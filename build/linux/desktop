@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=My Product
+Comment=A fidoapp application
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/fidoapp.exe %u
+Terminal=false
+Type=Application
+Icon=fidoapp.exe
+Categories=Utility;
+StartupWMClass=fidoapp.exe
+
+ 
