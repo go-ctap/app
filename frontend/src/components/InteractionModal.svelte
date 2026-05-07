@@ -1,6 +1,7 @@
 <script lang="ts">
   import { api } from "../lib/api";
   import { pendingInteraction } from "../lib/stores";
+  import DialogShell from "./DialogShell.svelte";
 
   let pin = "";
 
@@ -22,10 +23,13 @@
 </script>
 
 {#if prompt}
-  <div class="modal-backdrop">
-    <div class="modal">
-      <p class="eyebrow">{kind}</p>
-      <h2>{destructive ? "Confirm destructive operation" : "Authenticator needs you"}</h2>
+  <DialogShell
+    title={destructive ? "Confirm destructive operation" : "Authenticator needs you"}
+    eyebrow={kind}
+    destructive={destructive}
+    on:primary={() => answer(true)}
+    on:close={() => answer(false, true)}
+  >
       <p>{prompt.request.message || "Continue on the authenticator to proceed."}</p>
 
       {#if prompt.request.permission}
@@ -43,12 +47,11 @@
         </label>
       {/if}
 
-      <div class="actions">
-        <button class:danger={destructive} type="button" on:click={() => answer(true)}>
+      <div class="actions" slot="actions">
+        <button data-primary class:danger={destructive} type="button" on:click={() => answer(true)}>
           {kind === "pin" ? "Send PIN" : "Continue"}
         </button>
         <button class="quiet" type="button" on:click={() => answer(false, true)}>Cancel</button>
       </div>
-    </div>
-  </div>
+  </DialogShell>
 {/if}

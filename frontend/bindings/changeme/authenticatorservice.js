@@ -159,6 +159,15 @@ export function ListLargeBlobs(req) {
 }
 
 /**
+ * @returns {$CancellablePromise<$models.SessionStatus>}
+ */
+export function LockSession() {
+    return $Call.ByID(3810977571).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType2($result);
+    }));
+}
+
+/**
  * @param {$models.MakeCredentialRequest} req
  * @returns {$CancellablePromise<$models.OperationEnvelope>}
  */
@@ -203,6 +212,15 @@ export function ResolveInteraction(answer) {
 export function Select(selector) {
     return $Call.ByID(274961134, selector).then(/** @type {($result: any) => any} */(($result) => {
         return $$createType1($result);
+    }));
+}
+
+/**
+ * @returns {$CancellablePromise<$models.SessionStatus>}
+ */
+export function SessionStatus() {
+    return $Call.ByID(1956675252).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType2($result);
     }));
 }
 
@@ -259,3 +277,4 @@ export function WriteLargeBlob(req) {
 // Private type creation functions
 const $$createType0 = $models.OperationEnvelope.createFrom;
 const $$createType1 = $models.DiscoveryResponse.createFrom;
+const $$createType2 = $models.SessionStatus.createFrom;

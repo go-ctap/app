@@ -1,81 +1,172 @@
 <script lang="ts">
   import { api, bytesFromText, operationFailed } from "../lib/api";
-  import { selectedSelector, pushToast } from "../lib/stores";
-  import { asList, reportOf } from "../lib/format";
+  import { selectedSelector, selectionVersion, pushToast, sessionBusy, setStatusOutcome, summarizeEnvelope } from "../lib/stores";
+  import { asList, reportOf, stateLabel } from "../lib/format";
+  import CopyableId from "../components/CopyableId.svelte";
   import EmptyState from "../components/EmptyState.svelte";
-  import JsonView from "../components/JsonView.svelte";
+  import LargeBlobDetail from "../components/LargeBlobDetail.svelte";
+  import StatusBadge from "../components/StatusBadge.svelte";
 
   let loading = false;
   let envelope: any = null;
   let readResult: any = null;
-  let selected: any = null;
+  let selectedId = "";
   let payload = "";
   let decodeMode = "utf8";
+  let readDecodeMode = "";
   let preview: any = null;
+  let previewMode: "write" | "delete" | "" = "";
+  let detailMode: "read" | "write" | "delete" | "raw" = "read";
 
   $: selector = $selectedSelector;
+  $: if ($selectionVersion) resetState();
   $: report = reportOf(envelope);
   $: credentials = asList(report?.credentials);
+  $: selectedCredential = credentials.find((credential: any) => credentialKey(credential) === selectedId) || null;
+
+  function failureEnvelope(error: unknown) {
+    const message = error instanceof Error ? error.message : String(error || "Operation failed");
+    return { error: { message } };
+  }
+
+  function credentialKey(credential: any) {
+    return credential?.credentialIDHex || credential?.credentialIdHex || credential?.id || "";
+  }
+
+  function resetState() {
+    envelope = null;
+    readResult = null;
+    selectedId = "";
+    payload = "";
+    preview = null;
+    previewMode = "";
+    detailMode = "read";
+  }
+
+  function selectCredential(credential: any, mode: "read" | "write" | "delete" | "raw" = "read") {
+    selectedId = credentialKey(credential);
+    detailMode = mode;
+    preview = null;
+    previewMode = "";
+  }
 
   async function load() {
     if (!selector) return;
     loading = true;
-    envelope = await api.listLargeBlobs(selector);
-    loading = false;
+    try {
+      envelope = await api.listLargeBlobs(selector);
+      summarizeEnvelope("Large blob list", envelope, "large-blob-workspace", load);
+    } catch (error) {
+      envelope = failureEnvelope(error);
+      summarizeEnvelope("Large blob list", envelope, "large-blob-workspace", load);
+    } finally {
+      loading = false;
+    }
   }
 
-  async function readBlob(credential: any) {
-    selected = credential;
-    readResult = await api.readLargeBlob({ selector, credentialIdHex: credential.credentialIDHex, decodeMode });
+  async function readBlob(credential = selectedCredential) {
+    if (!credential) return;
+    selectCredential(credential, "read");
+    try {
+      readResult = await api.readLargeBlob({ selector, credentialIdHex: credentialKey(credential), decodeMode });
+      readDecodeMode = decodeMode;
+      summarizeEnvelope("Large blob read", readResult, "large-blob-detail", () => readBlob(credential));
+    } catch (error) {
+      readResult = failureEnvelope(error);
+      summarizeEnvelope("Large blob read", readResult, "large-blob-detail", () => readBlob(credential));
+    }
   }
 
   async function previewWrite() {
-    preview = await api.writeLargeBlob({
-      selector,
-      credentialIdHex: selected.credentialIDHex,
-      payload: bytesFromText(payload),
-      dryRun: true,
-    });
+    if (!selectedCredential) return;
+    detailMode = "write";
+    previewMode = "write";
+    try {
+      preview = await api.writeLargeBlob({
+        selector,
+        credentialIdHex: credentialKey(selectedCredential),
+        payload: bytesFromText(payload),
+        dryRun: true,
+      });
+      setStatusOutcome({ tone: "info", title: "Write preview ready", message: `${bytesFromText(payload).length} byte payload prepared.`, detailId: "large-blob-detail" });
+    } catch (error) {
+      preview = failureEnvelope(error);
+      summarizeEnvelope("Write preview", preview, "large-blob-detail", previewWrite);
+    }
   }
 
   async function executeWrite() {
-    await api.writeLargeBlob({
-      selector,
-      credentialIdHex: selected.credentialIDHex,
-      payload: bytesFromText(payload),
-      confirmed: true,
-      confirmationMessage: "write large blob",
-    });
-    preview = null;
-    await load();
-    pushToast("Large blob written");
+    if (!selectedCredential) return;
+    const credential = selectedCredential;
+    let result: any = null;
+    try {
+      result = await api.writeLargeBlob({
+        selector,
+        credentialIdHex: credentialKey(credential),
+        payload: bytesFromText(payload),
+        confirmed: true,
+        confirmationMessage: "write large blob",
+      });
+      preview = null;
+      previewMode = "";
+      await load();
+      await readBlob(credential);
+      pushToast("Large blob written");
+      summarizeEnvelope("Large blob write", result, "large-blob-detail");
+    } catch (error) {
+      result = failureEnvelope(error);
+      summarizeEnvelope("Large blob write", result, "large-blob-detail", executeWrite);
+    }
   }
 
   async function previewDelete(credential: any) {
-    selected = credential;
-    preview = await api.deleteLargeBlob({ selector, credentialIdHex: credential.credentialIDHex, dryRun: true });
+    selectCredential(credential, "delete");
+    previewMode = "delete";
+    try {
+      preview = await api.deleteLargeBlob({ selector, credentialIdHex: credentialKey(credential), dryRun: true });
+      setStatusOutcome({ tone: "warning", title: "Delete preview ready", message: "Review the mutation before confirming delete.", detailId: "large-blob-detail" });
+    } catch (error) {
+      preview = failureEnvelope(error);
+      summarizeEnvelope("Delete preview", preview, "large-blob-detail", () => previewDelete(credential));
+    }
   }
 
   async function executeDelete() {
-    await api.deleteLargeBlob({
-      selector,
-      credentialIdHex: selected.credentialIDHex,
-      confirmed: true,
-      confirmationMessage: "delete large blob",
-    });
-    preview = null;
-    await load();
-    pushToast("Large blob deleted");
+    if (!selectedCredential) return;
+    const credential = selectedCredential;
+    let result: any = null;
+    try {
+      result = await api.deleteLargeBlob({
+        selector,
+        credentialIdHex: credentialKey(credential),
+        confirmed: true,
+        confirmationMessage: "delete large blob",
+      });
+      preview = null;
+      previewMode = "";
+      await load();
+      readResult = null;
+      detailMode = "read";
+      pushToast("Large blob deleted");
+      summarizeEnvelope("Large blob delete", result, "large-blob-detail");
+    } catch (error) {
+      result = failureEnvelope(error);
+      summarizeEnvelope("Large blob delete", result, "large-blob-detail", executeDelete);
+    }
+  }
+
+  function copyToast(message: string) {
+    pushToast(message);
   }
 </script>
 
 <section class="screen-band">
   <div>
     <p class="eyebrow">Large blobs</p>
-    <h1>Data attached to credentials</h1>
-    <p class="lede">Read opaque relying-party data, decode it when possible, and preview array mutations before committing bytes back to the token.</p>
+    <h1>Credential blob workspace</h1>
+    <p class="lede">Select a resident credential, then read, edit, preview, or delete its attached data without leaving the row context.</p>
   </div>
-  <button type="button" on:click={load} disabled={!selector || loading}>{loading ? "Loading" : "Refresh"}</button>
+  <button type="button" on:click={load} disabled={!selector || loading || $sessionBusy}>{loading ? "Loading" : "Refresh"}</button>
 </section>
 
 {#if !selector}
@@ -88,59 +179,79 @@
   <div class="summary-line">
     <span>{report?.array?.blobCount || 0} blobs</span>
     <span>{report?.array?.matchedBlobCount || 0} matched</span>
-    <span>Support: {report?.support?.largeBlobs ? "available" : "unavailable"}</span>
+    <StatusBadge value={report?.support?.largeBlobs} label={`Support: ${stateLabel(report?.support?.largeBlobs)}`} />
   </div>
 
-  <section class="list-section">
-    {#each credentials as credential}
-      <article class="row">
-        <div>
-          <strong>{credential.user?.displayName || credential.user?.name || credential.rp?.id || "Credential"}</strong>
-          <code>{credential.credentialIDHex}</code>
-          <p>{credential.rp?.id || "unknown RP"} · {credential.blobState} · {credential.blobByteCount || 0} bytes</p>
-        </div>
-        <div class="actions">
-          <button type="button" on:click={() => readBlob(credential)}>Read</button>
-          <button type="button" on:click={() => (selected = credential)}>Write</button>
-          <button class="danger" type="button" on:click={() => previewDelete(credential)}>Delete</button>
-        </div>
-      </article>
-    {/each}
-  </section>
-{/if}
-
-{#if readResult}
-  <section class="details-grid">
-    <div>
-      <h2>Read result</h2>
-      <label>Decode mode
-        <select bind:value={decodeMode}>
-          <option value="none">none</option>
-          <option value="utf8">utf8</option>
-          <option value="json">json</option>
-          <option value="cbor">cbor</option>
-        </select>
-      </label>
-      <p>{readResult.result?.report?.blobPresent ? "Blob present" : "No blob present"}</p>
-      <p>{readResult.result?.report?.rawByteCount || 0} bytes</p>
-      <code>{readResult.result?.report?.rawHex || "no raw hex"}</code>
+  <section id="large-blob-workspace" class="large-blob-workspace">
+    <div class="list-section credential-list">
+      <div class="section-heading">
+        <h2>Credentials</h2>
+        <span class="muted">{credentials.length} row(s)</span>
+      </div>
+      {#each credentials as credential}
+        <article class:selected={credentialKey(credential) === selectedId} class="credential-row">
+          <button class="row-select" type="button" on:click={() => selectCredential(credential)}>
+            <span class="row-main">
+              <strong>{credential.user?.displayName || credential.user?.name || credential.rp?.id || "Credential"}</strong>
+              <span class="row-meta">
+                <span>{credential.rp?.id || "unknown RP"}</span>
+                <StatusBadge value={credential.blobState || "unknown"} label={credential.blobState || "unknown"} />
+                <span>{credential.blobByteCount || 0} bytes</span>
+              </span>
+            </span>
+          </button>
+          <div class="actions">
+            <button type="button" on:click={() => readBlob(credential)} disabled={$sessionBusy}>Read</button>
+            <button type="button" on:click={() => selectCredential(credential, "write")} disabled={$sessionBusy}>Write</button>
+            <button class="danger" type="button" on:click={() => previewDelete(credential)} disabled={$sessionBusy}>Delete</button>
+          </div>
+          {#if credentialKey(credential) === selectedId}
+            <div class="inline-detail">
+              <section class="credential-detail">
+                <LargeBlobDetail
+                  bind:detailMode
+                  bind:payload
+                  bind:decodeMode
+                  {readResult}
+                  {preview}
+                  {previewMode}
+                  {readDecodeMode}
+                  {selectedCredential}
+                  sessionBusy={$sessionBusy}
+                  {credentialKey}
+                  readBlob={() => readBlob()}
+                  {previewWrite}
+                  {executeWrite}
+                  previewDelete={() => previewDelete(selectedCredential)}
+                  {executeDelete}
+                  copied={copyToast}
+                />
+              </section>
+            </div>
+            {/if}
+        </article>
+      {/each}
     </div>
-    <JsonView value={readResult.result || readResult} title="Read report" />
-  </section>
-{/if}
 
-{#if selected}
-  <section class="editor-band">
-    <h2>Write blob for {selected.rp?.id || selected.credentialIDHex}</h2>
-    <textarea bind:value={payload} rows="8" placeholder="UTF-8 payload to store in the large blob"></textarea>
-    {#if preview}
-      <JsonView value={preview.result || preview} title="Mutation preview" />
-    {/if}
-    <div class="actions">
-      <button type="button" on:click={previewWrite}>Preview write</button>
-      <button type="button" on:click={executeWrite} disabled={!preview}>Confirm write</button>
-      <button type="button" class="danger" on:click={executeDelete} disabled={!preview}>Confirm delete</button>
-      <button class="quiet" type="button" on:click={() => { selected = null; preview = null; }}>Close</button>
-    </div>
+    <aside id="large-blob-detail" class="credential-detail">
+      <LargeBlobDetail
+        bind:detailMode
+        bind:payload
+        bind:decodeMode
+        {readResult}
+        {preview}
+        {previewMode}
+        {readDecodeMode}
+        {selectedCredential}
+        sessionBusy={$sessionBusy}
+        {credentialKey}
+        readBlob={() => readBlob()}
+        {previewWrite}
+        {executeWrite}
+        previewDelete={() => previewDelete(selectedCredential)}
+        {executeDelete}
+        copied={copyToast}
+      />
+    </aside>
   </section>
 {/if}

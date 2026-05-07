@@ -1,9 +1,12 @@
 <script lang="ts">
   import { api, operationFailed } from "../lib/api";
-  import { selectedSelector, pushToast } from "../lib/stores";
+  import { selectedSelector, selectionVersion, pushToast, sessionBusy } from "../lib/stores";
   import { asList, reportOf } from "../lib/format";
+  import CopyableId from "../components/CopyableId.svelte";
+  import DialogShell from "../components/DialogShell.svelte";
   import EmptyState from "../components/EmptyState.svelte";
   import JsonView from "../components/JsonView.svelte";
+  import StatusBadge from "../components/StatusBadge.svelte";
 
   let loading = false;
   let envelope: any = null;
@@ -14,14 +17,34 @@
   let userIDHex = "";
 
   $: selector = $selectedSelector;
+  $: if ($selectionVersion) resetState();
   $: report = reportOf(envelope);
   $: groups = asList(report?.groups);
+
+  function failureEnvelope(error: unknown) {
+    const message = error instanceof Error ? error.message : String(error || "Operation failed");
+    return { error: { message } };
+  }
+
+  function resetState() {
+    envelope = null;
+    preview = null;
+    editing = null;
+    displayName = "";
+    name = "";
+    userIDHex = "";
+  }
 
   async function load() {
     if (!selector) return;
     loading = true;
-    envelope = await api.listCredentials(selector);
-    loading = false;
+    try {
+      envelope = await api.listCredentials(selector);
+    } catch (error) {
+      envelope = failureEnvelope(error);
+    } finally {
+      loading = false;
+    }
   }
 
   async function previewDelete(credential: any) {
@@ -84,7 +107,7 @@
     <h1>Passkeys stored on the token</h1>
     <p class="lede">Browse discoverable credentials by relying party, update the friendly user fields, or delete stale entries after a backend preview.</p>
   </div>
-  <button type="button" on:click={load} disabled={!selector || loading}>{loading ? "Loading" : "Refresh"}</button>
+  <button type="button" on:click={load} disabled={!selector || loading || $sessionBusy}>{loading ? "Loading" : "Refresh"}</button>
 </section>
 
 {#if !selector}
@@ -97,7 +120,7 @@
   <div class="summary-line">
     <span>{report?.summary?.totalRPs || 0} relying parties</span>
     <span>{report?.summary?.totalCredentials || 0} credentials</span>
-    <span>Management: {report?.support?.credentialManagement ? "available" : "unavailable"}</span>
+    <StatusBadge value={report?.support?.credentialManagement} label={`Management: ${report?.support?.credentialManagement ? "available" : "unavailable"}`} />
   </div>
 
   {#each groups as group}
@@ -107,14 +130,21 @@
       <div class="table">
         {#each asList(group.credentials) as credential}
           <article class="row">
-            <div>
+            <div class="row-main">
               <strong>{credential.displayName || credential.userName || "Unnamed user"}</strong>
-              <code>{credential.credentialIDHex}</code>
-              <p>{credential.userIDHex || "no user id"} · blob key {credential.largeBlobKeyState || "unknown"}</p>
+              <CopyableId label="Credential ID" value={credential.credentialIDHex} on:copied={() => pushToast("Credential ID copied")} />
+              <div class="row-meta">
+                <CopyableId label="User ID" value={credential.userIDHex} empty="no user id" on:copied={() => pushToast("User ID copied")} />
+                <StatusBadge value={credential.largeBlobKeyState || "unknown"} label={`blob key ${credential.largeBlobKeyState || "unknown"}`} />
+              </div>
+              <details class="details-toggle">
+                <summary>Raw credential details</summary>
+                <JsonView value={credential} title="Credential JSON" />
+              </details>
             </div>
             <div class="actions">
-              <button type="button" on:click={() => startEdit(credential)}>Edit</button>
-              <button class="danger" type="button" on:click={() => previewDelete(credential)}>Delete</button>
+              <button type="button" on:click={() => startEdit(credential)} disabled={$sessionBusy}>Edit</button>
+              <button class="danger" type="button" on:click={() => previewDelete(credential)} disabled={$sessionBusy}>Delete</button>
             </div>
           </article>
         {/each}
@@ -124,33 +154,27 @@
 {/if}
 
 {#if editing}
-  <div class="modal-backdrop">
-    <div class="modal wide">
-      <h2>Edit credential user</h2>
+  <DialogShell title="Edit credential user" wide on:close={() => (editing = null)}>
       <label>User ID hex <input bind:value={userIDHex} /></label>
       <label>Name <input bind:value={name} /></label>
       <label>Display name <input bind:value={displayName} /></label>
       {#if preview}
         <JsonView value={preview.result || preview} title="Update preview" />
       {/if}
-      <div class="actions">
+      <div class="actions" slot="actions">
         <button type="button" on:click={previewUpdate}>Preview</button>
-        <button type="button" on:click={executeUpdate} disabled={!preview}>Confirm update</button>
+        <button data-primary type="button" on:click={executeUpdate} disabled={!preview}>Confirm update</button>
         <button class="quiet" type="button" on:click={() => (editing = null)}>Close</button>
       </div>
-    </div>
-  </div>
+  </DialogShell>
 {/if}
 
 {#if preview && !editing}
-  <div class="modal-backdrop">
-    <div class="modal wide">
-      <h2>Delete credential preview</h2>
+  <DialogShell title="Delete credential preview" wide destructive on:close={() => (preview = null)}>
       <JsonView value={preview.result || preview} title="Deletion preview" />
-      <div class="actions">
-        <button class="danger" type="button" on:click={executeDelete}>Confirm delete</button>
+      <div class="actions" slot="actions">
+        <button data-primary class="danger" type="button" on:click={executeDelete}>Confirm delete</button>
         <button class="quiet" type="button" on:click={() => (preview = null)}>Cancel</button>
       </div>
-    </div>
-  </div>
+  </DialogShell>
 {/if}

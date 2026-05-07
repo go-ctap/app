@@ -1,13 +1,55 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
 
+	ctapkit "github.com/go-ctap/kit"
 	"github.com/go-ctap/kit/model"
 	"github.com/go-ctap/kit/model/report"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
+
+type fakeSession struct {
+	runCount   int
+	closeCount int
+	runErr     error
+	block      chan struct{}
+	closeHook  func()
+}
+
+func (s *fakeSession) Run(context.Context, model.Operation, model.InteractionHandler, ...ctapkit.RunOption) (model.OperationResult, error) {
+	s.runCount++
+	if s.block != nil {
+		<-s.block
+	}
+	return nil, s.runErr
+}
+
+func (s *fakeSession) Close() error {
+	s.closeCount++
+	if s.closeHook != nil {
+		s.closeHook()
+	}
+	return nil
+}
+
+func assertCompletes(t *testing.T, name string, fn func()) {
+	t.Helper()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		fn()
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatalf("%s did not return", name)
+	}
+}
 
 func TestOperationErrorPreservesRuntimeCategory(t *testing.T) {
 	err := operationError(model.NewRuntimeError(model.ErrorBusy, "device is busy", errors.New("busy")))
@@ -106,5 +148,410 @@ func TestCancelOperationResolvesPendingInteraction(t *testing.T) {
 		}
 	case <-time.After(time.Second):
 		t.Fatal("handler did not receive cancellation")
+	}
+}
+
+func TestRunUsesAppContextAndReusesSelectedSession(t *testing.T) {
+	service := NewAuthenticatorService()
+	session := &fakeSession{}
+	openCalls := 0
+	openCtx := make(chan context.Context, 1)
+	if err := service.ServiceStartup(context.Background(), application.ServiceOptions{}); err != nil {
+		t.Fatalf("startup: %v", err)
+	}
+	service.discoverDevices = func(context.Context, ...ctapkit.DiscoverOption) ([]ctapkit.Device, error) {
+		return []ctapkit.Device{{}}, nil
+	}
+	service.selectDevice = func(_ []ctapkit.Device, selector string) (ctapkit.Device, error) {
+		if selector != "token-1" {
+			t.Fatalf("selector = %q, want token-1", selector)
+		}
+		return ctapkit.Device{}, nil
+	}
+	service.openSession = func(ctx context.Context, _ ctapkit.Device, _ ...ctapkit.OpenSessionOption) (sessionHandle, error) {
+		openCalls++
+		openCtx <- ctx
+		return session, nil
+	}
+
+	rpcCtx, cancel := context.WithCancel(context.Background())
+	cancel()
+	first := service.Inspect(rpcCtx, OperationRequest{Selector: "token-1"})
+	second := service.ListCredentials(rpcCtx, OperationRequest{Selector: "token-1"})
+
+	if first.Error != nil || second.Error != nil {
+		t.Fatalf("unexpected errors: %#v %#v", first.Error, second.Error)
+	}
+	if openCalls != 1 {
+		t.Fatalf("open calls = %d, want 1", openCalls)
+	}
+	select {
+	case ctx := <-openCtx:
+		if ctx.Err() != nil {
+			t.Fatalf("open context was canceled: %v", ctx.Err())
+		}
+	default:
+		t.Fatal("open context was not captured")
+	}
+	if session.runCount != 2 {
+		t.Fatalf("run count = %d, want 2", session.runCount)
+	}
+	if service.SessionStatus(nil).State != sessionStateReady {
+		t.Fatalf("state = %q, want ready", service.SessionStatus(nil).State)
+	}
+}
+
+func TestSelectClosesOldSessionWithoutOpeningNewSession(t *testing.T) {
+	service := NewAuthenticatorService()
+	oldSession := &fakeSession{}
+	openCalls := 0
+	service.selectDevice = func(_ []ctapkit.Device, _ string) (ctapkit.Device, error) {
+		return ctapkit.Device{}, nil
+	}
+	service.openSession = func(context.Context, ctapkit.Device, ...ctapkit.OpenSessionOption) (sessionHandle, error) {
+		openCalls++
+		return &fakeSession{}, nil
+	}
+	service.selectedSelector = "token-1"
+	service.selectedSession = &selectedSession{
+		selector: "token-1",
+		session:  oldSession,
+		state:    sessionStateReady,
+	}
+
+	response := service.Select(nil, "token-2")
+
+	if response.Error != nil {
+		t.Fatalf("unexpected select error: %#v", response.Error)
+	}
+	if oldSession.closeCount != 1 {
+		t.Fatalf("old close count = %d, want 1", oldSession.closeCount)
+	}
+	if openCalls != 0 {
+		t.Fatalf("open calls = %d, want 0", openCalls)
+	}
+	if response.Session.State != sessionStateClosed {
+		t.Fatalf("state = %q, want closed", response.Session.State)
+	}
+	if service.selectedSession.session != nil {
+		t.Fatal("expected selected session to have no open handle")
+	}
+}
+
+func TestSelectDoesNotOpenSession(t *testing.T) {
+	service := NewAuthenticatorService()
+	oldSession := &fakeSession{}
+	openCalls := 0
+	service.selectDevice = func(_ []ctapkit.Device, _ string) (ctapkit.Device, error) {
+		return ctapkit.Device{}, nil
+	}
+	service.openSession = func(context.Context, ctapkit.Device, ...ctapkit.OpenSessionOption) (sessionHandle, error) {
+		openCalls++
+		return nil, model.NewRuntimeError(model.ErrorPermissionDenied, "cannot open selected token", nil)
+	}
+	service.selectedSelector = "token-1"
+	service.selectedSession = &selectedSession{
+		selector: "token-1",
+		session:  oldSession,
+		state:    sessionStateReady,
+	}
+
+	response := service.Select(nil, "token-2")
+
+	if oldSession.closeCount != 1 {
+		t.Fatalf("old close count = %d, want 1", oldSession.closeCount)
+	}
+	if response.Error != nil {
+		t.Fatalf("error = %#v, want nil", response.Error)
+	}
+	if openCalls != 0 {
+		t.Fatalf("open calls = %d, want 0", openCalls)
+	}
+	if response.Session.State != sessionStateClosed {
+		t.Fatalf("state = %q, want closed", response.Session.State)
+	}
+}
+
+func TestDiscoverDoesNotOpenSession(t *testing.T) {
+	service := NewAuthenticatorService()
+	openCalls := 0
+	service.discoverDevices = func(context.Context, ...ctapkit.DiscoverOption) ([]ctapkit.Device, error) {
+		return []ctapkit.Device{{}}, nil
+	}
+	service.openSession = func(context.Context, ctapkit.Device, ...ctapkit.OpenSessionOption) (sessionHandle, error) {
+		openCalls++
+		return &fakeSession{}, nil
+	}
+
+	response := service.Discover(nil, DiscoverRequest{})
+
+	if response.Error != nil {
+		t.Fatalf("unexpected discover error: %#v", response.Error)
+	}
+	if openCalls != 0 {
+		t.Fatalf("open calls = %d, want 0", openCalls)
+	}
+	if response.Session.State != sessionStateIdle {
+		t.Fatalf("state = %q, want idle", response.Session.State)
+	}
+}
+
+func TestSelectCancelsActiveOperationAndPendingInteraction(t *testing.T) {
+	service := NewAuthenticatorService()
+	oldSession := &fakeSession{}
+	ctx, cancel := context.WithCancel(context.Background())
+	interaction := make(chan InteractionAnswer, 1)
+	service.selectDevice = func(_ []ctapkit.Device, _ string) (ctapkit.Device, error) {
+		return ctapkit.Device{}, nil
+	}
+	service.openSession = func(context.Context, ctapkit.Device, ...ctapkit.OpenSessionOption) (sessionHandle, error) {
+		return &fakeSession{}, nil
+	}
+	service.selectedSelector = "token-1"
+	service.active["op-running"] = cancel
+	service.interactions["op-running:pin"] = interaction
+	service.selectedSession = &selectedSession{
+		selector:          "token-1",
+		session:           oldSession,
+		state:             sessionStateRunning,
+		activeOperationID: "op-running",
+	}
+
+	response := service.Select(nil, "token-2")
+
+	if response.Error != nil {
+		t.Fatalf("unexpected select error: %#v", response.Error)
+	}
+	select {
+	case <-ctx.Done():
+	case <-time.After(time.Second):
+		t.Fatal("active operation was not canceled")
+	}
+	select {
+	case answer := <-interaction:
+		if !answer.Canceled {
+			t.Fatalf("interaction answer = %#v, want canceled", answer)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("pending interaction was not canceled")
+	}
+	if oldSession.closeCount != 1 {
+		t.Fatalf("old close count = %d, want 1", oldSession.closeCount)
+	}
+	if response.Session.State != sessionStateClosed {
+		t.Fatalf("state = %q, want closed", response.Session.State)
+	}
+}
+
+func TestRunInvalidSessionMarksSessionStale(t *testing.T) {
+	service := NewAuthenticatorService()
+	session := &fakeSession{
+		runErr: model.NewRuntimeError(model.ErrorInvalidSession, "lease expired", nil),
+	}
+	service.discoverDevices = func(context.Context, ...ctapkit.DiscoverOption) ([]ctapkit.Device, error) {
+		return []ctapkit.Device{{}}, nil
+	}
+	service.selectDevice = func(_ []ctapkit.Device, _ string) (ctapkit.Device, error) {
+		return ctapkit.Device{}, nil
+	}
+	service.openSession = func(context.Context, ctapkit.Device, ...ctapkit.OpenSessionOption) (sessionHandle, error) {
+		return session, nil
+	}
+
+	envelope := service.Inspect(nil, OperationRequest{Selector: "token-1"})
+
+	if envelope.Error == nil || envelope.Error.Category != model.ErrorInvalidSession {
+		t.Fatalf("error = %#v, want invalid-session", envelope.Error)
+	}
+	if session.closeCount != 1 {
+		t.Fatalf("close count = %d, want 1", session.closeCount)
+	}
+	if envelope.Session.State != sessionStateStale {
+		t.Fatalf("state = %q, want stale", envelope.Session.State)
+	}
+}
+
+func TestLockSessionClosesHandleAndKeepsSelection(t *testing.T) {
+	service := NewAuthenticatorService()
+	session := &fakeSession{}
+	service.selectedSelector = "token-1"
+	service.selectedSession = &selectedSession{
+		selector: "token-1",
+		session:  session,
+		state:    sessionStateReady,
+	}
+
+	status := service.LockSession(nil)
+
+	if session.closeCount != 1 {
+		t.Fatalf("close count = %d, want 1", session.closeCount)
+	}
+	if status.SelectedSelector != "token-1" {
+		t.Fatalf("selector = %q, want token-1", status.SelectedSelector)
+	}
+	if status.State != sessionStateClosed {
+		t.Fatalf("state = %q, want closed", status.State)
+	}
+}
+
+func TestLockSessionDoesNotHoldMutexWhileClosingSession(t *testing.T) {
+	service := NewAuthenticatorService()
+	session := &fakeSession{
+		closeHook: func() {
+			service.mu.Lock()
+			service.mu.Unlock()
+		},
+	}
+	service.selectedSelector = "token-1"
+	service.selectedSession = &selectedSession{
+		selector: "token-1",
+		session:  session,
+		state:    sessionStateReady,
+	}
+
+	assertCompletes(t, "LockSession", func() {
+		service.LockSession(nil)
+	})
+}
+
+func TestSelectDoesNotHoldMutexWhileClosingOldSession(t *testing.T) {
+	service := NewAuthenticatorService()
+	oldSession := &fakeSession{
+		closeHook: func() {
+			service.mu.Lock()
+			service.mu.Unlock()
+		},
+	}
+	newSession := &fakeSession{}
+	service.selectDevice = func(_ []ctapkit.Device, _ string) (ctapkit.Device, error) {
+		return ctapkit.Device{}, nil
+	}
+	service.openSession = func(context.Context, ctapkit.Device, ...ctapkit.OpenSessionOption) (sessionHandle, error) {
+		return newSession, nil
+	}
+	service.selectedSelector = "token-1"
+	service.selectedSession = &selectedSession{
+		selector: "token-1",
+		session:  oldSession,
+		state:    sessionStateReady,
+	}
+
+	assertCompletes(t, "Select", func() {
+		response := service.Select(nil, "token-2")
+		if response.Error != nil {
+			t.Fatalf("unexpected select error: %#v", response.Error)
+		}
+	})
+}
+
+func TestDiscoverStalePathDoesNotHoldMutexWhileClosingSession(t *testing.T) {
+	service := NewAuthenticatorService()
+	session := &fakeSession{
+		closeHook: func() {
+			service.mu.Lock()
+			service.mu.Unlock()
+		},
+	}
+	service.discoverDevices = func(context.Context, ...ctapkit.DiscoverOption) ([]ctapkit.Device, error) {
+		return nil, nil
+	}
+	service.selectedSelector = "token-1"
+	service.selectedSession = &selectedSession{
+		selector: "token-1",
+		deviceID: "device-1",
+		session:  session,
+		state:    sessionStateReady,
+	}
+
+	assertCompletes(t, "Discover", func() {
+		response := service.Discover(nil, DiscoverRequest{})
+		if response.Error != nil {
+			t.Fatalf("unexpected discover error: %#v", response.Error)
+		}
+	})
+}
+
+func TestInvalidateSessionAfterErrorDoesNotHoldMutexWhileClosingSession(t *testing.T) {
+	service := NewAuthenticatorService()
+	session := &fakeSession{
+		closeHook: func() {
+			service.mu.Lock()
+			service.mu.Unlock()
+		},
+	}
+	service.selectedSession = &selectedSession{
+		selector:          "token-1",
+		session:           session,
+		state:             sessionStateRunning,
+		activeOperationID: "op-1",
+	}
+
+	assertCompletes(t, "invalidateSessionAfterError", func() {
+		service.invalidateSessionAfterError("op-1", session, &OperationError{
+			Category: model.ErrorInvalidSession,
+			Message:  "lease expired",
+		})
+	})
+}
+
+func TestOperationEventSinkSkipsOperationLookupForSessionInvalidated(t *testing.T) {
+	service := NewAuthenticatorService()
+	service.mu.Lock()
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		operationEventSink{service: service}.Emit(model.OperationEvent{
+			Stage: model.OperationStageSessionInvalidated,
+		})
+	}()
+
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		service.mu.Unlock()
+		t.Fatal("session-invalidated event tried to read operation state")
+	}
+	service.mu.Unlock()
+}
+
+func TestDiscoverSelectionDoesNotAutoSwitchWhenCurrentMissing(t *testing.T) {
+	reports := []report.DeviceReport{{DeviceID: "new-device", OrdinalAlias: "1", Path: "new-path"}}
+	if got := reconcileDiscoverySelectionLocked("old-device", reports); got != "" {
+		t.Fatalf("selection = %q, want cleared selection", got)
+	}
+}
+
+func TestSelectedSessionMatchIgnoresOrdinalAlias(t *testing.T) {
+	session := &selectedSession{
+		selector:   "1",
+		deviceID:   "old-device",
+		devicePath: "old-path",
+	}
+	reports := []report.DeviceReport{{DeviceID: "new-device", OrdinalAlias: "1", Path: "new-path"}}
+	if selectedSessionMatchesReports(session, reports) {
+		t.Fatal("expected alias-only match to be rejected")
+	}
+}
+
+func TestOldSessionErrorDoesNotInvalidateNewSelection(t *testing.T) {
+	service := NewAuthenticatorService()
+	oldSession := &fakeSession{}
+	newSession := &fakeSession{}
+	service.selectedSession = &selectedSession{
+		selector: "token-2",
+		session:  newSession,
+		state:    sessionStateReady,
+	}
+
+	service.invalidateSessionAfterError("op-old", oldSession, &OperationError{
+		Category: model.ErrorInvalidSession,
+		Message:  "old session failed after switch",
+	})
+
+	if service.selectedSession.state != sessionStateReady {
+		t.Fatalf("state = %q, want ready", service.selectedSession.state)
+	}
+	if newSession.closeCount != 0 {
+		t.Fatalf("new session close count = %d, want 0", newSession.closeCount)
 	}
 }

@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { Events } from "@wailsio/runtime";
-  import { api } from "./lib/api";
-  import { activeScreen, appError, applyDiscovery, devices, operationStatus, pendingInteraction, selectedDevice, selectedSelector, toasts } from "./lib/stores";
+  import { bootstrap, handleInteractionRequested, handleOperationProgress, handleSessionChanged, loadOverview, lockSelectedSession, refreshDiscovery, selectToken } from "./lib/controller";
+  import { activeScreen, appError, devices, selectedDevice, selectedSelector, sessionStatus, toasts } from "./lib/stores";
   import { labelDevice } from "./lib/format";
-  import OperationBar from "./components/OperationBar.svelte";
+  import StatusBadge from "./components/StatusBadge.svelte";
+  import WorkbenchStatusBar from "./components/WorkbenchStatusBar.svelte";
   import InteractionModal from "./components/InteractionModal.svelte";
   import Overview from "./screens/Overview.svelte";
   import Credentials from "./screens/Credentials.svelte";
@@ -24,32 +25,55 @@
 
   async function refresh() {
     refreshing = true;
-    applyDiscovery(await api.discover());
-    refreshing = false;
+    try {
+      await refreshDiscovery();
+    } finally {
+      refreshing = false;
+    }
   }
 
   async function choose(selector: string) {
-    applyDiscovery(await api.select(selector));
+    refreshing = true;
+    try {
+      await selectToken(selector);
+    } finally {
+      refreshing = false;
+    }
+  }
+
+  async function lockSession() {
+    await lockSelectedSession();
   }
 
   function handleTokenChange(event: Event) {
     choose((event.currentTarget as HTMLSelectElement).value);
   }
 
+  function openScreen(screen: string) {
+    activeScreen.set(screen);
+    if (screen === "overview" && $selectedSelector) {
+      loadOverview($selectedSelector);
+    }
+  }
+
   onMount(() => {
     const offProgress = Events.On("authenticator:operation-progress", (event: any) => {
-      operationStatus.set(event.data);
-      if (event.data?.event?.stage?.includes("completed") || event.data?.event?.stage?.includes("failed") || event.data?.event?.stage?.includes("canceled")) {
-        setTimeout(() => operationStatus.set(null), 1800);
-      }
+      handleOperationProgress(event.data);
     });
     const offInteraction = Events.On("authenticator:interaction-requested", (event: any) => {
-      pendingInteraction.set(event.data);
+      handleInteractionRequested(event.data);
     });
-    refresh();
+    const offSession = Events.On("authenticator:session-changed", (event: any) => {
+      handleSessionChanged(event.data);
+    });
+    refreshing = true;
+    bootstrap().finally(() => {
+      refreshing = false;
+    });
     return () => {
       offProgress?.();
       offInteraction?.();
+      offSession?.();
     };
   });
 </script>
@@ -78,10 +102,12 @@
 
   <div class="device-strip">
     {#if $selectedDevice}
-      <span>{labelDevice($selectedDevice)}</span>
+      <span class="device-name">{labelDevice($selectedDevice)}</span>
       <code>{$selectedDevice.transport}</code>
       <code>VID {$selectedDevice.vendorId}</code>
       <code>PID {$selectedDevice.productId}</code>
+      <StatusBadge value={$sessionStatus.state} label={$sessionStatus.state === "ready" ? "session cached" : $sessionStatus.state} />
+      <button class="quiet compact" type="button" on:click={lockSession} disabled={$sessionStatus.state === "idle" || $sessionStatus.state === "closed"}>Lock session</button>
     {:else}
       <span>No active authenticator. Plug in a token or refresh discovery.</span>
     {/if}
@@ -93,13 +119,11 @@
 
   <nav class="nav-tabs" aria-label="Main sections">
     {#each screens as screen}
-      <button type="button" class:active={$activeScreen === screen.id} on:click={() => activeScreen.set(screen.id)}>
+      <button type="button" class:active={$activeScreen === screen.id} on:click={() => openScreen(screen.id)}>
         {screen.label}
       </button>
     {/each}
   </nav>
-
-  <OperationBar />
 
   <main>
     {#if $activeScreen === "overview"}
@@ -116,6 +140,7 @@
   </main>
 
   <InteractionModal />
+  <WorkbenchStatusBar />
 
   <div class="toast-stack">
     {#each $toasts as toast}

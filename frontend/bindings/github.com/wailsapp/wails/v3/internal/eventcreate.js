@@ -15,6 +15,7 @@ function configure() {
         "authenticator:interaction-requested": $$createType0,
         "authenticator:interaction-resolved": $$createType1,
         "authenticator:operation-progress": $$createType2,
+        "authenticator:session-changed": $$createType3,
     }));
 }
 
@@ -22,5 +23,6 @@ function configure() {
 const $$createType0 = main$0.InteractionPrompt.createFrom;
 const $$createType1 = main$0.InteractionAnswer.createFrom;
 const $$createType2 = main$0.OperationEventEnvelope.createFrom;
+const $$createType3 = main$0.SessionStatus.createFrom;
 
 configure();

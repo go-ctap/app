@@ -5,6 +5,7 @@ const service: any = AuthenticatorService;
 export type Envelope = {
   operationId?: string;
   selectedDevice?: any;
+  session?: SessionStatus;
   result?: any;
   error?: { category?: string; message: string; hint?: string };
 };
@@ -13,12 +14,25 @@ export type Discovery = {
   devices: any[];
   selectedSelector?: string;
   selectedDevice?: any;
+  session?: SessionStatus;
   error?: { category?: string; message: string; hint?: string };
+};
+
+export type SessionStatus = {
+  selectedSelector?: string;
+  selectedDevice?: any;
+  state: "idle" | "opening" | "ready" | "running" | "stale" | "closed" | "error";
+  activeOperation?: string;
+  error?: { category?: string; message: string; hint?: string };
+  openedAt?: string;
+  updatedAt?: string;
 };
 
 export const api = {
   discover: (transport = "auto"): Promise<Discovery> => service.Discover({ transport }),
   select: (selector: string): Promise<Discovery> => service.Select(selector),
+  sessionStatus: (): Promise<SessionStatus> => service.SessionStatus(),
+  lockSession: (): Promise<SessionStatus> => service.LockSession(),
   cancelOperation: (operationId: string): Promise<boolean> => service.CancelOperation(operationId),
   resolveInteraction: (answer: any): Promise<boolean> => service.ResolveInteraction(answer),
   inspect: (selector: string): Promise<Envelope> => service.Inspect({ selector }),

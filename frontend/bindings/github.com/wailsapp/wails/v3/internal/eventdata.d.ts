@@ -15,6 +15,7 @@ declare module "@wailsio/runtime" {
             "authenticator:interaction-requested": main$0.InteractionPrompt;
             "authenticator:interaction-resolved": main$0.InteractionAnswer;
             "authenticator:operation-progress": main$0.OperationEventEnvelope;
+            "authenticator:session-changed": main$0.SessionStatus;
         }
     }
 }

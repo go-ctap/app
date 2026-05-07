@@ -20,6 +20,7 @@ func init() {
 	application.RegisterEvent[OperationEventEnvelope](eventOperationProgress)
 	application.RegisterEvent[InteractionPrompt](eventInteractionRequested)
 	application.RegisterEvent[InteractionAnswer](eventInteractionResolved)
+	application.RegisterEvent[SessionStatus](eventSessionChanged)
 }
 
 // main function serves as the application's entry point. It initializes the application, creates a window,
@@ -32,11 +33,12 @@ func main() {
 	// 'Assets' configures the asset server with the 'FS' variable pointing to the frontend files.
 	// 'Bind' is a list of Go struct instances. The frontend has access to the methods of these instances.
 	// 'Mac' options tailor the application when running an macOS.
+	authenticatorService := NewAuthenticatorService()
 	app := application.New(application.Options{
 		Name:        "fidoapp",
 		Description: "Hardware authenticator workbench",
 		Services: []application.Service{
-			application.NewService(NewAuthenticatorService()),
+			application.NewService(authenticatorService),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

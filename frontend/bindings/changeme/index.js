@@ -27,5 +27,6 @@ export {
     OperationEventEnvelope,
     OperationRequest,
     PINRequest,
-    ResetRequest
+    ResetRequest,
+    SessionStatus
 } from "./models.js";

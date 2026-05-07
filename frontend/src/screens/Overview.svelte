@@ -1,63 +1,80 @@
 <script lang="ts">
-  import { api, operationFailed } from "../lib/api";
-  import { selectedSelector } from "../lib/stores";
+  import { operationFailed } from "../lib/api";
+  import { loadOverview } from "../lib/controller";
+  import { overviewEnvelope, overviewLoading, selectedDevice, selectedSelector, sessionBusy, sessionStatus } from "../lib/stores";
   import { resultOf, stateLabel } from "../lib/format";
   import EmptyState from "../components/EmptyState.svelte";
   import JsonView from "../components/JsonView.svelte";
-
-  let loading = false;
-  let envelope: any = null;
-  let loadedFor = "";
+  import StatusBadge from "../components/StatusBadge.svelte";
+  import MetaRow from "../components/MetaRow.svelte";
 
   $: selector = $selectedSelector;
-  $: if (selector && selector !== loadedFor) load(selector);
+  $: envelope = $overviewEnvelope;
+  $: loading = $overviewLoading;
   $: report = resultOf(envelope);
+  $: device = report?.device || $selectedDevice || {};
   $: info = report?.info || {};
   $: options = info?.options || {};
   $: extensions = info?.extensions || [];
-  $: capabilities = [
+  $: productName = [device.manufacturer, device.product].filter(Boolean).join(" ") || device.product || device.deviceId || "Selected authenticator";
+  $: versions = info.versions || [];
+  $: identityMetrics = [
+    { label: "Transport", value: device.transport || "unknown" },
+    { label: "Session", value: stateLabel($sessionStatus.state) },
+    { label: "AAGUID", value: info.aaguid || "not reported" },
+    { label: "Versions", value: versions.join(", ") || "unknown" },
+  ];
+  $: capabilityGroups = [
     {
-      title: "Resident credentials",
-      state: options.rk ?? options.clientPin,
-      text: "The token can remember passkeys inside itself, like tiny named keys for websites and apps.",
+      title: "Sign-in",
+      items: [
+        capability("Discoverable credentials", options.rk ?? options.residentKey, "Can keep passkeys on the authenticator."),
+        capability("User presence", options.up ?? true, "Requires a local touch or presence check."),
+        capability("Enterprise attestation", options.ep, "Can support managed attestation flows when enabled."),
+      ],
     },
     {
-      title: "Large blobs",
-      state: extensions.includes("largeBlobKey") || Boolean(info.maxSerializedLargeBlobArray),
-      text: "The token can keep small app-defined data next to a credential when the authenticator supports it.",
+      title: "Verification",
+      items: [
+        capability("User verification", options.uv, "Can verify the local user before releasing credentials."),
+        capability("PIN", options.clientPin ?? Boolean(info.minPINLength || info.maxPINLength), "Supports PIN-backed permissions."),
+        capability("Biometric modality", Boolean(info.uvModality), "Reports a platform verification sensor."),
+      ],
     },
     {
-      title: "PIN",
-      state: options.clientPin ?? Boolean(info.minPINLength || info.maxPINLength),
-      text: "The token can ask for a secret number before it releases stronger permissions.",
+      title: "Storage",
+      items: [
+        capability("Large blobs", extensions.includes("largeBlobKey") || Boolean(info.maxSerializedLargeBlobArray), "Can store app data beside credentials."),
+        capability("Credential management", options.credMgmt ?? options.credentialMgmtPreview, "Can list or manage resident credentials."),
+        capability("Maximum blob array", info.maxSerializedLargeBlobArray, "Reported large-blob storage ceiling."),
+      ],
     },
     {
-      title: "User verification",
-      state: options.uv,
-      text: "The token can prove that a real local user approved the operation.",
+      title: "Administration",
+      items: [
+        capability("Authenticator config", extensions.includes("authenticatorConfig") || options.alwaysUv, "Supports policy configuration such as always-UV."),
+        capability("Minimum PIN length", info.minPINLength || options.setMinPINLength, "Can report or enforce PIN policy."),
+        capability("Factory reset hints", info.longTouchForReset || (info.transportsForReset || []).length > 0, "Reports reset availability or transport hints."),
+      ],
     },
     {
-      title: "Biometrics",
-      state: Boolean(info.uvModality),
-      text: "The token may have a fingerprint or biometric sensor for user verification.",
-    },
-    {
-      title: "Authenticator config",
-      state: extensions.includes("authenticatorConfig") || options.alwaysUv,
-      text: "The token exposes switches such as always-UV or minimum PIN policy.",
-    },
-    {
-      title: "Factory reset",
-      state: info.longTouchForReset || (info.transportsForReset || []).length > 0,
-      text: "The token can be wiped back to a clean state when its reset rules are followed.",
+      title: "Protocol",
+      items: [
+        capability("PIN/UV protocols", (info.pinUvAuthProtocols || []).length, "Advertises CTAP PIN/UV protocol versions."),
+        capability("Extensions", extensions.length, "Reports optional CTAP extension support."),
+        capability("Algorithms", (info.algorithms || []).length, "Advertises public-key algorithm choices."),
+      ],
     },
   ];
+  $: flatCapabilities = capabilityGroups.flatMap((group) => group.items);
+  $: knownCapabilities = flatCapabilities.filter((item) => item.known);
+  $: supportedCapabilities = flatCapabilities.filter((item) => item.supported);
+  $: capabilitySummary = knownCapabilities.length ? `${supportedCapabilities.length}/${knownCapabilities.length}` : "unknown";
 
-  async function load(current: string) {
-    loading = true;
-    loadedFor = current;
-    envelope = await api.inspect(current);
-    loading = false;
+  function capability(title: string, state: unknown, text: string) {
+    const known = state !== null && state !== undefined && state !== "";
+    const supported = state === true || (typeof state === "number" && state > 0) || (typeof state === "string" && state.length > 0 && state !== "false");
+    return { title, state, text, known, supported };
   }
 </script>
 
@@ -67,10 +84,10 @@
   <section class="screen-band">
     <div>
       <p class="eyebrow">Overview</p>
-      <h1>Your token, translated</h1>
-      <p class="lede">This page reads the authenticator and explains its powers in plain language first, then leaves the raw CTAP facts one click away.</p>
+      <h1>Token dashboard</h1>
+      <p class="lede">Identity, session state, capabilities, and raw CTAP inspection in one scan-friendly view.</p>
     </div>
-    <button type="button" on:click={() => load(selector)} disabled={loading}>{loading ? "Loading" : "Refresh"}</button>
+    <button type="button" on:click={() => loadOverview(selector)} disabled={loading || $sessionBusy}>{loading ? "Loading" : "Refresh"}</button>
   </section>
 
   {#if operationFailed(envelope)}
@@ -78,45 +95,80 @@
   {/if}
 
   {#if report}
-    <section class="capability-grid">
-      {#each capabilities as capability}
-        <article class="capability">
-          <div>
-            <h2>{capability.title}</h2>
-            <p>{capability.text}</p>
+    <section id="overview-dashboard" class="token-dashboard">
+      <div class="token-identity">
+        <p class="eyebrow">Selected token</p>
+        <h2>{productName}</h2>
+        <p>{device.deviceId || "Device identity reported by the current transport."}</p>
+      </div>
+      <div class="metric-strip">
+        {#each identityMetrics as metric}
+          <div class="identity-metric">
+            <span>{metric.label}</span>
+            <strong>{metric.value}</strong>
           </div>
-          <span class:ok={capability.state === true} class:bad={capability.state === false}>
-            {stateLabel(capability.state)}
-          </span>
-        </article>
-      {/each}
-    </section>
-
-    <section class="details-grid">
-      <div>
-        <h2>Identity</h2>
-        <dl>
-          <dt>Product</dt><dd>{report.device?.product || "unknown"}</dd>
-          <dt>Manufacturer</dt><dd>{report.device?.manufacturer || "unknown"}</dd>
-          <dt>Transport</dt><dd>{report.device?.transport || "unknown"}</dd>
-          <dt>AAGUID</dt><dd>{info.aaguid || "not reported"}</dd>
-        </dl>
-      </div>
-      <div>
-        <h2>Protocol</h2>
-        <dl>
-          <dt>Versions</dt><dd>{(info.versions || []).join(", ") || "unknown"}</dd>
-          <dt>Extensions</dt><dd>{extensions.join(", ") || "none reported"}</dd>
-          <dt>PIN/UV protocols</dt><dd>{(info.pinUvAuthProtocols || []).join(", ") || "unknown"}</dd>
-        </dl>
+        {/each}
+        <div class="identity-metric strong">
+          <span>Capability summary</span>
+          <strong>{capabilitySummary}</strong>
+        </div>
       </div>
     </section>
 
-    <details class="technical">
-      <summary>Technical report</summary>
-      <JsonView value={report} title="Inspection result" />
-    </details>
+    <section class="overview-columns">
+      <div class="capability-story">
+        {#each capabilityGroups as group}
+          <section class="capability-group">
+            <div class="section-heading">
+              <h2>{group.title}</h2>
+              <span class="muted">{group.items.filter((item) => item.supported).length} supported</span>
+            </div>
+            {#each group.items as item}
+              <article class:supported={item.supported} class:unknown={!item.known} class="capability-line">
+                <div>
+                  <strong>{item.title}</strong>
+                  <p>{item.text}</p>
+                </div>
+                <StatusBadge value={item.state} label={stateLabel(item.state)} />
+              </article>
+            {/each}
+          </section>
+        {/each}
+      </div>
+
+      <aside class="overview-inspector">
+        <section class="technical">
+          <h2>Identity details</h2>
+          <MetaRow label="Product" value={device.product || "unknown"} />
+          <MetaRow label="Manufacturer" value={device.manufacturer || "unknown"} />
+          <MetaRow label="Transport" value={device.transport || "unknown"} />
+          <MetaRow label="AAGUID" value={info.aaguid || "not reported"} />
+          <MetaRow label="Extensions" value={extensions.join(", ") || "none reported"} />
+          <MetaRow label="PIN/UV protocols" value={(info.pinUvAuthProtocols || []).join(", ") || "unknown"} />
+        </section>
+        <details class="technical">
+          <summary>Raw technical report</summary>
+          <JsonView value={report} title="Inspection result" />
+        </details>
+      </aside>
+    </section>
   {:else if loading}
-    <EmptyState title="Reading token" message="Waiting for the authenticator inspection result." />
+    <section class="token-dashboard loading">
+      <div class="token-identity">
+        <p class="eyebrow">Reading token</p>
+        <h2>Inspection in progress</h2>
+        <p>The workbench is opening a session and collecting authenticator metadata.</p>
+      </div>
+      <div class="metric-strip">
+        {#each ["Transport", "Session", "AAGUID", "Versions", "Capability summary"] as label}
+          <div class="identity-metric skeleton">
+            <span>{label}</span>
+            <strong>Reading</strong>
+          </div>
+        {/each}
+      </div>
+    </section>
+  {:else}
+    <EmptyState title="Overview not loaded" message="Refresh to inspect the selected authenticator." />
   {/if}
 {/if}

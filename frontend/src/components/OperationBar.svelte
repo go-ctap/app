@@ -12,7 +12,7 @@
   }
 </script>
 
-{#if $operationStatus}
+{#if $operationStatus?.operationId}
   <div class="operation-bar">
     <div>
       <strong>{label}</strong>

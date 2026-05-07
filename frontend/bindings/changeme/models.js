@@ -406,6 +406,13 @@ export class DiscoveryResponse {
              */
             this["selectedDevice"] = undefined;
         }
+        if (!("session" in $$source)) {
+            /**
+             * @member
+             * @type {SessionStatus}
+             */
+            this["session"] = (new SessionStatus());
+        }
         if (/** @type {any} */(false)) {
             /**
              * @member
@@ -425,7 +432,8 @@ export class DiscoveryResponse {
     static createFrom($$source = {}) {
         const $$createField0_0 = $$createType1;
         const $$createField2_0 = $$createType2;
-        const $$createField3_0 = $$createType4;
+        const $$createField3_0 = $$createType3;
+        const $$createField4_0 = $$createType5;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("devices" in $$parsedSource) {
             $$parsedSource["devices"] = $$createField0_0($$parsedSource["devices"]);
@@ -433,8 +441,11 @@ export class DiscoveryResponse {
         if ("selectedDevice" in $$parsedSource) {
             $$parsedSource["selectedDevice"] = $$createField2_0($$parsedSource["selectedDevice"]);
         }
+        if ("session" in $$parsedSource) {
+            $$parsedSource["session"] = $$createField3_0($$parsedSource["session"]);
+        }
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         return new DiscoveryResponse(/** @type {Partial<DiscoveryResponse>} */($$parsedSource));
     }
@@ -470,7 +481,7 @@ export class GetAssertionRequest {
      * @returns {GetAssertionRequest}
      */
     static createFrom($$source = {}) {
-        const $$createField1_0 = $$createType5;
+        const $$createField1_0 = $$createType6;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("input" in $$parsedSource) {
             $$parsedSource["input"] = $$createField1_0($$parsedSource["input"]);
@@ -565,7 +576,7 @@ export class InteractionPrompt {
      * @returns {InteractionPrompt}
      */
     static createFrom($$source = {}) {
-        const $$createField2_0 = $$createType6;
+        const $$createField2_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("request" in $$parsedSource) {
             $$parsedSource["request"] = $$createField2_0($$parsedSource["request"]);
@@ -734,7 +745,7 @@ export class MakeCredentialRequest {
      * @returns {MakeCredentialRequest}
      */
     static createFrom($$source = {}) {
-        const $$createField1_0 = $$createType7;
+        const $$createField1_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("input" in $$parsedSource) {
             $$parsedSource["input"] = $$createField1_0($$parsedSource["input"]);
@@ -815,7 +826,7 @@ export class MinPINLengthRequest {
      * @returns {MinPINLengthRequest}
      */
     static createFrom($$source = {}) {
-        const $$createField2_0 = $$createType8;
+        const $$createField2_0 = $$createType9;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("minPinLengthRPIDs" in $$parsedSource) {
             $$parsedSource["minPinLengthRPIDs"] = $$createField2_0($$parsedSource["minPinLengthRPIDs"]);
@@ -844,6 +855,13 @@ export class OperationEnvelope {
              */
             this["selectedDevice"] = undefined;
         }
+        if (!("session" in $$source)) {
+            /**
+             * @member
+             * @type {SessionStatus}
+             */
+            this["session"] = (new SessionStatus());
+        }
         if (/** @type {any} */(false)) {
             /**
              * @member
@@ -869,13 +887,17 @@ export class OperationEnvelope {
      */
     static createFrom($$source = {}) {
         const $$createField1_0 = $$createType2;
-        const $$createField3_0 = $$createType4;
+        const $$createField2_0 = $$createType3;
+        const $$createField4_0 = $$createType5;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("selectedDevice" in $$parsedSource) {
             $$parsedSource["selectedDevice"] = $$createField1_0($$parsedSource["selectedDevice"]);
         }
+        if ("session" in $$parsedSource) {
+            $$parsedSource["session"] = $$createField2_0($$parsedSource["session"]);
+        }
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         return new OperationEnvelope(/** @type {Partial<OperationEnvelope>} */($$parsedSource));
     }
@@ -953,7 +975,7 @@ export class OperationEventEnvelope {
      * @returns {OperationEventEnvelope}
      */
     static createFrom($$source = {}) {
-        const $$createField1_0 = $$createType9;
+        const $$createField1_0 = $$createType10;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("event" in $$parsedSource) {
             $$parsedSource["event"] = $$createField1_0($$parsedSource["event"]);
@@ -1109,14 +1131,112 @@ export class ResetRequest {
     }
 }
 
+export class SessionStatus {
+    /**
+     * Creates a new SessionStatus instance.
+     * @param {Partial<SessionStatus>} [$$source = {}] - The source object to create the SessionStatus.
+     */
+    constructor($$source = {}) {
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | undefined}
+             */
+            this["selectedSelector"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {report$0.DeviceReport | null | undefined}
+             */
+            this["selectedDevice"] = undefined;
+        }
+        if (!("state" in $$source)) {
+            /**
+             * @member
+             * @type {sessionLifecycleState}
+             */
+            this["state"] = sessionLifecycleState.$zero;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | undefined}
+             */
+            this["activeOperation"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {OperationError | null | undefined}
+             */
+            this["error"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | undefined}
+             */
+            this["openedAt"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | undefined}
+             */
+            this["updatedAt"] = undefined;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SessionStatus instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {SessionStatus}
+     */
+    static createFrom($$source = {}) {
+        const $$createField1_0 = $$createType2;
+        const $$createField4_0 = $$createType5;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("selectedDevice" in $$parsedSource) {
+            $$parsedSource["selectedDevice"] = $$createField1_0($$parsedSource["selectedDevice"]);
+        }
+        if ("error" in $$parsedSource) {
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
+        }
+        return new SessionStatus(/** @type {Partial<SessionStatus>} */($$parsedSource));
+    }
+}
+
+/**
+ * @readonly
+ * @enum {string}
+ */
+export const sessionLifecycleState = {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero: "",
+
+    sessionStateIdle: "idle",
+    sessionStateOpening: "opening",
+    sessionStateReady: "ready",
+    sessionStateRunning: "running",
+    sessionStateStale: "stale",
+    sessionStateClosed: "closed",
+    sessionStateError: "error",
+};
+
 // Private type creation functions
 const $$createType0 = report$0.DeviceReport.createFrom;
 const $$createType1 = $Create.Array($$createType0);
 const $$createType2 = $Create.Nullable($$createType0);
-const $$createType3 = OperationError.createFrom;
-const $$createType4 = $Create.Nullable($$createType3);
-const $$createType5 = webauthn$0.GetAssertionInput.createFrom;
-const $$createType6 = model$0.InteractionRequest.createFrom;
-const $$createType7 = webauthn$0.MakeCredentialInput.createFrom;
-const $$createType8 = $Create.Array($Create.Any);
-const $$createType9 = model$0.OperationEvent.createFrom;
+const $$createType3 = SessionStatus.createFrom;
+const $$createType4 = OperationError.createFrom;
+const $$createType5 = $Create.Nullable($$createType4);
+const $$createType6 = webauthn$0.GetAssertionInput.createFrom;
+const $$createType7 = model$0.InteractionRequest.createFrom;
+const $$createType8 = webauthn$0.MakeCredentialInput.createFrom;
+const $$createType9 = $Create.Array($Create.Any);
+const $$createType10 = model$0.OperationEvent.createFrom;

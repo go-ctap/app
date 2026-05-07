@@ -23,23 +23,101 @@ const (
 	eventOperationProgress    = "authenticator:operation-progress"
 	eventInteractionRequested = "authenticator:interaction-requested"
 	eventInteractionResolved  = "authenticator:interaction-resolved"
+	eventSessionChanged       = "authenticator:session-changed"
 )
 
 var operationSequence uint64
 
 type AuthenticatorService struct {
 	mu               sync.Mutex
+	appCtx           context.Context
 	devices          []ctapkit.Device
 	selectedSelector string
 	active           map[string]context.CancelFunc
 	interactions     map[string]chan InteractionAnswer
+	selectedSession  *selectedSession
+	discoverDevices  discoverDevicesFunc
+	selectDevice     selectDeviceFunc
+	openSession      openSessionFunc
 }
 
 func NewAuthenticatorService() *AuthenticatorService {
 	return &AuthenticatorService{
-		active:       make(map[string]context.CancelFunc),
-		interactions: make(map[string]chan InteractionAnswer),
+		appCtx:          context.Background(),
+		active:          make(map[string]context.CancelFunc),
+		interactions:    make(map[string]chan InteractionAnswer),
+		discoverDevices: ctapkit.DiscoverDevices,
+		selectDevice:    ctapkit.SelectDevice,
+		openSession: func(ctx context.Context, device ctapkit.Device, opts ...ctapkit.OpenSessionOption) (sessionHandle, error) {
+			return ctapkit.OpenSession(ctx, device, opts...)
+		},
 	}
+}
+
+func (s *AuthenticatorService) ServiceStartup(ctx context.Context, _ application.ServiceOptions) error {
+	s.mu.Lock()
+	s.appCtx = normalizeContext(ctx)
+	s.mu.Unlock()
+	return nil
+}
+
+func (s *AuthenticatorService) ServiceShutdown() error {
+	var cancels []context.CancelFunc
+	var canceledInteractions []chan InteractionAnswer
+
+	s.mu.Lock()
+	cancels, canceledInteractions = s.cancelActiveLocked()
+	detached := s.detachSelectedSessionLocked(sessionStateClosed, "")
+	s.mu.Unlock()
+
+	resolveCanceled(canceledInteractions)
+	cancelAll(cancels)
+	closeDetachedSession(detached)
+	return nil
+}
+
+type sessionLifecycleState string
+
+const (
+	sessionStateIdle    sessionLifecycleState = "idle"
+	sessionStateOpening sessionLifecycleState = "opening"
+	sessionStateReady   sessionLifecycleState = "ready"
+	sessionStateRunning sessionLifecycleState = "running"
+	sessionStateStale   sessionLifecycleState = "stale"
+	sessionStateClosed  sessionLifecycleState = "closed"
+	sessionStateError   sessionLifecycleState = "error"
+)
+
+type sessionHandle interface {
+	Run(context.Context, model.Operation, model.InteractionHandler, ...ctapkit.RunOption) (model.OperationResult, error)
+	Close() error
+}
+
+type discoverDevicesFunc func(context.Context, ...ctapkit.DiscoverOption) ([]ctapkit.Device, error)
+type selectDeviceFunc func([]ctapkit.Device, string) (ctapkit.Device, error)
+type openSessionFunc func(context.Context, ctapkit.Device, ...ctapkit.OpenSessionOption) (sessionHandle, error)
+
+type selectedSession struct {
+	selector          string
+	deviceID          string
+	devicePath        string
+	device            report.DeviceReport
+	session           sessionHandle
+	state             sessionLifecycleState
+	activeOperationID string
+	lastError         *OperationError
+	openedAt          time.Time
+	updatedAt         time.Time
+}
+
+type SessionStatus struct {
+	SelectedSelector string                `json:"selectedSelector,omitempty"`
+	SelectedDevice   *report.DeviceReport  `json:"selectedDevice,omitempty"`
+	State            sessionLifecycleState `json:"state"`
+	ActiveOperation  string                `json:"activeOperation,omitempty"`
+	Error            *OperationError       `json:"error,omitempty"`
+	OpenedAt         string                `json:"openedAt,omitempty"`
+	UpdatedAt        string                `json:"updatedAt,omitempty"`
 }
 
 type DiscoverRequest struct {
@@ -50,6 +128,7 @@ type DiscoveryResponse struct {
 	Devices          []report.DeviceReport `json:"devices"`
 	SelectedSelector string                `json:"selectedSelector,omitempty"`
 	SelectedDevice   *report.DeviceReport  `json:"selectedDevice,omitempty"`
+	Session          SessionStatus         `json:"session"`
 	Error            *OperationError       `json:"error,omitempty"`
 }
 
@@ -61,6 +140,7 @@ type OperationRequest struct {
 type OperationEnvelope struct {
 	OperationID    string               `json:"operationId"`
 	SelectedDevice *report.DeviceReport `json:"selectedDevice,omitempty"`
+	Session        SessionStatus        `json:"session"`
 	Result         any                  `json:"result,omitempty"`
 	Error          *OperationError      `json:"error,omitempty"`
 }
@@ -192,9 +272,10 @@ type GetAssertionRequest struct {
 }
 
 func (s *AuthenticatorService) Discover(ctx context.Context, req DiscoverRequest) DiscoveryResponse {
-	devices, err := ctapkit.DiscoverDevices(ctx, discoverOptions(req.Transport)...)
+	ctx = normalizeContext(ctx)
+	devices, err := s.discoverDevices(ctx, discoverOptions(req.Transport)...)
 	if err != nil {
-		return DiscoveryResponse{Error: operationError(err)}
+		return DiscoveryResponse{Error: operationError(err), Session: s.statusSnapshot()}
 	}
 
 	reports := make([]report.DeviceReport, 0, len(devices))
@@ -203,58 +284,132 @@ func (s *AuthenticatorService) Discover(ctx context.Context, req DiscoverRequest
 	}
 
 	s.mu.Lock()
+	previous := s.selectedSelector
 	s.devices = devices
-	s.selectedSelector = reconcileSelectionLocked(s.selectedSelector, reports)
+	s.selectedSelector = reconcileDiscoverySelectionLocked(s.selectedSelector, reports)
 	selected := selectedReport(reports, s.selectedSelector)
+	var detached sessionHandle
+	if s.selectedSession != nil && !selectedSessionMatchesReports(s.selectedSession, reports) {
+		state := sessionStateStale
+		message := "Selected authenticator disappeared. Refresh or reconnect it."
+		if previous == "" || selected != nil {
+			state = sessionStateClosed
+			message = ""
+		}
+		detached = s.detachSelectedSessionLocked(state, message)
+		if previous != "" && selected == nil {
+			s.selectedSelector = ""
+		}
+	}
+	if selected != nil && s.selectedSession == nil {
+		s.selectedSession = newClosedSelectedSessionLocked(*selected)
+	}
+	status := s.statusSnapshotLocked(selected)
+	selectedSelector := s.selectedSelector
 	s.mu.Unlock()
+	closeDetachedSession(detached)
+	s.emitSessionStatus()
 
 	return DiscoveryResponse{
 		Devices:          reports,
-		SelectedSelector: s.selectedSelector,
+		SelectedSelector: selectedSelector,
 		SelectedDevice:   selected,
+		Session:          status,
 	}
 }
 
 func (s *AuthenticatorService) Select(ctx context.Context, selector string) DiscoveryResponse {
+	ctx = normalizeContext(ctx)
+	selector = strings.TrimSpace(selector)
+
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	reports := deviceReports(s.devices)
-	if _, err := ctapkit.SelectDevice(s.devices, selector); err != nil {
+	if selector == "" {
+		cancels, canceledInteractions := s.cancelActiveLocked()
+		detached := s.detachSelectedSessionLocked(sessionStateClosed, "")
+		s.selectedSelector = ""
+		status := s.statusSnapshotLocked(nil)
+		s.mu.Unlock()
+		resolveCanceled(canceledInteractions)
+		cancelAll(cancels)
+		closeDetachedSession(detached)
+		s.emitSessionStatus()
 		return DiscoveryResponse{
-			Devices: reports,
-			Error:   operationError(err),
+			Devices:          reports,
+			SelectedSelector: "",
+			SelectedDevice:   nil,
+			Session:          status,
 		}
 	}
-	s.selectedSelector = strings.TrimSpace(selector)
+
+	device, err := s.selectDevice(s.devices, selector)
+	if err != nil {
+		selected := selectedReport(reports, s.selectedSelector)
+		status := s.statusSnapshotLocked(selected)
+		selectedSelector := s.selectedSelector
+		s.mu.Unlock()
+		return DiscoveryResponse{
+			Devices:          reports,
+			SelectedSelector: selectedSelector,
+			SelectedDevice:   selected,
+			Session:          status,
+			Error:            operationError(err),
+		}
+	}
+	selected := device.Report()
+	cancels, canceledInteractions := s.cancelActiveLocked()
+	detached := s.detachSelectedSessionLocked(sessionStateClosed, "")
+	s.selectedSelector = selected.DeviceID
+	s.selectedSession = newClosedSelectedSessionLocked(selected)
+	status := s.statusSnapshotLocked(&selected)
+	s.mu.Unlock()
+
+	resolveCanceled(canceledInteractions)
+	cancelAll(cancels)
+	closeDetachedSession(detached)
+	s.emitSessionStatus()
 
 	return DiscoveryResponse{
 		Devices:          reports,
-		SelectedSelector: s.selectedSelector,
-		SelectedDevice:   selectedReport(reports, s.selectedSelector),
+		SelectedSelector: selected.DeviceID,
+		SelectedDevice:   &selected,
+		Session:          status,
 	}
+}
+
+func (s *AuthenticatorService) SessionStatus(ctx context.Context) SessionStatus {
+	return s.statusSnapshot()
+}
+
+func (s *AuthenticatorService) LockSession(ctx context.Context) SessionStatus {
+	var cancel context.CancelFunc
+
+	s.mu.Lock()
+	if s.selectedSession != nil && s.selectedSession.activeOperationID != "" {
+		cancel = s.active[s.selectedSession.activeOperationID]
+	}
+	detached := s.detachSelectedSessionLocked(sessionStateClosed, "")
+	status := s.statusSnapshotLocked(selectedReport(deviceReports(s.devices), s.selectedSelector))
+	s.mu.Unlock()
+
+	if cancel != nil {
+		cancel()
+	}
+	closeDetachedSession(detached)
+	s.emitSessionStatus()
+	return status
 }
 
 func (s *AuthenticatorService) CancelOperation(ctx context.Context, operationID string) bool {
 	s.mu.Lock()
 	cancel, ok := s.active[operationID]
-	canceledInteractions := make([]chan InteractionAnswer, 0)
-	for interactionID, ch := range s.interactions {
-		if strings.HasPrefix(interactionID, operationID+":") {
-			canceledInteractions = append(canceledInteractions, ch)
-			delete(s.interactions, interactionID)
-		}
-	}
+	canceledInteractions := s.cancelInteractionsLocked(operationID)
 	s.mu.Unlock()
 	if ok {
 		cancel()
 	}
-	for _, ch := range canceledInteractions {
-		select {
-		case ch <- InteractionAnswer{Canceled: true}:
-		default:
-		}
-	}
+	resolveCanceled(canceledInteractions)
 	return ok || len(canceledInteractions) > 0
 }
 
@@ -444,26 +599,19 @@ func (s *AuthenticatorService) GetAssertion(ctx context.Context, req GetAssertio
 
 func (s *AuthenticatorService) run(ctx context.Context, req OperationRequest, operation model.Operation) OperationEnvelope {
 	operationID := nextOperationID()
-	runCtx, cancel := context.WithCancel(ctx)
-	s.trackOperation(operationID, cancel)
-	defer s.untrackOperation(operationID)
+	sessionCtx := s.serviceContext()
+	runCtx, cancel := context.WithCancel(sessionCtx)
+	defer cancel()
 
-	devices, err := ctapkit.DiscoverDevices(runCtx)
+	session, selected, started, err := s.ensureOperationSession(sessionCtx, req, operationID, cancel)
 	if err != nil {
-		return OperationEnvelope{OperationID: operationID, Error: operationError(err)}
+		opErr := operationError(err)
+		if started {
+			s.finishOperation(operationID)
+			s.failSessionOpen(operationID, opErr, selected)
+		}
+		return OperationEnvelope{OperationID: operationID, SelectedDevice: selected, Session: s.statusSnapshot(), Error: opErr}
 	}
-	selector := s.selector(req.Selector, deviceReports(devices))
-	device, err := ctapkit.SelectDevice(devices, selector)
-	if err != nil {
-		return OperationEnvelope{OperationID: operationID, Error: operationError(err)}
-	}
-
-	selected := device.Report()
-	session, err := ctapkit.OpenSession(runCtx, device, ctapkit.WithEventSink(operationEventSink{operationID: operationID}))
-	if err != nil {
-		return OperationEnvelope{OperationID: operationID, SelectedDevice: &selected, Error: operationError(err)}
-	}
-	defer session.Close()
 
 	runOptions := []ctapkit.RunOption{}
 	if req.VerificationFlow != "" {
@@ -471,34 +619,157 @@ func (s *AuthenticatorService) run(ctx context.Context, req OperationRequest, op
 	}
 	result, err := session.Run(runCtx, operation, s.interactionHandler(operationID), runOptions...)
 	if err != nil {
-		return OperationEnvelope{OperationID: operationID, SelectedDevice: &selected, Error: operationError(err)}
+		opErr := operationError(err)
+		s.finishOperation(operationID)
+		s.invalidateSessionAfterError(operationID, session, opErr)
+		return OperationEnvelope{OperationID: operationID, SelectedDevice: selected, Session: s.statusSnapshot(), Error: opErr}
 	}
 
-	return OperationEnvelope{OperationID: operationID, SelectedDevice: &selected, Result: result}
+	s.finishOperation(operationID)
+	if operation.Kind() == model.OperationResetFactory && !operation.IsDryRun() {
+		s.markSessionStale(session, "Factory reset completed. Refresh discovery before running more operations.")
+	}
+
+	return OperationEnvelope{OperationID: operationID, SelectedDevice: selected, Session: s.statusSnapshot(), Result: result}
 }
 
-func (s *AuthenticatorService) selector(requested string, reports []report.DeviceReport) string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s *AuthenticatorService) ensureOperationSession(
+	ctx context.Context,
+	req OperationRequest,
+	operationID string,
+	cancel context.CancelFunc,
+) (sessionHandle, *report.DeviceReport, bool, error) {
+	requested := strings.TrimSpace(req.Selector)
 
+	var detached sessionHandle
+	s.mu.Lock()
+	if s.selectedSession != nil && s.selectedSession.activeOperationID != "" {
+		s.mu.Unlock()
+		return nil, nil, false, model.NewRuntimeError(model.ErrorBusy, "selected authenticator is already running an operation", nil)
+	}
 	if strings.TrimSpace(requested) != "" {
-		s.selectedSelector = strings.TrimSpace(requested)
-		return s.selectedSelector
+		if requested != s.selectedSelector {
+			detached = s.detachSelectedSessionLocked(sessionStateClosed, "")
+		}
+		s.selectedSelector = requested
 	}
-	s.selectedSelector = reconcileSelectionLocked(s.selectedSelector, reports)
-	return s.selectedSelector
-}
-
-func (s *AuthenticatorService) trackOperation(operationID string, cancel context.CancelFunc) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	if s.selectedSession != nil && s.selectedSession.session != nil && s.selectedSession.selector == s.selectedSelector && s.selectedSession.state != sessionStateStale && s.selectedSession.state != sessionStateError {
+		s.selectedSession.state = sessionStateRunning
+		s.selectedSession.activeOperationID = operationID
+		s.selectedSession.updatedAt = time.Now()
+		s.active[operationID] = cancel
+		selected := s.selectedSession.device
+		session := s.selectedSession.session
+		s.mu.Unlock()
+		closeDetachedSession(detached)
+		s.emitSessionStatus()
+		return session, &selected, true, nil
+	}
 	s.active[operationID] = cancel
+	if s.selectedSession == nil {
+		s.selectedSession = &selectedSession{selector: s.selectedSelector}
+	}
+	s.selectedSession.state = sessionStateOpening
+	s.selectedSession.activeOperationID = operationID
+	s.selectedSession.lastError = nil
+	s.selectedSession.updatedAt = time.Now()
+	s.mu.Unlock()
+	closeDetachedSession(detached)
+	s.emitSessionStatus()
+
+	devices, err := s.discoverDevices(ctx)
+	if err != nil {
+		return nil, nil, true, err
+	}
+	reports := deviceReports(devices)
+
+	s.mu.Lock()
+	s.devices = devices
+	if requested == "" {
+		s.selectedSelector = reconcileSelectionLocked(s.selectedSelector, reports)
+	}
+	selector := s.selectedSelector
+	s.mu.Unlock()
+
+	device, err := s.selectDevice(devices, selector)
+	if err != nil {
+		return nil, nil, true, err
+	}
+	selected := device.Report()
+	session, err := s.openSession(ctx, device, ctapkit.WithEventSink(operationEventSink{service: s}))
+	if err != nil {
+		return nil, &selected, true, err
+	}
+
+	s.mu.Lock()
+	s.selectedSession = &selectedSession{
+		selector:          selector,
+		deviceID:          selected.DeviceID,
+		devicePath:        selected.Path,
+		device:            selected,
+		session:           session,
+		state:             sessionStateRunning,
+		activeOperationID: operationID,
+		openedAt:          time.Now(),
+		updatedAt:         time.Now(),
+	}
+	s.mu.Unlock()
+	s.emitSessionStatus()
+
+	return session, &selected, true, nil
 }
 
-func (s *AuthenticatorService) untrackOperation(operationID string) {
+func (s *AuthenticatorService) finishOperation(operationID string) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	delete(s.active, operationID)
+	if s.selectedSession != nil && s.selectedSession.activeOperationID == operationID {
+		s.selectedSession.activeOperationID = ""
+		if s.selectedSession.session != nil && s.selectedSession.state == sessionStateRunning {
+			s.selectedSession.state = sessionStateReady
+		}
+		s.selectedSession.updatedAt = time.Now()
+	}
+	s.mu.Unlock()
+	s.emitSessionStatus()
+}
+
+func (s *AuthenticatorService) cancelActiveLocked() ([]context.CancelFunc, []chan InteractionAnswer) {
+	cancels := make([]context.CancelFunc, 0, len(s.active))
+	canceledInteractions := make([]chan InteractionAnswer, 0)
+	for operationID, cancel := range s.active {
+		cancels = append(cancels, cancel)
+		canceledInteractions = append(canceledInteractions, s.cancelInteractionsLocked(operationID)...)
+		delete(s.active, operationID)
+	}
+	return cancels, canceledInteractions
+}
+
+func (s *AuthenticatorService) cancelInteractionsLocked(operationID string) []chan InteractionAnswer {
+	canceledInteractions := make([]chan InteractionAnswer, 0)
+	for interactionID, ch := range s.interactions {
+		if strings.HasPrefix(interactionID, operationID+":") {
+			canceledInteractions = append(canceledInteractions, ch)
+			delete(s.interactions, interactionID)
+		}
+	}
+	return canceledInteractions
+}
+
+func cancelAll(cancels []context.CancelFunc) {
+	for _, cancel := range cancels {
+		if cancel != nil {
+			cancel()
+		}
+	}
+}
+
+func resolveCanceled(channels []chan InteractionAnswer) {
+	for _, ch := range channels {
+		select {
+		case ch <- InteractionAnswer{Canceled: true}:
+		default:
+		}
+	}
 }
 
 func (s *AuthenticatorService) interactionHandler(operationID string) model.InteractionHandler {
@@ -543,14 +814,174 @@ func (f interactionHandlerFunc) RequestInteraction(request model.InteractionRequ
 }
 
 type operationEventSink struct {
-	operationID string
+	service *AuthenticatorService
 }
 
 func (s operationEventSink) Emit(event model.OperationEvent) {
+	if event.Stage == model.OperationStageSessionInvalidated {
+		return
+	}
+	operationID := ""
+	if s.service != nil {
+		operationID = s.service.currentOperationID()
+	}
 	emit(eventOperationProgress, OperationEventEnvelope{
-		OperationID: s.operationID,
+		OperationID: operationID,
 		Event:       event,
 	})
+}
+
+func (s *AuthenticatorService) currentOperationID() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.selectedSession == nil {
+		return ""
+	}
+	return s.selectedSession.activeOperationID
+}
+
+func (s *AuthenticatorService) invalidateSessionAfterError(operationID string, failedSession sessionHandle, err *OperationError) {
+	if err == nil {
+		return
+	}
+	switch err.Category {
+	case model.ErrorInvalidSession, model.ErrorInvalidState, model.ErrorTransportFailure:
+	default:
+		return
+	}
+
+	s.mu.Lock()
+	var detached sessionHandle
+	if s.selectedSession != nil && (s.selectedSession.session == failedSession || s.selectedSession.activeOperationID == operationID) {
+		detached = s.detachSelectedSessionLocked(sessionStateStale, err.Message)
+		s.selectedSession.lastError = err
+	}
+	s.mu.Unlock()
+	closeDetachedSession(detached)
+	s.emitSessionStatus()
+}
+
+func (s *AuthenticatorService) failSessionOpen(operationID string, err *OperationError, selected *report.DeviceReport) {
+	if err == nil {
+		return
+	}
+
+	s.mu.Lock()
+	if s.selectedSession == nil {
+		s.selectedSession = &selectedSession{selector: s.selectedSelector}
+	}
+	if selected != nil {
+		s.selectedSession.device = *selected
+		s.selectedSession.deviceID = selected.DeviceID
+		s.selectedSession.devicePath = selected.Path
+	}
+	s.selectedSession.activeOperationID = ""
+	s.selectedSession.state = sessionStateError
+	s.selectedSession.lastError = err
+	s.selectedSession.updatedAt = time.Now()
+	detached := s.detachSelectedSessionLocked(sessionStateError, "")
+	s.selectedSession.lastError = err
+	_ = operationID
+	s.mu.Unlock()
+	closeDetachedSession(detached)
+	s.emitSessionStatus()
+}
+
+func (s *AuthenticatorService) markSessionStale(session sessionHandle, message string) {
+	s.mu.Lock()
+	var detached sessionHandle
+	if s.selectedSession != nil && s.selectedSession.session == session {
+		detached = s.detachSelectedSessionLocked(sessionStateStale, message)
+	}
+	s.mu.Unlock()
+	closeDetachedSession(detached)
+	s.emitSessionStatus()
+}
+
+func (s *AuthenticatorService) detachSelectedSessionLocked(state sessionLifecycleState, message string) sessionHandle {
+	if s.selectedSession == nil {
+		s.selectedSession = &selectedSession{
+			selector:  s.selectedSelector,
+			state:     state,
+			updatedAt: time.Now(),
+		}
+		if message != "" {
+			s.selectedSession.lastError = &OperationError{Category: model.ErrorInvalidSession, Message: message}
+		}
+		return nil
+	}
+	detached := s.selectedSession.session
+	s.selectedSession.session = nil
+	s.selectedSession.activeOperationID = ""
+	s.selectedSession.state = state
+	s.selectedSession.updatedAt = time.Now()
+	if message != "" {
+		s.selectedSession.lastError = &OperationError{Category: model.ErrorInvalidSession, Message: message}
+	} else {
+		s.selectedSession.lastError = nil
+	}
+	return detached
+}
+
+func closeDetachedSession(session sessionHandle) {
+	if session != nil {
+		_ = session.Close()
+	}
+}
+
+func newClosedSelectedSessionLocked(selected report.DeviceReport) *selectedSession {
+	return &selectedSession{
+		selector:   selected.DeviceID,
+		deviceID:   selected.DeviceID,
+		devicePath: selected.Path,
+		device:     selected,
+		state:      sessionStateClosed,
+		updatedAt:  time.Now(),
+	}
+}
+
+func (s *AuthenticatorService) serviceContext() context.Context {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return normalizeContext(s.appCtx)
+}
+
+func (s *AuthenticatorService) statusSnapshot() SessionStatus {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.statusSnapshotLocked(selectedReport(deviceReports(s.devices), s.selectedSelector))
+}
+
+func (s *AuthenticatorService) statusSnapshotLocked(selected *report.DeviceReport) SessionStatus {
+	status := SessionStatus{
+		SelectedSelector: s.selectedSelector,
+		SelectedDevice:   selected,
+		State:            sessionStateIdle,
+	}
+	if s.selectedSession == nil {
+		if s.selectedSelector != "" {
+			status.State = sessionStateClosed
+		}
+		return status
+	}
+	if selected == nil && s.selectedSession.deviceID != "" {
+		selectedDevice := s.selectedSession.device
+		status.SelectedDevice = &selectedDevice
+	}
+	status.State = s.selectedSession.state
+	status.ActiveOperation = s.selectedSession.activeOperationID
+	status.Error = s.selectedSession.lastError
+	if !s.selectedSession.openedAt.IsZero() {
+		status.OpenedAt = s.selectedSession.openedAt.Format(time.RFC3339)
+	}
+	if !s.selectedSession.updatedAt.IsZero() {
+		status.UpdatedAt = s.selectedSession.updatedAt.Format(time.RFC3339)
+	}
+	return status
+}
+
+func (s *AuthenticatorService) emitSessionStatus() {
+	emit(eventSessionChanged, s.statusSnapshot())
 }
 
 func discoverOptions(mode string) []ctapkit.DiscoverOption {
@@ -570,6 +1001,29 @@ func deviceReports(devices []ctapkit.Device) []report.DeviceReport {
 		reports = append(reports, device.Report())
 	}
 	return reports
+}
+
+func selectedSessionMatchesReports(session *selectedSession, reports []report.DeviceReport) bool {
+	if session == nil || session.selector == "" {
+		return true
+	}
+	for _, report := range reports {
+		if session.deviceID != "" && session.devicePath != "" && report.DeviceID == session.deviceID && report.Path == session.devicePath {
+			return true
+		}
+	}
+	return false
+}
+
+func reconcileDiscoverySelectionLocked(current string, reports []report.DeviceReport) string {
+	current = strings.TrimSpace(current)
+	if current != "" && selectedReport(reports, current) != nil {
+		return current
+	}
+	if current != "" {
+		return ""
+	}
+	return reconcileSelectionLocked(current, reports)
 }
 
 func reconcileSelectionLocked(current string, reports []report.DeviceReport) string {
@@ -626,6 +1080,8 @@ func hintFor(category model.ErrorCategory) string {
 		return "Another operation is using this authenticator. Wait for it to finish, then retry."
 	case model.ErrorInvalidState:
 		return "Refresh the token list and make sure the authenticator is still connected."
+	case model.ErrorInvalidSession:
+		return "Reconnect or refresh the selected authenticator, then run the operation again."
 	case model.ErrorCanceled:
 		return "The operation was canceled before the authenticator completed it."
 	default:
@@ -643,4 +1099,11 @@ func emit(name string, data any) {
 		return
 	}
 	app.Event.Emit(name, data)
+}
+
+func normalizeContext(ctx context.Context) context.Context {
+	if ctx == nil {
+		return context.Background()
+	}
+	return ctx
 }
