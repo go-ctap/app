@@ -22,6 +22,27 @@ export type StatusBarState = {
   actions: StatusBarAction[];
 };
 
+export type CredentialsScreenState = {
+  envelope: any | null;
+  preview: any | null;
+  editing: any | null;
+  displayName: string;
+  name: string;
+  userIDHex: string;
+};
+
+export type LargeBlobScreenState = {
+  envelope: any | null;
+  readResult: any | null;
+  selectedId: string;
+  payload: string;
+  decodeMode: string;
+  readDecodeMode: string;
+  preview: any | null;
+  previewMode: "write" | "delete" | "";
+  detailMode: "read" | "write" | "delete" | "raw";
+};
+
 export const devices = writable<any[]>([]);
 export const selectedSelector = writable("");
 export const selectedDevice = writable<any | null>(null);
@@ -35,6 +56,8 @@ export const overviewLoading = writable(false);
 export const pendingInteraction = writable<any | null>(null);
 export const appError = writable<string | null>(null);
 export const toasts = writable<string[]>([]);
+export const credentialsScreenCache = writable<Record<string, CredentialsScreenState>>({});
+export const largeBlobScreenCache = writable<Record<string, LargeBlobScreenState>>({});
 
 export const hasSelection = derived(selectedSelector, ($selectedSelector) => $selectedSelector.trim().length > 0);
 export const sessionBusy = derived(sessionStatus, ($sessionStatus) => $sessionStatus.state === "opening" || $sessionStatus.state === "running");
@@ -77,6 +100,40 @@ export function setStatusOutcome(outcome: StatusBarOutcome | null) {
 
 export function setStatusActions(actions: StatusBarAction[]) {
   statusBar.update((state) => ({ ...state, actions }));
+}
+
+export function emptyCredentialsState(): CredentialsScreenState {
+  return { envelope: null, preview: null, editing: null, displayName: "", name: "", userIDHex: "" };
+}
+
+export function emptyLargeBlobState(): LargeBlobScreenState {
+  return {
+    envelope: null,
+    readResult: null,
+    selectedId: "",
+    payload: "",
+    decodeMode: "utf8",
+    readDecodeMode: "",
+    preview: null,
+    previewMode: "",
+    detailMode: "read",
+  };
+}
+
+export function setCredentialsScreenState(selector: string, state: CredentialsScreenState) {
+  if (!selector) return;
+  credentialsScreenCache.update((cache) => ({ ...cache, [selector]: state }));
+}
+
+export function setLargeBlobScreenState(selector: string, state: LargeBlobScreenState) {
+  if (!selector) return;
+  largeBlobScreenCache.update((cache) => ({ ...cache, [selector]: state }));
+}
+
+export function clearWorkbenchScreenCaches() {
+  credentialsScreenCache.set({});
+  largeBlobScreenCache.set({});
+  selectionVersion.update((value) => value + 1);
 }
 
 export function summarizeEnvelope(label: string, envelope: Envelope | null | undefined, detailId?: string, retry?: () => void | Promise<void>) {

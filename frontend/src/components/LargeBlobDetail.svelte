@@ -41,26 +41,30 @@
 {#if !selectedCredential}
   <EmptyState title="Choose a credential" message="Select a row to open its read, write, delete, and raw inspection workspace." />
 {:else}
-  <div class="detail-heading">
-    <div>
+  <div class="large-blob-detail-heading">
+    <div class="large-blob-detail-title">
       <p class="eyebrow">Selected credential</p>
       <h2>{selectedCredential.user?.displayName || selectedCredential.user?.name || selectedCredential.rp?.id || "Credential"}</h2>
+      <p>{selectedCredential.rp?.id || "unknown RP"}</p>
     </div>
     <StatusBadge value={selectedCredential.blobState || "unknown"} label={selectedCredential.blobState || "unknown"} />
   </div>
   <CopyableId label="Credential ID" value={credentialKey(selectedCredential)} on:copied={() => copied("Credential ID copied")} />
 
-  <div class="segmented" aria-label="Workspace mode">
+  <div class="large-blob-mode-tabs" aria-label="Workspace mode">
     <button class:active={detailMode === "read"} type="button" on:click={() => (detailMode = "read")}>Read</button>
     <button class:active={detailMode === "write"} type="button" on:click={() => (detailMode = "write")}>Write</button>
-    <button class:active={detailMode === "delete"} type="button" on:click={previewDelete}>Delete</button>
+    <button class:active={detailMode === "delete"} type="button" on:click={() => (detailMode = "delete")}>Delete</button>
     <button class:active={detailMode === "raw"} type="button" on:click={() => (detailMode = "raw")}>Raw</button>
   </div>
 
   {#if detailMode === "read"}
-    <section class="detail-section">
-      <div class="section-heading">
-        <h3>Read result</h3>
+    <section class="large-blob-detail-section">
+      <div class="large-blob-section-heading">
+        <div>
+          <h3>Read result</h3>
+          <p class="muted">Blob presence, byte count, decoded content, and raw hex.</p>
+        </div>
         <button type="button" on:click={readBlob} disabled={sessionBusy}>Read blob</button>
       </div>
       <label>Decode mode
@@ -88,15 +92,20 @@
         <CopyableId label="Raw hex" value={readReport?.rawHex || ""} empty="no raw hex" on:copied={() => copied("Raw hex copied")} />
         <details class="technical">
           <summary>Raw read report</summary>
-          <JsonView value={readResult.result || readResult} title="Read report" />
+          <JsonView value={readResult.result || readResult} title="Read report" variant="bare" />
         </details>
       {:else}
         <p class="muted">Run Read to inspect blob presence, byte count, decoded content, and raw hex for this credential.</p>
       {/if}
     </section>
   {:else if detailMode === "write"}
-    <section class="detail-section">
-      <h3>Write payload</h3>
+    <section class="large-blob-detail-section">
+      <div class="large-blob-section-heading">
+        <div>
+          <h3>Write payload</h3>
+          <p class="muted">Preview the payload before writing it to this credential.</p>
+        </div>
+      </div>
       <textarea bind:value={payload} rows="8" placeholder="UTF-8 payload to store in the large blob" on:keydown={handlePayloadKeydown}></textarea>
       <div class="metric-band">
         <span>{bytesFromText(payload).length} bytes</span>
@@ -106,26 +115,30 @@
         <div class="notice danger">{operationFailed(preview)}</div>
       {:else if preview && previewMode === "write"}
         <div class="notice">Preview ready. Confirm write to update the selected credential blob.</div>
-        <JsonView value={preview.result || preview} title="Mutation preview" />
+        <JsonView value={preview.result || preview} title="Mutation preview" variant="bare" />
       {/if}
-      <div class="actions">
-        <button type="button" on:click={previewWrite}>Preview write</button>
-        <button type="button" on:click={executeWrite} disabled={previewMode !== "write" || !preview}>Confirm write</button>
+      <div class="large-blob-action-row">
+        <button type="button" on:click={previewWrite} disabled={sessionBusy}>Preview write</button>
+        <button type="button" on:click={executeWrite} disabled={sessionBusy || previewMode !== "write" || !preview}>Confirm write</button>
       </div>
     </section>
   {:else if detailMode === "delete"}
-    <section class="detail-section">
-      <h3>Delete blob</h3>
-      <p class="muted">Preview the deletion before removing the large blob bytes from this credential.</p>
+    <section class="large-blob-detail-section">
+      <div class="large-blob-section-heading">
+        <div>
+          <h3>Delete blob</h3>
+          <p class="muted">Preview deletion before removing the blob bytes from this credential.</p>
+        </div>
+      </div>
       {#if operationFailed(preview)}
         <div class="notice danger">{operationFailed(preview)}</div>
       {:else if preview && previewMode === "delete"}
         <div class="notice">Delete preview ready. Confirm delete only if the selected mutation is expected.</div>
-        <JsonView value={preview.result || preview} title="Delete preview" />
+        <JsonView value={preview.result || preview} title="Delete preview" variant="bare" />
       {/if}
-      <div class="actions">
-        <button class="danger" type="button" on:click={previewDelete}>Preview delete</button>
-        <button class="danger" type="button" on:click={executeDelete} disabled={previewMode !== "delete" || !preview}>Confirm delete</button>
+      <div class="large-blob-action-row">
+        <button class="quiet" type="button" on:click={previewDelete} disabled={sessionBusy}>Preview delete</button>
+        <button class="danger" type="button" on:click={executeDelete} disabled={sessionBusy || previewMode !== "delete" || !preview}>Confirm delete</button>
       </div>
     </section>
   {:else}

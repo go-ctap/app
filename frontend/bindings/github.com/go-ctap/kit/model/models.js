@@ -180,7 +180,6 @@ export const OperationStage = {
     $zero: "",
 
     OperationStageOperationStarted: "operation-started",
-    OperationStageOpeningDevice: "opening-device",
     OperationStageInteractionRequired: "interaction-required",
     OperationStageEnumeratingRPs: "enumerating-rps",
     OperationStageEnumeratingCredentials: "enumerating-credentials",

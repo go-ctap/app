@@ -3,7 +3,7 @@
   import { Events } from "@wailsio/runtime";
   import { bootstrap, handleInteractionRequested, handleOperationProgress, handleSessionChanged, loadOverview, lockSelectedSession, refreshDiscovery, selectToken } from "./lib/controller";
   import { activeScreen, appError, devices, selectedDevice, selectedSelector, sessionStatus, toasts } from "./lib/stores";
-  import { labelDevice } from "./lib/format";
+  import { labelDevice, sessionStateLabel } from "./lib/format";
   import StatusBadge from "./components/StatusBadge.svelte";
   import WorkbenchStatusBar from "./components/WorkbenchStatusBar.svelte";
   import InteractionModal from "./components/InteractionModal.svelte";
@@ -106,7 +106,7 @@
       <code>{$selectedDevice.transport}</code>
       <code>VID {$selectedDevice.vendorId}</code>
       <code>PID {$selectedDevice.productId}</code>
-      <StatusBadge value={$sessionStatus.state} label={$sessionStatus.state === "ready" ? "session cached" : $sessionStatus.state} />
+      <StatusBadge value={$sessionStatus.state} label={$sessionStatus.state === "ready" ? "session cached" : sessionStateLabel($sessionStatus.state)} />
       <button class="quiet compact" type="button" on:click={lockSession} disabled={$sessionStatus.state === "idle" || $sessionStatus.state === "closed"}>Lock session</button>
     {:else}
       <span>No active authenticator. Plug in a token or refresh discovery.</span>
@@ -126,17 +126,21 @@
   </nav>
 
   <main>
-    {#if $activeScreen === "overview"}
+    <section class:hidden-screen={$activeScreen !== "overview"} class="screen-pane">
       <Overview />
-    {:else if $activeScreen === "credentials"}
+    </section>
+    <section class:hidden-screen={$activeScreen !== "credentials"} class="screen-pane">
       <Credentials />
-    {:else if $activeScreen === "largeBlobs"}
+    </section>
+    <section class:hidden-screen={$activeScreen !== "largeBlobs"} class="screen-pane">
       <LargeBlobs />
-    {:else if $activeScreen === "config"}
+    </section>
+    <section class:hidden-screen={$activeScreen !== "config"} class="screen-pane">
       <Config />
-    {:else}
+    </section>
+    <section class:hidden-screen={$activeScreen !== "lab"} class="screen-pane">
       <Lab />
-    {/if}
+    </section>
   </main>
 
   <InteractionModal />

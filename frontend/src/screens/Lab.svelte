@@ -172,7 +172,7 @@
             {/if}
             <details class="technical">
               <summary>Raw makeCredential output</summary>
-              <JsonView value={makeReport} title="Raw makeCredential result" />
+              <JsonView value={makeReport} title="Raw makeCredential result" variant="bare" />
             </details>
           {:else}
             <p class="muted">Preview or run makeCredential to see normalized input, warnings, credential ID, and raw output here.</p>
@@ -220,7 +220,7 @@
             {/if}
             <details class="technical">
               <summary>Raw getAssertion output</summary>
-              <JsonView value={assertionReport} title="Raw getAssertion result" />
+              <JsonView value={assertionReport} title="Raw getAssertion result" variant="bare" />
             </details>
           {:else}
             <p class="muted">Run getAssertion to see assertion artifacts, copy actions, and raw output in this step.</p>

@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { get } from "svelte/store";
   import { api, operationFailed } from "../lib/api";
-  import { selectedSelector, selectionVersion, pushToast, sessionBusy } from "../lib/stores";
+  import { credentialsScreenCache, emptyCredentialsState, selectedSelector, selectionVersion, pushToast, sessionBusy, setCredentialsScreenState, summarizeEnvelope } from "../lib/stores";
   import { asList, reportOf } from "../lib/format";
   import CopyableId from "../components/CopyableId.svelte";
   import DialogShell from "../components/DialogShell.svelte";
@@ -15,9 +16,13 @@
   let displayName = "";
   let name = "";
   let userIDHex = "";
+  let cacheSelector = "";
+  let cacheVersion = -1;
 
   $: selector = $selectedSelector;
-  $: if ($selectionVersion) resetState();
+  $: if (selector !== cacheSelector) restoreState(selector);
+  $: if ($selectionVersion !== cacheVersion) restoreState(selector);
+  $: if (selector && selector === cacheSelector) persistState();
   $: report = reportOf(envelope);
   $: groups = asList(report?.groups);
 
@@ -26,13 +31,20 @@
     return { error: { message } };
   }
 
-  function resetState() {
-    envelope = null;
-    preview = null;
-    editing = null;
-    displayName = "";
-    name = "";
-    userIDHex = "";
+  function restoreState(nextSelector: string) {
+    const cached = get(credentialsScreenCache)[nextSelector] || emptyCredentialsState();
+    envelope = cached.envelope;
+    preview = cached.preview;
+    editing = cached.editing;
+    displayName = cached.displayName;
+    name = cached.name;
+    userIDHex = cached.userIDHex;
+    cacheSelector = nextSelector;
+    cacheVersion = $selectionVersion;
+  }
+
+  function persistState() {
+    setCredentialsScreenState(selector, { envelope, preview, editing, displayName, name, userIDHex });
   }
 
   async function load() {
@@ -40,8 +52,10 @@
     loading = true;
     try {
       envelope = await api.listCredentials(selector);
+      summarizeEnvelope("Credential list", envelope, "credential-inventory", load);
     } catch (error) {
       envelope = failureEnvelope(error);
+      summarizeEnvelope("Credential list", envelope, "credential-inventory", load);
     } finally {
       loading = false;
     }
@@ -49,6 +63,7 @@
 
   async function previewDelete(credential: any) {
     preview = await api.deleteCredential({ selector, credentialIdHex: credential.credentialIDHex, dryRun: true });
+    summarizeEnvelope("Credential delete preview", preview, "credential-inventory", () => previewDelete(credential));
   }
 
   async function executeDelete() {
@@ -56,6 +71,7 @@
     await api.deleteCredential({ selector, credentialIdHex, confirmed: true, confirmationMessage: "delete credential" });
     preview = null;
     await load();
+    editing = null;
     pushToast("Credential deleted");
   }
 
@@ -79,6 +95,7 @@
       displayProvided: true,
       dryRun: true,
     });
+    summarizeEnvelope("Credential update preview", preview, "credential-inventory", previewUpdate);
   }
 
   async function executeUpdate() {
@@ -123,17 +140,29 @@
     <StatusBadge value={report?.support?.credentialManagement} label={`Management: ${report?.support?.credentialManagement ? "available" : "unavailable"}`} />
   </div>
 
-  {#each groups as group}
-    <section class="list-section">
-      <h2>{group.rpName || group.rpID}</h2>
-      <p class="muted">{group.rpID}</p>
-      <div class="table">
+  <section id="credential-inventory" class="list-section workbench-list">
+    <div class="section-heading list-heading">
+      <div>
+        <h2>Credential inventory</h2>
+        <p class="muted">Grouped by relying party</p>
+      </div>
+      <span class="muted">{groups.length} relying part{groups.length === 1 ? "y" : "ies"}</span>
+    </div>
+    {#each groups as group}
+      <section class="rp-group">
+        <div class="group-heading">
+          <div>
+            <h3>{group.rpName || group.rpID}</h3>
+            <p class="muted">{group.rpID}</p>
+          </div>
+          <span>{asList(group.credentials).length} credential(s)</span>
+        </div>
         {#each asList(group.credentials) as credential}
-          <article class="row">
+          <article class="row inventory-row">
             <div class="row-main">
               <strong>{credential.displayName || credential.userName || "Unnamed user"}</strong>
-              <CopyableId label="Credential ID" value={credential.credentialIDHex} on:copied={() => pushToast("Credential ID copied")} />
               <div class="row-meta">
+                <CopyableId label="Credential ID" value={credential.credentialIDHex} on:copied={() => pushToast("Credential ID copied")} />
                 <CopyableId label="User ID" value={credential.userIDHex} empty="no user id" on:copied={() => pushToast("User ID copied")} />
                 <StatusBadge value={credential.largeBlobKeyState || "unknown"} label={`blob key ${credential.largeBlobKeyState || "unknown"}`} />
               </div>
@@ -143,14 +172,14 @@
               </details>
             </div>
             <div class="actions">
-              <button type="button" on:click={() => startEdit(credential)} disabled={$sessionBusy}>Edit</button>
-              <button class="danger" type="button" on:click={() => previewDelete(credential)} disabled={$sessionBusy}>Delete</button>
+              <button class="compact" type="button" on:click={() => startEdit(credential)} disabled={$sessionBusy}>Edit</button>
+              <button class="compact danger" type="button" on:click={() => previewDelete(credential)} disabled={$sessionBusy}>Delete</button>
             </div>
           </article>
         {/each}
-      </div>
-    </section>
-  {/each}
+      </section>
+    {/each}
+  </section>
 {/if}
 
 {#if editing}

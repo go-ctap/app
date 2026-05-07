@@ -2,14 +2,14 @@
   import { api } from "../lib/api";
   import { lockSelectedSession, refreshDiscovery } from "../lib/controller";
   import { selectedDevice, selectedSelector, sessionStatus, statusBar } from "../lib/stores";
-  import { labelDevice, stateLabel } from "../lib/format";
+  import { labelDevice, operationStageLabel, sessionStateLabel } from "../lib/format";
   import StatusBadge from "./StatusBadge.svelte";
 
   $: operation = $statusBar.activeOperation;
   $: event = operation?.event;
   $: outcome = $statusBar.lastOutcome;
   $: hasContext = Boolean($selectedSelector || operation || outcome || $sessionStatus.state !== "idle");
-  $: title = event?.message || event?.stage || outcome?.title || "Workbench ready";
+  $: title = event?.message || operationStageLabel(event?.stage) || outcome?.title || "Workbench ready";
   $: message = operation
     ? progressLabel(event)
     : outcome?.message || ($selectedDevice ? labelDevice($selectedDevice) : "Select a token to begin.");
@@ -19,7 +19,7 @@
     if (value.completed !== undefined && value.total !== undefined) {
       return `${value.completed} / ${value.total}`;
     }
-    return value.stage || "";
+    return operationStageLabel(value.stage);
   }
 
   async function cancel() {
@@ -41,7 +41,7 @@
 {#if hasContext}
   <section class:running={Boolean(operation)} class:error={outcome?.tone === "error" || $sessionStatus.state === "error" || $sessionStatus.state === "stale"} class="workbench-status-bar" aria-live="polite">
     <div class="status-context">
-      <StatusBadge value={$sessionStatus.state} label={stateLabel($sessionStatus.state)} />
+      <StatusBadge value={$sessionStatus.state} label={sessionStateLabel($sessionStatus.state)} />
       <div class="status-copy">
         <strong>{title}</strong>
         {#if message}

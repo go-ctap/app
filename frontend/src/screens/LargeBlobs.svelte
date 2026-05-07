@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { get } from "svelte/store";
   import { api, bytesFromText, operationFailed } from "../lib/api";
-  import { selectedSelector, selectionVersion, pushToast, sessionBusy, setStatusOutcome, summarizeEnvelope } from "../lib/stores";
+  import { emptyLargeBlobState, largeBlobScreenCache, selectedSelector, selectionVersion, pushToast, sessionBusy, setLargeBlobScreenState, setStatusOutcome, summarizeEnvelope } from "../lib/stores";
   import { asList, reportOf, stateLabel } from "../lib/format";
-  import CopyableId from "../components/CopyableId.svelte";
   import EmptyState from "../components/EmptyState.svelte";
   import LargeBlobDetail from "../components/LargeBlobDetail.svelte";
   import StatusBadge from "../components/StatusBadge.svelte";
@@ -17,9 +17,13 @@
   let preview: any = null;
   let previewMode: "write" | "delete" | "" = "";
   let detailMode: "read" | "write" | "delete" | "raw" = "read";
+  let cacheSelector = "";
+  let cacheVersion = -1;
 
   $: selector = $selectedSelector;
-  $: if ($selectionVersion) resetState();
+  $: if (selector !== cacheSelector) restoreState(selector);
+  $: if ($selectionVersion !== cacheVersion) restoreState(selector);
+  $: if (selector && selector === cacheSelector) persistState();
   $: report = reportOf(envelope);
   $: credentials = asList(report?.credentials);
   $: selectedCredential = credentials.find((credential: any) => credentialKey(credential) === selectedId) || null;
@@ -33,14 +37,23 @@
     return credential?.credentialIDHex || credential?.credentialIdHex || credential?.id || "";
   }
 
-  function resetState() {
-    envelope = null;
-    readResult = null;
-    selectedId = "";
-    payload = "";
-    preview = null;
-    previewMode = "";
-    detailMode = "read";
+  function restoreState(nextSelector: string) {
+    const cached = get(largeBlobScreenCache)[nextSelector] || emptyLargeBlobState();
+    envelope = cached.envelope;
+    readResult = cached.readResult;
+    selectedId = cached.selectedId;
+    payload = cached.payload;
+    decodeMode = cached.decodeMode;
+    readDecodeMode = cached.readDecodeMode;
+    preview = cached.preview;
+    previewMode = cached.previewMode;
+    detailMode = cached.detailMode;
+    cacheSelector = nextSelector;
+    cacheVersion = $selectionVersion;
+  }
+
+  function persistState() {
+    setLargeBlobScreenState(selector, { envelope, readResult, selectedId, payload, decodeMode, readDecodeMode, preview, previewMode, detailMode });
   }
 
   function selectCredential(credential: any, mode: "read" | "write" | "delete" | "raw" = "read") {
@@ -164,7 +177,7 @@
   <div>
     <p class="eyebrow">Large blobs</p>
     <h1>Credential blob workspace</h1>
-    <p class="lede">Select a resident credential, then read, edit, preview, or delete its attached data without leaving the row context.</p>
+    <p class="lede">Select a resident credential, then inspect and manage its attached blob from the workspace.</p>
   </div>
   <button type="button" on:click={load} disabled={!selector || loading || $sessionBusy}>{loading ? "Loading" : "Refresh"}</button>
 </section>
@@ -176,38 +189,39 @@
 {:else if credentials.length === 0}
   <EmptyState title="No large-blob state loaded" message="Refresh to map resident credentials to large-blob state." />
 {:else}
-  <div class="summary-line">
-    <span>{report?.array?.blobCount || 0} blobs</span>
-    <span>{report?.array?.matchedBlobCount || 0} matched</span>
+  <div class="large-blob-summary" aria-label="Large blob summary">
+    <span><strong>{report?.array?.blobCount || 0}</strong> blobs</span>
+    <span><strong>{report?.array?.matchedBlobCount || 0}</strong> matched</span>
     <StatusBadge value={report?.support?.largeBlobs} label={`Support: ${stateLabel(report?.support?.largeBlobs)}`} />
   </div>
 
   <section id="large-blob-workspace" class="large-blob-workspace">
-    <div class="list-section credential-list">
-      <div class="section-heading">
-        <h2>Credentials</h2>
+    <div class="large-blob-list-panel">
+      <div class="large-blob-list-heading">
+        <div>
+          <h2>Blob credentials</h2>
+          <p class="muted">Select a row to open its inspector.</p>
+        </div>
         <span class="muted">{credentials.length} row(s)</span>
       </div>
       {#each credentials as credential}
-        <article class:selected={credentialKey(credential) === selectedId} class="credential-row">
-          <button class="row-select" type="button" on:click={() => selectCredential(credential)}>
-            <span class="row-main">
-              <strong>{credential.user?.displayName || credential.user?.name || credential.rp?.id || "Credential"}</strong>
-              <span class="row-meta">
-                <span>{credential.rp?.id || "unknown RP"}</span>
-                <StatusBadge value={credential.blobState || "unknown"} label={credential.blobState || "unknown"} />
-                <span>{credential.blobByteCount || 0} bytes</span>
-              </span>
+        <article class:selected={credentialKey(credential) === selectedId} class="large-blob-row">
+          <button
+            class="large-blob-row-select"
+            type="button"
+            aria-pressed={credentialKey(credential) === selectedId}
+            on:click={() => selectCredential(credential)}
+          >
+            <span class="large-blob-row-name">{credential.user?.displayName || credential.user?.name || credential.rp?.id || "Credential"}</span>
+            <span class="large-blob-row-rp">{credential.rp?.id || "unknown RP"}</span>
+            <span class="large-blob-row-state">
+              <StatusBadge value={credential.blobState || "unknown"} label={credential.blobState || "unknown"} />
             </span>
+            <span class="large-blob-row-bytes">{credential.blobByteCount || 0} bytes</span>
           </button>
-          <div class="actions">
-            <button type="button" on:click={() => readBlob(credential)} disabled={$sessionBusy}>Read</button>
-            <button type="button" on:click={() => selectCredential(credential, "write")} disabled={$sessionBusy}>Write</button>
-            <button class="danger" type="button" on:click={() => previewDelete(credential)} disabled={$sessionBusy}>Delete</button>
-          </div>
           {#if credentialKey(credential) === selectedId}
-            <div class="inline-detail">
-              <section class="credential-detail">
+            <div class="large-blob-inline-detail">
+              <section class="large-blob-detail-panel">
                 <LargeBlobDetail
                   bind:detailMode
                   bind:payload
@@ -233,7 +247,7 @@
       {/each}
     </div>
 
-    <aside id="large-blob-detail" class="credential-detail">
+    <aside id="large-blob-detail" class="large-blob-detail-panel">
       <LargeBlobDetail
         bind:detailMode
         bind:payload

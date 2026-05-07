@@ -1,10 +1,12 @@
 import { get } from "svelte/store";
 import { api, operationFailed, type Envelope } from "./api";
+import { operationStageLabel } from "./format";
 import {
   activeScreen,
   appError,
   applyDiscovery,
   applyEnvelope,
+  clearWorkbenchScreenCaches,
   overviewEnvelope,
   overviewLoading,
   pendingInteraction,
@@ -110,6 +112,7 @@ export async function selectToken(selector: string) {
 export async function lockSelectedSession() {
   try {
     sessionStatus.set(await api.lockSession());
+    clearWorkbenchScreenCaches();
     setStatusOutcome({ tone: "info", title: "Session cleared", message: "The cached authenticator session was closed." });
   } catch (error) {
     appError.set(messageFromError(error));
@@ -167,7 +170,7 @@ export function handleOperationProgress(data: any) {
     setStatusOutcome({
       tone: failed ? "error" : canceled ? "warning" : "success",
       title: data.event?.message || (failed ? "Operation failed" : canceled ? "Operation canceled" : "Operation complete"),
-      message: data.event?.stage,
+      message: operationStageLabel(data.event?.stage),
     });
     operationClearTimer = window.setTimeout(() => setStatusOperation(null), 1800);
   }
@@ -176,6 +179,7 @@ export function handleOperationProgress(data: any) {
 export function handleSessionChanged(data: any) {
   sessionStatus.set(data);
   if (data?.state === "stale" || data?.state === "error") {
+    clearWorkbenchScreenCaches();
     setStatusOutcome({
       tone: "error",
       title: "Session needs attention",
