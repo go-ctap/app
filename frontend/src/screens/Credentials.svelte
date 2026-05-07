@@ -1,7 +1,7 @@
 <script lang="ts">
   import { get } from "svelte/store";
   import { api, operationFailed } from "../lib/api";
-  import { credentialsScreenCache, emptyCredentialsState, selectedSelector, selectionVersion, pushToast, sessionBusy, setCredentialsScreenState, summarizeEnvelope } from "../lib/stores";
+  import { beginOperation, clearSharedCredentialInventory, credentialGroupsFromRows, credentialsScreenCache, emptyCredentialsState, selectedSelector, selectionVersion, pushToast, sessionStatus, sharedCredentialInventoryCache, sessionBusy, setCredentialsScreenState, sharedInventoryFor, summarizeEnvelope, updateSharedCredentialInventory } from "../lib/stores";
   import { asList, reportOf } from "../lib/format";
   import CopyableId from "../components/CopyableId.svelte";
   import DialogShell from "../components/DialogShell.svelte";
@@ -18,10 +18,12 @@
   let userIDHex = "";
   let cacheSelector = "";
   let cacheVersion = -1;
+  let warmReloadKey = "";
 
   $: selector = $selectedSelector;
   $: if (selector !== cacheSelector) restoreState(selector);
   $: if ($selectionVersion !== cacheVersion) restoreState(selector);
+  $: if (selector && $sharedCredentialInventoryCache && !loading) hydrateFromSharedInventory(selector);
   $: if (selector && selector === cacheSelector) persistState();
   $: report = reportOf(envelope);
   $: groups = asList(report?.groups);
@@ -41,38 +43,93 @@
     userIDHex = cached.userIDHex;
     cacheSelector = nextSelector;
     cacheVersion = $selectionVersion;
+    hydrateFromSharedInventory(nextSelector);
   }
 
   function persistState() {
     setCredentialsScreenState(selector, { envelope, preview, editing, displayName, name, userIDHex });
   }
 
-  async function load() {
+  function blobInventoryEnvelope(inventory: any) {
+    const groups = credentialGroupsFromRows(inventory?.blobCredentials || []);
+    return {
+      result: {
+        report: {
+          groups,
+          summary: {
+            totalRPs: groups.length,
+            totalCredentials: groups.reduce((total: number, group: any) => total + (group.credentials?.length || 0), 0),
+          },
+          support: { credentialManagement: "cached from blob map" },
+        },
+      },
+    };
+  }
+
+  function hydrateFromSharedInventory(nextSelector: string) {
+    if (!nextSelector || nextSelector !== cacheSelector || envelope) return;
+    const inventory = sharedInventoryFor(nextSelector);
+    if (!inventory) return;
+    if (inventory.hasManagementFields && inventory.managementEnvelope) {
+      envelope = inventory.managementEnvelope;
+      return;
+    }
+    if (inventory.hasBlobFields && inventory.blobCredentials.length > 0) {
+      envelope = blobInventoryEnvelope(inventory);
+      if ($sessionStatus.state === "ready" && warmReloadKey !== `${nextSelector}:${inventory.loadedAt}`) {
+        warmReloadKey = `${nextSelector}:${inventory.loadedAt}`;
+        void load({ warm: true });
+      }
+    }
+  }
+
+  async function load(options: { warm?: boolean } = {}) {
     if (!selector) return;
     loading = true;
     try {
+      beginOperation(options.warm ? "Credential warm reload" : "Credential list", "credential-inventory");
       envelope = await api.listCredentials(selector);
-      summarizeEnvelope("Credential list", envelope, "credential-inventory", load);
+      if (!operationFailed(envelope)) {
+        updateSharedCredentialInventory(selector, envelope, "credentials");
+      }
+      summarizeEnvelope(options.warm ? "Credential warm reload" : "Credential list", envelope, "credential-inventory", load);
     } catch (error) {
       envelope = failureEnvelope(error);
-      summarizeEnvelope("Credential list", envelope, "credential-inventory", load);
+      summarizeEnvelope(options.warm ? "Credential warm reload" : "Credential list", envelope, "credential-inventory", load);
     } finally {
       loading = false;
     }
   }
 
   async function previewDelete(credential: any) {
-    preview = await api.deleteCredential({ selector, credentialIdHex: credential.credentialIDHex, dryRun: true });
+    try {
+      beginOperation("Credential delete preview", "credential-inventory");
+      preview = await api.deleteCredential({ selector, credentialIdHex: credential.credentialIDHex, dryRun: true });
+    } catch (error) {
+      preview = failureEnvelope(error);
+    }
     summarizeEnvelope("Credential delete preview", preview, "credential-inventory", () => previewDelete(credential));
   }
 
   async function executeDelete() {
     const credentialIdHex = preview?.result?.preview?.target?.credentialIDHex || preview?.result?.preview?.credentialIDHex;
-    await api.deleteCredential({ selector, credentialIdHex, confirmed: true, confirmationMessage: "delete credential" });
+    let result: any = null;
+    try {
+      beginOperation("Credential delete", "credential-inventory");
+      result = await api.deleteCredential({ selector, credentialIdHex, confirmed: true, confirmationMessage: "delete credential" });
+    } catch (error) {
+      result = failureEnvelope(error);
+    }
     preview = null;
-    await load();
-    editing = null;
-    pushToast("Credential deleted");
+    if (!operationFailed(result)) {
+      clearSharedCredentialInventory(selector);
+      await load();
+      editing = null;
+    }
+    summarizeEnvelope("Credential delete", result, "credential-inventory");
+    if (!operationFailed(result)) {
+      pushToast("Credential deleted");
+    }
   }
 
   function startEdit(credential: any) {
@@ -84,37 +141,54 @@
   }
 
   async function previewUpdate() {
-    preview = await api.updateCredentialUser({
-      selector,
-      credentialIdHex: editing.credentialIDHex,
-      userIdHex: userIDHex,
-      name,
-      displayName,
-      userIdProvided: userIDHex.length > 0,
-      nameProvided: true,
-      displayProvided: true,
-      dryRun: true,
-    });
+    try {
+      beginOperation("Credential update preview", "credential-inventory");
+      preview = await api.updateCredentialUser({
+        selector,
+        credentialIdHex: editing.credentialIDHex,
+        userIdHex: userIDHex,
+        name,
+        displayName,
+        userIdProvided: userIDHex.length > 0,
+        nameProvided: true,
+        displayProvided: true,
+        dryRun: true,
+      });
+    } catch (error) {
+      preview = failureEnvelope(error);
+    }
     summarizeEnvelope("Credential update preview", preview, "credential-inventory", previewUpdate);
   }
 
   async function executeUpdate() {
-    await api.updateCredentialUser({
-      selector,
-      credentialIdHex: editing.credentialIDHex,
-      userIdHex: userIDHex,
-      name,
-      displayName,
-      userIdProvided: userIDHex.length > 0,
-      nameProvided: true,
-      displayProvided: true,
-      confirmed: true,
-      confirmationMessage: "update credential user",
-    });
-    editing = null;
-    preview = null;
-    await load();
-    pushToast("Credential updated");
+    let result: any = null;
+    try {
+      beginOperation("Credential update", "credential-inventory");
+      result = await api.updateCredentialUser({
+        selector,
+        credentialIdHex: editing.credentialIDHex,
+        userIdHex: userIDHex,
+        name,
+        displayName,
+        userIdProvided: userIDHex.length > 0,
+        nameProvided: true,
+        displayProvided: true,
+        confirmed: true,
+        confirmationMessage: "update credential user",
+      });
+    } catch (error) {
+      result = failureEnvelope(error);
+    }
+    if (!operationFailed(result)) {
+      editing = null;
+      preview = null;
+      clearSharedCredentialInventory(selector);
+      await load();
+    }
+    summarizeEnvelope("Credential update", result, "credential-inventory");
+    if (!operationFailed(result)) {
+      pushToast("Credential updated");
+    }
   }
 </script>
 
@@ -124,15 +198,15 @@
     <h1>Passkeys stored on the token</h1>
     <p class="lede">Browse discoverable credentials by relying party, update the friendly user fields, or delete stale entries after a backend preview.</p>
   </div>
-  <button type="button" on:click={load} disabled={!selector || loading || $sessionBusy}>{loading ? "Loading" : "Refresh"}</button>
+  <button type="button" on:click={load} disabled={!selector || loading || $sessionBusy}>{loading ? "Reloading credentials" : "Reload credentials"}</button>
 </section>
 
 {#if !selector}
-  <EmptyState title="No token selected" message="Select an authenticator to list resident credentials." />
+  <EmptyState eyebrow="No token" title="No token selected" message="Select an authenticator to list resident credentials." />
 {:else if operationFailed(envelope)}
   <div class="notice danger">{operationFailed(envelope)}</div>
 {:else if groups.length === 0}
-  <EmptyState title="No credential inventory loaded" message="Refresh to ask the token for resident credentials. Unsupported tokens will explain their support state here." />
+  <EmptyState eyebrow="Ready to load" title="No credential inventory loaded" message="Reload credentials to ask the token for resident credentials. Unsupported tokens will explain their support state here." />
 {:else}
   <div class="summary-line">
     <span>{report?.summary?.totalRPs || 0} relying parties</span>

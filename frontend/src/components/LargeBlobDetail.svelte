@@ -15,6 +15,9 @@
   export let decodeMode = "utf8";
   export let readDecodeMode = "";
   export let sessionBusy = false;
+  export let largeBlobBusy = "";
+  export let canConfirmWrite = false;
+  export let canConfirmDelete = false;
   export let credentialKey: (credential: any) => string;
   export let readBlob: () => void | Promise<void>;
   export let previewWrite: () => void | Promise<void>;
@@ -24,10 +27,46 @@
   export let copied: (message: string) => void;
 
   $: readReport = reportOf(readResult);
+  $: previewOutput = reportOf(preview);
+  $: mutationPreview = previewOutput?.preview || previewOutput?.result || null;
+  $: mutationWarnings = Array.isArray(mutationPreview?.warnings) ? mutationPreview.warnings : [];
+  $: previewJSON = previewWithoutWarnings(preview?.result || preview);
+  $: capacityLimit = mutationPreview?.serializedLargeBlobArrayLimit || mutationPreview?.support?.maxSerializedLargeBlobArray || 0;
+  $: capacityAfter = mutationPreview?.serializedLargeBlobArraySizeAfter || 0;
+  $: capacityRemaining = capacityLimit ? capacityLimit - capacityAfter : null;
   $: decodeDirty = Boolean(readResult && readDecodeMode && decodeMode !== readDecodeMode);
+  $: decodeStatus = readReport?.decode || null;
+  $: decodedContent = decodedValue(readReport);
+  $: decodeFailure = decodeStatus?.requested && !decodeStatus?.success ? decodeStatus.failure || "Selected decode mode could not decode this blob." : "";
+  $: busy = sessionBusy || Boolean(largeBlobBusy);
 
   function decodedValue(value: any) {
-    return value?.decodedJSON ?? value?.decodedText ?? value?.decodedValue ?? value?.text ?? "";
+    return value?.decode?.decodedText ?? value?.decode?.decodedValue ?? value?.decodedJSON ?? value?.decodedText ?? value?.decodedValue ?? value?.text ?? "";
+  }
+
+  function hasDecodedValue(value: any) {
+    return value !== null && value !== undefined && value !== "";
+  }
+
+  function formatDecodedValue(value: any) {
+    return typeof value === "string" ? value : JSON.stringify(value, null, 2);
+  }
+
+  function previewWithoutWarnings(value: any) {
+    if (!value) return value;
+    const clone = JSON.parse(JSON.stringify(value));
+    if (clone?.warnings) delete clone.warnings;
+    if (clone?.preview?.warnings) delete clone.preview.warnings;
+    if (clone?.result?.preview?.warnings) delete clone.result.preview.warnings;
+    return clone;
+  }
+
+  function warningTone(warning: any) {
+    return String(warning?.severity || "warning").replaceAll("_", " ");
+  }
+
+  function warningMessage(warning: any) {
+    return warning?.message || warning?.code || "Review this mutation before confirming.";
   }
 
   function handlePayloadKeydown(event: KeyboardEvent) {
@@ -39,7 +78,7 @@
 </script>
 
 {#if !selectedCredential}
-  <EmptyState title="Choose a credential" message="Select a row to open its read, write, delete, and raw inspection workspace." />
+  <EmptyState eyebrow="Selection" variant="compact" title="Choose a credential" message="Select a row to open its read, write, delete, and raw inspection workspace." />
 {:else}
   <div class="large-blob-detail-heading">
     <div class="large-blob-detail-title">
@@ -65,7 +104,7 @@
           <h3>Read result</h3>
           <p class="muted">Blob presence, byte count, decoded content, and raw hex.</p>
         </div>
-        <button type="button" on:click={readBlob} disabled={sessionBusy}>Read blob</button>
+        <button type="button" on:click={readBlob} disabled={busy}>Read blob</button>
       </div>
       <label>Decode mode
         <select bind:value={decodeMode}>
@@ -86,8 +125,12 @@
           <span>{readReport?.rawByteCount || 0} bytes</span>
           <span>Decoded as {readDecodeMode || decodeMode}</span>
         </div>
-        {#if decodedValue(readReport)}
-          <pre>{typeof decodedValue(readReport) === "string" ? decodedValue(readReport) : JSON.stringify(decodedValue(readReport), null, 2)}</pre>
+        {#if hasDecodedValue(decodedContent)}
+          <pre>{formatDecodedValue(decodedContent)}</pre>
+        {:else if decodeFailure}
+          <div class="notice">Decode failed: {decodeFailure}</div>
+        {:else if decodeStatus?.requested && decodeStatus?.success}
+          <div class="notice">Decoded payload is empty.</div>
         {/if}
         <CopyableId label="Raw hex" value={readReport?.rawHex || ""} empty="no raw hex" on:copied={() => copied("Raw hex copied")} />
         <details class="technical">
@@ -113,13 +156,33 @@
       </div>
       {#if operationFailed(preview)}
         <div class="notice danger">{operationFailed(preview)}</div>
-      {:else if preview && previewMode === "write"}
+      {/if}
+      {#if preview && previewMode === "write"}
         <div class="notice">Preview ready. Confirm write to update the selected credential blob.</div>
-        <JsonView value={preview.result || preview} title="Mutation preview" variant="bare" />
+        {#if mutationPreview}
+          <div class="metric-band">
+            <span>{mutationPreview.serializedLargeBlobArraySizeBefore || 0} bytes before</span>
+            <span>{mutationPreview.serializedLargeBlobArraySizeAfter || 0} bytes after</span>
+            {#if capacityLimit}
+              <span>{Math.max(capacityRemaining || 0, 0)} bytes remaining</span>
+            {/if}
+          </div>
+        {/if}
+        {#if mutationWarnings.length}
+          <div class="warning-list" aria-label="Preview warnings">
+            {#each mutationWarnings as warning}
+              <div class:destructive={warning?.severity === "destructive"} class="warning-item">
+                <span>{warningTone(warning)}</span>
+                <p>{warningMessage(warning)}</p>
+              </div>
+            {/each}
+          </div>
+        {/if}
+        <JsonView value={previewJSON} title="Mutation preview" variant="bare" />
       {/if}
       <div class="large-blob-action-row">
-        <button type="button" on:click={previewWrite} disabled={sessionBusy}>Preview write</button>
-        <button type="button" on:click={executeWrite} disabled={sessionBusy || previewMode !== "write" || !preview}>Confirm write</button>
+        <button type="button" on:click={previewWrite} disabled={busy}>Preview write</button>
+        <button type="button" on:click={executeWrite} disabled={busy || !canConfirmWrite}>Confirm write</button>
       </div>
     </section>
   {:else if detailMode === "delete"}
@@ -132,13 +195,33 @@
       </div>
       {#if operationFailed(preview)}
         <div class="notice danger">{operationFailed(preview)}</div>
-      {:else if preview && previewMode === "delete"}
+      {/if}
+      {#if preview && previewMode === "delete"}
         <div class="notice">Delete preview ready. Confirm delete only if the selected mutation is expected.</div>
-        <JsonView value={preview.result || preview} title="Delete preview" variant="bare" />
+        {#if mutationPreview}
+          <div class="metric-band">
+            <span>{mutationPreview.serializedLargeBlobArraySizeBefore || 0} bytes before</span>
+            <span>{mutationPreview.serializedLargeBlobArraySizeAfter || 0} bytes after</span>
+            {#if capacityLimit}
+              <span>{Math.max(capacityRemaining || 0, 0)} bytes remaining</span>
+            {/if}
+          </div>
+        {/if}
+        {#if mutationWarnings.length}
+          <div class="warning-list" aria-label="Preview warnings">
+            {#each mutationWarnings as warning}
+              <div class:destructive={warning?.severity === "destructive"} class="warning-item">
+                <span>{warningTone(warning)}</span>
+                <p>{warningMessage(warning)}</p>
+              </div>
+            {/each}
+          </div>
+        {/if}
+        <JsonView value={previewJSON} title="Delete preview" variant="bare" />
       {/if}
       <div class="large-blob-action-row">
-        <button class="quiet" type="button" on:click={previewDelete} disabled={sessionBusy}>Preview delete</button>
-        <button class="danger" type="button" on:click={executeDelete} disabled={sessionBusy || previewMode !== "delete" || !preview}>Confirm delete</button>
+        <button class="quiet" type="button" on:click={previewDelete} disabled={busy}>Preview delete</button>
+        <button class="danger" type="button" on:click={executeDelete} disabled={busy || !canConfirmDelete}>Confirm delete</button>
       </div>
     </section>
   {:else}

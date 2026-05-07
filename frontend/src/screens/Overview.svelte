@@ -103,7 +103,7 @@
 </script>
 
 {#if !selector}
-  <EmptyState title="Choose a token" message="Connect an authenticator and select it in the top bar to see what it can do." />
+  <EmptyState eyebrow="No token" title="Choose a token" message="Connect an authenticator and select it in the top bar to see what it can do." />
 {:else if report}
   <section id="overview-dashboard" class="token-dashboard">
     <div class="token-identity">
@@ -111,7 +111,7 @@
       <h1>{productName}</h1>
       <p>{device.deviceId || "Device identity reported by the current transport."}</p>
       <div class="actions">
-        <button type="button" on:click={() => loadOverview(selector)} disabled={loading || $sessionBusy}>{loading ? "Loading" : "Refresh"}</button>
+        <button type="button" on:click={() => loadOverview(selector)} disabled={loading || $sessionBusy}>{loading ? "Reloading overview" : "Reload overview"}</button>
       </div>
     </div>
     <div class="metric-strip">
@@ -187,7 +187,7 @@
       <h1>Token dashboard</h1>
       <p class="lede">Identity, session state, capabilities, and raw CTAP inspection in one scan-friendly view.</p>
     </div>
-    <button type="button" on:click={() => loadOverview(selector)} disabled={loading || $sessionBusy}>{loading ? "Loading" : "Refresh"}</button>
+    <button type="button" on:click={() => loadOverview(selector)} disabled={loading || $sessionBusy}>{loading ? "Reloading overview" : "Reload overview"}</button>
   </section>
 
   {#if operationFailed(envelope)}
@@ -209,6 +209,6 @@
       </div>
     </section>
   {:else}
-    <EmptyState title="Overview not loaded" message="Refresh to inspect the selected authenticator." />
+    <EmptyState eyebrow="Ready to inspect" title="Overview not loaded" message="Reload overview to inspect the selected authenticator." />
   {/if}
 {/if}

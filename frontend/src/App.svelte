@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { Events } from "@wailsio/runtime";
-  import { bootstrap, handleInteractionRequested, handleOperationProgress, handleSessionChanged, loadOverview, lockSelectedSession, refreshDiscovery, selectToken } from "./lib/controller";
-  import { activeScreen, appError, devices, selectedDevice, selectedSelector, sessionStatus, toasts } from "./lib/stores";
+  import { bootstrap, handleInteractionRequested, handleOperationProgress, handleSessionChanged, loadOverview, lockSelectedSession, openSelectedSession, refreshDiscovery, selectToken } from "./lib/controller";
+  import { activeScreen, appError, devices, selectedDevice, selectedSelector, sessionBusy, sessionStatus, toasts } from "./lib/stores";
   import { labelDevice, sessionStateLabel } from "./lib/format";
   import StatusBadge from "./components/StatusBadge.svelte";
   import WorkbenchStatusBar from "./components/WorkbenchStatusBar.svelte";
@@ -12,6 +12,7 @@
   import LargeBlobs from "./screens/LargeBlobs.svelte";
   import Config from "./screens/Config.svelte";
   import Lab from "./screens/Lab.svelte";
+  import Logs from "./screens/Logs.svelte";
 
   const screens = [
     { id: "overview", label: "Overview" },
@@ -19,6 +20,7 @@
     { id: "largeBlobs", label: "Large blobs" },
     { id: "config", label: "Config" },
     { id: "lab", label: "Lab" },
+    { id: "logs", label: "Logs" },
   ];
 
   let refreshing = false;
@@ -43,6 +45,10 @@
 
   async function lockSession() {
     await lockSelectedSession();
+  }
+
+  async function openSession() {
+    await openSelectedSession($selectedSelector);
   }
 
   function handleTokenChange(event: Event) {
@@ -96,7 +102,7 @@
           <option value={device.deviceId}>{labelDevice(device)}</option>
         {/each}
       </select>
-      <button type="button" on:click={refresh} disabled={refreshing}>{refreshing ? "Refreshing" : "Refresh"}</button>
+      <button type="button" on:click={refresh} disabled={refreshing}>{refreshing ? "Refreshing devices" : "Refresh devices"}</button>
     </div>
   </header>
 
@@ -107,7 +113,11 @@
       <code>VID {$selectedDevice.vendorId}</code>
       <code>PID {$selectedDevice.productId}</code>
       <StatusBadge value={$sessionStatus.state} label={$sessionStatus.state === "ready" ? "session cached" : sessionStateLabel($sessionStatus.state)} />
-      <button class="quiet compact" type="button" on:click={lockSession} disabled={$sessionStatus.state === "idle" || $sessionStatus.state === "closed"}>Lock session</button>
+      {#if $sessionStatus.state === "closed" || $sessionStatus.state === "stale" || $sessionStatus.state === "error"}
+        <button class="quiet compact" type="button" on:click={openSession} disabled={$sessionBusy}>Open session</button>
+      {:else if $sessionStatus.state === "ready"}
+        <button class="quiet compact" type="button" on:click={lockSession}>Lock session</button>
+      {/if}
     {:else}
       <span>No active authenticator. Plug in a token or refresh discovery.</span>
     {/if}
@@ -140,6 +150,9 @@
     </section>
     <section class:hidden-screen={$activeScreen !== "lab"} class="screen-pane">
       <Lab />
+    </section>
+    <section class:hidden-screen={$activeScreen !== "logs"} class="screen-pane">
+      <Logs />
     </section>
   </main>
 

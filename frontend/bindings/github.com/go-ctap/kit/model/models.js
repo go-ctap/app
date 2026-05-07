@@ -147,13 +147,6 @@ export class OperationEvent {
              */
             this["sampleStatus"] = undefined;
         }
-        if (/** @type {any} */(false)) {
-            /**
-             * @member
-             * @type {ErrorCategory | undefined}
-             */
-            this["errCategory"] = undefined;
-        }
 
         Object.assign(this, $$source);
     }
@@ -179,17 +172,10 @@ export const OperationStage = {
      */
     $zero: "",
 
-    OperationStageOperationStarted: "operation-started",
     OperationStageInteractionRequired: "interaction-required",
     OperationStageEnumeratingRPs: "enumerating-rps",
     OperationStageEnumeratingCredentials: "enumerating-credentials",
-    OperationStageReadingLargeBlobArray: "reading-large-blob-array",
-    OperationStageWritingLargeBlobArray: "writing-large-blob-array",
     OperationStageCapturingBioSample: "capturing-bio-sample",
-    OperationStageOperationCompleted: "operation-completed",
-    OperationStageOperationFailed: "operation-failed",
-    OperationStageOperationCanceled: "operation-canceled",
-    OperationStageSessionInvalidated: "session-invalidated",
 };
 
 /**

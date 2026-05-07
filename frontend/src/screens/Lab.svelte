@@ -1,6 +1,6 @@
 <script lang="ts">
   import { api, bytesFromJSON, parseHexLines, operationFailed } from "../lib/api";
-  import { selectedSelector, selectionVersion, pushToast, sessionBusy, setStatusOutcome, summarizeEnvelope } from "../lib/stores";
+  import { beginOperation, selectedSelector, selectionVersion, pushToast, sessionBusy, setStatusOutcome, summarizeEnvelope } from "../lib/stores";
   import CopyableId from "../components/CopyableId.svelte";
   import EmptyState from "../components/EmptyState.svelte";
   import JsonView from "../components/JsonView.svelte";
@@ -57,6 +57,7 @@
 
   async function previewMake() {
     try {
+      beginOperation("makeCredential preview", "make-result");
       makeResult = await api.makeCredential({ selector, input: makeInput, dryRun: true });
       summarizeEnvelope("makeCredential preview", makeResult, "make-result", previewMake);
     } catch (error) {
@@ -67,6 +68,7 @@
 
   async function runMake() {
     try {
+      beginOperation("makeCredential", "make-result");
       makeResult = await api.makeCredential({ selector, input: makeInput, confirmed: true, confirmationMessage: "make credential" });
       summarizeEnvelope("makeCredential", makeResult, "make-result", runMake);
     } catch (error) {
@@ -77,6 +79,7 @@
 
   async function runGet() {
     try {
+      beginOperation("getAssertion", "assertion-result");
       assertionResult = await api.getAssertion({ selector, input: getInput });
       summarizeEnvelope("getAssertion", assertionResult, "assertion-result", runGet);
     } catch (error) {
@@ -128,7 +131,7 @@
 </section>
 
 {#if !selector}
-  <EmptyState title="No token selected" message="Select an authenticator before running the lab." />
+  <EmptyState eyebrow="No token" title="No token selected" message="Select an authenticator before running the lab." />
 {:else}
   <section class="step-workflow">
     <div class="step-stack">

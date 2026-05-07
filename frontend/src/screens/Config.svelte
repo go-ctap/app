@@ -1,6 +1,6 @@
 <script lang="ts">
   import { api, operationFailed } from "../lib/api";
-  import { selectedSelector, selectionVersion, pushToast, sessionBusy } from "../lib/stores";
+  import { beginOperation, clearSharedCredentialInventory, selectedSelector, selectionVersion, pushToast, sessionBusy, summarizeEnvelope } from "../lib/stores";
   import { reportOf, stateLabel } from "../lib/format";
   import EmptyState from "../components/EmptyState.svelte";
   import JsonView from "../components/JsonView.svelte";
@@ -40,15 +40,32 @@
     bioName = "";
   }
 
+  function operationLabel(kind: string, previewing = false) {
+    const labels: Record<string, string> = {
+      setPin: "Set PIN",
+      changePin: "Change PIN",
+      alwaysUv: "Always UV",
+      minPin: "Minimum PIN length",
+      reset: "Factory reset",
+    };
+    const label = labels[kind] || "Configuration";
+    return previewing ? `${label} preview` : label;
+  }
+
   async function load() {
     if (!selector) return;
     loading = true;
     try {
+      beginOperation("Configuration status");
       envelope = await api.configStatus(selector);
+      summarizeEnvelope("Configuration status", envelope);
+      beginOperation("Biometric list");
       bioEnvelope = await api.bioList(selector);
+      summarizeEnvelope("Biometric list", bioEnvelope);
     } catch (error) {
       envelope = failureEnvelope(error);
       bioEnvelope = null;
+      summarizeEnvelope("Configuration status", envelope);
     } finally {
       loading = false;
     }
@@ -56,48 +73,86 @@
 
   async function runPreview(kind: string) {
     const common = { selector, dryRun: true };
-    if (kind === "setPin") preview = await api.setPIN({ ...common, newPin });
-    if (kind === "changePin") preview = await api.changePIN({ ...common, currentPin, newPin });
-    if (kind === "alwaysUv") preview = await api.setAlwaysUV({ ...common, target: alwaysUv });
-    if (kind === "minPin") {
-      preview = await api.setMinPINLength({
-        ...common,
-        newMinPINLength: Number(minPinLength),
-        minPinLengthRPIDs: rpids.split(",").map((item) => item.trim()).filter(Boolean),
-      });
+    const label = operationLabel(kind, true);
+    try {
+      beginOperation(label);
+      if (kind === "setPin") preview = await api.setPIN({ ...common, newPin });
+      if (kind === "changePin") preview = await api.changePIN({ ...common, currentPin, newPin });
+      if (kind === "alwaysUv") preview = await api.setAlwaysUV({ ...common, target: alwaysUv });
+      if (kind === "minPin") {
+        preview = await api.setMinPINLength({
+          ...common,
+          newMinPINLength: Number(minPinLength),
+          minPinLengthRPIDs: rpids.split(",").map((item) => item.trim()).filter(Boolean),
+        });
+      }
+      if (kind === "reset") preview = await api.resetFactory({ ...common });
+    } catch (error) {
+      preview = failureEnvelope(error);
     }
-    if (kind === "reset") preview = await api.resetFactory({ ...common });
+    summarizeEnvelope(label, preview);
   }
 
   async function execute(kind: string) {
     const common = { selector, confirmed: true, confirmationMessage: kind };
-    if (kind === "setPin") await api.setPIN({ ...common, newPin });
-    if (kind === "changePin") await api.changePIN({ ...common, currentPin, newPin });
-    if (kind === "alwaysUv") await api.setAlwaysUV({ ...common, target: alwaysUv });
-    if (kind === "minPin") {
-      await api.setMinPINLength({
-        ...common,
-        newMinPINLength: Number(minPinLength),
-        minPinLengthRPIDs: rpids.split(",").map((item) => item.trim()).filter(Boolean),
-      });
+    const label = operationLabel(kind);
+    let result: any = null;
+    try {
+      beginOperation(label);
+      if (kind === "setPin") result = await api.setPIN({ ...common, newPin });
+      if (kind === "changePin") result = await api.changePIN({ ...common, currentPin, newPin });
+      if (kind === "alwaysUv") result = await api.setAlwaysUV({ ...common, target: alwaysUv });
+      if (kind === "minPin") {
+        result = await api.setMinPINLength({
+          ...common,
+          newMinPINLength: Number(minPinLength),
+          minPinLengthRPIDs: rpids.split(",").map((item) => item.trim()).filter(Boolean),
+        });
+      }
+      if (kind === "reset") result = await api.resetFactory(common);
+    } catch (error) {
+      result = failureEnvelope(error);
     }
-    if (kind === "reset") await api.resetFactory(common);
     preview = null;
+    if (kind === "reset" && !operationFailed(result)) {
+      clearSharedCredentialInventory(selector);
+    }
     await load();
-    pushToast("Configuration updated");
+    summarizeEnvelope(label, result);
+    if (!operationFailed(result)) {
+      pushToast("Configuration updated");
+    }
   }
 
   async function enrollBio() {
-    preview = await api.bioEnroll({ selector, timeoutMilliseconds: 60000, confirmed: true, confirmationMessage: "enroll biometric" });
-    await load();
+    try {
+      beginOperation("Biometric enroll");
+      preview = await api.bioEnroll({ selector, timeoutMilliseconds: 60000, confirmed: true, confirmationMessage: "enroll biometric" });
+      await load();
+    } catch (error) {
+      preview = failureEnvelope(error);
+    }
+    summarizeEnvelope("Biometric enroll", preview);
   }
 
   async function renameBio(templateIDHex: string) {
-    preview = await api.bioRename({ selector, templateIdHex: templateIDHex, friendlyName: bioName, dryRun: true });
+    try {
+      beginOperation("Biometric rename preview");
+      preview = await api.bioRename({ selector, templateIdHex: templateIDHex, friendlyName: bioName, dryRun: true });
+    } catch (error) {
+      preview = failureEnvelope(error);
+    }
+    summarizeEnvelope("Biometric rename preview", preview);
   }
 
   async function removeBio(templateIDHex: string) {
-    preview = await api.bioRemove({ selector, templateIdHex: templateIDHex, dryRun: true });
+    try {
+      beginOperation("Biometric remove preview");
+      preview = await api.bioRemove({ selector, templateIdHex: templateIDHex, dryRun: true });
+    } catch (error) {
+      preview = failureEnvelope(error);
+    }
+    summarizeEnvelope("Biometric remove preview", preview);
   }
 
   function previewOnEnter(event: KeyboardEvent, kind: string) {
@@ -114,15 +169,15 @@
     <h1>Token switches and safety state</h1>
     <p class="lede">Inspect PIN, UV, biometric, reset, and authenticator configuration. Mutations stay behind previews and explicit confirmation.</p>
   </div>
-  <button type="button" on:click={load} disabled={!selector || loading || $sessionBusy}>{loading ? "Loading" : "Refresh"}</button>
+  <button type="button" on:click={load} disabled={!selector || loading || $sessionBusy}>{loading ? "Reloading config" : "Reload config"}</button>
 </section>
 
 {#if !selector}
-  <EmptyState title="No token selected" message="Select an authenticator to manage configuration." />
+  <EmptyState eyebrow="No token" title="No token selected" message="Select an authenticator to manage configuration." />
 {:else if operationFailed(envelope)}
   <div class="notice danger">{operationFailed(envelope)}</div>
 {:else if !report}
-  <EmptyState title="No config loaded" message="Refresh to read configuration status." />
+  <EmptyState eyebrow="Ready to read" title="No config loaded" message="Reload config to read configuration status." />
 {:else}
   <section class="details-grid">
     <div>

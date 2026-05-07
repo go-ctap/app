@@ -585,6 +585,55 @@ export class InteractionPrompt {
     }
 }
 
+export class LargeBlobGarbageCollectRequest {
+    /**
+     * Creates a new LargeBlobGarbageCollectRequest instance.
+     * @param {Partial<LargeBlobGarbageCollectRequest>} [$$source = {}] - The source object to create the LargeBlobGarbageCollectRequest.
+     */
+    constructor($$source = {}) {
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | undefined}
+             */
+            this["selector"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {boolean | undefined}
+             */
+            this["confirmed"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | undefined}
+             */
+            this["confirmationMessage"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {boolean | undefined}
+             */
+            this["dryRun"] = undefined;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LargeBlobGarbageCollectRequest instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {LargeBlobGarbageCollectRequest}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new LargeBlobGarbageCollectRequest(/** @type {Partial<LargeBlobGarbageCollectRequest>} */($$parsedSource));
+    }
+}
+
 export class LargeBlobMutationRequest {
     /**
      * Creates a new LargeBlobMutationRequest instance.

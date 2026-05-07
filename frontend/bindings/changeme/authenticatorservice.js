@@ -119,6 +119,16 @@ export function Discover(req) {
 }
 
 /**
+ * @param {$models.LargeBlobGarbageCollectRequest} req
+ * @returns {$CancellablePromise<$models.OperationEnvelope>}
+ */
+export function GarbageCollectLargeBlobs(req) {
+    return $Call.ByID(1695547536, req).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType0($result);
+    }));
+}
+
+/**
  * @param {$models.GetAssertionRequest} req
  * @returns {$CancellablePromise<$models.OperationEnvelope>}
  */
@@ -174,6 +184,16 @@ export function LockSession() {
 export function MakeCredential(req) {
     return $Call.ByID(312151421, req).then(/** @type {($result: any) => any} */(($result) => {
         return $$createType0($result);
+    }));
+}
+
+/**
+ * @param {$models.OperationRequest} req
+ * @returns {$CancellablePromise<$models.SessionStatus>}
+ */
+export function OpenSession(req) {
+    return $Call.ByID(2027605130, req).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType2($result);
     }));
 }
 

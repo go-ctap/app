@@ -24,17 +24,10 @@ export function sessionStateLabel(value: unknown) {
 export function operationStageLabel(value: unknown) {
   const raw = String(value || "");
   const labels: Record<string, string> = {
-    "operation-started": "Operation started",
     "interaction-required": "Interaction required",
     "enumerating-rps": "Enumerating relying parties",
     "enumerating-credentials": "Enumerating credentials",
-    "reading-large-blob-array": "Reading large blob array",
-    "writing-large-blob-array": "Writing large blob array",
     "capturing-bio-sample": "Capturing biometric sample",
-    "operation-completed": "Operation completed",
-    "operation-failed": "Operation failed",
-    "operation-canceled": "Operation canceled",
-    "session-invalidated": "Session invalidated",
   };
   return labels[raw] || raw.replaceAll("-", " ") || "Operation running";
 }

@@ -18,6 +18,7 @@ export {
     GetAssertionRequest,
     InteractionAnswer,
     InteractionPrompt,
+    LargeBlobGarbageCollectRequest,
     LargeBlobMutationRequest,
     LargeBlobReadRequest,
     MakeCredentialRequest,

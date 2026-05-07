@@ -58,3 +58,5 @@ require (
 )
 
 replace github.com/go-ctap/kit => ../ctapkit
+
+replace github.com/go-ctap/ctaphid => ../go-ctaphid
