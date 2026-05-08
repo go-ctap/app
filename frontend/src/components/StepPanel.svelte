@@ -1,13 +1,21 @@
 <script lang="ts">
-  export let step = "1";
-  export let title = "";
-  export let active = false;
+  import type { Snippet } from "svelte";
+  import * as Card from "$lib/components/ui/card/index.js";
+
+  type Props = {
+    step?: string;
+    title?: string;
+    active?: boolean;
+    children?: Snippet;
+  };
+
+  let { step = "1", title = "", active = false, children }: Props = $props();
 </script>
 
-<section class:active class="step-panel">
+<Card.Root class={`step-panel ${active ? "active" : ""}`}>
   <div class="step-kicker">
     <span>{step}</span>
     <strong>{title}</strong>
   </div>
-  <slot />
-</section>
+  {@render children?.()}
+</Card.Root>

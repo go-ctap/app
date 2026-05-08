@@ -1,13 +1,16 @@
 <script lang="ts">
   import { api } from "../lib/api";
   import { pendingInteraction } from "../lib/stores";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Field from "$lib/components/ui/field/index.js";
+  import { Input } from "$lib/components/ui/input/index.js";
   import DialogShell from "./DialogShell.svelte";
 
-  let pin = "";
+  let pin = $state("");
 
-  $: prompt = $pendingInteraction;
-  $: kind = prompt?.request?.kind || "confirm";
-  $: destructive = Boolean(prompt?.request?.destructive);
+  let prompt = $derived($pendingInteraction);
+  let kind = $derived(prompt?.request?.kind || "confirm");
+  let destructive = $derived(Boolean(prompt?.request?.destructive));
 
   async function answer(confirmed: boolean, canceled = false) {
     if (!prompt) return;
@@ -27,8 +30,8 @@
     title={destructive ? "Confirm destructive operation" : "Authenticator needs you"}
     eyebrow={kind}
     destructive={destructive}
-    on:primary={() => answer(true)}
-    on:close={() => answer(false, true)}
+    primary={() => answer(true)}
+    close={() => answer(false, true)}
   >
       <p>{prompt.request.message || "Continue on the authenticator to proceed."}</p>
 
@@ -41,17 +44,19 @@
       {/if}
 
       {#if kind === "pin"}
-        <label>
-          PIN
-          <input bind:value={pin} type="password" autocomplete="off" />
-        </label>
+        <Field.Field>
+          <Field.Label>PIN</Field.Label>
+          <Input bind:value={pin} type="password" autocomplete="off" />
+        </Field.Field>
       {/if}
 
-      <div class="actions" slot="actions">
-        <button data-primary class:danger={destructive} type="button" on:click={() => answer(true)}>
+      {#snippet actions()}
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <Button variant={destructive ? "destructive" : "default"} onclick={() => answer(true)}>
           {kind === "pin" ? "Send PIN" : "Continue"}
-        </button>
-        <button class="quiet" type="button" on:click={() => answer(false, true)}>Cancel</button>
+        </Button>
+        <Button variant="ghost" onclick={() => answer(false, true)}>Cancel</Button>
       </div>
+      {/snippet}
   </DialogShell>
 {/if}

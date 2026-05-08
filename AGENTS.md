@@ -22,8 +22,15 @@
 - Mutating or destructive authenticator actions need preview/confirmation semantics that match `ctapkit`.
 
 ## Frontend / Wails
-- The frontend is expected to move to `shadcn-svelte` soon. Prefer changes that make that migration easier; do not over-invest in the current custom UI primitives.
+- Build new frontend UI around `shadcn-svelte` components first, not around the current legacy visual design. Treat the app as greenfield when that produces a cleaner product surface.
+- Keep custom styling minimal: prefer shadcn component composition plus Tailwind utilities in Svelte markup. Add CSS/component abstractions only for repeated product patterns that shadcn does not cover cleanly.
+- Avoid spreading `clsx`/`tailwind-merge` into screen code. It is acceptable inside generated shadcn primitives and small shared helpers, but product layout should stay readable and Tailwind-first.
 - When working on Svelte or SvelteKit code, use the Svelte MCP server: start with `list-sections`, fetch relevant docs with `get-documentation`, and run `svelte-autofixer` on generated Svelte code until it reports no issues.
+- For `shadcn-svelte` work, treat `https://shadcn-svelte.com/llms.txt` as the official docs index.
+- Before adding or changing a `shadcn-svelte` component, fetch only the relevant `.md` docs from that index.
+- Prefer the `shadcn-svelte` CLI for component installation instead of hand-copying component trees.
+- In this Wails/Vite app, run `shadcn-svelte` CLI commands from `frontend/` or pass `--cwd frontend`.
+- Use Svelte MCP for Svelte syntax/autofix, and `shadcn-svelte` docs for component API, CLI, theming, and registry behavior.
 - Inspect frontend behavior through the full Wails dev runtime, not plain Vite preview.
 - Run `wails3 dev` or `task dev` from the repo root, read the printed URL, and open that exact URL in the in-app browser.
 - If Wails dev is already running, reuse its URL from terminal output/logs instead of starting another server.

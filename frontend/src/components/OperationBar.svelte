@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { Button } from "$lib/components/ui/button/index.js";
   import { api } from "../lib/api";
   import { operationStatus } from "../lib/stores";
 
-  $: event = $operationStatus?.event;
-  $: label = event?.message || event?.stage || "Ready";
+  let event = $derived($operationStatus?.event);
+  let label = $derived(event?.message || event?.stage || "Ready");
 
   async function cancel() {
     if ($operationStatus?.operationId) {
@@ -20,6 +21,6 @@
         <span>{event.completed} / {event.total}</span>
       {/if}
     </div>
-    <button class="quiet danger" type="button" on:click={cancel}>Cancel</button>
+    <Button variant="destructive" type="button" onclick={cancel}>Cancel</Button>
   </div>
 {/if}

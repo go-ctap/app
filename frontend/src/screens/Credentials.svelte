@@ -1,32 +1,50 @@
 <script lang="ts">
   import { get } from "svelte/store";
-  import { api, operationFailed } from "../lib/api";
+  import { api, operationFailed } from "$lib/api";
   import { beginOperation, clearSharedCredentialInventory, credentialGroupsFromRows, credentialsScreenCache, emptyCredentialsState, selectedSelector, selectionVersion, pushToast, sessionStatus, sharedCredentialInventoryCache, sessionBusy, setCredentialsScreenState, sharedInventoryFor, summarizeEnvelope, updateSharedCredentialInventory } from "../lib/stores";
-  import { asList, reportOf } from "../lib/format";
+  import { asList, reportOf } from "$lib/format";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
+  import * as Field from "$lib/components/ui/field/index.js";
+  import { Input } from "$lib/components/ui/input/index.js";
   import CopyableId from "../components/CopyableId.svelte";
   import DialogShell from "../components/DialogShell.svelte";
   import EmptyState from "../components/EmptyState.svelte";
   import JsonView from "../components/JsonView.svelte";
+  import Notice from "../components/Notice.svelte";
+  import ScreenHeader from "../components/ScreenHeader.svelte";
   import StatusBadge from "../components/StatusBadge.svelte";
 
-  let loading = false;
-  let envelope: any = null;
-  let preview: any = null;
-  let editing: any = null;
-  let displayName = "";
-  let name = "";
-  let userIDHex = "";
-  let cacheSelector = "";
-  let cacheVersion = -1;
-  let warmReloadKey = "";
+  let loading = $state(false);
+  let envelope: any = $state(null);
+  let preview: any = $state(null);
+  let editing: any = $state(null);
+  let displayName = $state("");
+  let name = $state("");
+  let userIDHex = $state("");
+  let cacheSelector = $state("");
+  let cacheVersion = $state(-1);
+  let warmReloadKey = $state("");
 
-  $: selector = $selectedSelector;
-  $: if (selector !== cacheSelector) restoreState(selector);
-  $: if ($selectionVersion !== cacheVersion) restoreState(selector);
-  $: if (selector && $sharedCredentialInventoryCache && !loading) hydrateFromSharedInventory(selector);
-  $: if (selector && selector === cacheSelector) persistState();
-  $: report = reportOf(envelope);
-  $: groups = asList(report?.groups);
+  let selector = $derived($selectedSelector);
+  let report = $derived(reportOf(envelope));
+  let groups = $derived(asList(report?.groups));
+
+  $effect(() => {
+    if (selector !== cacheSelector) restoreState(selector);
+  });
+
+  $effect(() => {
+    if ($selectionVersion !== cacheVersion) restoreState(selector);
+  });
+
+  $effect(() => {
+    if (selector && $sharedCredentialInventoryCache && !loading) hydrateFromSharedInventory(selector);
+  });
+
+  $effect(() => {
+    if (selector && selector === cacheSelector) persistState();
+  });
 
   function failureEnvelope(error: unknown) {
     const message = error instanceof Error ? error.message : String(error || "Operation failed");
@@ -192,52 +210,66 @@
   }
 </script>
 
-<section class="screen-band">
-  <div>
-    <p class="eyebrow">Resident credentials</p>
-    <h1>Passkeys stored on the token</h1>
-    <p class="lede">Browse discoverable credentials by relying party, update the friendly user fields, or delete stale entries after a backend preview.</p>
-  </div>
-  <button type="button" on:click={load} disabled={!selector || loading || $sessionBusy}>{loading ? "Reloading credentials" : "Reload credentials"}</button>
-</section>
+<ScreenHeader eyebrow="Resident credentials" title="Passkeys stored on the token" description="Browse discoverable credentials by relying party, update the friendly user fields, or delete stale entries after a backend preview.">
+  {#snippet actions()}
+    <Button onclick={load} disabled={!selector || loading || $sessionBusy}>{loading ? "Reloading credentials" : "Reload credentials"}</Button>
+  {/snippet}
+</ScreenHeader>
 
 {#if !selector}
   <EmptyState eyebrow="No token" title="No token selected" message="Select an authenticator to list resident credentials." />
 {:else if operationFailed(envelope)}
-  <div class="notice danger">{operationFailed(envelope)}</div>
+  <Notice variant="destructive">{operationFailed(envelope)}</Notice>
 {:else if groups.length === 0}
   <EmptyState eyebrow="Ready to load" title="No credential inventory loaded" message="Reload credentials to ask the token for resident credentials. Unsupported tokens will explain their support state here." />
 {:else}
-  <div class="summary-line">
-    <span>{report?.summary?.totalRPs || 0} relying parties</span>
-    <span>{report?.summary?.totalCredentials || 0} credentials</span>
-    <StatusBadge value={report?.support?.credentialManagement} label={`Management: ${report?.support?.credentialManagement ? "available" : "unavailable"}`} />
+  <div class="grid gap-3 md:grid-cols-3">
+    <Card.Root size="sm">
+      <Card.Header>
+        <Card.Description>Relying parties</Card.Description>
+        <Card.Title>{report?.summary?.totalRPs || 0}</Card.Title>
+      </Card.Header>
+    </Card.Root>
+    <Card.Root size="sm">
+      <Card.Header>
+        <Card.Description>Credentials</Card.Description>
+        <Card.Title>{report?.summary?.totalCredentials || 0}</Card.Title>
+      </Card.Header>
+    </Card.Root>
+    <Card.Root size="sm">
+      <Card.Header>
+        <Card.Description>Management</Card.Description>
+        <StatusBadge value={report?.support?.credentialManagement} label={report?.support?.credentialManagement ? "available" : "unavailable"} />
+      </Card.Header>
+    </Card.Root>
   </div>
 
-  <section id="credential-inventory" class="list-section workbench-list">
-    <div class="section-heading list-heading">
-      <div>
-        <h2>Credential inventory</h2>
-        <p class="muted">Grouped by relying party</p>
+  <Card.Root id="credential-inventory">
+    <Card.Header class="flex-row items-start justify-between gap-3">
+      <div class="grid gap-1">
+        <Card.Title>Credential inventory</Card.Title>
+        <Card.Description>Grouped by relying party</Card.Description>
       </div>
-      <span class="muted">{groups.length} relying part{groups.length === 1 ? "y" : "ies"}</span>
-    </div>
-    {#each groups as group}
-      <section class="rp-group">
-        <div class="group-heading">
+      <span class="text-sm text-muted-foreground">{groups.length} relying part{groups.length === 1 ? "y" : "ies"}</span>
+    </Card.Header>
+    <Card.Content class="grid gap-4">
+    {#each groups as group (group.rpID || group.rpName)}
+      <Card.Root size="sm" class="bg-background">
+        <Card.Header class="flex-row items-start justify-between gap-3">
           <div>
-            <h3>{group.rpName || group.rpID}</h3>
-            <p class="muted">{group.rpID}</p>
+            <Card.Title class="text-base">{group.rpName || group.rpID}</Card.Title>
+            <Card.Description>{group.rpID}</Card.Description>
           </div>
-          <span>{asList(group.credentials).length} credential(s)</span>
-        </div>
-        {#each asList(group.credentials) as credential}
-          <article class="row inventory-row">
-            <div class="row-main">
-              <strong>{credential.displayName || credential.userName || "Unnamed user"}</strong>
-              <div class="row-meta">
-                <CopyableId label="Credential ID" value={credential.credentialIDHex} on:copied={() => pushToast("Credential ID copied")} />
-                <CopyableId label="User ID" value={credential.userIDHex} empty="no user id" on:copied={() => pushToast("User ID copied")} />
+          <span class="text-sm text-muted-foreground">{asList(group.credentials).length} credential(s)</span>
+        </Card.Header>
+        <Card.Content class="grid gap-2">
+        {#each asList(group.credentials) as credential (credential.credentialIDHex || credential.id)}
+          <article class="grid gap-3 rounded-md border border-border p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+            <div class="grid min-w-0 gap-3">
+              <strong class="text-sm font-medium text-foreground">{credential.displayName || credential.userName || "Unnamed user"}</strong>
+              <div class="flex flex-wrap items-center gap-2">
+                <CopyableId label="Credential ID" value={credential.credentialIDHex} copied={() => pushToast("Credential ID copied")} />
+                <CopyableId label="User ID" value={credential.userIDHex} empty="no user id" copied={() => pushToast("User ID copied")} />
                 <StatusBadge value={credential.largeBlobKeyState || "unknown"} label={`blob key ${credential.largeBlobKeyState || "unknown"}`} />
               </div>
               <details class="details-toggle">
@@ -245,39 +277,56 @@
                 <JsonView value={credential} title="Credential JSON" />
               </details>
             </div>
-            <div class="actions">
-              <button class="compact" type="button" on:click={() => startEdit(credential)} disabled={$sessionBusy}>Edit</button>
-              <button class="compact danger" type="button" on:click={() => previewDelete(credential)} disabled={$sessionBusy}>Delete</button>
+            <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+              <Button size="sm" variant="outline" onclick={() => startEdit(credential)} disabled={$sessionBusy}>Edit</Button>
+              <Button size="sm" variant="destructive" onclick={() => previewDelete(credential)} disabled={$sessionBusy}>Delete</Button>
             </div>
           </article>
         {/each}
-      </section>
+        </Card.Content>
+      </Card.Root>
     {/each}
-  </section>
+    </Card.Content>
+  </Card.Root>
 {/if}
 
 {#if editing}
-  <DialogShell title="Edit credential user" wide on:close={() => (editing = null)}>
-      <label>User ID hex <input bind:value={userIDHex} /></label>
-      <label>Name <input bind:value={name} /></label>
-      <label>Display name <input bind:value={displayName} /></label>
+  <DialogShell title="Edit credential user" wide close={() => (editing = null)}>
+      <Field.Group>
+        <Field.Field>
+          <Field.Label>User ID hex</Field.Label>
+          <Input bind:value={userIDHex} />
+        </Field.Field>
+        <Field.Field>
+          <Field.Label>Name</Field.Label>
+          <Input bind:value={name} />
+        </Field.Field>
+        <Field.Field>
+          <Field.Label>Display name</Field.Label>
+          <Input bind:value={displayName} />
+        </Field.Field>
+      </Field.Group>
       {#if preview}
         <JsonView value={preview.result || preview} title="Update preview" />
       {/if}
-      <div class="actions" slot="actions">
-        <button type="button" on:click={previewUpdate}>Preview</button>
-        <button data-primary type="button" on:click={executeUpdate} disabled={!preview}>Confirm update</button>
-        <button class="quiet" type="button" on:click={() => (editing = null)}>Close</button>
+      {#snippet actions()}
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <Button variant="outline" onclick={previewUpdate}>Preview</Button>
+        <Button onclick={executeUpdate} disabled={!preview}>Confirm update</Button>
+        <Button variant="ghost" onclick={() => (editing = null)}>Close</Button>
       </div>
+      {/snippet}
   </DialogShell>
 {/if}
 
 {#if preview && !editing}
-  <DialogShell title="Delete credential preview" wide destructive on:close={() => (preview = null)}>
+  <DialogShell title="Delete credential preview" wide destructive close={() => (preview = null)}>
       <JsonView value={preview.result || preview} title="Deletion preview" />
-      <div class="actions" slot="actions">
-        <button data-primary class="danger" type="button" on:click={executeDelete}>Confirm delete</button>
-        <button class="quiet" type="button" on:click={() => (preview = null)}>Cancel</button>
+      {#snippet actions()}
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <Button variant="destructive" onclick={executeDelete}>Confirm delete</Button>
+        <Button variant="ghost" onclick={() => (preview = null)}>Cancel</Button>
       </div>
+      {/snippet}
   </DialogShell>
 {/if}

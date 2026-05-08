@@ -1,48 +1,63 @@
 <script lang="ts">
   import { api, bytesFromJSON, parseHexLines, operationFailed } from "../lib/api";
   import { beginOperation, selectedSelector, selectionVersion, pushToast, sessionBusy, setStatusOutcome, summarizeEnvelope } from "../lib/stores";
+  import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
+  import { Badge } from "$lib/components/ui/badge/index.js";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
+  import { Checkbox } from "$lib/components/ui/checkbox/index.js";
+  import * as Field from "$lib/components/ui/field/index.js";
+  import { Input } from "$lib/components/ui/input/index.js";
+  import { Textarea } from "$lib/components/ui/textarea/index.js";
   import CopyableId from "../components/CopyableId.svelte";
   import EmptyState from "../components/EmptyState.svelte";
   import JsonView from "../components/JsonView.svelte";
+  import ScreenHeader from "../components/ScreenHeader.svelte";
   import StepPanel from "../components/StepPanel.svelte";
 
-  let rpID = "example.com";
-  let rpName = "Example";
-  let userIDHex = "01";
-  let userName = "alice";
-  let displayName = "Alice";
-  let challenge = "manual-lab-challenge";
-  let algorithms = "-7,-257";
-  let excludeList = "";
-  let allowList = "";
-  let residentKey = true;
-  let userVerification = true;
-  let makeResult: any = null;
-  let assertionResult: any = null;
+  let rpID = $state("example.com");
+  let rpName = $state("Example");
+  let userIDHex = $state("01");
+  let userName = $state("alice");
+  let displayName = $state("Alice");
+  let challenge = $state("manual-lab-challenge");
+  let algorithms = $state("-7,-257");
+  let excludeList = $state("");
+  let allowList = $state("");
+  let residentKey = $state(true);
+  let userVerification = $state(true);
+  let makeResult: any = $state(null);
+  let assertionResult: any = $state(null);
+  let lastSelectionVersion = $selectionVersion;
 
-  $: selector = $selectedSelector;
-  $: if ($selectionVersion) resetResults();
-  $: clientData = { type: "webauthn.create", challenge, origin: `https://${rpID}` };
-  $: getClientData = { type: "webauthn.get", challenge, origin: `https://${rpID}` };
-  $: makeInput = {
+  let selector = $derived($selectedSelector);
+  let clientData = $derived({ type: "webauthn.create", challenge, origin: `https://${rpID}` });
+  let getClientData = $derived({ type: "webauthn.get", challenge, origin: `https://${rpID}` });
+  let makeInput = $derived({
     rp: { id: rpID, name: rpName },
     user: { userIDHex, name: userName, displayName },
     clientDataJSON: bytesFromJSON(clientData),
     pubKeyCredParams: algorithms.split(",").map((alg) => ({ type: "public-key", alg: Number(alg.trim()) })).filter((item) => item.alg),
     excludeList: parseHexLines(excludeList),
     options: { residentKey, userPresence: true, userVerification },
-  };
-  $: getInput = {
+  });
+  let getInput = $derived({
     rpID,
     clientDataJSON: bytesFromJSON(getClientData),
     allowList: parseHexLines(allowList),
     options: { userPresence: true, userVerification },
-  };
-  $: createdCredentialID = findCredentialID(makeResult?.result || makeResult);
-  $: makeReport = makeResult?.result || makeResult;
-  $: assertionReport = assertionResult?.result || assertionResult;
-  $: makeBytes = makeInput.clientDataJSON?.length || 0;
-  $: getBytes = getInput.clientDataJSON?.length || 0;
+  });
+  let createdCredentialID = $derived(findCredentialID(makeResult?.result || makeResult));
+  let makeReport = $derived(makeResult?.result || makeResult);
+  let assertionReport = $derived(assertionResult?.result || assertionResult);
+  let makeBytes = $derived(makeInput.clientDataJSON?.length || 0);
+  let getBytes = $derived(getInput.clientDataJSON?.length || 0);
+
+  $effect(() => {
+    if ($selectionVersion === lastSelectionVersion) return;
+    lastSelectionVersion = $selectionVersion;
+    resetResults();
+  });
 
   function failureEnvelope(error: unknown) {
     const message = error instanceof Error ? error.message : String(error || "Operation failed");
@@ -122,13 +137,7 @@
   }
 </script>
 
-<section class="screen-band">
-  <div>
-    <p class="eyebrow">WebAuthn lab</p>
-    <h1>Build CTAP WebAuthn operations by hand</h1>
-    <p class="lede">Create raw makeCredential and getAssertion requests with visible normalized JSON before they touch the authenticator.</p>
-  </div>
-</section>
+<ScreenHeader eyebrow="WebAuthn lab" title="Build CTAP WebAuthn operations by hand" description="Create raw makeCredential and getAssertion requests with visible normalized JSON before they touch the authenticator." />
 
 {#if !selector}
   <EmptyState eyebrow="No token" title="No token selected" message="Select an authenticator before running the lab." />
@@ -136,25 +145,34 @@
   <section class="step-workflow">
     <div class="step-stack">
       <StepPanel step="1" title="makeCredential" active>
-        <div class="form-grid">
-          <label>RP ID <input bind:value={rpID} on:keydown={previewOnEnter} /></label>
-          <label>RP name <input bind:value={rpName} on:keydown={previewOnEnter} /></label>
-          <label>Challenge <input bind:value={challenge} on:keydown={previewOnEnter} /></label>
-          <label>User ID hex <input bind:value={userIDHex} on:keydown={previewOnEnter} /></label>
-          <label>User name <input bind:value={userName} on:keydown={previewOnEnter} /></label>
-          <label>Display name <input bind:value={displayName} on:keydown={previewOnEnter} /></label>
-          <label>Algorithms <input bind:value={algorithms} on:keydown={previewOnEnter} /></label>
-        </div>
-        <div class="row-meta">
-          <label><input type="checkbox" bind:checked={residentKey} /> Resident key</label>
-          <label><input type="checkbox" bind:checked={userVerification} /> User verification</label>
-        </div>
-        <label>Exclude credential IDs, one per line
-          <textarea bind:value={excludeList} rows="3" on:keydown={(event) => textareaPrimary(event, previewMake)}></textarea>
-        </label>
-        <div class="actions">
-          <button type="button" on:click={previewMake} disabled={$sessionBusy}>Preview</button>
-          <button type="button" on:click={runMake} disabled={$sessionBusy}>Run makeCredential</button>
+        <Field.Group>
+          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <Field.Field><Field.Label>RP ID</Field.Label><Input bind:value={rpID} onkeydown={previewOnEnter} /></Field.Field>
+            <Field.Field><Field.Label>RP name</Field.Label><Input bind:value={rpName} onkeydown={previewOnEnter} /></Field.Field>
+            <Field.Field><Field.Label>Challenge</Field.Label><Input bind:value={challenge} onkeydown={previewOnEnter} /></Field.Field>
+            <Field.Field><Field.Label>User ID hex</Field.Label><Input bind:value={userIDHex} onkeydown={previewOnEnter} /></Field.Field>
+            <Field.Field><Field.Label>User name</Field.Label><Input bind:value={userName} onkeydown={previewOnEnter} /></Field.Field>
+            <Field.Field><Field.Label>Display name</Field.Label><Input bind:value={displayName} onkeydown={previewOnEnter} /></Field.Field>
+            <Field.Field><Field.Label>Algorithms</Field.Label><Input bind:value={algorithms} onkeydown={previewOnEnter} /></Field.Field>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <Field.Field orientation="horizontal">
+              <Checkbox bind:checked={residentKey} />
+              <Field.Label>Resident key</Field.Label>
+            </Field.Field>
+            <Field.Field orientation="horizontal">
+              <Checkbox bind:checked={userVerification} />
+              <Field.Label>User verification</Field.Label>
+            </Field.Field>
+          </div>
+          <Field.Field>
+            <Field.Label>Exclude credential IDs, one per line</Field.Label>
+            <Textarea bind:value={excludeList} rows={3} onkeydown={(event) => textareaPrimary(event, previewMake)} />
+          </Field.Field>
+        </Field.Group>
+        <div class="flex flex-wrap gap-2">
+          <Button variant="outline" onclick={previewMake} disabled={$sessionBusy}>Preview</Button>
+          <Button onclick={runMake} disabled={$sessionBusy}>Run makeCredential</Button>
         </div>
         <div id="make-result" class="step-result">
           <div class="section-heading">
@@ -162,16 +180,16 @@
             <span class="muted">{makeBytes} client-data bytes</span>
           </div>
           {#if operationFailed(makeResult)}
-            <div class="notice danger">{operationFailed(makeResult)}</div>
+            <Alert variant="destructive"><AlertDescription>{operationFailed(makeResult)}</AlertDescription></Alert>
           {:else if makeResult}
-            <div class="metric-band">
-              <span>{createdCredentialID ? "Credential created" : "Preview ready"}</span>
-              <span>{makeInput.pubKeyCredParams.length} algorithm(s)</span>
-              <span>{makeInput.excludeList.length} excluded</span>
+            <div class="flex flex-wrap gap-2">
+              <Badge variant="secondary">{createdCredentialID ? "Credential created" : "Preview ready"}</Badge>
+              <Badge variant="outline">{makeInput.pubKeyCredParams.length} algorithm(s)</Badge>
+              <Badge variant="outline">{makeInput.excludeList.length} excluded</Badge>
             </div>
             {#if createdCredentialID}
-              <CopyableId label="Credential ID" value={createdCredentialID} on:copied={() => pushToast("Credential ID copied")} />
-              <button type="button" on:click={useCreatedCredential}>Use in getAssertion</button>
+              <CopyableId label="Credential ID" value={createdCredentialID} copied={() => pushToast("Credential ID copied")} />
+              <Button class="w-fit" variant="outline" onclick={useCreatedCredential}>Use in getAssertion</Button>
             {/if}
             <details class="technical">
               <summary>Raw makeCredential output</summary>
@@ -185,41 +203,44 @@
 
       <StepPanel step="2" title="getAssertion" active={Boolean(createdCredentialID || allowList)}>
         {#if createdCredentialID}
-          <div class="notice">
-            <CopyableId label="Created credential" value={createdCredentialID} on:copied={() => pushToast("Credential ID copied")} />
-            <button type="button" on:click={useCreatedCredential}>Use in allow list</button>
-          </div>
+          <Alert>
+            <AlertDescription class="grid gap-2">
+            <CopyableId label="Created credential" value={createdCredentialID} copied={() => pushToast("Credential ID copied")} />
+            <Button class="w-fit" variant="outline" onclick={useCreatedCredential}>Use in allow list</Button>
+            </AlertDescription>
+          </Alert>
         {:else}
           <p class="muted">Leave the allow list empty to ask the authenticator to choose a matching credential for the RP ID.</p>
         {/if}
-        <label>Allow credential IDs, one per line
-          <textarea bind:value={allowList} rows="6" on:keydown={(event) => textareaPrimary(event, runGet)}></textarea>
-        </label>
-        <button type="button" on:click={runGet} disabled={$sessionBusy}>Run getAssertion</button>
+        <Field.Field>
+          <Field.Label>Allow credential IDs, one per line</Field.Label>
+          <Textarea bind:value={allowList} rows={6} onkeydown={(event) => textareaPrimary(event, runGet)} />
+        </Field.Field>
+        <Button class="w-fit" onclick={runGet} disabled={$sessionBusy}>Run getAssertion</Button>
         <div id="assertion-result" class="step-result">
           <div class="section-heading">
             <h3>getAssertion result</h3>
             <span class="muted">{getBytes} client-data bytes</span>
           </div>
           {#if operationFailed(assertionResult)}
-            <div class="notice danger">{operationFailed(assertionResult)}</div>
+            <Alert variant="destructive"><AlertDescription>{operationFailed(assertionResult)}</AlertDescription></Alert>
           {:else if assertionResult}
-            <div class="metric-band">
-              <span>Assertion returned</span>
-              <span>{getInput.allowList.length} allow-list item(s)</span>
-              <span>{userVerification ? "UV requested" : "UV optional"}</span>
+            <div class="flex flex-wrap gap-2">
+              <Badge variant="secondary">Assertion returned</Badge>
+              <Badge variant="outline">{getInput.allowList.length} allow-list item(s)</Badge>
+              <Badge variant="outline">{userVerification ? "UV requested" : "UV optional"}</Badge>
             </div>
             {#if assertionReport?.credentialIDHex || assertionReport?.credentialIdHex}
-              <CopyableId label="Credential ID" value={assertionReport?.credentialIDHex || assertionReport?.credentialIdHex} on:copied={() => pushToast("Credential ID copied")} />
+              <CopyableId label="Credential ID" value={assertionReport?.credentialIDHex || assertionReport?.credentialIdHex} copied={() => pushToast("Credential ID copied")} />
             {/if}
             {#if assertionReport?.signatureHex}
-              <CopyableId label="Signature" value={assertionReport.signatureHex} on:copied={() => pushToast("Signature copied")} />
+              <CopyableId label="Signature" value={assertionReport.signatureHex} copied={() => pushToast("Signature copied")} />
             {/if}
             {#if assertionReport?.authenticatorDataHex}
-              <CopyableId label="Authenticator data" value={assertionReport.authenticatorDataHex} on:copied={() => pushToast("Authenticator data copied")} />
+              <CopyableId label="Authenticator data" value={assertionReport.authenticatorDataHex} copied={() => pushToast("Authenticator data copied")} />
             {/if}
             {#if assertionReport?.clientDataJSONHex}
-              <CopyableId label="Client data" value={assertionReport.clientDataJSONHex} on:copied={() => pushToast("Client data copied")} />
+              <CopyableId label="Client data" value={assertionReport.clientDataJSONHex} copied={() => pushToast("Client data copied")} />
             {/if}
             <details class="technical">
               <summary>Raw getAssertion output</summary>
@@ -233,16 +254,16 @@
     </div>
 
     <aside class="inspector-rail">
-      <section class="json-view">
-        <div class="section-heading">
-          <h3>Artifacts</h3>
-        </div>
-        <div class="artifact-list">
-          <div class="artifact-row"><span>makeCredential client data</span><strong>{makeBytes} bytes</strong></div>
-          <div class="artifact-row"><span>getAssertion client data</span><strong>{getBytes} bytes</strong></div>
-          <div class="artifact-row"><span>Allow list</span><strong>{getInput.allowList.length} item(s)</strong></div>
-        </div>
-      </section>
+      <Card.Root>
+        <Card.Header>
+          <Card.Title>Artifacts</Card.Title>
+        </Card.Header>
+        <Card.Content class="grid gap-2">
+          <div class="flex items-center justify-between gap-3 rounded-md border border-border p-2"><span>makeCredential client data</span><strong>{makeBytes} bytes</strong></div>
+          <div class="flex items-center justify-between gap-3 rounded-md border border-border p-2"><span>getAssertion client data</span><strong>{getBytes} bytes</strong></div>
+          <div class="flex items-center justify-between gap-3 rounded-md border border-border p-2"><span>Allow list</span><strong>{getInput.allowList.length} item(s)</strong></div>
+        </Card.Content>
+      </Card.Root>
       <details class="technical" open>
         <summary>Normalized inputs</summary>
         <JsonView value={makeInput} title="makeCredential input" />

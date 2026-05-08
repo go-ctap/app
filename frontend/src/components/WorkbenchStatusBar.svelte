@@ -1,22 +1,24 @@
 <script lang="ts">
+  import { Button } from "$lib/components/ui/button/index.js";
+  import { Progress } from "$lib/components/ui/progress/index.js";
   import { api } from "../lib/api";
   import { lockSelectedSession, openSelectedSession, refreshDiscovery } from "../lib/controller";
   import { focusLogEntry, selectedDevice, selectedSelector, sessionStatus, statusBar } from "../lib/stores";
   import { labelDevice, operationStageLabel, sessionStateLabel } from "../lib/format";
   import StatusBadge from "./StatusBadge.svelte";
 
-  $: operation = $statusBar.activeOperation;
-  $: event = operation?.event;
-  $: outcome = $statusBar.lastOutcome;
-  $: hasContext = Boolean($selectedSelector || operation || outcome || $sessionStatus.state !== "idle");
-  $: title = event?.message || operationStageLabel(event?.stage) || outcome?.title || "Workbench ready";
-  $: message = operation
+  let operation = $derived($statusBar.activeOperation);
+  let event = $derived(operation?.event);
+  let outcome = $derived($statusBar.lastOutcome);
+  let hasContext = $derived(Boolean($selectedSelector || operation || outcome || $sessionStatus.state !== "idle"));
+  let title = $derived(event?.message || operationStageLabel(event?.stage) || outcome?.title || "Workbench ready");
+  let message = $derived(operation
     ? progressLabel(event)
-    : outcome?.message || ($selectedDevice ? labelDevice($selectedDevice) : "Select a token to begin.");
-  $: detailLogEntryId = operation?.logEntryId || outcome?.logEntryId;
-  $: needsRefreshRecovery = $sessionStatus.state === "stale" || $sessionStatus.state === "error" || outcome?.title === "Discovery issue";
-  $: canOpenSession = Boolean($selectedSelector) && ["closed", "stale", "error"].includes($sessionStatus.state || "");
-  $: canLockSession = $sessionStatus.state === "ready";
+    : outcome?.message || ($selectedDevice ? labelDevice($selectedDevice) : "Select a token to begin."));
+  let detailLogEntryId = $derived(operation?.logEntryId || outcome?.logEntryId);
+  let needsRefreshRecovery = $derived($sessionStatus.state === "stale" || $sessionStatus.state === "error" || outcome?.title === "Discovery issue");
+  let canOpenSession = $derived(Boolean($selectedSelector) && ["closed", "stale", "error"].includes($sessionStatus.state || ""));
+  let canLockSession = $derived($sessionStatus.state === "ready");
 
   function progressLabel(value: any) {
     if (!value) return "";
@@ -51,35 +53,38 @@
         {#if message}
           <span>{message}</span>
         {/if}
+        {#if operation?.event?.completed !== undefined && operation?.event?.total}
+          <Progress value={operation.event.completed} max={operation.event.total} />
+        {/if}
       </div>
     </div>
 
     <div class="status-actions">
       {#if operation}
         {#if detailLogEntryId}
-          <button class="quiet" type="button" on:click={() => viewDetails(detailLogEntryId)}>View details</button>
+          <Button variant="outline" size="sm" type="button" onclick={() => viewDetails(detailLogEntryId)}>View details</Button>
         {/if}
         {#if operation.operationId}
-          <button class="quiet danger" type="button" on:click={cancel}>Cancel</button>
+          <Button variant="destructive" size="sm" type="button" onclick={cancel}>Cancel</Button>
         {/if}
       {:else}
         {#if detailLogEntryId}
-          <button class="quiet" type="button" on:click={() => viewDetails(detailLogEntryId)}>View details</button>
+          <Button variant="outline" size="sm" type="button" onclick={() => viewDetails(detailLogEntryId)}>View details</Button>
         {/if}
         {#if outcome?.retry}
-          <button class="quiet" type="button" on:click={outcome.retry}>Retry</button>
+          <Button variant="outline" size="sm" type="button" onclick={outcome.retry}>Retry</Button>
         {/if}
-        {#each $statusBar.actions as action}
-          <button class:danger={action.tone === "danger"} class:quiet={action.tone !== "default"} type="button" on:click={() => runAction(action)}>{action.label}</button>
+        {#each $statusBar.actions as action (action.id)}
+          <Button variant={action.tone === "danger" ? "destructive" : action.tone === "default" ? "default" : "outline"} size="sm" type="button" onclick={() => runAction(action)}>{action.label}</Button>
         {/each}
         {#if canOpenSession}
-          <button class="quiet" type="button" on:click={() => openSelectedSession($selectedSelector)}>Open session</button>
+          <Button variant="outline" size="sm" type="button" onclick={() => openSelectedSession($selectedSelector)}>Open session</Button>
         {/if}
         {#if needsRefreshRecovery}
-          <button class="quiet" type="button" on:click={refreshDiscovery}>Refresh devices</button>
+          <Button variant="outline" size="sm" type="button" onclick={refreshDiscovery}>Refresh devices</Button>
         {/if}
         {#if canLockSession}
-          <button class="quiet" type="button" on:click={lockSelectedSession}>Lock session</button>
+          <Button variant="outline" size="sm" type="button" onclick={lockSelectedSession}>Lock session</Button>
         {/if}
       {/if}
     </div>

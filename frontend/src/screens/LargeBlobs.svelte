@@ -3,52 +3,69 @@
   import { api, bytesFromText, operationFailed } from "../lib/api";
   import { beginOperation, clearSharedCredentialInventory, emptyLargeBlobState, finishOperation, largeBlobScreenCache, selectedSelector, selectionVersion, pushToast, sessionBusy, sessionStatus, setLargeBlobScreenState, setStatusOutcome, sharedCredentialInventoryCache, sharedInventoryFor, summarizeEnvelope, updateSharedCredentialInventory } from "../lib/stores";
   import { asList, reportOf, stateLabel } from "../lib/format";
+  import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
+  import { Badge } from "$lib/components/ui/badge/index.js";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
   import EmptyState from "../components/EmptyState.svelte";
   import LargeBlobDetail from "../components/LargeBlobDetail.svelte";
+  import ScreenHeader from "../components/ScreenHeader.svelte";
   import StatusBadge from "../components/StatusBadge.svelte";
 
-  let loading = false;
-  let largeBlobBusy: "" | "list" | "read" | "preview-write" | "write" | "preview-delete" | "delete" | "preview-gc" | "gc" = "";
-  let envelope: any = null;
-  let readResult: any = null;
-  let readCredentialId = "";
-  let selectedId = "";
-  let payload = "";
-  let payloadByCredential: Record<string, string> = {};
-  let decodeMode = "utf8";
-  let readDecodeMode = "";
-  let preview: any = null;
-  let previewBinding: any = null;
-  let previewMode: "write" | "delete" | "" = "";
-  let gcPreview: any = null;
-  let gcResult: any = null;
-  let gcPreviewBinding: any = null;
-  let detailMode: "read" | "write" | "delete" | "raw" = "read";
-  let cacheSelector = "";
-  let cacheVersion = -1;
-  let operationEpoch = 0;
-  let listVersion = 0;
-  let warmReloadKey = "";
+  let loading = $state(false);
+  let largeBlobBusy: "" | "list" | "read" | "preview-write" | "write" | "preview-delete" | "delete" | "preview-gc" | "gc" = $state("");
+  let envelope: any = $state(null);
+  let readResult: any = $state(null);
+  let readCredentialId = $state("");
+  let selectedId = $state("");
+  let payload = $state("");
+  let payloadByCredential: Record<string, string> = $state({});
+  let decodeMode = $state("utf8");
+  let readDecodeMode = $state("");
+  let preview: any = $state(null);
+  let previewBinding: any = $state(null);
+  let previewMode: "write" | "delete" | "" = $state("");
+  let gcPreview: any = $state(null);
+  let gcResult: any = $state(null);
+  let gcPreviewBinding: any = $state(null);
+  let detailMode: "read" | "write" | "delete" | "raw" = $state("read");
+  let cacheSelector = $state("");
+  let cacheVersion = $state(-1);
+  let operationEpoch = $state(0);
+  let listVersion = $state(0);
+  let warmReloadKey = $state("");
 
-  $: selector = $selectedSelector;
-  $: if (selector !== cacheSelector) restoreState(selector);
-  $: if ($selectionVersion !== cacheVersion) restoreState(selector);
-  $: if (selector && $sharedCredentialInventoryCache && !loading) hydrateFromSharedInventory(selector);
-  $: if (selector && selector === cacheSelector) persistState();
-  $: report = reportOf(envelope);
-  $: credentials = asList(report?.credentials);
-  $: largeBlobLoaded = Boolean(envelope && !operationFailed(envelope));
-  $: selectedCredential = credentials.find((credential: any) => credentialKey(credential) === selectedId) || null;
-  $: activeReadResult = readCredentialId === selectedId ? readResult : null;
-  $: activePreview = previewMatchesCurrent() ? preview : null;
-  $: canConfirmWrite = previewMode === "write" && Boolean(activePreview) && !operationFailed(activePreview) && previewMatches("write");
-  $: canConfirmDelete = previewMode === "delete" && Boolean(activePreview) && !operationFailed(activePreview) && previewMatches("delete");
-  $: canConfirmGarbageCollect = Boolean(gcPreview) && !operationFailed(gcPreview) && gcPreviewBinding?.selector === selector && gcPreviewBinding?.listVersion === listVersion;
-  $: hasUnmatchedBlobs = (report?.array?.unmatchedBlobCount || 0) > 0;
-  $: gcPreviewOutput = reportOf(gcPreview);
-  $: gcPreviewData = gcPreviewOutput?.preview || gcPreviewOutput;
-  $: gcResultOutput = reportOf(gcResult);
-  $: gcResultData = gcResultOutput?.result || gcResultOutput;
+  let selector = $derived($selectedSelector);
+  let report = $derived(reportOf(envelope));
+  let credentials = $derived(asList(report?.credentials));
+  let largeBlobLoaded = $derived(Boolean(envelope && !operationFailed(envelope)));
+  let selectedCredential = $derived(credentials.find((credential: any) => credentialKey(credential) === selectedId) || null);
+  let activeReadResult = $derived(readCredentialId === selectedId ? readResult : null);
+  let activePreview = $derived(previewMatchesCurrent() ? preview : null);
+  let canConfirmWrite = $derived(previewMode === "write" && Boolean(activePreview) && !operationFailed(activePreview) && previewMatches("write"));
+  let canConfirmDelete = $derived(previewMode === "delete" && Boolean(activePreview) && !operationFailed(activePreview) && previewMatches("delete"));
+  let canConfirmGarbageCollect = $derived(Boolean(gcPreview) && !operationFailed(gcPreview) && gcPreviewBinding?.selector === selector && gcPreviewBinding?.listVersion === listVersion);
+  let hasUnmatchedBlobs = $derived((report?.array?.unmatchedBlobCount || 0) > 0);
+  let gcPreviewOutput = $derived(reportOf(gcPreview));
+  let gcPreviewData = $derived(gcPreviewOutput?.preview || gcPreviewOutput);
+  let gcResultOutput = $derived(reportOf(gcResult));
+  let gcResultData = $derived(gcResultOutput?.result || gcResultOutput);
+
+  $effect(() => {
+    if (selector !== cacheSelector) restoreState(selector);
+  });
+
+  $effect(() => {
+    if ($selectionVersion !== cacheVersion) restoreState(selector);
+  });
+
+  $effect(() => {
+    if (selector && $sharedCredentialInventoryCache && !loading) hydrateFromSharedInventory(selector);
+  });
+
+  $effect(() => {
+    if (selector && selector === cacheSelector) persistState();
+  });
 
   function failureEnvelope(error: unknown) {
     const message = error instanceof Error ? error.message : String(error || "Operation failed");
@@ -505,73 +522,76 @@
   }
 </script>
 
-<section class="screen-band">
-  <div>
-    <p class="eyebrow">Large blobs</p>
-    <h1>Credential blob workspace</h1>
-    <p class="lede">Select a resident credential, then inspect and manage its attached blob from the workspace.</p>
-  </div>
-  <button type="button" on:click={() => load()} disabled={!selector || Boolean(largeBlobBusy) || $sessionBusy}>{loading ? "Reloading blobs" : "Reload blobs"}</button>
-</section>
+<ScreenHeader eyebrow="Large blobs" title="Credential blob workspace" description="Select a resident credential, then inspect and manage its attached blob from the workspace.">
+  {#snippet actions()}
+    <Button onclick={() => load()} disabled={!selector || Boolean(largeBlobBusy) || $sessionBusy}>{loading ? "Reloading blobs" : "Reload blobs"}</Button>
+  {/snippet}
+</ScreenHeader>
 
 {#if !selector}
   <EmptyState eyebrow="No token" title="No token selected" message="Select an authenticator to inspect large blobs." />
 {:else if operationFailed(envelope)}
-  <div class="notice danger">{operationFailed(envelope)}</div>
+  <Alert variant="destructive"><AlertDescription>{operationFailed(envelope)}</AlertDescription></Alert>
 {:else if !largeBlobLoaded}
   <EmptyState eyebrow="Workspace ready" variant="workspace" title="No large-blob state loaded" message="Reload blobs to map resident credentials to large-blob state. The workspace will show matched credentials, blob bytes, and cleanup state here." />
 {:else}
-  <div class="large-blob-summary" aria-label="Large blob summary">
-    <span><strong>{report?.array?.blobCount || 0}</strong> blobs</span>
-    <span><strong>{report?.array?.matchedBlobCount || 0}</strong> matched</span>
-    <span><strong>{report?.array?.unmatchedBlobCount || 0}</strong> unmatched</span>
+  <Card.Root aria-label="Large blob summary">
+    <Card.Content class="flex flex-wrap items-center gap-2 pt-6">
+    <Badge variant="secondary">{report?.array?.blobCount || 0} blobs</Badge>
+    <Badge variant="outline">{report?.array?.matchedBlobCount || 0} matched</Badge>
+    <Badge variant={hasUnmatchedBlobs ? "destructive" : "outline"}>{report?.array?.unmatchedBlobCount || 0} unmatched</Badge>
     <StatusBadge value={report?.support?.largeBlobs} label={`Support: ${stateLabel(report?.support?.largeBlobs)}`} />
     {#if hasUnmatchedBlobs || gcPreview || gcResult}
-      <button class="quiet compact" type="button" on:click={previewGarbageCollect} disabled={Boolean(largeBlobBusy) || $sessionBusy}>Preview cleanup</button>
-      <button class="danger compact" type="button" on:click={executeGarbageCollect} disabled={Boolean(largeBlobBusy) || $sessionBusy || !canConfirmGarbageCollect}>Confirm cleanup</button>
+      <Button size="sm" variant="outline" onclick={previewGarbageCollect} disabled={Boolean(largeBlobBusy) || $sessionBusy}>Preview cleanup</Button>
+      <Button size="sm" variant="destructive" onclick={executeGarbageCollect} disabled={Boolean(largeBlobBusy) || $sessionBusy || !canConfirmGarbageCollect}>Confirm cleanup</Button>
     {/if}
-  </div>
+    </Card.Content>
+  </Card.Root>
   {#if operationFailed(gcPreview)}
-    <div class="notice danger">{operationFailed(gcPreview)}</div>
+    <Alert variant="destructive"><AlertDescription>{operationFailed(gcPreview)}</AlertDescription></Alert>
   {:else if gcPreview}
-    <div class="notice">Cleanup preview ready. {gcPreviewData?.unmatchedBlobCount || 0} unmatched blob entries would be removed.</div>
+    <Alert><AlertDescription>Cleanup preview ready. {gcPreviewData?.unmatchedBlobCount || 0} unmatched blob entries would be removed.</AlertDescription></Alert>
   {/if}
   {#if operationFailed(gcResult)}
-    <div class="notice danger">{operationFailed(gcResult)}</div>
+    <Alert variant="destructive"><AlertDescription>{operationFailed(gcResult)}</AlertDescription></Alert>
   {:else if gcResult}
-    <div class="notice">Cleanup complete. {gcResultData?.deletedBlobCount || 0} unmatched blob entries removed.</div>
+    <Alert><AlertDescription>Cleanup complete. {gcResultData?.deletedBlobCount || 0} unmatched blob entries removed.</AlertDescription></Alert>
   {/if}
 
   {#if credentials.length === 0}
     <EmptyState eyebrow="Loaded state" title="No resident credentials found" message="Large-blob support is loaded, but this authenticator did not report resident credentials to inspect." />
   {:else}
-    <section id="large-blob-workspace" class="large-blob-workspace">
-      <div class="large-blob-list-panel">
-        <div class="large-blob-list-heading">
-          <div>
-            <h2>Blob credentials</h2>
-            <p class="muted">Select a row to open its inspector.</p>
+    <section id="large-blob-workspace" class="grid gap-4 xl:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.3fr)]">
+      <Card.Root>
+        <Card.Header class="flex-row items-start justify-between gap-3">
+          <div class="grid gap-1">
+            <Card.Title>Blob credentials</Card.Title>
+            <Card.Description>Select a row to open its inspector.</Card.Description>
           </div>
-          <span class="muted">{credentials.length} row(s)</span>
-        </div>
-        {#each credentials as credential}
-          <article class:selected={credentialKey(credential) === selectedId} class="large-blob-row">
-            <button
-              class="large-blob-row-select"
-              type="button"
+          <span class="text-sm text-muted-foreground">{credentials.length} row(s)</span>
+        </Card.Header>
+        <Card.Content class="grid max-h-[66vh] gap-2 overflow-auto pr-1">
+        {#each credentials as credential (credentialKey(credential))}
+          <article class="rounded-md border border-border bg-background p-2">
+            <Button
+              variant={credentialKey(credential) === selectedId ? "secondary" : "ghost"}
+              class="h-auto w-full justify-start whitespace-normal px-3 py-2 text-left"
               aria-pressed={credentialKey(credential) === selectedId}
-              on:click={() => selectCredential(credential)}
+              onclick={() => selectCredential(credential)}
             >
-              <span class="large-blob-row-name">{credential.user?.displayName || credential.user?.name || credential.rp?.id || "Credential"}</span>
-              <span class="large-blob-row-rp">{credential.rp?.id || "unknown RP"}</span>
-              <span class="large-blob-row-state">
+              <span class="grid w-full min-w-0 gap-1">
+                <span class="truncate text-sm font-medium">{credential.user?.displayName || credential.user?.name || credential.rp?.id || "Credential"}</span>
+                <span class="truncate text-xs font-normal text-muted-foreground">{credential.rp?.id || "unknown RP"}</span>
+                <span class="flex flex-wrap items-center gap-2 pt-1">
                 <StatusBadge value={credential.blobState || "unknown"} label={credential.blobState || "unknown"} />
+                  <Badge variant="outline">{credential.blobByteCount || 0} bytes</Badge>
+                </span>
               </span>
-              <span class="large-blob-row-bytes">{credential.blobByteCount || 0} bytes</span>
-            </button>
+            </Button>
             {#if credentialKey(credential) === selectedId}
-              <div class="large-blob-inline-detail">
-                <section class="large-blob-detail-panel">
+              <div class="mt-3 xl:hidden">
+                <Card.Root size="sm">
+                  <Card.Content class="pt-4">
                   <LargeBlobDetail
                     bind:detailMode
                     bind:payload
@@ -593,14 +613,17 @@
                     {executeDelete}
                     copied={copyToast}
                   />
-                </section>
+                  </Card.Content>
+                </Card.Root>
               </div>
               {/if}
           </article>
         {/each}
-      </div>
+        </Card.Content>
+      </Card.Root>
 
-      <aside id="large-blob-detail" class="large-blob-detail-panel">
+      <Card.Root id="large-blob-detail" class="hidden xl:flex">
+        <Card.Content class="pt-6">
         <LargeBlobDetail
           bind:detailMode
           bind:payload
@@ -622,7 +645,8 @@
           {executeDelete}
           copied={copyToast}
         />
-      </aside>
+        </Card.Content>
+      </Card.Root>
     </section>
   {/if}
 {/if}

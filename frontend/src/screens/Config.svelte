@@ -1,30 +1,43 @@
 <script lang="ts">
-  import { api, operationFailed } from "../lib/api";
+  import { api, operationFailed } from "$lib/api";
   import { beginOperation, clearSharedCredentialInventory, selectedSelector, selectionVersion, pushToast, sessionBusy, summarizeEnvelope } from "../lib/stores";
-  import { reportOf, stateLabel } from "../lib/format";
+  import { reportOf, stateLabel } from "$lib/format";
+  import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
+  import * as Field from "$lib/components/ui/field/index.js";
+  import { Input } from "$lib/components/ui/input/index.js";
+  import { NativeSelect } from "$lib/components/ui/native-select/index.js";
   import EmptyState from "../components/EmptyState.svelte";
   import JsonView from "../components/JsonView.svelte";
   import MetaRow from "../components/MetaRow.svelte";
+  import ScreenHeader from "../components/ScreenHeader.svelte";
   import StatusBadge from "../components/StatusBadge.svelte";
   import CopyableId from "../components/CopyableId.svelte";
 
-  let loading = false;
-  let envelope: any = null;
-  let bioEnvelope: any = null;
-  let preview: any = null;
-  let newPin = "";
-  let currentPin = "";
-  let alwaysUv = "enable";
-  let minPinLength = 8;
-  let rpids = "";
-  let bioName = "";
+  let loading = $state(false);
+  let envelope: any = $state(null);
+  let bioEnvelope: any = $state(null);
+  let preview: any = $state(null);
+  let newPin = $state("");
+  let currentPin = $state("");
+  let alwaysUv = $state("enable");
+  let minPinLength = $state(8);
+  let rpids = $state("");
+  let bioName = $state("");
+  let lastSelectionVersion = $selectionVersion;
 
-  $: selector = $selectedSelector;
-  $: if ($selectionVersion) resetState();
-  $: report = reportOf(envelope);
-  $: bioReport = reportOf(bioEnvelope);
-  $: bioState = report?.bio?.state ?? report?.bio?.uvBioEnroll?.state;
-  $: bioSupported = ![false, "unsupported", "unavailable", "not_supported", undefined, null].includes(bioState);
+  let selector = $derived($selectedSelector);
+  let report = $derived(reportOf(envelope));
+  let bioReport = $derived(reportOf(bioEnvelope));
+  let bioState = $derived(report?.bio?.state ?? report?.bio?.uvBioEnroll?.state);
+  let bioSupported = $derived(![false, "unsupported", "unavailable", "not_supported", undefined, null].includes(bioState));
+
+  $effect(() => {
+    if ($selectionVersion === lastSelectionVersion) return;
+    lastSelectionVersion = $selectionVersion;
+    resetState();
+  });
 
   function failureEnvelope(error: unknown) {
     const message = error instanceof Error ? error.message : String(error || "Operation failed");
@@ -163,97 +176,131 @@
   }
 </script>
 
-<section class="screen-band">
-  <div>
-    <p class="eyebrow">Configuration</p>
-    <h1>Token switches and safety state</h1>
-    <p class="lede">Inspect PIN, UV, biometric, reset, and authenticator configuration. Mutations stay behind previews and explicit confirmation.</p>
-  </div>
-  <button type="button" on:click={load} disabled={!selector || loading || $sessionBusy}>{loading ? "Reloading config" : "Reload config"}</button>
-</section>
+<ScreenHeader eyebrow="Configuration" title="Token switches and safety state" description="Inspect PIN, UV, biometric, reset, and authenticator configuration. Mutations stay behind previews and explicit confirmation.">
+  {#snippet actions()}
+    <Button onclick={load} disabled={!selector || loading || $sessionBusy}>{loading ? "Reloading config" : "Reload config"}</Button>
+  {/snippet}
+</ScreenHeader>
 
 {#if !selector}
   <EmptyState eyebrow="No token" title="No token selected" message="Select an authenticator to manage configuration." />
 {:else if operationFailed(envelope)}
-  <div class="notice danger">{operationFailed(envelope)}</div>
+  <Alert variant="destructive"><AlertDescription>{operationFailed(envelope)}</AlertDescription></Alert>
 {:else if !report}
   <EmptyState eyebrow="Ready to read" title="No config loaded" message="Reload config to read configuration status." />
 {:else}
-  <section class="details-grid">
-    <div>
-      <h2>PIN</h2>
-      <div class="row-meta">
+  <section class="grid gap-4 xl:grid-cols-2">
+    <Card.Root>
+      <Card.Header>
+        <Card.Title>PIN</Card.Title>
+        <Card.Description class="flex flex-wrap items-center gap-2">
         <StatusBadge value={report.pin?.state} label={stateLabel(report.pin?.state)} />
         <span>Retries: {stateLabel(report.pin?.retries?.remaining)}</span>
+        </Card.Description>
+      </Card.Header>
+      <Card.Content class="grid gap-4">
+      <Field.Group>
+        <Field.Field>
+          <Field.Label>Current PIN</Field.Label>
+          <Input bind:value={currentPin} type="password" autocomplete="off" onkeydown={(event) => previewOnEnter(event, "changePin")} />
+        </Field.Field>
+        <Field.Field>
+          <Field.Label>New PIN</Field.Label>
+          <Input bind:value={newPin} type="password" autocomplete="off" onkeydown={(event) => previewOnEnter(event, "setPin")} />
+        </Field.Field>
+      </Field.Group>
+      <div class="flex flex-wrap gap-2">
+        <Button variant="outline" onclick={() => runPreview("setPin")} disabled={$sessionBusy}>Preview set</Button>
+        <Button onclick={() => execute("setPin")} disabled={!preview || $sessionBusy}>Confirm set</Button>
+        <Button variant="outline" onclick={() => runPreview("changePin")} disabled={$sessionBusy}>Preview change</Button>
+        <Button onclick={() => execute("changePin")} disabled={!preview || $sessionBusy}>Confirm change</Button>
       </div>
-      <label>Current PIN <input bind:value={currentPin} type="password" autocomplete="off" on:keydown={(event) => previewOnEnter(event, "changePin")} /></label>
-      <label>New PIN <input bind:value={newPin} type="password" autocomplete="off" on:keydown={(event) => previewOnEnter(event, "setPin")} /></label>
-      <div class="actions">
-        <button type="button" on:click={() => runPreview("setPin")} disabled={$sessionBusy}>Preview set</button>
-        <button type="button" on:click={() => execute("setPin")} disabled={!preview || $sessionBusy}>Confirm set</button>
-        <button type="button" on:click={() => runPreview("changePin")} disabled={$sessionBusy}>Preview change</button>
-        <button type="button" on:click={() => execute("changePin")} disabled={!preview || $sessionBusy}>Confirm change</button>
-      </div>
-    </div>
+      </Card.Content>
+    </Card.Root>
 
-    <div>
-      <h2>Authenticator config</h2>
-      <div class="row-meta">
+    <Card.Root>
+      <Card.Header>
+        <Card.Title>Authenticator config</Card.Title>
+        <Card.Description class="flex flex-wrap items-center gap-2">
         <span>Always UV</span>
         <StatusBadge value={report.authenticatorConfig?.alwaysUv?.state} label={stateLabel(report.authenticatorConfig?.alwaysUv?.state)} />
-      </div>
-      <label>Always UV target
-        <select bind:value={alwaysUv}>
+        </Card.Description>
+      </Card.Header>
+      <Card.Content class="grid gap-4">
+      <Field.Group>
+        <Field.Field>
+        <Field.Label>Always UV target</Field.Label>
+        <NativeSelect bind:value={alwaysUv}>
           <option value="enable">enable</option>
           <option value="disable">disable</option>
-        </select>
-      </label>
-      <label>Minimum PIN length <input bind:value={minPinLength} type="number" min="4" on:keydown={(event) => previewOnEnter(event, "minPin")} /></label>
-      <label>Allowed RP IDs <input bind:value={rpids} placeholder="example.com, admin.example.com" on:keydown={(event) => previewOnEnter(event, "minPin")} /></label>
-      <div class="actions">
-        <button type="button" on:click={() => runPreview("alwaysUv")} disabled={$sessionBusy}>Preview UV</button>
-        <button type="button" on:click={() => execute("alwaysUv")} disabled={!preview || $sessionBusy}>Confirm UV</button>
-        <button type="button" on:click={() => runPreview("minPin")} disabled={$sessionBusy}>Preview min PIN</button>
-        <button type="button" on:click={() => execute("minPin")} disabled={!preview || $sessionBusy}>Confirm min PIN</button>
+        </NativeSelect>
+        </Field.Field>
+        <Field.Field>
+          <Field.Label>Minimum PIN length</Field.Label>
+          <Input bind:value={minPinLength} type="number" min="4" onkeydown={(event) => previewOnEnter(event, "minPin")} />
+        </Field.Field>
+        <Field.Field>
+          <Field.Label>Allowed RP IDs</Field.Label>
+          <Input bind:value={rpids} placeholder="example.com, admin.example.com" onkeydown={(event) => previewOnEnter(event, "minPin")} />
+        </Field.Field>
+      </Field.Group>
+      <div class="flex flex-wrap gap-2">
+        <Button variant="outline" onclick={() => runPreview("alwaysUv")} disabled={$sessionBusy}>Preview UV</Button>
+        <Button onclick={() => execute("alwaysUv")} disabled={!preview || $sessionBusy}>Confirm UV</Button>
+        <Button variant="outline" onclick={() => runPreview("minPin")} disabled={$sessionBusy}>Preview min PIN</Button>
+        <Button onclick={() => execute("minPin")} disabled={!preview || $sessionBusy}>Confirm min PIN</Button>
       </div>
-    </div>
+      </Card.Content>
+    </Card.Root>
   </section>
 
-  <section class="details-grid">
-    <div>
-      <h2>Biometrics</h2>
-      <div class="row-meta">
+  <section class="grid gap-4 xl:grid-cols-2">
+    <Card.Root>
+      <Card.Header>
+        <Card.Title>Biometrics</Card.Title>
+        <Card.Description class="flex flex-wrap items-center gap-2">
         <StatusBadge value={bioState} label={stateLabel(bioState)} />
         <StatusBadge value={report.bio?.uvBioEnroll?.state} label={`enroll ${stateLabel(report.bio?.uvBioEnroll?.state)}`} />
-      </div>
+        </Card.Description>
+      </Card.Header>
+      <Card.Content class="grid gap-4">
       {#if bioSupported}
-        <label>Template friendly name <input bind:value={bioName} /></label>
-        <button type="button" on:click={enrollBio} disabled={$sessionBusy}>Start enrollment</button>
-        {#each bioReport?.enrollments || [] as enrollment}
-          <article class="row compact">
-            <div class="row-main">
+        <Field.Field>
+          <Field.Label>Template friendly name</Field.Label>
+          <Input bind:value={bioName} />
+        </Field.Field>
+        <Button class="w-fit" onclick={enrollBio} disabled={$sessionBusy}>Start enrollment</Button>
+        {#each bioReport?.enrollments || [] as enrollment (enrollment.templateIDHex)}
+          <article class="grid gap-3 rounded-md border border-border p-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+            <div class="grid min-w-0 gap-2">
               <strong>{enrollment.friendlyName || "Unnamed template"}</strong>
-              <CopyableId label="Template ID" value={enrollment.templateIDHex} on:copied={() => pushToast("Template ID copied")} />
+              <CopyableId label="Template ID" value={enrollment.templateIDHex} copied={() => pushToast("Template ID copied")} />
             </div>
-            <div class="actions">
-              <button type="button" on:click={() => renameBio(enrollment.templateIDHex)} disabled={$sessionBusy}>Preview rename</button>
-              <button class="danger" type="button" on:click={() => removeBio(enrollment.templateIDHex)} disabled={$sessionBusy}>Preview remove</button>
+            <div class="flex flex-wrap gap-2 lg:justify-end">
+              <Button size="sm" variant="outline" onclick={() => renameBio(enrollment.templateIDHex)} disabled={$sessionBusy}>Preview rename</Button>
+              <Button size="sm" variant="destructive" onclick={() => removeBio(enrollment.templateIDHex)} disabled={$sessionBusy}>Preview remove</Button>
             </div>
           </article>
         {/each}
       {:else}
         <p class="muted">This authenticator does not expose biometric management controls.</p>
       {/if}
-    </div>
-    <div>
-      <h2>Factory reset</h2>
+      </Card.Content>
+    </Card.Root>
+    <Card.Root>
+      <Card.Header>
+        <Card.Title>Factory reset</Card.Title>
+        <Card.Description>Reset affordances reported by the selected authenticator.</Card.Description>
+      </Card.Header>
+      <Card.Content class="grid gap-4">
       <MetaRow label="Long touch reset" value={stateLabel(report.resetHints?.longTouchForReset)} />
       <MetaRow label="Reset transports" value={(report.resetHints?.transportsForReset || []).join(", ") || "not reported"} />
-      <div class="actions">
-        <button class="danger" type="button" on:click={() => runPreview("reset")} disabled={$sessionBusy}>Preview reset</button>
-        <button class="danger" type="button" on:click={() => execute("reset")} disabled={!preview || $sessionBusy}>Confirm reset</button>
+      <div class="flex flex-wrap gap-2">
+        <Button variant="destructive" onclick={() => runPreview("reset")} disabled={$sessionBusy}>Preview reset</Button>
+        <Button variant="destructive" onclick={() => execute("reset")} disabled={!preview || $sessionBusy}>Confirm reset</Button>
       </div>
-    </div>
+      </Card.Content>
+    </Card.Root>
   </section>
 
   {#if preview}

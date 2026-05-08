@@ -1,10 +1,15 @@
 <script lang="ts">
-  import { operationFailed } from "../lib/api";
-  import { loadOverview } from "../lib/controller";
-  import { overviewEnvelope, overviewLoading, selectedDevice, selectedSelector, sessionBusy, sessionStatus } from "../lib/stores";
-  import { resultOf, sessionStateLabel, stateLabel } from "../lib/format";
+  import { operationFailed } from "$lib/api";
+  import { loadOverview } from "$lib/controller";
+  import { overviewEnvelope, overviewLoading, selectedDevice, selectedSelector, sessionBusy, sessionStatus } from "$lib/stores";
+  import { resultOf, sessionStateLabel, stateLabel } from "$lib/format";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
+  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
   import EmptyState from "../components/EmptyState.svelte";
   import JsonView from "../components/JsonView.svelte";
+  import Notice from "../components/Notice.svelte";
+  import ScreenHeader from "../components/ScreenHeader.svelte";
   import StatusBadge from "../components/StatusBadge.svelte";
 
   const extensionCatalog = [
@@ -19,25 +24,25 @@
     { id: "thirdPartyPayment", title: "Third-party payment", text: "Marks credentials that can be used for payment authentication initiated by another party." },
   ];
 
-  $: selector = $selectedSelector;
-  $: envelope = $overviewEnvelope;
-  $: loading = $overviewLoading;
-  $: report = resultOf(envelope);
-  $: device = report?.device || $selectedDevice || {};
-  $: info = report?.info || {};
-  $: options = info?.options || {};
-  $: extensions = Array.isArray(info?.extensions) ? info.extensions : [];
-  $: extensionsKnown = Array.isArray(info?.extensions);
-  $: productName = [device.manufacturer, device.product].filter(Boolean).join(" ") || device.product || device.deviceId || "Selected authenticator";
-  $: versions = info.versions || [];
-  $: identityMetrics = [
+  let selector = $derived($selectedSelector);
+  let envelope = $derived($overviewEnvelope);
+  let loading = $derived($overviewLoading);
+  let report = $derived(resultOf(envelope));
+  let device = $derived(report?.device || $selectedDevice || {});
+  let info = $derived(report?.info || {});
+  let options = $derived(info?.options || {});
+  let extensions = $derived(Array.isArray(info?.extensions) ? info.extensions : []);
+  let extensionsKnown = $derived(Array.isArray(info?.extensions));
+  let productName = $derived([device.manufacturer, device.product].filter(Boolean).join(" ") || device.product || device.deviceId || "Selected authenticator");
+  let versions = $derived(info.versions || []);
+  let identityMetrics = $derived([
     { label: "Transport", value: device.transport || "unknown" },
     { label: "Session", value: sessionStateLabel($sessionStatus.state) },
     { label: "AAGUID", value: info.aaguid || "not reported" },
     { label: "Versions", value: versions.join(", ") || "unknown" },
-  ];
-  $: extensionItems = extensionCatalog.map((item) => ({ ...item, state: extensionState(item.id), supported: extensions.includes(item.id) }));
-  $: capabilityGroups = [
+  ]);
+  let extensionItems = $derived(extensionCatalog.map((item) => ({ ...item, state: extensionState(item.id), supported: extensions.includes(item.id) })));
+  let capabilityGroups = $derived([
     {
       title: "Sign-in",
       items: [
@@ -78,11 +83,11 @@
         capability("Algorithms", (info.algorithms || []).length, "Advertises public-key algorithm choices."),
       ],
     },
-  ];
-  $: flatCapabilities = capabilityGroups.flatMap((group) => group.items);
-  $: knownCapabilities = flatCapabilities.filter((item) => item.known);
-  $: supportedCapabilities = flatCapabilities.filter((item) => item.supported);
-  $: capabilitySummary = knownCapabilities.length ? `${supportedCapabilities.length}/${knownCapabilities.length}` : "unknown";
+  ]);
+  let flatCapabilities = $derived(capabilityGroups.flatMap((group) => group.items));
+  let knownCapabilities = $derived(flatCapabilities.filter((item) => item.known));
+  let supportedCapabilities = $derived(flatCapabilities.filter((item) => item.supported));
+  let capabilitySummary = $derived(knownCapabilities.length ? `${supportedCapabilities.length}/${knownCapabilities.length}` : "unknown");
 
   function capability(title: string, state: unknown, text: string) {
     const known = state !== null && state !== undefined && state !== "";
@@ -105,75 +110,79 @@
 {#if !selector}
   <EmptyState eyebrow="No token" title="Choose a token" message="Connect an authenticator and select it in the top bar to see what it can do." />
 {:else if report}
-  <section id="overview-dashboard" class="token-dashboard">
-    <div class="token-identity">
-      <p class="eyebrow">Overview</p>
-      <h1>{productName}</h1>
-      <p>{device.deviceId || "Device identity reported by the current transport."}</p>
-      <div class="actions">
-        <button type="button" on:click={() => loadOverview(selector)} disabled={loading || $sessionBusy}>{loading ? "Reloading overview" : "Reload overview"}</button>
-      </div>
-    </div>
-    <div class="metric-strip">
-      {#each identityMetrics as metric}
-        <div class="identity-metric">
-          <span>{metric.label}</span>
-          <strong>{metric.value}</strong>
-        </div>
-      {/each}
-      <div class="identity-metric strong">
-        <span>Capability summary</span>
-        <strong>{capabilitySummary}</strong>
-      </div>
-    </div>
-  </section>
+  <ScreenHeader eyebrow="Overview" title={productName} description={device.deviceId || "Device identity reported by the current transport."}>
+    {#snippet actions()}
+      <Button onclick={() => loadOverview(selector)} disabled={loading || $sessionBusy}>{loading ? "Reloading overview" : "Reload overview"}</Button>
+    {/snippet}
+  </ScreenHeader>
+
+  <div id="overview-dashboard" class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+    {#each identityMetrics as metric (metric.label)}
+      <Card.Root size="sm">
+        <Card.Header>
+          <Card.Description>{metric.label}</Card.Description>
+          <Card.Title class="break-words text-base">{metric.value}</Card.Title>
+        </Card.Header>
+      </Card.Root>
+    {/each}
+    <Card.Root size="sm" class="border-primary/30 bg-primary/5">
+      <Card.Header>
+        <Card.Description>Capability summary</Card.Description>
+        <Card.Title class="text-base">{capabilitySummary}</Card.Title>
+      </Card.Header>
+    </Card.Root>
+  </div>
 
   {#if operationFailed(envelope)}
-    <div class="notice danger">{operationFailed(envelope)}</div>
+    <Notice variant="destructive">{operationFailed(envelope)}</Notice>
   {/if}
 
-  <section class="overview-flow">
-    <div class="capability-story">
-      {#each capabilityGroups as group}
-        <section class="capability-group">
-          <div class="section-heading">
-            <h2>{group.title}</h2>
-            <span class="muted">{group.items.filter((item) => item.supported).length} supported</span>
-          </div>
-          {#each group.items as item}
-            <article class:supported={item.supported} class:unknown={!item.known} class="capability-line">
-              <div>
-                <strong>{item.title}</strong>
-                <p>{item.text}</p>
-              </div>
-              <StatusBadge value={item.state} label={stateLabel(item.state)} />
-            </article>
-          {/each}
-        </section>
+  <section class="grid gap-4">
+    <div class="grid gap-4 xl:grid-cols-2">
+      {#each capabilityGroups as group (group.title)}
+        <Card.Root size="sm">
+          <Card.Header class="flex-row items-start justify-between gap-3">
+            <div class="grid gap-1">
+              <Card.Title>{group.title}</Card.Title>
+              <Card.Description>{group.items.filter((item) => item.supported).length} supported</Card.Description>
+            </div>
+          </Card.Header>
+          <Card.Content class="grid gap-2">
+            {#each group.items as item (item.title)}
+              <article class="flex items-start justify-between gap-3 rounded-md border border-border bg-background px-3 py-2">
+                <div class="grid min-w-0 gap-1">
+                  <strong class="text-sm font-medium text-foreground">{item.title}</strong>
+                  <p class="text-sm leading-5 text-muted-foreground">{item.text}</p>
+                </div>
+                <StatusBadge value={item.state} label={stateLabel(item.state)} />
+              </article>
+            {/each}
+          </Card.Content>
+        </Card.Root>
       {/each}
     </div>
 
-    <section class="extensions-section">
-      <div class="section-heading">
-        <div>
-          <h2>Extensions</h2>
-          <p class="muted">CTAP 2.2 defined extension identifiers and support reported by this authenticator.</p>
+    <Card.Root>
+      <Card.Header class="flex-row items-start justify-between gap-3">
+        <div class="grid gap-1">
+          <Card.Title>Extensions</Card.Title>
+          <Card.Description>CTAP 2.2 defined extension identifiers and support reported by this authenticator.</Card.Description>
         </div>
-        <span class="muted">{extensionItems.filter((item) => item.supported).length} supported</span>
-      </div>
-      <div class="extension-table">
-        {#each extensionItems as item}
-          <article class:supported={item.supported} class="extension-row">
-            <div class="extension-id">
-              <strong>{item.id}</strong>
-              <span>{item.title}</span>
+        <span class="text-sm text-muted-foreground">{extensionItems.filter((item) => item.supported).length} supported</span>
+      </Card.Header>
+      <Card.Content class="grid gap-2">
+        {#each extensionItems as item (item.id)}
+          <article class="grid gap-3 rounded-md border border-border bg-background p-3 lg:grid-cols-[220px_1fr_auto] lg:items-center">
+            <div class="grid gap-1">
+              <strong class="break-all text-sm font-medium text-foreground">{item.id}</strong>
+              <span class="text-sm text-muted-foreground">{item.title}</span>
             </div>
-            <p>{item.text}</p>
+            <p class="text-sm leading-5 text-muted-foreground">{item.text}</p>
             <StatusBadge value={item.state} label={stateLabel(item.state)} />
           </article>
         {/each}
-      </div>
-    </section>
+      </Card.Content>
+    </Card.Root>
 
     <details class="technical raw-report">
       <summary>Raw technical report</summary>
@@ -181,33 +190,30 @@
     </details>
   </section>
 {:else}
-  <section class="screen-band">
-    <div>
-      <p class="eyebrow">Overview</p>
-      <h1>Token dashboard</h1>
-      <p class="lede">Identity, session state, capabilities, and raw CTAP inspection in one scan-friendly view.</p>
-    </div>
-    <button type="button" on:click={() => loadOverview(selector)} disabled={loading || $sessionBusy}>{loading ? "Reloading overview" : "Reload overview"}</button>
-  </section>
+  <ScreenHeader eyebrow="Overview" title="Token dashboard" description="Identity, session state, capabilities, and raw CTAP inspection in one scan-friendly view.">
+    {#snippet actions()}
+      <Button onclick={() => loadOverview(selector)} disabled={loading || $sessionBusy}>{loading ? "Reloading overview" : "Reload overview"}</Button>
+    {/snippet}
+  </ScreenHeader>
 
   {#if operationFailed(envelope)}
-    <div class="notice danger">{operationFailed(envelope)}</div>
+    <Notice variant="destructive">{operationFailed(envelope)}</Notice>
   {:else if loading}
-    <section class="token-dashboard loading">
-      <div class="token-identity">
-        <p class="eyebrow">Reading token</p>
-        <h2>Inspection in progress</h2>
-        <p>The workbench is opening a session and collecting authenticator metadata.</p>
-      </div>
-      <div class="metric-strip">
-        {#each ["Transport", "Session", "AAGUID", "Versions", "Capability summary"] as label}
-          <div class="identity-metric skeleton">
-            <span>{label}</span>
-            <strong>Reading</strong>
+    <Card.Root>
+      <Card.Header>
+        <Card.Description>Reading token</Card.Description>
+        <Card.Title>Inspection in progress</Card.Title>
+        <Card.Description>The workbench is opening a session and collecting authenticator metadata.</Card.Description>
+      </Card.Header>
+      <Card.Content class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        {#each ["Transport", "Session", "AAGUID", "Versions", "Capability summary"] as label (label)}
+          <div class="grid gap-2 rounded-md border border-border p-3">
+            <span class="text-sm text-muted-foreground">{label}</span>
+            <Skeleton class="h-5 w-24" />
           </div>
         {/each}
-      </div>
-    </section>
+      </Card.Content>
+    </Card.Root>
   {:else}
     <EmptyState eyebrow="Ready to inspect" title="Overview not loaded" message="Reload overview to inspect the selected authenticator." />
   {/if}

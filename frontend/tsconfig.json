@@ -3,6 +3,11 @@
     "moduleResolution": "bundler",
     "target": "ESNext",
     "module": "ESNext",
+    "baseUrl": ".",
+    "paths": {
+      "$lib": ["src/lib"],
+      "$lib/*": ["src/lib/*"]
+    },
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "isolatedModules": true,

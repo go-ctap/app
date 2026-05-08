@@ -1,13 +1,17 @@
 <script lang="ts">
+  import { Badge } from "$lib/components/ui/badge/index.js";
   import { stateLabel } from "../lib/format";
 
-  export let value: unknown = "unknown";
-  export let label = "";
-  export let help = "";
+  type Props = {
+    value?: unknown;
+    label?: string;
+    help?: string;
+  };
 
-  $: normalized = stateLabel(value);
-  $: text = label || normalized;
-  $: tone = (() => {
+  let { value = "unknown", label = "", help = "" }: Props = $props();
+  let normalized = $derived(stateLabel(value));
+  let text = $derived(label || normalized);
+  let tone = $derived.by(() => {
     const raw = String(value ?? "").toLowerCase();
     const readable = normalized.toLowerCase();
     if (value === true || ["supported", "configured", "available", "ready"].includes(raw) || readable === "available") return "ok";
@@ -15,10 +19,10 @@
     if (["preview_only", "preview only", "opening", "running"].includes(raw) || ["preview only", "opening", "running"].includes(readable)) return "warn";
     if (["stale", "error", "invalid-session"].includes(raw)) return "bad";
     return "neutral";
-  })();
+  });
 </script>
 
-<span class="status-badge {tone}" title={help || text}>
+<Badge class="status-badge {tone}" variant={tone === "bad" ? "destructive" : tone === "neutral" ? "outline" : "secondary"} title={help || text}>
   <span class="status-dot" aria-hidden="true"></span>
   <span>{text}</span>
-</span>
+</Badge>

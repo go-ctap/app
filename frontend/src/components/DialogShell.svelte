@@ -1,18 +1,39 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount, tick } from "svelte";
+  import { onMount, tick, type Snippet } from "svelte";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Dialog from "$lib/components/ui/dialog/index.js";
 
-  export let title = "";
-  export let eyebrow = "";
-  export let wide = false;
-  export let destructive = false;
-  export let closeLabel = "Cancel";
+  type Props = {
+    title?: string;
+    eyebrow?: string;
+    wide?: boolean;
+    destructive?: boolean;
+    closeLabel?: string;
+    close?: () => void;
+    primary?: () => void;
+    children?: Snippet;
+    actions?: Snippet;
+  };
 
-  const dispatch = createEventDispatcher<{ close: void; primary: void }>();
-  let dialog: HTMLDivElement;
+  let {
+    title = "",
+    eyebrow = "",
+    wide = false,
+    destructive = false,
+    closeLabel = "Cancel",
+    close = () => {},
+    primary = () => {},
+    children,
+    actions,
+  }: Props = $props();
+
+  let dialog: HTMLDivElement | null = $state(null);
   let restoreTo: Element | null = null;
 
-  function close() {
-    dispatch("close");
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      close();
+    }
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -50,18 +71,27 @@
   });
 </script>
 
-<div class="modal-backdrop" role="presentation" on:keydown={handleKeydown}>
-  <div class:wide class:destructive class="modal" bind:this={dialog} role="dialog" aria-modal="true" aria-label={title}>
-    {#if eyebrow}
-      <p class="eyebrow">{eyebrow}</p>
+<Dialog.Root open={true} onOpenChange={handleOpenChange}>
+  <Dialog.Content
+    bind:ref={dialog}
+    class={wide ? "sm:max-w-3xl" : ""}
+    showCloseButton={false}
+    onkeydown={handleKeydown}
+  >
+    <Dialog.Header>
+      {#if eyebrow}
+        <p class="eyebrow">{eyebrow}</p>
+      {/if}
+      <Dialog.Title>{title}</Dialog.Title>
+    </Dialog.Header>
+    {@render children?.()}
+    {#if actions}
+      {@render actions()}
+    {:else}
+      <Dialog.Footer>
+        <Button data-primary variant={destructive ? "destructive" : "default"} type="button" onclick={primary}>Continue</Button>
+        <Button variant="outline" type="button" onclick={close}>{closeLabel}</Button>
+      </Dialog.Footer>
     {/if}
-    <h2>{title}</h2>
-    <slot />
-    <slot name="actions">
-      <div class="actions">
-        <button data-primary class:danger={destructive} type="button" on:click={() => dispatch("primary")}>Continue</button>
-        <button class="quiet" type="button" on:click={close}>{closeLabel}</button>
-      </div>
-    </slot>
-  </div>
-</div>
+  </Dialog.Content>
+</Dialog.Root>

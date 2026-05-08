@@ -1,44 +1,79 @@
 <script lang="ts">
   import { bytesFromText, operationFailed } from "../lib/api";
   import { reportOf } from "../lib/format";
+  import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
+  import { Badge } from "$lib/components/ui/badge/index.js";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
+  import * as Field from "$lib/components/ui/field/index.js";
+  import { NativeSelect } from "$lib/components/ui/native-select/index.js";
+  import * as Tabs from "$lib/components/ui/tabs/index.js";
+  import { Textarea } from "$lib/components/ui/textarea/index.js";
   import CopyableId from "./CopyableId.svelte";
   import EmptyState from "./EmptyState.svelte";
   import JsonView from "./JsonView.svelte";
   import StatusBadge from "./StatusBadge.svelte";
 
-  export let selectedCredential: any = null;
-  export let detailMode: "read" | "write" | "delete" | "raw" = "read";
-  export let readResult: any = null;
-  export let preview: any = null;
-  export let previewMode: "write" | "delete" | "" = "";
-  export let payload = "";
-  export let decodeMode = "utf8";
-  export let readDecodeMode = "";
-  export let sessionBusy = false;
-  export let largeBlobBusy = "";
-  export let canConfirmWrite = false;
-  export let canConfirmDelete = false;
-  export let credentialKey: (credential: any) => string;
-  export let readBlob: () => void | Promise<void>;
-  export let previewWrite: () => void | Promise<void>;
-  export let executeWrite: () => void | Promise<void>;
-  export let previewDelete: () => void | Promise<void>;
-  export let executeDelete: () => void | Promise<void>;
-  export let copied: (message: string) => void;
+  type DetailMode = "read" | "write" | "delete" | "raw";
+  type PreviewMode = "write" | "delete" | "";
 
-  $: readReport = reportOf(readResult);
-  $: previewOutput = reportOf(preview);
-  $: mutationPreview = previewOutput?.preview || previewOutput?.result || null;
-  $: mutationWarnings = Array.isArray(mutationPreview?.warnings) ? mutationPreview.warnings : [];
-  $: previewJSON = previewWithoutWarnings(preview?.result || preview);
-  $: capacityLimit = mutationPreview?.serializedLargeBlobArrayLimit || mutationPreview?.support?.maxSerializedLargeBlobArray || 0;
-  $: capacityAfter = mutationPreview?.serializedLargeBlobArraySizeAfter || 0;
-  $: capacityRemaining = capacityLimit ? capacityLimit - capacityAfter : null;
-  $: decodeDirty = Boolean(readResult && readDecodeMode && decodeMode !== readDecodeMode);
-  $: decodeStatus = readReport?.decode || null;
-  $: decodedContent = decodedValue(readReport);
-  $: decodeFailure = decodeStatus?.requested && !decodeStatus?.success ? decodeStatus.failure || "Selected decode mode could not decode this blob." : "";
-  $: busy = sessionBusy || Boolean(largeBlobBusy);
+  interface Props {
+    selectedCredential?: any;
+    detailMode?: DetailMode;
+    readResult?: any;
+    preview?: any;
+    previewMode?: PreviewMode;
+    payload?: string;
+    decodeMode?: string;
+    readDecodeMode?: string;
+    sessionBusy?: boolean;
+    largeBlobBusy?: string;
+    canConfirmWrite?: boolean;
+    canConfirmDelete?: boolean;
+    credentialKey: (credential: any) => string;
+    readBlob: () => void | Promise<void>;
+    previewWrite: () => void | Promise<void>;
+    executeWrite: () => void | Promise<void>;
+    previewDelete: () => void | Promise<void>;
+    executeDelete: () => void | Promise<void>;
+    copied: (message: string) => void;
+  }
+
+  let {
+    selectedCredential = null,
+    detailMode = $bindable<DetailMode>("read"),
+    readResult = null,
+    preview = null,
+    previewMode = "",
+    payload = $bindable(""),
+    decodeMode = $bindable("utf8"),
+    readDecodeMode = "",
+    sessionBusy = false,
+    largeBlobBusy = "",
+    canConfirmWrite = false,
+    canConfirmDelete = false,
+    credentialKey,
+    readBlob,
+    previewWrite,
+    executeWrite,
+    previewDelete,
+    executeDelete,
+    copied,
+  }: Props = $props();
+
+  let readReport = $derived(reportOf(readResult));
+  let previewOutput = $derived(reportOf(preview));
+  let mutationPreview = $derived(previewOutput?.preview || previewOutput?.result || null);
+  let mutationWarnings = $derived(Array.isArray(mutationPreview?.warnings) ? mutationPreview.warnings : []);
+  let previewJSON = $derived(previewWithoutWarnings(preview?.result || preview));
+  let capacityLimit = $derived(mutationPreview?.serializedLargeBlobArrayLimit || mutationPreview?.support?.maxSerializedLargeBlobArray || 0);
+  let capacityAfter = $derived(mutationPreview?.serializedLargeBlobArraySizeAfter || 0);
+  let capacityRemaining = $derived(capacityLimit ? capacityLimit - capacityAfter : null);
+  let decodeDirty = $derived(Boolean(readResult && readDecodeMode && decodeMode !== readDecodeMode));
+  let decodeStatus = $derived(readReport?.decode || null);
+  let decodedContent = $derived(decodedValue(readReport));
+  let decodeFailure = $derived(decodeStatus?.requested && !decodeStatus?.success ? decodeStatus.failure || "Selected decode mode could not decode this blob." : "");
+  let busy = $derived(sessionBusy || Boolean(largeBlobBusy));
 
   function decodedValue(value: any) {
     return value?.decode?.decodedText ?? value?.decode?.decodedValue ?? value?.decodedJSON ?? value?.decodedText ?? value?.decodedValue ?? value?.text ?? "";
@@ -80,59 +115,66 @@
 {#if !selectedCredential}
   <EmptyState eyebrow="Selection" variant="compact" title="Choose a credential" message="Select a row to open its read, write, delete, and raw inspection workspace." />
 {:else}
-  <div class="large-blob-detail-heading">
-    <div class="large-blob-detail-title">
-      <p class="eyebrow">Selected credential</p>
-      <h2>{selectedCredential.user?.displayName || selectedCredential.user?.name || selectedCredential.rp?.id || "Credential"}</h2>
-      <p>{selectedCredential.rp?.id || "unknown RP"}</p>
-    </div>
-    <StatusBadge value={selectedCredential.blobState || "unknown"} label={selectedCredential.blobState || "unknown"} />
-  </div>
-  <CopyableId label="Credential ID" value={credentialKey(selectedCredential)} on:copied={() => copied("Credential ID copied")} />
-
-  <div class="large-blob-mode-tabs" aria-label="Workspace mode">
-    <button class:active={detailMode === "read"} type="button" on:click={() => (detailMode = "read")}>Read</button>
-    <button class:active={detailMode === "write"} type="button" on:click={() => (detailMode = "write")}>Write</button>
-    <button class:active={detailMode === "delete"} type="button" on:click={() => (detailMode = "delete")}>Delete</button>
-    <button class:active={detailMode === "raw"} type="button" on:click={() => (detailMode = "raw")}>Raw</button>
-  </div>
-
-  {#if detailMode === "read"}
-    <section class="large-blob-detail-section">
-      <div class="large-blob-section-heading">
-        <div>
-          <h3>Read result</h3>
-          <p class="muted">Blob presence, byte count, decoded content, and raw hex.</p>
+  <Card.Root class="border-0 bg-transparent p-0 shadow-none ring-0">
+    <Card.Header class="px-0 pt-0">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div class="grid gap-1">
+          <Card.Description>Selected credential</Card.Description>
+          <Card.Title>{selectedCredential.user?.displayName || selectedCredential.user?.name || selectedCredential.rp?.id || "Credential"}</Card.Title>
+          <Card.Description>{selectedCredential.rp?.id || "unknown RP"}</Card.Description>
         </div>
-        <button type="button" on:click={readBlob} disabled={busy}>Read blob</button>
+        <StatusBadge value={selectedCredential.blobState || "unknown"} label={selectedCredential.blobState || "unknown"} />
       </div>
-      <label>Decode mode
-        <select bind:value={decodeMode}>
+      <CopyableId label="Credential ID" value={credentialKey(selectedCredential)} copied={() => copied("Credential ID copied")} />
+    </Card.Header>
+
+    <Card.Content class="grid gap-4 px-0 pb-0">
+  <Tabs.Root bind:value={detailMode}>
+    <Tabs.List aria-label="Workspace mode">
+      <Tabs.Trigger value="read">Read</Tabs.Trigger>
+      <Tabs.Trigger value="write">Write</Tabs.Trigger>
+      <Tabs.Trigger value="delete">Delete</Tabs.Trigger>
+      <Tabs.Trigger value="raw">Raw</Tabs.Trigger>
+    </Tabs.List>
+
+  <Tabs.Content value="read" class="grid gap-4">
+    <Card.Root size="sm">
+      <Card.Header class="flex-row items-start justify-between gap-3">
+        <div class="grid gap-1">
+          <Card.Title>Read result</Card.Title>
+          <Card.Description>Blob presence, byte count, decoded content, and raw hex.</Card.Description>
+        </div>
+        <Button onclick={readBlob} disabled={busy}>Read blob</Button>
+      </Card.Header>
+      <Card.Content class="grid gap-4">
+      <Field.Field>
+        <Field.Label>Decode mode</Field.Label>
+        <NativeSelect bind:value={decodeMode}>
           <option value="none">none</option>
           <option value="utf8">utf8</option>
           <option value="json">json</option>
           <option value="cbor">cbor</option>
-        </select>
-      </label>
+        </NativeSelect>
+      </Field.Field>
       {#if decodeDirty}
-        <div class="notice">Decode mode changed. Re-read the blob to update the decoded content.</div>
+        <Alert><AlertDescription>Decode mode changed. Re-read the blob to update the decoded content.</AlertDescription></Alert>
       {/if}
       {#if operationFailed(readResult)}
-        <div class="notice danger">{operationFailed(readResult)}</div>
+        <Alert variant="destructive"><AlertDescription>{operationFailed(readResult)}</AlertDescription></Alert>
       {:else if readResult}
-        <div class="metric-band">
-          <span>{readReport?.blobPresent ? "Blob present" : "No blob present"}</span>
-          <span>{readReport?.rawByteCount || 0} bytes</span>
-          <span>Decoded as {readDecodeMode || decodeMode}</span>
+        <div class="flex flex-wrap gap-2">
+          <Badge variant="secondary">{readReport?.blobPresent ? "Blob present" : "No blob present"}</Badge>
+          <Badge variant="outline">{readReport?.rawByteCount || 0} bytes</Badge>
+          <Badge variant="outline">Decoded as {readDecodeMode || decodeMode}</Badge>
         </div>
         {#if hasDecodedValue(decodedContent)}
-          <pre>{formatDecodedValue(decodedContent)}</pre>
+          <pre class="max-h-72 overflow-auto rounded-md border border-border bg-muted/40 p-3 text-sm">{formatDecodedValue(decodedContent)}</pre>
         {:else if decodeFailure}
-          <div class="notice">Decode failed: {decodeFailure}</div>
+          <Alert><AlertDescription>Decode failed: {decodeFailure}</AlertDescription></Alert>
         {:else if decodeStatus?.requested && decodeStatus?.success}
-          <div class="notice">Decoded payload is empty.</div>
+          <Alert><AlertDescription>Decoded payload is empty.</AlertDescription></Alert>
         {/if}
-        <CopyableId label="Raw hex" value={readReport?.rawHex || ""} empty="no raw hex" on:copied={() => copied("Raw hex copied")} />
+        <CopyableId label="Raw hex" value={readReport?.rawHex || ""} empty="no raw hex" copied={() => copied("Raw hex copied")} />
         <details class="technical">
           <summary>Raw read report</summary>
           <JsonView value={readResult.result || readResult} title="Read report" variant="bare" />
@@ -140,91 +182,104 @@
       {:else}
         <p class="muted">Run Read to inspect blob presence, byte count, decoded content, and raw hex for this credential.</p>
       {/if}
-    </section>
-  {:else if detailMode === "write"}
-    <section class="large-blob-detail-section">
-      <div class="large-blob-section-heading">
-        <div>
-          <h3>Write payload</h3>
-          <p class="muted">Preview the payload before writing it to this credential.</p>
-        </div>
-      </div>
-      <textarea bind:value={payload} rows="8" placeholder="UTF-8 payload to store in the large blob" on:keydown={handlePayloadKeydown}></textarea>
-      <div class="metric-band">
-        <span>{bytesFromText(payload).length} bytes</span>
-        <span>{payload.length} characters</span>
+      </Card.Content>
+    </Card.Root>
+  </Tabs.Content>
+
+  <Tabs.Content value="write" class="grid gap-4">
+    <Card.Root size="sm">
+      <Card.Header>
+        <Card.Title>Write payload</Card.Title>
+        <Card.Description>Preview the payload before writing it to this credential.</Card.Description>
+      </Card.Header>
+      <Card.Content class="grid gap-4">
+      <Field.Field>
+        <Field.Label>Payload</Field.Label>
+        <Textarea bind:value={payload} rows={8} placeholder="UTF-8 payload to store in the large blob" onkeydown={handlePayloadKeydown} />
+      </Field.Field>
+      <div class="flex flex-wrap gap-2">
+        <Badge variant="outline">{bytesFromText(payload).length} bytes</Badge>
+        <Badge variant="outline">{payload.length} characters</Badge>
       </div>
       {#if operationFailed(preview)}
-        <div class="notice danger">{operationFailed(preview)}</div>
+        <Alert variant="destructive"><AlertDescription>{operationFailed(preview)}</AlertDescription></Alert>
       {/if}
       {#if preview && previewMode === "write"}
-        <div class="notice">Preview ready. Confirm write to update the selected credential blob.</div>
+        <Alert><AlertDescription>Preview ready. Confirm write to update the selected credential blob.</AlertDescription></Alert>
         {#if mutationPreview}
-          <div class="metric-band">
-            <span>{mutationPreview.serializedLargeBlobArraySizeBefore || 0} bytes before</span>
-            <span>{mutationPreview.serializedLargeBlobArraySizeAfter || 0} bytes after</span>
+          <div class="flex flex-wrap gap-2">
+            <Badge variant="outline">{mutationPreview.serializedLargeBlobArraySizeBefore || 0} bytes before</Badge>
+            <Badge variant="outline">{mutationPreview.serializedLargeBlobArraySizeAfter || 0} bytes after</Badge>
             {#if capacityLimit}
-              <span>{Math.max(capacityRemaining || 0, 0)} bytes remaining</span>
+              <Badge variant="outline">{Math.max(capacityRemaining || 0, 0)} bytes remaining</Badge>
             {/if}
           </div>
         {/if}
         {#if mutationWarnings.length}
-          <div class="warning-list" aria-label="Preview warnings">
-            {#each mutationWarnings as warning}
-              <div class:destructive={warning?.severity === "destructive"} class="warning-item">
-                <span>{warningTone(warning)}</span>
-                <p>{warningMessage(warning)}</p>
-              </div>
+          <div class="grid gap-2" aria-label="Preview warnings">
+            {#each mutationWarnings as warning (warning?.code || warningMessage(warning))}
+              <Alert variant={warning?.severity === "destructive" ? "destructive" : "default"}>
+                <Badge variant={warning?.severity === "destructive" ? "destructive" : "secondary"}>{warningTone(warning)}</Badge>
+                <AlertDescription>{warningMessage(warning)}</AlertDescription>
+              </Alert>
             {/each}
           </div>
         {/if}
         <JsonView value={previewJSON} title="Mutation preview" variant="bare" />
       {/if}
-      <div class="large-blob-action-row">
-        <button type="button" on:click={previewWrite} disabled={busy}>Preview write</button>
-        <button type="button" on:click={executeWrite} disabled={busy || !canConfirmWrite}>Confirm write</button>
+      <div class="flex flex-wrap justify-end gap-2">
+        <Button variant="outline" onclick={previewWrite} disabled={busy}>Preview write</Button>
+        <Button onclick={executeWrite} disabled={busy || !canConfirmWrite}>Confirm write</Button>
       </div>
-    </section>
-  {:else if detailMode === "delete"}
-    <section class="large-blob-detail-section">
-      <div class="large-blob-section-heading">
-        <div>
-          <h3>Delete blob</h3>
-          <p class="muted">Preview deletion before removing the blob bytes from this credential.</p>
-        </div>
-      </div>
+      </Card.Content>
+    </Card.Root>
+  </Tabs.Content>
+
+  <Tabs.Content value="delete" class="grid gap-4">
+    <Card.Root size="sm">
+      <Card.Header>
+        <Card.Title>Delete blob</Card.Title>
+        <Card.Description>Preview deletion before removing the blob bytes from this credential.</Card.Description>
+      </Card.Header>
+      <Card.Content class="grid gap-4">
       {#if operationFailed(preview)}
-        <div class="notice danger">{operationFailed(preview)}</div>
+        <Alert variant="destructive"><AlertDescription>{operationFailed(preview)}</AlertDescription></Alert>
       {/if}
       {#if preview && previewMode === "delete"}
-        <div class="notice">Delete preview ready. Confirm delete only if the selected mutation is expected.</div>
+        <Alert><AlertDescription>Delete preview ready. Confirm delete only if the selected mutation is expected.</AlertDescription></Alert>
         {#if mutationPreview}
-          <div class="metric-band">
-            <span>{mutationPreview.serializedLargeBlobArraySizeBefore || 0} bytes before</span>
-            <span>{mutationPreview.serializedLargeBlobArraySizeAfter || 0} bytes after</span>
+          <div class="flex flex-wrap gap-2">
+            <Badge variant="outline">{mutationPreview.serializedLargeBlobArraySizeBefore || 0} bytes before</Badge>
+            <Badge variant="outline">{mutationPreview.serializedLargeBlobArraySizeAfter || 0} bytes after</Badge>
             {#if capacityLimit}
-              <span>{Math.max(capacityRemaining || 0, 0)} bytes remaining</span>
+              <Badge variant="outline">{Math.max(capacityRemaining || 0, 0)} bytes remaining</Badge>
             {/if}
           </div>
         {/if}
         {#if mutationWarnings.length}
-          <div class="warning-list" aria-label="Preview warnings">
-            {#each mutationWarnings as warning}
-              <div class:destructive={warning?.severity === "destructive"} class="warning-item">
-                <span>{warningTone(warning)}</span>
-                <p>{warningMessage(warning)}</p>
-              </div>
+          <div class="grid gap-2" aria-label="Preview warnings">
+            {#each mutationWarnings as warning (warning?.code || warningMessage(warning))}
+              <Alert variant={warning?.severity === "destructive" ? "destructive" : "default"}>
+                <Badge variant={warning?.severity === "destructive" ? "destructive" : "secondary"}>{warningTone(warning)}</Badge>
+                <AlertDescription>{warningMessage(warning)}</AlertDescription>
+              </Alert>
             {/each}
           </div>
         {/if}
         <JsonView value={previewJSON} title="Delete preview" variant="bare" />
       {/if}
-      <div class="large-blob-action-row">
-        <button class="quiet" type="button" on:click={previewDelete} disabled={busy}>Preview delete</button>
-        <button class="danger" type="button" on:click={executeDelete} disabled={busy || !canConfirmDelete}>Confirm delete</button>
+      <div class="flex flex-wrap justify-end gap-2">
+        <Button variant="outline" onclick={previewDelete} disabled={busy}>Preview delete</Button>
+        <Button variant="destructive" onclick={executeDelete} disabled={busy || !canConfirmDelete}>Confirm delete</Button>
       </div>
-    </section>
-  {:else}
+      </Card.Content>
+    </Card.Root>
+  </Tabs.Content>
+
+  <Tabs.Content value="raw">
     <JsonView value={selectedCredential} title="Large blob credential JSON" />
-  {/if}
+  </Tabs.Content>
+  </Tabs.Root>
+    </Card.Content>
+  </Card.Root>
 {/if}

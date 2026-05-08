@@ -1,24 +1,38 @@
 <script lang="ts">
-  export let title = "Nothing here yet";
-  export let message = "";
-  export let eyebrow = "";
-  export let variant: "default" | "compact" | "workspace" = "default";
+  import type { Snippet } from "svelte";
+  import * as Empty from "$lib/components/ui/empty/index.js";
+
+  type Props = {
+    title?: string;
+    message?: string;
+    eyebrow?: string;
+    variant?: "default" | "compact" | "workspace";
+    actions?: Snippet;
+  };
+
+  let {
+    title = "Nothing here yet",
+    message = "",
+    eyebrow = "",
+    variant = "default",
+    actions,
+  }: Props = $props();
 </script>
 
-<div class="empty-state" class:compact={variant === "compact"} class:workspace={variant === "workspace"}>
-  <div class="empty-state-marker" aria-hidden="true"></div>
-  <div class="empty-state-copy">
+<Empty.Root class={`empty-state ${variant === "compact" ? "compact" : ""} ${variant === "workspace" ? "workspace" : ""}`}>
+  <Empty.Media variant="icon" class="empty-state-marker" aria-hidden="true"></Empty.Media>
+  <Empty.Header class="empty-state-copy">
     {#if eyebrow}
       <p class="empty-state-eyebrow">{eyebrow}</p>
     {/if}
-    <h2>{title}</h2>
+    <Empty.Title>{title}</Empty.Title>
     {#if message}
-      <p>{message}</p>
+      <Empty.Description>{message}</Empty.Description>
     {/if}
-  </div>
-  {#if $$slots.actions}
-    <div class="empty-state-actions">
-      <slot name="actions" />
-    </div>
+  </Empty.Header>
+  {#if actions}
+    <Empty.Content class="empty-state-actions">
+      {@render actions()}
+    </Empty.Content>
   {/if}
-</div>
+</Empty.Root>
