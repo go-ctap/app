@@ -80,7 +80,7 @@
   >
     <Dialog.Header>
       {#if eyebrow}
-        <p class="eyebrow">{eyebrow}</p>
+        <p class="text-xs font-medium uppercase tracking-normal text-muted-foreground">{eyebrow}</p>
       {/if}
       <Dialog.Title>{title}</Dialog.Title>
     </Dialog.Header>

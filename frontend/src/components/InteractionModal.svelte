@@ -36,11 +36,11 @@
       <p>{prompt.request.message || "Continue on the authenticator to proceed."}</p>
 
       {#if prompt.request.permission}
-        <p class="muted">Permission: {prompt.request.permission}</p>
+        <p class="text-sm text-muted-foreground">Permission: {prompt.request.permission}</p>
       {/if}
 
       {#if prompt.request.preview}
-        <pre class="preview">{JSON.stringify(prompt.request.preview, null, 2)}</pre>
+        <pre class="my-3 rounded-md border bg-muted/40 p-3 text-sm">{JSON.stringify(prompt.request.preview, null, 2)}</pre>
       {/if}
 
       {#if kind === "pin"}

@@ -14,11 +14,11 @@
 </script>
 
 {#if $operationStatus?.operationId}
-  <div class="operation-bar">
+  <div class="flex items-center justify-between gap-3 rounded-md border bg-card p-3">
     <div>
       <strong>{label}</strong>
       {#if event?.completed !== undefined && event?.total !== undefined}
-        <span>{event.completed} / {event.total}</span>
+        <span class="ml-2 text-sm text-muted-foreground">{event.completed} / {event.total}</span>
       {/if}
     </div>
     <Button variant="destructive" type="button" onclick={cancel}>Cancel</Button>

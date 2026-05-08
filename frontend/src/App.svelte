@@ -111,7 +111,7 @@
 
 <Sidebar.Provider>
   <Sidebar.Root collapsible="icon" class="border-sidebar-border bg-sidebar">
-    <Sidebar.Header class="gap-3 px-3 py-4">
+    <Sidebar.Header class="gap-3 border-b px-3 py-4">
       <div class="flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
         <div class="flex aspect-square size-8 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary">
           <ShieldCheck size={19} strokeWidth={2.4} />
@@ -158,7 +158,7 @@
 
   <Sidebar.Inset class="min-w-0 bg-background">
     <header class="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
-      <div class="grid min-h-20 grid-cols-[auto_minmax(240px,380px)_auto_minmax(280px,auto)_minmax(260px,1fr)] items-center gap-3 px-4 py-3 max-lg:grid-cols-[auto_minmax(0,1fr)_auto] xl:px-5">
+      <div class="grid min-h-16 grid-cols-[auto_minmax(240px,380px)_auto_minmax(280px,auto)_minmax(260px,1fr)] items-center gap-3 px-4 py-2 max-lg:grid-cols-[auto_minmax(0,1fr)_auto] xl:px-5">
         <Sidebar.Trigger class="md:hidden" />
         <div class="grid gap-1.5">
           <label for="token-select" class="m-0 text-xs font-medium text-muted-foreground">Authenticator</label>
@@ -209,23 +209,23 @@
     {/if}
 
     <div class="grid grid-cols-1 items-start gap-2 xl:grid-cols-[minmax(0,1fr)_342px]">
-      <div class="min-w-0 px-2 pb-28">
-        <section class:hidden-screen={$activeScreen !== "overview"} class="screen-pane">
+      <div class="min-w-0 px-4 pb-28 xl:px-5">
+        <section class:hidden={$activeScreen !== "overview"}>
           <Overview />
         </section>
-        <section class:hidden-screen={$activeScreen !== "credentials"} class="screen-pane">
+        <section class:hidden={$activeScreen !== "credentials"}>
           <Credentials />
         </section>
-        <section class:hidden-screen={$activeScreen !== "largeBlobs"} class="screen-pane">
+        <section class:hidden={$activeScreen !== "largeBlobs"}>
           <LargeBlobs />
         </section>
-        <section class:hidden-screen={$activeScreen !== "config"} class="screen-pane">
+        <section class:hidden={$activeScreen !== "config"}>
           <Config />
         </section>
-        <section class:hidden-screen={$activeScreen !== "lab"} class="screen-pane">
+        <section class:hidden={$activeScreen !== "lab"}>
           <Lab />
         </section>
-        <section class:hidden-screen={$activeScreen !== "logs"} class="screen-pane">
+        <section class:hidden={$activeScreen !== "logs"}>
           <Logs />
         </section>
       </div>
@@ -284,9 +284,9 @@
   <WorkbenchStatusBar />
   <Toaster richColors closeButton />
 
-  <div class="toast-stack">
+  <div class="fixed right-5 bottom-24 z-20 grid gap-2">
     {#each $toasts as toast (toast)}
-      <div class="toast">{toast}</div>
+      <div class="rounded-md bg-foreground px-3 py-2 text-sm text-background shadow-lg">{toast}</div>
     {/each}
   </div>
 </Sidebar.Provider>

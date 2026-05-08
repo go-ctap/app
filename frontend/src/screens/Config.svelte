@@ -283,7 +283,7 @@
           </article>
         {/each}
       {:else}
-        <p class="muted">This authenticator does not expose biometric management controls.</p>
+        <p class="text-sm text-muted-foreground">This authenticator does not expose biometric management controls.</p>
       {/if}
       </Card.Content>
     </Card.Root>

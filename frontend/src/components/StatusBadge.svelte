@@ -22,7 +22,11 @@
   });
 </script>
 
-<Badge class="status-badge {tone}" variant={tone === "bad" ? "destructive" : tone === "neutral" ? "outline" : "secondary"} title={help || text}>
-  <span class="status-dot" aria-hidden="true"></span>
+<Badge
+  class={`${tone === "ok" ? "bg-success text-success-foreground" : tone === "warn" ? "bg-warning text-warning-foreground" : ""} gap-1`}
+  variant={tone === "bad" ? "destructive" : tone === "neutral" ? "outline" : "secondary"}
+  title={help || text}
+>
+  <span class="size-1.5 rounded-full bg-current" aria-hidden="true"></span>
   <span>{text}</span>
 </Badge>

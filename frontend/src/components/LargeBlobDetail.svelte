@@ -175,12 +175,12 @@
           <Alert><AlertDescription>Decoded payload is empty.</AlertDescription></Alert>
         {/if}
         <CopyableId label="Raw hex" value={readReport?.rawHex || ""} empty="no raw hex" copied={() => copied("Raw hex copied")} />
-        <details class="technical">
+        <details class="rounded-md border bg-card p-4">
           <summary>Raw read report</summary>
           <JsonView value={readResult.result || readResult} title="Read report" variant="bare" />
         </details>
       {:else}
-        <p class="muted">Run Read to inspect blob presence, byte count, decoded content, and raw hex for this credential.</p>
+        <p class="text-sm text-muted-foreground">Run Read to inspect blob presence, byte count, decoded content, and raw hex for this credential.</p>
       {/if}
       </Card.Content>
     </Card.Root>

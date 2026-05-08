@@ -19,11 +19,11 @@
   }: Props = $props();
 </script>
 
-<Empty.Root class={`empty-state ${variant === "compact" ? "compact" : ""} ${variant === "workspace" ? "workspace" : ""}`}>
-  <Empty.Media variant="icon" class="empty-state-marker" aria-hidden="true"></Empty.Media>
-  <Empty.Header class="empty-state-copy">
+<Empty.Root class={`mt-4 grid ${variant === "compact" ? "min-h-28 grid-cols-[auto_minmax(0,1fr)] bg-muted/45 p-4" : variant === "workspace" ? "min-h-40" : "min-h-36"} items-center gap-4 rounded-lg border bg-card p-5 text-card-foreground shadow-xs max-sm:grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)_auto]`}>
+  <Empty.Media variant="icon" class="border" aria-hidden="true"></Empty.Media>
+  <Empty.Header class="min-w-0">
     {#if eyebrow}
-      <p class="empty-state-eyebrow">{eyebrow}</p>
+      <p class="mb-1 text-xs font-medium uppercase tracking-normal text-muted-foreground">{eyebrow}</p>
     {/if}
     <Empty.Title>{title}</Empty.Title>
     {#if message}
@@ -31,7 +31,7 @@
     {/if}
   </Empty.Header>
   {#if actions}
-    <Empty.Content class="empty-state-actions">
+    <Empty.Content class="flex flex-wrap justify-end gap-2 max-sm:justify-start">
       {@render actions()}
     </Empty.Content>
   {/if}

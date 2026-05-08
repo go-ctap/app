@@ -272,7 +272,7 @@
                 <CopyableId label="User ID" value={credential.userIDHex} empty="no user id" copied={() => pushToast("User ID copied")} />
                 <StatusBadge value={credential.largeBlobKeyState || "unknown"} label={`blob key ${credential.largeBlobKeyState || "unknown"}`} />
               </div>
-              <details class="details-toggle">
+              <details class="rounded-md border bg-card p-3">
                 <summary>Raw credential details</summary>
                 <JsonView value={credential} title="Credential JSON" />
               </details>

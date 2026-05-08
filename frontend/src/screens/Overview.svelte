@@ -6,6 +6,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Skeleton } from "$lib/components/ui/skeleton/index.js";
+  import * as Table from "$lib/components/ui/table/index.js";
   import EmptyState from "../components/EmptyState.svelte";
   import JsonView from "../components/JsonView.svelte";
   import Notice from "../components/Notice.svelte";
@@ -35,12 +36,6 @@
   let extensionsKnown = $derived(Array.isArray(info?.extensions));
   let productName = $derived([device.manufacturer, device.product].filter(Boolean).join(" ") || device.product || device.deviceId || "Selected authenticator");
   let versions = $derived(info.versions || []);
-  let identityMetrics = $derived([
-    { label: "Transport", value: device.transport || "unknown" },
-    { label: "Session", value: sessionStateLabel($sessionStatus.state) },
-    { label: "AAGUID", value: info.aaguid || "not reported" },
-    { label: "Versions", value: versions.join(", ") || "unknown" },
-  ]);
   let extensionItems = $derived(extensionCatalog.map((item) => ({ ...item, state: extensionState(item.id), supported: extensions.includes(item.id) })));
   let capabilityGroups = $derived([
     {
@@ -88,6 +83,19 @@
   let knownCapabilities = $derived(flatCapabilities.filter((item) => item.known));
   let supportedCapabilities = $derived(flatCapabilities.filter((item) => item.supported));
   let capabilitySummary = $derived(knownCapabilities.length ? `${supportedCapabilities.length}/${knownCapabilities.length}` : "unknown");
+  let identityRows = $derived([
+    { label: "Authenticator", value: productName },
+    { label: "AAGUID", value: info.aaguid || "not reported" },
+    { label: "Transport", value: device.transport || "unknown" },
+    { label: "Protocol", value: versions.join(", ") || "unknown" },
+    { label: "User verification", value: stateLabel(options.uv) },
+    { label: "Client PIN", value: stateLabel(options.clientPin ?? Boolean(info.minPINLength || info.maxPINLength)) },
+    { label: "Resident keys", value: stateLabel(options.rk ?? options.residentKey) },
+    { label: "Large blob storage", value: info.maxSerializedLargeBlobArray ? `${info.maxSerializedLargeBlobArray} bytes` : stateLabel(extensions.includes("largeBlobKey")) },
+    { label: "Minimum PIN length", value: info.minPINLength ?? "not reported" },
+    { label: "Maximum PIN length", value: info.maxPINLength ?? "not reported" },
+  ]);
+  let capabilityRows = $derived(capabilityGroups.flatMap((group) => group.items.map((item) => ({ ...item, group: group.title }))));
 
   function capability(title: string, state: unknown, text: string) {
     const known = state !== null && state !== undefined && state !== "";
@@ -116,50 +124,63 @@
     {/snippet}
   </ScreenHeader>
 
-  <div id="overview-dashboard" class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-    {#each identityMetrics as metric (metric.label)}
-      <Card.Root size="sm">
-        <Card.Header>
-          <Card.Description>{metric.label}</Card.Description>
-          <Card.Title class="break-words text-base">{metric.value}</Card.Title>
-        </Card.Header>
-      </Card.Root>
-    {/each}
-    <Card.Root size="sm" class="border-primary/30 bg-primary/5">
-      <Card.Header>
-        <Card.Description>Capability summary</Card.Description>
-        <Card.Title class="text-base">{capabilitySummary}</Card.Title>
-      </Card.Header>
-    </Card.Root>
-  </div>
-
   {#if operationFailed(envelope)}
     <Notice variant="destructive">{operationFailed(envelope)}</Notice>
   {/if}
 
   <section class="grid gap-4">
-    <div class="grid gap-4 xl:grid-cols-2">
-      {#each capabilityGroups as group (group.title)}
-        <Card.Root size="sm">
-          <Card.Header class="flex-row items-start justify-between gap-3">
-            <div class="grid gap-1">
-              <Card.Title>{group.title}</Card.Title>
-              <Card.Description>{group.items.filter((item) => item.supported).length} supported</Card.Description>
-            </div>
-          </Card.Header>
-          <Card.Content class="grid gap-2">
-            {#each group.items as item (item.title)}
-              <article class="flex items-start justify-between gap-3 rounded-md border border-border bg-background px-3 py-2">
-                <div class="grid min-w-0 gap-1">
-                  <strong class="text-sm font-medium text-foreground">{item.title}</strong>
-                  <p class="text-sm leading-5 text-muted-foreground">{item.text}</p>
-                </div>
-                <StatusBadge value={item.state} label={stateLabel(item.state)} />
-              </article>
-            {/each}
-          </Card.Content>
-        </Card.Root>
-      {/each}
+    <div class="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+      <Card.Root>
+        <Card.Header class="flex-row items-start justify-between gap-3">
+          <div class="grid gap-1">
+            <Card.Title>Authenticator Identity</Card.Title>
+            <Card.Description>Transport and protocol values reported by the selected token.</Card.Description>
+          </div>
+          <StatusBadge value={$sessionStatus.state} label={sessionStateLabel($sessionStatus.state)} />
+        </Card.Header>
+        <Card.Content>
+          <Table.Root>
+            <Table.Body>
+              {#each identityRows as row (row.label)}
+                <Table.Row>
+                  <Table.Cell class="w-[190px] text-muted-foreground">{row.label}</Table.Cell>
+                  <Table.Cell class="break-words font-medium">{row.value}</Table.Cell>
+                </Table.Row>
+              {/each}
+            </Table.Body>
+          </Table.Root>
+        </Card.Content>
+      </Card.Root>
+
+      <Card.Root>
+        <Card.Header class="flex-row items-start justify-between gap-3">
+          <div class="grid gap-1">
+            <Card.Title>Capabilities</Card.Title>
+            <Card.Description>{capabilitySummary} known capabilities supported.</Card.Description>
+          </div>
+          <span class="text-sm text-muted-foreground">{extensions.length} extension(s)</span>
+        </Card.Header>
+        <Card.Content>
+          <Table.Root>
+            <Table.Body>
+              {#each capabilityRows as item (`${item.group}:${item.title}`)}
+                <Table.Row>
+                  <Table.Cell class="w-[110px] text-muted-foreground">{item.group}</Table.Cell>
+                  <Table.Cell>
+                    <div class="grid gap-1">
+                      <span class="font-medium">{item.title}</span>
+                      <span class="text-xs text-muted-foreground">{item.text}</span>
+                    </div>
+                  </Table.Cell>
+                  <Table.Cell class="w-[120px] text-right">
+                    <StatusBadge value={item.state} label={stateLabel(item.state)} />
+                  </Table.Cell>
+                </Table.Row>
+              {/each}
+            </Table.Body>
+          </Table.Root>
+        </Card.Content>
+      </Card.Root>
     </div>
 
     <Card.Root>
@@ -170,21 +191,34 @@
         </div>
         <span class="text-sm text-muted-foreground">{extensionItems.filter((item) => item.supported).length} supported</span>
       </Card.Header>
-      <Card.Content class="grid gap-2">
-        {#each extensionItems as item (item.id)}
-          <article class="grid gap-3 rounded-md border border-border bg-background p-3 lg:grid-cols-[220px_1fr_auto] lg:items-center">
-            <div class="grid gap-1">
-              <strong class="break-all text-sm font-medium text-foreground">{item.id}</strong>
-              <span class="text-sm text-muted-foreground">{item.title}</span>
-            </div>
-            <p class="text-sm leading-5 text-muted-foreground">{item.text}</p>
-            <StatusBadge value={item.state} label={stateLabel(item.state)} />
-          </article>
-        {/each}
+      <Card.Content>
+        <Table.Root>
+          <Table.Header>
+            <Table.Row>
+              <Table.Head>Extension</Table.Head>
+              <Table.Head>Description</Table.Head>
+              <Table.Head class="text-right">State</Table.Head>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {#each extensionItems as item (item.id)}
+              <Table.Row>
+                <Table.Cell>
+                  <div class="grid gap-1">
+                    <strong class="break-all font-medium">{item.id}</strong>
+                    <span class="text-xs text-muted-foreground">{item.title}</span>
+                  </div>
+                </Table.Cell>
+                <Table.Cell class="text-muted-foreground">{item.text}</Table.Cell>
+                <Table.Cell class="text-right"><StatusBadge value={item.state} label={stateLabel(item.state)} /></Table.Cell>
+              </Table.Row>
+            {/each}
+          </Table.Body>
+        </Table.Root>
       </Card.Content>
     </Card.Root>
 
-    <details class="technical raw-report">
+    <details class="rounded-md border bg-card p-4">
       <summary>Raw technical report</summary>
       <JsonView value={report} title="Inspection result" variant="bare" />
     </details>

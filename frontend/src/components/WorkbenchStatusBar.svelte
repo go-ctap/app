@@ -45,13 +45,16 @@
 </script>
 
 {#if hasContext}
-  <section class:running={Boolean(operation)} class:error={outcome?.tone === "error" || $sessionStatus.state === "error" || $sessionStatus.state === "stale"} class="workbench-status-bar" aria-live="polite">
-    <div class="status-context">
+  <section
+    class={`fixed right-4 bottom-3 left-4 z-30 grid min-h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg border bg-popover/95 p-3 text-popover-foreground shadow-lg backdrop-blur max-sm:right-2 max-sm:left-2 max-sm:grid-cols-1 ${operation ? "border-warning bg-warning/90 text-warning-foreground" : ""} ${outcome?.tone === "error" || $sessionStatus.state === "error" || $sessionStatus.state === "stale" ? "border-destructive/30 bg-destructive/10 text-destructive" : ""}`}
+    aria-live="polite"
+  >
+    <div class="flex min-w-0 items-center gap-3">
       <StatusBadge value={$sessionStatus.state} label={sessionStateLabel($sessionStatus.state)} />
-      <div class="status-copy">
-        <strong>{title}</strong>
+      <div class="grid min-w-0 gap-0.5">
+        <strong class="truncate">{title}</strong>
         {#if message}
-          <span>{message}</span>
+          <span class="truncate text-sm text-muted-foreground max-sm:whitespace-normal">{message}</span>
         {/if}
         {#if operation?.event?.completed !== undefined && operation?.event?.total}
           <Progress value={operation.event.completed} max={operation.event.total} />
@@ -59,7 +62,7 @@
       </div>
     </div>
 
-    <div class="status-actions">
+    <div class="flex flex-wrap items-center justify-end gap-2 max-sm:justify-start">
       {#if operation}
         {#if detailLogEntryId}
           <Button variant="outline" size="sm" type="button" onclick={() => viewDetails(detailLogEntryId)}>View details</Button>

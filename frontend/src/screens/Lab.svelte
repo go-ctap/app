@@ -1,6 +1,6 @@
 <script lang="ts">
   import { api, bytesFromJSON, parseHexLines, operationFailed } from "../lib/api";
-  import { beginOperation, selectedSelector, selectionVersion, pushToast, sessionBusy, setStatusOutcome, summarizeEnvelope } from "../lib/stores";
+  import { beginOperation, selectedSelector, pushToast, sessionBusy, setStatusOutcome, summarizeEnvelope } from "../lib/stores";
   import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -28,7 +28,6 @@
   let userVerification = $state(true);
   let makeResult: any = $state(null);
   let assertionResult: any = $state(null);
-  let lastSelectionVersion = $selectionVersion;
 
   let selector = $derived($selectedSelector);
   let clientData = $derived({ type: "webauthn.create", challenge, origin: `https://${rpID}` });
@@ -53,21 +52,9 @@
   let makeBytes = $derived(makeInput.clientDataJSON?.length || 0);
   let getBytes = $derived(getInput.clientDataJSON?.length || 0);
 
-  $effect(() => {
-    if ($selectionVersion === lastSelectionVersion) return;
-    lastSelectionVersion = $selectionVersion;
-    resetResults();
-  });
-
   function failureEnvelope(error: unknown) {
     const message = error instanceof Error ? error.message : String(error || "Operation failed");
     return { error: { message } };
-  }
-
-  function resetResults() {
-    makeResult = null;
-    assertionResult = null;
-    allowList = "";
   }
 
   async function previewMake() {
@@ -142,8 +129,8 @@
 {#if !selector}
   <EmptyState eyebrow="No token" title="No token selected" message="Select an authenticator before running the lab." />
 {:else}
-  <section class="step-workflow">
-    <div class="step-stack">
+  <section class="my-4 grid grid-cols-[minmax(0,1fr)_minmax(320px,0.78fr)] items-start gap-4 max-md:grid-cols-1">
+    <div class="grid gap-3">
       <StepPanel step="1" title="makeCredential" active>
         <Field.Group>
           <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -174,10 +161,10 @@
           <Button variant="outline" onclick={previewMake} disabled={$sessionBusy}>Preview</Button>
           <Button onclick={runMake} disabled={$sessionBusy}>Run makeCredential</Button>
         </div>
-        <div id="make-result" class="step-result">
-          <div class="section-heading">
+        <div id="make-result" class="mt-4 grid gap-3 border-t pt-3">
+          <div class="flex items-start justify-between gap-3">
             <h3>makeCredential result</h3>
-            <span class="muted">{makeBytes} client-data bytes</span>
+            <span class="text-sm text-muted-foreground">{makeBytes} client-data bytes</span>
           </div>
           {#if operationFailed(makeResult)}
             <Alert variant="destructive"><AlertDescription>{operationFailed(makeResult)}</AlertDescription></Alert>
@@ -191,12 +178,12 @@
               <CopyableId label="Credential ID" value={createdCredentialID} copied={() => pushToast("Credential ID copied")} />
               <Button class="w-fit" variant="outline" onclick={useCreatedCredential}>Use in getAssertion</Button>
             {/if}
-            <details class="technical">
+            <details class="rounded-md border bg-card p-4">
               <summary>Raw makeCredential output</summary>
               <JsonView value={makeReport} title="Raw makeCredential result" variant="bare" />
             </details>
           {:else}
-            <p class="muted">Preview or run makeCredential to see normalized input, warnings, credential ID, and raw output here.</p>
+            <p class="text-sm text-muted-foreground">Preview or run makeCredential to see normalized input, warnings, credential ID, and raw output here.</p>
           {/if}
         </div>
       </StepPanel>
@@ -210,17 +197,17 @@
             </AlertDescription>
           </Alert>
         {:else}
-          <p class="muted">Leave the allow list empty to ask the authenticator to choose a matching credential for the RP ID.</p>
+          <p class="text-sm text-muted-foreground">Leave the allow list empty to ask the authenticator to choose a matching credential for the RP ID.</p>
         {/if}
         <Field.Field>
           <Field.Label>Allow credential IDs, one per line</Field.Label>
           <Textarea bind:value={allowList} rows={6} onkeydown={(event) => textareaPrimary(event, runGet)} />
         </Field.Field>
         <Button class="w-fit" onclick={runGet} disabled={$sessionBusy}>Run getAssertion</Button>
-        <div id="assertion-result" class="step-result">
-          <div class="section-heading">
+        <div id="assertion-result" class="mt-4 grid gap-3 border-t pt-3">
+          <div class="flex items-start justify-between gap-3">
             <h3>getAssertion result</h3>
-            <span class="muted">{getBytes} client-data bytes</span>
+            <span class="text-sm text-muted-foreground">{getBytes} client-data bytes</span>
           </div>
           {#if operationFailed(assertionResult)}
             <Alert variant="destructive"><AlertDescription>{operationFailed(assertionResult)}</AlertDescription></Alert>
@@ -242,18 +229,18 @@
             {#if assertionReport?.clientDataJSONHex}
               <CopyableId label="Client data" value={assertionReport.clientDataJSONHex} copied={() => pushToast("Client data copied")} />
             {/if}
-            <details class="technical">
+            <details class="rounded-md border bg-card p-4">
               <summary>Raw getAssertion output</summary>
               <JsonView value={assertionReport} title="Raw getAssertion result" variant="bare" />
             </details>
           {:else}
-            <p class="muted">Run getAssertion to see assertion artifacts, copy actions, and raw output in this step.</p>
+            <p class="text-sm text-muted-foreground">Run getAssertion to see assertion artifacts, copy actions, and raw output in this step.</p>
           {/if}
         </div>
       </StepPanel>
     </div>
 
-    <aside class="inspector-rail">
+    <aside class="grid gap-3">
       <Card.Root>
         <Card.Header>
           <Card.Title>Artifacts</Card.Title>
@@ -264,7 +251,7 @@
           <div class="flex items-center justify-between gap-3 rounded-md border border-border p-2"><span>Allow list</span><strong>{getInput.allowList.length} item(s)</strong></div>
         </Card.Content>
       </Card.Root>
-      <details class="technical" open>
+      <details class="rounded-md border bg-card p-4" open>
         <summary>Normalized inputs</summary>
         <JsonView value={makeInput} title="makeCredential input" />
         <JsonView value={getInput} title="getAssertion input" />
