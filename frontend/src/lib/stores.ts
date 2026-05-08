@@ -88,6 +88,7 @@ export const workbenchLog = writable<WorkbenchLogEntry[]>([]);
 export const selectedLogEntryId = writable("");
 export const sessionStatus = writable<SessionStatus>({ state: "idle" });
 export const overviewEnvelope = writable<Envelope | null>(null);
+export const overviewBioSensorEnvelope = writable<Envelope | null>(null);
 export const overviewLoading = writable(false);
 export const pendingInteraction = writable<any | null>(null);
 export const appError = writable<string | null>(null);
@@ -296,6 +297,7 @@ export function applyDiscovery(response: Discovery): boolean {
   if (changed) {
     selectionVersion.update((value) => value + 1);
     overviewEnvelope.set(null);
+    overviewBioSensorEnvelope.set(null);
     clearSharedCredentialInventory(previousSelector);
   }
   if (response.session) sessionStatus.set(response.session);
@@ -407,6 +409,8 @@ export function setLargeBlobScreenState(selector: string, state: LargeBlobScreen
 }
 
 export function clearWorkbenchScreenCaches() {
+  overviewEnvelope.set(null);
+  overviewBioSensorEnvelope.set(null);
   credentialsScreenCache.set({});
   largeBlobScreenCache.set({});
   clearSharedCredentialInventory();

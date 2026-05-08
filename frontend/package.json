@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.4",
+    "@tanstack/table-core": "^8.21.3",
     "@wailsio/runtime": "latest",
     "bits-ui": "^2.18.1",
     "clsx": "^2.1.1",
+    "shiki": "^4.0.2",
     "svelte": "^5.55.5",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.4",

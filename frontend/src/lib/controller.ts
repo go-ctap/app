@@ -11,6 +11,7 @@ import {
   clearSharedCredentialInventory,
   clearWorkbenchScreenCaches,
   finishOperation,
+  overviewBioSensorEnvelope,
   overviewEnvelope,
   overviewLoading,
   pendingInteraction,
@@ -31,6 +32,16 @@ function messageFromError(error: unknown) {
 
 function failureEnvelope(error: unknown): Envelope {
   return { error: { message: messageFromError(error) } };
+}
+
+function resultFromEnvelope(envelope: Envelope | null | undefined) {
+  return envelope?.result?.result ?? envelope?.result?.report ?? envelope?.result ?? null;
+}
+
+function shouldLoadBioSensor(envelope: Envelope | null | undefined) {
+  const report = resultFromEnvelope(envelope);
+  const options = report?.info?.options || {};
+  return options.bioEnroll === true || options.uvBioEnroll === true;
 }
 
 function shouldAutoLoadOverview() {
@@ -133,6 +144,7 @@ export async function selectToken(selector: string) {
   const epoch = ++lifecycleEpoch;
   overviewEpoch++;
   overviewEnvelope.set(null);
+  overviewBioSensorEnvelope.set(null);
   try {
     const discovery = await api.select(selector);
     if (epoch !== lifecycleEpoch) return;
@@ -247,18 +259,32 @@ export async function loadOverview(selector = get(selectedSelector)) {
   selector = selector.trim();
   if (!selector) {
     overviewEnvelope.set(null);
+    overviewBioSensorEnvelope.set(null);
     overviewLoading.set(false);
     return;
   }
 
   const epoch = ++overviewEpoch;
   overviewLoading.set(true);
+  overviewBioSensorEnvelope.set(null);
   try {
     beginOperation("Overview inspection", "overview-dashboard");
     const envelope = await api.inspect(selector);
     if (epoch !== overviewEpoch || selector !== get(selectedSelector)) return;
     overviewEnvelope.set(envelope);
     applyEnvelope(envelope);
+    if (!operationFailed(envelope) && shouldLoadBioSensor(envelope)) {
+      try {
+        const bioEnvelope = await api.bioSensorInfo(selector);
+        if (epoch !== overviewEpoch || selector !== get(selectedSelector)) return;
+        overviewBioSensorEnvelope.set(bioEnvelope);
+        applyEnvelope(bioEnvelope);
+      } catch {
+        if (epoch === overviewEpoch && selector === get(selectedSelector)) {
+          overviewBioSensorEnvelope.set(null);
+        }
+      }
+    }
     summarizeEnvelope("Overview inspection", envelope, "overview-dashboard", () => loadOverview(selector));
     if (operationFailed(envelope)) {
       appError.set(null);
@@ -267,6 +293,7 @@ export async function loadOverview(selector = get(selectedSelector)) {
     if (epoch === overviewEpoch && selector === get(selectedSelector)) {
       const envelope = failureEnvelope(error);
       overviewEnvelope.set(envelope);
+      overviewBioSensorEnvelope.set(null);
       summarizeEnvelope("Overview inspection", envelope, "overview-dashboard", () => loadOverview(selector));
     }
   } finally {

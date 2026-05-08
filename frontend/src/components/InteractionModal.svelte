@@ -5,6 +5,7 @@
   import * as Field from "$lib/components/ui/field/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import DialogShell from "./DialogShell.svelte";
+  import JsonView from "./JsonView.svelte";
 
   let pin = $state("");
 
@@ -40,7 +41,7 @@
       {/if}
 
       {#if prompt.request.preview}
-        <pre class="my-3 rounded-md border bg-muted/40 p-3 text-sm">{JSON.stringify(prompt.request.preview, null, 2)}</pre>
+        <JsonView value={prompt.request.preview} title="Preview JSON" variant="bare" />
       {/if}
 
       {#if kind === "pin"}

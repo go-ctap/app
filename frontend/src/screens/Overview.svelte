@@ -1,126 +1,63 @@
 <script lang="ts">
   import { operationFailed } from "$lib/api";
   import { loadOverview } from "$lib/controller";
-  import { overviewEnvelope, overviewLoading, selectedDevice, selectedSelector, sessionBusy, sessionStatus } from "$lib/stores";
-  import { resultOf, sessionStateLabel, stateLabel } from "$lib/format";
+  import { overviewBioSensorEnvelope, overviewEnvelope, overviewLoading, selectedDevice, selectedSelector, sessionBusy, sessionStatus } from "$lib/stores";
+  import { resultOf, sessionStateLabel } from "$lib/format";
+  import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
+  import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Separator } from "$lib/components/ui/separator/index.js";
   import { Skeleton } from "$lib/components/ui/skeleton/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
+  import {
+    buildOverviewRows,
+    formatAlgorithm,
+    groupOverviewRows,
+    inlineList,
+    overviewStatusLabel,
+  } from "$lib/overview-rules";
   import EmptyState from "../components/EmptyState.svelte";
   import JsonView from "../components/JsonView.svelte";
-  import Notice from "../components/Notice.svelte";
   import StatusBadge from "../components/StatusBadge.svelte";
-
-  const extensionCatalog = [
-    { id: "credProtect", title: "Credential protection", text: "Credential protection policy" },
-    { id: "credBlob", title: "Credential blob", text: "Small opaque blob at credential creation" },
-    { id: "largeBlobKey", title: "Large blob key", text: "Per-credential key for large-blob entries" },
-    { id: "largeBlob", title: "Large blob", text: "Read/write larger per-credential blob data" },
-    { id: "minPinLength", title: "Minimum PIN length", text: "Minimum PIN length policy" },
-    { id: "pinComplexityPolicy", title: "PIN complexity policy", text: "PIN policy requirements" },
-    { id: "hmac-secret", title: "HMAC secret", text: "Credential-scoped symmetric secret" },
-    { id: "hmac-secret-mc", title: "HMAC secret at creation", text: "Secret derivation during makeCredential" },
-    { id: "thirdPartyPayment", title: "Third-party payment", text: "Payment authentication marker" },
-  ];
 
   let selector = $derived($selectedSelector);
   let envelope = $derived($overviewEnvelope);
+  let bioSensorEnvelope = $derived($overviewBioSensorEnvelope);
   let loading = $derived($overviewLoading);
   let report = $derived(resultOf(envelope));
+  let bioSensorReport = $derived(resultOf(bioSensorEnvelope));
   let device = $derived(report?.device || $selectedDevice || {});
   let info = $derived(report?.info || {});
-  let options = $derived(info?.options || {});
-  let extensions = $derived(Array.isArray(info?.extensions) ? info.extensions : []);
-  let extensionsKnown = $derived(Array.isArray(info?.extensions));
+  let versions = $derived(Array.isArray(info?.versions) ? info.versions : []);
+  let transports = $derived(Array.isArray(info?.transports) ? info.transports : []);
+  let algorithms = $derived(Array.isArray(info?.algorithms) ? info.algorithms : []);
+  let attestationFormats = $derived(Array.isArray(info?.attestationFormats) ? info.attestationFormats : []);
+  let pinUvProtocols = $derived(Array.isArray(info?.pinUvAuthProtocols) ? info.pinUvAuthProtocols : []);
   let productName = $derived([device.manufacturer, device.product].filter(Boolean).join(" ") || device.product || device.deviceId || "Selected authenticator");
-  let versions = $derived(Array.isArray(info.versions) ? info.versions : []);
-  let extensionItems = $derived(extensionCatalog.map((item) => ({ ...item, state: extensionState(item.id), supported: extensions.includes(item.id) })));
-  let capabilityGroups = $derived([
-    {
-      title: "Sign-in",
-      items: [
-        capability("Discoverable credentials", options.rk ?? options.residentKey, "Stored passkeys"),
-        capability("User presence", options.up ?? true, "Touch or presence check"),
-        capability("Enterprise attestation", options.ep, "Managed attestation"),
-      ],
-    },
-    {
-      title: "Verification",
-      items: [
-        capability("User verification", options.uv, "Local user verification"),
-        capability("PIN", options.clientPin ?? Boolean(info.minPINLength || info.maxPINLength), "PIN-backed permissions"),
-        capability("Biometric modality", info.uvModality === undefined ? undefined : Boolean(info.uvModality), "Verification sensor report"),
-      ],
-    },
-    {
-      title: "Storage",
-      items: [
-        capability("Large blobs", extensions.includes("largeBlobKey") || Boolean(info.maxSerializedLargeBlobArray), "Credential-adjacent app data"),
-        capability("Credential management", options.credMgmt ?? options.credentialMgmtPreview, "Resident credential management"),
-        capability("Maximum blob array", info.maxSerializedLargeBlobArray, "Large-blob array ceiling"),
-      ],
-    },
-    {
-      title: "Administration",
-      items: [
-        capability("Authenticator config", extensions.includes("authenticatorConfig") || options.alwaysUv, "Policy configuration"),
-        capability("Minimum PIN length", info.minPINLength || options.setMinPINLength, "PIN length controls"),
-        capability("Authenticator reset", resetState(), "Reset support hints"),
-      ],
-    },
-    {
-      title: "Protocol",
-      items: [
-        capability("PIN/UV protocols", (info.pinUvAuthProtocols || []).length, "PIN/UV protocol versions"),
-        capability("Extensions", extensionsKnown ? extensions.length : undefined, "Optional CTAP extensions"),
-        capability("Algorithms", (info.algorithms || []).length, "Public-key algorithms"),
-      ],
-    },
-  ]);
-  let capabilityRows = $derived(capabilityGroups.flatMap((group) => group.items.map((item) => ({ ...item, group: group.title }))));
-  let knownCapabilities = $derived(capabilityRows.filter((item) => item.known));
-  let supportedCapabilities = $derived(capabilityRows.filter((item) => item.supported));
-  let identityRows = $derived([
-    { label: "Authenticator", value: productName },
+  let protocolLabel = $derived(versions.join(", ") || "unknown");
+  let transportLabel = $derived(transports.length ? transports.join(", ") : device.transport || "unknown");
+  let overviewRows = $derived(buildOverviewRows({ info, device, bioSensor: bioSensorReport || {} }));
+  let overviewGroups = $derived(groupOverviewRows(overviewRows));
+  let warningOverviewRows = $derived(overviewRows.filter((row) => row.status === "warning"));
+  let heroFacts = $derived([
     { label: "AAGUID", value: info.aaguid || "not reported" },
-    { label: "Transport", value: device.transport || "unknown" },
-    { label: "Protocol", value: versions.join(", ") || "unknown" },
-    { label: "User verification", value: stateLabel(options.uv) },
-    { label: "Client PIN", value: stateLabel(options.clientPin ?? Boolean(info.minPINLength || info.maxPINLength)) },
-    { label: "Resident keys", value: stateLabel(options.rk ?? options.residentKey) },
-    { label: "Large blob storage", value: info.maxSerializedLargeBlobArray ? `${info.maxSerializedLargeBlobArray} bytes` : stateLabel(extensions.includes("largeBlobKey")) },
-    { label: "Minimum PIN length", value: info.minPINLength ?? "not reported" },
-    { label: "Maximum PIN length", value: info.maxPINLength ?? "not reported" },
+    { label: "Transport", value: transportLabel },
+    { label: "Protocol", value: protocolLabel },
+    { label: "Device ID", value: device.deviceId || "not reported" },
   ]);
-  let summaryItems = $derived([
-    { label: "Capabilities", value: knownCapabilities.length ? `${supportedCapabilities.length}/${knownCapabilities.length}` : "unknown" },
-    { label: "Extensions", value: extensionsKnown ? `${extensions.length}` : "unknown" },
-    { label: "PIN/UV protocols", value: (info.pinUvAuthProtocols || []).length || "unknown" },
-    { label: "Algorithms", value: (info.algorithms || []).length || "unknown" },
+  let technicalRows = $derived([
+    { label: "Transports", value: transportLabel },
+    { label: "Algorithms", value: algorithms.length ? inlineList(algorithms.map(formatAlgorithm)) : "not reported" },
+    { label: "Attestation", value: inlineList(attestationFormats, "not reported") },
+    { label: "PIN/UV protocols", value: inlineList(pinUvProtocols, "not reported") },
+    { label: "Max message size", value: info.maxMsgSize ? `${info.maxMsgSize} bytes` : "not reported" },
+    { label: "Max credential length", value: info.maxCredentialLength ? `${info.maxCredentialLength} bytes` : "not reported" },
+    { label: "Max serialized large-blob array", value: info.maxSerializedLargeBlobArray ? `${info.maxSerializedLargeBlobArray} bytes` : "not reported" },
   ]);
 
-  function capability(title: string, state: unknown, text: string) {
-    const known = state !== null && state !== undefined && state !== "";
-    const supported = state === true || (typeof state === "number" && state > 0) || (typeof state === "string" && !["false", "not reported", "unknown"].includes(state));
-    return { title, state, text, known, supported };
-  }
-
-  function resetState() {
-    if (info.longTouchForReset === true || (info.transportsForReset || []).length > 0) return true;
-    if (info.longTouchForReset === false) return false;
-    return "not reported";
-  }
-
-  function extensionState(id: string) {
-    if (!extensionsKnown) return undefined;
-    return extensions.includes(id);
-  }
-
-  function displayState(value: unknown) {
-    if (typeof value === "number" && value > 0) return String(value);
-    return stateLabel(value);
+  async function copyReport() {
+    await navigator.clipboard?.writeText(JSON.stringify(report ?? null, null, 2));
   }
 </script>
 
@@ -128,118 +65,27 @@
   <EmptyState title="Choose an authenticator" message="Connect a token and select it in the top bar." />
 {:else if report}
   <section class="grid gap-4">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div class="grid gap-1">
-        <h1 class="text-2xl font-semibold tracking-normal">{productName}</h1>
-        <p class="m-0 text-sm text-muted-foreground">{device.deviceId || "Current authenticator overview"}</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <StatusBadge value={$sessionStatus.state} label={sessionStateLabel($sessionStatus.state)} />
-        <Button onclick={() => loadOverview(selector)} disabled={loading || $sessionBusy}>{loading ? "Reloading" : "Reload overview"}</Button>
-      </div>
-    </div>
-
-    {#if operationFailed(envelope)}
-      <Notice variant="destructive">{operationFailed(envelope)}</Notice>
-    {/if}
-
-    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      {#each summaryItems as item (item.label)}
-        <Card.Root size="sm">
-          <Card.Header>
-            <Card.Description>{item.label}</Card.Description>
-            <Card.Title class="text-2xl">{item.value}</Card.Title>
-          </Card.Header>
-        </Card.Root>
-      {/each}
-    </div>
-
-    <div class="grid gap-4 2xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-      <Card.Root>
-        <Card.Header class="has-data-[slot=card-action]:grid-cols-[1fr_auto]">
-          <Card.Title>Authenticator Identity</Card.Title>
-          <Card.Description>Transport and protocol fields</Card.Description>
-          <Card.Action>
-            <StatusBadge value={$sessionStatus.state} label={$sessionStatus.state === "ready" ? "open" : sessionStateLabel($sessionStatus.state)} />
-          </Card.Action>
-        </Card.Header>
-        <Card.Content>
-          <Table.Root>
-            <Table.Body>
-              {#each identityRows as row (row.label)}
-                <Table.Row>
-                  <Table.Cell class="w-[180px] text-muted-foreground">{row.label}</Table.Cell>
-                  <Table.Cell class="whitespace-normal break-words font-medium">{row.value}</Table.Cell>
-                </Table.Row>
-              {/each}
-            </Table.Body>
-          </Table.Root>
-        </Card.Content>
-      </Card.Root>
-
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Capabilities</Card.Title>
-          <Card.Description>{knownCapabilities.length ? `${supportedCapabilities.length} supported, ${knownCapabilities.length - supportedCapabilities.length} unavailable or unknown` : "No capability report"}</Card.Description>
-        </Card.Header>
-        <Card.Content>
-          <Table.Root>
-            <Table.Header>
-              <Table.Row>
-                <Table.Head class="w-[120px]">Group</Table.Head>
-                <Table.Head>Capability</Table.Head>
-                <Table.Head class="w-[126px] text-right">State</Table.Head>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {#each capabilityRows as item (`${item.group}:${item.title}`)}
-                <Table.Row>
-                  <Table.Cell class="text-muted-foreground">{item.group}</Table.Cell>
-                  <Table.Cell class="whitespace-normal">
-                    <div class="grid gap-1">
-                      <span class="font-medium">{item.title}</span>
-                      <span class="text-xs text-muted-foreground">{item.text}</span>
-                    </div>
-                  </Table.Cell>
-                  <Table.Cell class="text-right">
-                    <StatusBadge value={item.state} label={displayState(item.state)} />
-                  </Table.Cell>
-                </Table.Row>
-              {/each}
-            </Table.Body>
-          </Table.Root>
-        </Card.Content>
-      </Card.Root>
-    </div>
-
     <Card.Root>
       <Card.Header class="has-data-[slot=card-action]:grid-cols-[1fr_auto]">
-        <Card.Title>Extensions</Card.Title>
-        <Card.Description>CTAP extension identifiers</Card.Description>
+        <div class="grid gap-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">Overview</Badge>
+            <StatusBadge value={$sessionStatus.state} label={sessionStateLabel($sessionStatus.state)} />
+          </div>
+          <Card.Title class="text-2xl">{productName}</Card.Title>
+          <Card.Description class="break-all">{device.deviceId || "Current authenticator overview"}</Card.Description>
+        </div>
         <Card.Action>
-          <span class="text-sm text-muted-foreground">{extensionItems.filter((item) => item.supported).length} supported</span>
+          <Button onclick={() => loadOverview(selector)} disabled={loading || $sessionBusy}>{loading ? "Reloading" : "Reload overview"}</Button>
         </Card.Action>
       </Card.Header>
       <Card.Content>
         <Table.Root>
-          <Table.Header>
-            <Table.Row>
-              <Table.Head>Extension</Table.Head>
-              <Table.Head>Description</Table.Head>
-              <Table.Head class="w-[120px] text-right">State</Table.Head>
-            </Table.Row>
-          </Table.Header>
           <Table.Body>
-            {#each extensionItems as item (item.id)}
+            {#each heroFacts as fact (fact.label)}
               <Table.Row>
-                <Table.Cell>
-                  <div class="grid gap-1">
-                    <span class="break-all font-medium">{item.id}</span>
-                    <span class="text-xs text-muted-foreground">{item.title}</span>
-                  </div>
-                </Table.Cell>
-                <Table.Cell class="whitespace-normal text-muted-foreground">{item.text}</Table.Cell>
-                <Table.Cell class="text-right"><StatusBadge value={item.state} label={stateLabel(item.state)} /></Table.Cell>
+                <Table.Cell class="w-[150px] text-muted-foreground">{fact.label}</Table.Cell>
+                <Table.Cell class="whitespace-normal break-words font-medium">{fact.value}</Table.Cell>
               </Table.Row>
             {/each}
           </Table.Body>
@@ -247,37 +93,137 @@
       </Card.Content>
     </Card.Root>
 
-    <details class="rounded-xl border bg-card p-4 text-sm shadow-xs">
-      <summary class="cursor-pointer font-medium">Raw technical report</summary>
-      <Separator class="my-4" />
-      <JsonView value={report} title="Inspection result" variant="bare" />
-    </details>
+    {#if operationFailed(envelope)}
+      <Alert variant="destructive">
+        <AlertDescription>{operationFailed(envelope)}</AlertDescription>
+      </Alert>
+    {/if}
+
+    <Card.Root>
+      <Card.Header class="has-data-[slot=card-action]:grid-cols-[1fr_auto]">
+        <div class="grid gap-1">
+          <Card.Title>GetInfo capability rules</Card.Title>
+          <Card.Description>CTAP 2.2 authenticatorGetInfo fields interpreted with explicit option, extension, and limit semantics</Card.Description>
+        </div>
+        <Card.Action>
+          {#if warningOverviewRows.length}
+            <Badge variant="secondary">{warningOverviewRows.length} warning{warningOverviewRows.length === 1 ? "" : "s"}</Badge>
+          {/if}
+        </Card.Action>
+      </Card.Header>
+      <Card.Content>
+        <div class="rounded-md border">
+          <Table.Root>
+            <Table.Header>
+              <Table.Row>
+                <Table.Head class="min-w-[180px]">Name</Table.Head>
+                <Table.Head class="min-w-[260px]">Description</Table.Head>
+                <Table.Head class="w-[150px] text-right">Status</Table.Head>
+                <Table.Head class="min-w-[180px]">Value</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {#each overviewGroups as group (group.name)}
+                <Table.Row class="bg-muted/50 hover:bg-muted/50">
+                  <Table.Cell colspan={4} class="py-2">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <span class="font-medium">{group.name}</span>
+                    </div>
+                  </Table.Cell>
+                </Table.Row>
+                {#each group.rows as row (`${row.group}:${row.name}`)}
+                  <Table.Row class={row.status === "unsupported" ? "text-muted-foreground" : ""}>
+                    <Table.Cell class="whitespace-normal align-top">
+                      <div class="grid gap-1">
+                        <span class="font-medium">{row.name}</span>
+                        {#if row.source}
+                          <span class="hidden break-all text-xs text-muted-foreground md:inline">{row.source}</span>
+                        {/if}
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell class="whitespace-normal align-top text-muted-foreground">{row.description}</Table.Cell>
+                    <Table.Cell class="whitespace-normal align-top text-right">
+                      <div class="flex justify-end">
+                        <StatusBadge value={row.status} label={overviewStatusLabel(row.status)} help={row.source || row.name} />
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell class="whitespace-normal align-top">
+                      <span class="break-words font-medium">{row.value || "not reported"}</span>
+                    </Table.Cell>
+                  </Table.Row>
+                {/each}
+              {:else}
+                <Table.Row>
+                  <Table.Cell colspan={4} class="h-24 text-center text-muted-foreground">No getInfo fields reported.</Table.Cell>
+                </Table.Row>
+              {/each}
+            </Table.Body>
+          </Table.Root>
+        </div>
+      </Card.Content>
+    </Card.Root>
+
+    <Card.Root>
+      <Card.Header class="has-data-[slot=card-action]:grid-cols-[1fr_auto]">
+        <div class="grid gap-1">
+          <Card.Title>Technical details</Card.Title>
+          <Card.Description>Raw CTAP getInfo, transports, algorithms, attestation, and JSON export</Card.Description>
+        </div>
+        <Card.Action>
+          <Button variant="outline" size="sm" type="button" onclick={copyReport}>Export JSON</Button>
+        </Card.Action>
+      </Card.Header>
+      <Card.Content class="grid gap-4">
+        <Table.Root>
+          <Table.Body>
+            {#each technicalRows as row (row.label)}
+              <Table.Row>
+                <Table.Cell class="w-[220px] text-muted-foreground">{row.label}</Table.Cell>
+                <Table.Cell class="whitespace-normal break-words font-medium">{row.value}</Table.Cell>
+              </Table.Row>
+            {/each}
+          </Table.Body>
+        </Table.Root>
+        <Separator />
+        <JsonView value={info} title="Raw CTAP getInfo" variant="bare" />
+      </Card.Content>
+    </Card.Root>
   </section>
 {:else}
   <section class="grid gap-4">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div class="grid gap-1">
-        <h1 class="text-2xl font-semibold tracking-normal">Overview</h1>
-        <p class="m-0 text-sm text-muted-foreground">Authenticator identity and CTAP capabilities.</p>
-      </div>
-      <Button onclick={() => loadOverview(selector)} disabled={loading || $sessionBusy}>{loading ? "Reloading" : "Reload overview"}</Button>
-    </div>
+    <Card.Root>
+      <Card.Header class="has-data-[slot=card-action]:grid-cols-[1fr_auto]">
+        <div class="grid gap-1">
+          <Card.Title>Overview</Card.Title>
+          <Card.Description>Authenticator identity and CTAP capabilities.</Card.Description>
+        </div>
+        <Card.Action>
+          <Button onclick={() => loadOverview(selector)} disabled={loading || $sessionBusy}>{loading ? "Reloading" : "Reload overview"}</Button>
+        </Card.Action>
+      </Card.Header>
+    </Card.Root>
 
     {#if operationFailed(envelope)}
-      <Notice variant="destructive">{operationFailed(envelope)}</Notice>
+      <Alert variant="destructive">
+        <AlertDescription>{operationFailed(envelope)}</AlertDescription>
+      </Alert>
     {:else if loading}
       <Card.Root>
         <Card.Header>
           <Card.Title>Inspection in progress</Card.Title>
           <Card.Description>Reading authenticator metadata</Card.Description>
         </Card.Header>
-        <Card.Content class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {#each ["Transport", "Session", "AAGUID", "Versions"] as label (label)}
-            <div class="grid gap-2 rounded-md border p-3">
-              <span class="text-sm text-muted-foreground">{label}</span>
-              <Skeleton class="h-5 w-24" />
-            </div>
-          {/each}
+        <Card.Content>
+          <Table.Root>
+            <Table.Body>
+              {#each ["Transport", "Session", "AAGUID", "Versions"] as label (label)}
+                <Table.Row>
+                  <Table.Cell class="w-[150px] text-muted-foreground">{label}</Table.Cell>
+                  <Table.Cell><Skeleton class="h-5 w-24" /></Table.Cell>
+                </Table.Row>
+              {/each}
+            </Table.Body>
+          </Table.Root>
         </Card.Content>
       </Card.Root>
     {:else}
