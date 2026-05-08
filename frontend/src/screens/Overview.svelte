@@ -37,6 +37,7 @@
   let productName = $derived([device.manufacturer, device.product].filter(Boolean).join(" ") || device.product || device.deviceId || "Selected authenticator");
   let protocolLabel = $derived(versions.join(", ") || "unknown");
   let transportLabel = $derived(transports.length ? transports.join(", ") : device.transport || "unknown");
+  let maxCredentialIdLength = $derived(info.maxCredentialIdLength ?? info.maxCredentialLength);
   let overviewRows = $derived(buildOverviewRows({ info, device, bioSensor: bioSensorReport || {} }));
   let overviewGroups = $derived(groupOverviewRows(overviewRows));
   let warningOverviewRows = $derived(overviewRows.filter((row) => row.status === "warning"));
@@ -52,7 +53,7 @@
     { label: "Attestation", value: inlineList(attestationFormats, "not reported") },
     { label: "PIN/UV protocols", value: inlineList(pinUvProtocols, "not reported") },
     { label: "Max message size", value: info.maxMsgSize ? `${info.maxMsgSize} bytes` : "not reported" },
-    { label: "Max credential length", value: info.maxCredentialLength ? `${info.maxCredentialLength} bytes` : "not reported" },
+    { label: "Max credential ID length", value: maxCredentialIdLength ? `${maxCredentialIdLength} bytes` : "not reported" },
     { label: "Max serialized large-blob array", value: info.maxSerializedLargeBlobArray ? `${info.maxSerializedLargeBlobArray} bytes` : "not reported" },
   ]);
 
@@ -103,7 +104,7 @@
       <Card.Header class="has-data-[slot=card-action]:grid-cols-[1fr_auto]">
         <div class="grid gap-1">
           <Card.Title>GetInfo capability rules</Card.Title>
-          <Card.Description>CTAP 2.2 authenticatorGetInfo fields interpreted with explicit option, extension, and limit semantics</Card.Description>
+          <Card.Description>CTAP 2.3 authenticatorGetInfo fields interpreted with explicit option, extension, and limit semantics</Card.Description>
         </div>
         <Card.Action>
           {#if warningOverviewRows.length}
