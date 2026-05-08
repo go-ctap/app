@@ -32,7 +32,7 @@ export const api = {
   discover: (transport = "auto"): Promise<Discovery> => service.Discover({ transport }),
   select: (selector: string): Promise<Discovery> => service.Select(selector),
   sessionStatus: (): Promise<SessionStatus> => service.SessionStatus(),
-  lockSession: (): Promise<SessionStatus> => service.LockSession(),
+  closeSession: (): Promise<SessionStatus> => service.LockSession(),
   openSession: (selector: string): Promise<SessionStatus> => service.OpenSession({ selector }),
   cancelOperation: (operationId: string): Promise<boolean> => service.CancelOperation(operationId),
   resolveInteraction: (answer: any): Promise<boolean> => service.ResolveInteraction(answer),

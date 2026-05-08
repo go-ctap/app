@@ -166,33 +166,33 @@ export async function selectToken(selector: string) {
   }
 }
 
-export async function lockSelectedSession() {
+export async function closeSelectedSession() {
   try {
-    const status = await api.lockSession();
+    const status = await api.closeSession();
     sessionStatus.set(status);
     clearWorkbenchScreenCaches();
     const logEntryId = appendLogEntry({
       tone: "info",
       source: "session",
-      title: "Session locked",
-      message: "Cached authenticator authorization was closed.",
+      title: "Session closed",
+      message: "Cached authenticator authorization was released.",
       selector: status.selectedSelector || get(selectedSelector),
       data: {
         session: { state: status.state },
       },
     });
-    setStatusOutcome({ tone: "info", title: "Session locked", message: "Cached authenticator authorization was closed.", logEntryId });
+    setStatusOutcome({ tone: "info", title: "Session closed", message: "Cached authenticator authorization was released.", logEntryId });
   } catch (error) {
     appError.set(messageFromError(error));
     const logEntryId = appendLogEntry({
       tone: "error",
       source: "session",
-      title: "Could not lock session",
+      title: "Could not close session",
       message: messageFromError(error),
       selector: get(selectedSelector),
       data: { error: { message: messageFromError(error) } },
     });
-    setStatusOutcome({ tone: "error", title: "Could not lock session", message: messageFromError(error), logEntryId });
+    setStatusOutcome({ tone: "error", title: "Could not close session", message: messageFromError(error), logEntryId });
   }
 }
 

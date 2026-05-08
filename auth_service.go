@@ -683,7 +683,7 @@ func (s *AuthenticatorService) ensureOperationSession(
 		s.selectedSelector = requested
 	}
 	if s.session != nil {
-		s.sessionState = sessionStateRunning
+		//s.sessionState = sessionStateRunning
 		s.activeOperation = operationID
 		s.activeCancel = cancel
 		s.sessionError = nil
@@ -741,7 +741,7 @@ func (s *AuthenticatorService) ensureOperationSession(
 	}
 	s.selectedDevice = &selectedDevice
 	s.session = session
-	s.sessionState = sessionStateRunning
+	//s.sessionState = sessionStateRunning
 	s.sessionOpenedAt = time.Now()
 	s.sessionUpdatedAt = s.sessionOpenedAt
 	s.mu.Unlock()
@@ -968,7 +968,7 @@ func (s *AuthenticatorService) statusSnapshotLocked(selected *report.DeviceRepor
 		if info.Closed {
 			state = sessionStateClosed
 		} else if s.activeOperation != "" {
-			state = sessionStateRunning
+			//state = sessionStateRunning
 		} else if state != sessionStateStale && state != sessionStateError {
 			state = sessionStateReady
 		}

@@ -1,19 +1,40 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { Events } from "@wailsio/runtime";
-  import { Database, FlaskConical, KeyRound, LayoutDashboard, LockKeyhole, RefreshCw, ScrollText, Settings2, ShieldCheck, UnlockKeyhole } from "@lucide/svelte";
-  import { bootstrap, handleInteractionRequested, handleOperationProgress, handleSessionChanged, loadOverview, lockSelectedSession, openSelectedSession, refreshDiscovery, selectToken } from "./lib/controller";
-  import { activeScreen, appError, devices, focusLogEntry, selectedDevice, selectedSelector, sessionBusy, sessionStatus, toasts, workbenchLog } from "./lib/stores";
-  import { labelDevice, sessionStateLabel } from "./lib/format";
+  import {
+    Database,
+    FlaskConical,
+    KeyRound,
+    LayoutDashboard,
+    RefreshCw,
+    ScrollText,
+    Settings2,
+    ShieldCheck,
+    X,
+  } from "@lucide/svelte";
+  import {
+    bootstrap,
+    handleInteractionRequested,
+    handleOperationProgress,
+    handleSessionChanged,
+    loadOverview,
+    refreshDiscovery,
+    selectToken,
+  } from "./lib/controller";
+  import {
+    activeScreen,
+    appError,
+    devices,
+    selectedSelector,
+    toasts,
+  } from "./lib/stores";
+  import { labelDevice } from "./lib/format";
   import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
   import { NativeSelect } from "$lib/components/ui/native-select/index.js";
-  import { Separator } from "$lib/components/ui/separator/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { Toaster } from "$lib/components/ui/sonner/index.js";
-  import StatusBadge from "./components/StatusBadge.svelte";
-  import WorkbenchStatusBar from "./components/WorkbenchStatusBar.svelte";
+  import ActivityRail from "./components/ActivityRail.svelte";
   import InteractionModal from "./components/InteractionModal.svelte";
   import Overview from "./screens/Overview.svelte";
   import Credentials from "./screens/Credentials.svelte";
@@ -32,10 +53,7 @@
   ];
 
   let refreshing = $state(false);
-  let recentLogs = $derived($workbenchLog.slice(0, 8));
-  let selectedLabel = $derived($selectedDevice ? labelDevice($selectedDevice) : "");
-  let canOpenSession = $derived(Boolean($selectedSelector) && ["closed", "stale", "error"].includes($sessionStatus.state || ""));
-  let canLockSession = $derived($sessionStatus.state === "ready");
+  let activeScreenLabel = $derived(screens.find((screen) => screen.id === $activeScreen)?.label || "Overview");
 
   async function refresh() {
     refreshing = true;
@@ -55,14 +73,6 @@
     }
   }
 
-  async function lockSession() {
-    await lockSelectedSession();
-  }
-
-  async function openSession() {
-    await openSelectedSession($selectedSelector);
-  }
-
   function handleTokenChange(event: Event) {
     choose((event.currentTarget as HTMLSelectElement).value);
   }
@@ -72,19 +82,6 @@
     if (screen === "overview" && $selectedSelector) {
       loadOverview($selectedSelector);
     }
-  }
-
-  function formatTime(value: string) {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  }
-
-  function logTone(value: string) {
-    if (value === "success") return "ok";
-    if (value === "warning") return "warn";
-    if (value === "error") return "bad";
-    return "info";
   }
 
   onMount(() => {
@@ -109,16 +106,16 @@
   });
 </script>
 
-<Sidebar.Provider>
-  <Sidebar.Root collapsible="icon" class="border-sidebar-border bg-sidebar">
-    <Sidebar.Header class="gap-3 border-b px-3 py-4">
-      <div class="flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
-        <div class="flex aspect-square size-8 items-center justify-center rounded-md border border-primary/25 bg-primary/10 text-primary">
-          <ShieldCheck size={19} strokeWidth={2.4} />
+<Sidebar.Provider style="--sidebar-width: 15rem; --sidebar-width-mobile: 18rem;">
+  <Sidebar.Root collapsible="icon">
+    <Sidebar.Header class="border-b px-2 py-3">
+      <div class="flex min-w-0 items-center gap-2 px-2 py-1.5 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+        <div class="flex size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+          <ShieldCheck size={17} strokeWidth={2.25} />
         </div>
-        <div class="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-          <span class="truncate font-semibold">FIDO Workbench</span>
-          <span class="truncate text-xs text-sidebar-foreground/65">CTAP/FIDO2 console</span>
+        <div class="grid min-w-0 flex-1 leading-tight group-data-[collapsible=icon]:hidden">
+          <span class="truncate text-sm font-semibold">FIDO Workbench</span>
+          <span class="truncate text-xs text-sidebar-foreground/60">Local CTAP console</span>
         </div>
       </div>
     </Sidebar.Header>
@@ -144,26 +141,19 @@
         </Sidebar.GroupContent>
       </Sidebar.Group>
     </Sidebar.Content>
-
-    <Sidebar.Footer class="p-3">
-      <div class="rounded-md border border-sidebar-border bg-sidebar-accent/45 p-2 text-xs text-sidebar-foreground/75 group-data-[collapsible=icon]:hidden">
-        <div class="flex items-center gap-2">
-          <span class="size-2 rounded-full bg-primary"></span>
-          <span>{sessionStateLabel($sessionStatus.state)}</span>
-        </div>
-      </div>
-    </Sidebar.Footer>
     <Sidebar.Rail />
   </Sidebar.Root>
 
   <Sidebar.Inset class="min-w-0 bg-background">
-    <header class="sticky top-0 z-20 border-b bg-background/95 backdrop-blur">
-      <div class="grid min-h-16 grid-cols-[auto_minmax(240px,380px)_auto_minmax(280px,auto)_minmax(260px,1fr)] items-center gap-3 px-4 py-2 max-lg:grid-cols-[auto_minmax(0,1fr)_auto] xl:px-5">
-        <Sidebar.Trigger class="md:hidden" />
-        <div class="grid gap-1.5">
-          <label for="token-select" class="m-0 text-xs font-medium text-muted-foreground">Authenticator</label>
-          <NativeSelect id="token-select" bind:value={$selectedSelector} onchange={handleTokenChange}>
-            <option value="">Select token</option>
+    <header class="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div class="flex min-h-14 flex-wrap items-center gap-2 px-3 py-2 lg:flex-nowrap lg:px-4">
+        <Sidebar.Trigger class="md:hidden">
+        </Sidebar.Trigger>
+
+        <div class="min-w-0 flex-1 lg:max-w-[360px]">
+          <label for="token-select" class="sr-only">Authenticator</label>
+          <NativeSelect id="token-select" bind:value={$selectedSelector} onchange={handleTokenChange} aria-label="Authenticator">
+            <option value="">Select authenticator</option>
             {#each $devices as device (device.deviceId)}
               <option value={device.deviceId}>{labelDevice(device)}</option>
             {/each}
@@ -171,122 +161,55 @@
         </div>
 
         <Button variant="outline" size="icon" type="button" onclick={refresh} disabled={refreshing} aria-label="Refresh devices" title="Refresh devices">
-          <RefreshCw size={17} class={refreshing ? "animate-spin" : ""} />
+          <RefreshCw size={16} class={refreshing ? "animate-spin" : ""} />
         </Button>
 
-        <div class="flex min-w-0 flex-wrap items-center gap-2 max-lg:col-span-3">
-          <span class="basis-full text-xs font-medium text-muted-foreground">Session</span>
-          <StatusBadge value={$sessionStatus.state} label={$sessionStatus.state === "ready" ? "Open" : sessionStateLabel($sessionStatus.state)} />
-          {#if canOpenSession}
-            <Button variant="outline" size="sm" type="button" onclick={openSession} disabled={$sessionBusy}>
-              <UnlockKeyhole size={15} />
-              Open session
-            </Button>
-          {:else if canLockSession}
-            <Button variant="outline" size="sm" type="button" onclick={lockSession}>
-              <LockKeyhole size={15} />
-              Lock session
-            </Button>
-          {/if}
-        </div>
-
-        <div class="grid grid-cols-3 gap-3 justify-self-end text-sm max-lg:col-span-3 max-lg:justify-self-stretch max-sm:grid-cols-1">
-          {#if $selectedDevice}
-            <div class="border-l pl-3"><span class="block text-xs text-muted-foreground">Transport</span>{$selectedDevice.transport || "unknown"}</div>
-            <div class="border-l pl-3"><span class="block text-xs text-muted-foreground">VID</span>{$selectedDevice.vendorId || "n/a"}</div>
-            <div class="border-l pl-3"><span class="block text-xs text-muted-foreground">PID</span>{$selectedDevice.productId || "n/a"}</div>
-          {:else}
-            <span class="col-span-3 text-muted-foreground">No active authenticator</span>
-          {/if}
+        <div class="flex flex-1 justify-end xl:hidden">
+          <ActivityRail variant="sheet" />
         </div>
       </div>
     </header>
 
     {#if $appError}
-      <Alert variant="destructive" class="mx-4 mt-3 xl:mx-5">
+      <Alert variant="destructive" class="mx-4 mt-4">
         <AlertDescription>{$appError}</AlertDescription>
       </Alert>
     {/if}
 
-    <div class="grid grid-cols-1 items-start gap-2 xl:grid-cols-[minmax(0,1fr)_342px]">
-      <div class="min-w-0 px-4 pb-28 xl:px-5">
-        <section class:hidden={$activeScreen !== "overview"}>
+    <main class="grid gap-4 px-4 py-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div class="min-w-0">
+        <section class:hidden={$activeScreen !== "overview"} aria-label={activeScreenLabel}>
           <Overview />
         </section>
-        <section class:hidden={$activeScreen !== "credentials"}>
+        <section class:hidden={$activeScreen !== "credentials"} aria-label={activeScreenLabel}>
           <Credentials />
         </section>
-        <section class:hidden={$activeScreen !== "largeBlobs"}>
+        <section class:hidden={$activeScreen !== "largeBlobs"} aria-label={activeScreenLabel}>
           <LargeBlobs />
         </section>
-        <section class:hidden={$activeScreen !== "config"}>
+        <section class:hidden={$activeScreen !== "config"} aria-label={activeScreenLabel}>
           <Config />
         </section>
-        <section class:hidden={$activeScreen !== "lab"}>
+        <section class:hidden={$activeScreen !== "lab"} aria-label={activeScreenLabel}>
           <Lab />
         </section>
-        <section class:hidden={$activeScreen !== "logs"}>
+        <section class:hidden={$activeScreen !== "logs"} aria-label={activeScreenLabel}>
           <Logs />
         </section>
       </div>
-
-      <aside class="sticky top-24 grid max-h-[calc(100vh-6.5rem)] gap-2 overflow-auto border-l p-2 pb-28 max-xl:static max-xl:max-h-none max-xl:grid-cols-2 max-xl:border-l-0 max-xl:border-t max-md:grid-cols-1" aria-label="Session and event summary">
-        <Card.Root>
-          <Card.Header class="flex-row items-center justify-between gap-3 pb-0">
-            <Card.Title class="text-base">Event Journal</Card.Title>
-            <Card.Description>latest {recentLogs.length}</Card.Description>
-          </Card.Header>
-          <Card.Content class="grid gap-1 pt-4">
-            {#if recentLogs.length}
-              {#each recentLogs as entry (entry.id)}
-                <Button variant="ghost" class="h-auto justify-start gap-2 px-2 py-1.5 text-left" onclick={() => focusLogEntry(entry.id)}>
-                  <span class={`size-2 rounded-full ${logTone(entry.tone) === "ok" ? "bg-success-foreground" : logTone(entry.tone) === "warn" ? "bg-warning-foreground" : logTone(entry.tone) === "bad" ? "bg-destructive" : "bg-primary"}`}></span>
-                  <time class="w-[72px] shrink-0 text-xs font-normal text-muted-foreground" datetime={entry.timestamp}>{formatTime(entry.timestamp)}</time>
-                  <span class="min-w-0 truncate text-xs font-medium">{entry.title}</span>
-                </Button>
-              {/each}
-            {:else}
-              <p class="m-0 text-sm text-muted-foreground">No events yet.</p>
-            {/if}
-          </Card.Content>
-        </Card.Root>
-
-        <Card.Root>
-          <Card.Header>
-            <Card.Title class="text-base">Session Status</Card.Title>
-          </Card.Header>
-          <Card.Content class="grid gap-3">
-            <dl class="grid !grid-cols-1 gap-0">
-              <div class="grid grid-cols-[88px_minmax(0,1fr)] items-center gap-2 border-b py-2 first:pt-0"><dt class="text-sm text-muted-foreground">State</dt><dd class="m-0"><StatusBadge value={$sessionStatus.state} label={sessionStateLabel($sessionStatus.state)} /></dd></div>
-              <div class="grid grid-cols-[88px_minmax(0,1fr)] items-center gap-2 border-b py-2"><dt class="text-sm text-muted-foreground">Token</dt><dd class="m-0 min-w-0 break-words text-sm">{selectedLabel || "none"}</dd></div>
-              <div class="grid grid-cols-[88px_minmax(0,1fr)] items-center gap-2 border-b py-2"><dt class="text-sm text-muted-foreground">Transport</dt><dd class="m-0 text-sm">{$selectedDevice?.transport || "unknown"}</dd></div>
-              <div class="grid grid-cols-[88px_minmax(0,1fr)] items-center gap-2 py-2"><dt class="text-sm text-muted-foreground">Selector</dt><dd class="m-0 min-w-0"><code>{$selectedSelector || "not selected"}</code></dd></div>
-            </dl>
-            <Separator />
-            {#if canLockSession}
-              <Button variant="outline" size="sm" type="button" onclick={lockSession}>
-                <LockKeyhole size={15} />
-                Lock session
-              </Button>
-            {:else if canOpenSession}
-              <Button variant="outline" size="sm" type="button" onclick={openSession} disabled={$sessionBusy}>
-                <UnlockKeyhole size={15} />
-                Open session
-              </Button>
-            {/if}
-          </Card.Content>
-        </Card.Root>
-      </aside>
-    </div>
+      <ActivityRail />
+    </main>
   </Sidebar.Inset>
 
   <InteractionModal />
-  <WorkbenchStatusBar />
-  <Toaster richColors closeButton />
+  <Toaster closeButton />
 
-  <div class="fixed right-5 bottom-24 z-20 grid gap-2">
+  <div class="fixed right-4 bottom-4 z-20 grid gap-2">
     {#each $toasts as toast (toast)}
-      <div class="rounded-md bg-foreground px-3 py-2 text-sm text-background shadow-lg">{toast}</div>
+      <div class="flex items-center gap-2 rounded-md border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md">
+        <span>{toast}</span>
+        <X size={14} class="text-muted-foreground" />
+      </div>
     {/each}
   </div>
 </Sidebar.Provider>

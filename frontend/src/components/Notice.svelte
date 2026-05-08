@@ -13,7 +13,7 @@
 
 <Alert
   variant={variant === "destructive" ? "destructive" : "default"}
-  class={variant === "warning" ? "border-amber-500/40 bg-amber-500/10 text-amber-950 dark:text-amber-100" : undefined}
+  class={variant === "warning" ? "bg-muted/40" : undefined}
 >
   {#if title}
     <AlertTitle>{title}</AlertTitle>

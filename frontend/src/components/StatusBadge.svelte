@@ -23,8 +23,8 @@
 </script>
 
 <Badge
-  class={`${tone === "ok" ? "bg-success text-success-foreground" : tone === "warn" ? "bg-warning text-warning-foreground" : ""} gap-1`}
-  variant={tone === "bad" ? "destructive" : tone === "neutral" ? "outline" : "secondary"}
+  class="gap-1"
+  variant={tone === "ok" ? "default" : tone === "bad" ? "destructive" : tone === "warn" ? "secondary" : "outline"}
   title={help || text}
 >
   <span class="size-1.5 rounded-full bg-current" aria-hidden="true"></span>
