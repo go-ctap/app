@@ -44,16 +44,15 @@
   import Logs from "./screens/Logs.svelte";
 
   const screens = [
-    { id: "overview", label: "Overview", icon: LayoutDashboard },
-    { id: "credentials", label: "Credentials", icon: KeyRound },
-    { id: "largeBlobs", label: "Large blobs", icon: Database },
-    { id: "config", label: "Config", icon: Settings2 },
-    { id: "lab", label: "Lab", icon: FlaskConical },
-    { id: "logs", label: "Logs", icon: ScrollText },
+    { id: "overview", label: "Overview", icon: LayoutDashboard, component: Overview },
+    { id: "credentials", label: "Credentials", icon: KeyRound, component: Credentials },
+    { id: "largeBlobs", label: "Large blobs", icon: Database, component: LargeBlobs },
+    { id: "config", label: "Config", icon: Settings2, component: Config },
+    { id: "lab", label: "Lab", icon: FlaskConical, component: Lab },
+    { id: "logs", label: "Logs", icon: ScrollText, component: Logs },
   ];
 
   let refreshing = $state(false);
-  let activeScreenLabel = $derived(screens.find((screen) => screen.id === $activeScreen)?.label || "Overview");
 
   async function refresh() {
     refreshing = true;
@@ -178,24 +177,12 @@
 
     <main class="grid gap-4 px-4 py-4 xl:grid-cols-[minmax(0,1fr)_340px]">
       <div class="min-w-0">
-        <section class:hidden={$activeScreen !== "overview"} aria-label={activeScreenLabel}>
-          <Overview />
-        </section>
-        <section class:hidden={$activeScreen !== "credentials"} aria-label={activeScreenLabel}>
-          <Credentials />
-        </section>
-        <section class:hidden={$activeScreen !== "largeBlobs"} aria-label={activeScreenLabel}>
-          <LargeBlobs />
-        </section>
-        <section class:hidden={$activeScreen !== "config"} aria-label={activeScreenLabel}>
-          <Config />
-        </section>
-        <section class:hidden={$activeScreen !== "lab"} aria-label={activeScreenLabel}>
-          <Lab />
-        </section>
-        <section class:hidden={$activeScreen !== "logs"} aria-label={activeScreenLabel}>
-          <Logs />
-        </section>
+        {#each screens as screen (screen.id)}
+          {@const ScreenComponent = screen.component}
+          <section hidden={$activeScreen !== screen.id} aria-label={screen.label}>
+            <ScreenComponent />
+          </section>
+        {/each}
       </div>
       <ActivityRail />
     </main>
