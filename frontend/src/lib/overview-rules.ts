@@ -23,10 +23,18 @@ export type OverviewGroup = {
   rows: OverviewRow[];
 };
 
+export type OverviewConformanceWarning = {
+  name: string;
+  description: string;
+  value: string;
+  source: string;
+};
+
 export type OverviewSummaryFact = {
   label: string;
   value: string;
   status: OverviewRowStatus;
+  help?: string;
 };
 
 export type OverviewSummaryCard = {
@@ -108,25 +116,24 @@ const CONFIG_COMMAND_ID = {
   vendorPrototype: 0xff,
 } as const;
 
-const GROUP_ORDER = ["Identity", "Protocol", "Conformance", "Verification", "Storage", "Management", "Policy", "Extensions", "Limits", "Attestation"];
+const GROUP_ORDER = ["Identity", "Protocol", "Verification", "Storage", "Management", "Policy", "Extensions", "Limits", "Attestation"];
 
 export function buildOverviewSummaryCards(context: OverviewContext = {}): OverviewSummaryCard[] {
   const info = objectValue(context.info);
   const options = objectValue(info.options);
   const versions = arrayValue(info.versions);
-  const algorithms = arrayValue(info.algorithms);
   const extensions = arrayValue(info.extensions);
+  const certifications = objectValue(info.certifications);
 
   const versionsKnown = Array.isArray(info.versions);
-  const algorithmsKnown = Array.isArray(info.algorithms);
   const extensionsKnown = Array.isArray(info.extensions);
+  const certificationsKnown = hasOwn(info, "certifications");
   const ctapVersion = highestCtapVersion(versions);
   const u2fSupported = versionsKnown ? versions.includes("U2F_V2") : undefined;
   const hasLargeBlobKey = extensions.includes("largeBlobKey");
   const hasLargeBlobExtension = extensions.includes("largeBlob");
   const largeBlobsCommand = option(options, "largeBlobs") === true;
   const largeBlobCapacity = unsignedIntegerValue(info.maxSerializedLargeBlobArray);
-  const transportsForReset = arrayValue(info.transportsForReset);
   const remainingDiscoverableCredentials = unsignedIntegerValue(info.remainingDiscoverableCredentials);
 
   return [
@@ -134,11 +141,11 @@ export function buildOverviewSummaryCards(context: OverviewContext = {}): Overvi
       title: "Protocol",
       description: "CTAP generation and key algorithm breadth.",
       status: ctapVersion ? "supported" : versionsKnown ? "unsupported" : "unknown",
-      statusLabel: ctapVersion || (versionsKnown ? "CTAP absent" : "unknown"),
+      statusLabel: ctapVersion ? formatProtocolVersion(ctapVersion) : versionsKnown ? "CTAP absent" : "unknown",
       facts: [
-        fact("CTAP", ctapVersion || "not reported", ctapVersion ? "supported" : versionsKnown ? "unsupported" : "unknown"),
+        fact("CTAP", ctapVersion ? formatProtocolVersion(ctapVersion) : "not reported", ctapVersion ? "supported" : versionsKnown ? "unsupported" : "unknown"),
+        fact("FIDO cert", fidoCertificationSummary(certificationsKnown, certifications), fidoCertificationStatus(certificationsKnown, certifications)),
         fact("U2F", supportValue(u2fSupported), booleanSupportStatus(u2fSupported)),
-        fact("Algorithms", algorithmsKnown ? algorithms.length ? `${algorithms.length} reported` : "empty list" : "not reported", algorithmsKnown ? algorithms.length ? "informational" : "warning" : "unknown"),
       ],
     },
     {
@@ -159,7 +166,7 @@ export function buildOverviewSummaryCards(context: OverviewContext = {}): Overvi
       statusLabel: passkeySummaryLabel(options),
       facts: [
         fact("Discoverable", optionSupportValue(option(options, "rk")), optionSupportStatus(option(options, "rk"))),
-        fact("Credential inventory", optionSupportValue(option(options, "credMgmt")), optionSupportStatus(option(options, "credMgmt"))),
+        fact("Credential Management", optionSupportValue(option(options, "credMgmt")), optionSupportStatus(option(options, "credMgmt"))),
         fact("Remaining", remainingDiscoverableCredentials !== undefined ? `${remainingDiscoverableCredentials} slots` : "not reported", remainingDiscoverableCredentials !== undefined ? "informational" : "unknown"),
       ],
     },
@@ -169,7 +176,7 @@ export function buildOverviewSummaryCards(context: OverviewContext = {}): Overvi
       status: storageSummaryStatus(extensionsKnown, extensions, largeBlobsCommand),
       statusLabel: storageSummaryLabel(extensionsKnown, extensions, largeBlobsCommand),
       facts: [
-        fact("Large blobs", largeBlobSummary(hasLargeBlobKey, hasLargeBlobExtension, largeBlobsCommand, extensionsKnown), storageSummaryStatus(extensionsKnown, extensions, largeBlobsCommand)),
+        fact("Large Blob", largeBlobSummary(hasLargeBlobKey, hasLargeBlobExtension, largeBlobsCommand, extensionsKnown), storageSummaryStatus(extensionsKnown, extensions, largeBlobsCommand), largeBlobSummaryHelp()),
         fact("credBlob", extensionsKnown ? supportValue(extensions.includes("credBlob")) : "not reported", extensionsKnown ? booleanSupportStatus(extensions.includes("credBlob")) : "unknown"),
         fact("Array limit", largeBlobCapacity !== undefined ? `${largeBlobCapacity} bytes` : "not reported", largeBlobCapacity !== undefined ? "informational" : "unknown"),
       ],
@@ -177,12 +184,12 @@ export function buildOverviewSummaryCards(context: OverviewContext = {}): Overvi
     {
       title: "Administration",
       description: "Authenticator policy and maintenance controls.",
-      status: administrationSummaryStatus(options, info),
-      statusLabel: administrationSummaryLabel(options, info),
+      status: administrationSummaryStatus(options),
+      statusLabel: administrationSummaryLabel(options),
       facts: [
         fact("Auth config", optionSupportValue(option(options, "authnrCfg")), optionSupportStatus(option(options, "authnrCfg"))),
         fact("Always UV", featureStateValue(option(options, "alwaysUv")), featureStateStatus(option(options, "alwaysUv"))),
-        fact("EA / reset", enterpriseResetSummary(options, info, transportsForReset), enterpriseResetStatus(options, info, transportsForReset)),
+        fact("EA", enabledValue(option(options, "ep")), featureStateStatus(option(options, "ep"))),
       ],
     },
   ];
@@ -228,8 +235,6 @@ export function buildOverviewRows(context: OverviewContext = {}): OverviewRow[] 
     versionRow("FIDO 2.3", "CTAP 2.3 support.", versionsKnown, versions, CTAP_2_3_VERSION),
     algorithmListRow(info, algorithms),
     ...coseAlgorithmRows(Array.isArray(info.algorithms), algorithms),
-
-    ...conformanceRows(info, options, versionsKnown, versions, extensionsKnown, extensions, pinUvAuthProtocolsKnown, pinUvAuthProtocols),
 
     upRow(options),
     optionRow("Verification", "Discoverable credentials", "rk=true means the authenticator can create discoverable credentials and answer without an allowList.", option(options, "rk"), "supported", "unsupported", "options.rk", "default false"),
@@ -289,6 +294,25 @@ export function buildOverviewRows(context: OverviewContext = {}): OverviewRow[] 
   ].filter(Boolean) as OverviewRow[];
 }
 
+export function buildOverviewConformanceWarnings(context: OverviewContext = {}): OverviewConformanceWarning[] {
+  const info = objectValue(context.info);
+  const options = objectValue(info.options);
+  const versions = arrayValue(info.versions);
+  const extensions = arrayValue(info.extensions);
+  const pinUvAuthProtocols = arrayValue(info.pinUvAuthProtocols);
+
+  return conformanceWarnings(
+    info,
+    options,
+    Array.isArray(info.versions),
+    versions,
+    Array.isArray(info.extensions),
+    extensions,
+    Array.isArray(info.pinUvAuthProtocols),
+    pinUvAuthProtocols,
+  );
+}
+
 export function groupOverviewRows(rows: OverviewRow[]): OverviewGroup[] {
   return GROUP_ORDER.map((name) => ({ name, rows: rows.filter((row) => row.group === name) })).filter((group) => group.rows.length > 0);
 }
@@ -334,8 +358,8 @@ export function formatAlgorithm(value: unknown) {
   return value ?? "unknown";
 }
 
-function fact(label: string, value: string, status: OverviewRowStatus): OverviewSummaryFact {
-  return { label, value, status };
+function fact(label: string, value: string, status: OverviewRowStatus, help?: string): OverviewSummaryFact {
+  return { label, value, status, help };
 }
 
 function row(group: string, name: string, description: string, status: OverviewRowStatus, value?: string, source?: string): OverviewRow {
@@ -344,6 +368,23 @@ function row(group: string, name: string, description: string, status: OverviewR
 
 function highestCtapVersion(versions: unknown[]) {
   return CTAP_VERSION_ORDER.find((version) => versions.includes(version)) || "";
+}
+
+function formatProtocolVersion(version: string) {
+  return version.replace(/^FIDO_/, "FIDO ").replaceAll("_", ".");
+}
+
+function fidoCertificationSummary(known: boolean, certifications: Record<string, unknown>) {
+  if (!known) return "not reported";
+  if (!hasOwn(certifications, "FIDO")) return "not listed";
+  return formatCertificationValue("FIDO", certifications.FIDO);
+}
+
+function fidoCertificationStatus(known: boolean, certifications: Record<string, unknown>): OverviewRowStatus {
+  if (!known) return "unknown";
+  if (!hasOwn(certifications, "FIDO")) return "unsupported";
+  const level = unsignedIntegerValue(certifications.FIDO);
+  return level !== undefined && level >= 1 && level <= 6 ? "informational" : "warning";
 }
 
 function supportValue(value: boolean | undefined) {
@@ -453,36 +494,25 @@ function storageSummaryLabel(extensionsKnown: boolean, extensions: unknown[], la
 }
 
 function largeBlobSummary(hasLargeBlobKey: boolean, hasLargeBlobExtension: boolean, largeBlobsCommand: boolean, extensionsKnown: boolean) {
-  if (hasLargeBlobKey && largeBlobsCommand) return "largeBlobKey + command";
-  if (largeBlobsCommand) return "command only";
-  if (hasLargeBlobExtension) return "largeBlob extension";
-  if (hasLargeBlobKey) return "incomplete: key only";
+  if (largeBlobsCommand || hasLargeBlobKey) return "command";
+  if (hasLargeBlobExtension) return "extension";
   return extensionsKnown ? "not listed" : "not reported";
 }
 
-function administrationSummaryStatus(options: Record<string, unknown>, info: Record<string, unknown>): OverviewRowStatus {
+function largeBlobSummaryHelp() {
+  return "Command means the CTAP authenticatorLargeBlobs command path: the platform manages a serialized large-blob array and uses largeBlobKey per credential. Extension means the legacy largeBlob extension path used during makeCredential/getAssertion. CTAP treats the command path and extension path as separate, mutually exclusive storage models.";
+}
+
+function administrationSummaryStatus(options: Record<string, unknown>): OverviewRowStatus {
   if (option(options, "authnrCfg") === true || option(options, "alwaysUv") === true || option(options, "ep") === true) return "supported";
-  if (Array.isArray(info.transportsForReset) && info.transportsForReset.length) return "supported";
-  if (option(options, "authnrCfg") === false || option(options, "alwaysUv") === false || option(options, "ep") === false || hasOwn(info, "longTouchForReset")) return "disabled";
+  if (option(options, "authnrCfg") === false || option(options, "alwaysUv") === false || option(options, "ep") === false) return "disabled";
   return "unknown";
 }
 
-function administrationSummaryLabel(options: Record<string, unknown>, info: Record<string, unknown>) {
-  const status = administrationSummaryStatus(options, info);
+function administrationSummaryLabel(options: Record<string, unknown>) {
+  const status = administrationSummaryStatus(options);
   if (status === "supported") return "available";
   if (status === "disabled") return "limited";
-  return "unknown";
-}
-
-function enterpriseResetSummary(options: Record<string, unknown>, info: Record<string, unknown>, transportsForReset: unknown[]) {
-  const enterprise = enabledValue(option(options, "ep"));
-  const reset = transportsForReset.length ? `reset: ${inlineList(transportsForReset)}` : hasOwn(info, "longTouchForReset") ? "reset policy reported" : "reset unknown";
-  return `${enterprise}; ${reset}`;
-}
-
-function enterpriseResetStatus(options: Record<string, unknown>, info: Record<string, unknown>, transportsForReset: unknown[]): OverviewRowStatus {
-  if (option(options, "ep") === true || transportsForReset.length) return "supported";
-  if (option(options, "ep") === false || hasOwn(info, "longTouchForReset")) return "disabled";
   return "unknown";
 }
 
@@ -514,7 +544,7 @@ function versionsRow(getInfoReported: boolean, versionsKnown: boolean, versions:
 }
 
 function versionRow(name: string, description: string, versionsKnown: boolean, versions: unknown[], version: string) {
-  return row("Protocol", name, description, versionsKnown ? versions.includes(version) ? "supported" : "unsupported" : "unknown", version, `versions.${version}`);
+  return row("Protocol", name, description, versionsKnown ? versions.includes(version) ? "supported" : "unsupported" : "unknown", formatProtocolVersion(version), `versions.${version}`);
 }
 
 function algorithmListRow(info: Record<string, unknown>, algorithms: unknown[]) {
@@ -869,7 +899,7 @@ function attestationFormatsRow(known: boolean, attestationFormats: unknown[]) {
   return row("Attestation", "Attestation formats", description, "informational", inlineList(attestationFormats), "attestationFormats");
 }
 
-function conformanceRows(
+function conformanceWarnings(
   info: Record<string, unknown>,
   options: Record<string, unknown>,
   versionsKnown: boolean,
@@ -879,7 +909,7 @@ function conformanceRows(
   pinUvAuthProtocolsKnown: boolean,
   pinUvAuthProtocols: unknown[],
 ) {
-  const rows: OverviewRow[] = [];
+  const warnings: OverviewConformanceWarning[] = [];
   const isCtap23 = versionsKnown && versions.includes(CTAP_2_3_VERSION);
   const authenticatorConfigCommands = arrayValue(info.authenticatorConfigCommands);
   const configCommandsKnown = Array.isArray(info.authenticatorConfigCommands);
@@ -887,7 +917,7 @@ function conformanceRows(
   const hasClientPinOption = option(options, "clientPin") !== undefined;
   const hasUvOption = option(options, "uv") !== undefined;
   const hasSomeUvOption = hasClientPinOption || hasUvOption;
-  const add = (name: string, description: string, value: string, source: string) => rows.push(row("Conformance", name, description, "warning", value, source));
+  const add = (name: string, description: string, value: string, source: string) => warnings.push({ name, description, value, source });
 
   if (versions.includes("FIDO_2_2")) {
     add("Forbidden CTAP version identifier", "CTAP 2.3 states that FIDO_2_2 was not defined and must not be present in versions.", "FIDO_2_2 reported", "versions");
@@ -991,7 +1021,7 @@ function conformanceRows(
     add("Long touch config command missing", "If the long-touch-for-reset subcommand is supported, authenticatorConfigCommands must contain 0x04; verify this if the feature is configurable.", "0x04 not listed", "authenticatorConfigCommands + longTouchForReset");
   }
 
-  return rows;
+  return warnings;
 }
 
 function strictNonEmptyUniqueListStatus(known: boolean, value: unknown[], keyFn: (item: unknown) => string = defaultListItemKey): OverviewRowStatus {

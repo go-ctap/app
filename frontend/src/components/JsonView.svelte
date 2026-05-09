@@ -45,7 +45,7 @@
   type Props = {
     value: unknown;
     title?: string;
-    variant?: "card" | "bare";
+    variant?: "card" | "bare" | "code";
   };
 
   let { value, title = "Raw JSON", variant = "card" }: Props = $props();
@@ -60,7 +60,7 @@
 {#snippet codeBlock()}
   <ScrollArea
     orientation="both"
-    class="max-h-[420px] rounded-md border bg-muted/40"
+    class="max-h-105 rounded-md border bg-muted/40"
     scrollbarXClasses="z-20"
     scrollbarYClasses="z-20"
   >
@@ -90,12 +90,16 @@
       {@render codeBlock()}
     </Card.Content>
   </Card.Root>
-{:else}
+{:else if variant === "bare" }
   <section class="grid gap-2">
     <div class="flex items-center justify-between gap-3 text-xs text-muted-foreground">
       <span>{title}</span>
       <Button variant="outline" size="xs" type="button" onclick={copy}>Copy</Button>
     </div>
+    {@render codeBlock()}
+  </section>
+{:else}
+  <section class="grid gap-2">
     {@render codeBlock()}
   </section>
 {/if}
