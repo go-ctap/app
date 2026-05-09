@@ -7,14 +7,12 @@
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
-  import { Separator } from "$lib/components/ui/separator/index.js";
   import { Skeleton } from "$lib/components/ui/skeleton/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
   import {
     buildOverviewRows,
-    formatAlgorithm,
+    buildOverviewSummaryCards,
     groupOverviewRows,
-    inlineList,
     overviewStatusLabel,
   } from "$lib/overview-rules";
   import EmptyState from "../components/EmptyState.svelte";
@@ -29,33 +27,11 @@
   let bioSensorReport = $derived(resultOf(bioSensorEnvelope));
   let device = $derived(report?.device || $selectedDevice || {});
   let info = $derived(report?.info || {});
-  let versions = $derived(Array.isArray(info?.versions) ? info.versions : []);
-  let transports = $derived(Array.isArray(info?.transports) ? info.transports : []);
-  let algorithms = $derived(Array.isArray(info?.algorithms) ? info.algorithms : []);
-  let attestationFormats = $derived(Array.isArray(info?.attestationFormats) ? info.attestationFormats : []);
-  let pinUvProtocols = $derived(Array.isArray(info?.pinUvAuthProtocols) ? info.pinUvAuthProtocols : []);
   let productName = $derived([device.manufacturer, device.product].filter(Boolean).join(" ") || device.product || device.deviceId || "Selected authenticator");
-  let protocolLabel = $derived(versions.join(", ") || "unknown");
-  let transportLabel = $derived(transports.length ? transports.join(", ") : device.transport || "unknown");
-  let maxCredentialIdLength = $derived(info.maxCredentialIdLength ?? info.maxCredentialLength);
+  let summaryCards = $derived(buildOverviewSummaryCards({ info }));
   let overviewRows = $derived(buildOverviewRows({ info, device, bioSensor: bioSensorReport || {} }));
   let overviewGroups = $derived(groupOverviewRows(overviewRows));
   let warningOverviewRows = $derived(overviewRows.filter((row) => row.status === "warning"));
-  let heroFacts = $derived([
-    { label: "AAGUID", value: info.aaguid || "not reported" },
-    { label: "Transport", value: transportLabel },
-    { label: "Protocol", value: protocolLabel },
-    { label: "Device ID", value: device.deviceId || "not reported" },
-  ]);
-  let technicalRows = $derived([
-    { label: "Transports", value: transportLabel },
-    { label: "Algorithms", value: algorithms.length ? inlineList(algorithms.map(formatAlgorithm)) : "not reported" },
-    { label: "Attestation", value: inlineList(attestationFormats, "not reported") },
-    { label: "PIN/UV protocols", value: inlineList(pinUvProtocols, "not reported") },
-    { label: "Max message size", value: info.maxMsgSize ? `${info.maxMsgSize} bytes` : "not reported" },
-    { label: "Max credential ID length", value: maxCredentialIdLength ? `${maxCredentialIdLength} bytes` : "not reported" },
-    { label: "Max serialized large-blob array", value: info.maxSerializedLargeBlobArray ? `${info.maxSerializedLargeBlobArray} bytes` : "not reported" },
-  ]);
 
   async function copyReport() {
     await navigator.clipboard?.writeText(JSON.stringify(report ?? null, null, 2));
@@ -80,18 +56,6 @@
           <Button onclick={() => loadOverview(selector)} disabled={loading || $sessionBusy}>{loading ? "Reloading" : "Reload overview"}</Button>
         </Card.Action>
       </Card.Header>
-      <Card.Content>
-        <Table.Root>
-          <Table.Body>
-            {#each heroFacts as fact (fact.label)}
-              <Table.Row>
-                <Table.Cell class="w-[150px] text-muted-foreground">{fact.label}</Table.Cell>
-                <Table.Cell class="whitespace-normal break-words font-medium">{fact.value}</Table.Cell>
-              </Table.Row>
-            {/each}
-          </Table.Body>
-        </Table.Root>
-      </Card.Content>
     </Card.Root>
 
     {#if operationFailed(envelope)}
@@ -100,11 +64,35 @@
       </Alert>
     {/if}
 
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+      {#each summaryCards as card (card.title)}
+        <Card.Root>
+          <Card.Header class="gap-3">
+            <div class="flex items-start justify-between gap-2">
+              <div class="grid gap-1">
+                <Card.Title class="text-base">{card.title}</Card.Title>
+                <Card.Description>{card.description}</Card.Description>
+              </div>
+              <StatusBadge value={card.status} label={card.statusLabel} help={card.title} />
+            </div>
+          </Card.Header>
+          <Card.Content class="grid gap-2 text-sm">
+            {#each card.facts as fact (fact.label)}
+              <div class="flex items-start justify-between gap-3" class:text-muted-foreground={fact.status === "unsupported" || fact.status === "unknown"}>
+                <span>{fact.label}</span>
+                <span class="max-w-[55%] text-right font-medium break-words">{fact.value}</span>
+              </div>
+            {/each}
+          </Card.Content>
+        </Card.Root>
+      {/each}
+    </div>
+
     <Card.Root>
       <Card.Header class="has-data-[slot=card-action]:grid-cols-[1fr_auto]">
         <div class="grid gap-1">
-          <Card.Title>GetInfo capability rules</Card.Title>
-          <Card.Description>CTAP 2.3 authenticatorGetInfo fields interpreted with explicit option, extension, and limit semantics</Card.Description>
+          <Card.Title>Capability Matrix</Card.Title>
+          <Card.Description>CTAP 2.3 getInfo capabilities, limits, extensions, and certification hints.</Card.Description>
         </div>
         <Card.Action>
           {#if warningOverviewRows.length}
@@ -167,25 +155,14 @@
     <Card.Root>
       <Card.Header class="has-data-[slot=card-action]:grid-cols-[1fr_auto]">
         <div class="grid gap-1">
-          <Card.Title>Technical details</Card.Title>
-          <Card.Description>Raw CTAP getInfo, transports, algorithms, attestation, and JSON export</Card.Description>
+          <Card.Title>Raw inspection data</Card.Title>
+          <Card.Description>Full CTAP getInfo payload and JSON export.</Card.Description>
         </div>
         <Card.Action>
           <Button variant="outline" size="sm" type="button" onclick={copyReport}>Export JSON</Button>
         </Card.Action>
       </Card.Header>
-      <Card.Content class="grid gap-4">
-        <Table.Root>
-          <Table.Body>
-            {#each technicalRows as row (row.label)}
-              <Table.Row>
-                <Table.Cell class="w-[220px] text-muted-foreground">{row.label}</Table.Cell>
-                <Table.Cell class="whitespace-normal break-words font-medium">{row.value}</Table.Cell>
-              </Table.Row>
-            {/each}
-          </Table.Body>
-        </Table.Root>
-        <Separator />
+      <Card.Content>
         <JsonView value={info} title="Raw CTAP getInfo" variant="bare" />
       </Card.Content>
     </Card.Root>
