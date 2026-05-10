@@ -1,5 +1,6 @@
 import { derived, get, writable } from "svelte/store";
 import type { Discovery, Envelope, SessionStatus } from "./api";
+import { m } from "../paraglide/messages.js";
 
 export type StatusBarAction = {
   id: string;
@@ -89,7 +90,9 @@ export const selectedLogEntryId = writable("");
 export const sessionStatus = writable<SessionStatus>({ state: "idle" });
 export const overviewEnvelope = writable<Envelope | null>(null);
 export const overviewBioSensorEnvelope = writable<Envelope | null>(null);
+export const overviewMDSEnvelope = writable<Envelope | null>(null);
 export const overviewLoading = writable(false);
+export const overviewMDSLoading = writable(false);
 export const pendingInteraction = writable<any | null>(null);
 export const appError = writable<string | null>(null);
 export const toasts = writable<string[]>([]);
@@ -211,7 +214,7 @@ function normalizeBlobCredentials(report: any) {
 export function credentialGroupsFromRows(credentials: any[]) {
   const groups = new Map<string, any>();
   for (const credential of credentials) {
-    const rpID = credential.rpID || credential.rp?.id || "unknown RP";
+    const rpID = credential.rpID || credential.rp?.id || m.unknown_rp();
     const rpName = credential.rpName || credential.rp?.name || rpID;
     if (!groups.has(rpID)) {
       groups.set(rpID, { rpID, rpName, credentials: [] });
@@ -298,6 +301,8 @@ export function applyDiscovery(response: Discovery): boolean {
     selectionVersion.update((value) => value + 1);
     overviewEnvelope.set(null);
     overviewBioSensorEnvelope.set(null);
+    overviewMDSEnvelope.set(null);
+    overviewMDSLoading.set(false);
     clearSharedCredentialInventory(previousSelector);
   }
   if (response.session) sessionStatus.set(response.session);
@@ -324,8 +329,8 @@ export function beginOperation(label: string, detailId?: string) {
   const logEntryId = appendLogEntry({
     tone: "info",
     source: "operation",
-    title: `${label} started`,
-    message: "Waiting for authenticator response.",
+    title: m.operation_started({ label }),
+    message: m.waiting_for_authenticator_response(),
     screen: get(activeScreen),
     selector: currentSelector(),
     detailId,
@@ -340,7 +345,7 @@ export function beginOperation(label: string, detailId?: string) {
     detailId,
     logEntryId,
     event: {
-      message: `${label} running`,
+      message: m.operation_running_with_label({ label }),
     },
   });
   return logEntryId;
@@ -411,6 +416,8 @@ export function setLargeBlobScreenState(selector: string, state: LargeBlobScreen
 export function clearWorkbenchScreenCaches() {
   overviewEnvelope.set(null);
   overviewBioSensorEnvelope.set(null);
+  overviewMDSEnvelope.set(null);
+  overviewMDSLoading.set(false);
   credentialsScreenCache.set({});
   largeBlobScreenCache.set({});
   clearSharedCredentialInventory();
@@ -425,7 +432,7 @@ export function summarizeEnvelope(label: string, envelope: Envelope | null | und
     const logEntryId = appendLogEntry({
       tone: "error",
       source: "operation",
-      title: `${label} failed`,
+      title: m.operation_failed_with_label({ label }),
       message: error.hint ? `${error.message} ${error.hint}` : error.message,
       operationId: envelope.operationId,
       screen: get(activeScreen),
@@ -435,7 +442,7 @@ export function summarizeEnvelope(label: string, envelope: Envelope | null | und
     });
     setStatusOutcome({
       tone: "error",
-      title: `${label} failed`,
+      title: m.operation_failed_with_label({ label }),
       message: error.hint ? `${error.message} ${error.hint}` : error.message,
       detailId,
       logEntryId,
@@ -446,8 +453,8 @@ export function summarizeEnvelope(label: string, envelope: Envelope | null | und
   const logEntryId = appendLogEntry({
     tone: "success",
     source: "operation",
-    title: `${label} complete`,
-    message: envelope.result?.summary || envelope.result?.message || "Operation finished successfully.",
+    title: m.operation_complete_with_label({ label }),
+    message: envelope.result?.summary || envelope.result?.message || m.operation_finished_successfully(),
     operationId: envelope.operationId,
     screen: get(activeScreen),
     selector: currentSelector(),
@@ -456,8 +463,8 @@ export function summarizeEnvelope(label: string, envelope: Envelope | null | und
   });
   setStatusOutcome({
     tone: "success",
-    title: `${label} complete`,
-    message: envelope.result?.summary || envelope.result?.message || "Operation finished successfully.",
+    title: m.operation_complete_with_label({ label }),
+    message: envelope.result?.summary || envelope.result?.message || m.operation_finished_successfully(),
     detailId,
     logEntryId,
   });

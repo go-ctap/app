@@ -178,6 +178,16 @@ export function LockSession() {
 }
 
 /**
+ * @param {$models.MDSLookupRequest} req
+ * @returns {$CancellablePromise<$models.OperationEnvelope>}
+ */
+export function LookupMDS(req) {
+    return $Call.ByID(1406571638, req).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType0($result);
+    }));
+}
+
+/**
  * @param {$models.MakeCredentialRequest} req
  * @returns {$CancellablePromise<$models.OperationEnvelope>}
  */

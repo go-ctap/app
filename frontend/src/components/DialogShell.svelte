@@ -2,6 +2,7 @@
   import { onMount, tick, type Snippet } from "svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
+  import { m } from "../paraglide/messages.js";
 
   type Props = {
     title?: string;
@@ -20,7 +21,7 @@
     eyebrow = "",
     wide = false,
     destructive = false,
-    closeLabel = "Cancel",
+    closeLabel = m.cancel(),
     close = () => {},
     primary = () => {},
     children,

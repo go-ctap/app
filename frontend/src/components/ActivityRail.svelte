@@ -31,6 +31,7 @@
   } from "../lib/stores";
   import { labelDevice, operationStageLabel, sessionStateLabel } from "../lib/format";
   import StatusBadge from "./StatusBadge.svelte";
+  import { m } from "../paraglide/messages.js";
 
   type Props = {
     variant?: "rail" | "sheet";
@@ -55,12 +56,12 @@
   let selectedLabel = $derived($selectedDevice ? labelDevice($selectedDevice) : "");
   let canOpenSession = $derived(Boolean($selectedSelector) && ["closed", "stale", "error"].includes($sessionStatus.state || ""));
   let canCloseSession = $derived($sessionStatus.state === "ready");
-  let needsRefreshRecovery = $derived($sessionStatus.state === "stale" || $sessionStatus.state === "error" || outcome?.title === "Discovery issue");
+  let needsRefreshRecovery = $derived($sessionStatus.state === "stale" || $sessionStatus.state === "error" || outcome?.title === m.discovery_issue());
   let detailLogEntryId = $derived(operation?.logEntryId || outcome?.logEntryId);
   let activityView = $derived({
     running: Boolean(operation),
-    title: operation ? event?.message || operationStageLabel(event?.stage) || "Operation running" : outcome?.title || "Workbench ready",
-    message: operation ? progressLabel(event) : outcome?.message || selectedLabel || "Select an authenticator to begin.",
+    title: operation ? event?.message || operationStageLabel(event?.stage) || m.operation_running() : outcome?.title || m.workbench_ready(),
+    message: operation ? progressLabel(event) : outcome?.message || selectedLabel || m.select_authenticator_to_begin(),
   });
   let operationProgress = $derived.by(() => {
     const completed = operation?.event?.completed;
@@ -75,7 +76,7 @@
     if (detailLogEntryId) {
       actions.push({
         id: `details:${detailLogEntryId}`,
-        label: "View details",
+        label: m.view_details(),
         variant: "outline",
         icon: "details",
         run: () => viewDetails(detailLogEntryId),
@@ -85,7 +86,7 @@
     if (operation?.operationId) {
       actions.push({
         id: `cancel:${operation.operationId}`,
-        label: "Cancel",
+        label: m.cancel(),
         variant: "destructive",
         icon: "cancel",
         run: cancel,
@@ -96,7 +97,7 @@
     if (outcome?.retry) {
       actions.push({
         id: `retry:${outcome.logEntryId || outcome.title || "latest"}`,
-        label: "Retry",
+        label: m.retry(),
         variant: "outline",
         run: outcome.retry,
       });
@@ -114,7 +115,7 @@
     if (canOpenSession) {
       actions.push({
         id: "open-session",
-        label: "Open session",
+        label: m.open_session(),
         variant: "outline",
         run: openSession,
       });
@@ -123,7 +124,7 @@
     if (needsRefreshRecovery) {
       actions.push({
         id: "refresh-devices",
-        label: "Refresh devices",
+        label: m.refresh_devices(),
         variant: "outline",
         run: refreshDiscovery,
       });
@@ -192,12 +193,12 @@
 {#snippet railContent()}
   <Card.Root size="sm">
     <Card.Header>
-      <Card.Title class="text-sm">Session</Card.Title>
-      <Card.Description>{selectedLabel || "No authenticator selected"}</Card.Description>
+      <Card.Title class="text-sm">{m.session()}</Card.Title>
+      <Card.Description>{selectedLabel || m.no_authenticator_selected()}</Card.Description>
     </Card.Header>
     <Card.Content class="grid gap-4">
       <div class="flex items-center justify-between gap-3">
-        <span class="text-sm text-muted-foreground">State</span>
+        <span class="text-sm text-muted-foreground">{m.state()}</span>
         <StatusBadge value={$sessionStatus.state} label={sessionStateLabel($sessionStatus.state)} />
       </div>
 
@@ -205,22 +206,22 @@
 
       <dl class="grid gap-2 text-sm">
         <div class="grid grid-cols-[88px_minmax(0,1fr)] gap-2">
-          <dt class="text-muted-foreground">Transport</dt>
-          <dd class="m-0 truncate">{$selectedDevice?.transport || "unknown"}</dd>
+          <dt class="text-muted-foreground">{m.transport()}</dt>
+          <dd class="m-0 truncate">{$selectedDevice?.transport || m.state_unknown()}</dd>
         </div>
         <div class="grid grid-cols-[88px_minmax(0,1fr)] gap-2">
-          <dt class="text-muted-foreground">Selector</dt>
-          <dd class="m-0 min-w-0 break-words font-mono text-xs">{$selectedSelector || "not selected"}</dd>
+          <dt class="text-muted-foreground">{m.selector()}</dt>
+          <dd class="m-0 min-w-0 break-words font-mono text-xs">{$selectedSelector || m.not_selected()}</dd>
         </div>
         {#if $sessionStatus.openedAt}
           <div class="grid grid-cols-[88px_minmax(0,1fr)] gap-2">
-            <dt class="text-muted-foreground">Opened</dt>
+            <dt class="text-muted-foreground">{m.opened()}</dt>
             <dd class="m-0 truncate">{formatTime($sessionStatus.openedAt)}</dd>
           </div>
         {/if}
         {#if $sessionStatus.updatedAt}
           <div class="grid grid-cols-[88px_minmax(0,1fr)] gap-2">
-            <dt class="text-muted-foreground">Updated</dt>
+            <dt class="text-muted-foreground">{m.updated()}</dt>
             <dd class="m-0 truncate">{formatTime($sessionStatus.updatedAt)}</dd>
           </div>
         {/if}
@@ -229,17 +230,17 @@
       <div class="flex flex-wrap gap-2">
         <Button variant="outline" size="sm" type="button" onclick={refreshDiscovery}>
           <RefreshCw />
-          Refresh
+          {m.refresh()}
         </Button>
         {#if canCloseSession}
           <Button variant="outline" size="sm" type="button" onclick={closeSelectedSession}>
             <LockKeyhole />
-            Close
+            {m.close()}
           </Button>
         {:else if canOpenSession}
           <Button variant="outline" size="sm" type="button" onclick={openSession}>
             <UnlockKeyhole />
-            Open
+            {m.open()}
           </Button>
         {/if}
       </div>
@@ -248,8 +249,8 @@
 
   <Card.Root size="sm">
     <Card.Header>
-      <Card.Title class="text-sm">Current activity</Card.Title>
-      <Card.Description>Operation and recovery state</Card.Description>
+      <Card.Title class="text-sm">{m.current_activity()}</Card.Title>
+      <Card.Description>{m.operation_and_recovery_state()}</Card.Description>
     </Card.Header>
     <Card.Content class="grid gap-2">
       <Item.Root size="sm" variant={activityView.running ? "muted" : "outline"}>
@@ -294,10 +295,10 @@
 
   <Card.Root size="sm">
     <Card.Header>
-      <Card.Title class="text-sm">Recent events</Card.Title>
-      <Card.Description>Latest app activity</Card.Description>
+      <Card.Title class="text-sm">{m.recent_events()}</Card.Title>
+      <Card.Description>{m.latest_app_activity()}</Card.Description>
       <Card.Action>
-        <Button variant="ghost" size="sm" type="button" onclick={openLogs}>View all</Button>
+        <Button variant="ghost" size="sm" type="button" onclick={openLogs}>{m.view_all()}</Button>
       </Card.Action>
     </Card.Header>
     <Card.Content>
@@ -333,7 +334,7 @@
           {/each}
         </Item.Group>
       {:else}
-        <p class="m-0 text-sm text-muted-foreground" in:fade={{ duration: 120 }} out:fade={{ duration: 90 }}>No events yet.</p>
+        <p class="m-0 text-sm text-muted-foreground" in:fade={{ duration: 120 }} out:fade={{ duration: 90 }}>{m.no_events_yet()}</p>
       {/if}
     </Card.Content>
   </Card.Root>
@@ -341,13 +342,13 @@
 
 {#if variant === "sheet"}
   <Sheet.Root bind:open={sheetOpen}>
-    <Sheet.Trigger class={buttonVariants({ variant: "outline", size: "icon" })} aria-label="Open activity panel" title="Activity">
+    <Sheet.Trigger class={buttonVariants({ variant: "outline", size: "icon" })} aria-label={m.open_activity_panel()} title={m.activity()}>
       <Activity class="size-4" />
     </Sheet.Trigger>
     <Sheet.Content side="right" class="w-[min(28rem,calc(100vw-1rem))] p-0 sm:max-w-md">
       <Sheet.Header class="border-b">
-        <Sheet.Title>Activity</Sheet.Title>
-        <Sheet.Description>Session state, operation progress, and recent events.</Sheet.Description>
+        <Sheet.Title>{m.activity()}</Sheet.Title>
+        <Sheet.Description>{m.activity_sheet_description()}</Sheet.Description>
       </Sheet.Header>
       <ScrollArea class="min-h-0 flex-1">
         <div class="grid gap-4 p-4">
@@ -357,7 +358,7 @@
     </Sheet.Content>
   </Sheet.Root>
 {:else}
-  <aside class={`hidden xl:block ${className}`} aria-label="Session and activity summary">
+  <aside class={`hidden xl:block ${className}`} aria-label={m.session_activity_summary()}>
     <div class="sticky top-[4.5rem] grid gap-4">
       {@render railContent()}
     </div>

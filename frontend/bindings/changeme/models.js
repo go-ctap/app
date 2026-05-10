@@ -743,6 +743,41 @@ export class LargeBlobReadRequest {
     }
 }
 
+export class MDSLookupRequest {
+    /**
+     * Creates a new MDSLookupRequest instance.
+     * @param {Partial<MDSLookupRequest>} [$$source = {}] - The source object to create the MDSLookupRequest.
+     */
+    constructor($$source = {}) {
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | undefined}
+             */
+            this["aaguid"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {boolean | undefined}
+             */
+            this["refresh"] = undefined;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MDSLookupRequest instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {MDSLookupRequest}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new MDSLookupRequest(/** @type {Partial<MDSLookupRequest>} */($$parsedSource));
+    }
+}
+
 export class MakeCredentialRequest {
     /**
      * Creates a new MakeCredentialRequest instance.

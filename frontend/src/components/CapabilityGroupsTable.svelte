@@ -4,6 +4,7 @@
   import { Badge } from "$lib/components/ui/badge/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
   import { createSvelteTable } from "$lib/components/ui/data-table/index.js";
+  import { m } from "../paraglide/messages.js";
 
   export type CapabilityGroupRow = {
     group: string;
@@ -23,11 +24,11 @@
   const columns: ColumnDef<CapabilityGroupRow>[] = [
     {
       accessorKey: "group",
-      header: "Group",
+      header: m.group(),
     },
     {
       accessorKey: "label",
-      header: "Capability",
+      header: m.capability(),
     },
   ];
 
@@ -57,7 +58,7 @@
   function groupSummary(row: ReturnType<typeof table.getRowModel>["rows"][number]) {
     const leaves = row.getLeafRows();
     const supported = leaves.filter((item) => item.original.supported).length;
-    return `${supported}/${leaves.length} supported`;
+    return m.supported_ratio({ supported, total: leaves.length });
   }
 
   function statusMark(state: CapabilityGroupRow["state"]) {
@@ -103,9 +104,9 @@
                   {#if item.value}
                     <span class="text-muted-foreground">: {item.value}</span>
                   {:else if item.state === "unknown"}
-                    <span class="text-muted-foreground"> not reported</span>
+                    <span class="text-muted-foreground"> {m.not_reported()}</span>
                   {:else if item.state === "unsupported"}
-                    <span class="text-muted-foreground"> not available</span>
+                    <span class="text-muted-foreground"> {m.state_not_available()}</span>
                   {/if}
                 </span>
               </div>
@@ -115,7 +116,7 @@
       {:else}
         <Table.Row>
           <Table.Cell class="h-24 text-center">
-            No capabilities reported.
+            {m.no_capabilities_reported()}
           </Table.Cell>
         </Table.Row>
       {/each}

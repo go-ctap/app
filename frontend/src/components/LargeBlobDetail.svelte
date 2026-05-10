@@ -13,6 +13,7 @@
   import EmptyState from "./EmptyState.svelte";
   import JsonView from "./JsonView.svelte";
   import StatusBadge from "./StatusBadge.svelte";
+  import { m } from "../paraglide/messages.js";
 
   type DetailMode = "read" | "write" | "delete" | "raw";
   type PreviewMode = "write" | "delete" | "";
@@ -72,7 +73,7 @@
   let decodeDirty = $derived(Boolean(readResult && readDecodeMode && decodeMode !== readDecodeMode));
   let decodeStatus = $derived(readReport?.decode || null);
   let decodedContent = $derived(decodedValue(readReport));
-  let decodeFailure = $derived(decodeStatus?.requested && !decodeStatus?.success ? decodeStatus.failure || "Selected decode mode could not decode this blob." : "");
+  let decodeFailure = $derived(decodeStatus?.requested && !decodeStatus?.success ? decodeStatus.failure || m.decode_mode_failed() : "");
   let busy = $derived(sessionBusy || Boolean(largeBlobBusy));
 
   function decodedValue(value: any) {
@@ -101,7 +102,7 @@
   }
 
   function warningMessage(warning: any) {
-    return warning?.message || warning?.code || "Review this mutation before confirming.";
+    return warning?.message || warning?.code || m.review_mutation_before_confirming();
   }
 
   function handlePayloadKeydown(event: KeyboardEvent) {
@@ -113,42 +114,42 @@
 </script>
 
 {#if !selectedCredential}
-  <EmptyState eyebrow="Selection" variant="compact" title="Choose a credential" message="Select a row to open its read, write, delete, and raw inspection workspace." />
+  <EmptyState eyebrow={m.selection()} variant="compact" title={m.choose_credential()} message={m.choose_credential_message()} />
 {:else}
   <Card.Root class="border-0 bg-transparent p-0 shadow-none ring-0">
     <Card.Header class="px-0 pt-0">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="grid gap-1">
-          <Card.Description>Selected credential</Card.Description>
-          <Card.Title>{selectedCredential.user?.displayName || selectedCredential.user?.name || selectedCredential.rp?.id || "Credential"}</Card.Title>
-          <Card.Description>{selectedCredential.rp?.id || "unknown RP"}</Card.Description>
+          <Card.Description>{m.selected_credential()}</Card.Description>
+          <Card.Title>{selectedCredential.user?.displayName || selectedCredential.user?.name || selectedCredential.rp?.id || m.credential()}</Card.Title>
+          <Card.Description>{selectedCredential.rp?.id || m.unknown_rp()}</Card.Description>
         </div>
-        <StatusBadge value={selectedCredential.blobState || "unknown"} label={selectedCredential.blobState || "unknown"} />
+        <StatusBadge value={selectedCredential.blobState || "unknown"} label={selectedCredential.blobState || m.state_unknown()} />
       </div>
-      <CopyableId label="Credential ID" value={credentialKey(selectedCredential)} copied={() => copied("Credential ID copied")} />
+      <CopyableId label={m.credential_id()} value={credentialKey(selectedCredential)} copied={() => copied(m.credential_id_copied())} />
     </Card.Header>
 
     <Card.Content class="grid gap-4 px-0 pb-0">
   <Tabs.Root bind:value={detailMode}>
-    <Tabs.List aria-label="Workspace mode">
-      <Tabs.Trigger value="read">Read</Tabs.Trigger>
-      <Tabs.Trigger value="write">Write</Tabs.Trigger>
-      <Tabs.Trigger value="delete">Delete</Tabs.Trigger>
-      <Tabs.Trigger value="raw">Raw</Tabs.Trigger>
+    <Tabs.List aria-label={m.workspace_mode()}>
+      <Tabs.Trigger value="read">{m.read()}</Tabs.Trigger>
+      <Tabs.Trigger value="write">{m.write()}</Tabs.Trigger>
+      <Tabs.Trigger value="delete">{m.delete()}</Tabs.Trigger>
+      <Tabs.Trigger value="raw">{m.raw()}</Tabs.Trigger>
     </Tabs.List>
 
   <Tabs.Content value="read" class="grid gap-4">
     <Card.Root size="sm">
       <Card.Header class="flex-row items-start justify-between gap-3">
         <div class="grid gap-1">
-          <Card.Title>Read result</Card.Title>
-          <Card.Description>Blob presence, byte count, decoded content, and raw hex.</Card.Description>
+          <Card.Title>{m.read_result()}</Card.Title>
+          <Card.Description>{m.read_result_description()}</Card.Description>
         </div>
-        <Button onclick={readBlob} disabled={busy}>Read blob</Button>
+        <Button onclick={readBlob} disabled={busy}>{m.read_blob()}</Button>
       </Card.Header>
       <Card.Content class="grid gap-4">
       <Field.Field>
-        <Field.Label>Decode mode</Field.Label>
+        <Field.Label>{m.decode_mode()}</Field.Label>
         <NativeSelect bind:value={decodeMode}>
           <option value="none">none</option>
           <option value="utf8">utf8</option>
@@ -157,30 +158,30 @@
         </NativeSelect>
       </Field.Field>
       {#if decodeDirty}
-        <Alert><AlertDescription>Decode mode changed. Re-read the blob to update the decoded content.</AlertDescription></Alert>
+        <Alert><AlertDescription>{m.decode_mode_changed()}</AlertDescription></Alert>
       {/if}
       {#if operationFailed(readResult)}
         <Alert variant="destructive"><AlertDescription>{operationFailed(readResult)}</AlertDescription></Alert>
       {:else if readResult}
         <div class="flex flex-wrap gap-2">
-          <Badge variant="secondary">{readReport?.blobPresent ? "Blob present" : "No blob present"}</Badge>
-          <Badge variant="outline">{readReport?.rawByteCount || 0} bytes</Badge>
-          <Badge variant="outline">Decoded as {readDecodeMode || decodeMode}</Badge>
+          <Badge variant="secondary">{readReport?.blobPresent ? m.blob_present() : m.no_blob_present()}</Badge>
+          <Badge variant="outline">{m.bytes_count({ count: readReport?.rawByteCount || 0 })}</Badge>
+          <Badge variant="outline">{m.decoded_as({ mode: readDecodeMode || decodeMode })}</Badge>
         </div>
         {#if hasDecodedValue(decodedContent)}
           <pre class="max-h-72 overflow-auto rounded-md border border-border bg-muted/40 p-3 text-sm">{formatDecodedValue(decodedContent)}</pre>
         {:else if decodeFailure}
-          <Alert><AlertDescription>Decode failed: {decodeFailure}</AlertDescription></Alert>
+          <Alert><AlertDescription>{m.decode_failed({ failure: decodeFailure })}</AlertDescription></Alert>
         {:else if decodeStatus?.requested && decodeStatus?.success}
-          <Alert><AlertDescription>Decoded payload is empty.</AlertDescription></Alert>
+          <Alert><AlertDescription>{m.decoded_payload_empty()}</AlertDescription></Alert>
         {/if}
-        <CopyableId label="Raw hex" value={readReport?.rawHex || ""} empty="no raw hex" copied={() => copied("Raw hex copied")} />
+        <CopyableId label={m.raw_hex()} value={readReport?.rawHex || ""} empty={m.no_raw_hex()} copied={() => copied(m.raw_hex_copied())} />
         <details class="rounded-md border bg-card p-4">
-          <summary>Raw read report</summary>
-          <JsonView value={readResult.result || readResult} title="Read report" variant="bare" />
+          <summary>{m.raw_read_report()}</summary>
+          <JsonView value={readResult.result || readResult} title={m.read_report()} variant="bare" />
         </details>
       {:else}
-        <p class="text-sm text-muted-foreground">Run Read to inspect blob presence, byte count, decoded content, and raw hex for this credential.</p>
+        <p class="text-sm text-muted-foreground">{m.run_read_blob_hint()}</p>
       {/if}
       </Card.Content>
     </Card.Root>
@@ -189,34 +190,34 @@
   <Tabs.Content value="write" class="grid gap-4">
     <Card.Root size="sm">
       <Card.Header>
-        <Card.Title>Write payload</Card.Title>
-        <Card.Description>Preview the payload before writing it to this credential.</Card.Description>
+        <Card.Title>{m.write_payload()}</Card.Title>
+        <Card.Description>{m.write_payload_description()}</Card.Description>
       </Card.Header>
       <Card.Content class="grid gap-4">
       <Field.Field>
-        <Field.Label>Payload</Field.Label>
-        <Textarea bind:value={payload} rows={8} placeholder="UTF-8 payload to store in the large blob" onkeydown={handlePayloadKeydown} />
+        <Field.Label>{m.payload()}</Field.Label>
+        <Textarea bind:value={payload} rows={8} placeholder={m.large_blob_payload_placeholder()} onkeydown={handlePayloadKeydown} />
       </Field.Field>
       <div class="flex flex-wrap gap-2">
-        <Badge variant="outline">{bytesFromText(payload).length} bytes</Badge>
-        <Badge variant="outline">{payload.length} characters</Badge>
+        <Badge variant="outline">{m.bytes_count({ count: bytesFromText(payload).length })}</Badge>
+        <Badge variant="outline">{m.characters_count({ count: payload.length })}</Badge>
       </div>
       {#if operationFailed(preview)}
         <Alert variant="destructive"><AlertDescription>{operationFailed(preview)}</AlertDescription></Alert>
       {/if}
       {#if preview && previewMode === "write"}
-        <Alert><AlertDescription>Preview ready. Confirm write to update the selected credential blob.</AlertDescription></Alert>
+        <Alert><AlertDescription>{m.write_preview_ready()}</AlertDescription></Alert>
         {#if mutationPreview}
           <div class="flex flex-wrap gap-2">
-            <Badge variant="outline">{mutationPreview.serializedLargeBlobArraySizeBefore || 0} bytes before</Badge>
-            <Badge variant="outline">{mutationPreview.serializedLargeBlobArraySizeAfter || 0} bytes after</Badge>
+            <Badge variant="outline">{m.bytes_before({ count: mutationPreview.serializedLargeBlobArraySizeBefore || 0 })}</Badge>
+            <Badge variant="outline">{m.bytes_after({ count: mutationPreview.serializedLargeBlobArraySizeAfter || 0 })}</Badge>
             {#if capacityLimit}
-              <Badge variant="outline">{Math.max(capacityRemaining || 0, 0)} bytes remaining</Badge>
+              <Badge variant="outline">{m.bytes_remaining({ count: Math.max(capacityRemaining || 0, 0) })}</Badge>
             {/if}
           </div>
         {/if}
         {#if mutationWarnings.length}
-          <div class="grid gap-2" aria-label="Preview warnings">
+          <div class="grid gap-2" aria-label={m.preview_warnings()}>
             {#each mutationWarnings as warning (warning?.code || warningMessage(warning))}
               <Alert variant={warning?.severity === "destructive" ? "destructive" : "default"}>
                 <Badge variant={warning?.severity === "destructive" ? "destructive" : "secondary"}>{warningTone(warning)}</Badge>
@@ -225,11 +226,11 @@
             {/each}
           </div>
         {/if}
-        <JsonView value={previewJSON} title="Mutation preview" variant="bare" />
+        <JsonView value={previewJSON} title={m.mutation_preview()} variant="bare" />
       {/if}
       <div class="flex flex-wrap justify-end gap-2">
-        <Button variant="outline" onclick={previewWrite} disabled={busy}>Preview write</Button>
-        <Button onclick={executeWrite} disabled={busy || !canConfirmWrite}>Confirm write</Button>
+        <Button variant="outline" onclick={previewWrite} disabled={busy}>{m.preview_write()}</Button>
+        <Button onclick={executeWrite} disabled={busy || !canConfirmWrite}>{m.confirm_write()}</Button>
       </div>
       </Card.Content>
     </Card.Root>
@@ -238,26 +239,26 @@
   <Tabs.Content value="delete" class="grid gap-4">
     <Card.Root size="sm">
       <Card.Header>
-        <Card.Title>Delete blob</Card.Title>
-        <Card.Description>Preview deletion before removing the blob bytes from this credential.</Card.Description>
+        <Card.Title>{m.delete_blob()}</Card.Title>
+        <Card.Description>{m.delete_blob_description()}</Card.Description>
       </Card.Header>
       <Card.Content class="grid gap-4">
       {#if operationFailed(preview)}
         <Alert variant="destructive"><AlertDescription>{operationFailed(preview)}</AlertDescription></Alert>
       {/if}
       {#if preview && previewMode === "delete"}
-        <Alert><AlertDescription>Delete preview ready. Confirm delete only if the selected mutation is expected.</AlertDescription></Alert>
+        <Alert><AlertDescription>{m.delete_preview_ready()}</AlertDescription></Alert>
         {#if mutationPreview}
           <div class="flex flex-wrap gap-2">
-            <Badge variant="outline">{mutationPreview.serializedLargeBlobArraySizeBefore || 0} bytes before</Badge>
-            <Badge variant="outline">{mutationPreview.serializedLargeBlobArraySizeAfter || 0} bytes after</Badge>
+            <Badge variant="outline">{m.bytes_before({ count: mutationPreview.serializedLargeBlobArraySizeBefore || 0 })}</Badge>
+            <Badge variant="outline">{m.bytes_after({ count: mutationPreview.serializedLargeBlobArraySizeAfter || 0 })}</Badge>
             {#if capacityLimit}
-              <Badge variant="outline">{Math.max(capacityRemaining || 0, 0)} bytes remaining</Badge>
+              <Badge variant="outline">{m.bytes_remaining({ count: Math.max(capacityRemaining || 0, 0) })}</Badge>
             {/if}
           </div>
         {/if}
         {#if mutationWarnings.length}
-          <div class="grid gap-2" aria-label="Preview warnings">
+          <div class="grid gap-2" aria-label={m.preview_warnings()}>
             {#each mutationWarnings as warning (warning?.code || warningMessage(warning))}
               <Alert variant={warning?.severity === "destructive" ? "destructive" : "default"}>
                 <Badge variant={warning?.severity === "destructive" ? "destructive" : "secondary"}>{warningTone(warning)}</Badge>
@@ -266,18 +267,18 @@
             {/each}
           </div>
         {/if}
-        <JsonView value={previewJSON} title="Delete preview" variant="bare" />
+        <JsonView value={previewJSON} title={m.delete_preview()} variant="bare" />
       {/if}
       <div class="flex flex-wrap justify-end gap-2">
-        <Button variant="outline" onclick={previewDelete} disabled={busy}>Preview delete</Button>
-        <Button variant="destructive" onclick={executeDelete} disabled={busy || !canConfirmDelete}>Confirm delete</Button>
+        <Button variant="outline" onclick={previewDelete} disabled={busy}>{m.preview_delete()}</Button>
+        <Button variant="destructive" onclick={executeDelete} disabled={busy || !canConfirmDelete}>{m.confirm_delete()}</Button>
       </div>
       </Card.Content>
     </Card.Root>
   </Tabs.Content>
 
   <Tabs.Content value="raw">
-    <JsonView value={selectedCredential} title="Large blob credential JSON" />
+    <JsonView value={selectedCredential} title={m.large_blob_credential_json()} />
   </Tabs.Content>
   </Tabs.Root>
     </Card.Content>

@@ -21,6 +21,7 @@ export {
     LargeBlobGarbageCollectRequest,
     LargeBlobMutationRequest,
     LargeBlobReadRequest,
+    MDSLookupRequest,
     MakeCredentialRequest,
     MinPINLengthRequest,
     OperationEnvelope,

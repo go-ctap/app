@@ -37,6 +37,7 @@ export const api = {
   cancelOperation: (operationId: string): Promise<boolean> => service.CancelOperation(operationId),
   resolveInteraction: (answer: any): Promise<boolean> => service.ResolveInteraction(answer),
   inspect: (selector: string): Promise<Envelope> => service.Inspect({ selector }),
+  lookupMDS: (aaguid: string, refresh = false): Promise<Envelope> => service.LookupMDS({ aaguid, refresh }),
   listCredentials: (selector: string): Promise<Envelope> => service.ListCredentials({ selector }),
   deleteCredential: (request: any): Promise<Envelope> => service.DeleteCredential(request),
   updateCredentialUser: (request: any): Promise<Envelope> => service.UpdateCredentialUser(request),

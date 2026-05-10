@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import * as Empty from "$lib/components/ui/empty/index.js";
+  import { m } from "../paraglide/messages.js";
 
   type Props = {
     title?: string;
@@ -11,7 +12,7 @@
   };
 
   let {
-    title = "Nothing here yet",
+    title = m.nothing_here_yet(),
     message = "",
     eyebrow = "",
     variant = "default",

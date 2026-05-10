@@ -14,6 +14,7 @@
   import Notice from "../components/Notice.svelte";
   import ScreenHeader from "../components/ScreenHeader.svelte";
   import StatusBadge from "../components/StatusBadge.svelte";
+  import { m } from "../paraglide/messages.js";
 
   let loading = $state(false);
   let envelope: any = $state(null);
@@ -47,7 +48,7 @@
   });
 
   function failureEnvelope(error: unknown) {
-    const message = error instanceof Error ? error.message : String(error || "Operation failed");
+    const message = error instanceof Error ? error.message : String(error || m.operation_failed());
     return { error: { message } };
   }
 
@@ -78,7 +79,7 @@
             totalRPs: groups.length,
             totalCredentials: groups.reduce((total: number, group: any) => total + (group.credentials?.length || 0), 0),
           },
-          support: { credentialManagement: "cached from blob map" },
+          support: { credentialManagement: m.cached_from_blob_map() },
         },
       },
     };
@@ -105,15 +106,15 @@
     if (!selector) return;
     loading = true;
     try {
-      beginOperation(options.warm ? "Credential warm reload" : "Credential list", "credential-inventory");
+      beginOperation(options.warm ? m.credential_warm_reload() : m.credential_list(), "credential-inventory");
       envelope = await api.listCredentials(selector);
       if (!operationFailed(envelope)) {
         updateSharedCredentialInventory(selector, envelope, "credentials");
       }
-      summarizeEnvelope(options.warm ? "Credential warm reload" : "Credential list", envelope, "credential-inventory", load);
+      summarizeEnvelope(options.warm ? m.credential_warm_reload() : m.credential_list(), envelope, "credential-inventory", load);
     } catch (error) {
       envelope = failureEnvelope(error);
-      summarizeEnvelope(options.warm ? "Credential warm reload" : "Credential list", envelope, "credential-inventory", load);
+      summarizeEnvelope(options.warm ? m.credential_warm_reload() : m.credential_list(), envelope, "credential-inventory", load);
     } finally {
       loading = false;
     }
@@ -121,20 +122,20 @@
 
   async function previewDelete(credential: any) {
     try {
-      beginOperation("Credential delete preview", "credential-inventory");
+      beginOperation(m.credential_delete_preview(), "credential-inventory");
       preview = await api.deleteCredential({ selector, credentialIdHex: credential.credentialIDHex, dryRun: true });
     } catch (error) {
       preview = failureEnvelope(error);
     }
-    summarizeEnvelope("Credential delete preview", preview, "credential-inventory", () => previewDelete(credential));
+    summarizeEnvelope(m.credential_delete_preview(), preview, "credential-inventory", () => previewDelete(credential));
   }
 
   async function executeDelete() {
     const credentialIdHex = preview?.result?.preview?.target?.credentialIDHex || preview?.result?.preview?.credentialIDHex;
     let result: any = null;
     try {
-      beginOperation("Credential delete", "credential-inventory");
-      result = await api.deleteCredential({ selector, credentialIdHex, confirmed: true, confirmationMessage: "delete credential" });
+      beginOperation(m.credential_delete(), "credential-inventory");
+      result = await api.deleteCredential({ selector, credentialIdHex, confirmed: true, confirmationMessage: m.credential_delete() });
     } catch (error) {
       result = failureEnvelope(error);
     }
@@ -144,9 +145,9 @@
       await load();
       editing = null;
     }
-    summarizeEnvelope("Credential delete", result, "credential-inventory");
+    summarizeEnvelope(m.credential_delete(), result, "credential-inventory");
     if (!operationFailed(result)) {
-      pushToast("Credential deleted");
+      pushToast(m.credential_deleted());
     }
   }
 
@@ -160,7 +161,7 @@
 
   async function previewUpdate() {
     try {
-      beginOperation("Credential update preview", "credential-inventory");
+      beginOperation(m.credential_update_preview(), "credential-inventory");
       preview = await api.updateCredentialUser({
         selector,
         credentialIdHex: editing.credentialIDHex,
@@ -175,13 +176,13 @@
     } catch (error) {
       preview = failureEnvelope(error);
     }
-    summarizeEnvelope("Credential update preview", preview, "credential-inventory", previewUpdate);
+    summarizeEnvelope(m.credential_update_preview(), preview, "credential-inventory", previewUpdate);
   }
 
   async function executeUpdate() {
     let result: any = null;
     try {
-      beginOperation("Credential update", "credential-inventory");
+      beginOperation(m.credential_update(), "credential-inventory");
       result = await api.updateCredentialUser({
         selector,
         credentialIdHex: editing.credentialIDHex,
@@ -192,7 +193,7 @@
         nameProvided: true,
         displayProvided: true,
         confirmed: true,
-        confirmationMessage: "update credential user",
+        confirmationMessage: m.credential_update(),
       });
     } catch (error) {
       result = failureEnvelope(error);
@@ -203,43 +204,43 @@
       clearSharedCredentialInventory(selector);
       await load();
     }
-    summarizeEnvelope("Credential update", result, "credential-inventory");
+    summarizeEnvelope(m.credential_update(), result, "credential-inventory");
     if (!operationFailed(result)) {
-      pushToast("Credential updated");
+      pushToast(m.credential_updated());
     }
   }
 </script>
 
-<ScreenHeader eyebrow="Resident credentials" title="Passkeys stored on the token" description="Browse discoverable credentials by relying party, update the friendly user fields, or delete stale entries after a backend preview.">
+<ScreenHeader eyebrow={m.resident_credentials()} title={m.passkeys_stored_on_token()} description={m.credentials_description()}>
   {#snippet actions()}
-    <Button onclick={load} disabled={!selector || loading || $sessionBusy}>{loading ? "Reloading credentials" : "Reload credentials"}</Button>
+    <Button onclick={load} disabled={!selector || loading || $sessionBusy}>{loading ? m.reloading_credentials() : m.reload_credentials()}</Button>
   {/snippet}
 </ScreenHeader>
 
 {#if !selector}
-  <EmptyState eyebrow="No token" title="No token selected" message="Select an authenticator to list resident credentials." />
+  <EmptyState eyebrow={m.no_token()} title={m.no_token_selected()} message={m.select_authenticator_for_credentials()} />
 {:else if operationFailed(envelope)}
   <Notice variant="destructive">{operationFailed(envelope)}</Notice>
 {:else if groups.length === 0}
-  <EmptyState eyebrow="Ready to load" title="No credential inventory loaded" message="Reload credentials to ask the token for resident credentials. Unsupported tokens will explain their support state here." />
+  <EmptyState eyebrow={m.ready_to_load()} title={m.no_credential_inventory_loaded()} message={m.no_credential_inventory_message()} />
 {:else}
   <div class="grid gap-3 md:grid-cols-3">
     <Card.Root size="sm">
       <Card.Header>
-        <Card.Description>Relying parties</Card.Description>
+        <Card.Description>{m.relying_parties()}</Card.Description>
         <Card.Title>{report?.summary?.totalRPs || 0}</Card.Title>
       </Card.Header>
     </Card.Root>
     <Card.Root size="sm">
       <Card.Header>
-        <Card.Description>Credentials</Card.Description>
+        <Card.Description>{m.credentials()}</Card.Description>
         <Card.Title>{report?.summary?.totalCredentials || 0}</Card.Title>
       </Card.Header>
     </Card.Root>
     <Card.Root size="sm">
       <Card.Header>
-        <Card.Description>Management</Card.Description>
-        <StatusBadge value={report?.support?.credentialManagement} label={report?.support?.credentialManagement ? "available" : "unavailable"} />
+        <Card.Description>{m.management()}</Card.Description>
+        <StatusBadge value={report?.support?.credentialManagement} label={report?.support?.credentialManagement ? m.state_available() : m.unavailable()} />
       </Card.Header>
     </Card.Root>
   </div>
@@ -247,10 +248,10 @@
   <Card.Root id="credential-inventory">
     <Card.Header class="flex-row items-start justify-between gap-3">
       <div class="grid gap-1">
-        <Card.Title>Credential inventory</Card.Title>
-        <Card.Description>Grouped by relying party</Card.Description>
+        <Card.Title>{m.credential_inventory()}</Card.Title>
+        <Card.Description>{m.grouped_by_relying_party()}</Card.Description>
       </div>
-      <span class="text-sm text-muted-foreground">{groups.length} relying part{groups.length === 1 ? "y" : "ies"}</span>
+      <span class="text-sm text-muted-foreground">{m.relying_parties_count({ count: groups.length })}</span>
     </Card.Header>
     <Card.Content class="grid gap-4">
     {#each groups as group (group.rpID || group.rpName)}
@@ -260,26 +261,26 @@
             <Card.Title class="text-base">{group.rpName || group.rpID}</Card.Title>
             <Card.Description>{group.rpID}</Card.Description>
           </div>
-          <span class="text-sm text-muted-foreground">{asList(group.credentials).length} credential(s)</span>
+          <span class="text-sm text-muted-foreground">{m.credentials_count({ count: asList(group.credentials).length })}</span>
         </Card.Header>
         <Card.Content class="grid gap-2">
         {#each asList(group.credentials) as credential (credential.credentialIDHex || credential.id)}
           <article class="grid gap-3 rounded-md border border-border p-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
             <div class="grid min-w-0 gap-3">
-              <strong class="text-sm font-medium text-foreground">{credential.displayName || credential.userName || "Unnamed user"}</strong>
+              <strong class="text-sm font-medium text-foreground">{credential.displayName || credential.userName || m.unnamed_user()}</strong>
               <div class="flex flex-wrap items-center gap-2">
-                <CopyableId label="Credential ID" value={credential.credentialIDHex} copied={() => pushToast("Credential ID copied")} />
-                <CopyableId label="User ID" value={credential.userIDHex} empty="no user id" copied={() => pushToast("User ID copied")} />
-                <StatusBadge value={credential.largeBlobKeyState || "unknown"} label={`blob key ${credential.largeBlobKeyState || "unknown"}`} />
+                <CopyableId label={m.credential_id()} value={credential.credentialIDHex} copied={() => pushToast(m.credential_id_copied())} />
+                <CopyableId label={m.user_id()} value={credential.userIDHex} empty={m.no_user_id()} copied={() => pushToast(m.user_id_copied())} />
+                <StatusBadge value={credential.largeBlobKeyState || "unknown"} label={m.blob_key_status({ status: credential.largeBlobKeyState || m.state_unknown() })} />
               </div>
               <details class="rounded-md border bg-card p-3">
-                <summary>Raw credential details</summary>
-                <JsonView value={credential} title="Credential JSON" />
+                <summary>{m.raw_credential_details()}</summary>
+                <JsonView value={credential} title={m.credential_json()} />
               </details>
             </div>
             <div class="flex flex-wrap items-center gap-2 lg:justify-end">
-              <Button size="sm" variant="outline" onclick={() => startEdit(credential)} disabled={$sessionBusy}>Edit</Button>
-              <Button size="sm" variant="destructive" onclick={() => previewDelete(credential)} disabled={$sessionBusy}>Delete</Button>
+              <Button size="sm" variant="outline" onclick={() => startEdit(credential)} disabled={$sessionBusy}>{m.edit()}</Button>
+              <Button size="sm" variant="destructive" onclick={() => previewDelete(credential)} disabled={$sessionBusy}>{m.delete()}</Button>
             </div>
           </article>
         {/each}
@@ -291,41 +292,41 @@
 {/if}
 
 {#if editing}
-  <DialogShell title="Edit credential user" wide close={() => (editing = null)}>
+  <DialogShell title={m.edit_credential_user()} wide close={() => (editing = null)}>
       <Field.Group>
         <Field.Field>
-          <Field.Label>User ID hex</Field.Label>
+          <Field.Label>{m.user_id_hex()}</Field.Label>
           <Input bind:value={userIDHex} />
         </Field.Field>
         <Field.Field>
-          <Field.Label>Name</Field.Label>
+          <Field.Label>{m.name()}</Field.Label>
           <Input bind:value={name} />
         </Field.Field>
         <Field.Field>
-          <Field.Label>Display name</Field.Label>
+          <Field.Label>{m.display_name()}</Field.Label>
           <Input bind:value={displayName} />
         </Field.Field>
       </Field.Group>
       {#if preview}
-        <JsonView value={preview.result || preview} title="Update preview" />
+        <JsonView value={preview.result || preview} title={m.update_preview()} />
       {/if}
       {#snippet actions()}
       <div class="flex flex-wrap items-center justify-end gap-2">
-        <Button variant="outline" onclick={previewUpdate}>Preview</Button>
-        <Button onclick={executeUpdate} disabled={!preview}>Confirm update</Button>
-        <Button variant="ghost" onclick={() => (editing = null)}>Close</Button>
+        <Button variant="outline" onclick={previewUpdate}>{m.preview()}</Button>
+        <Button onclick={executeUpdate} disabled={!preview}>{m.confirm_update()}</Button>
+        <Button variant="ghost" onclick={() => (editing = null)}>{m.close()}</Button>
       </div>
       {/snippet}
   </DialogShell>
 {/if}
 
 {#if preview && !editing}
-  <DialogShell title="Delete credential preview" wide destructive close={() => (preview = null)}>
-      <JsonView value={preview.result || preview} title="Deletion preview" />
+  <DialogShell title={m.delete_credential_preview()} wide destructive close={() => (preview = null)}>
+      <JsonView value={preview.result || preview} title={m.deletion_preview()} />
       {#snippet actions()}
       <div class="flex flex-wrap items-center justify-end gap-2">
-        <Button variant="destructive" onclick={executeDelete}>Confirm delete</Button>
-        <Button variant="ghost" onclick={() => (preview = null)}>Cancel</Button>
+        <Button variant="destructive" onclick={executeDelete}>{m.confirm_delete()}</Button>
+        <Button variant="ghost" onclick={() => (preview = null)}>{m.cancel()}</Button>
       </div>
       {/snippet}
   </DialogShell>

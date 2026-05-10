@@ -8,6 +8,7 @@
   import ScreenHeader from "../components/ScreenHeader.svelte";
   import { activeScreen, focusLogEntry, selectedLogEntryId, workbenchLog, type WorkbenchLogEntry } from "$lib/stores";
   import { operationStageLabel } from "$lib/format";
+  import { m } from "../paraglide/messages.js";
 
   type LogFilter = "all" | "operations" | "errors";
 
@@ -15,9 +16,9 @@
   let lastScrolled = "";
 
   const filters: { id: LogFilter; label: string }[] = [
-    { id: "all", label: "All" },
-    { id: "operations", label: "Operations" },
-    { id: "errors", label: "Errors" },
+    { id: "all", label: () => m.filter_all() },
+    { id: "operations", label: () => m.filter_operations() },
+    { id: "errors", label: () => m.filter_errors() },
   ];
 
   let entries = $derived($workbenchLog.filter((entry) => {
@@ -27,13 +28,13 @@
   }));
   let selected = $derived(entries.find((entry) => entry.id === $selectedLogEntryId) || entries[0] || null);
   let detailData = $derived(selected ? selected.data || selected : null);
-  let emptyTitleText = $derived(filter === "errors" ? "No error events" : filter === "operations" ? "No operation events" : "No events yet");
+  let emptyTitleText = $derived(filter === "errors" ? m.no_error_events() : filter === "operations" ? m.no_operation_events() : m.no_events_yet());
   let emptyMessageText = $derived(
     filter === "errors"
-      ? "Errors and failed operations will appear here when they happen."
+      ? m.no_error_events_message()
       : filter === "operations"
-        ? "Run an authenticator operation to populate the operation journal."
-        : "Recent session changes, operation progress, and recoverable errors will appear here."
+        ? m.no_operation_events_message()
+        : m.no_events_message()
   );
 
   $effect(() => {
@@ -51,7 +52,7 @@
   }
 
   function sourceLabel(entry: WorkbenchLogEntry) {
-    if (entry.source.startsWith("operation") || entry.operationId) return "Operation";
+    if (entry.source.startsWith("operation") || entry.operationId) return m.operation();
     return entry.source.replaceAll("-", " ");
   }
 
@@ -78,12 +79,12 @@
 
 </script>
 
-<ScreenHeader eyebrow="Session journal" title="Logs" description="Recent operation events, recoverable errors, and session changes for this app session.">
+<ScreenHeader eyebrow={m.session_journal()} title={m.logs()} description={m.logs_description()}>
   {#snippet actions()}
     <Tabs.Root bind:value={filter}>
-      <Tabs.List aria-label="Log filters">
+      <Tabs.List aria-label={m.log_filters()}>
         {#each filters as item (item.id)}
-          <Tabs.Trigger value={item.id}>{item.label}</Tabs.Trigger>
+          <Tabs.Trigger value={item.id}>{item.label()}</Tabs.Trigger>
         {/each}
       </Tabs.List>
     </Tabs.Root>
@@ -94,10 +95,10 @@
   <section class="grid gap-4 xl:grid-cols-[minmax(320px,0.95fr)_minmax(0,1.4fr)]">
     <Card.Root>
       <Card.Header>
-        <Card.Title>Event stream</Card.Title>
-        <Card.Description>{entries.length} event{entries.length === 1 ? "" : "s"}</Card.Description>
+        <Card.Title>{m.event_stream()}</Card.Title>
+        <Card.Description>{m.events_count({ count: entries.length })}</Card.Description>
       </Card.Header>
-      <Card.Content class="grid max-h-[58vh] gap-2 overflow-auto pr-1" aria-label="Workbench log entries">
+      <Card.Content class="grid max-h-[58vh] gap-2 overflow-auto pr-1" aria-label={m.workbench_log_entries()}>
         {#each entries as entry (entry.id)}
           <Button
             id={`log-entry-${entry.id}`}
@@ -120,7 +121,7 @@
       </Card.Content>
     </Card.Root>
 
-    <Card.Root aria-label="Selected log entry">
+    <Card.Root aria-label={m.selected_log_entry()}>
       {#if selected}
         <Card.Header class="flex-row items-start justify-between gap-3">
           <div class="grid gap-1">
@@ -133,30 +134,30 @@
         <Card.Content class="grid gap-4">
         <dl class="grid gap-3 sm:grid-cols-2">
           <div>
-            <dt class="text-xs font-medium uppercase tracking-normal text-muted-foreground">Source</dt>
+            <dt class="text-xs font-medium uppercase tracking-normal text-muted-foreground">{m.source()}</dt>
             <dd class="break-words text-sm">{sourceLabel(selected)}</dd>
           </div>
           {#if selected.operationId}
             <div>
-              <dt class="text-xs font-medium uppercase tracking-normal text-muted-foreground">Operation</dt>
+              <dt class="text-xs font-medium uppercase tracking-normal text-muted-foreground">{m.operation()}</dt>
               <dd><code>{selected.operationId}</code></dd>
             </div>
           {/if}
           {#if selected.stage}
             <div>
-              <dt class="text-xs font-medium uppercase tracking-normal text-muted-foreground">Stage</dt>
+              <dt class="text-xs font-medium uppercase tracking-normal text-muted-foreground">{m.stage()}</dt>
               <dd class="text-sm">{operationStageLabel(selected.stage)}</dd>
             </div>
           {/if}
           {#if selected.screen}
             <div>
-              <dt class="text-xs font-medium uppercase tracking-normal text-muted-foreground">Screen</dt>
+              <dt class="text-xs font-medium uppercase tracking-normal text-muted-foreground">{m.screen()}</dt>
               <dd class="text-sm">{selected.screen}</dd>
             </div>
           {/if}
           {#if selected.selector}
             <div>
-              <dt class="text-xs font-medium uppercase tracking-normal text-muted-foreground">Selector</dt>
+              <dt class="text-xs font-medium uppercase tracking-normal text-muted-foreground">{m.selector()}</dt>
               <dd><code>{selected.selector}</code></dd>
             </div>
           {/if}
@@ -166,11 +167,11 @@
           <p class="rounded-md border border-border bg-muted/40 p-3 text-sm leading-6">{selected.message}</p>
         {/if}
 
-        <JsonView title="Sanitized JSON" value={detailData} variant="bare" />
+        <JsonView title={m.sanitized_json()} value={detailData} variant="bare" />
         </Card.Content>
       {/if}
     </Card.Root>
   </section>
 {:else}
-  <EmptyState eyebrow="Logs" title={emptyTitleText} message={emptyMessageText} variant="workspace" />
+  <EmptyState eyebrow={m.logs()} title={emptyTitleText} message={emptyMessageText} variant="workspace" />
 {/if}

@@ -2,6 +2,7 @@ import App from "./App.svelte";
 import "./app.css";
 import { Events, System } from "@wailsio/runtime";
 import { mount } from "svelte";
+import { initLocale } from "$lib/i18n";
 
 async function syncTheme() {
   try {
@@ -12,6 +13,7 @@ async function syncTheme() {
 }
 
 void syncTheme();
+initLocale();
 Events.On(Events.Types.Common.ThemeChanged, () => {
   void syncTheme();
 });

@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@inlang/paraglide-js": "^2.18.0",
     "@tailwindcss/vite": "^4.2.4",
     "@tanstack/table-core": "^8.21.3",
     "@wailsio/runtime": "latest",

@@ -41,6 +41,7 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
   import { pretty } from "$lib/format";
+  import { m } from "../paraglide/messages.js";
 
   type Props = {
     value: unknown;
@@ -48,7 +49,7 @@
     variant?: "card" | "bare" | "code";
   };
 
-  let { value, title = "Raw JSON", variant = "card" }: Props = $props();
+  let { value, title = m.raw_json(), variant = "card" }: Props = $props();
   let source = $derived(pretty(value));
   let highlighted = $derived(highlightJson(source));
 
@@ -85,7 +86,7 @@
     <Card.Content class="grid gap-3 pt-4">
       <div class="flex items-center justify-between gap-3">
         <h3>{title}</h3>
-        <Button variant="outline" size="sm" type="button" onclick={copy}>Copy</Button>
+        <Button variant="outline" size="sm" type="button" onclick={copy}>{m.copy()}</Button>
       </div>
       {@render codeBlock()}
     </Card.Content>
@@ -94,7 +95,7 @@
   <section class="grid gap-2">
     <div class="flex items-center justify-between gap-3 text-xs text-muted-foreground">
       <span>{title}</span>
-      <Button variant="outline" size="xs" type="button" onclick={copy}>Copy</Button>
+      <Button variant="outline" size="xs" type="button" onclick={copy}>{m.copy()}</Button>
     </div>
     {@render codeBlock()}
   </section>

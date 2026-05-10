@@ -14,6 +14,7 @@
   import JsonView from "../components/JsonView.svelte";
   import ScreenHeader from "../components/ScreenHeader.svelte";
   import StepPanel from "../components/StepPanel.svelte";
+  import { m } from "../paraglide/messages.js";
 
   let rpID = $state("example.com");
   let rpName = $state("Example");
@@ -53,25 +54,25 @@
   let getBytes = $derived(getInput.clientDataJSON?.length || 0);
 
   function failureEnvelope(error: unknown) {
-    const message = error instanceof Error ? error.message : String(error || "Operation failed");
+    const message = error instanceof Error ? error.message : String(error || m.operation_failed());
     return { error: { message } };
   }
 
   async function previewMake() {
     try {
-      beginOperation("makeCredential preview", "make-result");
+      beginOperation(m.makecredential_preview(), "make-result");
       makeResult = await api.makeCredential({ selector, input: makeInput, dryRun: true });
-      summarizeEnvelope("makeCredential preview", makeResult, "make-result", previewMake);
+      summarizeEnvelope(m.makecredential_preview(), makeResult, "make-result", previewMake);
     } catch (error) {
       makeResult = failureEnvelope(error);
-      summarizeEnvelope("makeCredential preview", makeResult, "make-result", previewMake);
+      summarizeEnvelope(m.makecredential_preview(), makeResult, "make-result", previewMake);
     }
   }
 
   async function runMake() {
     try {
       beginOperation("makeCredential", "make-result");
-      makeResult = await api.makeCredential({ selector, input: makeInput, confirmed: true, confirmationMessage: "make credential" });
+      makeResult = await api.makeCredential({ selector, input: makeInput, confirmed: true, confirmationMessage: m.run_makecredential() });
       summarizeEnvelope("makeCredential", makeResult, "make-result", runMake);
     } catch (error) {
       makeResult = failureEnvelope(error);
@@ -93,8 +94,8 @@
   function useCreatedCredential() {
     if (!createdCredentialID) return;
     allowList = createdCredentialID;
-    setStatusOutcome({ tone: "success", title: "Credential added to allow list", message: "getAssertion is ready to use the new credential.", detailId: "assertion-result" });
-    pushToast("Allow list populated from makeCredential");
+    setStatusOutcome({ tone: "success", title: m.credential_added_to_allow_list(), message: m.getassertion_ready_for_new_credential(), detailId: "assertion-result" });
+    pushToast(m.allow_list_populated());
   }
 
   function findCredentialID(value: any): string {
@@ -124,10 +125,10 @@
   }
 </script>
 
-<ScreenHeader eyebrow="WebAuthn lab" title="Build CTAP WebAuthn operations by hand" description="Create raw makeCredential and getAssertion requests with visible normalized JSON before they touch the authenticator." />
+<ScreenHeader eyebrow={m.webauthn_lab()} title={m.lab_title()} description={m.lab_description()} />
 
 {#if !selector}
-  <EmptyState eyebrow="No token" title="No token selected" message="Select an authenticator before running the lab." />
+  <EmptyState eyebrow={m.no_token()} title={m.no_token_selected()} message={m.select_authenticator_for_lab()} />
 {:else}
   <section class="my-4 grid grid-cols-[minmax(0,1fr)_minmax(320px,0.78fr)] items-start gap-4 max-md:grid-cols-1">
     <div class="grid gap-3">
@@ -135,55 +136,55 @@
         <Field.Group>
           <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <Field.Field><Field.Label>RP ID</Field.Label><Input bind:value={rpID} onkeydown={previewOnEnter} /></Field.Field>
-            <Field.Field><Field.Label>RP name</Field.Label><Input bind:value={rpName} onkeydown={previewOnEnter} /></Field.Field>
-            <Field.Field><Field.Label>Challenge</Field.Label><Input bind:value={challenge} onkeydown={previewOnEnter} /></Field.Field>
-            <Field.Field><Field.Label>User ID hex</Field.Label><Input bind:value={userIDHex} onkeydown={previewOnEnter} /></Field.Field>
-            <Field.Field><Field.Label>User name</Field.Label><Input bind:value={userName} onkeydown={previewOnEnter} /></Field.Field>
-            <Field.Field><Field.Label>Display name</Field.Label><Input bind:value={displayName} onkeydown={previewOnEnter} /></Field.Field>
-            <Field.Field><Field.Label>Algorithms</Field.Label><Input bind:value={algorithms} onkeydown={previewOnEnter} /></Field.Field>
+            <Field.Field><Field.Label>{m.rp_name()}</Field.Label><Input bind:value={rpName} onkeydown={previewOnEnter} /></Field.Field>
+            <Field.Field><Field.Label>{m.challenge()}</Field.Label><Input bind:value={challenge} onkeydown={previewOnEnter} /></Field.Field>
+            <Field.Field><Field.Label>{m.user_id_hex()}</Field.Label><Input bind:value={userIDHex} onkeydown={previewOnEnter} /></Field.Field>
+            <Field.Field><Field.Label>{m.user_name()}</Field.Label><Input bind:value={userName} onkeydown={previewOnEnter} /></Field.Field>
+            <Field.Field><Field.Label>{m.display_name()}</Field.Label><Input bind:value={displayName} onkeydown={previewOnEnter} /></Field.Field>
+            <Field.Field><Field.Label>{m.algorithms()}</Field.Label><Input bind:value={algorithms} onkeydown={previewOnEnter} /></Field.Field>
           </div>
           <div class="grid gap-3 sm:grid-cols-2">
             <Field.Field orientation="horizontal">
               <Checkbox bind:checked={residentKey} />
-              <Field.Label>Resident key</Field.Label>
+              <Field.Label>{m.resident_key()}</Field.Label>
             </Field.Field>
             <Field.Field orientation="horizontal">
               <Checkbox bind:checked={userVerification} />
-              <Field.Label>User verification</Field.Label>
+              <Field.Label>{m.user_verification()}</Field.Label>
             </Field.Field>
           </div>
           <Field.Field>
-            <Field.Label>Exclude credential IDs, one per line</Field.Label>
+            <Field.Label>{m.exclude_credential_ids()}</Field.Label>
             <Textarea bind:value={excludeList} rows={3} onkeydown={(event) => textareaPrimary(event, previewMake)} />
           </Field.Field>
         </Field.Group>
         <div class="flex flex-wrap gap-2">
-          <Button variant="outline" onclick={previewMake} disabled={$sessionBusy}>Preview</Button>
-          <Button onclick={runMake} disabled={$sessionBusy}>Run makeCredential</Button>
+          <Button variant="outline" onclick={previewMake} disabled={$sessionBusy}>{m.preview()}</Button>
+          <Button onclick={runMake} disabled={$sessionBusy}>{m.run_makecredential()}</Button>
         </div>
         <div id="make-result" class="mt-4 grid gap-3 border-t pt-3">
           <div class="flex items-start justify-between gap-3">
-            <h3>makeCredential result</h3>
-            <span class="text-sm text-muted-foreground">{makeBytes} client-data bytes</span>
+            <h3>{m.makecredential_result()}</h3>
+            <span class="text-sm text-muted-foreground">{m.client_data_bytes({ count: makeBytes })}</span>
           </div>
           {#if operationFailed(makeResult)}
             <Alert variant="destructive"><AlertDescription>{operationFailed(makeResult)}</AlertDescription></Alert>
           {:else if makeResult}
             <div class="flex flex-wrap gap-2">
-              <Badge variant="secondary">{createdCredentialID ? "Credential created" : "Preview ready"}</Badge>
-              <Badge variant="outline">{makeInput.pubKeyCredParams.length} algorithm(s)</Badge>
-              <Badge variant="outline">{makeInput.excludeList.length} excluded</Badge>
+              <Badge variant="secondary">{createdCredentialID ? m.credential_created() : m.preview_ready()}</Badge>
+              <Badge variant="outline">{m.algorithms_count({ count: makeInput.pubKeyCredParams.length })}</Badge>
+              <Badge variant="outline">{m.excluded_count({ count: makeInput.excludeList.length })}</Badge>
             </div>
             {#if createdCredentialID}
-              <CopyableId label="Credential ID" value={createdCredentialID} copied={() => pushToast("Credential ID copied")} />
-              <Button class="w-fit" variant="outline" onclick={useCreatedCredential}>Use in getAssertion</Button>
+              <CopyableId label={m.credential_id()} value={createdCredentialID} copied={() => pushToast(m.credential_id_copied())} />
+              <Button class="w-fit" variant="outline" onclick={useCreatedCredential}>{m.use_in_getassertion()}</Button>
             {/if}
             <details class="rounded-md border bg-card p-4">
-              <summary>Raw makeCredential output</summary>
-              <JsonView value={makeReport} title="Raw makeCredential result" variant="bare" />
+              <summary>{m.raw_makecredential_output()}</summary>
+              <JsonView value={makeReport} title={m.raw_makecredential_result()} variant="bare" />
             </details>
           {:else}
-            <p class="text-sm text-muted-foreground">Preview or run makeCredential to see normalized input, warnings, credential ID, and raw output here.</p>
+            <p class="text-sm text-muted-foreground">{m.makecredential_empty_hint()}</p>
           {/if}
         </div>
       </StepPanel>
@@ -192,49 +193,49 @@
         {#if createdCredentialID}
           <Alert>
             <AlertDescription class="grid gap-2">
-            <CopyableId label="Created credential" value={createdCredentialID} copied={() => pushToast("Credential ID copied")} />
-            <Button class="w-fit" variant="outline" onclick={useCreatedCredential}>Use in allow list</Button>
+            <CopyableId label={m.created_credential()} value={createdCredentialID} copied={() => pushToast(m.credential_id_copied())} />
+            <Button class="w-fit" variant="outline" onclick={useCreatedCredential}>{m.use_in_allow_list()}</Button>
             </AlertDescription>
           </Alert>
         {:else}
-          <p class="text-sm text-muted-foreground">Leave the allow list empty to ask the authenticator to choose a matching credential for the RP ID.</p>
+          <p class="text-sm text-muted-foreground">{m.allow_list_empty_hint()}</p>
         {/if}
         <Field.Field>
-          <Field.Label>Allow credential IDs, one per line</Field.Label>
+          <Field.Label>{m.allow_credential_ids()}</Field.Label>
           <Textarea bind:value={allowList} rows={6} onkeydown={(event) => textareaPrimary(event, runGet)} />
         </Field.Field>
-        <Button class="w-fit" onclick={runGet} disabled={$sessionBusy}>Run getAssertion</Button>
+        <Button class="w-fit" onclick={runGet} disabled={$sessionBusy}>{m.run_getassertion()}</Button>
         <div id="assertion-result" class="mt-4 grid gap-3 border-t pt-3">
           <div class="flex items-start justify-between gap-3">
-            <h3>getAssertion result</h3>
-            <span class="text-sm text-muted-foreground">{getBytes} client-data bytes</span>
+            <h3>{m.getassertion_result()}</h3>
+            <span class="text-sm text-muted-foreground">{m.client_data_bytes({ count: getBytes })}</span>
           </div>
           {#if operationFailed(assertionResult)}
             <Alert variant="destructive"><AlertDescription>{operationFailed(assertionResult)}</AlertDescription></Alert>
           {:else if assertionResult}
             <div class="flex flex-wrap gap-2">
-              <Badge variant="secondary">Assertion returned</Badge>
-              <Badge variant="outline">{getInput.allowList.length} allow-list item(s)</Badge>
-              <Badge variant="outline">{userVerification ? "UV requested" : "UV optional"}</Badge>
+              <Badge variant="secondary">{m.assertion_returned()}</Badge>
+              <Badge variant="outline">{m.allow_list_items_count({ count: getInput.allowList.length })}</Badge>
+              <Badge variant="outline">{userVerification ? m.uv_requested() : m.uv_optional()}</Badge>
             </div>
             {#if assertionReport?.credentialIDHex || assertionReport?.credentialIdHex}
-              <CopyableId label="Credential ID" value={assertionReport?.credentialIDHex || assertionReport?.credentialIdHex} copied={() => pushToast("Credential ID copied")} />
+              <CopyableId label={m.credential_id()} value={assertionReport?.credentialIDHex || assertionReport?.credentialIdHex} copied={() => pushToast(m.credential_id_copied())} />
             {/if}
             {#if assertionReport?.signatureHex}
-              <CopyableId label="Signature" value={assertionReport.signatureHex} copied={() => pushToast("Signature copied")} />
+              <CopyableId label={m.signature()} value={assertionReport.signatureHex} copied={() => pushToast(m.signature_copied())} />
             {/if}
             {#if assertionReport?.authenticatorDataHex}
-              <CopyableId label="Authenticator data" value={assertionReport.authenticatorDataHex} copied={() => pushToast("Authenticator data copied")} />
+              <CopyableId label={m.authenticator_data()} value={assertionReport.authenticatorDataHex} copied={() => pushToast(m.authenticator_data_copied())} />
             {/if}
             {#if assertionReport?.clientDataJSONHex}
-              <CopyableId label="Client data" value={assertionReport.clientDataJSONHex} copied={() => pushToast("Client data copied")} />
+              <CopyableId label={m.client_data()} value={assertionReport.clientDataJSONHex} copied={() => pushToast(m.client_data_copied())} />
             {/if}
             <details class="rounded-md border bg-card p-4">
-              <summary>Raw getAssertion output</summary>
-              <JsonView value={assertionReport} title="Raw getAssertion result" variant="bare" />
+              <summary>{m.raw_getassertion_output()}</summary>
+              <JsonView value={assertionReport} title={m.raw_getassertion_result()} variant="bare" />
             </details>
           {:else}
-            <p class="text-sm text-muted-foreground">Run getAssertion to see assertion artifacts, copy actions, and raw output in this step.</p>
+            <p class="text-sm text-muted-foreground">{m.getassertion_empty_hint()}</p>
           {/if}
         </div>
       </StepPanel>
@@ -243,18 +244,18 @@
     <aside class="grid gap-3">
       <Card.Root>
         <Card.Header>
-          <Card.Title>Artifacts</Card.Title>
+          <Card.Title>{m.artifacts()}</Card.Title>
         </Card.Header>
         <Card.Content class="grid gap-2">
-          <div class="flex items-center justify-between gap-3 rounded-md border border-border p-2"><span>makeCredential client data</span><strong>{makeBytes} bytes</strong></div>
-          <div class="flex items-center justify-between gap-3 rounded-md border border-border p-2"><span>getAssertion client data</span><strong>{getBytes} bytes</strong></div>
-          <div class="flex items-center justify-between gap-3 rounded-md border border-border p-2"><span>Allow list</span><strong>{getInput.allowList.length} item(s)</strong></div>
+          <div class="flex items-center justify-between gap-3 rounded-md border border-border p-2"><span>{m.makecredential_client_data()}</span><strong>{m.bytes_count({ count: makeBytes })}</strong></div>
+          <div class="flex items-center justify-between gap-3 rounded-md border border-border p-2"><span>{m.getassertion_client_data()}</span><strong>{m.bytes_count({ count: getBytes })}</strong></div>
+          <div class="flex items-center justify-between gap-3 rounded-md border border-border p-2"><span>{m.allow_list()}</span><strong>{m.items_count({ count: getInput.allowList.length })}</strong></div>
         </Card.Content>
       </Card.Root>
       <details class="rounded-md border bg-card p-4" open>
-        <summary>Normalized inputs</summary>
-        <JsonView value={makeInput} title="makeCredential input" />
-        <JsonView value={getInput} title="getAssertion input" />
+        <summary>{m.normalized_inputs()}</summary>
+        <JsonView value={makeInput} title={m.makecredential_input()} />
+        <JsonView value={getInput} title={m.getassertion_input()} />
       </details>
     </aside>
   </section>

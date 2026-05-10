@@ -11,6 +11,7 @@
   import LargeBlobDetail from "../components/LargeBlobDetail.svelte";
   import ScreenHeader from "../components/ScreenHeader.svelte";
   import StatusBadge from "../components/StatusBadge.svelte";
+  import { m } from "../paraglide/messages.js";
 
   let loading = $state(false);
   let largeBlobBusy: "" | "list" | "read" | "preview-write" | "write" | "preview-delete" | "delete" | "preview-gc" | "gc" = $state("");
@@ -68,7 +69,7 @@
   });
 
   function failureEnvelope(error: unknown) {
-    const message = error instanceof Error ? error.message : String(error || "Operation failed");
+    const message = error instanceof Error ? error.message : String(error || m.operation_failed());
     return { error: { message } };
   }
 
@@ -212,7 +213,7 @@
             matchedBlobCount: 0,
             unmatchedBlobCount: 0,
           },
-          support: { largeBlobs: "cached credentials" },
+          support: { largeBlobs: m.cached_credentials() },
         },
       },
     };
@@ -245,7 +246,7 @@
       clearGarbageCollectState();
     }
     try {
-      if (!options.quiet) beginOperation(options.warm ? "Large blob warm reload" : "Large blob list", "large-blob-workspace");
+      if (!options.quiet) beginOperation(options.warm ? m.large_blob_warm_reload() : m.large_blob_list(), "large-blob-workspace");
       const result = await api.listLargeBlobs(selector);
       if (token !== operationEpoch) return;
       if (!options.preserveOnError || !operationFailed(result)) {
@@ -255,7 +256,7 @@
           updateSharedCredentialInventory(selector, result, "largeBlobs");
         }
       }
-      if (!options.quiet) summarizeEnvelope(options.warm ? "Large blob warm reload" : "Large blob list", result, "large-blob-workspace", () => load());
+      if (!options.quiet) summarizeEnvelope(options.warm ? m.large_blob_warm_reload() : m.large_blob_list(), result, "large-blob-workspace", () => load());
       return result;
     } catch (error) {
       if (token !== operationEpoch) return;
@@ -263,7 +264,7 @@
       if (!options.preserveOnError) {
         envelope = failure;
       }
-      if (!options.quiet) summarizeEnvelope(options.warm ? "Large blob warm reload" : "Large blob list", failure, "large-blob-workspace", () => load());
+      if (!options.quiet) summarizeEnvelope(options.warm ? m.large_blob_warm_reload() : m.large_blob_list(), failure, "large-blob-workspace", () => load());
       return failure;
     } finally {
       loading = false;
@@ -277,18 +278,18 @@
     const token = ++operationEpoch;
     const credentialId = credentialKey(credential);
     try {
-      beginOperation("Large blob read", "large-blob-detail");
+      beginOperation(m.large_blob_read(), "large-blob-detail");
       const result = await api.readLargeBlob({ selector, credentialIdHex: credentialId, decodeMode });
       if (token !== operationEpoch || selectedId !== credentialId) return;
       readResult = result;
       readCredentialId = credentialId;
       readDecodeMode = decodeMode;
-      summarizeEnvelope("Large blob read", readResult, "large-blob-detail", () => readBlob(credential));
+      summarizeEnvelope(m.large_blob_read(), readResult, "large-blob-detail", () => readBlob(credential));
     } catch (error) {
       if (token !== operationEpoch || selectedId !== credentialId) return;
       readResult = failureEnvelope(error);
       readCredentialId = credentialId;
-      summarizeEnvelope("Large blob read", readResult, "large-blob-detail", () => readBlob(credential));
+      summarizeEnvelope(m.large_blob_read(), readResult, "large-blob-detail", () => readBlob(credential));
     } finally {
       endAction("read");
     }
@@ -305,7 +306,7 @@
     const capturedPayloadHash = payloadSignature(capturedPayload);
     const capturedDecodeMode = decodeMode;
     try {
-      beginOperation("Write preview", "large-blob-detail");
+      beginOperation(m.write_preview(), "large-blob-detail");
       const result = await api.writeLargeBlob({
         selector,
         credentialIdHex: credentialId,
@@ -316,16 +317,16 @@
       preview = result;
       bindPreview("write", credentialId, capturedPayloadHash, capturedDecodeMode);
       if (operationFailed(preview)) {
-        summarizeEnvelope("Write preview", preview, "large-blob-detail", previewWrite);
+        summarizeEnvelope(m.write_preview(), preview, "large-blob-detail", previewWrite);
       } else {
         finishOperation();
-        setStatusOutcome({ tone: "info", title: "Write preview ready", message: `${capturedPayloadBytes.length} byte payload prepared.`, detailId: "large-blob-detail" });
+        setStatusOutcome({ tone: "info", title: m.write_preview_ready_title(), message: m.byte_payload_prepared({ count: capturedPayloadBytes.length }), detailId: "large-blob-detail" });
       }
     } catch (error) {
       if (token !== operationEpoch || credentialKey(selectedCredential) !== credentialId) return;
       preview = failureEnvelope(error);
       bindPreview("write", credentialId, capturedPayloadHash, capturedDecodeMode);
-      summarizeEnvelope("Write preview", preview, "large-blob-detail", previewWrite);
+      summarizeEnvelope(m.write_preview(), preview, "large-blob-detail", previewWrite);
     } finally {
       endAction("preview-write");
     }
@@ -338,13 +339,13 @@
     const credentialId = credentialKey(credential);
     let result: any = null;
     try {
-      beginOperation("Large blob write", "large-blob-detail");
+      beginOperation(m.large_blob_write(), "large-blob-detail");
       result = await api.writeLargeBlob({
         selector,
         credentialIdHex: credentialId,
         payload: bytesFromText(payload),
         confirmed: true,
-        confirmationMessage: "write large blob",
+        confirmationMessage: m.large_blob_write(),
       });
       if (token !== operationEpoch || selectedId !== credentialId) return;
       preview = null;
@@ -354,12 +355,12 @@
       clearSharedCredentialInventory(selector);
       endAction("write");
       await load({ clearCleanup: false });
-      pushToast("Large blob written");
-      summarizeEnvelope("Large blob write", result, "large-blob-detail");
+      pushToast(m.large_blob_written());
+      summarizeEnvelope(m.large_blob_write(), result, "large-blob-detail");
     } catch (error) {
       if (token !== operationEpoch || selectedId !== credentialId) return;
       result = failureEnvelope(error);
-      summarizeEnvelope("Large blob write", result, "large-blob-detail", executeWrite);
+      summarizeEnvelope(m.large_blob_write(), result, "large-blob-detail", executeWrite);
     } finally {
       endAction("write");
     }
@@ -372,22 +373,22 @@
     const token = ++operationEpoch;
     const credentialId = credentialKey(credential);
     try {
-      beginOperation("Delete preview", "large-blob-detail");
+      beginOperation(m.delete_preview(), "large-blob-detail");
       const result = await api.deleteLargeBlob({ selector, credentialIdHex: credentialId, dryRun: true });
       if (token !== operationEpoch || selectedId !== credentialId) return;
       preview = result;
       bindPreview("delete", credentialId);
       if (operationFailed(preview)) {
-        summarizeEnvelope("Delete preview", preview, "large-blob-detail", () => previewDelete(credential));
+        summarizeEnvelope(m.delete_preview(), preview, "large-blob-detail", () => previewDelete(credential));
       } else {
         finishOperation();
-        setStatusOutcome({ tone: "warning", title: "Delete preview ready", message: "Review the mutation before confirming delete.", detailId: "large-blob-detail" });
+        setStatusOutcome({ tone: "warning", title: m.delete_preview_ready_title(), message: m.review_mutation_before_delete(), detailId: "large-blob-detail" });
       }
     } catch (error) {
       if (token !== operationEpoch || selectedId !== credentialId) return;
       preview = failureEnvelope(error);
       bindPreview("delete", credentialId);
-      summarizeEnvelope("Delete preview", preview, "large-blob-detail", () => previewDelete(credential));
+      summarizeEnvelope(m.delete_preview(), preview, "large-blob-detail", () => previewDelete(credential));
     } finally {
       endAction("preview-delete");
     }
@@ -400,12 +401,12 @@
     const credentialId = credentialKey(credential);
     let result: any = null;
     try {
-      beginOperation("Large blob delete", "large-blob-detail");
+      beginOperation(m.large_blob_delete(), "large-blob-detail");
       result = await api.deleteLargeBlob({
         selector,
         credentialIdHex: credentialId,
         confirmed: true,
-        confirmationMessage: "delete large blob",
+        confirmationMessage: m.large_blob_delete(),
       });
       if (token !== operationEpoch || selectedId !== credentialId) return;
       preview = null;
@@ -421,20 +422,20 @@
       detailMode = "read";
       if (deleteProblem) {
         if (refreshed && credentialBlobCleared(refreshed, credentialId)) {
-          pushToast("Large blob deleted");
+          pushToast(m.large_blob_deleted());
           finishOperation();
           setStatusOutcome({
             tone: "warning",
-            title: "Large blob delete applied",
-            message: "The blob is gone after refresh, but CTAP reported an issue during the delete response.",
+            title: m.large_blob_delete_applied(),
+            message: m.blob_gone_ctap_issue(),
             detailId: "large-blob-detail",
           });
         } else {
-          summarizeEnvelope("Large blob delete", result, "large-blob-detail", executeDelete);
+          summarizeEnvelope(m.large_blob_delete(), result, "large-blob-detail", executeDelete);
         }
       } else {
-        pushToast("Large blob deleted");
-        summarizeEnvelope("Large blob delete", result, "large-blob-detail");
+        pushToast(m.large_blob_deleted());
+        summarizeEnvelope(m.large_blob_delete(), result, "large-blob-detail");
       }
     } catch (error) {
       if (token !== operationEpoch || selectedId !== credentialId) return;
@@ -450,16 +451,16 @@
         readResult = null;
         readCredentialId = "";
         detailMode = "read";
-        pushToast("Large blob deleted");
+        pushToast(m.large_blob_deleted());
         finishOperation();
         setStatusOutcome({
           tone: "warning",
-          title: "Large blob delete applied",
-          message: "The blob is gone after refresh, but CTAP reported an issue during the delete response.",
+          title: m.large_blob_delete_applied(),
+          message: m.blob_gone_ctap_issue(),
           detailId: "large-blob-detail",
         });
       } else {
-        summarizeEnvelope("Large blob delete", result, "large-blob-detail", executeDelete);
+        summarizeEnvelope(m.large_blob_delete(), result, "large-blob-detail", executeDelete);
       }
     } finally {
       endAction("delete");
@@ -472,18 +473,18 @@
     const previewSelector = selector;
     const previewListVersion = listVersion;
     try {
-      beginOperation("Large blob cleanup preview", "large-blob-workspace");
+      beginOperation(m.large_blob_cleanup_preview(), "large-blob-workspace");
       const result = await api.garbageCollectLargeBlobs({ selector: previewSelector, dryRun: true });
       if (token !== operationEpoch || selector !== previewSelector || listVersion !== previewListVersion) return;
       gcPreview = result;
       gcPreviewBinding = { selector: previewSelector, listVersion: previewListVersion };
       gcResult = null;
-      summarizeEnvelope("Large blob cleanup preview", gcPreview, "large-blob-workspace", previewGarbageCollect);
+      summarizeEnvelope(m.large_blob_cleanup_preview(), gcPreview, "large-blob-workspace", previewGarbageCollect);
     } catch (error) {
       if (token !== operationEpoch || selector !== previewSelector || listVersion !== previewListVersion) return;
       gcPreview = failureEnvelope(error);
       gcPreviewBinding = { selector: previewSelector, listVersion: previewListVersion };
-      summarizeEnvelope("Large blob cleanup preview", gcPreview, "large-blob-workspace", previewGarbageCollect);
+      summarizeEnvelope(m.large_blob_cleanup_preview(), gcPreview, "large-blob-workspace", previewGarbageCollect);
     } finally {
       endAction("preview-gc");
     }
@@ -493,11 +494,11 @@
     if (!selector || !canConfirmGarbageCollect || !beginAction("gc")) return;
     const token = ++operationEpoch;
     try {
-      beginOperation("Large blob cleanup", "large-blob-workspace");
+      beginOperation(m.large_blob_cleanup(), "large-blob-workspace");
       const result = await api.garbageCollectLargeBlobs({
         selector,
         confirmed: true,
-        confirmationMessage: "garbage collect unmatched large blob entries",
+        confirmationMessage: m.large_blob_cleanup(),
       });
       if (token !== operationEpoch) return;
       gcPreview = null;
@@ -506,12 +507,12 @@
       endAction("gc");
       await load({ clearCleanup: false });
       gcResult = result;
-      pushToast("Large blob cleanup complete");
-      summarizeEnvelope("Large blob cleanup", gcResult, "large-blob-workspace");
+      pushToast(m.large_blob_cleanup_complete());
+      summarizeEnvelope(m.large_blob_cleanup(), gcResult, "large-blob-workspace");
     } catch (error) {
       if (token !== operationEpoch) return;
       gcResult = failureEnvelope(error);
-      summarizeEnvelope("Large blob cleanup", gcResult, "large-blob-workspace", executeGarbageCollect);
+      summarizeEnvelope(m.large_blob_cleanup(), gcResult, "large-blob-workspace", executeGarbageCollect);
     } finally {
       endAction("gc");
     }
@@ -522,28 +523,28 @@
   }
 </script>
 
-<ScreenHeader eyebrow="Large blobs" title="Credential blob workspace" description="Select a resident credential, then inspect and manage its attached blob from the workspace.">
+<ScreenHeader eyebrow={m.nav_large_blobs()} title={m.credential_blob_workspace()} description={m.large_blobs_description()}>
   {#snippet actions()}
-    <Button onclick={() => load()} disabled={!selector || Boolean(largeBlobBusy) || $sessionBusy}>{loading ? "Reloading blobs" : "Reload blobs"}</Button>
+    <Button onclick={() => load()} disabled={!selector || Boolean(largeBlobBusy) || $sessionBusy}>{loading ? m.reloading_blobs() : m.reload_blobs()}</Button>
   {/snippet}
 </ScreenHeader>
 
 {#if !selector}
-  <EmptyState eyebrow="No token" title="No token selected" message="Select an authenticator to inspect large blobs." />
+  <EmptyState eyebrow={m.no_token()} title={m.no_token_selected()} message={m.select_authenticator_for_large_blobs()} />
 {:else if operationFailed(envelope)}
   <Alert variant="destructive"><AlertDescription>{operationFailed(envelope)}</AlertDescription></Alert>
 {:else if !largeBlobLoaded}
-  <EmptyState eyebrow="Workspace ready" variant="workspace" title="No large-blob state loaded" message="Reload blobs to map resident credentials to large-blob state. The workspace will show matched credentials, blob bytes, and cleanup state here." />
+  <EmptyState eyebrow={m.workspace_ready()} variant="workspace" title={m.no_large_blob_state_loaded()} message={m.no_large_blob_state_message()} />
 {:else}
-  <Card.Root aria-label="Large blob summary">
+  <Card.Root aria-label={m.large_blob_summary()}>
     <Card.Content class="flex flex-wrap items-center gap-2 pt-6">
-    <Badge variant="secondary">{report?.array?.blobCount || 0} blobs</Badge>
-    <Badge variant="outline">{report?.array?.matchedBlobCount || 0} matched</Badge>
-    <Badge variant={hasUnmatchedBlobs ? "destructive" : "outline"}>{report?.array?.unmatchedBlobCount || 0} unmatched</Badge>
+    <Badge variant="secondary">{m.blobs_count({ count: report?.array?.blobCount || 0 })}</Badge>
+    <Badge variant="outline">{m.matched_count({ count: report?.array?.matchedBlobCount || 0 })}</Badge>
+    <Badge variant={hasUnmatchedBlobs ? "destructive" : "outline"}>{m.unmatched_count({ count: report?.array?.unmatchedBlobCount || 0 })}</Badge>
     <StatusBadge value={report?.support?.largeBlobs} label={`Support: ${stateLabel(report?.support?.largeBlobs)}`} />
     {#if hasUnmatchedBlobs || gcPreview || gcResult}
-      <Button size="sm" variant="outline" onclick={previewGarbageCollect} disabled={Boolean(largeBlobBusy) || $sessionBusy}>Preview cleanup</Button>
-      <Button size="sm" variant="destructive" onclick={executeGarbageCollect} disabled={Boolean(largeBlobBusy) || $sessionBusy || !canConfirmGarbageCollect}>Confirm cleanup</Button>
+      <Button size="sm" variant="outline" onclick={previewGarbageCollect} disabled={Boolean(largeBlobBusy) || $sessionBusy}>{m.preview_cleanup()}</Button>
+      <Button size="sm" variant="destructive" onclick={executeGarbageCollect} disabled={Boolean(largeBlobBusy) || $sessionBusy || !canConfirmGarbageCollect}>{m.confirm_cleanup()}</Button>
     {/if}
     </Card.Content>
   </Card.Root>
@@ -559,16 +560,16 @@
   {/if}
 
   {#if credentials.length === 0}
-    <EmptyState eyebrow="Loaded state" title="No resident credentials found" message="Large-blob support is loaded, but this authenticator did not report resident credentials to inspect." />
+    <EmptyState eyebrow={m.loaded_state()} title={m.no_resident_credentials_found()} message={m.no_resident_credentials_large_blob_message()} />
   {:else}
     <section id="large-blob-workspace" class="grid gap-4 xl:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.3fr)]">
       <Card.Root>
         <Card.Header class="flex-row items-start justify-between gap-3">
           <div class="grid gap-1">
-            <Card.Title>Blob credentials</Card.Title>
-            <Card.Description>Select a row to open its inspector.</Card.Description>
+            <Card.Title>{m.blob_credentials()}</Card.Title>
+            <Card.Description>{m.select_row_to_open_inspector()}</Card.Description>
           </div>
-          <span class="text-sm text-muted-foreground">{credentials.length} row(s)</span>
+          <span class="text-sm text-muted-foreground">{m.rows_count({ count: credentials.length })}</span>
         </Card.Header>
         <Card.Content class="grid max-h-[66vh] gap-2 overflow-auto pr-1">
         {#each credentials as credential (credentialKey(credential))}
@@ -580,11 +581,11 @@
               onclick={() => selectCredential(credential)}
             >
               <span class="grid w-full min-w-0 gap-1">
-                <span class="truncate text-sm font-medium">{credential.user?.displayName || credential.user?.name || credential.rp?.id || "Credential"}</span>
-                <span class="truncate text-xs font-normal text-muted-foreground">{credential.rp?.id || "unknown RP"}</span>
+                <span class="truncate text-sm font-medium">{credential.user?.displayName || credential.user?.name || credential.rp?.id || m.credential()}</span>
+                <span class="truncate text-xs font-normal text-muted-foreground">{credential.rp?.id || m.unknown_rp()}</span>
                 <span class="flex flex-wrap items-center gap-2 pt-1">
-                <StatusBadge value={credential.blobState || "unknown"} label={credential.blobState || "unknown"} />
-                  <Badge variant="outline">{credential.blobByteCount || 0} bytes</Badge>
+                <StatusBadge value={credential.blobState || "unknown"} label={credential.blobState || m.state_unknown()} />
+                  <Badge variant="outline">{m.bytes_count({ count: credential.blobByteCount || 0 })}</Badge>
                 </span>
               </span>
             </Button>

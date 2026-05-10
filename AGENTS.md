@@ -32,13 +32,12 @@
 - In this Wails/Vite app, run `shadcn-svelte` CLI commands from `frontend/` or pass `--cwd frontend`.
 - Use Svelte MCP for Svelte syntax/autofix, and `shadcn-svelte` docs for component API, CLI, theming, and registry behavior.
 - Inspect frontend behavior through the full Wails dev runtime, not plain Vite preview.
-- Run `wails3 dev` or `task dev` from the repo root, read the printed URL, and open that exact URL in the in-app browser.
-- If Wails dev is already running, reuse its URL from terminal output/logs instead of starting another server.
-- After frontend edits, reload the Wails page and inspect the DOM or screenshot again.
+- Wails 3 dev runtime does not work correctly through the Codex in-app browser/browser automation. For UI work, run build checks locally, then ask the user to smoke-test the actual Wails window manually.
+- If the user is smoke-testing, ask them to run `wails3 dev` or `task dev` from the repo root and verify the real desktop window rather than a browser URL.
 - Keep UI state in stores/controllers; screens should call the controller/API layer rather than raw generated bindings.
 
 ## Verification
 - Backend changes: `go test ./... -count=1`.
 - Session, locking, interaction, or cancellation changes: also consider `go test -race ./... -count=1`.
 - Frontend changes: `cd frontend; npm run build`.
-- Full app smoke check for UI work: run Wails dev and verify the actual screen in the in-app browser.
+- Full app smoke check for UI work: ask the user to run Wails dev and verify the actual desktop screen manually.

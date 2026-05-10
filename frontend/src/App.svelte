@@ -29,9 +29,11 @@
     toasts,
   } from "./lib/stores";
   import { labelDevice } from "./lib/format";
+  import { availableLocales, currentLocale, localeLabel, setAppLocale } from "./lib/i18n";
+  import { m } from "./paraglide/messages.js";
   import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
-  import { NativeSelect } from "$lib/components/ui/native-select/index.js";
+  import * as NativeSelect from "$lib/components/ui/native-select/index.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { Toaster } from "$lib/components/ui/sonner/index.js";
   import ActivityRail from "./components/ActivityRail.svelte";
@@ -44,12 +46,12 @@
   import Logs from "./screens/Logs.svelte";
 
   const screens = [
-    { id: "overview", label: "Overview", icon: LayoutDashboard, component: Overview },
-    { id: "credentials", label: "Credentials", icon: KeyRound, component: Credentials },
-    { id: "largeBlobs", label: "Large blobs", icon: Database, component: LargeBlobs },
-    { id: "config", label: "Config", icon: Settings2, component: Config },
-    { id: "lab", label: "Lab", icon: FlaskConical, component: Lab },
-    { id: "logs", label: "Logs", icon: ScrollText, component: Logs },
+    { id: "overview", label: () => m.nav_overview(), icon: LayoutDashboard, component: Overview },
+    { id: "credentials", label: () => m.nav_credentials(), icon: KeyRound, component: Credentials },
+    { id: "largeBlobs", label: () => m.nav_large_blobs(), icon: Database, component: LargeBlobs },
+    { id: "config", label: () => m.nav_config(), icon: Settings2, component: Config },
+    { id: "lab", label: () => m.nav_lab(), icon: FlaskConical, component: Lab },
+    { id: "logs", label: () => m.nav_logs(), icon: ScrollText, component: Logs },
   ];
 
   let refreshing = $state(false);
@@ -105,6 +107,7 @@
   });
 </script>
 
+{#key $currentLocale}
 <Sidebar.Provider style="--sidebar-width: 15rem; --sidebar-width-mobile: 18rem;">
   <Sidebar.Root collapsible="icon">
     <Sidebar.Header class="border-b px-2 py-3">
@@ -113,15 +116,15 @@
           <ShieldCheck size={17} strokeWidth={2.25} />
         </div>
         <div class="grid min-w-0 flex-1 leading-tight group-data-[collapsible=icon]:hidden">
-          <span class="truncate text-sm font-semibold">FIDO Workbench</span>
-          <span class="truncate text-xs text-sidebar-foreground/60">Local CTAP console</span>
+          <span class="truncate text-sm font-semibold">{m.app_title()}</span>
+          <span class="truncate text-xs text-sidebar-foreground/60">{m.app_subtitle()}</span>
         </div>
       </div>
     </Sidebar.Header>
 
     <Sidebar.Content>
       <Sidebar.Group>
-        <Sidebar.GroupLabel>Workbench</Sidebar.GroupLabel>
+        <Sidebar.GroupLabel>{m.nav_group_workbench()}</Sidebar.GroupLabel>
         <Sidebar.GroupContent>
           <Sidebar.Menu>
             {#each screens as screen (screen.id)}
@@ -132,7 +135,7 @@
                   onclick={() => openScreen(screen.id)}
                 >
                   <ScreenIcon />
-                  <span>{screen.label}</span>
+                  <span>{screen.label()}</span>
                 </Sidebar.MenuButton>
               </Sidebar.MenuItem>
             {/each}
@@ -144,22 +147,23 @@
   </Sidebar.Root>
 
   <Sidebar.Inset class="min-w-0 bg-background">
-    <header class="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <header class="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
       <div class="flex min-h-14 flex-wrap items-center gap-2 px-3 py-2 lg:flex-nowrap lg:px-4">
-        <Sidebar.Trigger class="md:hidden">
-        </Sidebar.Trigger>
-
-        <div class="min-w-0 flex-1 lg:max-w-[360px]">
-          <label for="token-select" class="sr-only">Authenticator</label>
-          <NativeSelect id="token-select" bind:value={$selectedSelector} onchange={handleTokenChange} aria-label="Authenticator">
-            <option value="">Select authenticator</option>
+          <label for="token-select" class="sr-only">{m.authenticator()}</label>
+          <NativeSelect.Root id="token-select" bind:value={$selectedSelector} onchange={handleTokenChange} aria-label={m.authenticator()}>
+            <NativeSelect.Option>{m.select_authenticator()}</NativeSelect.Option>
             {#each $devices as device (device.deviceId)}
-              <option value={device.deviceId}>{labelDevice(device)}</option>
+              <NativeSelect.Option value={device.deviceId}>{labelDevice(device)}</NativeSelect.Option>
             {/each}
-          </NativeSelect>
-        </div>
+          </NativeSelect.Root>
 
-        <Button variant="outline" size="icon" type="button" onclick={refresh} disabled={refreshing} aria-label="Refresh devices" title="Refresh devices">
+        <NativeSelect.Root class="w-auto min-w-22" value={$currentLocale} onchange={(event) => setAppLocale((event.currentTarget as HTMLSelectElement).value)} aria-label={m.language()}>
+          {#each availableLocales as locale (locale)}
+            <NativeSelect.Option value={locale}>{localeLabel(locale)}</NativeSelect.Option>
+          {/each}
+        </NativeSelect.Root>
+
+        <Button variant="outline" size="icon" type="button" onclick={refresh} disabled={refreshing} aria-label={m.refresh_devices()} title={m.refresh_devices()}>
           <RefreshCw size={16} class={refreshing ? "animate-spin" : ""} />
         </Button>
 
@@ -179,7 +183,7 @@
       <div class="min-w-0">
         {#each screens as screen (screen.id)}
           {@const ScreenComponent = screen.component}
-          <section hidden={$activeScreen !== screen.id} aria-label={screen.label}>
+          <section hidden={$activeScreen !== screen.id} aria-label={screen.label()}>
             <ScreenComponent />
           </section>
         {/each}
@@ -200,3 +204,4 @@
     {/each}
   </div>
 </Sidebar.Provider>
+{/key}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -13,9 +14,11 @@ import (
 	"github.com/go-ctap/kit/model"
 	"github.com/go-ctap/kit/model/config"
 	"github.com/go-ctap/kit/model/largeblobs"
+	appmds "github.com/go-ctap/kit/model/mds"
 	"github.com/go-ctap/kit/model/report"
 	"github.com/go-ctap/kit/model/webauthn"
 	"github.com/go-ctap/kit/transport"
+	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -24,6 +27,7 @@ const (
 	eventInteractionRequested = "authenticator:interaction-requested"
 	eventInteractionResolved  = "authenticator:interaction-resolved"
 	eventSessionChanged       = "authenticator:session-changed"
+	mdsLookupTimeout          = 30 * time.Second
 )
 
 var operationSequence uint64
@@ -45,6 +49,8 @@ type AuthenticatorService struct {
 	discoverDevices  discoverDevicesFunc
 	selectDevice     selectDeviceFunc
 	openSession      openSessionFunc
+	lookupMDS        lookupMDSFunc
+	mdsHTTPClient    *http.Client
 }
 
 func NewAuthenticatorService() *AuthenticatorService {
@@ -57,6 +63,8 @@ func NewAuthenticatorService() *AuthenticatorService {
 		openSession: func(ctx context.Context, device ctapkit.Device, opts ...ctapkit.OpenSessionOption) (sessionHandle, error) {
 			return ctapkit.OpenSession(ctx, device, opts...)
 		},
+		lookupMDS:     ctapkit.LookupMDS,
+		mdsHTTPClient: &http.Client{Timeout: mdsLookupTimeout},
 	}
 }
 
@@ -101,6 +109,7 @@ type sessionHandle interface {
 type discoverDevicesFunc func(context.Context, ...ctapkit.DiscoverOption) ([]ctapkit.Device, error)
 type selectDeviceFunc func([]ctapkit.Device, string) (ctapkit.Device, error)
 type openSessionFunc func(context.Context, ctapkit.Device, ...ctapkit.OpenSessionOption) (sessionHandle, error)
+type lookupMDSFunc func(context.Context, uuid.UUID, ...ctapkit.MDSOption) (appmds.LookupResult, error)
 
 type SessionStatus struct {
 	SelectedSelector string                `json:"selectedSelector,omitempty"`
@@ -127,6 +136,11 @@ type DiscoveryResponse struct {
 type OperationRequest struct {
 	Selector         string                 `json:"selector,omitempty"`
 	VerificationFlow model.VerificationFlow `json:"verificationFlow,omitempty"`
+}
+
+type MDSLookupRequest struct {
+	AAGUID  string `json:"aaguid,omitempty"`
+	Refresh bool   `json:"refresh,omitempty"`
 }
 
 type OperationEnvelope struct {
@@ -458,6 +472,36 @@ func (s *AuthenticatorService) ResolveInteraction(ctx context.Context, answer In
 
 func (s *AuthenticatorService) Inspect(ctx context.Context, req OperationRequest) OperationEnvelope {
 	return s.run(ctx, req, model.InspectOperation{})
+}
+
+func (s *AuthenticatorService) LookupMDS(ctx context.Context, req MDSLookupRequest) OperationEnvelope {
+	operationID := nextOperationID()
+	aaguidText := strings.TrimSpace(req.AAGUID)
+	if aaguidText == "" {
+		opErr := operationError(model.NewRuntimeError(model.ErrorInvalidOperation, "AAGUID is required for MDS lookup", nil))
+		return OperationEnvelope{OperationID: operationID, Session: s.statusSnapshot(), Error: opErr}
+	}
+
+	aaguid, err := uuid.Parse(aaguidText)
+	if err != nil {
+		opErr := operationError(model.NewRuntimeError(model.ErrorInvalidOperation, "AAGUID is not a valid UUID", err))
+		return OperationEnvelope{OperationID: operationID, Session: s.statusSnapshot(), Error: opErr}
+	}
+
+	sessionCtx := s.serviceContext()
+	lookupCtx, cancel := context.WithTimeout(sessionCtx, mdsLookupTimeout)
+	defer cancel()
+
+	options := []ctapkit.MDSOption{ctapkit.WithMDSHTTPClient(s.mdsHTTPClient)}
+	if req.Refresh {
+		options = append(options, ctapkit.WithMDSRefresh())
+	}
+	result, err := s.lookupMDS(lookupCtx, aaguid, options...)
+	if err != nil {
+		return OperationEnvelope{OperationID: operationID, Session: s.statusSnapshot(), Error: operationError(err)}
+	}
+
+	return OperationEnvelope{OperationID: operationID, Session: s.statusSnapshot(), Result: result}
 }
 
 func (s *AuthenticatorService) ListCredentials(ctx context.Context, req OperationRequest) OperationEnvelope {

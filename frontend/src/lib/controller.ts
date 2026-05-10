@@ -1,6 +1,7 @@
 import { get } from "svelte/store";
 import { api, operationFailed, type Envelope } from "./api";
 import { operationStageLabel } from "./format";
+import { m } from "../paraglide/messages.js";
 import {
   activeScreen,
   appendLogEntry,
@@ -14,6 +15,8 @@ import {
   overviewBioSensorEnvelope,
   overviewEnvelope,
   overviewLoading,
+  overviewMDSEnvelope,
+  overviewMDSLoading,
   pendingInteraction,
   selectedSelector,
   sessionStatus,
@@ -25,9 +28,10 @@ import {
 
 let lifecycleEpoch = 0;
 let overviewEpoch = 0;
+let mdsEpoch = 0;
 
 function messageFromError(error: unknown) {
-  return error instanceof Error ? error.message : String(error || "Unexpected error");
+  return error instanceof Error ? error.message : String(error || m.unexpected_error());
 }
 
 function failureEnvelope(error: unknown): Envelope {
@@ -42,6 +46,11 @@ function shouldLoadBioSensor(envelope: Envelope | null | undefined) {
   const report = resultFromEnvelope(envelope);
   const options = report?.info?.options || {};
   return options.bioEnroll === true || options.uvBioEnroll === true;
+}
+
+function aaguidFromEnvelope(envelope: Envelope | null | undefined) {
+  const report = resultFromEnvelope(envelope);
+  return typeof report?.info?.aaguid === "string" ? report.info.aaguid.trim() : "";
 }
 
 function shouldAutoLoadOverview() {
@@ -76,8 +85,8 @@ export async function bootstrap() {
       const logEntryId = appendLogEntry({
         tone: "error",
         source: "session",
-        title: "Session needs attention",
-        message: status.error?.hint || status.error?.message || "Open the selected session again or refresh devices.",
+        title: m.session_needs_attention(),
+        message: status.error?.hint || status.error?.message || m.open_session_or_refresh_devices(),
         selector: status.selectedSelector || get(selectedSelector),
         data: {
           session: { state: status.state, error: status.error },
@@ -85,8 +94,8 @@ export async function bootstrap() {
       });
       setStatusOutcome({
         tone: "error",
-        title: "Session needs attention",
-        message: status.error?.hint || status.error?.message || "Open the selected session again or refresh devices.",
+        title: m.session_needs_attention(),
+        message: status.error?.hint || status.error?.message || m.open_session_or_refresh_devices(),
         logEntryId,
       });
     }
@@ -114,8 +123,8 @@ export async function refreshDiscovery() {
     const logEntryId = appendLogEntry({
       tone: discovery.error ? "error" : "info",
       source: "discovery",
-      title: discovery.error ? "Discovery issue" : "Discovery refreshed",
-      message: discovery.error ? discovery.error.message : `${discovery.devices?.length || 0} authenticator(s) found.`,
+      title: discovery.error ? m.discovery_issue() : m.discovery_refreshed(),
+      message: discovery.error ? discovery.error.message : m.authenticators_found({ count: discovery.devices?.length || 0 }),
       selector: discovery.selectedSelector || previous,
       data: {
         deviceCount: discovery.devices?.length || 0,
@@ -126,8 +135,8 @@ export async function refreshDiscovery() {
     });
     setStatusOutcome({
       tone: discovery.error ? "error" : "info",
-      title: discovery.error ? "Discovery issue" : "Discovery refreshed",
-      message: discovery.error ? discovery.error.message : `${discovery.devices?.length || 0} authenticator(s) found.`,
+      title: discovery.error ? m.discovery_issue() : m.discovery_refreshed(),
+      message: discovery.error ? discovery.error.message : m.authenticators_found({ count: discovery.devices?.length || 0 }),
       logEntryId,
     });
     if ((changed || get(selectedSelector) !== previous) && shouldAutoLoadOverview()) {
@@ -143,8 +152,11 @@ export async function refreshDiscovery() {
 export async function selectToken(selector: string) {
   const epoch = ++lifecycleEpoch;
   overviewEpoch++;
+  mdsEpoch++;
   overviewEnvelope.set(null);
   overviewBioSensorEnvelope.set(null);
+  overviewMDSEnvelope.set(null);
+  overviewMDSLoading.set(false);
   try {
     const discovery = await api.select(selector);
     if (epoch !== lifecycleEpoch) return;
@@ -152,8 +164,8 @@ export async function selectToken(selector: string) {
     const logEntryId = appendLogEntry({
       tone: discovery.error ? "error" : "info",
       source: "selection",
-      title: discovery.error ? "Token selection issue" : "Token selected",
-      message: discovery.selectedDevice?.product || discovery.selectedDevice?.deviceId || selector || "Selection updated.",
+      title: discovery.error ? m.token_selection_issue() : m.token_selected(),
+      message: discovery.selectedDevice?.product || discovery.selectedDevice?.deviceId || selector || m.selection_updated(),
       selector: discovery.selectedSelector || selector,
       data: {
         selectedSelector: discovery.selectedSelector || selector,
@@ -164,8 +176,8 @@ export async function selectToken(selector: string) {
     });
     setStatusOutcome({
       tone: discovery.error ? "error" : "info",
-      title: discovery.error ? "Token selection issue" : "Token selected",
-      message: discovery.selectedDevice?.product || discovery.selectedDevice?.deviceId || selector || "Selection updated.",
+      title: discovery.error ? m.token_selection_issue() : m.token_selected(),
+      message: discovery.selectedDevice?.product || discovery.selectedDevice?.deviceId || selector || m.selection_updated(),
       logEntryId,
     });
     if (get(activeScreen) === "overview" && get(selectedSelector)) {
@@ -186,25 +198,25 @@ export async function closeSelectedSession() {
     const logEntryId = appendLogEntry({
       tone: "info",
       source: "session",
-      title: "Session closed",
-      message: "Cached authenticator authorization was released.",
+      title: m.session_closed_title(),
+      message: m.cached_authorization_released(),
       selector: status.selectedSelector || get(selectedSelector),
       data: {
         session: { state: status.state },
       },
     });
-    setStatusOutcome({ tone: "info", title: "Session closed", message: "Cached authenticator authorization was released.", logEntryId });
+    setStatusOutcome({ tone: "info", title: m.session_closed_title(), message: m.cached_authorization_released(), logEntryId });
   } catch (error) {
     appError.set(messageFromError(error));
     const logEntryId = appendLogEntry({
       tone: "error",
       source: "session",
-      title: "Could not close session",
+      title: m.could_not_close_session(),
       message: messageFromError(error),
       selector: get(selectedSelector),
       data: { error: { message: messageFromError(error) } },
     });
-    setStatusOutcome({ tone: "error", title: "Could not close session", message: messageFromError(error), logEntryId });
+    setStatusOutcome({ tone: "error", title: m.could_not_close_session(), message: messageFromError(error), logEntryId });
   }
 }
 
@@ -212,7 +224,7 @@ export async function openSelectedSession(selector = get(selectedSelector)) {
   selector = selector.trim();
   if (!selector) return;
   try {
-    beginOperation("Open session", "session-recovery");
+    beginOperation(m.open_session(), "session-recovery");
     const status = await api.openSession(selector);
     sessionStatus.set(status);
     finishOperation();
@@ -220,38 +232,38 @@ export async function openSelectedSession(selector = get(selectedSelector)) {
       const logEntryId = appendLogEntry({
         tone: "error",
         source: "session",
-        title: "Open session failed",
+        title: m.open_session_failed(),
         message: status.error.hint ? `${status.error.message} ${status.error.hint}` : status.error.message,
         selector,
         detailId: "session-recovery",
         data: { session: status },
       });
-      setStatusOutcome({ tone: "error", title: "Open session failed", message: status.error.hint ? `${status.error.message} ${status.error.hint}` : status.error.message, detailId: "session-recovery", logEntryId, retry: () => openSelectedSession(selector) });
+      setStatusOutcome({ tone: "error", title: m.open_session_failed(), message: status.error.hint ? `${status.error.message} ${status.error.hint}` : status.error.message, detailId: "session-recovery", logEntryId, retry: () => openSelectedSession(selector) });
       return;
     }
     const logEntryId = appendLogEntry({
       tone: "success",
       source: "session",
-      title: "Session open",
-      message: "Selected authenticator session is ready.",
+      title: m.session_open_title(),
+      message: m.selected_session_ready(),
       selector,
       detailId: "session-recovery",
       data: { session: status },
     });
-    setStatusOutcome({ tone: "success", title: "Session open", message: "Selected authenticator session is ready.", detailId: "session-recovery", logEntryId });
+    setStatusOutcome({ tone: "success", title: m.session_open_title(), message: m.selected_session_ready(), detailId: "session-recovery", logEntryId });
   } catch (error) {
     finishOperation();
     const message = messageFromError(error);
     const logEntryId = appendLogEntry({
       tone: "error",
       source: "session",
-      title: "Open session failed",
+      title: m.open_session_failed(),
       message,
       selector,
       detailId: "session-recovery",
       data: { error: { message } },
     });
-    setStatusOutcome({ tone: "error", title: "Open session failed", message, detailId: "session-recovery", logEntryId, retry: () => openSelectedSession(selector) });
+    setStatusOutcome({ tone: "error", title: m.open_session_failed(), message, detailId: "session-recovery", logEntryId, retry: () => openSelectedSession(selector) });
   }
 }
 
@@ -260,19 +272,28 @@ export async function loadOverview(selector = get(selectedSelector)) {
   if (!selector) {
     overviewEnvelope.set(null);
     overviewBioSensorEnvelope.set(null);
+    overviewMDSEnvelope.set(null);
     overviewLoading.set(false);
+    overviewMDSLoading.set(false);
     return;
   }
 
   const epoch = ++overviewEpoch;
+  mdsEpoch++;
   overviewLoading.set(true);
   overviewBioSensorEnvelope.set(null);
+  overviewMDSEnvelope.set(null);
+  overviewMDSLoading.set(false);
   try {
-    beginOperation("Overview inspection", "overview-dashboard");
+    beginOperation(m.overview_inspection(), "overview-dashboard");
     const envelope = await api.inspect(selector);
     if (epoch !== overviewEpoch || selector !== get(selectedSelector)) return;
     overviewEnvelope.set(envelope);
     applyEnvelope(envelope);
+    const aaguid = !operationFailed(envelope) ? aaguidFromEnvelope(envelope) : "";
+    if (aaguid) {
+      void loadOverviewMDS(aaguid, false, selector);
+    }
     if (!operationFailed(envelope) && shouldLoadBioSensor(envelope)) {
       try {
         const bioEnvelope = await api.bioSensorInfo(selector);
@@ -285,7 +306,7 @@ export async function loadOverview(selector = get(selectedSelector)) {
         }
       }
     }
-    summarizeEnvelope("Overview inspection", envelope, "overview-dashboard", () => loadOverview(selector));
+    summarizeEnvelope(m.overview_inspection(), envelope, "overview-dashboard", () => loadOverview(selector));
     if (operationFailed(envelope)) {
       appError.set(null);
     }
@@ -294,11 +315,37 @@ export async function loadOverview(selector = get(selectedSelector)) {
       const envelope = failureEnvelope(error);
       overviewEnvelope.set(envelope);
       overviewBioSensorEnvelope.set(null);
-      summarizeEnvelope("Overview inspection", envelope, "overview-dashboard", () => loadOverview(selector));
+      summarizeEnvelope(m.overview_inspection(), envelope, "overview-dashboard", () => loadOverview(selector));
     }
   } finally {
     if (epoch === overviewEpoch) {
       overviewLoading.set(false);
+    }
+  }
+}
+
+export async function loadOverviewMDS(aaguid: string, refresh = false, selector = get(selectedSelector)) {
+  aaguid = aaguid.trim();
+  selector = selector.trim();
+  const epoch = ++mdsEpoch;
+  if (!aaguid || !selector) {
+    overviewMDSEnvelope.set(null);
+    overviewMDSLoading.set(false);
+    return;
+  }
+
+  overviewMDSLoading.set(true);
+  try {
+    const envelope = await api.lookupMDS(aaguid, refresh);
+    if (epoch !== mdsEpoch || selector !== get(selectedSelector)) return;
+    overviewMDSEnvelope.set(envelope);
+  } catch (error) {
+    if (epoch === mdsEpoch && selector === get(selectedSelector)) {
+      overviewMDSEnvelope.set(failureEnvelope(error));
+    }
+  } finally {
+    if (epoch === mdsEpoch) {
+      overviewMDSLoading.set(false);
     }
   }
 }
@@ -333,7 +380,7 @@ export function handleSessionChanged(data: any) {
     setStatusOperation({
       ...currentOperation,
       operationId: data.activeOperation,
-      event: currentOperation.event || { message: "Operation running" },
+      event: currentOperation.event || { message: m.operation_running() },
     });
   } else if (!data?.activeOperation && !isActiveSession) {
     setStatusOperation(null);
@@ -343,8 +390,8 @@ export function handleSessionChanged(data: any) {
     const logEntryId = appendLogEntry({
       tone: "error",
       source: "session",
-      title: "Session needs attention",
-      message: data.error?.hint || data.error?.message || "Open the selected session again or refresh devices.",
+      title: m.session_needs_attention(),
+      message: data.error?.hint || data.error?.message || m.open_session_or_refresh_devices(),
       selector: data.selectedSelector || get(selectedSelector),
       data: {
         session: { state: data.state, activeOperation: data.activeOperation, error: data.error },
@@ -352,8 +399,8 @@ export function handleSessionChanged(data: any) {
     });
     setStatusOutcome({
       tone: "error",
-      title: "Session needs attention",
-      message: data.error?.hint || data.error?.message || "Open the selected session again or refresh devices.",
+      title: m.session_needs_attention(),
+      message: data.error?.hint || data.error?.message || m.open_session_or_refresh_devices(),
       logEntryId,
     });
   }
@@ -364,7 +411,7 @@ export function handleInteractionRequested(data: any) {
   appendLogEntry({
     tone: "warning",
     source: "operation-interaction",
-    title: "Interaction required",
+    title: m.stage_interaction_required(),
     message: operationStageLabel("interaction-required"),
     operationId: data?.operationId,
     screen: get(activeScreen),
@@ -373,7 +420,7 @@ export function handleInteractionRequested(data: any) {
       operationId: data?.operationId,
       interactionId: data?.interactionId,
       request: {
-        type: data?.request?.type || data?.request?.kind || data?.request?.prompt || "interaction",
+        type: data?.request?.type || data?.request?.kind || data?.request?.prompt || m.interaction(),
       },
     },
   });

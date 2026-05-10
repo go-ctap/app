@@ -8,7 +8,9 @@ import (
 
 	ctapkit "github.com/go-ctap/kit"
 	"github.com/go-ctap/kit/model"
+	appmds "github.com/go-ctap/kit/model/mds"
 	"github.com/go-ctap/kit/model/report"
+	"github.com/google/uuid"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -212,6 +214,116 @@ func TestRunUsesAppContextAndReusesSelectedSession(t *testing.T) {
 	}
 	if service.SessionStatus(nil).State != sessionStateReady {
 		t.Fatalf("state = %q, want ready", service.SessionStatus(nil).State)
+	}
+}
+
+func TestLookupMDSReturnsEnvelope(t *testing.T) {
+	service := NewAuthenticatorService()
+	wantAAGUID := uuid.MustParse("00112233-4455-6677-8899-aabbccddeeff")
+	service.lookupMDS = func(ctx context.Context, aaguid uuid.UUID, opts ...ctapkit.MDSOption) (appmds.LookupResult, error) {
+		if aaguid != wantAAGUID {
+			t.Fatalf("aaguid = %s, want %s", aaguid, wantAAGUID)
+		}
+		if _, ok := ctx.Deadline(); !ok {
+			t.Fatal("expected MDS lookup context to have timeout deadline")
+		}
+		if len(opts) != 1 {
+			t.Fatalf("option count = %d, want HTTP client option only", len(opts))
+		}
+		return appmds.LookupResult{AAGUID: aaguid, Found: true, Source: "test-source", Cached: true}, nil
+	}
+
+	envelope := service.LookupMDS(nil, MDSLookupRequest{AAGUID: wantAAGUID.String()})
+
+	if envelope.Error != nil {
+		t.Fatalf("unexpected error: %#v", envelope.Error)
+	}
+	result, ok := envelope.Result.(appmds.LookupResult)
+	if !ok {
+		t.Fatalf("result type = %T, want mds.LookupResult", envelope.Result)
+	}
+	if !result.Found || result.AAGUID != wantAAGUID {
+		t.Fatalf("unexpected result: %#v", result)
+	}
+}
+
+func TestLookupMDSRejectsInvalidAAGUID(t *testing.T) {
+	service := NewAuthenticatorService()
+	called := false
+	service.lookupMDS = func(context.Context, uuid.UUID, ...ctapkit.MDSOption) (appmds.LookupResult, error) {
+		called = true
+		return appmds.LookupResult{}, nil
+	}
+
+	for _, req := range []MDSLookupRequest{{}, {AAGUID: "not-a-uuid"}} {
+		envelope := service.LookupMDS(nil, req)
+		if envelope.Error == nil || envelope.Error.Category != model.ErrorInvalidOperation {
+			t.Fatalf("error = %#v, want invalid-operation", envelope.Error)
+		}
+	}
+	if called {
+		t.Fatal("lookupMDS was called for invalid input")
+	}
+}
+
+func TestLookupMDSPassesRefreshOption(t *testing.T) {
+	service := NewAuthenticatorService()
+	optionCount := 0
+	service.lookupMDS = func(_ context.Context, _ uuid.UUID, opts ...ctapkit.MDSOption) (appmds.LookupResult, error) {
+		optionCount = len(opts)
+		return appmds.LookupResult{}, nil
+	}
+
+	envelope := service.LookupMDS(nil, MDSLookupRequest{
+		AAGUID:  "00112233-4455-6677-8899-aabbccddeeff",
+		Refresh: true,
+	})
+
+	if envelope.Error != nil {
+		t.Fatalf("unexpected error: %#v", envelope.Error)
+	}
+	if optionCount != 2 {
+		t.Fatalf("option count = %d, want HTTP client plus refresh options", optionCount)
+	}
+}
+
+func TestLookupMDSDoesNotTouchSessionOrDeviceLifecycle(t *testing.T) {
+	service := NewAuthenticatorService()
+	session := &fakeSession{}
+	seedOpenSession(service, "token-1", session, sessionStateReady)
+	discoverCalls := 0
+	selectCalls := 0
+	openCalls := 0
+	service.discoverDevices = func(context.Context, ...ctapkit.DiscoverOption) ([]ctapkit.Device, error) {
+		discoverCalls++
+		return nil, nil
+	}
+	service.selectDevice = func([]ctapkit.Device, string) (ctapkit.Device, error) {
+		selectCalls++
+		return ctapkit.Device{}, nil
+	}
+	service.openSession = func(context.Context, ctapkit.Device, ...ctapkit.OpenSessionOption) (sessionHandle, error) {
+		openCalls++
+		return &fakeSession{}, nil
+	}
+	service.lookupMDS = func(context.Context, uuid.UUID, ...ctapkit.MDSOption) (appmds.LookupResult, error) {
+		return appmds.LookupResult{}, model.NewRuntimeError(model.ErrorTransportFailure, "MDS offline", nil)
+	}
+
+	envelope := service.LookupMDS(nil, MDSLookupRequest{AAGUID: "00112233-4455-6677-8899-aabbccddeeff"})
+
+	if envelope.Error == nil || envelope.Error.Category != model.ErrorTransportFailure {
+		t.Fatalf("error = %#v, want transport-failure", envelope.Error)
+	}
+	if discoverCalls != 0 || selectCalls != 0 || openCalls != 0 {
+		t.Fatalf("device lifecycle calls = discover:%d select:%d open:%d, want all zero", discoverCalls, selectCalls, openCalls)
+	}
+	if session.closeCount != 0 {
+		t.Fatalf("session close count = %d, want 0", session.closeCount)
+	}
+	status := service.SessionStatus(nil)
+	if status.State != sessionStateReady || status.Error != nil || status.ActiveOperation != "" {
+		t.Fatalf("session status = %#v, want ready without error/operation", status)
 	}
 }
 
