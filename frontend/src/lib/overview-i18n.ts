@@ -68,196 +68,244 @@ type CtapWarningMessageArgs = {
 type CtapWarningMessages = {
   name: () => string;
   description: (args: CtapWarningMessageArgs) => string;
+  value: (args: CtapWarningMessageArgs) => string;
 };
 
 const CTAP_WARNING_MESSAGES = {
   versions_required: {
     name: m.overview_ctap_warning_versions_required_name,
     description: m.overview_ctap_warning_versions_required_description,
+    value: m.overview_ctap_warning_versions_required_value,
   },
   aaguid_required: {
     name: m.overview_ctap_warning_aaguid_required_name,
     description: m.overview_ctap_warning_aaguid_required_description,
+    value: m.overview_ctap_warning_aaguid_required_value,
   },
   fido22_forbidden: {
     name: m.overview_ctap_warning_fido22_forbidden_name,
     description: m.overview_ctap_warning_fido22_forbidden_description,
+    value: m.overview_ctap_warning_fido22_forbidden_value,
   },
   pin_uv_auth_protocols_list_empty: {
     name: m.overview_ctap_warning_pin_uv_auth_protocols_list_empty_name,
     description: m.overview_ctap_warning_pin_uv_auth_protocols_list_empty_description,
+    value: m.overview_ctap_warning_pin_uv_auth_protocols_list_empty_value,
   },
   pin_uv_auth_protocols_list_duplicate: {
     name: m.overview_ctap_warning_pin_uv_auth_protocols_list_duplicate_name,
     description: m.overview_ctap_warning_pin_uv_auth_protocols_list_duplicate_description,
+    value: m.overview_ctap_warning_pin_uv_auth_protocols_list_duplicate_value,
   },
   transports_list_empty: {
     name: m.overview_ctap_warning_transports_list_empty_name,
     description: m.overview_ctap_warning_transports_list_empty_description,
+    value: m.overview_ctap_warning_transports_list_empty_value,
   },
   transports_list_duplicate: {
     name: m.overview_ctap_warning_transports_list_duplicate_name,
     description: m.overview_ctap_warning_transports_list_duplicate_description,
+    value: m.overview_ctap_warning_transports_list_duplicate_value,
   },
   algorithms_list_empty: {
     name: m.overview_ctap_warning_algorithms_list_empty_name,
     description: m.overview_ctap_warning_algorithms_list_empty_description,
+    value: m.overview_ctap_warning_algorithms_list_empty_value,
   },
   algorithms_list_duplicate: {
     name: m.overview_ctap_warning_algorithms_list_duplicate_name,
     description: m.overview_ctap_warning_algorithms_list_duplicate_description,
+    value: m.overview_ctap_warning_algorithms_list_duplicate_value,
   },
   max_credential_count_in_list_positive: {
     name: m.overview_ctap_warning_max_credential_count_in_list_positive_name,
     description: m.overview_ctap_warning_max_credential_count_in_list_positive_description,
+    value: m.overview_ctap_warning_max_credential_count_in_list_positive_value,
   },
   max_credential_id_length_positive: {
     name: m.overview_ctap_warning_max_credential_id_length_positive_name,
     description: m.overview_ctap_warning_max_credential_id_length_positive_description,
+    value: m.overview_ctap_warning_max_credential_id_length_positive_value,
   },
   max_msg_size_minimum: {
     name: m.overview_ctap_warning_max_msg_size_minimum_name,
     description: m.overview_ctap_warning_max_msg_size_minimum_description,
+    value: m.overview_ctap_warning_max_msg_size_minimum_value,
   },
   preferred_platform_uv_attempts_minimum: {
     name: m.overview_ctap_warning_preferred_platform_uv_attempts_minimum_name,
     description: m.overview_ctap_warning_preferred_platform_uv_attempts_minimum_description,
+    value: m.overview_ctap_warning_preferred_platform_uv_attempts_minimum_value,
   },
   ctap23_hmac_secret: {
     name: m.overview_ctap_warning_ctap23_hmac_secret_name,
     description: m.overview_ctap_warning_ctap23_hmac_secret_description,
+    value: m.overview_ctap_warning_ctap23_hmac_secret_value,
   },
   ctap23_rk_uv_state: {
     name: m.overview_ctap_warning_ctap23_rk_uv_state_name,
     description: m.overview_ctap_warning_ctap23_rk_uv_state_description,
+    value: m.overview_ctap_warning_ctap23_rk_uv_state_value,
   },
   ctap23_rk_cred_mgmt: {
     name: m.overview_ctap_warning_ctap23_rk_cred_mgmt_name,
     description: m.overview_ctap_warning_ctap23_rk_cred_mgmt_description,
+    value: m.overview_ctap_warning_ctap23_rk_cred_mgmt_value,
   },
   ctap23_cred_protect: {
     name: m.overview_ctap_warning_ctap23_cred_protect_name,
     description: m.overview_ctap_warning_ctap23_cred_protect_description,
+    value: m.overview_ctap_warning_ctap23_cred_protect_value,
   },
   ctap23_pin_uv_auth_token: {
     name: m.overview_ctap_warning_ctap23_pin_uv_auth_token_name,
     description: m.overview_ctap_warning_ctap23_pin_uv_auth_token_description,
+    value: m.overview_ctap_warning_ctap23_pin_uv_auth_token_value,
   },
   ctap23_pin_protocol_two: {
     name: m.overview_ctap_warning_ctap23_pin_protocol_two_name,
     description: m.overview_ctap_warning_ctap23_pin_protocol_two_description,
+    value: m.overview_ctap_warning_ctap23_pin_protocol_two_value,
   },
   credblob_requires_credprotect: {
     name: m.overview_ctap_warning_credblob_requires_credprotect_name,
     description: m.overview_ctap_warning_credblob_requires_credprotect_description,
+    value: m.overview_ctap_warning_credblob_requires_credprotect_value,
   },
   credblob_requires_limit: {
     name: m.overview_ctap_warning_credblob_requires_limit_name,
     description: m.overview_ctap_warning_credblob_requires_limit_description,
+    value: m.overview_ctap_warning_credblob_requires_limit_value,
   },
   credblob_limit_invalid: {
     name: m.overview_ctap_warning_credblob_limit_invalid_name,
     description: m.overview_ctap_warning_credblob_limit_invalid_description,
+    value: m.overview_ctap_warning_credblob_limit_invalid_value,
   },
   credblob_limit_without_extension: {
     name: m.overview_ctap_warning_credblob_limit_without_extension_name,
     description: m.overview_ctap_warning_credblob_limit_without_extension_description,
+    value: m.overview_ctap_warning_credblob_limit_without_extension_value,
   },
   largeblob_mode_conflict: {
     name: m.overview_ctap_warning_largeblob_mode_conflict_name,
     description: m.overview_ctap_warning_largeblob_mode_conflict_description,
+    value: m.overview_ctap_warning_largeblob_mode_conflict_value,
   },
   largeblob_key_incomplete: {
     name: m.overview_ctap_warning_largeblob_key_incomplete_name,
     description: m.overview_ctap_warning_largeblob_key_incomplete_description,
+    value: m.overview_ctap_warning_largeblob_key_incomplete_value,
   },
   largeblobs_requires_limit: {
     name: m.overview_ctap_warning_largeblobs_requires_limit_name,
     description: m.overview_ctap_warning_largeblobs_requires_limit_description,
+    value: m.overview_ctap_warning_largeblobs_requires_limit_value,
   },
   largeblobs_limit_invalid: {
     name: m.overview_ctap_warning_largeblobs_limit_invalid_name,
     description: m.overview_ctap_warning_largeblobs_limit_invalid_description,
+    value: m.overview_ctap_warning_largeblobs_limit_invalid_value,
   },
   largeblobs_limit_without_command: {
     name: m.overview_ctap_warning_largeblobs_limit_without_command_name,
     description: m.overview_ctap_warning_largeblobs_limit_without_command_description,
+    value: m.overview_ctap_warning_largeblobs_limit_without_command_value,
   },
   min_pin_extension_without_option: {
     name: m.overview_ctap_warning_min_pin_extension_without_option_name,
     description: m.overview_ctap_warning_min_pin_extension_without_option_description,
+    value: m.overview_ctap_warning_min_pin_extension_without_option_value,
   },
   set_min_pin_without_uv: {
     name: m.overview_ctap_warning_set_min_pin_without_uv_name,
     description: m.overview_ctap_warning_set_min_pin_without_uv_description,
+    value: m.overview_ctap_warning_set_min_pin_without_uv_value,
   },
   set_min_pin_command_missing: {
     name: m.overview_ctap_warning_set_min_pin_command_missing_name,
     description: m.overview_ctap_warning_set_min_pin_command_missing_description,
+    value: m.overview_ctap_warning_set_min_pin_command_missing_value,
   },
   max_rpids_invalid: {
     name: m.overview_ctap_warning_max_rpids_invalid_name,
     description: m.overview_ctap_warning_max_rpids_invalid_description,
+    value: m.overview_ctap_warning_max_rpids_invalid_value,
   },
   max_rpids_without_set_min_pin: {
     name: m.overview_ctap_warning_max_rpids_without_set_min_pin_name,
     description: m.overview_ctap_warning_max_rpids_without_set_min_pin_description,
+    value: m.overview_ctap_warning_max_rpids_without_set_min_pin_value,
   },
   min_pin_length_invalid: {
     name: m.overview_ctap_warning_min_pin_length_invalid_name,
     description: m.overview_ctap_warning_min_pin_length_invalid_description,
+    value: m.overview_ctap_warning_min_pin_length_invalid_value,
   },
   min_pin_without_client_pin: {
     name: m.overview_ctap_warning_min_pin_without_client_pin_name,
     description: m.overview_ctap_warning_min_pin_without_client_pin_description,
+    value: m.overview_ctap_warning_min_pin_without_client_pin_value,
   },
   min_pin_missing: {
     name: m.overview_ctap_warning_min_pin_missing_name,
     description: m.overview_ctap_warning_min_pin_missing_description,
+    value: m.overview_ctap_warning_min_pin_missing_value,
   },
   max_pin_length_invalid: {
     name: m.overview_ctap_warning_max_pin_length_invalid_name,
     description: m.overview_ctap_warning_max_pin_length_invalid_description,
+    value: m.overview_ctap_warning_max_pin_length_invalid_value,
   },
   max_pin_without_client_pin: {
     name: m.overview_ctap_warning_max_pin_without_client_pin_name,
     description: m.overview_ctap_warning_max_pin_without_client_pin_description,
+    value: m.overview_ctap_warning_max_pin_without_client_pin_value,
   },
   pin_complexity_extension_without_set_min_pin: {
     name: m.overview_ctap_warning_pin_complexity_extension_without_set_min_pin_name,
     description: m.overview_ctap_warning_pin_complexity_extension_without_set_min_pin_description,
+    value: m.overview_ctap_warning_pin_complexity_extension_without_set_min_pin_value,
   },
   pin_complexity_without_client_pin: {
     name: m.overview_ctap_warning_pin_complexity_without_client_pin_name,
     description: m.overview_ctap_warning_pin_complexity_without_client_pin_description,
+    value: m.overview_ctap_warning_pin_complexity_without_client_pin_value,
   },
   no_mc_ga_without_client_pin: {
     name: m.overview_ctap_warning_no_mc_ga_without_client_pin_name,
     description: m.overview_ctap_warning_no_mc_ga_without_client_pin_description,
+    value: m.overview_ctap_warning_no_mc_ga_without_client_pin_value,
   },
   uv_bio_enroll_without_bio_enroll: {
     name: m.overview_ctap_warning_uv_bio_enroll_without_bio_enroll_name,
     description: m.overview_ctap_warning_uv_bio_enroll_without_bio_enroll_description,
+    value: m.overview_ctap_warning_uv_bio_enroll_without_bio_enroll_value,
   },
   uv_acfg_without_authnr_cfg: {
     name: m.overview_ctap_warning_uv_acfg_without_authnr_cfg_name,
     description: m.overview_ctap_warning_uv_acfg_without_authnr_cfg_description,
+    value: m.overview_ctap_warning_uv_acfg_without_authnr_cfg_value,
   },
   always_uv_conflict: {
     name: m.overview_ctap_warning_always_uv_conflict_name,
     description: m.overview_ctap_warning_always_uv_conflict_description,
+    value: m.overview_ctap_warning_always_uv_conflict_value,
   },
   enterprise_attestation_command_missing: {
     name: m.overview_ctap_warning_enterprise_attestation_command_missing_name,
     description: m.overview_ctap_warning_enterprise_attestation_command_missing_description,
+    value: m.overview_ctap_warning_enterprise_attestation_command_missing_value,
   },
   vendor_prototype_command_missing: {
     name: m.overview_ctap_warning_vendor_prototype_command_missing_name,
     description: m.overview_ctap_warning_vendor_prototype_command_missing_description,
+    value: m.overview_ctap_warning_vendor_prototype_command_missing_value,
   },
   long_touch_command_missing: {
     name: m.overview_ctap_warning_long_touch_command_missing_name,
     description: m.overview_ctap_warning_long_touch_command_missing_description,
+    value: m.overview_ctap_warning_long_touch_command_missing_value,
   }
 } satisfies Record<CtapConformanceFindingId, CtapWarningMessages>;
 
@@ -270,7 +318,7 @@ export function localizeCtapWarning(finding: CtapConformanceFinding): OverviewCo
     id: finding.id,
     name: messages.name(),
     description: messages.description(args),
-    value: warningValue,
+    value: messages.value(args),
     source: finding.source,
   };
 }

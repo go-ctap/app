@@ -70,7 +70,7 @@ export function buildOverviewRows(context: OverviewContext = {}): OverviewRow[] 
     triStateOptionRow("Verification", m.matrix_name_biometric_enrollment_preview, m.matrix_desc_bio_enroll_preview, boolOption(options, "userVerificationMgmtPreview"), "configured", "not configured", "unsupported", "options.userVerificationMgmtPreview"),
     optionRow("Verification", m.matrix_name_uv_biometric_enrollment_permission, m.matrix_desc_uv_bio_enroll, boolOption(options, "uvBioEnroll"), "supported", "unsupported", "options.uvBioEnroll", value.defaultFalse()),
     row("Verification", m.matrix_name_biometric_modality, m.matrix_desc_bio_modality, valueStatus(bioSensor.modality), textValue(bioSensor.modality, value.notReported()), "bioSensor.modality"),
-    uvModalityRow(info),
+    uintRow("Verification", m.matrix_name_uv_modality_bit_flags, m.matrix_desc_uv_modality, info, "uvModality"),
     uintRow("Verification", m.matrix_name_preferred_platform_uv_attempts, m.matrix_desc_preferred_platform_uv_attempts, info, "preferredPlatformUvAttempts", "", 1),
     uintRow("Verification", m.matrix_name_uv_count_since_last_pin_entry, m.matrix_desc_uv_count_since_last_pin_entry, info, "uvCountSinceLastPinEntry"),
 
@@ -191,16 +191,6 @@ function noMcGaPermissionsRow(options: Record<string, unknown>) {
     return row("Verification", m.matrix_name_client_pin_token_mc_ga_permissions, m.matrix_desc_no_mc_ga_permissions_true, "warning", value.notAvailableThroughClientPinToken(), "options.noMcGaPermissionsWithClientPin");
   }
   return row("Verification", m.matrix_name_client_pin_token_mc_ga_permissions, m.matrix_desc_no_mc_ga_permissions_false, "informational", noMcGa === false ? value.available() : value.availableByDefault(), "options.noMcGaPermissionsWithClientPin");
-}
-
-function uvModalityRow(info: Record<string, unknown>) {
-  const source = "uvModality";
-  if (!hasOwn(info, source)) return row("Verification", m.matrix_name_uv_modality_bit_flags, m.matrix_desc_uv_modality, "unknown", value.notReported(), source);
-  const amount = unsignedIntegerValue(info[source]);
-  if (amount === undefined) return row("Verification", m.matrix_name_uv_modality_bit_flags, m.matrix_desc_uv_modality, "warning", value.invalid(String(formatListItem(info[source]))), source);
-  const label = textValue(info.uvModalityLabel, "");
-  const display = label ? `${label} (${formatIntegerHex(amount)})` : formatNumberWithUnit(amount, "");
-  return row("Verification", m.matrix_name_uv_modality_bit_flags, m.matrix_desc_uv_modality, "informational", display, source);
 }
 
 function makeCredUvRow(options: Record<string, unknown>) {

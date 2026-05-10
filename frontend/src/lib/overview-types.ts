@@ -86,21 +86,165 @@ export type OverviewHeroModel = {
   title: string;
   subtitle: string;
   aaguid: string;
+  aaguidAvailable: boolean;
   iconSrc: string;
   mdsState: "loading" | "found" | "missing" | "error" | "idle";
   mdsStateLabel: string;
   mdsDescription: string;
-  mdsBlobSource: string;
-  mdsSnapshotSaved: string;
-  mdsBlobNumber: string;
-  mdsFacts: OverviewHeroFact[];
+  mdsStatusFacts: OverviewHeroFact[];
+  mdsBlobFacts: OverviewHeroFact[];
+};
+
+export type OverviewMDSLookupResult = {
+  aaguid: string;
+  found: boolean;
+  entry?: OverviewMDSPayloadEntry | null;
+  blobNumber: number;
+  source: string;
+  cached: boolean;
+  cachedAt: string;
+};
+
+export type OverviewMDSPayloadEntry = {
+  aaid?: string | null;
+  aaguid?: string;
+  attestationCertificateKeyIdentifiers?: string[];
+  metadataStatement?: OverviewMDSMetadataStatement;
+  biometricStatusReports?: OverviewMDSBiometricStatusReport[];
+  statusReports?: OverviewMDSStatusReport[];
+  timeOfLastStatusChange?: string;
+  rogueListURL?: string | null;
+  rogueListHash?: string | null;
+};
+
+export type OverviewMDSAuthenticatorStatus =
+  | "NOT_FIDO_CERTIFIED"
+  | "FIDO_CERTIFIED"
+  | "USER_VERIFICATION_BYPASS"
+  | "ATTESTATION_KEY_COMPROMISE"
+  | "USER_KEY_REMOTE_COMPROMISE"
+  | "USER_KEY_PHYSICAL_COMPROMISE"
+  | "UPDATE_AVAILABLE"
+  | "RETIRED"
+  | "REVOKED"
+  | "SELF_ASSERTION_SUBMITTED"
+  | "FIDO_CERTIFIED_L1"
+  | "FIDO_CERTIFIED_L1plus"
+  | "FIDO_CERTIFIED_L2"
+  | "FIDO_CERTIFIED_L2plus"
+  | "FIDO_CERTIFIED_L3"
+  | "FIDO_CERTIFIED_L3plus"
+  | "FIPS140_CERTIFIED_L1"
+  | "FIPS140_CERTIFIED_L2"
+  | "FIPS140_CERTIFIED_L3"
+  | "FIPS140_CERTIFIED_L4";
+
+export type OverviewMDSStatusReport = {
+  status?: OverviewMDSAuthenticatorStatus | string;
+  effectiveDate?: string | null;
+  authenticatorVersion?: number | null;
+  certificate?: string | null;
+  url?: string | null;
+  certificationDescriptor?: string | null;
+  certificateNumber?: string | null;
+  certificationPolicyVersion?: string | null;
+  certificationProfiles?: string[];
+  certificationRequirementsVersion?: string | null;
+  sunsetDate?: string | null;
+  fipsRevision?: number | null;
+  fipsPhysicalSecurityLevel?: number | null;
+};
+
+export type OverviewMDSBiometricStatusReport = {
+  certLevel?: number;
+  modality?: string;
+  effectiveDate?: string | null;
+  certificationDescriptor?: string | null;
+  certificateNumber?: string | null;
+  certificationPolicyVersion?: string | null;
+  certificationRequirementsVersion?: string | null;
+};
+
+export type OverviewMDSMetadataStatement = {
+  legalHeader?: string | null;
+  aaid?: string | null;
+  aaguid?: string | null;
+  attestationCertificateKeyIdentifiers?: string[];
+  friendlyNames?: Record<string, string>;
+  description?: string;
+  alternativeDescriptions?: Record<string, string>;
+  authenticatorVersion?: number | null;
+  protocolFamily?: string;
+  schema?: number;
+  upv?: OverviewMDSVersion[];
+  authenticationAlgorithms?: string[];
+  publicKeyAlgAndEncodings?: string[];
+  attestationTypes?: string[];
+  userVerificationDetails?: unknown[];
+  keyProtection?: string[];
+  isKeyRestricted?: boolean | null;
+  isFreshUserVerificationRequired?: boolean | null;
+  matcherProtection?: string[];
+  cryptoStrength?: number | null;
+  attachmentHint?: string[];
+  tcDisplay?: string[];
+  tcDisplayContentType?: string | null;
+  tcDisplayPNGCharacteristics?: OverviewMDSDisplayPNGCharacteristicsDescriptor[];
+  attestationRootCertificates?: string[];
+  ECDAATrustAnchor?: OverviewMDSECDAATrustAnchor[];
+  icon?: string | null;
+  iconDark?: string | null;
+  providerLogoLight?: string | null;
+  providerLogoDark?: string | null;
+  extensionDescriptor?: OverviewMDSExtensionDescriptor[];
+  multiDeviceCredentialSupport?: string | null;
+  authenticatorGetInfo?: Record<string, unknown>;
+  cxConfigURL?: string | null;
+};
+
+export type OverviewMDSVersion = {
+  major?: number;
+  minor?: number;
+};
+
+export type OverviewMDSDisplayPNGCharacteristicsDescriptor = {
+  width?: number;
+  height?: number;
+  bitDepth?: number;
+  colorType?: number;
+  compression?: number;
+  filter?: number;
+  interlace?: number;
+  plte?: OverviewMDSRGBPaletteEntry[];
+};
+
+export type OverviewMDSRGBPaletteEntry = {
+  r?: number | null;
+  g?: number | null;
+  b?: number | null;
+};
+
+export type OverviewMDSECDAATrustAnchor = {
+  X?: string;
+  Y?: string;
+  c?: string;
+  sx?: string;
+  sy?: string;
+  G1Curve?: string;
+};
+
+export type OverviewMDSExtensionDescriptor = {
+  id?: string;
+  tag?: number;
+  data?: string;
+  fail_if_unknown?: boolean;
 };
 
 export type OverviewContext = {
   info?: Record<string, unknown> | null;
   device?: Record<string, unknown> | null;
   bioSensor?: Record<string, unknown> | null;
-  mds?: Record<string, unknown> | null;
+  mds?: Partial<OverviewMDSLookupResult> | Record<string, unknown> | null;
 };
 
 export type OverviewHeroContext = OverviewContext & {
