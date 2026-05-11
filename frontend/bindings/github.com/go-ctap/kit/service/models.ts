@@ -26,6 +26,9 @@ import * as webauthn$0 from "../model/webauthn/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as transport$0 from "../transport/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as time$0 from "../../../../time/models.js";
 
 export class AlwaysUVRequest {
     "sessionId": SessionID;
@@ -759,6 +762,8 @@ export class SessionSnapshot {
     "id": SessionID;
     "info": model$0.SessionInfo;
     "running"?: boolean;
+    "openedAt": time$0.Time;
+    "updatedAt": time$0.Time;
 
     /** Creates a new SessionSnapshot instance. */
     constructor($$source: Partial<SessionSnapshot> = {}) {
@@ -767,6 +772,12 @@ export class SessionSnapshot {
         }
         if (!("info" in $$source)) {
             this["info"] = (new model$0.SessionInfo());
+        }
+        if (!("openedAt" in $$source)) {
+            this["openedAt"] = null;
+        }
+        if (!("updatedAt" in $$source)) {
+            this["updatedAt"] = null;
         }
 
         Object.assign(this, $$source);

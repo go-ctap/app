@@ -28,9 +28,9 @@ export type SessionStatus = {
   selectedDevice?: unknown;
   state: "idle" | "opening" | "ready" | "running" | "stale" | "closed" | "error" | string;
   activeOperation?: string;
-  error?: OperationError | null;
   openedAt?: string;
   updatedAt?: string;
+  error?: OperationError | null;
 };
 
 export type Discovery = {
@@ -51,18 +51,12 @@ const state: {
   selectedSelector: string;
   selectedDevice: unknown;
   currentSession: kitservice.SessionSnapshot | null;
-  openedAt: string;
-  updatedAt: string;
 } = {
   devices: [],
   selectedSelector: "",
   selectedDevice: null,
   currentSession: null,
-  openedAt: "",
-  updatedAt: "",
 };
-
-const now = () => new Date().toISOString();
 
 function errorFrom(error: unknown): OperationError {
   const source = error as { category?: string; message?: string; error?: { message?: string } };
@@ -90,27 +84,31 @@ function reportForSelector(selector: string) {
 
 function setCurrentSession(snapshot: kitservice.SessionSnapshot | null) {
   state.currentSession = snapshot;
-  if (!snapshot) {
-    state.openedAt = "";
-    return;
-  }
+  if (!snapshot) return;
 
   state.selectedDevice = snapshot.info?.device || state.selectedDevice;
   state.selectedSelector = deviceID(state.selectedDevice) || state.selectedSelector;
-  state.openedAt ||= now();
-  state.updatedAt = now();
+}
+
+function snapshotTimestamp(value: unknown) {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
 }
 
 function sessionStatus(snapshot = state.currentSession, status?: SessionStatus["state"], error?: OperationError | null): SessionStatus {
   const device = snapshot?.info?.device || state.selectedDevice || null;
+  const openedAt = snapshotTimestamp((snapshot as { openedAt?: unknown } | null)?.openedAt);
+  const updatedAt = snapshotTimestamp((snapshot as { updatedAt?: unknown } | null)?.updatedAt);
   return {
     selectedSelector: state.selectedSelector,
     selectedDevice: device,
     state: status || (snapshot?.info?.closed ? "closed" : snapshot ? (snapshot.running ? "running" : "ready") : "idle"),
     ...(snapshot?.running ? { activeOperation: "" } : {}),
+    ...(openedAt ? { openedAt } : {}),
+    ...(updatedAt ? { updatedAt } : {}),
     ...(error ? { error } : {}),
-    ...(state.openedAt ? { openedAt: state.openedAt } : {}),
-    ...(state.updatedAt ? { updatedAt: state.updatedAt } : {}),
   };
 }
 
@@ -158,8 +156,6 @@ async function ensureSession(selector = state.selectedSelector) {
   const snapshot = await service.OpenSession({ selector });
   setCurrentSession(snapshot);
   state.selectedSelector = deviceID(state.selectedDevice) || selector;
-  state.openedAt = now();
-  state.updatedAt = state.openedAt;
 
   return snapshot;
 }
@@ -174,7 +170,6 @@ function splitRequest<T extends SessionBound>(request: Selectable<T>) {
 }
 
 function decorateEnvelope(envelope: kitservice.OperationEnvelope): Envelope {
-  state.updatedAt = now();
   return {
     ...envelope,
     selectedDevice: state.selectedDevice,
@@ -194,7 +189,18 @@ function operation<T extends SessionBound>(invoke: OperationCall<T>) {
   return async (request: Selectable<T>): Promise<Envelope> => {
     const { selector, payload } = splitRequest(request);
     const session = await ensureSession(selector);
-    return decorateEnvelope(await invoke({ ...payload, sessionId: session.id } as T));
+    let envelope: kitservice.OperationEnvelope;
+    try {
+      envelope = await invoke({ ...payload, sessionId: session.id } as T);
+    } finally {
+      try {
+        setCurrentSession(await service.Session(session.id));
+      } catch {
+        // The operation result should keep its original success/error semantics.
+      }
+    }
+
+    return decorateEnvelope(envelope);
   };
 }
 
@@ -225,7 +231,6 @@ export const api = {
     state.selectedSelector = deviceID(state.selectedDevice) || state.selectedSelector;
 
     await refreshSessions();
-    state.updatedAt = now();
     return discovery();
   },
 
@@ -251,15 +256,12 @@ export const api = {
       setCurrentSession(await service.CloseSession(state.currentSession.id));
     }
 
-    state.updatedAt = now();
     return sessionStatus(state.currentSession, "closed");
   },
 
   async closeAllSessions(): Promise<SessionStatus[]> {
     const closed = await service.CloseAllSessions();
     state.currentSession = null;
-    state.openedAt = "";
-    state.updatedAt = now();
     return closed.map((snapshot) => sessionStatus(snapshot, "closed"));
   },
 
