@@ -13,10 +13,9 @@
   import type { OverviewHeroSignal, OverviewHeroSignalGroup } from "$lib/overview-rules";
   import { m } from "../paraglide/messages.js";
 
-  export let group: OverviewHeroSignalGroup;
+  let { group }: { group: OverviewHeroSignalGroup } = $props();
 
-  let Icon = Info;
-  $: Icon = ICONS[group.id] || Info;
+  let Icon = $derived(ICONS[group.id] || Info);
 
   function signalToneClass(status: OverviewHeroSignal["status"]) {
     if (status === "supported" || status === "configured" || status === "enabled") return "text-emerald-700 dark:text-emerald-400";
@@ -50,7 +49,7 @@
 
 {#snippet signalRow(signal: OverviewHeroSignal)}
   <div class="grid min-w-0 gap-1.5 border-t py-2.5 first:border-t-0">
-    <div class="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+    <div class="overview-signal-row flex min-w-0 flex-col gap-1.5">
       <div class="grid min-w-0 gap-1.5">
         <div class="flex min-w-0 items-center gap-1.5">
           <span class="min-w-0 text-sm font-medium leading-5">{signal.title}</span>
@@ -64,15 +63,15 @@
           </code>
         </div>
       </div>
-      <div class="flex shrink-0 items-center gap-1.5 pt-0.5 sm:justify-end" title={signal.tooltip}>
+      <div class="overview-signal-status flex min-w-0 items-center gap-1.5 pt-0.5" title={signal.tooltip}>
         <span class={`size-1.5 rounded-full ${signalDotClass(signal.status)}`} aria-hidden="true"></span>
-        <span class={`text-right text-xs font-semibold ${signalToneClass(signal.status)}`}>{signal.statusLabel}</span>
+        <span class={`min-w-0 truncate text-xs font-semibold ${signalToneClass(signal.status)}`}>{signal.statusLabel}</span>
       </div>
     </div>
   </div>
 {/snippet}
 
-<section class="grid min-w-0 content-start">
+<section class="overview-signal-group grid min-w-0 content-start">
   <div class="flex items-center gap-2 border-b pb-2">
     <Icon class="size-4 text-muted-foreground" strokeWidth={2.1} />
     <h3 class="truncate text-sm font-semibold">{group.title}</h3>
@@ -83,3 +82,23 @@
     {/each}
   </div>
 </section>
+
+<style>
+  .overview-signal-group {
+    container-type: inline-size;
+  }
+
+  @container (min-width: 18rem) {
+    .overview-signal-row {
+      align-items: flex-start;
+      flex-direction: row;
+      gap: 0.75rem;
+      justify-content: space-between;
+    }
+
+    .overview-signal-status {
+      flex-shrink: 0;
+      justify-content: flex-end;
+    }
+  }
+</style>

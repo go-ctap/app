@@ -7,9 +7,15 @@
   import type { OverviewHeroFact, OverviewHeroModel } from "$lib/overview-rules";
   import { m } from "../paraglide/messages.js";
 
-  export let hero: OverviewHeroModel;
-  export let loading = false;
-  export let onRefresh: () => void | Promise<void> = () => {};
+  let {
+    hero,
+    loading = false,
+    onRefresh = () => {},
+  }: {
+    hero: OverviewHeroModel;
+    loading?: boolean;
+    onRefresh?: () => void | Promise<void>;
+  } = $props();
 
   async function copyAaguid() {
     if (hero.aaguidAvailable) {
@@ -53,7 +59,7 @@
   </section>
 {/snippet}
 
-<aside class="grid min-w-0 content-start gap-3 border-t bg-muted/15 p-4 lg:p-5 xl:border-l xl:border-t-0" aria-label={m.metadata_service()}>
+<aside class="grid h-full min-w-0 content-start gap-3 p-4 lg:p-5" aria-label={m.metadata_service()}>
   <div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
     <div class="grid min-w-0 gap-1">
       <h2 class="truncate text-sm font-semibold">{m.metadata_service()}</h2>
