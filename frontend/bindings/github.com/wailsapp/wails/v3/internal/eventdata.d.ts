@@ -7,15 +7,13 @@ import type { Events } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import type * as main$0 from "../../../../../changeme/models.js";
+import type * as service$0 from "../../../../go-ctap/kit/service/models.js";
 
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
-            "authenticator:interaction-requested": main$0.InteractionPrompt;
-            "authenticator:interaction-resolved": main$0.InteractionAnswer;
-            "authenticator:operation-progress": main$0.OperationEventEnvelope;
-            "authenticator:session-changed": main$0.SessionStatus;
+            "ctapkit:interaction-requested": service$0.InteractionPrompt;
+            "ctapkit:operation-event": service$0.OperationEventEnvelope;
         }
     }
 }

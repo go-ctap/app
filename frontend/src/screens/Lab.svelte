@@ -61,7 +61,7 @@
   async function previewMake() {
     try {
       beginOperation(m.makecredential_preview(), "make-result");
-      makeResult = await api.makeCredential({ selector, input: makeInput, dryRun: true });
+      makeResult = await api.makeCredential({ selector, ...makeInput, dryRun: true });
       summarizeEnvelope(m.makecredential_preview(), makeResult, "make-result", previewMake);
     } catch (error) {
       makeResult = failureEnvelope(error);
@@ -72,7 +72,7 @@
   async function runMake() {
     try {
       beginOperation("makeCredential", "make-result");
-      makeResult = await api.makeCredential({ selector, input: makeInput, confirmed: true, confirmationMessage: m.run_makecredential() });
+      makeResult = await api.makeCredential({ selector, ...makeInput, confirmed: true, confirmationMessage: m.run_makecredential() });
       summarizeEnvelope("makeCredential", makeResult, "make-result", runMake);
     } catch (error) {
       makeResult = failureEnvelope(error);
@@ -83,7 +83,7 @@
   async function runGet() {
     try {
       beginOperation("getAssertion", "assertion-result");
-      assertionResult = await api.getAssertion({ selector, input: getInput });
+      assertionResult = await api.getAssertion({ selector, ...getInput });
       summarizeEnvelope("getAssertion", assertionResult, "assertion-result", runGet);
     } catch (error) {
       assertionResult = failureEnvelope(error);

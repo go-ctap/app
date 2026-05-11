@@ -372,40 +372,6 @@ export function handleOperationProgress(data: any) {
   setStatusOperation({ ...currentOperation, ...data, logEntryId });
 }
 
-export function handleSessionChanged(data: any) {
-  sessionStatus.set(data);
-  const isActiveSession = ["opening", "running"].includes(data?.state || "");
-  if (data?.activeOperation && isActiveSession) {
-    const currentOperation = get(statusBar).activeOperation || {};
-    setStatusOperation({
-      ...currentOperation,
-      operationId: data.activeOperation,
-      event: currentOperation.event || { message: m.operation_running() },
-    });
-  } else if (!data?.activeOperation && !isActiveSession) {
-    setStatusOperation(null);
-  }
-  if (data?.state === "stale" || data?.state === "error") {
-    clearSharedCredentialInventory(data?.selectedSelector || get(selectedSelector));
-    const logEntryId = appendLogEntry({
-      tone: "error",
-      source: "session",
-      title: m.session_needs_attention(),
-      message: data.error?.hint || data.error?.message || m.open_session_or_refresh_devices(),
-      selector: data.selectedSelector || get(selectedSelector),
-      data: {
-        session: { state: data.state, activeOperation: data.activeOperation, error: data.error },
-      },
-    });
-    setStatusOutcome({
-      tone: "error",
-      title: m.session_needs_attention(),
-      message: data.error?.hint || data.error?.message || m.open_session_or_refresh_devices(),
-      logEntryId,
-    });
-  }
-}
-
 export function handleInteractionRequested(data: any) {
   pendingInteraction.set(data);
   appendLogEntry({

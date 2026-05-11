@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"log"
 
+	kitservice "github.com/go-ctap/kit/service"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -17,28 +18,25 @@ import (
 var assets embed.FS
 
 func init() {
-	application.RegisterEvent[OperationEventEnvelope](eventOperationProgress)
-	application.RegisterEvent[InteractionPrompt](eventInteractionRequested)
-	application.RegisterEvent[InteractionAnswer](eventInteractionResolved)
-	application.RegisterEvent[SessionStatus](eventSessionChanged)
+	application.RegisterEvent[kitservice.OperationEventEnvelope](kitservice.EventOperationEvent)
+	application.RegisterEvent[kitservice.InteractionPrompt](kitservice.EventInteractionRequested)
 }
 
 // main function serves as the application's entry point. It initializes the application, creates a window,
 // and starts a goroutine that emits a time-based event every second. It subsequently runs the application and
 // logs any error that might occur.
 func main() {
-
 	// Create a new Wails application by providing the necessary options.
 	// Variables 'Name' and 'Description' are for application metadata.
 	// 'Assets' configures the asset server with the 'FS' variable pointing to the frontend files.
 	// 'Bind' is a list of Go struct instances. The frontend has access to the methods of these instances.
 	// 'Mac' options tailor the application when running an macOS.
-	authenticatorService := NewAuthenticatorService()
+	ctapkitService := NewCtapkitService()
 	app := application.New(application.Options{
 		Name:        "fidoapp",
 		Description: "Hardware authenticator workbench",
 		Services: []application.Service{
-			application.NewService(authenticatorService),
+			application.NewService(ctapkitService),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

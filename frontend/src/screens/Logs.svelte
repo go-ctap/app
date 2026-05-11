@@ -16,9 +16,9 @@
   let lastScrolled = "";
 
   const filters: { id: LogFilter; label: string }[] = [
-    { id: "all", label: () => m.filter_all() },
-    { id: "operations", label: () => m.filter_operations() },
-    { id: "errors", label: () => m.filter_errors() },
+    { id: "all", label: m.filter_all() },
+    { id: "operations", label: m.filter_operations() },
+    { id: "errors", label: m.filter_errors() },
   ];
 
   let entries = $derived($workbenchLog.filter((entry) => {
@@ -84,7 +84,7 @@
     <Tabs.Root bind:value={filter}>
       <Tabs.List aria-label={m.log_filters()}>
         {#each filters as item (item.id)}
-          <Tabs.Trigger value={item.id}>{item.label()}</Tabs.Trigger>
+          <Tabs.Trigger value={item.id}>{item.label}</Tabs.Trigger>
         {/each}
       </Tabs.List>
     </Tabs.Root>

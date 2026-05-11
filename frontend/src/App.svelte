@@ -16,20 +16,19 @@
     bootstrap,
     handleInteractionRequested,
     handleOperationProgress,
-    handleSessionChanged,
     loadOverview,
     refreshDiscovery,
     selectToken,
-  } from "./lib/controller";
+  } from "$lib/controller";
   import {
     activeScreen,
     appError,
     devices,
     selectedSelector,
     toasts,
-  } from "./lib/stores";
-  import { labelDevice } from "./lib/format";
-  import { availableLocales, currentLocale, localeLabel, setAppLocale } from "./lib/i18n";
+  } from "$lib/stores";
+  import { labelDevice } from "$lib/format";
+  import { availableLocales, currentLocale, localeLabel, setAppLocale } from "$lib/i18n";
   import { m } from "./paraglide/messages.js";
   import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -86,14 +85,11 @@
   }
 
   onMount(() => {
-    const offProgress = Events.On("authenticator:operation-progress", (event: any) => {
+    const offProgress = Events.On("ctapkit:operation-event", (event: any) => {
       handleOperationProgress(event.data);
     });
-    const offInteraction = Events.On("authenticator:interaction-requested", (event: any) => {
+    const offInteraction = Events.On("ctapkit:interaction-requested", (event: any) => {
       handleInteractionRequested(event.data);
-    });
-    const offSession = Events.On("authenticator:session-changed", (event: any) => {
-      handleSessionChanged(event.data);
     });
     refreshing = true;
     bootstrap().finally(() => {
@@ -102,7 +98,6 @@
     return () => {
       offProgress?.();
       offInteraction?.();
-      offSession?.();
     };
   });
 </script>

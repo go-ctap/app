@@ -90,8 +90,8 @@
     const label = operationLabel(kind, true);
     try {
       beginOperation(label);
-      if (kind === "setPin") preview = await api.setPIN({ ...common, newPin });
-      if (kind === "changePin") preview = await api.changePIN({ ...common, currentPin, newPin });
+      if (kind === "setPin") preview = await api.setPIN({ ...common, newPIN: newPin });
+      if (kind === "changePin") preview = await api.changePIN({ ...common, currentPIN: currentPin, newPIN: newPin });
       if (kind === "alwaysUv") preview = await api.setAlwaysUV({ ...common, target: alwaysUv });
       if (kind === "minPin") {
         preview = await api.setMinPINLength({
@@ -113,8 +113,8 @@
     let result: any = null;
     try {
       beginOperation(label);
-      if (kind === "setPin") result = await api.setPIN({ ...common, newPin });
-      if (kind === "changePin") result = await api.changePIN({ ...common, currentPin, newPin });
+      if (kind === "setPin") result = await api.setPIN({ ...common, newPIN: newPin });
+      if (kind === "changePin") result = await api.changePIN({ ...common, currentPIN: currentPin, newPIN: newPin });
       if (kind === "alwaysUv") result = await api.setAlwaysUV({ ...common, target: alwaysUv });
       if (kind === "minPin") {
         result = await api.setMinPINLength({

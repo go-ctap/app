@@ -1,4 +1,5 @@
 import App from "./App.svelte";
+// @ts-ignore
 import "./app.css";
 import { Events, System } from "@wailsio/runtime";
 import { mount } from "svelte";
