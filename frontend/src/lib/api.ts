@@ -122,12 +122,14 @@ function discovery(error?: OperationError | null): Discovery {
   };
 }
 
-async function refreshSessions() {
+async function refreshSessions(recoverUnselected = true) {
   const snapshots = await service.Sessions();
   const session =
     state.selectedSelector
       ? snapshots.find((snapshot: any) => sessionMatches(snapshot, state.selectedSelector)) || null
-      : snapshots.find((snapshot: any) => !snapshot.info?.closed) || null;
+      : recoverUnselected
+        ? snapshots.find((snapshot: any) => !snapshot.info?.closed) || null
+        : null;
 
   setCurrentSession(session);
 
@@ -226,11 +228,11 @@ export const api = {
   },
 
   async select(selector: string): Promise<Discovery> {
-    state.selectedSelector = selector.trim();
-    state.selectedDevice = reportForSelector(state.selectedSelector);
-    state.selectedSelector = deviceID(state.selectedDevice) || state.selectedSelector;
+    const requestedSelector = selector.trim();
+    state.selectedDevice = requestedSelector ? reportForSelector(requestedSelector) : null;
+    state.selectedSelector = state.selectedDevice ? deviceID(state.selectedDevice) || ordinalAlias(state.selectedDevice) : "";
 
-    await refreshSessions();
+    await refreshSessions(Boolean(state.selectedSelector));
     return discovery();
   },
 

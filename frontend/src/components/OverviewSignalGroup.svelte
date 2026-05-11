@@ -56,10 +56,15 @@
           {@render infoTooltip(signal.title, signal.tooltip)}
         </div>
         <div class="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 text-xs text-muted-foreground">
-          <code class="inline-flex max-w-full items-center gap-1 overflow-hidden truncate whitespace-nowrap rounded border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] leading-4 text-muted-foreground" title={`${signal.flag} = ${signal.value}`}>
+          <code class="inline-flex max-w-full items-center gap-1 overflow-hidden truncate whitespace-nowrap rounded border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] leading-4 text-muted-foreground" title={`${signal.flag} ${signal.value}${signal.valueNote ? ` (${signal.valueNote})` : ""}`}>
             <span class="truncate">{signal.flag}</span>
-            <span class="text-muted-foreground/60">=</span>
-            <span class="text-foreground/80">{signal.value}</span>
+            <span class="text-foreground/80">
+              {signal.value}
+            </span>
+            {#if signal.valueNote}
+              <span class="text-muted-foreground/60">·</span>
+              <span class="text-muted-foreground">{signal.valueNote}</span>
+            {/if}
           </code>
         </div>
       </div>

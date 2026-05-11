@@ -103,7 +103,7 @@
     container-type: inline-size;
   }
 
-  @container (min-width: 42rem) {
+  @container (min-width: 48rem) {
     .overview-signal-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -111,7 +111,7 @@
 
   @container (min-width: 64rem) {
     .overview-hero-grid {
-      grid-template-columns: minmax(0, 1fr) minmax(20rem, 23.75rem);
+      grid-template-columns: minmax(0, 1fr) 24rem;
     }
 
     .overview-hero-metadata {

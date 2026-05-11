@@ -61,6 +61,7 @@ export type OverviewHeroSignal = {
   flag: string;
   title: string;
   value: string;
+  valueNote?: string;
   status: OverviewRowStatus;
   statusLabel: string;
   tooltip: string;

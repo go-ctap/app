@@ -1,4 +1,4 @@
-import { m, value } from "./overview-i18n.js";
+import { m } from "./overview-i18n.js";
 import type { OverviewContext, OverviewHeroSignal, OverviewHeroSignalGroup, OverviewHeroSignalId, OverviewRowStatus } from "./overview-types.js";
 import { boolOption, hasOwn, objectValue } from "./overview-utils.js";
 
@@ -11,7 +11,7 @@ type SignalConfig = {
   falseLabel: string;
   absentStatus: OverviewRowStatus;
   absentLabel: string;
-  absentValue?: string;
+  absentNote?: string;
 };
 
 export function buildOverviewHeroSignalGroups(context: OverviewContext = {}): OverviewHeroSignalGroup[] {
@@ -46,9 +46,7 @@ export function buildOverviewHeroSignalGroups(context: OverviewContext = {}): Ov
           absentLabel: m.status_unsupported(),
         }),
         defaultFalseSignal("pinUvAuthToken", options, optionsKnown, m.overview_signal_pin_uv_auth_token_title(), m.overview_signal_pin_uv_auth_token_tooltip()),
-        signal("alwaysUv", options, optionsKnown, {
-          title: m.overview_signal_always_uv_title(),
-          tooltip: m.overview_signal_always_uv_tooltip(),
+        defaultFalseSignal("alwaysUv", options, optionsKnown, m.overview_signal_always_uv_title(), m.overview_signal_always_uv_tooltip(), {
           trueStatus: "enabled",
           trueLabel: m.status_enabled(),
           falseStatus: "disabled",
@@ -82,21 +80,27 @@ function upSignal(options: Record<string, unknown>, optionsKnown: boolean): Over
     falseLabel: m.status_unsupported(),
     absentStatus: "supported",
     absentLabel: m.status_supported(),
-    absentValue: value.defaultTrue(),
+    absentNote: "default true",
   });
 }
 
-function defaultFalseSignal(id: OverviewHeroSignalId, options: Record<string, unknown>, optionsKnown: boolean, title: string, tooltip: string): OverviewHeroSignal {
+function defaultFalseSignal(
+  id: OverviewHeroSignalId,
+  options: Record<string, unknown>,
+  optionsKnown: boolean,
+  title: string,
+  tooltip: string,
+  overrides: Partial<Pick<SignalConfig, "trueStatus" | "trueLabel" | "falseStatus" | "falseLabel" | "absentStatus" | "absentLabel">> = {},
+): OverviewHeroSignal {
   return signal(id, options, optionsKnown, {
     title,
     tooltip,
-    trueStatus: "supported",
-    trueLabel: m.status_supported(),
-    falseStatus: "unsupported",
-    falseLabel: m.status_unsupported(),
-    absentStatus: "unsupported",
-    absentLabel: m.status_unsupported(),
-    absentValue: value.defaultFalse(),
+    trueStatus: overrides.trueStatus ?? "supported",
+    trueLabel: overrides.trueLabel ?? m.status_supported(),
+    falseStatus: overrides.falseStatus ?? "unsupported",
+    falseLabel: overrides.falseLabel ?? m.status_unsupported(),
+    absentStatus: overrides.absentStatus ?? overrides.falseStatus ?? "unsupported",
+    absentLabel: overrides.absentLabel ?? overrides.falseLabel ?? m.status_unsupported(),
   });
 }
 
@@ -113,5 +117,11 @@ function signal(id: OverviewHeroSignalId, options: Record<string, unknown>, opti
   if (option === false) {
     return { ...base, value: "false", status: config.falseStatus, statusLabel: config.falseLabel };
   }
-  return { ...base, value: config.absentValue ?? value.absent(), status: config.absentStatus, statusLabel: config.absentLabel };
+  return {
+    ...base,
+    value: m.overview_signal_value_absent(),
+    valueNote: config.absentNote,
+    status: config.absentStatus,
+    statusLabel: config.absentLabel,
+  };
 }
