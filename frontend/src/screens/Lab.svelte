@@ -1,6 +1,6 @@
 <script lang="ts">
   import { api, bytesFromJSON, parseHexLines, operationFailed } from "../lib/api";
-  import { beginOperation, selectedSelector, pushToast, sessionBusy, setStatusOutcome, summarizeEnvelope } from "../lib/stores";
+  import { beginOperation, selectedSelector, pushToast, sessionBusy, sessionStatus, setStatusOutcome, summarizeEnvelope } from "../lib/stores";
   import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -31,6 +31,7 @@
   let assertionResult: any = $state(null);
 
   let selector = $derived($selectedSelector);
+  let sessionReady = $derived($sessionStatus.state === "ready");
   let clientData = $derived({ type: "webauthn.create", challenge, origin: `https://${rpID}` });
   let getClientData = $derived({ type: "webauthn.get", challenge, origin: `https://${rpID}` });
   let makeInput = $derived({
@@ -125,11 +126,12 @@
   }
 </script>
 
-<ScreenHeader eyebrow={m.webauthn_lab()} title={m.lab_title()} description={m.lab_description()} />
-
 {#if !selector}
   <EmptyState eyebrow={m.no_token()} title={m.no_token_selected()} message={m.select_authenticator_for_lab()} />
+{:else if !sessionReady}
+  <EmptyState eyebrow={m.webauthn_lab()} title={m.open_session()} message={m.open_session_or_refresh_devices()} />
 {:else}
+  <ScreenHeader eyebrow={m.webauthn_lab()} title={m.lab_title()} description={m.lab_description()} />
   <section class="my-4 grid grid-cols-[minmax(0,1fr)_minmax(320px,0.78fr)] items-start gap-4 max-md:grid-cols-1">
     <div class="grid gap-3">
       <StepPanel step="1" title="makeCredential" active>

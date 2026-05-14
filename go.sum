@@ -33,10 +33,12 @@ github.com/fxamacker/cbor/v2 v2.9.2 h1:X4Ksno9+x3cz0TZv69ec1hxP/+tymuR8PXQJyDwfh
 github.com/fxamacker/cbor/v2 v2.9.2/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
 github.com/gliderlabs/ssh v0.3.8 h1:a4YXD1V7xMF9g5nTkdfnja3Sxy1PVDCj1Zg4Wb8vY6c=
 github.com/gliderlabs/ssh v0.3.8/go.mod h1:xYoytBv1sV0aL3CavoDuJIQNURXkkfPA/wxQ1pL1fAU=
-github.com/go-ctap/ctaphid v0.10.0 h1:tOsAzI8Gqybjxb1xMAqAP+EmqYciTyw5jWcZBc/kOtk=
-github.com/go-ctap/ctaphid v0.10.0/go.mod h1:3zErStQGAaTlH4tfCY1aAGltycjZbq61YrBmROaUZhk=
+github.com/go-ctap/ctap v0.11.0 h1:XTgMmjrZGbAV/MJLM85XVKZ1gOKBVXADVAA1mvn/BTM=
+github.com/go-ctap/ctap v0.11.0/go.mod h1:UGCwhmI+2v6IJnzTxLWxJfRGx+2ztDPQILyDjUIrWjQ=
 github.com/go-ctap/hid v0.5.0 h1:CPGVw9g5a0xLrTt+EET6o4vP5jfPtKR+RA3NUdVsvdg=
 github.com/go-ctap/hid v0.5.0/go.mod h1:GTZGG8VIRx5uM4nSNmKbRKnr02O1mtS6OZ9P0yeIz2A=
+github.com/go-ctap/kit v0.0.0-20260514002749-8ab82c1a1123 h1:0E78LZexKZOjvbIIyXrqq67bYO8uh6KNMq4YZJWKq2Y=
+github.com/go-ctap/kit v0.0.0-20260514002749-8ab82c1a1123/go.mod h1:KsNPm2PzrKdPwrsA/jZvJgJkq+Wsg6abF6DYhYJyk7Q=
 github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 h1:+zs/tPmkDkHx3U66DAb0lQFJrpS6731Oaa12ikc+DiI=
 github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376/go.mod h1:an3vInlBmSxCcxctByoQdvwPiA7DTK7jaaFDBTtu0ic=
 github.com/go-git/go-billy/v5 v5.9.0 h1:jItGXszUDRtR/AlferWPTMN4j38BQ88XnXKbilmmBPA=

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { get } from "svelte/store";
+  import { Download } from "@lucide/svelte";
   import { api, operationFailed } from "$lib/api";
   import { beginOperation, clearSharedCredentialInventory, credentialGroupsFromRows, credentialsScreenCache, emptyCredentialsState, selectedSelector, selectionVersion, pushToast, sessionStatus, sharedCredentialInventoryCache, sessionBusy, setCredentialsScreenState, sharedInventoryFor, summarizeEnvelope, updateSharedCredentialInventory } from "../lib/stores";
   import { asList, reportOf } from "$lib/format";
@@ -211,19 +212,30 @@
   }
 </script>
 
-<ScreenHeader eyebrow={m.resident_credentials()} title={m.passkeys_stored_on_token()} description={m.credentials_description()}>
-  {#snippet actions()}
-    <Button onclick={load} disabled={!selector || loading || $sessionBusy}>{loading ? m.reloading_credentials() : m.reload_credentials()}</Button>
-  {/snippet}
-</ScreenHeader>
-
 {#if !selector}
   <EmptyState eyebrow={m.no_token()} title={m.no_token_selected()} message={m.select_authenticator_for_credentials()} />
 {:else if operationFailed(envelope)}
+  <ScreenHeader eyebrow={m.resident_credentials()} title={m.passkeys_stored_on_token()} description={m.credentials_description()}>
+    {#snippet actions()}
+      <Button onclick={load} disabled={!selector || loading || $sessionBusy}>{loading ? m.reloading_credentials() : m.reload_credentials()}</Button>
+    {/snippet}
+  </ScreenHeader>
   <Notice variant="destructive">{operationFailed(envelope)}</Notice>
 {:else if groups.length === 0}
-  <EmptyState eyebrow={m.ready_to_load()} title={m.no_credential_inventory_loaded()} message={m.no_credential_inventory_message()} />
+  <EmptyState eyebrow={m.ready_to_load()} title={m.no_credential_inventory_loaded()} message={m.no_credential_inventory_message()}>
+    {#snippet actions()}
+      <Button onclick={load} disabled={!selector || loading || $sessionBusy}>
+        <Download />
+        {loading ? m.reloading_credentials() : m.load_credentials()}
+      </Button>
+    {/snippet}
+  </EmptyState>
 {:else}
+  <ScreenHeader eyebrow={m.resident_credentials()} title={m.passkeys_stored_on_token()} description={m.credentials_description()}>
+    {#snippet actions()}
+      <Button onclick={load} disabled={!selector || loading || $sessionBusy}>{loading ? m.reloading_credentials() : m.reload_credentials()}</Button>
+    {/snippet}
+  </ScreenHeader>
   <div class="grid gap-3 md:grid-cols-3">
     <Card.Root size="sm">
       <Card.Header>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Badge } from "$lib/components/ui/badge/index.js";
+  import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
   import type { OverviewMDSObservation } from "$lib/overview-rules";
   import { m } from "../paraglide/messages.js";
@@ -29,7 +30,7 @@
     </summary>
     <div class="grid min-w-0 gap-3 border-t px-6 pt-4 pb-6">
       <p class="text-sm text-muted-foreground">{m.mds_observations_description()}</p>
-      <div class="max-w-full overflow-x-auto rounded-md border">
+      <ScrollArea orientation="horizontal" class="max-w-full rounded-md border" scrollbarXClasses="z-20">
         <Table.Root class="min-w-[72rem]">
           <Table.Header>
             <Table.Row>
@@ -64,7 +65,7 @@
             {/each}
           </Table.Body>
         </Table.Root>
-      </div>
+      </ScrollArea>
     </div>
   </details>
 {/if}

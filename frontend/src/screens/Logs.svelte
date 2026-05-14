@@ -2,6 +2,7 @@
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
+  import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
   import EmptyState from "../components/EmptyState.svelte";
   import JsonView from "../components/JsonView.svelte";
@@ -79,45 +80,48 @@
 
 </script>
 
-<ScreenHeader eyebrow={m.session_journal()} title={m.logs()} description={m.logs_description()}>
-  {#snippet actions()}
-    <Tabs.Root bind:value={filter}>
-      <Tabs.List aria-label={m.log_filters()}>
-        {#each filters as item (item.id)}
-          <Tabs.Trigger value={item.id}>{item.label}</Tabs.Trigger>
-        {/each}
-      </Tabs.List>
-    </Tabs.Root>
-  {/snippet}
-</ScreenHeader>
-
 {#if entries.length}
+  <ScreenHeader eyebrow={m.session_journal()} title={m.logs()} description={m.logs_description()}>
+    {#snippet actions()}
+      <Tabs.Root bind:value={filter}>
+        <Tabs.List aria-label={m.log_filters()}>
+          {#each filters as item (item.id)}
+            <Tabs.Trigger value={item.id}>{item.label}</Tabs.Trigger>
+          {/each}
+        </Tabs.List>
+      </Tabs.Root>
+    {/snippet}
+  </ScreenHeader>
   <section class="grid gap-4 xl:grid-cols-[minmax(320px,0.95fr)_minmax(0,1.4fr)]">
     <Card.Root>
       <Card.Header>
         <Card.Title>{m.event_stream()}</Card.Title>
         <Card.Description>{m.events_count({ count: entries.length })}</Card.Description>
       </Card.Header>
-      <Card.Content class="grid max-h-[58vh] gap-2 overflow-auto pr-1" aria-label={m.workbench_log_entries()}>
-        {#each entries as entry (entry.id)}
-          <Button
-            id={`log-entry-${entry.id}`}
-            variant={selected?.id === entry.id ? "secondary" : "ghost"}
-            class="h-auto justify-start whitespace-normal px-3 py-2 text-left"
-            onclick={() => focusLogEntry(entry.id)}
-          >
-            <span class="grid w-full min-w-0 gap-1">
-              <span class="flex flex-wrap items-center justify-between gap-2">
-                <strong class="min-w-0 truncate text-sm">{entry.title}</strong>
-                <span class="text-xs text-muted-foreground">{formatTime(entry.timestamp)}</span>
-              </span>
-              {#if secondaryMessage(entry)}
-                <span class="line-clamp-2 text-sm font-normal text-muted-foreground">{secondaryMessage(entry)}</span>
-              {/if}
-              <span class="text-xs font-normal text-muted-foreground">{metaLabel(entry)}</span>
-            </span>
-          </Button>
-        {/each}
+      <Card.Content aria-label={m.workbench_log_entries()}>
+        <ScrollArea class="max-h-[58vh]" scrollbarYClasses="z-20">
+          <div class="grid gap-2 pr-3">
+            {#each entries as entry (entry.id)}
+              <Button
+                id={`log-entry-${entry.id}`}
+                variant={selected?.id === entry.id ? "secondary" : "ghost"}
+                class="h-auto justify-start whitespace-normal px-3 py-2 text-left"
+                onclick={() => focusLogEntry(entry.id)}
+              >
+                <span class="grid w-full min-w-0 gap-1">
+                  <span class="flex flex-wrap items-center justify-between gap-2">
+                    <strong class="min-w-0 truncate text-sm">{entry.title}</strong>
+                    <span class="text-xs text-muted-foreground">{formatTime(entry.timestamp)}</span>
+                  </span>
+                  {#if secondaryMessage(entry)}
+                    <span class="line-clamp-2 text-sm font-normal text-muted-foreground">{secondaryMessage(entry)}</span>
+                  {/if}
+                  <span class="text-xs font-normal text-muted-foreground">{metaLabel(entry)}</span>
+                </span>
+              </Button>
+            {/each}
+          </div>
+        </ScrollArea>
       </Card.Content>
     </Card.Root>
 

@@ -1,9 +1,9 @@
 module fidobench
 
-go 1.26.2
+go 1.26.3
 
 require (
-	github.com/go-ctap/kit v0.0.0-20260513022845-89b1c7fb3abe
+	github.com/go-ctap/kit v0.0.0-20260514002749-8ab82c1a1123
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.91
 )
 
@@ -19,7 +19,7 @@ require (
 	github.com/ebitengine/purego v0.10.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.2 // indirect
-	github.com/go-ctap/ctaphid v0.10.0 // indirect
+	github.com/go-ctap/ctap v0.11.0 // indirect
 	github.com/go-ctap/hid v0.5.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.9.0 // indirect
@@ -57,5 +57,3 @@ require (
 	golang.org/x/text v0.37.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
-
-replace github.com/go-ctap/kit => ../kit

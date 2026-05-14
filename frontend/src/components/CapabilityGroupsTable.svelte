@@ -2,6 +2,7 @@
   import type { ColumnDef } from "@tanstack/table-core";
   import { getCoreRowModel, getExpandedRowModel, getGroupedRowModel } from "@tanstack/table-core";
   import { Badge } from "$lib/components/ui/badge/index.js";
+  import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
   import { createSvelteTable } from "$lib/components/ui/data-table/index.js";
   import { m } from "../paraglide/messages.js";
@@ -78,7 +79,7 @@
   }
 </script>
 
-<div class="overflow-x-auto rounded-md border">
+<ScrollArea orientation="horizontal" class="rounded-md border" scrollbarXClasses="z-20">
   <Table.Root>
     <Table.Body>
       {#each table.getRowModel().rows as row (row.id)}
@@ -122,4 +123,4 @@
       {/each}
     </Table.Body>
   </Table.Root>
-</div>
+</ScrollArea>

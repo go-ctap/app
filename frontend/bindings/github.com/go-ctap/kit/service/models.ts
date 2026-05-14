@@ -7,6 +7,9 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as credential$0 from "../../ctap/credential/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as model$0 from "../model/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -280,7 +283,7 @@ export class GetAssertionRequest {
     "verificationFlow"?: model$0.VerificationFlow;
     "rpID": string;
     "clientDataJSON": string;
-    "allowList"?: webauthn$0.CredentialDescriptor[];
+    "allowList"?: credential$0.PublicKeyCredentialDescriptor[];
     "options"?: webauthn$0.AuthenticatorOptions;
 
     /** Creates a new GetAssertionRequest instance. */
@@ -498,11 +501,11 @@ export class MDSLookupRequest {
 export class MakeCredentialRequest {
     "sessionId": SessionID;
     "verificationFlow"?: model$0.VerificationFlow;
-    "rp": webauthn$0.RelyingParty;
-    "user": webauthn$0.User;
+    "rp": credential$0.PublicKeyCredentialRpEntity;
+    "user": credential$0.PublicKeyCredentialUserEntity;
     "clientDataJSON": string;
-    "pubKeyCredParams": webauthn$0.CredentialParameter[];
-    "excludeList"?: webauthn$0.CredentialDescriptor[];
+    "pubKeyCredParams": credential$0.PublicKeyCredentialParameters[];
+    "excludeList"?: credential$0.PublicKeyCredentialDescriptor[];
     "options"?: webauthn$0.AuthenticatorOptions;
     "confirmed"?: boolean;
     "confirmationMessage"?: string;
@@ -514,10 +517,10 @@ export class MakeCredentialRequest {
             this["sessionId"] = "";
         }
         if (!("rp" in $$source)) {
-            this["rp"] = (new webauthn$0.RelyingParty());
+            this["rp"] = (new credential$0.PublicKeyCredentialRpEntity());
         }
         if (!("user" in $$source)) {
-            this["user"] = (new webauthn$0.User());
+            this["user"] = (new credential$0.PublicKeyCredentialUserEntity());
         }
         if (!("clientDataJSON" in $$source)) {
             this["clientDataJSON"] = "";
@@ -799,14 +802,14 @@ export class SessionSnapshot {
 // Private type creation functions
 const $$createType0 = report$0.DeviceReport.createFrom;
 const $$createType1 = $Create.Array($$createType0);
-const $$createType2 = webauthn$0.CredentialDescriptor.createFrom;
+const $$createType2 = credential$0.PublicKeyCredentialDescriptor.createFrom;
 const $$createType3 = $Create.Array($$createType2);
 const $$createType4 = webauthn$0.AuthenticatorOptions.createFrom;
 const $$createType5 = model$0.InteractionRequest.createFrom;
 const $$createType6 = mds$0.LookupResult.createFrom;
-const $$createType7 = webauthn$0.RelyingParty.createFrom;
-const $$createType8 = webauthn$0.User.createFrom;
-const $$createType9 = webauthn$0.CredentialParameter.createFrom;
+const $$createType7 = credential$0.PublicKeyCredentialRpEntity.createFrom;
+const $$createType8 = credential$0.PublicKeyCredentialUserEntity.createFrom;
+const $$createType9 = credential$0.PublicKeyCredentialParameters.createFrom;
 const $$createType10 = $Create.Array($$createType9);
 const $$createType11 = $Create.Array($Create.Any);
 const $$createType12 = RuntimeErrorEnvelope.createFrom;

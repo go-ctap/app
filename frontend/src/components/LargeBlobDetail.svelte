@@ -7,6 +7,7 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Field from "$lib/components/ui/field/index.js";
   import { NativeSelect } from "$lib/components/ui/native-select/index.js";
+  import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
   import CopyableId from "./CopyableId.svelte";
@@ -169,7 +170,9 @@
           <Badge variant="outline">{m.decoded_as({ mode: readDecodeMode || decodeMode })}</Badge>
         </div>
         {#if hasDecodedValue(decodedContent)}
-          <pre class="max-h-72 overflow-auto rounded-md border border-border bg-muted/40 p-3 text-sm">{formatDecodedValue(decodedContent)}</pre>
+          <ScrollArea class="max-h-72 rounded-md border border-border bg-muted/40" scrollbarYClasses="z-20">
+            <pre class="m-0 p-3 text-sm whitespace-pre-wrap">{formatDecodedValue(decodedContent)}</pre>
+          </ScrollArea>
         {:else if decodeFailure}
           <Alert><AlertDescription>{m.decode_failed({ failure: decodeFailure })}</AlertDescription></Alert>
         {:else if decodeStatus?.requested && decodeStatus?.success}

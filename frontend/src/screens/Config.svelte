@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Download } from "@lucide/svelte";
   import { api, operationFailed } from "$lib/api";
   import { beginOperation, clearSharedCredentialInventory, selectedSelector, selectionVersion, pushToast, sessionBusy, summarizeEnvelope } from "../lib/stores";
   import { reportOf, stateLabel } from "$lib/format";
@@ -177,19 +178,30 @@
   }
 </script>
 
-<ScreenHeader eyebrow={m.configuration()} title={m.token_switches_title()} description={m.config_description()}>
-  {#snippet actions()}
-    <Button onclick={load} disabled={!selector || loading || $sessionBusy}>{loading ? m.reloading_config() : m.reload_config()}</Button>
-  {/snippet}
-</ScreenHeader>
-
 {#if !selector}
   <EmptyState eyebrow={m.no_token()} title={m.no_token_selected()} message={m.select_authenticator_for_config()} />
 {:else if operationFailed(envelope)}
+  <ScreenHeader eyebrow={m.configuration()} title={m.token_switches_title()} description={m.config_description()}>
+    {#snippet actions()}
+      <Button onclick={load} disabled={!selector || loading || $sessionBusy}>{loading ? m.reloading_config() : m.reload_config()}</Button>
+    {/snippet}
+  </ScreenHeader>
   <Alert variant="destructive"><AlertDescription>{operationFailed(envelope)}</AlertDescription></Alert>
 {:else if !report}
-  <EmptyState eyebrow={m.ready_to_read()} title={m.no_config_loaded()} message={m.no_config_loaded_message()} />
+  <EmptyState eyebrow={m.ready_to_read()} title={m.no_config_loaded()} message={m.no_config_loaded_message()}>
+    {#snippet actions()}
+      <Button onclick={load} disabled={!selector || loading || $sessionBusy}>
+        <Download />
+        {loading ? m.reloading_config() : m.load_config()}
+      </Button>
+    {/snippet}
+  </EmptyState>
 {:else}
+  <ScreenHeader eyebrow={m.configuration()} title={m.token_switches_title()} description={m.config_description()}>
+    {#snippet actions()}
+      <Button onclick={load} disabled={!selector || loading || $sessionBusy}>{loading ? m.reloading_config() : m.reload_config()}</Button>
+    {/snippet}
+  </ScreenHeader>
   <section class="grid gap-4 xl:grid-cols-2">
     <Card.Root>
       <Card.Header>

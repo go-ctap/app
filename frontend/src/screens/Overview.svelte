@@ -14,8 +14,6 @@
     sessionStatus,
   } from "$lib/stores";
   import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
   import {
     buildOverviewConformanceWarnings,
     buildOverviewHero,
@@ -50,9 +48,6 @@
 
   let device = $derived(report?.device || $selectedDevice || {});
   let info = $derived(report?.info || {});
-  let productName = $derived([device.manufacturer, device.product].filter(Boolean).join(" ") || device.product || device.deviceId || m.selected_authenticator());
-  let title = $derived(hasReport ? productName : m.nav_overview());
-  let description = $derived(hasReport ? device.deviceId || m.current_authenticator_overview() : m.authenticator_identity_capabilities());
 
   let hero = $derived(buildOverviewHero({ info, device, mds: mdsResult || {}, mdsLoading, mdsError: mdsFailureMessage }));
   let signalGroups = $derived(buildOverviewHeroSignalGroups({ info }));
@@ -79,16 +74,18 @@
   }
 </script>
 
-{#snippet reloadButton(variant: "default" | "outline" = "default", size: "default" | "sm" = "default")}
-  <Button {variant} {size} onclick={reloadOverview} disabled={reloadDisabled}>
-    {loading ? m.reloading() : m.reload_overview()}
-  </Button>
-{/snippet}
-
 {#if !selector}
   <EmptyState title={m.choose_authenticator()} message={m.choose_authenticator_message()} />
+{:else if !hasReport && !loading && !failureMessage}
+  <EmptyState title={m.overview_not_loaded()} message={m.overview_not_loaded_message()} />
 {:else}
   <section class="grid gap-4">
+    {#if failureMessage}
+      <Alert variant="destructive">
+        <AlertDescription>{failureMessage}</AlertDescription>
+      </Alert>
+    {/if}
+
     {#if hasReport}
       <OverviewHeroCard
         {hero}
@@ -101,39 +98,12 @@
         onReload={reloadOverview}
         onRefreshMDS={refreshMDS}
       />
-    {:else}
-      <Card.Root>
-        <Card.Header>
-          <div class="grid gap-2">
-            <Card.Title>{title}</Card.Title>
-            <Card.Description>{description}</Card.Description>
-          </div>
-          <Card.Action>
-            {@render reloadButton()}
-          </Card.Action>
-        </Card.Header>
-      </Card.Root>
-    {/if}
-
-    {#if failureMessage}
-      <Alert variant="destructive">
-        <AlertDescription>{failureMessage}</AlertDescription>
-      </Alert>
-    {/if}
-
-    {#if hasReport}
       <OverviewConformanceWarnings warnings={conformanceWarnings} />
       <OverviewCapabilityMatrix groups={overviewGroups} {warningCount} />
       <OverviewMDSObservations observations={mdsObservations} />
       <OverviewRawInspectionData {info} onCopy={copyReport} />
     {:else if loading}
       <OverviewLoadingCard rows={loadingRows} />
-    {:else if !failureMessage}
-      <EmptyState title={m.overview_not_loaded()} message={m.overview_not_loaded_message()}>
-        {#snippet actions()}
-          {@render reloadButton()}
-        {/snippet}
-      </EmptyState>
     {/if}
   </section>
 {/if}

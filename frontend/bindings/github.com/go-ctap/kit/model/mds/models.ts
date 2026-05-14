@@ -7,7 +7,7 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as ctaptypes$0 from "../../../ctaphid/pkg/ctaptypes/models.js";
+import * as protocol$0 from "../../../ctap/protocol/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as uuid$0 from "../../../../google/uuid/models.js";
@@ -308,7 +308,7 @@ export class MetadataStatement {
     "providerLogoDark"?: string | null;
     "extensionDescriptor"?: ExtensionDescriptor[];
     "multiDeviceCredentialSupport": string | null;
-    "authenticatorGetInfo"?: ctaptypes$0.AuthenticatorGetInfoResponse;
+    "authenticatorGetInfo"?: protocol$0.AuthenticatorGetInfoResponse;
     "cxConfigURL": string | null;
 
     /** Creates a new MetadataStatement instance. */
@@ -591,7 +591,7 @@ const $$createType11 = ECDAATrustAnchor.createFrom;
 const $$createType12 = $Create.Array($$createType11);
 const $$createType13 = ExtensionDescriptor.createFrom;
 const $$createType14 = $Create.Array($$createType13);
-const $$createType15 = ctaptypes$0.AuthenticatorGetInfoResponse.createFrom;
+const $$createType15 = protocol$0.AuthenticatorGetInfoResponse.createFrom;
 const $$createType16 = MetadataStatement.createFrom;
 const $$createType17 = BiometricStatusReport.createFrom;
 const $$createType18 = $Create.Array($$createType17);

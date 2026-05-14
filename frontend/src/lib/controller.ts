@@ -19,6 +19,7 @@ import {
   overviewMDSLoading,
   pendingInteraction,
   selectedSelector,
+  sessions,
   sessionStatus,
   statusBar,
   setStatusOperation,
@@ -103,6 +104,7 @@ export async function bootstrap() {
     const discovery = await api.discover();
     if (epoch !== lifecycleEpoch) return;
     const changed = applyDiscovery(discovery);
+    await refreshSessionList();
     if ((changed || get(selectedSelector)) && get(activeScreen) === "overview") {
       await loadOverview(get(selectedSelector));
     }
@@ -120,6 +122,7 @@ export async function refreshDiscovery() {
     const discovery = await api.discover();
     if (epoch !== lifecycleEpoch) return;
     const changed = applyDiscovery(discovery);
+    await refreshSessionList();
     const logEntryId = appendLogEntry({
       tone: discovery.error ? "error" : "info",
       source: "discovery",
@@ -161,6 +164,7 @@ export async function selectToken(selector: string) {
     const discovery = await api.select(selector);
     if (epoch !== lifecycleEpoch) return;
     applyDiscovery(discovery);
+    await refreshSessionList();
     const logEntryId = appendLogEntry({
       tone: discovery.error ? "error" : "info",
       source: "selection",
@@ -194,6 +198,7 @@ export async function closeSelectedSession() {
   try {
     const status = await api.closeSession();
     sessionStatus.set(status);
+    await refreshSessionList();
     clearWorkbenchScreenCaches();
     const logEntryId = appendLogEntry({
       tone: "info",
@@ -207,16 +212,50 @@ export async function closeSelectedSession() {
     });
     setStatusOutcome({ tone: "info", title: m.session_closed_title(), message: m.cached_authorization_released(), logEntryId });
   } catch (error) {
-    appError.set(messageFromError(error));
+    const message = messageFromError(error);
+    appError.set(message);
     const logEntryId = appendLogEntry({
       tone: "error",
       source: "session",
       title: m.could_not_close_session(),
-      message: messageFromError(error),
+      message,
       selector: get(selectedSelector),
-      data: { error: { message: messageFromError(error) } },
+      data: { error: { message } },
     });
-    setStatusOutcome({ tone: "error", title: m.could_not_close_session(), message: messageFromError(error), logEntryId });
+    setStatusOutcome({ tone: "error", title: m.could_not_close_session(), message, logEntryId });
+  }
+}
+
+export async function closeAllSessions() {
+  try {
+    const closed = await api.closeAllSessions();
+    const selector = get(selectedSelector);
+    sessions.set([]);
+    sessionStatus.set({ state: selector ? "closed" : "idle", selectedSelector: selector });
+    clearWorkbenchScreenCaches();
+    const logEntryId = appendLogEntry({
+      tone: "info",
+      source: "session",
+      title: m.all_sessions_closed(),
+      message: m.cached_authorization_released(),
+      selector,
+      data: {
+        closedSessions: closed.length,
+      },
+    });
+    setStatusOutcome({ tone: "info", title: m.all_sessions_closed(), message: m.cached_authorization_released(), logEntryId });
+  } catch (error) {
+    const message = messageFromError(error);
+    appError.set(message);
+    const logEntryId = appendLogEntry({
+      tone: "error",
+      source: "session",
+      title: m.could_not_close_session(),
+      message,
+      selector: get(selectedSelector),
+      data: { error: { message } },
+    });
+    setStatusOutcome({ tone: "error", title: m.could_not_close_session(), message, logEntryId });
   }
 }
 
@@ -227,6 +266,7 @@ export async function openSelectedSession(selector = get(selectedSelector)) {
     beginOperation(m.open_session(), "session-recovery");
     const status = await api.openSession(selector);
     sessionStatus.set(status);
+    await refreshSessionList();
     finishOperation();
     if (status.error) {
       const logEntryId = appendLogEntry({
@@ -264,6 +304,14 @@ export async function openSelectedSession(selector = get(selectedSelector)) {
       data: { error: { message } },
     });
     setStatusOutcome({ tone: "error", title: m.open_session_failed(), message, detailId: "session-recovery", logEntryId, retry: () => openSelectedSession(selector) });
+  }
+}
+
+export async function refreshSessionList() {
+  try {
+    sessions.set(await api.sessions());
+  } catch {
+    sessions.set([]);
   }
 }
 

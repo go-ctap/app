@@ -1,5 +1,6 @@
 <script lang="ts">
   import { get } from "svelte/store";
+  import { Download } from "@lucide/svelte";
   import { api, bytesFromText, operationFailed } from "../lib/api";
   import { beginOperation, clearSharedCredentialInventory, emptyLargeBlobState, finishOperation, largeBlobScreenCache, selectedSelector, selectionVersion, pushToast, sessionBusy, sessionStatus, setLargeBlobScreenState, setStatusOutcome, sharedCredentialInventoryCache, sharedInventoryFor, summarizeEnvelope, updateSharedCredentialInventory } from "../lib/stores";
   import { asList, reportOf, stateLabel } from "../lib/format";
@@ -7,6 +8,7 @@
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
+  import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
   import EmptyState from "../components/EmptyState.svelte";
   import LargeBlobDetail from "../components/LargeBlobDetail.svelte";
   import ScreenHeader from "../components/ScreenHeader.svelte";
@@ -523,19 +525,32 @@
   }
 </script>
 
-<ScreenHeader eyebrow={m.nav_large_blobs()} title={m.credential_blob_workspace()} description={m.large_blobs_description()}>
-  {#snippet actions()}
-    <Button onclick={() => load()} disabled={!selector || Boolean(largeBlobBusy) || $sessionBusy}>{loading ? m.reloading_blobs() : m.reload_blobs()}</Button>
-  {/snippet}
-</ScreenHeader>
-
 {#if !selector}
   <EmptyState eyebrow={m.no_token()} title={m.no_token_selected()} message={m.select_authenticator_for_large_blobs()} />
 {:else if operationFailed(envelope)}
+  <ScreenHeader eyebrow={m.nav_large_blobs()} title={m.credential_blob_workspace()} description={m.large_blobs_description()}>
+    {#snippet actions()}
+      <Button onclick={() => load()} disabled={!selector || Boolean(largeBlobBusy) || $sessionBusy}>{loading ? m.reloading_blobs() : m.reload_blobs()}</Button>
+    {/snippet}
+  </ScreenHeader>
   <Alert variant="destructive"><AlertDescription>{operationFailed(envelope)}</AlertDescription></Alert>
 {:else if !largeBlobLoaded}
-  <EmptyState eyebrow={m.workspace_ready()} variant="workspace" title={m.no_large_blob_state_loaded()} message={m.no_large_blob_state_message()} />
+  <EmptyState eyebrow={m.workspace_ready()} variant="workspace" title={m.no_large_blob_state_loaded()} message={m.no_large_blob_state_message()}>
+    {#snippet actions()}
+      <Button onclick={() => load()} disabled={!selector || Boolean(largeBlobBusy) || $sessionBusy}>
+        <Download />
+        {loading ? m.reloading_blobs() : m.load_blobs()}
+      </Button>
+    {/snippet}
+  </EmptyState>
+{:else if credentials.length === 0}
+  <EmptyState eyebrow={m.loaded_state()} title={m.no_resident_credentials_found()} message={m.no_resident_credentials_large_blob_message()} />
 {:else}
+  <ScreenHeader eyebrow={m.nav_large_blobs()} title={m.credential_blob_workspace()} description={m.large_blobs_description()}>
+    {#snippet actions()}
+      <Button onclick={() => load()} disabled={!selector || Boolean(largeBlobBusy) || $sessionBusy}>{loading ? m.reloading_blobs() : m.reload_blobs()}</Button>
+    {/snippet}
+  </ScreenHeader>
   <Card.Root aria-label={m.large_blob_summary()}>
     <Card.Content class="flex flex-wrap items-center gap-2 pt-6">
     <Badge variant="secondary">{m.blobs_count({ count: report?.array?.blobCount || 0 })}</Badge>
@@ -559,10 +574,7 @@
     <Alert><AlertDescription>Cleanup complete. {gcResultData?.deletedBlobCount || 0} unmatched blob entries removed.</AlertDescription></Alert>
   {/if}
 
-  {#if credentials.length === 0}
-    <EmptyState eyebrow={m.loaded_state()} title={m.no_resident_credentials_found()} message={m.no_resident_credentials_large_blob_message()} />
-  {:else}
-    <section id="large-blob-workspace" class="grid gap-4 xl:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.3fr)]">
+  <section id="large-blob-workspace" class="grid gap-4 xl:grid-cols-[minmax(320px,0.9fr)_minmax(0,1.3fr)]">
       <Card.Root>
         <Card.Header class="flex-row items-start justify-between gap-3">
           <div class="grid gap-1">
@@ -571,55 +583,59 @@
           </div>
           <span class="text-sm text-muted-foreground">{m.rows_count({ count: credentials.length })}</span>
         </Card.Header>
-        <Card.Content class="grid max-h-[66vh] gap-2 overflow-auto pr-1">
-        {#each credentials as credential (credentialKey(credential))}
-          <article class="rounded-md border border-border bg-background p-2">
-            <Button
-              variant={credentialKey(credential) === selectedId ? "secondary" : "ghost"}
-              class="h-auto w-full justify-start whitespace-normal px-3 py-2 text-left"
-              aria-pressed={credentialKey(credential) === selectedId}
-              onclick={() => selectCredential(credential)}
-            >
-              <span class="grid w-full min-w-0 gap-1">
-                <span class="truncate text-sm font-medium">{credential.user?.displayName || credential.user?.name || credential.rp?.id || m.credential()}</span>
-                <span class="truncate text-xs font-normal text-muted-foreground">{credential.rp?.id || m.unknown_rp()}</span>
-                <span class="flex flex-wrap items-center gap-2 pt-1">
-                <StatusBadge value={credential.blobState || "unknown"} label={credential.blobState || m.state_unknown()} />
-                  <Badge variant="outline">{m.bytes_count({ count: credential.blobByteCount || 0 })}</Badge>
-                </span>
-              </span>
-            </Button>
-            {#if credentialKey(credential) === selectedId}
-              <div class="mt-3 xl:hidden">
-                <Card.Root size="sm">
-                  <Card.Content class="pt-4">
-                  <LargeBlobDetail
-                    bind:detailMode
-                    bind:payload
-                    bind:decodeMode
-                    readResult={activeReadResult}
-                    preview={activePreview}
-                    {previewMode}
-                    {readDecodeMode}
-                    {selectedCredential}
-                    sessionBusy={$sessionBusy}
-                    {largeBlobBusy}
-                    {canConfirmWrite}
-                    {canConfirmDelete}
-                    {credentialKey}
-                    readBlob={() => readBlob()}
-                    {previewWrite}
-                    {executeWrite}
-                    previewDelete={() => previewDelete(selectedCredential)}
-                    {executeDelete}
-                    copied={copyToast}
-                  />
-                  </Card.Content>
-                </Card.Root>
-              </div>
-              {/if}
-          </article>
-        {/each}
+        <Card.Content>
+        <ScrollArea class="max-h-[66vh]" scrollbarYClasses="z-20">
+          <div class="grid gap-2 pr-3">
+            {#each credentials as credential (credentialKey(credential))}
+              <article class="rounded-md border border-border bg-background p-2">
+                <Button
+                  variant={credentialKey(credential) === selectedId ? "secondary" : "ghost"}
+                  class="h-auto w-full justify-start whitespace-normal px-3 py-2 text-left"
+                  aria-pressed={credentialKey(credential) === selectedId}
+                  onclick={() => selectCredential(credential)}
+                >
+                  <span class="grid w-full min-w-0 gap-1">
+                    <span class="truncate text-sm font-medium">{credential.user?.displayName || credential.user?.name || credential.rp?.id || m.credential()}</span>
+                    <span class="truncate text-xs font-normal text-muted-foreground">{credential.rp?.id || m.unknown_rp()}</span>
+                    <span class="flex flex-wrap items-center gap-2 pt-1">
+                    <StatusBadge value={credential.blobState || "unknown"} label={credential.blobState || m.state_unknown()} />
+                      <Badge variant="outline">{m.bytes_count({ count: credential.blobByteCount || 0 })}</Badge>
+                    </span>
+                  </span>
+                </Button>
+                {#if credentialKey(credential) === selectedId}
+                  <div class="mt-3 xl:hidden">
+                    <Card.Root size="sm">
+                      <Card.Content class="pt-4">
+                      <LargeBlobDetail
+                        bind:detailMode
+                        bind:payload
+                        bind:decodeMode
+                        readResult={activeReadResult}
+                        preview={activePreview}
+                        {previewMode}
+                        {readDecodeMode}
+                        {selectedCredential}
+                        sessionBusy={$sessionBusy}
+                        {largeBlobBusy}
+                        {canConfirmWrite}
+                        {canConfirmDelete}
+                        {credentialKey}
+                        readBlob={() => readBlob()}
+                        {previewWrite}
+                        {executeWrite}
+                        previewDelete={() => previewDelete(selectedCredential)}
+                        {executeDelete}
+                        copied={copyToast}
+                      />
+                      </Card.Content>
+                    </Card.Root>
+                  </div>
+                  {/if}
+              </article>
+            {/each}
+          </div>
+        </ScrollArea>
         </Card.Content>
       </Card.Root>
 
@@ -648,6 +664,5 @@
         />
         </Card.Content>
       </Card.Root>
-    </section>
-  {/if}
+  </section>
 {/if}

@@ -7,17 +7,20 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as webauthntypes$0 from "../webauthntypes/models.js";
+import * as credential$0 from "../credential/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as uuid$0 from "../../../../google/uuid/models.js";
+import * as extension$0 from "../extension/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as uuid$0 from "../../../google/uuid/models.js";
 
 /**
  * AuthenticatorGetInfoResponse is used in Metadata Statement specification as well, so json notation added.
  */
 export class AuthenticatorGetInfoResponse {
     "versions": Versions;
-    "extensions"?: webauthntypes$0.ExtensionIdentifier[];
+    "extensions"?: extension$0.ExtensionIdentifier[];
     "aaguid": uuid$0.UUID;
     "options"?: { [_ in Option]?: boolean };
     "maxMsgSize"?: number | null;
@@ -25,7 +28,7 @@ export class AuthenticatorGetInfoResponse {
     "maxCredentialCountInList"?: number | null;
     "maxCredentialIdLength"?: number | null;
     "transports"?: string[];
-    "algorithms"?: webauthntypes$0.PublicKeyCredentialParameters[];
+    "algorithms"?: credential$0.PublicKeyCredentialParameters[];
     "maxSerializedLargeBlobArray"?: number | null;
     "forcePINChange"?: boolean | null;
     "minPINLength"?: number | null;
@@ -40,12 +43,12 @@ export class AuthenticatorGetInfoResponse {
     "attestationFormats"?: string[];
     "uvCountSinceLastPinEntry"?: number | null;
     "longTouchForReset"?: boolean | null;
-    "encIdentifier"?: string | null;
+    "encIdentifier"?: string;
     "transportsForReset"?: string[];
     "pinComplexityPolicy"?: boolean | null;
-    "pinComplexityPolicyURL"?: string | null;
+    "pinComplexityPolicyURL"?: string;
     "maxPINLength"?: number | null;
-    "encCredStoreState"?: string | null;
+    "encCredStoreState"?: string;
     "authenticatorConfigCommands"?: number[];
 
     /** Creates a new AuthenticatorGetInfoResponse instance. */
@@ -73,7 +76,10 @@ export class AuthenticatorGetInfoResponse {
         const $$createField18_0 = $$createType8;
         const $$createField20_0 = $$createType9;
         const $$createField21_0 = $$createType5;
+        const $$createField24_0 = $Create.ByteSlice;
         const $$createField25_0 = $$createType5;
+        const $$createField27_0 = $Create.ByteSlice;
+        const $$createField29_0 = $Create.ByteSlice;
         const $$createField30_0 = $$createType9;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("versions" in $$parsedSource) {
@@ -103,8 +109,17 @@ export class AuthenticatorGetInfoResponse {
         if ("attestationFormats" in $$parsedSource) {
             $$parsedSource["attestationFormats"] = $$createField21_0($$parsedSource["attestationFormats"]);
         }
+        if ("encIdentifier" in $$parsedSource) {
+            $$parsedSource["encIdentifier"] = $$createField24_0($$parsedSource["encIdentifier"]);
+        }
         if ("transportsForReset" in $$parsedSource) {
             $$parsedSource["transportsForReset"] = $$createField25_0($$parsedSource["transportsForReset"]);
+        }
+        if ("pinComplexityPolicyURL" in $$parsedSource) {
+            $$parsedSource["pinComplexityPolicyURL"] = $$createField27_0($$parsedSource["pinComplexityPolicyURL"]);
+        }
+        if ("encCredStoreState" in $$parsedSource) {
+            $$parsedSource["encCredStoreState"] = $$createField29_0($$parsedSource["encCredStoreState"]);
         }
         if ("authenticatorConfigCommands" in $$parsedSource) {
             $$parsedSource["authenticatorConfigCommands"] = $$createField30_0($$parsedSource["authenticatorConfigCommands"]);
@@ -199,7 +214,7 @@ const $$createType2 = $Create.Array($Create.Any);
 const $$createType3 = $Create.Map($Create.Any, $Create.Any);
 const $$createType4 = $Create.Array($Create.Any);
 const $$createType5 = $Create.Array($Create.Any);
-const $$createType6 = webauthntypes$0.PublicKeyCredentialParameters.createFrom;
+const $$createType6 = credential$0.PublicKeyCredentialParameters.createFrom;
 const $$createType7 = $Create.Array($$createType6);
 const $$createType8 = $Create.Map($Create.Any, $Create.Any);
 const $$createType9 = $Create.Array($Create.Any);

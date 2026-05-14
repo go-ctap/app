@@ -24,8 +24,11 @@ export type OperationError = {
 };
 
 export type SessionStatus = {
+  sessionId?: string;
   selectedSelector?: string;
   selectedDevice?: unknown;
+  deviceId?: string;
+  deviceLabel?: string;
   state: "idle" | "opening" | "ready" | "running" | "stale" | "closed" | "error" | string;
   activeOperation?: string;
   openedAt?: string;
@@ -78,6 +81,13 @@ function ordinalAlias(device: unknown) {
   return String((device as { ordinalAlias?: string })?.ordinalAlias || "");
 }
 
+function labelForDevice(device: unknown) {
+  const source = device as { manufacturer?: string; product?: string; serial?: string; deviceId?: string } | null;
+  if (!source) return "";
+  const name = [source.manufacturer, source.product].filter(Boolean).join(" ") || source.product || source.deviceId || "";
+  return [name, source.serial].filter(Boolean).join(" · ");
+}
+
 function reportForSelector(selector: string) {
   return state.devices.find((device) => deviceID(device) === selector || ordinalAlias(device) === selector) || null;
 }
@@ -99,11 +109,15 @@ function snapshotTimestamp(value: unknown) {
 
 function sessionStatus(snapshot = state.currentSession, status?: SessionStatus["state"], error?: OperationError | null): SessionStatus {
   const device = snapshot?.info?.device || state.selectedDevice || null;
+  const selector = snapshot ? deviceID(device) || ordinalAlias(device) : state.selectedSelector;
   const openedAt = snapshotTimestamp((snapshot as { openedAt?: unknown } | null)?.openedAt);
   const updatedAt = snapshotTimestamp((snapshot as { updatedAt?: unknown } | null)?.updatedAt);
   return {
-    selectedSelector: state.selectedSelector,
+    ...(snapshot?.id ? { sessionId: String(snapshot.id) } : {}),
+    selectedSelector: selector,
     selectedDevice: device,
+    ...(deviceID(device) ? { deviceId: deviceID(device) } : {}),
+    ...(labelForDevice(device) ? { deviceLabel: labelForDevice(device) } : {}),
     state: status || (snapshot?.info?.closed ? "closed" : snapshot ? (snapshot.running ? "running" : "ready") : "idle"),
     ...(snapshot?.running ? { activeOperation: "" } : {}),
     ...(openedAt ? { openedAt } : {}),
@@ -220,7 +234,7 @@ export const api = {
         state.selectedSelector = deviceID(state.selectedDevice) || ordinalAlias(state.selectedDevice);
       }
 
-      await refreshSessions();
+      await refreshSessions(Boolean(state.selectedSelector));
       return discovery();
     } catch (error) {
       return discovery(errorFrom(error));
@@ -241,7 +255,7 @@ export const api = {
   },
 
   async sessions(): Promise<SessionStatus[]> {
-    return (await refreshSessions()).map((snapshot: any) => sessionStatus(snapshot));
+    return (await refreshSessions(false)).map((snapshot: any) => sessionStatus(snapshot));
   },
 
   async session(): Promise<SessionStatus> {

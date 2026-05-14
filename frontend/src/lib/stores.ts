@@ -1,6 +1,7 @@
 import { derived, get, writable } from "svelte/store";
 import type { Discovery, Envelope, SessionStatus } from "./api";
 import { m } from "../paraglide/messages.js";
+import { navigateToScreen } from "./navigation";
 
 export type StatusBarAction = {
   id: string;
@@ -88,6 +89,7 @@ export const statusBar = writable<StatusBarState>({ activeOperation: null, lastO
 export const workbenchLog = writable<WorkbenchLogEntry[]>([]);
 export const selectedLogEntryId = writable("");
 export const sessionStatus = writable<SessionStatus>({ state: "idle" });
+export const sessions = writable<SessionStatus[]>([]);
 export const overviewEnvelope = writable<Envelope | null>(null);
 export const overviewBioSensorEnvelope = writable<Envelope | null>(null);
 export const overviewMDSEnvelope = writable<Envelope | null>(null);
@@ -288,6 +290,7 @@ export function focusLogEntry(id: string | undefined) {
   if (!id) return;
   selectedLogEntryId.set(id);
   activeScreen.set("logs");
+  void navigateToScreen("logs");
 }
 
 export function applyDiscovery(response: Discovery): boolean {

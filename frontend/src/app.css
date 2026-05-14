@@ -106,16 +106,19 @@
 @layer base {
   * {
     @apply border-border box-border;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  *::-webkit-scrollbar {
+    width: 0;
+    height: 0;
   }
 
   html,
   body,
   #app {
-    @apply min-h-screen;
-  }
-
-  html {
-    scrollbar-gutter: stable;
+    @apply h-screen min-h-screen overflow-hidden;
   }
 
   body {

@@ -8,6 +8,16 @@ export function labelDevice(device: any) {
   return `${alias}${name || device.deviceId || m.authenticator()}${serial}`;
 }
 
+export function deviceName(device: any) {
+  if (!device) return m.no_token_selected();
+  return [device.manufacturer, device.product].filter(Boolean).join(" ") || device.product || device.deviceId || m.authenticator();
+}
+
+export function deviceDetail(device: any) {
+  if (!device) return "";
+  return device.serial || device.deviceId || "";
+}
+
 export function stateLabel(value: unknown) {
   if (value === true) return m.state_available();
   if (value === false) return m.state_not_available();

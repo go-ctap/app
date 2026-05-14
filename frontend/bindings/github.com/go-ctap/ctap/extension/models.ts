@@ -5,10 +5,6 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as key$0 from "../../../../ldclabs/cose/key/models.js";
-
 /**
  * ExtensionIdentifier is an enum consisting of IANA registered Extension Identifiers.
  * https://www.iana.org/assignments/webauthn/webauthn.xhtml
@@ -38,46 +34,4 @@ export enum ExtensionIdentifier {
     ExtensionIdentifierCredentialProperties = "credProps",
     ExtensionIdentifierLargeBlob = "largeBlob",
     ExtensionIdentifierPayment = "payment",
-};
-
-/**
- * PublicKeyCredentialParameters is used to supply additional parameters when creating a new credential.
- * https://www.w3.org/TR/webauthn-3/#dictdef-publickeycredentialparameters
- */
-export class PublicKeyCredentialParameters {
-    "type": PublicKeyCredentialType;
-    "alg": key$0.Alg;
-
-    /** Creates a new PublicKeyCredentialParameters instance. */
-    constructor($$source: Partial<PublicKeyCredentialParameters> = {}) {
-        if (!("type" in $$source)) {
-            this["type"] = PublicKeyCredentialType.$zero;
-        }
-        if (!("alg" in $$source)) {
-            this["alg"] = 0;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new PublicKeyCredentialParameters instance from a string or object.
-     */
-    static createFrom($$source: any = {}): PublicKeyCredentialParameters {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new PublicKeyCredentialParameters($$parsedSource as Partial<PublicKeyCredentialParameters>);
-    }
-}
-
-/**
- * PublicKeyCredentialType defines the valid credential types.
- * https://www.w3.org/TR/webauthn-3/#enumdef-publickeycredentialtype
- */
-export enum PublicKeyCredentialType {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    PublicKeyCredentialTypePublicKey = "public-key",
 };
