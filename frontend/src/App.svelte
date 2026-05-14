@@ -55,6 +55,7 @@
   import RouteRedirect from "./components/RouteRedirect.svelte";
   import TokenSelect from "./components/TokenSelect.svelte";
   import TopSessionControls from "./components/TopSessionControls.svelte";
+  import { WindowTitlebar } from "./components/window-controls";
   import Overview from "./screens/Overview.svelte";
   import Credentials from "./screens/Credentials.svelte";
   import LargeBlobs from "./screens/LargeBlobs.svelte";
@@ -231,8 +232,8 @@
           : "bg-background"
       ]}
     >
-      <div class="flex h-16 min-w-0 items-center gap-2 px-4">
-        <div class="min-w-0 flex-1 sm:max-w-[32rem]">
+      <WindowTitlebar class="h-16 min-w-0 items-center gap-2 px-4" windowControlsProps={{ class: "shrink-0" }}>
+        <div class="min-w-0 flex-1 sm:max-w-[32rem]" data-window-drag-exclude>
           <TokenSelect
             devices={$devices}
             sessions={$sessions}
@@ -244,22 +245,22 @@
           />
         </div>
 
-        <Button variant="outline" size="icon-lg" class="size-11" type="button" onclick={refresh} disabled={refreshing} aria-label={m.refresh_devices()} title={m.refresh_devices()}>
+        <Button data-window-drag-exclude variant="outline" size="icon-lg" class="size-11" type="button" onclick={refresh} disabled={refreshing} aria-label={m.refresh_devices()} title={m.refresh_devices()}>
           <RefreshCw size={16} class={refreshing ? "animate-spin" : ""} />
         </Button>
 
         <div class="min-w-0 flex-1"></div>
 
-        <div class="min-w-0 justify-end">
+        <div class="min-w-0 justify-end" data-window-drag-exclude>
           <TopSessionControls />
         </div>
 
-        <NativeSelect.Root class="w-auto min-w-24 [&_select]:h-11" value={$currentLocale} onchange={(event) => setAppLocale((event.currentTarget as HTMLSelectElement).value)} aria-label={m.language()}>
+        <NativeSelect.Root class="w-auto min-w-24 [&_select]:h-11" value={$currentLocale} onchange={(event) => setAppLocale((event.currentTarget as HTMLSelectElement).value)} aria-label={m.language()} data-window-drag-exclude>
           {#each availableLocales as locale (locale)}
             <NativeSelect.Option value={locale}>{localeLabel(locale)}</NativeSelect.Option>
           {/each}
         </NativeSelect.Root>
-      </div>
+      </WindowTitlebar>
     </header>
 
     {#if $appError}
