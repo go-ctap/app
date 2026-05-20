@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "runtime:build": "npm --prefix ../../wails/v3/internal/runtime/desktop/@wailsio/runtime run build:code",
     "build:dev": "vite build --minify false --mode development",
     "build": "vite build --mode production",
     "preview": "vite preview"
@@ -13,7 +14,7 @@
     "@inlang/paraglide-js": "^2.18.0",
     "@tailwindcss/vite": "^4.2.4",
     "@tanstack/table-core": "^8.21.3",
-    "@wailsio/runtime": "latest",
+    "@wailsio/runtime": "file:../../wails/v3/internal/runtime/desktop/@wailsio/runtime",
     "bits-ui": "^2.18.1",
     "clsx": "^2.1.1",
     "shiki": "^4.0.2",

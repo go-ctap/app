@@ -134,6 +134,24 @@
     font: inherit;
   }
 
+  [data-window-drag-region] {
+    -webkit-app-region: drag;
+    app-region: drag;
+  }
+
+  [data-window-drag-region] [data-window-drag-exclude],
+  [data-window-drag-region] [data-window-drag-exclude] *,
+  [data-window-drag-region] button,
+  [data-window-drag-region] a,
+  [data-window-drag-region] input,
+  [data-window-drag-region] select,
+  [data-window-drag-region] textarea,
+  [data-window-drag-region] [role="button"],
+  [data-window-drag-region] [contenteditable] {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+  }
+
   code,
   pre {
     @apply font-mono;

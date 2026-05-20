@@ -46,7 +46,7 @@ export class AuthenticatorGetInfoResponse {
     "encIdentifier"?: string;
     "transportsForReset"?: string[];
     "pinComplexityPolicy"?: boolean | null;
-    "pinComplexityPolicyURL"?: string;
+    "pinComplexityPolicyURL"?: string | null;
     "maxPINLength"?: number | null;
     "encCredStoreState"?: string;
     "authenticatorConfigCommands"?: number[];
@@ -78,7 +78,6 @@ export class AuthenticatorGetInfoResponse {
         const $$createField21_0 = $$createType5;
         const $$createField24_0 = $Create.ByteSlice;
         const $$createField25_0 = $$createType5;
-        const $$createField27_0 = $Create.ByteSlice;
         const $$createField29_0 = $Create.ByteSlice;
         const $$createField30_0 = $$createType9;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
@@ -114,9 +113,6 @@ export class AuthenticatorGetInfoResponse {
         }
         if ("transportsForReset" in $$parsedSource) {
             $$parsedSource["transportsForReset"] = $$createField25_0($$parsedSource["transportsForReset"]);
-        }
-        if ("pinComplexityPolicyURL" in $$parsedSource) {
-            $$parsedSource["pinComplexityPolicyURL"] = $$createField27_0($$parsedSource["pinComplexityPolicyURL"]);
         }
         if ("encCredStoreState" in $$parsedSource) {
             $$parsedSource["encCredStoreState"] = $$createField29_0($$parsedSource["encCredStoreState"]);

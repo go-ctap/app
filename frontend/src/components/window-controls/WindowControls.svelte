@@ -67,12 +67,16 @@
     const offUnMaximise = Events.On("common:WindowUnMaximise", () => {
       maximised = false;
     });
+    const offRestore = Events.On("common:WindowRestore", () => {
+      void refreshMaximisedState();
+    });
 
     return () => {
       window.removeEventListener("keydown", handleKeydown);
       window.removeEventListener("keyup", handleKeyup);
       offMaximise?.();
       offUnMaximise?.();
+      offRestore?.();
     };
   });
 
@@ -173,18 +177,18 @@
   >
     <button
       type="button"
+      style="--wails-non-client-region: minimize;"
       class="grid w-[46px] place-items-center bg-transparent text-foreground/90 outline-none hover:bg-foreground/[.06] active:bg-foreground/[.04]"
       aria-label="Minimise window"
-      title="Minimise"
       onclick={minimiseWindow}
     >
       <Minus size={13} strokeWidth={2} />
     </button>
     <button
       type="button"
+      style="--wails-non-client-region: maximize;"
       class="grid w-[46px] place-items-center bg-transparent text-foreground/90 outline-none hover:bg-foreground/[.06] active:bg-foreground/[.04]"
       aria-label={maximised ? "Restore window" : "Maximise window"}
-      title={maximised ? "Restore" : "Maximise"}
       onclick={toggleMaximise}
     >
       {#if maximised}
@@ -195,9 +199,9 @@
     </button>
     <button
       type="button"
+      style="--wails-non-client-region: close;"
       class="grid w-[46px] place-items-center bg-transparent text-foreground/90 outline-none hover:bg-[#c42b1c] hover:text-white active:bg-[#c42b1c]/90"
       aria-label="Close window"
-      title="Close"
       onclick={closeWindow}
     >
       <X size={15} strokeWidth={2} />

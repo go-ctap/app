@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Events } from "@wailsio/runtime";
+  import { Events, System } from "@wailsio/runtime";
   import Router, { router, type RouteDefinition, type RouteDetailLoaded } from "svelte-spa-router";
   import {
     Database,
@@ -82,6 +82,7 @@
     [WORKBENCH_ROUTES.logs]: routeComponents.logs,
     "*": RouteRedirect,
   };
+  const useWindowControlsOverlay = System.IsWindows();
 
   const screenIcons: Record<WorkbenchScreenId, any> = {
     overview: LayoutDashboard,
@@ -178,7 +179,7 @@
 {#key $currentLocale}
 <Sidebar.Provider style="--sidebar-width: 15rem; --sidebar-width-mobile: 18rem;">
   <Sidebar.Root collapsible="icon">
-    <Sidebar.Header class="h-16 justify-center border-b bg-background px-4 py-0">
+    <Sidebar.Header style="--wails-non-client-region: caption;" class="h-16 justify-center border-b bg-background px-4 py-0">
       <div class="flex min-w-0 items-center gap-2 group-data-[collapsible=icon]:justify-center">
         <div class="flex size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
           <ShieldCheck size={17} strokeWidth={2.25} />
@@ -232,7 +233,7 @@
           : "bg-background"
       ]}
     >
-      <WindowTitlebar class="h-16 min-w-0 items-center gap-2 px-4" windowControlsProps={{ class: "shrink-0" }}>
+      <WindowTitlebar class="h-16 min-w-0 items-center gap-2 px-4" nativeWindowControlsOverlay={useWindowControlsOverlay}>
         <div class="min-w-0 flex-1 sm:max-w-[32rem]" data-window-drag-exclude>
           <TokenSelect
             devices={$devices}

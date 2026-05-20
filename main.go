@@ -4,6 +4,7 @@ import (
 	"embed"
 	_ "embed"
 	"log"
+	"log/slog"
 
 	kitservice "github.com/go-ctap/kit/service"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -34,6 +35,7 @@ func main() {
 	ctapkitService := NewCtapkitService()
 	app := application.New(application.Options{
 		Name:        "fidoapp",
+		LogLevel:    slog.LevelDebug,
 		Description: "Hardware authenticator workbench",
 		Services: []application.Service{
 			application.NewService(ctapkitService),
@@ -59,7 +61,11 @@ func main() {
 			Backdrop:                application.MacBackdropTranslucent,
 			TitleBar:                application.MacTitleBarHiddenInset,
 		},
-		BackgroundColour: application.NewRGB(27, 38, 54),
+		Windows: application.WindowsWindow{
+			NonClientRegionSupport:     true,
+			WebView2CompositionHosting: true,
+		},
+		BackgroundColour: application.NewRGB(0, 0, 0),
 		URL:              "/",
 	})
 
