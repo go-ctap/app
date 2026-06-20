@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { Events, System } from "@wailsio/runtime";
   import { RefreshCw, ShieldCheck, X } from "@lucide/svelte";
+  import type * as kitservice from "../bindings/github.com/go-ctap/kit/service/models";
   import {
     bootstrap,
     handleInteractionRequested,
@@ -27,6 +28,8 @@
   import Overview from "./screens/Overview.svelte";
 
   const useWindowControlsOverlay = System.IsWindows();
+
+  type WailsDataEvent<T> = { data: T };
 
   let refreshing = $state(false);
   let initialized = $state(false);
@@ -55,10 +58,10 @@
   onMount(() => {
     activeScreen.set("overview");
 
-    const offProgress = Events.On("ctapkit:operation-event", (event: any) => {
+    const offProgress = Events.On("ctapkit:operation-event", (event: WailsDataEvent<kitservice.OperationEventEnvelope>) => {
       handleOperationProgress(event.data);
     });
-    const offInteraction = Events.On("ctapkit:interaction-requested", (event: any) => {
+    const offInteraction = Events.On("ctapkit:interaction-requested", (event: WailsDataEvent<kitservice.InteractionPrompt>) => {
       handleInteractionRequested(event.data);
     });
 

@@ -1,58 +1,48 @@
 import * as service from "../../bindings/fidobench/ctapkitservice";
-import type * as kitservice from "../../bindings/github.com/go-ctap/kit/service/models";
-import type { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import {
+  RuntimeErrorEnvelope,
+  type CancelOperationRequest,
+  type DiscoverRequest,
+  type InteractionAnswer,
+  type MDSLookupEnvelope,
+  type MDSLookupRequest,
+  type OpenSessionRequest,
+  type OperationEnvelope,
+  type OperationRequest,
+  type SessionID,
+  type SessionSnapshot,
+} from "../../bindings/github.com/go-ctap/kit/service";
 
-type SessionBound = { sessionId: kitservice.SessionID; verificationFlow?: unknown };
-type WithSelector<T> = Omit<T, "sessionId"> & { selector?: string };
-type Selectable<T extends SessionBound> = string | WithSelector<T>;
-type OperationCall<T extends SessionBound> = (request: T) => Promise<kitservice.OperationEnvelope>;
-type ErrorLike = { error?: OperationError | null } | null | undefined;
-type DiscoverInput = { transport?: string; mode?: Mode };
-type OpenSessionInput = string | { selector?: string };
-type CancelInput = string | { operationId?: string };
-type InteractionAnswer = { interactionId: string; pin?: string; confirmed?: boolean; canceled?: boolean };
-type MDSLookupEnvelope = kitservice.MDSLookupEnvelope & {
-  selectedDevice?: unknown;
-  session?: SessionStatus;
-};
-
-export type OperationError = {
-  category?: string;
-  message: string;
-  hint?: string;
-};
+export type OperationError = RuntimeErrorEnvelope;
+export type Envelope = OperationEnvelope;
 
 export type SessionStatus = {
-  sessionId?: string;
-  selectedSelector?: string;
-  selectedDevice?: unknown;
+  sessionId?: SessionID;
+  selectedSelector: string;
+  selectedDevice: DeviceReport | null;
   deviceId?: string;
   deviceLabel?: string;
   state: "idle" | "opening" | "ready" | "running" | "stale" | "closed" | "error" | string;
   activeOperation?: string;
   openedAt?: string;
   updatedAt?: string;
-  error?: OperationError | null;
+  error?: RuntimeErrorEnvelope | null;
 };
 
 export type Discovery = {
-  devices: unknown[];
-  selectedSelector?: string;
-  selectedDevice?: unknown;
+  devices: DeviceReport[];
+  selectedSelector: string;
+  selectedDevice: DeviceReport | null;
   session: SessionStatus;
-  error?: OperationError | null;
-};
-
-export type Envelope = kitservice.OperationEnvelope & {
-  selectedDevice?: unknown;
-  session?: SessionStatus;
+  error?: RuntimeErrorEnvelope | null;
 };
 
 const state: {
-  devices: unknown[];
+  devices: DeviceReport[];
   selectedSelector: string;
-  selectedDevice: unknown;
-  currentSession: kitservice.SessionSnapshot | null;
+  selectedDevice: DeviceReport | null;
+  currentSession: SessionSnapshot | null;
 } = {
   devices: [],
   selectedSelector: "",
@@ -60,88 +50,94 @@ const state: {
   currentSession: null,
 };
 
-function errorFrom(error: unknown): OperationError {
-  const source = error as { category?: string; message?: string; error?: { message?: string } };
-  return {
-    ...(source?.category ? { category: source.category } : {}),
-    message: source?.message || source?.error?.message || (error instanceof Error ? error.message : String(error || "operation failed")),
-  };
+function runtimeErrorFrom(error: unknown): RuntimeErrorEnvelope {
+  const source = error as { category?: RuntimeErrorEnvelope["category"]; message?: string; error?: { message?: string } };
+  const nestedMessage = source.error ? source.error.message : "";
+  return new RuntimeErrorEnvelope({
+    category: source.category,
+    message: source.message || nestedMessage || (error instanceof Error ? error.message : String(error || "operation failed")),
+  });
 }
 
-function selectorFrom(request?: OpenSessionInput | null) {
-  return (typeof request === "string" ? request : request?.selector || state.selectedSelector).trim();
+function selectorFromDevice(device: DeviceReport) {
+  return device.deviceId || device.ordinalAlias || "";
 }
 
-function deviceID(device: unknown) {
-  return String((device as { deviceId?: string })?.deviceId || "");
-}
-
-function ordinalAlias(device: unknown) {
-  return String((device as { ordinalAlias?: string })?.ordinalAlias || "");
-}
-
-function labelForDevice(device: unknown) {
-  const source = device as { manufacturer?: string; product?: string; serial?: string; deviceId?: string } | null;
-  if (!source) return "";
-  const name = [source.manufacturer, source.product].filter(Boolean).join(" ") || source.product || source.deviceId || "";
-  return [name, source.serial].filter(Boolean).join(" · ");
+function labelForDevice(device: DeviceReport) {
+  const name = [device.manufacturer, device.product].filter(Boolean).join(" ") || device.product || device.deviceId;
+  return [name, device.serial].filter(Boolean).join(" · ");
 }
 
 function reportForSelector(selector: string) {
-  return state.devices.find((device) => deviceID(device) === selector || ordinalAlias(device) === selector) || null;
+  return state.devices.find((device) => device.deviceId === selector || device.ordinalAlias === selector) || null;
 }
 
-function setCurrentSession(snapshot: kitservice.SessionSnapshot | null) {
+function setCurrentSession(snapshot: SessionSnapshot | null) {
   state.currentSession = snapshot;
   if (!snapshot) return;
 
-  state.selectedDevice = snapshot.info?.device || state.selectedDevice;
-  state.selectedSelector = deviceID(state.selectedDevice) || state.selectedSelector;
+  state.selectedDevice = snapshot.info.device;
+  state.selectedSelector = selectorFromDevice(snapshot.info.device);
 }
 
-function snapshotTimestamp(value: unknown) {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  if (value instanceof Date) return value.toISOString();
-  return String(value);
-}
+function statusFromSession(
+  snapshot = state.currentSession,
+  stateOverride?: SessionStatus["state"],
+  error?: RuntimeErrorEnvelope | null,
+): SessionStatus {
+  if (!snapshot) {
+    const device = state.selectedDevice;
+    const status: SessionStatus = {
+      selectedSelector: state.selectedSelector,
+      selectedDevice: device,
+      state: stateOverride || "idle",
+    };
+    if (device) {
+      status.deviceId = device.deviceId;
+      status.deviceLabel = labelForDevice(device);
+    }
+    if (error) status.error = error;
+    return status;
+  }
 
-function sessionStatus(snapshot = state.currentSession, status?: SessionStatus["state"], error?: OperationError | null): SessionStatus {
-  const device = snapshot?.info?.device || state.selectedDevice || null;
-  const selector = snapshot ? deviceID(device) || ordinalAlias(device) : state.selectedSelector;
-  const openedAt = snapshotTimestamp((snapshot as { openedAt?: unknown } | null)?.openedAt);
-  const updatedAt = snapshotTimestamp((snapshot as { updatedAt?: unknown } | null)?.updatedAt);
-  return {
-    ...(snapshot?.id ? { sessionId: String(snapshot.id) } : {}),
-    selectedSelector: selector,
+  const device = snapshot.info.device;
+  const status: SessionStatus = {
+    sessionId: snapshot.id,
+    selectedSelector: selectorFromDevice(device),
     selectedDevice: device,
-    ...(deviceID(device) ? { deviceId: deviceID(device) } : {}),
-    ...(labelForDevice(device) ? { deviceLabel: labelForDevice(device) } : {}),
-    state: status || (snapshot?.info?.closed ? "closed" : snapshot ? (snapshot.running ? "running" : "ready") : "idle"),
-    ...(snapshot?.running ? { activeOperation: "" } : {}),
-    ...(openedAt ? { openedAt } : {}),
-    ...(updatedAt ? { updatedAt } : {}),
-    ...(error ? { error } : {}),
+    deviceId: device.deviceId,
+    deviceLabel: labelForDevice(device),
+    state: stateOverride || (snapshot.info.closed ? "closed" : snapshot.running ? "running" : "ready"),
+    openedAt: String(snapshot.openedAt),
+    updatedAt: String(snapshot.updatedAt),
   };
+  if (snapshot.running) status.activeOperation = "";
+  if (error) status.error = error;
+  return status;
 }
 
-function discovery(error?: OperationError | null, status?: SessionStatus["state"]): Discovery {
-  return {
+function discovery(error?: RuntimeErrorEnvelope | null, stateOverride?: SessionStatus["state"]): Discovery {
+  const snapshot: Discovery = {
     devices: state.devices,
     selectedSelector: state.selectedSelector,
     selectedDevice: state.selectedDevice,
-    session: sessionStatus(state.currentSession, status, error),
-    ...(error ? { error } : {}),
+    session: statusFromSession(state.currentSession, stateOverride, error),
   };
+  if (error) snapshot.error = error;
+  return snapshot;
 }
 
-function sessionIsOpen(snapshot: kitservice.SessionSnapshot | null | undefined) {
-  return Boolean(snapshot && !snapshot.info?.closed);
+function sessionIsOpen(snapshot: SessionSnapshot) {
+  return !snapshot.info.closed;
+}
+
+function sessionMatches(snapshot: SessionSnapshot, selector: string) {
+  return sessionIsOpen(snapshot) && (snapshot.info.device.deviceId === selector || snapshot.info.device.ordinalAlias === selector);
 }
 
 async function closeOpenSessions() {
   const snapshots = await service.Sessions();
-  if (snapshots.some((snapshot: any) => sessionIsOpen(snapshot))) {
+  if (snapshots.some(sessionIsOpen)) {
     await service.CloseAllSessions();
   }
   state.currentSession = null;
@@ -151,29 +147,21 @@ async function closeOpenSessions() {
 async function refreshSessions() {
   const snapshots = await service.Sessions();
   const session = state.selectedSelector
-    ? snapshots.find((snapshot: any) => sessionMatches(snapshot, state.selectedSelector)) || null
+    ? snapshots.find((snapshot) => sessionMatches(snapshot, state.selectedSelector)) || null
     : null;
 
   setCurrentSession(session);
-
   return snapshots;
 }
 
-function sessionMatches(snapshot: kitservice.SessionSnapshot, selector: string) {
-  return (
-    sessionIsOpen(snapshot) &&
-    (snapshot.info?.device?.deviceId === selector || snapshot.info?.device?.ordinalAlias === selector)
-  );
-}
-
-async function ensureSession(selector = state.selectedSelector) {
-  selector = selector.trim();
+async function openSelectedSession(request: OpenSessionRequest) {
+  const selector = (request.selector || state.selectedSelector).trim();
   if (!selector) throw new Error("authenticator selection is required");
 
   const snapshots = await service.Sessions();
-  const openSessions = snapshots.filter((snapshot: any) => sessionIsOpen(snapshot));
-  const existing = openSessions.find((snapshot: any) => sessionMatches(snapshot, selector));
-  const onlySelectedSession = existing && openSessions.every((snapshot: any) => sessionMatches(snapshot, selector));
+  const openSessions = snapshots.filter(sessionIsOpen);
+  const existing = openSessions.find((snapshot) => sessionMatches(snapshot, selector));
+  const onlySelectedSession = existing && openSessions.every((snapshot) => sessionMatches(snapshot, selector));
 
   if (onlySelectedSession) {
     setCurrentSession(existing);
@@ -187,146 +175,95 @@ async function ensureSession(selector = state.selectedSelector) {
 
   const snapshot = await service.OpenSession({ selector });
   setCurrentSession(snapshot);
-  state.selectedSelector = deviceID(state.selectedDevice) || selector;
-
   return snapshot;
 }
 
-function splitRequest<T extends SessionBound>(request: Selectable<T>) {
-  if (typeof request === "string") {
-    return { selector: request.trim(), payload: {} as Omit<T, "sessionId"> };
-  }
-
-  const { selector, ...payload } = request;
-  return { selector: selectorFrom({ selector }), payload };
-}
-
-function decorateEnvelope(envelope: kitservice.OperationEnvelope): Envelope {
-  return {
-    ...envelope,
-    selectedDevice: state.selectedDevice,
-    session: sessionStatus(),
-  };
-}
-
-function decorateMDS(envelope: kitservice.MDSLookupEnvelope): MDSLookupEnvelope {
-  return {
-    ...envelope,
-    selectedDevice: state.selectedDevice,
-    session: sessionStatus(),
-  };
-}
-
-function operation<T extends SessionBound>(invoke: OperationCall<T>) {
-  return async (request: Selectable<T>): Promise<Envelope> => {
-    const { selector, payload } = splitRequest(request);
-    const session = await ensureSession(selector);
-    let envelope: kitservice.OperationEnvelope;
-    try {
-      envelope = await invoke({ ...payload, sessionId: session.id } as T);
-    } finally {
-      try {
-        setCurrentSession(await service.Session(session.id));
-      } catch {
-        // The operation result should keep its original success/error semantics.
-      }
-    }
-
-    return decorateEnvelope(envelope);
-  };
-}
-
 export const api = {
-  async discover(request: DiscoverInput | string = {}): Promise<Discovery> {
+  async discover(request: DiscoverRequest = {}): Promise<Discovery> {
     try {
-      const mode = typeof request === "string" ? request : request.mode || request.transport;
-      const snapshot = await service.Discover({ mode: mode || undefined });
+      const snapshot = await service.Discover(request);
 
-      state.devices = snapshot.devices || [];
+      state.devices = snapshot.devices;
       state.selectedDevice = state.selectedSelector ? reportForSelector(state.selectedSelector) : null;
       if (!state.selectedDevice) state.selectedSelector = "";
       if (!state.selectedSelector && state.devices.length === 1) {
         state.selectedDevice = state.devices[0];
-        state.selectedSelector = deviceID(state.selectedDevice) || ordinalAlias(state.selectedDevice);
+        state.selectedSelector = selectorFromDevice(state.selectedDevice);
       }
 
       if (state.selectedSelector) {
-        await ensureSession(state.selectedSelector);
+        await openSelectedSession({ selector: state.selectedSelector });
       } else {
         await closeOpenSessions();
       }
       return discovery();
     } catch (error) {
-      return discovery(errorFrom(error), state.selectedSelector ? "error" : "idle");
+      return discovery(runtimeErrorFrom(error), state.selectedSelector ? "error" : "idle");
     }
   },
 
   async select(selector: string): Promise<Discovery> {
     const requestedSelector = selector.trim();
     state.selectedDevice = requestedSelector ? reportForSelector(requestedSelector) : null;
-    state.selectedSelector = state.selectedDevice ? deviceID(state.selectedDevice) || ordinalAlias(state.selectedDevice) : "";
+    state.selectedSelector = state.selectedDevice ? selectorFromDevice(state.selectedDevice) : "";
 
     try {
       if (state.selectedSelector) {
-        await ensureSession(state.selectedSelector);
+        await openSelectedSession({ selector: state.selectedSelector });
       } else {
         await closeOpenSessions();
       }
       return discovery();
     } catch (error) {
-      return discovery(errorFrom(error), state.selectedSelector ? "error" : "idle");
+      return discovery(runtimeErrorFrom(error), state.selectedSelector ? "error" : "idle");
     }
   },
 
-  async openSession(request: OpenSessionInput): Promise<SessionStatus> {
-    return sessionStatus(await ensureSession(selectorFrom(request)));
+  async openSession(request: OpenSessionRequest): Promise<SessionStatus> {
+    return statusFromSession(await openSelectedSession(request));
   },
 
   async sessions(): Promise<SessionStatus[]> {
-    return (await refreshSessions()).map((snapshot: any) => sessionStatus(snapshot));
+    return (await refreshSessions()).map((snapshot) => statusFromSession(snapshot));
   },
 
   async session(): Promise<SessionStatus> {
     await refreshSessions();
-    return sessionStatus();
+    return statusFromSession();
   },
 
   sessionStatus(): Promise<SessionStatus> {
     return api.session();
   },
 
-  async closeSession(): Promise<SessionStatus> {
-    if (state.currentSession && !state.currentSession.info?.closed) {
-      setCurrentSession(await service.CloseSession(state.currentSession.id));
-    }
-
-    return sessionStatus(state.currentSession, "closed");
+  async closeSession(id: SessionID): Promise<SessionStatus> {
+    setCurrentSession(await service.CloseSession(id));
+    return statusFromSession(state.currentSession, "closed");
   },
 
   async closeAllSessions(): Promise<SessionStatus[]> {
     const closed = await service.CloseAllSessions();
     state.currentSession = null;
-    return closed.map((snapshot) => sessionStatus(snapshot, "closed"));
+    return closed.map((snapshot) => statusFromSession(snapshot, "closed"));
   },
 
-  cancelOperation(request: CancelInput): Promise<boolean> {
-    const operationId = typeof request === "string" ? request : request.operationId || "";
-    return operationId ? service.CancelOperation({ operationId }) : Promise.resolve(false);
+  cancelOperation(request: CancelOperationRequest): Promise<boolean> {
+    return service.CancelOperation(request);
   },
 
   resolveInteraction(answer: InteractionAnswer): Promise<boolean> {
     return service.ResolveInteraction(answer);
   },
 
-  inspect: operation(service.Inspect),
-  bioSensorInfo: operation(service.BioSensorInfo),
+  inspect(request: OperationRequest): Promise<OperationEnvelope> {
+    return service.Inspect(request);
+  },
 
-  async lookupMDS(request: kitservice.MDSLookupRequest | string, refresh = false): Promise<MDSLookupEnvelope> {
-    return decorateMDS(await service.LookupMDS(typeof request === "string" ? { aaguid: request, refresh } : request));
+  bioSensorInfo(request: OperationRequest): Promise<OperationEnvelope> {
+    return service.BioSensorInfo(request);
+  },
+
+  lookupMDS(request: MDSLookupRequest): Promise<MDSLookupEnvelope> {
+    return service.LookupMDS(request);
   },
 } as const;
-
-export function operationFailed(envelope: ErrorLike): string | null {
-  if (!envelope?.error) return null;
-  return envelope.error.hint ? `${envelope.error.message} ${envelope.error.hint}` : envelope.error.message;
-}

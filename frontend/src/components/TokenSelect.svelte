@@ -6,11 +6,12 @@
     CircleOff,
     LoaderCircle,
   } from "@lucide/svelte";
+  import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
   import { deviceDetail, deviceName, labelDevice } from "$lib/format";
   import { m } from "../paraglide/messages.js";
 
   type Props = {
-    devices: any[];
+    devices: DeviceReport[];
     value: string;
     disabled?: boolean;
     sessionState?: string;
@@ -32,11 +33,11 @@
   let selectedTransport = $derived(selectedDevice?.transport || m.state_unknown());
   let iconTone = $derived(sessionTone(sessionState));
 
-  function matchesDevice(device: any, selector: string) {
+  function matchesDevice(device: DeviceReport, selector: string) {
     return deviceValue(device) === selector || device.deviceId === selector || device.ordinalAlias === selector;
   }
 
-  function deviceValue(device: any) {
+  function deviceValue(device: DeviceReport | null | undefined) {
     return String(device?.deviceId || device?.ordinalAlias || "");
   }
 
@@ -47,7 +48,7 @@
     return "muted";
   }
 
-  function compactIdentifier(device: any) {
+  function compactIdentifier(device: DeviceReport) {
     const raw = deviceDetail(device) || deviceValue(device);
     if (!raw || raw.length <= 24) return raw;
     return `${raw.slice(0, 12)}...${raw.slice(-7)}`;

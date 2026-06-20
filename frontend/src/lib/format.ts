@@ -1,6 +1,12 @@
+import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { m } from "../paraglide/messages.js";
+import type { Envelope } from "./api";
 
-export function labelDevice(device: any) {
+type ResultEnvelope = { result?: unknown; report?: unknown } | null | undefined;
+type ResultCarrier = { result?: unknown } | null | undefined;
+type ErrorCarrier = { error?: { message: string } | null } | null | undefined;
+
+export function labelDevice(device: DeviceReport | null | undefined) {
   if (!device) return m.no_token_selected();
   const name = [device.manufacturer, device.product].filter(Boolean).join(" ");
   const serial = device.serial ? ` · ${device.serial}` : "";
@@ -8,12 +14,12 @@ export function labelDevice(device: any) {
   return `${alias}${name || device.deviceId || m.authenticator()}${serial}`;
 }
 
-export function deviceName(device: any) {
+export function deviceName(device: DeviceReport | null | undefined) {
   if (!device) return m.no_token_selected();
   return [device.manufacturer, device.product].filter(Boolean).join(" ") || device.product || device.deviceId || m.authenticator();
 }
 
-export function deviceDetail(device: any) {
+export function deviceDetail(device: DeviceReport | null | undefined) {
   if (!device) return "";
   return device.serial || device.deviceId || "";
 }
@@ -52,12 +58,18 @@ export function asList(value: unknown) {
   return Array.isArray(value) ? value : [];
 }
 
-export function resultOf(envelope: any) {
-  return envelope?.result?.result ?? envelope?.result?.report ?? envelope?.result ?? null;
+export function resultOf(envelope: Envelope | ResultCarrier) {
+  const result = envelope?.result as ResultEnvelope;
+  return result?.result ?? result?.report ?? envelope?.result ?? null;
 }
 
-export function reportOf(envelope: any) {
-  return envelope?.result?.report ?? envelope?.result?.result ?? envelope?.result ?? null;
+export function reportOf(envelope: Envelope | ResultCarrier) {
+  const result = envelope?.result as ResultEnvelope;
+  return result?.report ?? result?.result ?? envelope?.result ?? null;
+}
+
+export function operationFailed(envelope: ErrorCarrier) {
+  return envelope?.error?.message || null;
 }
 
 function sessionStateText(raw: string) {

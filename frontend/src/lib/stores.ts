@@ -1,6 +1,20 @@
 import { derived, get, writable } from "svelte/store";
-import type { Discovery, Envelope, SessionStatus } from "./api";
+import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import type { OperationEvent } from "../../bindings/github.com/go-ctap/kit/model";
+import type { InteractionPrompt, MDSLookupEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type { Discovery, Envelope, OperationError, SessionStatus } from "./api";
 import { m } from "../paraglide/messages.js";
+
+export type MDSLookupState = MDSLookupEnvelope | { error: OperationError };
+
+export type ActiveOperation = {
+  operationId?: string;
+  sessionId?: string;
+  label?: string;
+  detailId?: string;
+  logEntryId?: string;
+  event?: Partial<OperationEvent>;
+};
 
 export type StatusBarAction = {
   id: string;
@@ -34,28 +48,28 @@ export type WorkbenchLogEntry = {
 };
 
 export type StatusBarState = {
-  activeOperation: any | null;
+  activeOperation: ActiveOperation | null;
   lastOutcome: StatusBarOutcome | null;
   actions: StatusBarAction[];
 };
 
-export const devices = writable<any[]>([]);
+export const devices = writable<DeviceReport[]>([]);
 export const selectedSelector = writable("");
-export const selectedDevice = writable<any | null>(null);
+export const selectedDevice = writable<DeviceReport | null>(null);
 export const selectionVersion = writable(0);
 export const activeScreen = writable("overview");
-export const operationStatus = writable<any | null>(null);
+export const operationStatus = writable<ActiveOperation | null>(null);
 export const statusBar = writable<StatusBarState>({ activeOperation: null, lastOutcome: null, actions: [] });
 export const workbenchLog = writable<WorkbenchLogEntry[]>([]);
 export const selectedLogEntryId = writable("");
-export const sessionStatus = writable<SessionStatus>({ state: "idle" });
+export const sessionStatus = writable<SessionStatus>({ state: "idle", selectedSelector: "", selectedDevice: null });
 export const sessions = writable<SessionStatus[]>([]);
 export const overviewEnvelope = writable<Envelope | null>(null);
 export const overviewBioSensorEnvelope = writable<Envelope | null>(null);
-export const overviewMDSEnvelope = writable<Envelope | null>(null);
+export const overviewMDSEnvelope = writable<MDSLookupState | null>(null);
 export const overviewLoading = writable(false);
 export const overviewMDSLoading = writable(false);
-export const pendingInteraction = writable<any | null>(null);
+export const pendingInteraction = writable<InteractionPrompt | null>(null);
 export const appError = writable<string | null>(null);
 export const toasts = writable<string[]>([]);
 
@@ -71,10 +85,13 @@ function nextLogEntryId() {
   return `log-${logSequence}`;
 }
 
-function compactCounts(value: any) {
+function recordValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function compactCounts(value: unknown) {
   const counts: Record<string, number> = {};
-  if (!value || typeof value !== "object") return undefined;
-  for (const [key, item] of Object.entries(value)) {
+  for (const [key, item] of Object.entries(recordValue(value))) {
     if (Array.isArray(item)) {
       counts[key] = item.length;
     }
@@ -82,11 +99,12 @@ function compactCounts(value: any) {
   return Object.keys(counts).length ? counts : undefined;
 }
 
-function compactResult(value: any) {
-  if (!value || typeof value !== "object") return undefined;
-  const result = value.result ?? value.report ?? value;
-  const summary = value.summary ?? value.message ?? result?.summary ?? result?.message;
-  const kind = value.kind ?? result?.kind ?? result?.operationKind;
+function compactResult(value: unknown) {
+  const source = recordValue(value);
+  if (!Object.keys(source).length) return undefined;
+  const result = recordValue(source.result ?? source.report ?? source);
+  const summary = source.summary ?? source.message ?? result.summary ?? result.message;
+  const kind = source.kind ?? result.kind ?? result.operationKind;
   const counts = compactCounts(result);
   return {
     ...(kind ? { kind } : {}),
@@ -99,11 +117,16 @@ function compactEnvelope(envelope: Envelope | null | undefined) {
   if (!envelope) return undefined;
   return {
     ...(envelope.operationId ? { operationId: envelope.operationId } : {}),
-    ...(envelope.selectedDevice ? { selectedDevice: envelope.selectedDevice.product || envelope.selectedDevice.deviceId } : {}),
-    ...(envelope.session?.state ? { session: { state: envelope.session.state } } : {}),
+    ...(envelope.sessionId ? { sessionId: envelope.sessionId } : {}),
+    ...(envelope.kind ? { kind: envelope.kind } : {}),
     ...(envelope.error ? { error: envelope.error } : {}),
     ...(envelope.result ? { result: compactResult(envelope.result) } : {}),
   };
+}
+
+function operationResultMessage(envelope: Envelope) {
+  const result = envelope.result as { summary?: string; message?: string };
+  return result.summary || result.message || m.operation_finished_successfully();
 }
 
 export function appendLogEntry(entry: Omit<WorkbenchLogEntry, "id" | "timestamp"> & { id?: string; timestamp?: string }) {
@@ -126,7 +149,7 @@ export function applyDiscovery(response: Discovery): boolean {
   const nextSelector = response.selectedSelector || "";
   const previousSelector = get(selectedSelector);
   const changed = nextSelector !== previousSelector;
-  devices.set(response.devices || []);
+  devices.set(response.devices);
   selectedSelector.set(nextSelector);
   selectedDevice.set(response.selectedDevice || null);
   if (changed) {
@@ -136,9 +159,9 @@ export function applyDiscovery(response: Discovery): boolean {
     overviewMDSEnvelope.set(null);
     overviewMDSLoading.set(false);
   }
-  if (response.session) sessionStatus.set(response.session);
+  sessionStatus.set(response.session);
   if (response.error) {
-    appError.set(response.error.hint ? `${response.error.message} ${response.error.hint}` : response.error.message);
+    appError.set(response.error.message);
   } else {
     appError.set(null);
   }
@@ -146,12 +169,10 @@ export function applyDiscovery(response: Discovery): boolean {
 }
 
 export function applyEnvelope(response: Envelope | null) {
-  if (response?.session) {
-    sessionStatus.set(response.session);
-  }
+  if (!response) return;
 }
 
-export function setStatusOperation(operation: any | null) {
+export function setStatusOperation(operation: ActiveOperation | null) {
   operationStatus.set(operation);
   statusBar.update((state) => ({ ...state, activeOperation: operation }));
 }
@@ -230,7 +251,7 @@ export function summarizeEnvelope(label: string, envelope: Envelope | null | und
       tone: "error",
       source: "operation",
       title: m.operation_failed_with_label({ label }),
-      message: error.hint ? `${error.message} ${error.hint}` : error.message,
+      message: error.message,
       operationId: envelope.operationId,
       screen: get(activeScreen),
       selector: currentSelector(),
@@ -240,7 +261,7 @@ export function summarizeEnvelope(label: string, envelope: Envelope | null | und
     setStatusOutcome({
       tone: "error",
       title: m.operation_failed_with_label({ label }),
-      message: error.hint ? `${error.message} ${error.hint}` : error.message,
+      message: error.message,
       detailId,
       logEntryId,
       retry,
@@ -251,7 +272,7 @@ export function summarizeEnvelope(label: string, envelope: Envelope | null | und
     tone: "success",
     source: "operation",
     title: m.operation_complete_with_label({ label }),
-    message: envelope.result?.summary || envelope.result?.message || m.operation_finished_successfully(),
+    message: operationResultMessage(envelope),
     operationId: envelope.operationId,
     screen: get(activeScreen),
     selector: currentSelector(),
@@ -261,7 +282,7 @@ export function summarizeEnvelope(label: string, envelope: Envelope | null | und
   setStatusOutcome({
     tone: "success",
     title: m.operation_complete_with_label({ label }),
-    message: envelope.result?.summary || envelope.result?.message || m.operation_finished_successfully(),
+    message: operationResultMessage(envelope),
     detailId,
     logEntryId,
   });

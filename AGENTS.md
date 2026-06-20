@@ -9,6 +9,7 @@
 
 ## Hard Rules
 - Never log, store, dump, or render PINs, `pinUvAuthToken`, reset confirmations, or other secrets.
+- Treat generated Wails bindings and `ctapkit/service` DTOs as first-party contracts. Do not add defensive optional chaining, fallback object construction, or "unknown JSON" normalization around fields that are required by those Go types; open `../ctapkit` and the generated bindings when in doubt.
 - Discovery must not implicitly open sessions. Selecting a device in the switch is an explicit session boundary: close any existing open session, then open a session for the selected device. Clearing selection or app shutdown must close open sessions.
 - Close/cancel paths must release sessions and resolve pending interactions without holding service locks while closing handles.
 - Mutating or destructive authenticator actions need preview/confirmation semantics matching `ctapkit`.

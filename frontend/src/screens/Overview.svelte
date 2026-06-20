@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { operationFailed } from "$lib/api";
   import { loadOverview, loadOverviewMDS } from "$lib/controller";
-  import { resultOf, sessionStateLabel } from "$lib/format";
+  import { operationFailed, resultOf, sessionStateLabel } from "$lib/format";
   import {
     overviewBioSensorEnvelope,
     overviewEnvelope,

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { LockKeyhole, LockKeyholeOpen, MailCheck } from "@lucide/svelte";
   import { closeAllSessions, closeSelectedSession, openSelectedSession } from "$lib/controller";
+  import type { SessionStatus } from "$lib/api";
   import { selectedSelector, sessions, sessionBusy, sessionStatus } from "$lib/stores";
   import { m } from "../paraglide/messages.js";
 
@@ -10,12 +11,12 @@
   let canCloseSelected = $derived($sessionStatus.state === "ready");
   let hasOpenSessions = $derived(openSessions.length > 0 || canCloseSelected);
 
-  function sessionSelector(session: any) {
+  function sessionSelector(session: SessionStatus | null | undefined) {
     const device = session?.selectedDevice || {};
     return session?.selectedSelector || session?.deviceId || device.deviceId || device.ordinalAlias || "";
   }
 
-  function isBackgroundSession(session: any) {
+  function isBackgroundSession(session: SessionStatus | null | undefined) {
     if (!session || session.state === "closed") return false;
     const selector = sessionSelector(session);
     const device = session.selectedDevice || {};
