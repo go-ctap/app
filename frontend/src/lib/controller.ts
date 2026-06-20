@@ -6,6 +6,7 @@ import {
   OperationEnvelope,
   RuntimeErrorEnvelope,
   type InteractionPrompt,
+  type InteractionAnswer,
   type OperationEventEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
 import {
@@ -69,7 +70,7 @@ function failureMDSEnvelope(error: unknown): MDSLookupState {
 }
 
 function failureEnvelope(error: unknown): Envelope {
-  return new OperationEnvelope({ error: new RuntimeErrorEnvelope({ message: messageFromError(error) }) });
+  return new OperationEnvelope({ error: runtimeErrorFrom(error) });
 }
 
 function inspectResultFromEnvelope(envelope: Envelope) {
@@ -108,6 +109,10 @@ function initialSelectorForDevices(devices: DeviceReport[], preferredSelector: s
   return devices.length === 1 ? selectorFromDevice(devices[0]) : "";
 }
 
+function retainedSelectorForDevices(devices: DeviceReport[], preferredSelector: string) {
+  return reportForSelector(devices, preferredSelector) ? preferredSelector : "";
+}
+
 function discoverySnapshot(
   devices: DeviceReport[],
   selectedSelector: string,
@@ -126,21 +131,9 @@ function discoverySnapshot(
 }
 
 async function cancelPendingInteraction() {
-  const prompt = get(pendingInteraction);
-  if (!prompt) {
-    pendingInteraction.set(null);
-    return;
-  }
-
   try {
-    await api.resolveInteraction({
-      interactionId: prompt.interactionId,
-      confirmed: false,
-      canceled: true,
-    });
+    await answerPendingInteraction({ confirmed: false, canceled: true });
   } catch {
-    // Closing the session remains the source of truth for releasing backend state.
-  } finally {
     pendingInteraction.set(null);
   }
 }
@@ -151,6 +144,7 @@ async function closeOpenSessions() {
   if (snapshots.some(sessionIsOpen)) {
     await api.closeAllSessions();
   }
+  finishOperation();
 }
 
 async function openSessionForDevice(devices: DeviceReport[], selector: string): Promise<Discovery> {
@@ -225,15 +219,18 @@ async function selectFromDevices(devices: DeviceReport[], selector: string): Pro
   }
 }
 
-async function discoverAndSelect(preferredSelector: string): Promise<Discovery> {
+async function discoverAndSelect(preferredSelector: string, autoSelectSingle = false): Promise<Discovery> {
   const discoveredDevices = await api.discover();
-  return selectFromDevices(discoveredDevices, initialSelectorForDevices(discoveredDevices, preferredSelector));
+  const selector = autoSelectSingle
+    ? initialSelectorForDevices(discoveredDevices, preferredSelector)
+    : retainedSelectorForDevices(discoveredDevices, preferredSelector);
+  return selectFromDevices(discoveredDevices, selector);
 }
 
 export async function bootstrap() {
   const epoch = ++lifecycleEpoch;
   try {
-    const discovery = await discoverAndSelect(get(selectedSelector));
+    const discovery = await discoverAndSelect(get(selectedSelector), true);
     if (epoch !== lifecycleEpoch) return;
     const changed = applyDiscovery(discovery);
     if ((changed || get(selectedSelector)) && get(activeScreen) === "overview") {
@@ -324,6 +321,23 @@ export async function selectToken(selector: string) {
   }
 }
 
+export async function answerPendingInteraction(answer: Omit<InteractionAnswer, "interactionId">) {
+  const prompt = get(pendingInteraction);
+  if (!prompt) {
+    pendingInteraction.set(null);
+    return false;
+  }
+
+  try {
+    return await api.resolveInteraction({
+      ...answer,
+      interactionId: prompt.interactionId,
+    });
+  } finally {
+    pendingInteraction.set(null);
+  }
+}
+
 export async function shutdownWorkbench() {
   try {
     await closeOpenSessions();
@@ -385,6 +399,7 @@ export async function loadOverview(selector = get(selectedSelector)) {
       }
     }
     summarizeEnvelope(m.overview_inspection(), envelope, "overview-dashboard", () => loadOverview(selector));
+    applySessionError(envelope.error);
     if (operationFailed(envelope)) {
       appError.set(null);
     }
@@ -394,12 +409,23 @@ export async function loadOverview(selector = get(selectedSelector)) {
       overviewEnvelope.set(envelope);
       overviewBioSensorEnvelope.set(null);
       summarizeEnvelope(m.overview_inspection(), envelope, "overview-dashboard", () => loadOverview(selector));
+      applySessionError(envelope.error);
     }
   } finally {
     if (epoch === overviewEpoch) {
       overviewLoading.set(false);
     }
   }
+}
+
+function applySessionError(error: RuntimeErrorEnvelope | null | undefined) {
+  if (error?.category !== "invalid-session") return;
+  pendingInteraction.set(null);
+  sessionStatus.update((state) => ({
+    ...state,
+    state: "stale",
+    error,
+  }));
 }
 
 export async function loadOverviewMDS(aaguid: string, refresh = false, selector = get(selectedSelector)) {

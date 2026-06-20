@@ -1,3 +1,7 @@
+import type { AuthenticatorGetInfoResponse } from "../../bindings/github.com/go-ctap/ctap/protocol";
+import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
+
 export type OverviewRowStatus =
   | "supported"
   | "unsupported"
@@ -104,6 +108,25 @@ export type OverviewMDSLookupResult = {
   source: string;
   cached: boolean;
   cachedAt: string;
+};
+
+export type OverviewInspectInfo = AuthenticatorGetInfoResponse & {
+  uvModalityLabel?: string;
+};
+
+export type OverviewInspectResult = {
+  device: DeviceReport;
+  info: OverviewInspectInfo;
+};
+
+export type OverviewBioSensorReport = {
+  device: DeviceReport;
+  supported: boolean;
+  previewOnly: boolean;
+  modality?: string | null;
+  fingerprintKind?: string | null;
+  maxCaptureSamplesRequiredForEnroll?: number | null;
+  maxTemplateFriendlyName?: number | null;
 };
 
 export type OverviewMDSPayloadEntry = {
@@ -242,10 +265,10 @@ export type OverviewMDSExtensionDescriptor = {
 };
 
 export type OverviewContext = {
-  info?: Record<string, unknown> | null;
-  device?: Record<string, unknown> | null;
-  bioSensor?: Record<string, unknown> | null;
-  mds?: Partial<OverviewMDSLookupResult> | Record<string, unknown> | null;
+  info?: Partial<OverviewInspectInfo> | null;
+  device?: Partial<DeviceReport> | null;
+  bioSensor?: Partial<OverviewBioSensorReport> | null;
+  mds?: Partial<LookupResult> | Partial<OverviewMDSLookupResult> | null;
 };
 
 export type OverviewHeroContext = OverviewContext & {

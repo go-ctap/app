@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { api } from "../lib/api";
+  import { answerPendingInteraction } from "../lib/controller";
   import { pendingInteraction } from "../lib/stores";
   import DialogShell from "./DialogShell.svelte";
   import JsonView from "./JsonView.svelte";
@@ -13,14 +13,15 @@
 
   async function answer(confirmed: boolean, canceled = false) {
     if (!prompt) return;
-    await api.resolveInteraction({
-      interactionId: prompt.interactionId,
-      pin,
-      confirmed,
-      canceled,
-    });
-    pin = "";
-    pendingInteraction.set(null);
+    try {
+      await answerPendingInteraction({
+        pin,
+        confirmed,
+        canceled,
+      });
+    } finally {
+      pin = "";
+    }
   }
 </script>
 

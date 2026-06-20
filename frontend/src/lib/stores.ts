@@ -83,13 +83,18 @@ const REDACTED = "[redacted]";
 const SECRET_FIELD_NAMES = new Set([
   "pin",
   "pinCode",
+  "currentPIN",
   "pinUvAuthToken",
   "pinUVAuthToken",
   "newPIN",
+  "newPin",
   "oldPIN",
+  "oldPin",
   "confirmationMessage",
   "resetConfirmation",
+  "resetPhrase",
 ]);
+const NORMALIZED_SECRET_FIELD_NAMES = new Set([...SECRET_FIELD_NAMES].map(normalizeFieldName));
 
 function nextLogEntryId() {
   logSequence += 1;
@@ -135,14 +140,22 @@ function compactEnvelope(envelope: Envelope | null | undefined) {
   };
 }
 
-function sanitizeLogData(value: unknown, depth = 0): unknown {
+function normalizeFieldName(value: string) {
+  return value.replace(/[^a-z0-9]/gi, "").toLowerCase();
+}
+
+function isSecretFieldName(key: string) {
+  return NORMALIZED_SECRET_FIELD_NAMES.has(normalizeFieldName(key));
+}
+
+export function sanitizeLogData(value: unknown, depth = 0): unknown {
   if (depth > 6) return "[truncated]";
   if (!value || typeof value !== "object") return value;
   if (Array.isArray(value)) return value.map((item) => sanitizeLogData(item, depth + 1));
 
   const output: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
-    output[key] = SECRET_FIELD_NAMES.has(key) ? REDACTED : sanitizeLogData(item, depth + 1);
+    output[key] = isSecretFieldName(key) ? REDACTED : sanitizeLogData(item, depth + 1);
   }
   return output;
 }

@@ -20,6 +20,7 @@
     buildOverviewRows,
     groupOverviewRows,
   } from "$lib/overview-rules";
+  import { overviewBioSensorReport, overviewInspectResult, overviewMDSResult } from "$lib/overview-adapters";
   import EmptyState from "../components/EmptyState.svelte";
   import { m } from "../paraglide/messages.js";
   import OverviewCapabilityMatrix from "../components/OverviewCapabilityMatrix.svelte";
@@ -39,9 +40,9 @@
   let mdsFailureMessage = $derived(operationFailed(mdsEnvelope));
   let reloadDisabled = $derived(loading || $sessionBusy);
 
-  let report = $derived(resultOf(envelope));
-  let mdsResult = $derived(resultOf(mdsEnvelope));
-  let bioSensorReport = $derived(resultOf(bioSensorEnvelope));
+  let report = $derived(overviewInspectResult(resultOf(envelope)));
+  let mdsResult = $derived(overviewMDSResult(resultOf(mdsEnvelope)));
+  let bioSensorReport = $derived(overviewBioSensorReport(resultOf(bioSensorEnvelope)));
   let hasReport = $derived(Boolean(report));
 
   let device = $derived(report?.device || $selectedDevice || {});
