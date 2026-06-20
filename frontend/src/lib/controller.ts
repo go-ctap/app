@@ -1,13 +1,26 @@
 import { get } from "svelte/store";
 import type { OperationEvent } from "../../bindings/github.com/go-ctap/kit/model";
 import type { AuthenticatorGetInfoResponse } from "../../bindings/github.com/go-ctap/ctap/protocol";
+import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import {
   OperationEnvelope,
   RuntimeErrorEnvelope,
   type InteractionPrompt,
   type OperationEventEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
-import { api, type Envelope } from "./api";
+import {
+  api,
+  idleSessionStatus,
+  reportForSelector,
+  runtimeErrorFrom,
+  selectorFromDevice,
+  sessionIsOpen,
+  sessionMatches,
+  statusFromSession,
+  type Discovery,
+  type Envelope,
+  type SessionStatus,
+} from "./api";
 import { operationFailed, operationStageLabel } from "./format";
 import { m } from "../paraglide/messages.js";
 import {
@@ -18,6 +31,7 @@ import {
   applyEnvelope,
   beginOperation,
   clearWorkbenchScreenCaches,
+  devices as deviceStore,
   finishOperation,
   overviewBioSensorEnvelope,
   overviewEnvelope,
@@ -81,6 +95,88 @@ function selectedSessionId() {
   return sessionId;
 }
 
+function deviceSelection(devices: DeviceReport[], requestedSelector: string) {
+  const device = reportForSelector(devices, requestedSelector);
+  return {
+    selectedDevice: device,
+    selectedSelector: selectorFromDevice(device),
+  };
+}
+
+function initialSelectorForDevices(devices: DeviceReport[], preferredSelector: string) {
+  if (reportForSelector(devices, preferredSelector)) return preferredSelector;
+  return devices.length === 1 ? selectorFromDevice(devices[0]) : "";
+}
+
+function discoverySnapshot(
+  devices: DeviceReport[],
+  selectedSelector: string,
+  selectedDevice: DeviceReport | null,
+  session: SessionStatus,
+  error?: RuntimeErrorEnvelope | null,
+): Discovery {
+  const discovery: Discovery = {
+    devices,
+    selectedSelector,
+    selectedDevice,
+    session,
+  };
+  if (error) discovery.error = error;
+  return discovery;
+}
+
+async function cancelPendingInteraction() {
+  const prompt = get(pendingInteraction);
+  if (!prompt) {
+    pendingInteraction.set(null);
+    return;
+  }
+
+  try {
+    await api.resolveInteraction({
+      interactionId: prompt.interactionId,
+      confirmed: false,
+      canceled: true,
+    });
+  } catch {
+    // Closing the session remains the source of truth for releasing backend state.
+  } finally {
+    pendingInteraction.set(null);
+  }
+}
+
+async function closeOpenSessions() {
+  await cancelPendingInteraction();
+  const snapshots = await api.sessions();
+  if (snapshots.some(sessionIsOpen)) {
+    await api.closeAllSessions();
+  }
+}
+
+async function openSessionForDevice(devices: DeviceReport[], selector: string): Promise<Discovery> {
+  const { selectedSelector: canonicalSelector, selectedDevice } = deviceSelection(devices, selector);
+  if (!canonicalSelector || !selectedDevice) {
+    await closeOpenSessions();
+    return discoverySnapshot(devices, "", null, idleSessionStatus("", null));
+  }
+
+  const snapshots = await api.sessions();
+  const openSessions = snapshots.filter(sessionIsOpen);
+  const current = openSessions.find((snapshot) => sessionMatches(snapshot, canonicalSelector));
+  if (current && openSessions.length === 1) {
+    return discoverySnapshot(devices, canonicalSelector, current.info.device, statusFromSession(current));
+  }
+
+  await closeOpenSessions();
+  const snapshot = await api.openSession({ selector: canonicalSelector });
+  return discoverySnapshot(devices, canonicalSelector, snapshot.info.device, statusFromSession(snapshot));
+}
+
+async function closeSelection(devices: DeviceReport[] = get(deviceStore)): Promise<Discovery> {
+  await closeOpenSessions();
+  return discoverySnapshot(devices, "", null, idleSessionStatus("", null));
+}
+
 function progressLabel(value: OperationEvent) {
   if (value.completed !== undefined && value.total !== undefined) {
     return `${value.completed} / ${value.total}`;
@@ -98,46 +194,46 @@ function operationEventData(data: OperationEventEnvelope) {
   };
 }
 
-function statusMessage(status: { error?: RuntimeErrorEnvelope | null }) {
-  return status.error ? status.error.message : m.open_session_or_refresh_devices();
-}
-
-function selectionMessage(discovery: Awaited<ReturnType<typeof api.select>>, fallback: string) {
+function selectionMessage(discovery: Discovery, fallback: string) {
   const device = discovery.selectedDevice;
   return device ? device.product || device.deviceId : fallback || m.selection_updated();
 }
 
-function selectedDeviceSummary(discovery: Awaited<ReturnType<typeof api.select>>) {
+function selectedDeviceSummary(discovery: Discovery) {
   const device = discovery.selectedDevice;
   return device ? device.product || device.deviceId : undefined;
+}
+
+async function selectFromDevices(devices: DeviceReport[], selector: string): Promise<Discovery> {
+  const requestedSelector = selector.trim();
+  if (!requestedSelector) return closeSelection(devices);
+
+  const { selectedSelector: canonicalSelector, selectedDevice } = deviceSelection(devices, requestedSelector);
+  if (!canonicalSelector || !selectedDevice) return closeSelection(devices);
+
+  try {
+    return await openSessionForDevice(devices, canonicalSelector);
+  } catch (error) {
+    const runtimeError = runtimeErrorFrom(error);
+    return discoverySnapshot(
+      devices,
+      canonicalSelector,
+      selectedDevice,
+      idleSessionStatus(canonicalSelector, selectedDevice, "error", runtimeError),
+      runtimeError,
+    );
+  }
+}
+
+async function discoverAndSelect(preferredSelector: string): Promise<Discovery> {
+  const discoveredDevices = await api.discover();
+  return selectFromDevices(discoveredDevices, initialSelectorForDevices(discoveredDevices, preferredSelector));
 }
 
 export async function bootstrap() {
   const epoch = ++lifecycleEpoch;
   try {
-    const status = await api.sessionStatus();
-    if (epoch !== lifecycleEpoch) return;
-    sessionStatus.set(status);
-    if (status.state === "error" || status.state === "stale") {
-      const logEntryId = appendLogEntry({
-        tone: "error",
-        source: "session",
-        title: m.session_needs_attention(),
-        message: statusMessage(status),
-        selector: status.selectedSelector || get(selectedSelector),
-        data: {
-          session: { state: status.state, error: status.error },
-        },
-      });
-      setStatusOutcome({
-        tone: "error",
-        title: m.session_needs_attention(),
-        message: statusMessage(status),
-        logEntryId,
-      });
-    }
-
-    const discovery = await api.discover();
+    const discovery = await discoverAndSelect(get(selectedSelector));
     if (epoch !== lifecycleEpoch) return;
     const changed = applyDiscovery(discovery);
     if ((changed || get(selectedSelector)) && get(activeScreen) === "overview") {
@@ -154,7 +250,7 @@ export async function refreshDiscovery() {
   const epoch = ++lifecycleEpoch;
   try {
     const previous = get(selectedSelector);
-    const discovery = await api.discover();
+    const discovery = await discoverAndSelect(previous);
     if (epoch !== lifecycleEpoch) return;
     const changed = applyDiscovery(discovery);
     const logEntryId = appendLogEntry({
@@ -190,15 +286,13 @@ export async function selectToken(selector: string) {
   const epoch = ++lifecycleEpoch;
   overviewEpoch++;
   mdsEpoch++;
-  overviewEnvelope.set(null);
-  overviewBioSensorEnvelope.set(null);
-  overviewMDSEnvelope.set(null);
-  overviewMDSLoading.set(false);
+  clearWorkbenchScreenCaches();
   try {
     if (selector.trim()) {
-      sessionStatus.set({ state: "opening", selectedSelector: selector.trim(), selectedDevice: null });
+      const device = reportForSelector(get(deviceStore), selector);
+      sessionStatus.set(idleSessionStatus(selector.trim(), device, "opening"));
     }
-    const discovery = await api.select(selector);
+    const discovery = await selectFromDevices(get(deviceStore), selector);
     if (epoch !== lifecycleEpoch) return;
     applyDiscovery(discovery);
     const logEntryId = appendLogEntry({
@@ -230,122 +324,21 @@ export async function selectToken(selector: string) {
   }
 }
 
-export async function closeSelectedSession() {
+export async function shutdownWorkbench() {
   try {
-    const status = await api.closeSession(selectedSessionId());
-    sessionStatus.set(status);
-    await refreshSessionList();
-    clearWorkbenchScreenCaches();
-    const logEntryId = appendLogEntry({
-      tone: "info",
-      source: "session",
-      title: m.session_closed_title(),
-      message: m.cached_authorization_released(),
-      selector: status.selectedSelector || get(selectedSelector),
-      data: {
-        session: { state: status.state },
-      },
-    });
-    setStatusOutcome({ tone: "info", title: m.session_closed_title(), message: m.cached_authorization_released(), logEntryId });
-  } catch (error) {
-    const message = messageFromError(error);
-    appError.set(message);
-    const logEntryId = appendLogEntry({
-      tone: "error",
-      source: "session",
-      title: m.could_not_close_session(),
-      message,
-      selector: get(selectedSelector),
-      data: { error: { message } },
-    });
-    setStatusOutcome({ tone: "error", title: m.could_not_close_session(), message, logEntryId });
-  }
-}
-
-export async function closeAllSessions() {
-  try {
-    const closed = await api.closeAllSessions();
+    await closeOpenSessions();
+  } finally {
     const selector = get(selectedSelector);
     sessions.set([]);
-    sessionStatus.set({ state: selector ? "closed" : "idle", selectedSelector: selector, selectedDevice: null });
-    clearWorkbenchScreenCaches();
-    const logEntryId = appendLogEntry({
-      tone: "info",
-      source: "session",
-      title: m.all_sessions_closed(),
-      message: m.cached_authorization_released(),
-      selector,
-      data: {
-        closedSessions: closed.length,
-      },
-    });
-    setStatusOutcome({ tone: "info", title: m.all_sessions_closed(), message: m.cached_authorization_released(), logEntryId });
-  } catch (error) {
-    const message = messageFromError(error);
-    appError.set(message);
-    const logEntryId = appendLogEntry({
-      tone: "error",
-      source: "session",
-      title: m.could_not_close_session(),
-      message,
-      selector: get(selectedSelector),
-      data: { error: { message } },
-    });
-    setStatusOutcome({ tone: "error", title: m.could_not_close_session(), message, logEntryId });
-  }
-}
-
-export async function openSelectedSession(selector = get(selectedSelector)) {
-  selector = selector.trim();
-  if (!selector) return;
-  try {
-    beginOperation(m.open_session(), "session-recovery");
-    const status = await api.openSession({ selector });
-    sessionStatus.set(status);
-    await refreshSessionList();
+    sessionStatus.set(idleSessionStatus(selector, reportForSelector(get(deviceStore), selector), selector ? "closed" : "idle"));
+    pendingInteraction.set(null);
     finishOperation();
-    if (status.error) {
-      const logEntryId = appendLogEntry({
-        tone: "error",
-        source: "session",
-        title: m.open_session_failed(),
-        message: status.error.message,
-        selector,
-        detailId: "session-recovery",
-        data: { session: status },
-      });
-      setStatusOutcome({ tone: "error", title: m.open_session_failed(), message: status.error.message, detailId: "session-recovery", logEntryId, retry: () => openSelectedSession(selector) });
-      return;
-    }
-    const logEntryId = appendLogEntry({
-      tone: "success",
-      source: "session",
-      title: m.session_open_title(),
-      message: m.selected_session_ready(),
-      selector,
-      detailId: "session-recovery",
-      data: { session: status },
-    });
-    setStatusOutcome({ tone: "success", title: m.session_open_title(), message: m.selected_session_ready(), detailId: "session-recovery", logEntryId });
-  } catch (error) {
-    finishOperation();
-    const message = messageFromError(error);
-    const logEntryId = appendLogEntry({
-      tone: "error",
-      source: "session",
-      title: m.open_session_failed(),
-      message,
-      selector,
-      detailId: "session-recovery",
-      data: { error: { message } },
-    });
-    setStatusOutcome({ tone: "error", title: m.open_session_failed(), message, detailId: "session-recovery", logEntryId, retry: () => openSelectedSession(selector) });
   }
 }
 
 export async function refreshSessionList() {
   try {
-    sessions.set(await api.sessions());
+    sessions.set((await api.sessions()).map((snapshot) => statusFromSession(snapshot)));
   } catch {
     sessions.set([]);
   }

@@ -9,6 +9,7 @@
     handleOperationProgress,
     refreshDiscovery,
     selectToken,
+    shutdownWorkbench,
   } from "$lib/controller";
   import {
     activeScreen,
@@ -74,6 +75,7 @@
     return () => {
       offProgress?.();
       offInteraction?.();
+      void shutdownWorkbench();
     };
   });
 </script>
@@ -111,7 +113,7 @@
           data-window-drag-exclude
           type="button"
           onclick={refresh}
-          disabled={refreshing}
+          disabled={refreshing || $sessionBusy}
           aria-label={m.refresh_devices()}
           title={m.refresh_devices()}
         >

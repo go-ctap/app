@@ -38,19 +38,7 @@ export type Discovery = {
   error?: RuntimeErrorEnvelope | null;
 };
 
-const state: {
-  devices: DeviceReport[];
-  selectedSelector: string;
-  selectedDevice: DeviceReport | null;
-  currentSession: SessionSnapshot | null;
-} = {
-  devices: [],
-  selectedSelector: "",
-  selectedDevice: null,
-  currentSession: null,
-};
-
-function runtimeErrorFrom(error: unknown): RuntimeErrorEnvelope {
+export function runtimeErrorFrom(error: unknown): RuntimeErrorEnvelope {
   const source = error as { category?: RuntimeErrorEnvelope["category"]; message?: string; error?: { message?: string } };
   const nestedMessage = source.error ? source.error.message : "";
   return new RuntimeErrorEnvelope({
@@ -59,47 +47,54 @@ function runtimeErrorFrom(error: unknown): RuntimeErrorEnvelope {
   });
 }
 
-function selectorFromDevice(device: DeviceReport) {
-  return device.deviceId || device.ordinalAlias || "";
+export function selectorFromDevice(device: DeviceReport | null | undefined) {
+  return device?.deviceId || device?.ordinalAlias || "";
 }
 
-function labelForDevice(device: DeviceReport) {
+export function reportForSelector(devices: DeviceReport[], selector: string) {
+  const requestedSelector = selector.trim();
+  if (!requestedSelector) return null;
+  return devices.find((device) => device.deviceId === requestedSelector || device.ordinalAlias === requestedSelector) || null;
+}
+
+export function labelForDevice(device: DeviceReport) {
   const name = [device.manufacturer, device.product].filter(Boolean).join(" ") || device.product || device.deviceId;
   return [name, device.serial].filter(Boolean).join(" · ");
 }
 
-function reportForSelector(selector: string) {
-  return state.devices.find((device) => device.deviceId === selector || device.ordinalAlias === selector) || null;
+export function idleSessionStatus(
+  selectedSelector: string,
+  selectedDevice: DeviceReport | null,
+  state: SessionStatus["state"] = selectedSelector ? "closed" : "idle",
+  error?: RuntimeErrorEnvelope | null,
+): SessionStatus {
+  const status: SessionStatus = {
+    selectedSelector,
+    selectedDevice,
+    state,
+  };
+  if (selectedDevice) {
+    status.deviceId = selectedDevice.deviceId;
+    status.deviceLabel = labelForDevice(selectedDevice);
+  }
+  if (error) status.error = error;
+  return status;
 }
 
-function setCurrentSession(snapshot: SessionSnapshot | null) {
-  state.currentSession = snapshot;
-  if (!snapshot) return;
-
-  state.selectedDevice = snapshot.info.device;
-  state.selectedSelector = selectorFromDevice(snapshot.info.device);
+export function sessionIsOpen(snapshot: SessionSnapshot) {
+  return !snapshot.info.closed;
 }
 
-function statusFromSession(
-  snapshot = state.currentSession,
+export function sessionMatches(snapshot: SessionSnapshot, selector: string) {
+  const requestedSelector = selector.trim();
+  return sessionIsOpen(snapshot) && (snapshot.info.device.deviceId === requestedSelector || snapshot.info.device.ordinalAlias === requestedSelector);
+}
+
+export function statusFromSession(
+  snapshot: SessionSnapshot,
   stateOverride?: SessionStatus["state"],
   error?: RuntimeErrorEnvelope | null,
 ): SessionStatus {
-  if (!snapshot) {
-    const device = state.selectedDevice;
-    const status: SessionStatus = {
-      selectedSelector: state.selectedSelector,
-      selectedDevice: device,
-      state: stateOverride || "idle",
-    };
-    if (device) {
-      status.deviceId = device.deviceId;
-      status.deviceLabel = labelForDevice(device);
-    }
-    if (error) status.error = error;
-    return status;
-  }
-
   const device = snapshot.info.device;
   const status: SessionStatus = {
     sessionId: snapshot.id,
@@ -116,135 +111,25 @@ function statusFromSession(
   return status;
 }
 
-function discovery(error?: RuntimeErrorEnvelope | null, stateOverride?: SessionStatus["state"]): Discovery {
-  const snapshot: Discovery = {
-    devices: state.devices,
-    selectedSelector: state.selectedSelector,
-    selectedDevice: state.selectedDevice,
-    session: statusFromSession(state.currentSession, stateOverride, error),
-  };
-  if (error) snapshot.error = error;
-  return snapshot;
-}
-
-function sessionIsOpen(snapshot: SessionSnapshot) {
-  return !snapshot.info.closed;
-}
-
-function sessionMatches(snapshot: SessionSnapshot, selector: string) {
-  return sessionIsOpen(snapshot) && (snapshot.info.device.deviceId === selector || snapshot.info.device.ordinalAlias === selector);
-}
-
-async function closeOpenSessions() {
-  const snapshots = await service.Sessions();
-  if (snapshots.some(sessionIsOpen)) {
-    await service.CloseAllSessions();
-  }
-  state.currentSession = null;
-  return snapshots;
-}
-
-async function refreshSessions() {
-  const snapshots = await service.Sessions();
-  const session = state.selectedSelector
-    ? snapshots.find((snapshot) => sessionMatches(snapshot, state.selectedSelector)) || null
-    : null;
-
-  setCurrentSession(session);
-  return snapshots;
-}
-
-async function openSelectedSession(request: OpenSessionRequest) {
-  const selector = (request.selector || state.selectedSelector).trim();
-  if (!selector) throw new Error("authenticator selection is required");
-
-  const snapshots = await service.Sessions();
-  const openSessions = snapshots.filter(sessionIsOpen);
-  const existing = openSessions.find((snapshot) => sessionMatches(snapshot, selector));
-  const onlySelectedSession = existing && openSessions.every((snapshot) => sessionMatches(snapshot, selector));
-
-  if (onlySelectedSession) {
-    setCurrentSession(existing);
-    return existing;
-  }
-
-  if (openSessions.length) {
-    await service.CloseAllSessions();
-    state.currentSession = null;
-  }
-
-  const snapshot = await service.OpenSession({ selector });
-  setCurrentSession(snapshot);
-  return snapshot;
-}
-
 export const api = {
-  async discover(request: DiscoverRequest = {}): Promise<Discovery> {
-    try {
-      const snapshot = await service.Discover(request);
-
-      state.devices = snapshot.devices;
-      state.selectedDevice = state.selectedSelector ? reportForSelector(state.selectedSelector) : null;
-      if (!state.selectedDevice) state.selectedSelector = "";
-      if (!state.selectedSelector && state.devices.length === 1) {
-        state.selectedDevice = state.devices[0];
-        state.selectedSelector = selectorFromDevice(state.selectedDevice);
-      }
-
-      if (state.selectedSelector) {
-        await openSelectedSession({ selector: state.selectedSelector });
-      } else {
-        await closeOpenSessions();
-      }
-      return discovery();
-    } catch (error) {
-      return discovery(runtimeErrorFrom(error), state.selectedSelector ? "error" : "idle");
-    }
+  async discover(request: DiscoverRequest = {}): Promise<DeviceReport[]> {
+    return (await service.Discover(request)).devices;
   },
 
-  async select(selector: string): Promise<Discovery> {
-    const requestedSelector = selector.trim();
-    state.selectedDevice = requestedSelector ? reportForSelector(requestedSelector) : null;
-    state.selectedSelector = state.selectedDevice ? selectorFromDevice(state.selectedDevice) : "";
-
-    try {
-      if (state.selectedSelector) {
-        await openSelectedSession({ selector: state.selectedSelector });
-      } else {
-        await closeOpenSessions();
-      }
-      return discovery();
-    } catch (error) {
-      return discovery(runtimeErrorFrom(error), state.selectedSelector ? "error" : "idle");
-    }
+  openSession(request: OpenSessionRequest): Promise<SessionSnapshot> {
+    return service.OpenSession(request);
   },
 
-  async openSession(request: OpenSessionRequest): Promise<SessionStatus> {
-    return statusFromSession(await openSelectedSession(request));
+  sessions(): Promise<SessionSnapshot[]> {
+    return service.Sessions();
   },
 
-  async sessions(): Promise<SessionStatus[]> {
-    return (await refreshSessions()).map((snapshot) => statusFromSession(snapshot));
+  closeSession(id: SessionID): Promise<SessionSnapshot> {
+    return service.CloseSession(id);
   },
 
-  async session(): Promise<SessionStatus> {
-    await refreshSessions();
-    return statusFromSession();
-  },
-
-  sessionStatus(): Promise<SessionStatus> {
-    return api.session();
-  },
-
-  async closeSession(id: SessionID): Promise<SessionStatus> {
-    setCurrentSession(await service.CloseSession(id));
-    return statusFromSession(state.currentSession, "closed");
-  },
-
-  async closeAllSessions(): Promise<SessionStatus[]> {
-    const closed = await service.CloseAllSessions();
-    state.currentSession = null;
-    return closed.map((snapshot) => statusFromSession(snapshot, "closed"));
+  closeAllSessions(): Promise<SessionSnapshot[]> {
+    return service.CloseAllSessions();
   },
 
   cancelOperation(request: CancelOperationRequest): Promise<boolean> {

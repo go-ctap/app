@@ -79,6 +79,17 @@ export const sessionProblem = derived(sessionStatus, ($sessionStatus) => $sessio
 
 const LOG_LIMIT = 250;
 let logSequence = 0;
+const REDACTED = "[redacted]";
+const SECRET_FIELD_NAMES = new Set([
+  "pin",
+  "pinCode",
+  "pinUvAuthToken",
+  "pinUVAuthToken",
+  "newPIN",
+  "oldPIN",
+  "confirmationMessage",
+  "resetConfirmation",
+]);
 
 function nextLogEntryId() {
   logSequence += 1;
@@ -124,6 +135,18 @@ function compactEnvelope(envelope: Envelope | null | undefined) {
   };
 }
 
+function sanitizeLogData(value: unknown, depth = 0): unknown {
+  if (depth > 6) return "[truncated]";
+  if (!value || typeof value !== "object") return value;
+  if (Array.isArray(value)) return value.map((item) => sanitizeLogData(item, depth + 1));
+
+  const output: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    output[key] = SECRET_FIELD_NAMES.has(key) ? REDACTED : sanitizeLogData(item, depth + 1);
+  }
+  return output;
+}
+
 function operationResultMessage(envelope: Envelope) {
   const result = envelope.result as { summary?: string; message?: string };
   return result.summary || result.message || m.operation_finished_successfully();
@@ -132,7 +155,7 @@ function operationResultMessage(envelope: Envelope) {
 export function appendLogEntry(entry: Omit<WorkbenchLogEntry, "id" | "timestamp"> & { id?: string; timestamp?: string }) {
   const id = entry.id || nextLogEntryId();
   const timestamp = entry.timestamp || new Date().toISOString();
-  const next: WorkbenchLogEntry = { ...entry, id, timestamp };
+  const next: WorkbenchLogEntry = { ...entry, id, timestamp, data: sanitizeLogData(entry.data) };
   workbenchLog.update((items) => [next, ...items].slice(0, LOG_LIMIT));
   if (!get(selectedLogEntryId)) {
     selectedLogEntryId.set(id);
@@ -200,12 +223,14 @@ export function beginOperation(label: string, detailId?: string) {
       message: m.operation_running_with_label({ label }),
     },
   });
+  sessionStatus.update((state) => state.selectedSelector ? { ...state, state: "running" } : state);
   return logEntryId;
 }
 
 export function finishOperation() {
   setStatusOperation(null);
   pendingInteraction.set(null);
+  sessionStatus.update((state) => state.state === "running" ? { ...state, state: "ready" } : state);
 }
 
 export function setStatusOutcome(outcome: StatusBarOutcome | null) {
