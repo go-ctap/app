@@ -11,7 +11,6 @@ type DiscoverInput = { transport?: string; mode?: Mode };
 type OpenSessionInput = string | { selector?: string };
 type CancelInput = string | { operationId?: string };
 type InteractionAnswer = { interactionId: string; pin?: string; confirmed?: boolean; canceled?: boolean };
-type LargeBlobMutationInput = kitservice.LargeBlobMutationRequest & { payload?: number[] | string };
 type MDSLookupEnvelope = kitservice.MDSLookupEnvelope & {
   selectedDevice?: unknown;
   session?: SessionStatus;
@@ -126,24 +125,34 @@ function sessionStatus(snapshot = state.currentSession, status?: SessionStatus["
   };
 }
 
-function discovery(error?: OperationError | null): Discovery {
+function discovery(error?: OperationError | null, status?: SessionStatus["state"]): Discovery {
   return {
     devices: state.devices,
     selectedSelector: state.selectedSelector,
     selectedDevice: state.selectedDevice,
-    session: sessionStatus(state.currentSession, undefined, error),
+    session: sessionStatus(state.currentSession, status, error),
     ...(error ? { error } : {}),
   };
 }
 
-async function refreshSessions(recoverUnselected = true) {
+function sessionIsOpen(snapshot: kitservice.SessionSnapshot | null | undefined) {
+  return Boolean(snapshot && !snapshot.info?.closed);
+}
+
+async function closeOpenSessions() {
   const snapshots = await service.Sessions();
-  const session =
-    state.selectedSelector
-      ? snapshots.find((snapshot: any) => sessionMatches(snapshot, state.selectedSelector)) || null
-      : recoverUnselected
-        ? snapshots.find((snapshot: any) => !snapshot.info?.closed) || null
-        : null;
+  if (snapshots.some((snapshot: any) => sessionIsOpen(snapshot))) {
+    await service.CloseAllSessions();
+  }
+  state.currentSession = null;
+  return snapshots;
+}
+
+async function refreshSessions() {
+  const snapshots = await service.Sessions();
+  const session = state.selectedSelector
+    ? snapshots.find((snapshot: any) => sessionMatches(snapshot, state.selectedSelector)) || null
+    : null;
 
   setCurrentSession(session);
 
@@ -152,7 +161,7 @@ async function refreshSessions(recoverUnselected = true) {
 
 function sessionMatches(snapshot: kitservice.SessionSnapshot, selector: string) {
   return (
-    !snapshot.info?.closed &&
+    sessionIsOpen(snapshot) &&
     (snapshot.info?.device?.deviceId === selector || snapshot.info?.device?.ordinalAlias === selector)
   );
 }
@@ -161,12 +170,19 @@ async function ensureSession(selector = state.selectedSelector) {
   selector = selector.trim();
   if (!selector) throw new Error("authenticator selection is required");
 
-  if (state.currentSession && sessionMatches(state.currentSession, selector)) return state.currentSession;
+  const snapshots = await service.Sessions();
+  const openSessions = snapshots.filter((snapshot: any) => sessionIsOpen(snapshot));
+  const existing = openSessions.find((snapshot: any) => sessionMatches(snapshot, selector));
+  const onlySelectedSession = existing && openSessions.every((snapshot: any) => sessionMatches(snapshot, selector));
 
-  const existing = (await service.Sessions()).find((snapshot: any) => sessionMatches(snapshot, selector));
-  if (existing) {
+  if (onlySelectedSession) {
     setCurrentSession(existing);
     return existing;
+  }
+
+  if (openSessions.length) {
+    await service.CloseAllSessions();
+    state.currentSession = null;
   }
 
   const snapshot = await service.OpenSession({ selector });
@@ -234,10 +250,14 @@ export const api = {
         state.selectedSelector = deviceID(state.selectedDevice) || ordinalAlias(state.selectedDevice);
       }
 
-      await refreshSessions(Boolean(state.selectedSelector));
+      if (state.selectedSelector) {
+        await ensureSession(state.selectedSelector);
+      } else {
+        await closeOpenSessions();
+      }
       return discovery();
     } catch (error) {
-      return discovery(errorFrom(error));
+      return discovery(errorFrom(error), state.selectedSelector ? "error" : "idle");
     }
   },
 
@@ -246,8 +266,16 @@ export const api = {
     state.selectedDevice = requestedSelector ? reportForSelector(requestedSelector) : null;
     state.selectedSelector = state.selectedDevice ? deviceID(state.selectedDevice) || ordinalAlias(state.selectedDevice) : "";
 
-    await refreshSessions(Boolean(state.selectedSelector));
-    return discovery();
+    try {
+      if (state.selectedSelector) {
+        await ensureSession(state.selectedSelector);
+      } else {
+        await closeOpenSessions();
+      }
+      return discovery();
+    } catch (error) {
+      return discovery(errorFrom(error), state.selectedSelector ? "error" : "idle");
+    }
   },
 
   async openSession(request: OpenSessionInput): Promise<SessionStatus> {
@@ -255,7 +283,7 @@ export const api = {
   },
 
   async sessions(): Promise<SessionStatus[]> {
-    return (await refreshSessions(false)).map((snapshot: any) => sessionStatus(snapshot));
+    return (await refreshSessions()).map((snapshot: any) => sessionStatus(snapshot));
   },
 
   async session(): Promise<SessionStatus> {
@@ -291,48 +319,12 @@ export const api = {
   },
 
   inspect: operation(service.Inspect),
-  listCredentials: operation(service.ListCredentials),
-  deleteCredential: operation(service.DeleteCredential),
-  updateCredentialUser: operation(service.UpdateCredentialUser),
-  readLargeBlob: operation(service.ReadLargeBlob),
-  listLargeBlobs: operation(service.ListLargeBlobs),
-  writeLargeBlob: operation(service.WriteLargeBlob as OperationCall<LargeBlobMutationInput>),
-  deleteLargeBlob: operation(service.DeleteLargeBlob),
-  garbageCollectLargeBlobs: operation(service.GarbageCollectLargeBlobs),
-  configStatus: operation(service.ConfigStatus),
-  setPIN: operation(service.SetPIN),
-  changePIN: operation(service.ChangePIN),
-  setAlwaysUV: operation(service.SetAlwaysUV),
-  setMinPINLength: operation(service.SetMinPINLength),
   bioSensorInfo: operation(service.BioSensorInfo),
-  bioList: operation(service.BioList),
-  bioEnroll: operation(service.BioEnroll),
-  bioRename: operation(service.BioRename),
-  bioRemove: operation(service.BioRemove),
-  resetFactory: operation(service.ResetFactory),
-  makeCredential: operation(service.MakeCredential),
-  getAssertion: operation(service.GetAssertion),
 
   async lookupMDS(request: kitservice.MDSLookupRequest | string, refresh = false): Promise<MDSLookupEnvelope> {
     return decorateMDS(await service.LookupMDS(typeof request === "string" ? { aaguid: request, refresh } : request));
   },
 } as const;
-
-export function bytesFromText(value: string): number[] {
-  return Array.from(new TextEncoder().encode(value));
-}
-
-export function bytesFromJSON(value: unknown): number[] {
-  return bytesFromText(JSON.stringify(value));
-}
-
-export function parseHexLines(value: string): Array<{ type: "public-key"; credentialIDHex: string }> {
-  return value
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-    .map((credentialIDHex) => ({ type: "public-key", credentialIDHex }));
-}
 
 export function operationFailed(envelope: ErrorLike): string | null {
   if (!envelope?.error) return null;

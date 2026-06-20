@@ -1,29 +1,73 @@
 <script lang="ts">
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
-  import * as Table from "$lib/components/ui/table/index.js";
   import { m } from "../paraglide/messages.js";
 
-  export let rows: string[] = [];
+  let { rows = [] }: { rows?: string[] } = $props();
 </script>
 
-<Card.Root>
-  <Card.Header>
-    <Card.Title>{m.inspection_in_progress()}</Card.Title>
-    <Card.Description>{m.reading_authenticator_metadata()}</Card.Description>
-  </Card.Header>
-  <Card.Content>
-    <Table.Root>
-      <Table.Body>
-        {#each rows as label (label)}
-          <Table.Row>
-            <Table.Cell class="w-35 text-muted-foreground">{label}</Table.Cell>
-            <Table.Cell>
-              <Skeleton class="h-5 w-24" />
-            </Table.Cell>
-          </Table.Row>
-        {/each}
-      </Table.Body>
-    </Table.Root>
-  </Card.Content>
-</Card.Root>
+<section class="loading-panel">
+  <header>
+    <h2>{m.inspection_in_progress()}</h2>
+    <p>{m.reading_authenticator_metadata()}</p>
+  </header>
+  <table>
+    <tbody>
+      {#each rows as label (label)}
+        <tr>
+          <td>{label}</td>
+          <td><span class="skeleton"></span></td>
+        </tr>
+      {/each}
+    </tbody>
+  </table>
+</section>
+
+<style>
+  .loading-panel {
+    display: grid;
+    gap: var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    background: var(--color-panel);
+    padding: var(--space-4);
+  }
+
+  h2,
+  p {
+    margin: 0;
+  }
+
+  h2 {
+    font-size: 1rem;
+  }
+
+  p,
+  td:first-child {
+    color: var(--color-text-muted);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  td {
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-3) 0;
+  }
+
+  .skeleton {
+    display: block;
+    width: 8rem;
+    height: 1rem;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--color-panel-soft), #e8eeee, var(--color-panel-soft));
+    background-size: 200% 100%;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    to {
+      background-position: -200% 0;
+    }
+  }
+</style>

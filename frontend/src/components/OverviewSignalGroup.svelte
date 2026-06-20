@@ -8,102 +8,178 @@
 </script>
 
 <script lang="ts">
-  import { buttonVariants } from "$lib/components/ui/button/index.js";
-  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import type { OverviewHeroSignal, OverviewHeroSignalGroup } from "$lib/overview-rules";
-  import { m } from "../paraglide/messages.js";
 
   let { group }: { group: OverviewHeroSignalGroup } = $props();
 
   let Icon = $derived(ICONS[group.id] || Info);
 
-  function signalToneClass(status: OverviewHeroSignal["status"]) {
-    if (status === "supported" || status === "configured" || status === "enabled") return "text-emerald-700 dark:text-emerald-400";
-    if (status === "warning" || status === "not configured" || status === "disabled") return "text-amber-700 dark:text-amber-400";
-    if (status === "informational") return "text-sky-700 dark:text-sky-400";
-    return "text-muted-foreground";
-  }
-
-  function signalDotClass(status: OverviewHeroSignal["status"]) {
-    if (status === "supported" || status === "configured" || status === "enabled") return "bg-emerald-500";
-    if (status === "warning" || status === "not configured" || status === "disabled") return "bg-amber-500";
-    if (status === "informational") return "bg-sky-500";
-    return "bg-muted-foreground/40";
+  function signalTone(status: OverviewHeroSignal["status"]) {
+    if (status === "supported" || status === "configured" || status === "enabled") return "ok";
+    if (status === "warning" || status === "not configured" || status === "disabled") return "warn";
+    if (status === "informational") return "info";
+    return "muted";
   }
 </script>
 
-{#snippet infoTooltip(label: string, text: string)}
-  <Tooltip.Root>
-    <Tooltip.Trigger
-      class={buttonVariants({ variant: "ghost", size: "icon-xs" })}
-      type="button"
-      aria-label={m.about_label({ label })}
-    >
-      <Info size={12} />
-    </Tooltip.Trigger>
-    <Tooltip.Content side="top" sideOffset={6} class="max-w-96 leading-5">
-      <p>{text}</p>
-    </Tooltip.Content>
-  </Tooltip.Root>
-{/snippet}
+<section class="signal-group">
+  <header>
+    <Icon size={16} strokeWidth={2.1} />
+    <h3>{group.title}</h3>
+  </header>
 
-{#snippet signalRow(signal: OverviewHeroSignal)}
-  <div class="grid min-w-0 gap-1.5 border-t py-2.5 first:border-t-0">
-    <div class="overview-signal-row flex min-w-0 flex-col gap-1.5">
-      <div class="grid min-w-0 gap-1.5">
-        <div class="flex min-w-0 items-center gap-1.5">
-          <span class="min-w-0 text-sm font-medium leading-5">{signal.title}</span>
-          {@render infoTooltip(signal.title, signal.tooltip)}
-        </div>
-        <div class="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1 text-xs text-muted-foreground">
-          <code class="inline-flex max-w-full items-center gap-1 overflow-hidden truncate whitespace-nowrap rounded border bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] leading-4 text-muted-foreground" title={`${signal.flag} ${signal.value}${signal.valueNote ? ` (${signal.valueNote})` : ""}`}>
-            <span class="truncate">{signal.flag}</span>
-            <span class="text-foreground/80">
-              {signal.value}
-            </span>
+  <div class="signals">
+    {#each group.signals as signal (signal.id)}
+      {@const tone = signalTone(signal.status)}
+      <article class="signal-row" title={signal.tooltip}>
+        <div class="signal-copy">
+          <div class="signal-title">
+            <span>{signal.title}</span>
+            <Info size={12} aria-label={signal.tooltip} />
+          </div>
+          <code title={`${signal.flag} ${signal.value}${signal.valueNote ? ` (${signal.valueNote})` : ""}`}>
+            <span>{signal.flag}</span>
+            <strong>{signal.value}</strong>
             {#if signal.valueNote}
-              <span class="text-muted-foreground/60">·</span>
-              <span class="text-muted-foreground">{signal.valueNote}</span>
+              <span>{signal.valueNote}</span>
             {/if}
           </code>
         </div>
-      </div>
-      <div class="overview-signal-status flex min-w-0 items-center gap-1.5 pt-0.5" title={signal.tooltip}>
-        <span class={`size-1.5 rounded-full ${signalDotClass(signal.status)}`} aria-hidden="true"></span>
-        <span class={`min-w-0 truncate text-xs font-semibold ${signalToneClass(signal.status)}`}>{signal.statusLabel}</span>
-      </div>
-    </div>
-  </div>
-{/snippet}
-
-<section class="overview-signal-group grid min-w-0 content-start">
-  <div class="flex items-center gap-2 border-b pb-2">
-    <Icon class="size-4 text-muted-foreground" strokeWidth={2.1} />
-    <h3 class="truncate text-sm font-semibold">{group.title}</h3>
-  </div>
-  <div class="grid min-w-0">
-    {#each group.signals as signal (signal.id)}
-      {@render signalRow(signal)}
+        <div class="signal-status" data-tone={tone}>
+          <span aria-hidden="true"></span>
+          <strong>{signal.statusLabel}</strong>
+        </div>
+      </article>
     {/each}
   </div>
 </section>
 
 <style>
-  .overview-signal-group {
-    container-type: inline-size;
+  .signal-group {
+    display: grid;
+    align-content: start;
+    min-width: 0;
   }
 
-  @container (min-width: 18rem) {
-    .overview-signal-row {
-      align-items: flex-start;
-      flex-direction: row;
-      gap: 0.75rem;
-      justify-content: space-between;
-    }
+  header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-2);
+    color: var(--color-text-muted);
+  }
 
-    .overview-signal-status {
-      flex-shrink: 0;
-      justify-content: flex-end;
+  h3 {
+    min-width: 0;
+    overflow: hidden;
+    margin: 0;
+    color: var(--color-text);
+    font-size: 0.9rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .signals {
+    display: grid;
+    min-width: 0;
+  }
+
+  .signal-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-3);
+    min-width: 0;
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-3) 0;
+  }
+
+  .signal-row:first-child {
+    border-top: 0;
+  }
+
+  .signal-copy {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .signal-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-width: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .signal-title span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  code {
+    display: inline-flex;
+    width: fit-content;
+    max-width: 100%;
+    gap: var(--space-1);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: var(--color-panel-soft);
+    color: var(--color-text-muted);
+    padding: 2px 6px;
+    font-size: 0.72rem;
+  }
+
+  code span,
+  code strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  code strong {
+    color: var(--color-text);
+  }
+
+  .signal-status {
+    display: inline-flex;
+    align-items: center;
+    align-self: start;
+    gap: 6px;
+    padding-top: 2px;
+    font-size: 0.75rem;
+  }
+
+  .signal-status span {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  .signal-status[data-tone="ok"] {
+    color: var(--color-success);
+  }
+
+  .signal-status[data-tone="warn"] {
+    color: var(--color-warning);
+  }
+
+  .signal-status[data-tone="info"] {
+    color: var(--color-info);
+  }
+
+  .signal-status[data-tone="muted"] {
+    color: var(--color-text-muted);
+  }
+
+  @media (max-width: 520px) {
+    .signal-row {
+      grid-template-columns: 1fr;
     }
   }
 </style>

@@ -1,7 +1,6 @@
 import { derived, get, writable } from "svelte/store";
 import type { Discovery, Envelope, SessionStatus } from "./api";
 import { m } from "../paraglide/messages.js";
-import { navigateToScreen } from "./navigation";
 
 export type StatusBarAction = {
   id: string;
@@ -40,45 +39,6 @@ export type StatusBarState = {
   actions: StatusBarAction[];
 };
 
-export type CredentialsScreenState = {
-  envelope: any | null;
-  preview: any | null;
-  editing: any | null;
-  displayName: string;
-  name: string;
-  userIDHex: string;
-};
-
-export type LargeBlobScreenState = {
-  envelope: any | null;
-  readResult: any | null;
-  readCredentialId: string;
-  selectedId: string;
-  payload: string;
-  payloadByCredential: Record<string, string>;
-  decodeMode: string;
-  readDecodeMode: string;
-  preview: any | null;
-  previewBinding: any | null;
-  previewMode: "write" | "delete" | "";
-  detailMode: "read" | "write" | "delete" | "raw";
-};
-
-export type SharedCredentialInventory = {
-  selector: string;
-  selectionVersion: number;
-  deviceId?: string;
-  loadedAt: string;
-  source: "credentials" | "largeBlobs";
-  hasManagementFields: boolean;
-  hasBlobFields: boolean;
-  managementEnvelope?: any | null;
-  blobEnvelope?: any | null;
-  managementGroups: any[];
-  managementCredentials: any[];
-  blobCredentials: any[];
-};
-
 export const devices = writable<any[]>([]);
 export const selectedSelector = writable("");
 export const selectedDevice = writable<any | null>(null);
@@ -98,9 +58,6 @@ export const overviewMDSLoading = writable(false);
 export const pendingInteraction = writable<any | null>(null);
 export const appError = writable<string | null>(null);
 export const toasts = writable<string[]>([]);
-export const credentialsScreenCache = writable<Record<string, CredentialsScreenState>>({});
-export const largeBlobScreenCache = writable<Record<string, LargeBlobScreenState>>({});
-export const sharedCredentialInventoryCache = writable<Record<string, SharedCredentialInventory>>({});
 
 export const hasSelection = derived(selectedSelector, ($selectedSelector) => $selectedSelector.trim().length > 0);
 export const sessionBusy = derived(sessionStatus, ($sessionStatus) => $sessionStatus.state === "opening" || $sessionStatus.state === "running");
@@ -149,132 +106,6 @@ function compactEnvelope(envelope: Envelope | null | undefined) {
   };
 }
 
-function envelopeReport(envelope: any) {
-  return envelope?.result?.report ?? envelope?.result?.result ?? envelope?.result ?? null;
-}
-
-function listValue(value: unknown) {
-  return Array.isArray(value) ? value : [];
-}
-
-function credentialKey(credential: any) {
-  return credential?.credentialIDHex || credential?.credentialIdHex || credential?.id || "";
-}
-
-function normalizeManagementCredentials(report: any) {
-  const rows: any[] = [];
-  for (const group of listValue(report?.groups)) {
-    for (const credential of listValue(group?.credentials)) {
-      rows.push({
-        ...credential,
-        credentialIDHex: credential.credentialIDHex || credential.credentialIdHex || credential.id || "",
-        userIDHex: credential.userIDHex || credential.userIdHex || credential.user?.idHex || "",
-        userName: credential.userName || credential.user?.name || "",
-        displayName: credential.displayName || credential.user?.displayName || "",
-        rpID: group.rpID || group.rpId || group.rp?.id || "",
-        rpName: group.rpName || group.rp?.name || "",
-        rp: {
-          id: group.rpID || group.rpId || group.rp?.id || "",
-          name: group.rpName || group.rp?.name || "",
-        },
-        user: {
-          idHex: credential.userIDHex || credential.userIdHex || credential.user?.idHex || "",
-          name: credential.userName || credential.user?.name || "",
-          displayName: credential.displayName || credential.user?.displayName || "",
-        },
-        blobState: credential.blobState || credential.largeBlobKeyState || "unknown",
-        blobByteCount: credential.blobByteCount ?? credential.rawByteCount ?? 0,
-      });
-    }
-  }
-  return rows;
-}
-
-function normalizeBlobCredentials(report: any) {
-  return listValue(report?.credentials).map((credential: any) => ({
-    ...credential,
-    credentialIDHex: credential.credentialIDHex || credential.credentialIdHex || credential.id || "",
-    userIDHex: credential.userIDHex || credential.userIdHex || credential.user?.idHex || "",
-    userName: credential.userName || credential.user?.name || "",
-    displayName: credential.displayName || credential.user?.displayName || "",
-    rpID: credential.rpID || credential.rpId || credential.rp?.id || "",
-    rpName: credential.rpName || credential.rp?.name || "",
-    rp: {
-      id: credential.rpID || credential.rpId || credential.rp?.id || "",
-      name: credential.rpName || credential.rp?.name || "",
-    },
-    user: {
-      idHex: credential.userIDHex || credential.userIdHex || credential.user?.idHex || "",
-      name: credential.userName || credential.user?.name || "",
-      displayName: credential.displayName || credential.user?.displayName || "",
-    },
-    blobState: credential.blobState || "unknown",
-    blobByteCount: credential.blobByteCount ?? credential.rawByteCount ?? 0,
-  }));
-}
-
-export function credentialGroupsFromRows(credentials: any[]) {
-  const groups = new Map<string, any>();
-  for (const credential of credentials) {
-    const rpID = credential.rpID || credential.rp?.id || m.unknown_rp();
-    const rpName = credential.rpName || credential.rp?.name || rpID;
-    if (!groups.has(rpID)) {
-      groups.set(rpID, { rpID, rpName, credentials: [] });
-    }
-    groups.get(rpID).credentials.push(credential);
-  }
-  return Array.from(groups.values());
-}
-
-export function updateSharedCredentialInventory(selector: string, envelope: any, source: "credentials" | "largeBlobs") {
-  if (!selector || envelope?.error) return;
-  const report = envelopeReport(envelope);
-  const version = get(selectionVersion);
-  const selected = get(selectedDevice);
-  sharedCredentialInventoryCache.update((cache) => {
-    const previous = cache[selector];
-    const managementCredentials = source === "credentials" ? normalizeManagementCredentials(report) : previous?.managementCredentials || [];
-    const managementGroups = source === "credentials"
-      ? listValue(report?.groups)
-      : previous?.managementGroups || credentialGroupsFromRows(managementCredentials);
-    const blobCredentials = source === "largeBlobs" ? normalizeBlobCredentials(report) : previous?.blobCredentials || [];
-    const next: SharedCredentialInventory = {
-      selector,
-      selectionVersion: version,
-      deviceId: selected?.deviceId,
-      loadedAt: new Date().toISOString(),
-      source,
-      hasManagementFields: source === "credentials" || Boolean(previous?.hasManagementFields),
-      hasBlobFields: source === "largeBlobs" || Boolean(previous?.hasBlobFields),
-      managementEnvelope: source === "credentials" ? envelope : previous?.managementEnvelope || null,
-      blobEnvelope: source === "largeBlobs" ? envelope : previous?.blobEnvelope || null,
-      managementGroups,
-      managementCredentials,
-      blobCredentials,
-    };
-    return { ...cache, [selector]: next };
-  });
-}
-
-export function sharedInventoryFor(selector: string) {
-  if (!selector) return null;
-  const inventory = get(sharedCredentialInventoryCache)[selector] || null;
-  if (!inventory || inventory.selectionVersion !== get(selectionVersion)) return null;
-  return inventory;
-}
-
-export function clearSharedCredentialInventory(selector?: string) {
-  if (!selector) {
-    sharedCredentialInventoryCache.set({});
-    return;
-  }
-  sharedCredentialInventoryCache.update((cache) => {
-    const next = { ...cache };
-    delete next[selector];
-    return next;
-  });
-}
-
 export function appendLogEntry(entry: Omit<WorkbenchLogEntry, "id" | "timestamp"> & { id?: string; timestamp?: string }) {
   const id = entry.id || nextLogEntryId();
   const timestamp = entry.timestamp || new Date().toISOString();
@@ -289,8 +120,6 @@ export function appendLogEntry(entry: Omit<WorkbenchLogEntry, "id" | "timestamp"
 export function focusLogEntry(id: string | undefined) {
   if (!id) return;
   selectedLogEntryId.set(id);
-  activeScreen.set("logs");
-  void navigateToScreen("logs");
 }
 
 export function applyDiscovery(response: Discovery): boolean {
@@ -306,7 +135,6 @@ export function applyDiscovery(response: Discovery): boolean {
     overviewBioSensorEnvelope.set(null);
     overviewMDSEnvelope.set(null);
     overviewMDSLoading.set(false);
-    clearSharedCredentialInventory(previousSelector);
   }
   if (response.session) sessionStatus.set(response.session);
   if (response.error) {
@@ -385,45 +213,11 @@ export function setStatusActions(actions: StatusBarAction[]) {
   statusBar.update((state) => ({ ...state, actions }));
 }
 
-export function emptyCredentialsState(): CredentialsScreenState {
-  return { envelope: null, preview: null, editing: null, displayName: "", name: "", userIDHex: "" };
-}
-
-export function emptyLargeBlobState(): LargeBlobScreenState {
-  return {
-    envelope: null,
-    readResult: null,
-    readCredentialId: "",
-    selectedId: "",
-    payload: "",
-    payloadByCredential: {},
-    decodeMode: "utf8",
-    readDecodeMode: "",
-    preview: null,
-    previewBinding: null,
-    previewMode: "",
-    detailMode: "read",
-  };
-}
-
-export function setCredentialsScreenState(selector: string, state: CredentialsScreenState) {
-  if (!selector) return;
-  credentialsScreenCache.update((cache) => ({ ...cache, [selector]: state }));
-}
-
-export function setLargeBlobScreenState(selector: string, state: LargeBlobScreenState) {
-  if (!selector) return;
-  largeBlobScreenCache.update((cache) => ({ ...cache, [selector]: state }));
-}
-
 export function clearWorkbenchScreenCaches() {
   overviewEnvelope.set(null);
   overviewBioSensorEnvelope.set(null);
   overviewMDSEnvelope.set(null);
   overviewMDSLoading.set(false);
-  credentialsScreenCache.set({});
-  largeBlobScreenCache.set({});
-  clearSharedCredentialInventory();
   selectionVersion.update((value) => value + 1);
 }
 

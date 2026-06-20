@@ -13,7 +13,6 @@
     sessionBusy,
     sessionStatus,
   } from "$lib/stores";
-  import { Alert, AlertDescription } from "$lib/components/ui/alert/index.js";
   import {
     buildOverviewConformanceWarnings,
     buildOverviewHero,
@@ -79,11 +78,9 @@
 {:else if !hasReport && !loading && !failureMessage}
   <EmptyState title={m.overview_not_loaded()} message={m.overview_not_loaded_message()} />
 {:else}
-  <section class="grid gap-4">
+  <section class="overview-screen flow">
     {#if failureMessage}
-      <Alert variant="destructive">
-        <AlertDescription>{failureMessage}</AlertDescription>
-      </Alert>
+      <div class="overview-alert" role="alert">{failureMessage}</div>
     {/if}
 
     {#if hasReport}
@@ -107,3 +104,18 @@
     {/if}
   </section>
 {/if}
+
+<style>
+  .overview-screen {
+    min-width: 0;
+    --flow-space: var(--space-4);
+  }
+
+  .overview-alert {
+    border: 1px solid var(--color-danger-border);
+    border-radius: var(--radius-panel);
+    background: var(--color-danger-bg);
+    color: var(--color-danger-text);
+    padding: var(--space-3) var(--space-4);
+  }
+</style>

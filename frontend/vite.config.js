@@ -1,7 +1,6 @@
 import { defineConfig } from "vite";
 import { svelte, vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
-import tailwindcss from "@tailwindcss/vite";
 import wails from '@wailsio/runtime/plugins/vite'
 import { fileURLToPath, URL } from "node:url";
 
@@ -18,7 +17,6 @@ export default defineConfig({
       emitTsDeclarations: true,
     }),
     svelte({ preprocess: vitePreprocess() }),
-    tailwindcss(),
     wails("./bindings"),
   ],
   resolve: {

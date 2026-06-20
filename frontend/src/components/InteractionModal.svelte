@@ -1,9 +1,6 @@
 <script lang="ts">
   import { api } from "../lib/api";
   import { pendingInteraction } from "../lib/stores";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Field from "$lib/components/ui/field/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
   import DialogShell from "./DialogShell.svelte";
   import JsonView from "./JsonView.svelte";
   import { m } from "../paraglide/messages.js";
@@ -35,30 +32,64 @@
     primary={() => answer(true)}
     close={() => answer(false, true)}
   >
-      <p>{prompt.request.message || m.continue_on_authenticator()}</p>
+    <p>{prompt.request.message || m.continue_on_authenticator()}</p>
 
-      {#if prompt.request.permission}
-        <p class="text-sm text-muted-foreground">{m.permission({ permission: prompt.request.permission })}</p>
-      {/if}
+    {#if prompt.request.permission}
+      <p class="muted">{m.permission({ permission: prompt.request.permission })}</p>
+    {/if}
 
-      {#if prompt.request.preview}
-        <JsonView value={prompt.request.preview} title={m.preview_json()} variant="bare" />
-      {/if}
+    {#if prompt.request.preview}
+      <JsonView value={prompt.request.preview} title={m.preview_json()} variant="bare" />
+    {/if}
 
-      {#if kind === "pin"}
-        <Field.Field>
-          <Field.Label>{m.pin()}</Field.Label>
-          <Input bind:value={pin} type="password" autocomplete="off" />
-        </Field.Field>
-      {/if}
+    {#if kind === "pin"}
+      <label class="field">
+        <span>{m.pin()}</span>
+        <input bind:value={pin} type="password" autocomplete="off" />
+      </label>
+    {/if}
 
-      {#snippet actions()}
-      <div class="flex flex-wrap items-center justify-end gap-2">
-        <Button variant={destructive ? "destructive" : "default"} onclick={() => answer(true)}>
+    {#snippet actions()}
+      <div class="actions cluster">
+        <button class="primary" data-tone={destructive ? "destructive" : "neutral"} type="button" onclick={() => answer(true)}>
           {kind === "pin" ? m.send_pin() : m.continue_action()}
-        </Button>
-        <Button variant="ghost" onclick={() => answer(false, true)}>{m.cancel()}</Button>
+        </button>
+        <button type="button" onclick={() => answer(false, true)}>{m.cancel()}</button>
       </div>
-      {/snippet}
+    {/snippet}
   </DialogShell>
 {/if}
+
+<style>
+  .muted {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+  }
+
+  .field {
+    display: grid;
+    gap: var(--space-2);
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  input {
+    width: 100%;
+  }
+
+  .actions {
+    --cluster-justify: flex-end;
+  }
+
+  .primary {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: white;
+  }
+
+  .primary[data-tone="destructive"] {
+    border-color: var(--color-danger);
+    background: var(--color-danger);
+  }
+</style>

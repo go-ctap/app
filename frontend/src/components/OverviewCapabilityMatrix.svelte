@@ -15,80 +15,184 @@
 </script>
 
 <script lang="ts">
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as Table from "$lib/components/ui/table/index.js";
   import { overviewStatusLabel, type OverviewGroup } from "$lib/overview-rules";
   import StatusBadge from "../components/StatusBadge.svelte";
   import { m } from "../paraglide/messages.js";
 
-  export let groups: OverviewGroup[] = [];
-  export let warningCount = 0;
+  let { groups = [], warningCount = 0 }: { groups?: OverviewGroup[]; warningCount?: number } = $props();
 </script>
 
-<Card.Root>
-  <Card.Header>
-    <Card.Title>{m.capability_matrix()}</Card.Title>
-    <Card.Description>{m.capability_matrix_description()}</Card.Description>
-    <Card.Action>
-      {#if warningCount}
-        <Badge variant="secondary">{m.warnings_count({ count: warningCount })}</Badge>
-      {/if}
-    </Card.Action>
-  </Card.Header>
-  <Card.Content>
-    <div class="rounded-md border">
-      <Table.Root>
-        <Table.Header>
-          <Table.Row>
-            <Table.Head class="min-w-45">{m.name()}</Table.Head>
-            <Table.Head class="min-w-65">{m.description()}</Table.Head>
-            <Table.Head class="w-40 text-right">{m.status()}</Table.Head>
-            <Table.Head class="min-w-45">{m.value()}</Table.Head>
-          </Table.Row>
-        </Table.Header>
-        <Table.Body>
-          {#each groups as group (group.name)}
-            {@const GroupIcon = GROUP_ICONS[group.rows[0]?.group] || Info}
-            <Table.Row class="bg-muted/50">
-              <Table.Cell colspan={4} class="py-2">
-                <span class="flex items-center gap-2">
-                  <GroupIcon class="text-muted-foreground" />
-                  <span>{group.name}</span>
-                </span>
-              </Table.Cell>
-            </Table.Row>
-            {#each group.rows as row (`${row.group}:${row.name}`)}
-              <Table.Row class={row.status === "unsupported" ? "text-muted-foreground" : ""}>
-                <Table.Cell class="whitespace-normal align-top">
-                  <div class="grid gap-1">
-                    <span class="font-medium">{row.name}</span>
-                    {#if row.source}
-                      <span class="hidden break-all text-xs text-muted-foreground md:inline">{row.source}</span>
-                    {/if}
-                  </div>
-                </Table.Cell>
-                <Table.Cell class="whitespace-normal align-top text-muted-foreground">{row.description}</Table.Cell>
-                <Table.Cell class="whitespace-normal align-top text-right">
-                  <StatusBadge
-                    value={row.status}
-                    label={overviewStatusLabel(row.status)}
-                    help={row.source || row.name}
-                    tone={row.status === "unsupported" ? "neutral" : "auto"}
-                  />
-                </Table.Cell>
-                <Table.Cell class="whitespace-normal align-top">
-                  <span class="wrap-break-word font-medium">{row.value || m.not_reported()}</span>
-                </Table.Cell>
-              </Table.Row>
-            {/each}
-          {:else}
-            <Table.Row>
-              <Table.Cell colspan={4} class="h-24 text-center text-muted-foreground">{m.no_getinfo_fields_reported()}</Table.Cell>
-            </Table.Row>
-          {/each}
-        </Table.Body>
-      </Table.Root>
+<section class="matrix-panel">
+  <header>
+    <div>
+      <h2>{m.capability_matrix()}</h2>
+      <p>{m.capability_matrix_description()}</p>
     </div>
-  </Card.Content>
-</Card.Root>
+    {#if warningCount}
+      <span class="count-badge">{m.warnings_count({ count: warningCount })}</span>
+    {/if}
+  </header>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>{m.name()}</th>
+          <th>{m.description()}</th>
+          <th class="status-col">{m.status()}</th>
+          <th>{m.value()}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each groups as group (group.name)}
+          {@const GroupIcon = GROUP_ICONS[group.rows[0]?.group] || Info}
+          <tr class="group-row">
+            <td colspan="4">
+              <span>
+                <GroupIcon size={15} />
+                {group.name}
+              </span>
+            </td>
+          </tr>
+          {#each group.rows as row (`${row.group}:${row.name}`)}
+            <tr data-state={row.status === "unsupported" ? "muted" : undefined}>
+              <td>
+                <strong>{row.name}</strong>
+                {#if row.source}
+                  <small>{row.source}</small>
+                {/if}
+              </td>
+              <td>{row.description}</td>
+              <td class="status-col">
+                <StatusBadge
+                  value={row.status}
+                  label={overviewStatusLabel(row.status)}
+                  help={row.source || row.name}
+                  tone={row.status === "unsupported" ? "neutral" : "auto"}
+                />
+              </td>
+              <td><strong>{row.value || m.not_reported()}</strong></td>
+            </tr>
+          {/each}
+        {:else}
+          <tr>
+            <td colspan="4" class="empty-cell">{m.no_getinfo_fields_reported()}</td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<style>
+  .matrix-panel {
+    display: grid;
+    gap: var(--space-4);
+    min-width: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    background: var(--color-panel);
+    padding: var(--space-4);
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  h2,
+  p {
+    margin: 0;
+  }
+
+  h2 {
+    font-size: 1rem;
+  }
+
+  p {
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .count-badge {
+    align-self: start;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  .table-wrap {
+    min-width: 0;
+    overflow: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-control);
+  }
+
+  table {
+    width: 100%;
+    min-width: 58rem;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  th,
+  td {
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-3);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .group-row td {
+    background: var(--color-panel-soft);
+    color: var(--color-text);
+    font-weight: 700;
+  }
+
+  .group-row span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  small {
+    display: block;
+    margin-top: var(--space-1);
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    overflow-wrap: anywhere;
+  }
+
+  tr[data-state="muted"] {
+    color: var(--color-text-muted);
+  }
+
+  .status-col {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .empty-cell {
+    height: 6rem;
+    color: var(--color-text-muted);
+    text-align: center;
+    vertical-align: middle;
+  }
+</style>

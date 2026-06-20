@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount, tick, type Snippet } from "svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
+  import { X } from "@lucide/svelte";
   import { m } from "../paraglide/messages.js";
 
   type Props = {
@@ -31,12 +30,6 @@
   let dialog: HTMLDivElement | null = $state(null);
   let restoreTo: Element | null = null;
 
-  function handleOpenChange(nextOpen: boolean) {
-    if (!nextOpen) {
-      close();
-    }
-  }
-
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -45,18 +38,18 @@
     if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
       const target = event.target as HTMLElement;
       if (target?.tagName !== "TEXTAREA") {
-        const primary = dialog?.querySelector<HTMLElement>("[data-primary]");
-        if (primary) {
+        const primaryButton = dialog?.querySelector<HTMLElement>("[data-primary]");
+        if (primaryButton) {
           event.preventDefault();
-          primary.click();
+          primaryButton.click();
         }
       }
     }
     if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
-      const primary = dialog?.querySelector<HTMLElement>("[data-primary]");
-      if (primary) {
+      const primaryButton = dialog?.querySelector<HTMLElement>("[data-primary]");
+      if (primaryButton) {
         event.preventDefault();
-        primary.click();
+        primaryButton.click();
       }
     }
   }
@@ -72,27 +65,124 @@
   });
 </script>
 
-<Dialog.Root open={true} onOpenChange={handleOpenChange}>
-  <Dialog.Content
-    bind:ref={dialog}
-    class={wide ? "sm:max-w-3xl" : ""}
-    showCloseButton={false}
+<div class="dialog-backdrop" role="presentation">
+  <div
+    bind:this={dialog}
+    class="dialog-panel"
+    data-size={wide ? "wide" : "default"}
+    data-tone={destructive ? "destructive" : "neutral"}
+    role="dialog"
+    tabindex="-1"
+    aria-modal="true"
+    aria-label={title}
     onkeydown={handleKeydown}
   >
-    <Dialog.Header>
-      {#if eyebrow}
-        <p class="text-xs font-medium uppercase tracking-normal text-muted-foreground">{eyebrow}</p>
-      {/if}
-      <Dialog.Title>{title}</Dialog.Title>
-    </Dialog.Header>
-    {@render children?.()}
+    <header class="dialog-header">
+      <div>
+        {#if eyebrow}
+          <p class="eyebrow">{eyebrow}</p>
+        {/if}
+        <h2>{title}</h2>
+      </div>
+      <button class="icon-close" type="button" onclick={close} aria-label={closeLabel}>
+        <X size={16} />
+      </button>
+    </header>
+
+    <div class="dialog-body">
+      {@render children?.()}
+    </div>
+
     {#if actions}
       {@render actions()}
     {:else}
-      <Dialog.Footer>
-        <Button data-primary variant={destructive ? "destructive" : "default"} type="button" onclick={primary}>Continue</Button>
-        <Button variant="outline" type="button" onclick={close}>{closeLabel}</Button>
-      </Dialog.Footer>
+      <footer class="dialog-actions cluster">
+        <button class="primary" data-tone={destructive ? "destructive" : "neutral"} data-primary type="button" onclick={primary}>Continue</button>
+        <button type="button" onclick={close}>{closeLabel}</button>
+      </footer>
     {/if}
-  </Dialog.Content>
-</Dialog.Root>
+  </div>
+</div>
+
+<style>
+  .dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    background: rgb(16 22 20 / 0.36);
+    padding: var(--space-4);
+  }
+
+  .dialog-panel {
+    display: grid;
+    gap: var(--space-4);
+    width: min(32rem, 100%);
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    background: var(--color-panel);
+    box-shadow: var(--shadow-panel);
+    padding: var(--space-5);
+  }
+
+  .dialog-panel[data-size="wide"] {
+    width: min(52rem, 100%);
+  }
+
+  .dialog-header {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  h2,
+  .eyebrow {
+    margin: 0;
+  }
+
+  h2 {
+    font-size: 1.05rem;
+  }
+
+  .eyebrow {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .dialog-body {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  .dialog-actions {
+    --cluster-justify: flex-end;
+  }
+
+  .primary {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: white;
+  }
+
+  .primary:hover:not(:disabled) {
+    border-color: var(--color-accent-hover);
+    background: var(--color-accent-hover);
+  }
+
+  .primary[data-tone="destructive"] {
+    border-color: var(--color-danger);
+    background: var(--color-danger);
+  }
+
+  .icon-close {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+  }
+</style>

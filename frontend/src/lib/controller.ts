@@ -9,7 +9,6 @@ import {
   applyDiscovery,
   applyEnvelope,
   beginOperation,
-  clearSharedCredentialInventory,
   clearWorkbenchScreenCaches,
   finishOperation,
   overviewBioSensorEnvelope,
@@ -104,7 +103,6 @@ export async function bootstrap() {
     const discovery = await api.discover();
     if (epoch !== lifecycleEpoch) return;
     const changed = applyDiscovery(discovery);
-    await refreshSessionList();
     if ((changed || get(selectedSelector)) && get(activeScreen) === "overview") {
       await loadOverview(get(selectedSelector));
     }
@@ -122,7 +120,6 @@ export async function refreshDiscovery() {
     const discovery = await api.discover();
     if (epoch !== lifecycleEpoch) return;
     const changed = applyDiscovery(discovery);
-    await refreshSessionList();
     const logEntryId = appendLogEntry({
       tone: discovery.error ? "error" : "info",
       source: "discovery",
@@ -161,10 +158,12 @@ export async function selectToken(selector: string) {
   overviewMDSEnvelope.set(null);
   overviewMDSLoading.set(false);
   try {
+    if (selector.trim()) {
+      sessionStatus.set({ state: "opening", selectedSelector: selector.trim() });
+    }
     const discovery = await api.select(selector);
     if (epoch !== lifecycleEpoch) return;
     applyDiscovery(discovery);
-    await refreshSessionList();
     const logEntryId = appendLogEntry({
       tone: discovery.error ? "error" : "info",
       source: "selection",

@@ -3,7 +3,6 @@
 </script>
 
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button/index.js";
   import type { OverviewHeroFact, OverviewHeroModel } from "$lib/overview-rules";
   import { m } from "../paraglide/messages.js";
 
@@ -23,23 +22,23 @@
     }
   }
 
-  function factToneClass(fact: OverviewHeroFact) {
-    if (fact.placeholder || fact.tone === "muted") return "text-muted-foreground";
-    if (fact.tone === "success") return "text-emerald-700 dark:text-emerald-400";
-    if (fact.tone === "warning") return "text-amber-700 dark:text-amber-400";
-    if (fact.tone === "error") return "text-destructive";
-    return "text-foreground";
+  function factTone(fact: OverviewHeroFact) {
+    if (fact.placeholder || fact.tone === "muted") return "muted";
+    if (fact.tone === "success") return "success";
+    if (fact.tone === "warning") return "warning";
+    if (fact.tone === "error") return "error";
+    return "";
   }
 </script>
 
 {#snippet factRow(fact: OverviewHeroFact)}
-  <div class="grid min-w-0 grid-cols-[7rem_minmax(0,1fr)] items-baseline gap-3 border-t py-2 first:border-t-0">
-    <dt class="text-xs text-muted-foreground">{fact.label}</dt>
-    <dd class={`m-0 min-w-0 truncate text-right text-xs font-medium ${factToneClass(fact)}`}>
+  <div class="fact-row">
+    <dt>{fact.label}</dt>
+    <dd data-tone={factTone(fact)}>
       {#if fact.href && !fact.placeholder}
-        <a class="inline-flex max-w-full items-center justify-end gap-1 truncate underline-offset-4 hover:underline" href={fact.href} target="_blank" rel="noreferrer" title={fact.href}>
-          <span class="truncate">{fact.value}</span>
-          <ExternalLink size={11} class="shrink-0" />
+        <a href={fact.href} target="_blank" rel="noreferrer" title={fact.href}>
+          <span>{fact.value}</span>
+          <ExternalLink size={11} />
         </a>
       {:else}
         {fact.value}
@@ -49,9 +48,9 @@
 {/snippet}
 
 {#snippet factSection(title: string, facts: OverviewHeroFact[])}
-  <section class="grid min-w-0 gap-1 border-t pt-3">
-    <h3 class="text-xs font-medium uppercase text-muted-foreground">{title}</h3>
-    <dl class="grid min-w-0">
+  <section class="fact-section">
+    <h3>{title}</h3>
+    <dl>
       {#each facts as fact (fact.label)}
         {@render factRow(fact)}
       {/each}
@@ -59,30 +58,181 @@
   </section>
 {/snippet}
 
-<aside class="grid h-full min-w-0 content-start gap-3 p-4 lg:p-5" aria-label={m.metadata_service()}>
-  <div class="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-    <div class="grid min-w-0 gap-1">
-      <h2 class="truncate text-sm font-semibold">{m.metadata_service()}</h2>
-      <p class="line-clamp-2 text-xs leading-5 text-muted-foreground">{hero.mdsDescription}</p>
+<aside class="metadata-panel" aria-label={m.metadata_service()}>
+  <header>
+    <div>
+      <h2>{m.metadata_service()}</h2>
+      <p>{hero.mdsDescription}</p>
     </div>
-    <Button variant="outline" size="sm" type="button" onclick={onRefresh} disabled={loading || !hero.aaguidAvailable}>
-      <RefreshCw size={14} class={loading ? "animate-spin" : ""} />
+    <button type="button" onclick={onRefresh} disabled={loading || !hero.aaguidAvailable}>
+      <RefreshCw size={14} class={loading ? "u-spin" : undefined} />
       {loading ? m.mds_refreshing() : m.mds_refresh()}
-    </Button>
-  </div>
+    </button>
+  </header>
 
-  <div class="grid min-w-0 gap-1 border-t pt-3">
-    <div class="flex min-w-0 items-center justify-between gap-3">
-      <span class="text-xs text-muted-foreground">{m.mds_aaguid()}</span>
+  <section class="aaguid-section">
+    <div class="aaguid-header cluster">
+      <span>{m.mds_aaguid()}</span>
       {#if hero.aaguidAvailable}
-        <Button variant="ghost" size="icon-xs" type="button" onclick={copyAaguid} aria-label={m.copy_label({ label: "AAGUID" })}>
+        <button class="tiny-button" type="button" onclick={copyAaguid} aria-label={m.copy_label({ label: "AAGUID" })}>
           <Copy size={12} />
-        </Button>
+        </button>
       {/if}
     </div>
-    <code class="block min-w-0 truncate font-mono text-xs font-medium text-foreground" title={hero.aaguid}>{hero.aaguid}</code>
-  </div>
+    <code title={hero.aaguid}>{hero.aaguid}</code>
+  </section>
 
   {@render factSection(m.mds_latest_status_report(), hero.mdsStatusFacts)}
   {@render factSection(m.mds_metadata_blob(), hero.mdsBlobFacts)}
 </aside>
+
+<style>
+  .metadata-panel {
+    display: grid;
+    align-content: start;
+    gap: var(--space-4);
+    min-width: 0;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-panel-soft);
+    padding: var(--space-5);
+  }
+
+  header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-3);
+    align-items: start;
+  }
+
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+
+  h2 {
+    font-size: 0.95rem;
+  }
+
+  h3,
+  .aaguid-header {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  p {
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+    line-height: 1.55;
+  }
+
+  .aaguid-section,
+  .fact-section {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-3);
+  }
+
+  .fact-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-3);
+    align-items: baseline;
+  }
+
+  .aaguid-header {
+    --cluster-justify: space-between;
+    --cluster-space: var(--space-3);
+  }
+
+  code {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--color-text);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  dl {
+    display: grid;
+    margin: 0;
+  }
+
+  .fact-row {
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-2) 0;
+  }
+
+  .fact-row:first-child {
+    border-top: 0;
+  }
+
+  dt,
+  dd {
+    margin: 0;
+    min-width: 0;
+    font-size: 0.75rem;
+  }
+
+  dt {
+    color: var(--color-text-muted);
+  }
+
+  dd {
+    overflow: hidden;
+    color: var(--color-text);
+    font-weight: 700;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  dd a {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-1);
+  }
+
+  dd a span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  dd[data-tone="muted"] {
+    color: var(--color-text-muted);
+  }
+
+  dd[data-tone="success"] {
+    color: var(--color-success);
+  }
+
+  dd[data-tone="warning"] {
+    color: var(--color-warning);
+  }
+
+  dd[data-tone="error"] {
+    color: var(--color-danger);
+  }
+
+  .tiny-button {
+    width: 24px;
+    min-height: 24px;
+    padding: 0;
+  }
+
+  @media (min-width: 1020px) {
+    .metadata-panel {
+      border-top: 0;
+      border-left: 1px solid var(--color-border);
+    }
+  }
+</style>

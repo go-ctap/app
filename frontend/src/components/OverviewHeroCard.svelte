@@ -3,9 +3,6 @@
 </script>
 
 <script lang="ts">
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
   import type { OverviewHeroModel, OverviewHeroSignalGroup } from "$lib/overview-rules";
   import StatusBadge from "../components/StatusBadge.svelte";
   import { m } from "../paraglide/messages.js";
@@ -34,89 +31,161 @@
     onRefreshMDS?: () => void | Promise<void>;
   } = $props();
 
-  function mdsBadgeVariant(state: OverviewHeroModel["mdsState"]): "secondary" | "outline" | "destructive" {
-    if (state === "error") return "destructive";
-    if (state === "found") return "secondary";
-    return "outline";
+  function mdsTone(state: OverviewHeroModel["mdsState"]) {
+    if (state === "error") return "bad";
+    if (state === "found") return "ok";
+    return "neutral";
   }
 </script>
 
-<div class="overview-hero-container">
-  <Card.Root class="overflow-hidden py-0">
-    <Card.Content class="grid gap-0 p-0">
-      <div class="overview-hero-grid grid min-w-0">
-        <div class="overview-hero-primary grid min-w-0 gap-5 p-4 lg:p-5">
-          <div class="flex min-w-0 flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-              <div class="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted text-muted-foreground">
-                {#if hero.iconSrc}
-                  <img src={hero.iconSrc} alt="" class="size-full object-contain p-2" />
-                {:else}
-                  <ShieldCheck size={23} strokeWidth={2.1} />
-                {/if}
-              </div>
-              <div class="grid min-w-0 gap-1.5">
-                <div class="flex flex-wrap items-center gap-2">
-                  <StatusBadge value={sessionState} label={sessionLabel} />
-                  <Badge variant={mdsBadgeVariant(hero.mdsState)}>{hero.mdsStateLabel}</Badge>
-                </div>
-                <h1 class="truncate text-xl font-semibold tracking-normal md:text-2xl">{hero.title}</h1>
-                <p class="line-clamp-2 max-w-3xl text-sm text-muted-foreground">{hero.subtitle}</p>
-              </div>
-            </div>
-            <div class="flex shrink-0 flex-wrap items-center gap-2 md:justify-end">
-              <Button variant="outline" size="sm" onclick={onReload} disabled={reloadDisabled}>
-                {loading ? m.reloading() : m.reload_overview()}
-              </Button>
-            </div>
-          </div>
-
-          <div class="grid min-w-0 gap-4">
-            <div class="grid min-w-0 content-start gap-2">
-              <p class="text-xs font-medium uppercase text-muted-foreground">{m.overview_hero_heading()}</p>
-              <h2 class="text-balance text-2xl font-semibold leading-8 tracking-normal">{m.overview_hero_title()}</h2>
-              <p class="max-w-3xl text-sm leading-6 text-muted-foreground">{m.overview_hero_description()}</p>
-            </div>
-
-            <div class="overview-signal-grid grid min-w-0 gap-5">
-              {#each signalGroups as group (group.id)}
-                <OverviewSignalGroup {group} />
-              {/each}
-            </div>
-          </div>
+<section class="hero-panel sidebar-layout">
+  <div class="hero-main">
+    <header class="hero-header">
+      <div class="hero-identity">
+        <div class="token-icon">
+          {#if hero.iconSrc}
+            <img src={hero.iconSrc} alt="" />
+          {:else}
+            <ShieldCheck size={24} strokeWidth={2.1} />
+          {/if}
         </div>
-
-        <div class="overview-hero-metadata min-w-0 border-t bg-muted/15">
-          <OverviewMetadataPanel {hero} loading={mdsLoading} onRefresh={onRefreshMDS} />
+        <div class="hero-copy">
+          <div class="badges cluster">
+            <StatusBadge value={sessionState} label={sessionLabel} />
+            <StatusBadge value={hero.mdsState} label={hero.mdsStateLabel} tone={mdsTone(hero.mdsState)} />
+          </div>
+          <h1>{hero.title}</h1>
+          <p>{hero.subtitle}</p>
         </div>
       </div>
-    </Card.Content>
-  </Card.Root>
-</div>
+
+      <button type="button" onclick={onReload} disabled={reloadDisabled}>
+        {loading ? m.reloading() : m.reload_overview()}
+      </button>
+    </header>
+
+    <div class="hero-description flow">
+      <p class="eyebrow">{m.overview_hero_heading()}</p>
+      <h2>{m.overview_hero_title()}</h2>
+      <p>{m.overview_hero_description()}</p>
+    </div>
+
+    <div class="signal-grid switcher">
+      {#each signalGroups as group (group.id)}
+        <OverviewSignalGroup {group} />
+      {/each}
+    </div>
+  </div>
+
+  <OverviewMetadataPanel {hero} loading={mdsLoading} onRefresh={onRefreshMDS} />
+</section>
 
 <style>
-  .overview-hero-container {
-    container-type: inline-size;
+  .hero-panel {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    background: var(--color-panel);
+    box-shadow: var(--shadow-hairline);
   }
 
-  .overview-hero-primary {
-    container-type: inline-size;
+  .hero-main {
+    display: grid;
+    gap: var(--space-5);
+    min-width: 0;
+    padding: var(--space-5);
   }
 
-  @container (min-width: 48rem) {
-    .overview-signal-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+  .hero-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+
+  .hero-identity {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  .token-icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    background: var(--color-panel-soft);
+    color: var(--color-text-muted);
+  }
+
+  .token-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: var(--space-2);
+  }
+
+  .hero-copy {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  h1,
+  h2,
+  p {
+    margin: 0;
+  }
+
+  h1 {
+    overflow: hidden;
+    color: var(--color-text);
+    font-size: clamp(1.2rem, 2vw, 1.55rem);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  h2 {
+    max-width: 50rem;
+    font-size: 1.25rem;
+  }
+
+  p {
+    color: var(--color-text-muted);
+    line-height: 1.55;
+  }
+
+  .eyebrow {
+    color: var(--color-text-soft);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .hero-description {
+    --flow-space: var(--space-2);
+  }
+
+  .signal-grid {
+    --switcher-space: var(--space-4);
+    --switcher-threshold: 42rem;
+  }
+
+  @media (min-width: 1020px) {
+    .hero-panel {
+      --sidebar-width: 24rem;
     }
   }
 
-  @container (min-width: 64rem) {
-    .overview-hero-grid {
-      grid-template-columns: minmax(0, 1fr) 24rem;
-    }
-
-    .overview-hero-metadata {
-      border-left-width: 1px;
-      border-top-width: 0;
+  @media (max-width: 720px) {
+    .hero-header {
+      display: grid;
     }
   }
 </style>

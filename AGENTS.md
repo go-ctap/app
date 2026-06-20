@@ -1,43 +1,39 @@
 # AGENTS.md
 
-## Project
+## Mission
 - `fidoapp` is a Wails 3 desktop workbench for local FIDO2/CTAP authenticators.
-- The Go backend is a thin application boundary over `github.com/go-ctap/kit`, replaced locally by `../ctapkit`.
-- `ctapkit` owns device discovery, sessions, typed operations, DTOs, events, interactions, transport policy, token/session safety, and hardware semantics. Keep that logic there when it is reusable.
-- This app owns product UX: Svelte screens, status/log presentation, Wails event wiring, session lifecycle affordances, and app-specific request/response envelopes.
-- The project is still greenfield; change architecture, APIs, bindings, and flows when that produces a cleaner result.
+- The Go app is a product boundary over `github.com/go-ctap/kit`, replaced locally by `../ctapkit`.
+- Keep reusable authenticator, CTAP, device, transport, interaction, token, and session semantics in `ctapkit`.
+- Keep product UX, Wails wiring, app state, screens, status/log presentation, and app-specific envelopes in this repo.
+- The project is greenfield. Prefer clean architecture over preserving early shapes.
 
-## Code Map
-- Backend entrypoint: `main.go`; Wails service and app orchestration: `auth_service.go`.
-- Frontend app shell: `frontend/src/App.svelte`; controller/store boundary: `frontend/src/lib/`.
-- Main screens live in `frontend/src/screens/`; reusable UI in `frontend/src/components/`.
-- `frontend/bindings/` is generated Wails binding output. Do not hand-edit it unless you are deliberately updating generated artifacts.
-- OpenSpec artifacts live under `openspec/`; use them for requirement history, not as a reason to preserve bad early shapes.
-
-## Runtime Rules
-- Prefer `ctapkit.DiscoverDevices`, `ctapkit.SelectDevice`, `ctapkit.OpenSession`, and `Session.Run` over direct CTAP/HID calls.
-- Keep PINs, `pinUvAuthToken`, reset confirmations, and other secrets out of logs, stores, JSON dumps, and UI debug panels.
-- Discovery/selection should not implicitly open sessions. Open sessions only for explicit session recovery or operations.
+## Hard Rules
+- Never log, store, dump, or render PINs, `pinUvAuthToken`, reset confirmations, or other secrets.
+- Discovery must not implicitly open sessions. Selecting a device in the switch is an explicit session boundary: close any existing open session, then open a session for the selected device. Clearing selection or app shutdown must close open sessions.
 - Close/cancel paths must release sessions and resolve pending interactions without holding service locks while closing handles.
-- Mutating or destructive authenticator actions need preview/confirmation semantics that match `ctapkit`.
+- Mutating or destructive authenticator actions need preview/confirmation semantics matching `ctapkit`.
+- Do not hand-edit `frontend/bindings/` unless intentionally updating generated Wails artifacts.
 
-## Frontend / Wails
-- Build new frontend UI around `shadcn-svelte` components first, not around the current legacy visual design. Treat the app as greenfield when that produces a cleaner product surface.
-- Keep custom styling minimal: prefer shadcn component composition plus Tailwind utilities in Svelte markup. Add CSS/component abstractions only for repeated product patterns that shadcn does not cover cleanly.
-- Avoid spreading `clsx`/`tailwind-merge` into screen code. It is acceptable inside generated shadcn primitives and small shared helpers, but product layout should stay readable and Tailwind-first.
-- When working on Svelte or SvelteKit code, use the Svelte MCP server: start with `list-sections`, fetch relevant docs with `get-documentation`, and run `svelte-autofixer` on generated Svelte code until it reports no issues.
-- For `shadcn-svelte` work, treat `https://shadcn-svelte.com/llms.txt` as the official docs index.
-- Before adding or changing a `shadcn-svelte` component, fetch only the relevant `.md` docs from that index.
-- Prefer the `shadcn-svelte` CLI for component installation instead of hand-copying component trees.
-- In this Wails/Vite app, run `shadcn-svelte` CLI commands from `frontend/` or pass `--cwd frontend`.
-- Use Svelte MCP for Svelte syntax/autofix, and `shadcn-svelte` docs for component API, CLI, theming, and registry behavior.
-- Inspect frontend behavior through the full Wails dev runtime, not plain Vite preview.
-- Wails 3 dev runtime does not work correctly through the Codex in-app browser/browser automation. For UI work, run build checks locally, then ask the user to smoke-test the actual Wails window manually.
-- If the user is smoke-testing, ask them to run `wails3 dev` or `task dev` from the repo root and verify the real desktop window rather than a browser URL.
-- Keep UI state in stores/controllers; screens should call the controller/API layer rather than raw generated bindings.
+## Frontend
+- Tailwind is rejected as a frontend foundation. Do not add new Tailwind utilities, config, plugins, abstractions, or Tailwind-dependent patterns.
+- `shadcn-svelte` is not the design system. Do not build new screens shadcn-first, and do not install new shadcn components except as a temporary migration bridge.
+- Existing Tailwind/shadcn code is technical debt, not precedent. Remove it when touching affected UI in a meaningful way.
+- Build UI with Svelte components, vanilla CSS, CSS custom properties, and product-specific component boundaries.
+- Frontend CSS must follow CUBE CSS strictly: CSS/global rules first, then Composition, Utility, Block, and Exception.
+- `data-*` attributes are the required CUBE Exception mechanism for real state/variant deviations. They are not an escape hatch from CUBE.
+- Do not introduce BEM-style modifier classes, Tailwind-like utility piles, ad hoc scoped styling, or component variants that bypass the CUBE layers.
+- Use Bits UI directly for complex accessible behavior: dialogs, menus, popovers, selects, tabs, tooltips, focus-managed interactions.
+- Screens compose product/workbench components. Product components compose small UI components. UI components may wrap Bits UI.
+- Keep state in stores/controllers under `frontend/src/lib/`; screens should not call raw generated bindings directly.
 
-## Verification
-- Backend changes: `go test ./... -count=1`.
+## Local Map
+- Backend entrypoint: `main.go`; Wails service: `auth_service.go`.
+- Frontend shell: `frontend/src/App.svelte`.
+- Screens: `frontend/src/screens/`; reusable components: `frontend/src/components/`; app stores/controllers: `frontend/src/lib/`.
+- OpenSpec files under `openspec/` are history and requirements, not architectural handcuffs.
+
+## Verify
+- Backend: `go test ./... -count=1`.
 - Session, locking, interaction, or cancellation changes: also consider `go test -race ./... -count=1`.
-- Frontend changes: `cd frontend; npm run build`.
-- Full app smoke check for UI work: ask the user to run Wails dev and verify the actual desktop screen manually.
+- Frontend: `cd frontend; npm run build`.
+- UI smoke tests must use the real Wails window. Wails 3 dev runtime is not reliable through browser automation; ask the user to run `wails3 dev` or `task dev`.

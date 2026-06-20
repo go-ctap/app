@@ -1,0 +1,46 @@
+@layer composition {
+  .flow > * + * {
+    margin-block-start: var(--flow-space, 1rem);
+  }
+
+  .cluster {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cluster-space, var(--space-2));
+    align-items: var(--cluster-align, center);
+    justify-content: var(--cluster-justify, flex-start);
+  }
+
+  .switcher {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--switcher-space, var(--space-4));
+  }
+
+  .switcher > * {
+    flex-grow: 1;
+    flex-basis: calc((var(--switcher-threshold, 48rem) - 100%) * 999);
+  }
+
+  .sidebar-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  @media (min-width: 1020px) {
+    .sidebar-layout {
+      grid-template-columns: minmax(0, 1fr) var(--sidebar-width, 24rem);
+    }
+  }
+
+  .reel {
+    display: flex;
+    gap: var(--reel-space, var(--space-3));
+    overflow-x: auto;
+  }
+
+  .center {
+    display: grid;
+    place-items: center;
+  }
+}

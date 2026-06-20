@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Badge } from "$lib/components/ui/badge/index.js";
   import { stateLabel } from "../lib/format";
   import { m } from "../paraglide/messages.js";
 
@@ -26,11 +25,49 @@
   });
 </script>
 
-<Badge
-  class="gap-1"
-  variant={resolvedTone === "ok" ? "default" : resolvedTone === "bad" ? "destructive" : resolvedTone === "warn" ? "secondary" : "outline"}
-  title={help || text}
->
-  <span class="size-1.5 rounded-full bg-current" aria-hidden="true"></span>
+<span class="status-badge" data-tone={resolvedTone} title={help || text}>
+  <span class="dot" aria-hidden="true"></span>
   <span>{text}</span>
-</Badge>
+</span>
+
+<style>
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    background: var(--color-panel-soft);
+    color: var(--color-text-muted);
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  .status-badge[data-tone="ok"] {
+    border-color: color-mix(in srgb, var(--color-success) 30%, var(--color-border));
+    background: color-mix(in srgb, var(--color-success) 10%, white);
+    color: var(--color-success);
+  }
+
+  .status-badge[data-tone="bad"] {
+    border-color: var(--color-danger-border);
+    background: var(--color-danger-bg);
+    color: var(--color-danger-text);
+  }
+
+  .status-badge[data-tone="warn"] {
+    border-color: color-mix(in srgb, var(--color-warning) 28%, var(--color-border));
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+  }
+</style>

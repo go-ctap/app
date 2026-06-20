@@ -1,8 +1,5 @@
 <script lang="ts">
-  import { Ellipsis, LockKeyhole, LockKeyholeOpen, MailCheck } from "@lucide/svelte";
-  import * as ButtonGroup from "$lib/components/ui/button-group/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
+  import { LockKeyhole, LockKeyholeOpen, MailCheck } from "@lucide/svelte";
   import { closeAllSessions, closeSelectedSession, openSelectedSession } from "$lib/controller";
   import { selectedSelector, sessions, sessionBusy, sessionStatus } from "$lib/stores";
   import { m } from "../paraglide/messages.js";
@@ -30,10 +27,10 @@
   }
 </script>
 
-<div class="flex min-w-0 items-center justify-end gap-2">
+<div class="session-controls cluster">
   {#if backgroundSessions.length}
     <span
-      class="hidden h-11 shrink-0 items-center justify-center rounded-md border border-dashed border-muted-foreground/45 bg-background/70 text-sm font-semibold tabular-nums text-muted-foreground sm:inline-flex"
+      class="background-count"
       title={m.background_sessions_description()}
       aria-label={m.background_sessions_count({ count: backgroundSessions.length })}
     >
@@ -42,65 +39,60 @@
   {/if}
 
   {#if canOpenSelected}
-    <Button
-      variant="outline"
-      size="sm"
-      type="button"
-      onclick={openSelected}
-      disabled={$sessionBusy}
-      aria-label={m.open_session()}
-      title={m.open_session()}
-      class="h-11 shrink-0 px-3"
-    >
-      <LockKeyholeOpen />
-      <span class="hidden sm:inline">{m.open()}</span>
-    </Button>
+    <button type="button" onclick={openSelected} disabled={$sessionBusy} title={m.open_session()}>
+      <LockKeyholeOpen size={15} />
+      <span>{m.open()}</span>
+    </button>
   {/if}
 
-  <ButtonGroup.Root class="shrink-0">
-    <Button
-      variant="outline"
-      size="sm"
-      type="button"
-      onclick={closeSelectedSession}
-      disabled={!canCloseSelected || $sessionBusy}
-      aria-label={m.close_session()}
-      title={m.close_session()}
-      class="h-11 px-3"
-    >
-      <LockKeyhole />
-      <span class="hidden lg:inline">{m.close_session()}</span>
-      <span class="lg:hidden">{m.close_session()}</span>
-    </Button>
+  <button
+    type="button"
+    onclick={closeSelectedSession}
+    disabled={!canCloseSelected || $sessionBusy}
+    title={m.close_session()}
+  >
+    <LockKeyhole size={15} />
+    <span>{m.close_session()}</span>
+  </button>
 
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger>
-        {#snippet child({ props })}
-          <Button
-            {...props}
-            variant="outline"
-            size="icon-lg"
-            class="size-11"
-            aria-label={m.close_all_sessions()}
-            title={m.close_all_sessions()}
-          >
-            <Ellipsis />
-          </Button>
-        {/snippet}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="end" class="w-max min-w-44">
-        <DropdownMenu.Group>
-          <DropdownMenu.Item
-            onclick={closeAllSessions}
-            disabled={!hasOpenSessions || $sessionBusy}
-            variant="destructive"
-            class="whitespace-nowrap"
-          >
-            <MailCheck />
-            <span>{m.close_all_sessions()}</span>
-          </DropdownMenu.Item>
-        </DropdownMenu.Group>
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
-  </ButtonGroup.Root>
+  <button
+    type="button"
+    onclick={closeAllSessions}
+    disabled={!hasOpenSessions || $sessionBusy}
+    title={m.close_all_sessions()}
+  >
+    <MailCheck size={15} />
+    <span>{m.close_all_sessions()}</span>
+  </button>
 </div>
+
+<style>
+  .session-controls {
+    min-width: 0;
+    --cluster-justify: flex-end;
+  }
+
+  .background-count {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: var(--radius-control);
+    color: var(--color-text-muted);
+    padding: 0 var(--space-2);
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  @media (max-width: 1100px) {
+    button span,
+    .background-count {
+      display: none;
+    }
+
+    button {
+      width: 36px;
+      padding: 0;
+    }
+  }
+</style>

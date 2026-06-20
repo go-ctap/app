@@ -1,19 +1,49 @@
 <script lang="ts">
-  import { Button } from "$lib/components/ui/button/index.js";
   import JsonView from "../components/JsonView.svelte";
   import { m } from "../paraglide/messages.js";
 
-  export let info: unknown = null;
-  export let onCopy: () => void | Promise<void> = () => {};
+  let { info = null, onCopy = () => {} }: { info?: unknown; onCopy?: () => void | Promise<void> } = $props();
 </script>
 
-<details class="rounded-xl border bg-card text-sm shadow-xs ring-1 ring-foreground/10">
-  <summary class="cursor-pointer px-6 py-4 font-medium">{m.raw_inspection_data()}</summary>
-  <div class="grid gap-3 border-t px-6 pt-4 pb-6">
-    <div class="flex items-center justify-between gap-3 text-muted-foreground">
+<details class="raw-panel">
+  <summary>{m.raw_inspection_data()}</summary>
+  <div class="content">
+    <div class="toolbar">
       <span><code>ctapkit</code> {m.raw_operation_response()}</span>
-      <Button variant="outline" size="sm" type="button" onclick={onCopy}>{m.copy_json()}</Button>
+      <button type="button" onclick={onCopy}>{m.copy_json()}</button>
     </div>
     <JsonView value={info} variant="code" />
   </div>
 </details>
+
+<style>
+  .raw-panel {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-panel);
+    background: var(--color-panel);
+  }
+
+  summary {
+    cursor: pointer;
+    padding: var(--space-4);
+    font-weight: 700;
+  }
+
+  .content {
+    display: grid;
+    gap: var(--space-3);
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-4);
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+  }
+</style>
