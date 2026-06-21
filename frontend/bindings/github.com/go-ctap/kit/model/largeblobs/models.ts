@@ -5,6 +5,99 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as credentials$0 from "../credentials/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as report$0 from "../report/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as safety$0 from "../safety/models.js";
+
+export class ArrayState {
+    "read": boolean;
+    "blobCount": number;
+    "blobPresent": boolean;
+    "blobState": BlobState;
+    "blobSize"?: number;
+
+    /** Creates a new ArrayState instance. */
+    constructor($$source: Partial<ArrayState> = {}) {
+        if (!("read" in $$source)) {
+            this["read"] = false;
+        }
+        if (!("blobCount" in $$source)) {
+            this["blobCount"] = 0;
+        }
+        if (!("blobPresent" in $$source)) {
+            this["blobPresent"] = false;
+        }
+        if (!("blobState" in $$source)) {
+            this["blobState"] = BlobState.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ArrayState instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ArrayState {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ArrayState($$parsedSource as Partial<ArrayState>);
+    }
+}
+
+export enum BlobState {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    BlobStateUnknownKeyMissing = "unknown_key_missing",
+    BlobStateMissing = "missing",
+    BlobStatePresent = "present",
+    BlobStateUnsupported = "unsupported",
+};
+
+export class BlobTarget {
+    "credentialIDHex": string;
+    "rp": credentials$0.RelyingParty;
+    "user": credentials$0.UserIdentity;
+
+    /** Creates a new BlobTarget instance. */
+    constructor($$source: Partial<BlobTarget> = {}) {
+        if (!("credentialIDHex" in $$source)) {
+            this["credentialIDHex"] = "";
+        }
+        if (!("rp" in $$source)) {
+            this["rp"] = (new credentials$0.RelyingParty());
+        }
+        if (!("user" in $$source)) {
+            this["user"] = (new credentials$0.UserIdentity());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BlobTarget instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BlobTarget {
+        const $$createField1_0 = $$createType0;
+        const $$createField2_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("rp" in $$parsedSource) {
+            $$parsedSource["rp"] = $$createField1_0($$parsedSource["rp"]);
+        }
+        if ("user" in $$parsedSource) {
+            $$parsedSource["user"] = $$createField2_0($$parsedSource["user"]);
+        }
+        return new BlobTarget($$parsedSource as Partial<BlobTarget>);
+    }
+}
+
 export enum DecodeMode {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -16,3 +109,459 @@ export enum DecodeMode {
     DecodeModeJSON = "json",
     DecodeModeCBOR = "cbor",
 };
+
+export class DecodeStatus {
+    "requested": boolean;
+    "mode": DecodeMode;
+    "label"?: string;
+    "success": boolean;
+    "decodedText"?: string;
+    "decodedValue"?: any;
+    "failure"?: string;
+
+    /** Creates a new DecodeStatus instance. */
+    constructor($$source: Partial<DecodeStatus> = {}) {
+        if (!("requested" in $$source)) {
+            this["requested"] = false;
+        }
+        if (!("mode" in $$source)) {
+            this["mode"] = DecodeMode.$zero;
+        }
+        if (!("success" in $$source)) {
+            this["success"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new DecodeStatus instance from a string or object.
+     */
+    static createFrom($$source: any = {}): DecodeStatus {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new DecodeStatus($$parsedSource as Partial<DecodeStatus>);
+    }
+}
+
+export enum LargeBlobKeyState {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    LargeBlobKeyAvailable = "available",
+    LargeBlobKeyMissing = "missing",
+};
+
+export class ListArraySummary {
+    "read": boolean;
+    "blobCount": number;
+    "matchedBlobCount": number;
+    "unmatchedBlobCount": number;
+
+    /** Creates a new ListArraySummary instance. */
+    constructor($$source: Partial<ListArraySummary> = {}) {
+        if (!("read" in $$source)) {
+            this["read"] = false;
+        }
+        if (!("blobCount" in $$source)) {
+            this["blobCount"] = 0;
+        }
+        if (!("matchedBlobCount" in $$source)) {
+            this["matchedBlobCount"] = 0;
+        }
+        if (!("unmatchedBlobCount" in $$source)) {
+            this["unmatchedBlobCount"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ListArraySummary instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ListArraySummary {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ListArraySummary($$parsedSource as Partial<ListArraySummary>);
+    }
+}
+
+export class ListCredential {
+    "deviceId"?: string;
+    "credentialIDHex": string;
+    "rp": credentials$0.RelyingParty;
+    "user": credentials$0.UserIdentity;
+    "largeBlobKeyState": LargeBlobKeyState;
+    "blobPresent": boolean;
+    "blobState": BlobState;
+    "blobByteCount": number;
+
+    /** Creates a new ListCredential instance. */
+    constructor($$source: Partial<ListCredential> = {}) {
+        if (!("credentialIDHex" in $$source)) {
+            this["credentialIDHex"] = "";
+        }
+        if (!("rp" in $$source)) {
+            this["rp"] = (new credentials$0.RelyingParty());
+        }
+        if (!("user" in $$source)) {
+            this["user"] = (new credentials$0.UserIdentity());
+        }
+        if (!("largeBlobKeyState" in $$source)) {
+            this["largeBlobKeyState"] = LargeBlobKeyState.$zero;
+        }
+        if (!("blobPresent" in $$source)) {
+            this["blobPresent"] = false;
+        }
+        if (!("blobState" in $$source)) {
+            this["blobState"] = BlobState.$zero;
+        }
+        if (!("blobByteCount" in $$source)) {
+            this["blobByteCount"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ListCredential instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ListCredential {
+        const $$createField2_0 = $$createType0;
+        const $$createField3_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("rp" in $$parsedSource) {
+            $$parsedSource["rp"] = $$createField2_0($$parsedSource["rp"]);
+        }
+        if ("user" in $$parsedSource) {
+            $$parsedSource["user"] = $$createField3_0($$parsedSource["user"]);
+        }
+        return new ListCredential($$parsedSource as Partial<ListCredential>);
+    }
+}
+
+export class ListReport {
+    "device": report$0.DeviceReport;
+    "support": SupportReport;
+    "array": ListArraySummary;
+    "credentials"?: ListCredential[];
+
+    /** Creates a new ListReport instance. */
+    constructor($$source: Partial<ListReport> = {}) {
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("support" in $$source)) {
+            this["support"] = (new SupportReport());
+        }
+        if (!("array" in $$source)) {
+            this["array"] = (new ListArraySummary());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ListReport instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ListReport {
+        const $$createField0_0 = $$createType2;
+        const $$createField1_0 = $$createType3;
+        const $$createField2_0 = $$createType4;
+        const $$createField3_0 = $$createType6;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
+        }
+        if ("support" in $$parsedSource) {
+            $$parsedSource["support"] = $$createField1_0($$parsedSource["support"]);
+        }
+        if ("array" in $$parsedSource) {
+            $$parsedSource["array"] = $$createField2_0($$parsedSource["array"]);
+        }
+        if ("credentials" in $$parsedSource) {
+            $$parsedSource["credentials"] = $$createField3_0($$parsedSource["credentials"]);
+        }
+        return new ListReport($$parsedSource as Partial<ListReport>);
+    }
+}
+
+export enum MutationOperation {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    MutationCreate = "create",
+    MutationReplace = "replace",
+    MutationDelete = "delete",
+    MutationNoBlob = "no_blob",
+    MutationGC = "garbage_collect",
+};
+
+export class MutationPreview {
+    "operation": MutationOperation;
+    "device": report$0.DeviceReport;
+    "support": SupportReport;
+    "target": BlobTarget;
+    "largeBlobKeyState": LargeBlobKeyState;
+    "currentByteCount": number;
+    "proposedByteCount": number;
+    "serializedLargeBlobArraySizeBefore": number;
+    "serializedLargeBlobArraySizeAfter": number;
+    "serializedLargeBlobArrayLimit"?: number | null;
+    "blobCountBefore": number;
+    "blobCountAfter": number;
+    "matchedBlobCount"?: number;
+    "unmatchedBlobCount"?: number;
+    "deletedBlobCount"?: number;
+    "noBlob": boolean;
+    "noop"?: boolean;
+    "warnings"?: safety$0.Warning[];
+
+    /** Creates a new MutationPreview instance. */
+    constructor($$source: Partial<MutationPreview> = {}) {
+        if (!("operation" in $$source)) {
+            this["operation"] = MutationOperation.$zero;
+        }
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("support" in $$source)) {
+            this["support"] = (new SupportReport());
+        }
+        if (!("target" in $$source)) {
+            this["target"] = (new BlobTarget());
+        }
+        if (!("largeBlobKeyState" in $$source)) {
+            this["largeBlobKeyState"] = LargeBlobKeyState.$zero;
+        }
+        if (!("currentByteCount" in $$source)) {
+            this["currentByteCount"] = 0;
+        }
+        if (!("proposedByteCount" in $$source)) {
+            this["proposedByteCount"] = 0;
+        }
+        if (!("serializedLargeBlobArraySizeBefore" in $$source)) {
+            this["serializedLargeBlobArraySizeBefore"] = 0;
+        }
+        if (!("serializedLargeBlobArraySizeAfter" in $$source)) {
+            this["serializedLargeBlobArraySizeAfter"] = 0;
+        }
+        if (!("blobCountBefore" in $$source)) {
+            this["blobCountBefore"] = 0;
+        }
+        if (!("blobCountAfter" in $$source)) {
+            this["blobCountAfter"] = 0;
+        }
+        if (!("noBlob" in $$source)) {
+            this["noBlob"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MutationPreview instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MutationPreview {
+        const $$createField1_0 = $$createType2;
+        const $$createField2_0 = $$createType3;
+        const $$createField3_0 = $$createType7;
+        const $$createField17_0 = $$createType9;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField1_0($$parsedSource["device"]);
+        }
+        if ("support" in $$parsedSource) {
+            $$parsedSource["support"] = $$createField2_0($$parsedSource["support"]);
+        }
+        if ("target" in $$parsedSource) {
+            $$parsedSource["target"] = $$createField3_0($$parsedSource["target"]);
+        }
+        if ("warnings" in $$parsedSource) {
+            $$parsedSource["warnings"] = $$createField17_0($$parsedSource["warnings"]);
+        }
+        return new MutationPreview($$parsedSource as Partial<MutationPreview>);
+    }
+}
+
+export class MutationResult {
+    "operation": MutationOperation;
+    "deviceId": string;
+    "credentialIDHex": string;
+    "rpID": string;
+    "rpName"?: string;
+    "userIDHex"?: string;
+    "userName"?: string;
+    "displayName"?: string;
+    "currentByteCount": number;
+    "proposedByteCount": number;
+    "serializedLargeBlobArraySizeBefore": number;
+    "serializedLargeBlobArraySizeAfter": number;
+    "serializedLargeBlobArrayLimit"?: number | null;
+    "blobCountBefore": number;
+    "blobCountAfter": number;
+    "matchedBlobCount"?: number;
+    "unmatchedBlobCount"?: number;
+    "deletedBlobCount"?: number;
+    "noBlob": boolean;
+    "noop"?: boolean;
+
+    /** Creates a new MutationResult instance. */
+    constructor($$source: Partial<MutationResult> = {}) {
+        if (!("operation" in $$source)) {
+            this["operation"] = MutationOperation.$zero;
+        }
+        if (!("deviceId" in $$source)) {
+            this["deviceId"] = "";
+        }
+        if (!("credentialIDHex" in $$source)) {
+            this["credentialIDHex"] = "";
+        }
+        if (!("rpID" in $$source)) {
+            this["rpID"] = "";
+        }
+        if (!("currentByteCount" in $$source)) {
+            this["currentByteCount"] = 0;
+        }
+        if (!("proposedByteCount" in $$source)) {
+            this["proposedByteCount"] = 0;
+        }
+        if (!("serializedLargeBlobArraySizeBefore" in $$source)) {
+            this["serializedLargeBlobArraySizeBefore"] = 0;
+        }
+        if (!("serializedLargeBlobArraySizeAfter" in $$source)) {
+            this["serializedLargeBlobArraySizeAfter"] = 0;
+        }
+        if (!("blobCountBefore" in $$source)) {
+            this["blobCountBefore"] = 0;
+        }
+        if (!("blobCountAfter" in $$source)) {
+            this["blobCountAfter"] = 0;
+        }
+        if (!("noBlob" in $$source)) {
+            this["noBlob"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MutationResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MutationResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new MutationResult($$parsedSource as Partial<MutationResult>);
+    }
+}
+
+export class ReadReport {
+    "device": report$0.DeviceReport;
+    "support": SupportReport;
+    "target": BlobTarget;
+    "largeBlobKeyState": LargeBlobKeyState;
+    "array": ArrayState;
+    "blobPresent": boolean;
+    "rawHex"?: string;
+    "rawByteCount": number;
+    "decode": DecodeStatus;
+
+    /** Creates a new ReadReport instance. */
+    constructor($$source: Partial<ReadReport> = {}) {
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("support" in $$source)) {
+            this["support"] = (new SupportReport());
+        }
+        if (!("target" in $$source)) {
+            this["target"] = (new BlobTarget());
+        }
+        if (!("largeBlobKeyState" in $$source)) {
+            this["largeBlobKeyState"] = LargeBlobKeyState.$zero;
+        }
+        if (!("array" in $$source)) {
+            this["array"] = (new ArrayState());
+        }
+        if (!("blobPresent" in $$source)) {
+            this["blobPresent"] = false;
+        }
+        if (!("rawByteCount" in $$source)) {
+            this["rawByteCount"] = 0;
+        }
+        if (!("decode" in $$source)) {
+            this["decode"] = (new DecodeStatus());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ReadReport instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ReadReport {
+        const $$createField0_0 = $$createType2;
+        const $$createField1_0 = $$createType3;
+        const $$createField2_0 = $$createType7;
+        const $$createField4_0 = $$createType10;
+        const $$createField8_0 = $$createType11;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
+        }
+        if ("support" in $$parsedSource) {
+            $$parsedSource["support"] = $$createField1_0($$parsedSource["support"]);
+        }
+        if ("target" in $$parsedSource) {
+            $$parsedSource["target"] = $$createField2_0($$parsedSource["target"]);
+        }
+        if ("array" in $$parsedSource) {
+            $$parsedSource["array"] = $$createField4_0($$parsedSource["array"]);
+        }
+        if ("decode" in $$parsedSource) {
+            $$parsedSource["decode"] = $$createField8_0($$parsedSource["decode"]);
+        }
+        return new ReadReport($$parsedSource as Partial<ReadReport>);
+    }
+}
+
+export class SupportReport {
+    "largeBlobs": boolean;
+    "largeBlobKeyExtension": boolean;
+    "maxSerializedLargeBlobArray"?: number | null;
+
+    /** Creates a new SupportReport instance. */
+    constructor($$source: Partial<SupportReport> = {}) {
+        if (!("largeBlobs" in $$source)) {
+            this["largeBlobs"] = false;
+        }
+        if (!("largeBlobKeyExtension" in $$source)) {
+            this["largeBlobKeyExtension"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SupportReport instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SupportReport {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new SupportReport($$parsedSource as Partial<SupportReport>);
+    }
+}
+
+// Private type creation functions
+const $$createType0 = credentials$0.RelyingParty.createFrom;
+const $$createType1 = credentials$0.UserIdentity.createFrom;
+const $$createType2 = report$0.DeviceReport.createFrom;
+const $$createType3 = SupportReport.createFrom;
+const $$createType4 = ListArraySummary.createFrom;
+const $$createType5 = ListCredential.createFrom;
+const $$createType6 = $Create.Array($$createType5);
+const $$createType7 = BlobTarget.createFrom;
+const $$createType8 = safety$0.Warning.createFrom;
+const $$createType9 = $Create.Array($$createType8);
+const $$createType10 = ArrayState.createFrom;
+const $$createType11 = DecodeStatus.createFrom;

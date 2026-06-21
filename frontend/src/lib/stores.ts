@@ -7,7 +7,7 @@ import type { Discovery, Envelope, OperationError, SessionStatus } from "./api";
 import { operationEnvelopeLogData } from "./ctapkit-results.js";
 import { m } from "../paraglide/messages.js";
 
-export type MDSLookupState = {
+export type MDSLookupViewState = {
   result?: LookupResult;
   error?: OperationError | null;
 };
@@ -71,7 +71,7 @@ export const sessionStatus = writable<SessionStatus>({ state: "idle", selectedSe
 export const sessions = writable<SessionStatus[]>([]);
 export const overviewEnvelope = writable<Envelope | null>(null);
 export const overviewBioSensorEnvelope = writable<Envelope | null>(null);
-export const overviewMDSEnvelope = writable<MDSLookupState | null>(null);
+export const overviewMDSLookup = writable<MDSLookupViewState | null>(null);
 export const overviewLoading = writable(false);
 export const overviewMDSLoading = writable(false);
 export const pendingInteraction = writable<InteractionPrompt | null>(null);
@@ -153,7 +153,7 @@ export function applyDiscovery(response: Discovery): boolean {
     selectionVersion.update((value) => value + 1);
     overviewEnvelope.set(null);
     overviewBioSensorEnvelope.set(null);
-    overviewMDSEnvelope.set(null);
+    overviewMDSLookup.set(null);
     overviewMDSLoading.set(false);
   }
   sessionStatus.set(response.session);
@@ -236,7 +236,7 @@ export function setStatusActions(actions: StatusBarAction[]) {
 export function clearWorkbenchScreenCaches() {
   overviewEnvelope.set(null);
   overviewBioSensorEnvelope.set(null);
-  overviewMDSEnvelope.set(null);
+  overviewMDSLookup.set(null);
   overviewMDSLoading.set(false);
   selectionVersion.update((value) => value + 1);
 }

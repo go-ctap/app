@@ -5,6 +5,75 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as attestation$0 from "../../../ctap/attestation/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as credential$0 from "../../../ctap/credential/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as report$0 from "../report/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as safety$0 from "../safety/models.js";
+
+export class Assertion {
+    "index": number;
+    "credential": credential$0.PublicKeyCredentialDescriptor;
+    "authenticatorDataHex": string;
+    "signatureHex": string;
+    "user"?: credential$0.PublicKeyCredentialUserEntity | null;
+    "numberOfCredentials"?: number | null;
+    "userSelected"?: boolean | null;
+    "signCount": number;
+    "userPresent": boolean;
+    "userVerified": boolean;
+
+    /** Creates a new Assertion instance. */
+    constructor($$source: Partial<Assertion> = {}) {
+        if (!("index" in $$source)) {
+            this["index"] = 0;
+        }
+        if (!("credential" in $$source)) {
+            this["credential"] = (new credential$0.PublicKeyCredentialDescriptor());
+        }
+        if (!("authenticatorDataHex" in $$source)) {
+            this["authenticatorDataHex"] = "";
+        }
+        if (!("signatureHex" in $$source)) {
+            this["signatureHex"] = "";
+        }
+        if (!("signCount" in $$source)) {
+            this["signCount"] = 0;
+        }
+        if (!("userPresent" in $$source)) {
+            this["userPresent"] = false;
+        }
+        if (!("userVerified" in $$source)) {
+            this["userVerified"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Assertion instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Assertion {
+        const $$createField1_0 = $$createType0;
+        const $$createField4_0 = $$createType2;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("credential" in $$parsedSource) {
+            $$parsedSource["credential"] = $$createField1_0($$parsedSource["credential"]);
+        }
+        if ("user" in $$parsedSource) {
+            $$parsedSource["user"] = $$createField4_0($$parsedSource["user"]);
+        }
+        return new Assertion($$parsedSource as Partial<Assertion>);
+    }
+}
+
 export class AuthenticatorOptions {
     "residentKey"?: boolean | null;
     "userPresence"?: boolean | null;
@@ -24,3 +93,171 @@ export class AuthenticatorOptions {
         return new AuthenticatorOptions($$parsedSource as Partial<AuthenticatorOptions>);
     }
 }
+
+export class GetAssertionResult {
+    "deviceId": string;
+    "rpID": string;
+    "assertions"?: Assertion[];
+
+    /** Creates a new GetAssertionResult instance. */
+    constructor($$source: Partial<GetAssertionResult> = {}) {
+        if (!("deviceId" in $$source)) {
+            this["deviceId"] = "";
+        }
+        if (!("rpID" in $$source)) {
+            this["rpID"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new GetAssertionResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): GetAssertionResult {
+        const $$createField2_0 = $$createType4;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("assertions" in $$parsedSource) {
+            $$parsedSource["assertions"] = $$createField2_0($$parsedSource["assertions"]);
+        }
+        return new GetAssertionResult($$parsedSource as Partial<GetAssertionResult>);
+    }
+}
+
+export class MakeCredentialPreview {
+    "device": report$0.DeviceReport;
+    "rp": credential$0.PublicKeyCredentialRpEntity;
+    "user": credential$0.PublicKeyCredentialUserEntity;
+    "pubKeyCredParams": credential$0.PublicKeyCredentialParameters[];
+    "excludeList"?: credential$0.PublicKeyCredentialDescriptor[];
+    "options"?: AuthenticatorOptions;
+    "warnings"?: safety$0.Warning[];
+
+    /** Creates a new MakeCredentialPreview instance. */
+    constructor($$source: Partial<MakeCredentialPreview> = {}) {
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("rp" in $$source)) {
+            this["rp"] = (new credential$0.PublicKeyCredentialRpEntity());
+        }
+        if (!("user" in $$source)) {
+            this["user"] = (new credential$0.PublicKeyCredentialUserEntity());
+        }
+        if (!("pubKeyCredParams" in $$source)) {
+            this["pubKeyCredParams"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MakeCredentialPreview instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MakeCredentialPreview {
+        const $$createField0_0 = $$createType5;
+        const $$createField1_0 = $$createType6;
+        const $$createField2_0 = $$createType1;
+        const $$createField3_0 = $$createType8;
+        const $$createField4_0 = $$createType9;
+        const $$createField5_0 = $$createType10;
+        const $$createField6_0 = $$createType12;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
+        }
+        if ("rp" in $$parsedSource) {
+            $$parsedSource["rp"] = $$createField1_0($$parsedSource["rp"]);
+        }
+        if ("user" in $$parsedSource) {
+            $$parsedSource["user"] = $$createField2_0($$parsedSource["user"]);
+        }
+        if ("pubKeyCredParams" in $$parsedSource) {
+            $$parsedSource["pubKeyCredParams"] = $$createField3_0($$parsedSource["pubKeyCredParams"]);
+        }
+        if ("excludeList" in $$parsedSource) {
+            $$parsedSource["excludeList"] = $$createField4_0($$parsedSource["excludeList"]);
+        }
+        if ("options" in $$parsedSource) {
+            $$parsedSource["options"] = $$createField5_0($$parsedSource["options"]);
+        }
+        if ("warnings" in $$parsedSource) {
+            $$parsedSource["warnings"] = $$createField6_0($$parsedSource["warnings"]);
+        }
+        return new MakeCredentialPreview($$parsedSource as Partial<MakeCredentialPreview>);
+    }
+}
+
+export class MakeCredentialResult {
+    "deviceId": string;
+    "rpID": string;
+    "fmt": attestation$0.AttestationStatementFormatIdentifier;
+    "credentialIDHex": string;
+    "publicKeyCOSEHex": string;
+    "authenticatorDataHex": string;
+    "attestationObjectCBORHex": string;
+    "aaguid"?: string;
+    "signCount": number;
+    "userPresent": boolean;
+    "userVerified": boolean;
+    "enterpriseAttestation"?: boolean;
+
+    /** Creates a new MakeCredentialResult instance. */
+    constructor($$source: Partial<MakeCredentialResult> = {}) {
+        if (!("deviceId" in $$source)) {
+            this["deviceId"] = "";
+        }
+        if (!("rpID" in $$source)) {
+            this["rpID"] = "";
+        }
+        if (!("fmt" in $$source)) {
+            this["fmt"] = attestation$0.AttestationStatementFormatIdentifier.$zero;
+        }
+        if (!("credentialIDHex" in $$source)) {
+            this["credentialIDHex"] = "";
+        }
+        if (!("publicKeyCOSEHex" in $$source)) {
+            this["publicKeyCOSEHex"] = "";
+        }
+        if (!("authenticatorDataHex" in $$source)) {
+            this["authenticatorDataHex"] = "";
+        }
+        if (!("attestationObjectCBORHex" in $$source)) {
+            this["attestationObjectCBORHex"] = "";
+        }
+        if (!("signCount" in $$source)) {
+            this["signCount"] = 0;
+        }
+        if (!("userPresent" in $$source)) {
+            this["userPresent"] = false;
+        }
+        if (!("userVerified" in $$source)) {
+            this["userVerified"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MakeCredentialResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MakeCredentialResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new MakeCredentialResult($$parsedSource as Partial<MakeCredentialResult>);
+    }
+}
+
+// Private type creation functions
+const $$createType0 = credential$0.PublicKeyCredentialDescriptor.createFrom;
+const $$createType1 = credential$0.PublicKeyCredentialUserEntity.createFrom;
+const $$createType2 = $Create.Nullable($$createType1);
+const $$createType3 = Assertion.createFrom;
+const $$createType4 = $Create.Array($$createType3);
+const $$createType5 = report$0.DeviceReport.createFrom;
+const $$createType6 = credential$0.PublicKeyCredentialRpEntity.createFrom;
+const $$createType7 = credential$0.PublicKeyCredentialParameters.createFrom;
+const $$createType8 = $Create.Array($$createType7);
+const $$createType9 = $Create.Array($$createType0);
+const $$createType10 = AuthenticatorOptions.createFrom;
+const $$createType11 = safety$0.Warning.createFrom;
+const $$createType12 = $Create.Array($$createType11);

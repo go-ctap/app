@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
-import type { OperationEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
-import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
+import type { BioSensorEnvelope, CredentialsEnvelope, InspectEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
-import { bioSensorReport, inspectResult, mdsLookupResult, operationEnvelopeLogData, operationError } from "./ctapkit-results";
+import { bioSensorReport, inspectResult, operationEnvelopeLogData } from "./ctapkit-results";
 import type { OverviewBioSensorReport, OverviewInspectResult } from "./overview-types";
-import type { MDSLookupState } from "./stores";
 
 const device: DeviceReport = {
   deviceId: "dev-1",
@@ -28,7 +26,7 @@ describe("ctapkit result extractors", () => {
       },
     };
 
-    const envelope = { kind: OperationKind.OperationInspect, result: { result } } as OperationEnvelope;
+    const envelope = { kind: OperationKind.OperationInspect, result: { result } } as InspectEnvelope;
 
     expect(inspectResult(envelope)).toBe(result);
   });
@@ -37,7 +35,7 @@ describe("ctapkit result extractors", () => {
     const envelope = {
       kind: OperationKind.OperationBioSensorInfo,
       result: { result: { device, info: { versions: [], aaguid: "", conformanceFindings: [] } } },
-    } as OperationEnvelope;
+    } as BioSensorEnvelope;
 
     expect(inspectResult(envelope)).toBeNull();
   });
@@ -50,7 +48,7 @@ describe("ctapkit result extractors", () => {
       modality: "fingerprint",
     };
 
-    const envelope = { kind: OperationKind.OperationBioSensorInfo, result: { report } } as OperationEnvelope;
+    const envelope = { kind: OperationKind.OperationBioSensorInfo, result: { report } } as BioSensorEnvelope;
 
     expect(bioSensorReport(envelope)).toBe(report);
   });
@@ -66,7 +64,7 @@ describe("ctapkit result extractors", () => {
           groups: [{ rpID: "example.test" }],
         },
       },
-    } as OperationEnvelope;
+    } as CredentialsEnvelope;
 
     expect(operationEnvelopeLogData(envelope)).toEqual({
       operationId: "op-1",
@@ -82,18 +80,4 @@ describe("ctapkit result extractors", () => {
     });
   });
 
-  it("uses typed MDS lookup state directly", () => {
-    const result: LookupResult = {
-      aaguid: "00000000-0000-0000-0000-000000000000",
-      found: false,
-      blobNumber: 1,
-      source: "https://mds.example.test",
-      cached: true,
-      cachedAt: "2026-06-21T00:00:00Z",
-    };
-    const state: MDSLookupState = { result };
-
-    expect(mdsLookupResult(state)).toBe(result);
-    expect(operationError(state)).toBeNull();
-  });
 });

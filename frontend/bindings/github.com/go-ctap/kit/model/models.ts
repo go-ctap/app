@@ -7,7 +7,299 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as credential$0 from "../../ctap/credential/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as extension$0 from "../../ctap/extension/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as protocol$0 from "../../ctap/protocol/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as config$0 from "./config/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as conformance$0 from "./conformance/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as credentials$0 from "./credentials/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as largeblobs$0 from "./largeblobs/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as report$0 from "./report/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as webauthn$0 from "./webauthn/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as uuid$0 from "../../../google/uuid/models.js";
+
+export class AuthenticatorConfigOutput {
+    "preview": config$0.AuthenticatorConfigPreview;
+    "result": config$0.AuthenticatorConfigResult | null;
+
+    /** Creates a new AuthenticatorConfigOutput instance. */
+    constructor($$source: Partial<AuthenticatorConfigOutput> = {}) {
+        if (!("preview" in $$source)) {
+            this["preview"] = (new config$0.AuthenticatorConfigPreview());
+        }
+        if (!("result" in $$source)) {
+            this["result"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AuthenticatorConfigOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AuthenticatorConfigOutput {
+        const $$createField0_0 = $$createType0;
+        const $$createField1_0 = $$createType2;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("preview" in $$parsedSource) {
+            $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
+        }
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField1_0($$parsedSource["result"]);
+        }
+        return new AuthenticatorConfigOutput($$parsedSource as Partial<AuthenticatorConfigOutput>);
+    }
+}
+
+export class BioEnrollOutput {
+    "preview": config$0.BioEnrollPreview;
+    "result": config$0.BioEnrollResult | null;
+
+    /** Creates a new BioEnrollOutput instance. */
+    constructor($$source: Partial<BioEnrollOutput> = {}) {
+        if (!("preview" in $$source)) {
+            this["preview"] = (new config$0.BioEnrollPreview());
+        }
+        if (!("result" in $$source)) {
+            this["result"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BioEnrollOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BioEnrollOutput {
+        const $$createField0_0 = $$createType3;
+        const $$createField1_0 = $$createType5;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("preview" in $$parsedSource) {
+            $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
+        }
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField1_0($$parsedSource["result"]);
+        }
+        return new BioEnrollOutput($$parsedSource as Partial<BioEnrollOutput>);
+    }
+}
+
+export class BioListOutput {
+    "report": config$0.BioListReport;
+
+    /** Creates a new BioListOutput instance. */
+    constructor($$source: Partial<BioListOutput> = {}) {
+        if (!("report" in $$source)) {
+            this["report"] = (new config$0.BioListReport());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BioListOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BioListOutput {
+        const $$createField0_0 = $$createType6;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("report" in $$parsedSource) {
+            $$parsedSource["report"] = $$createField0_0($$parsedSource["report"]);
+        }
+        return new BioListOutput($$parsedSource as Partial<BioListOutput>);
+    }
+}
+
+export class BioMutationOutput {
+    "preview": config$0.BioMutationPreview;
+    "result": config$0.BioMutationResult | null;
+
+    /** Creates a new BioMutationOutput instance. */
+    constructor($$source: Partial<BioMutationOutput> = {}) {
+        if (!("preview" in $$source)) {
+            this["preview"] = (new config$0.BioMutationPreview());
+        }
+        if (!("result" in $$source)) {
+            this["result"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BioMutationOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BioMutationOutput {
+        const $$createField0_0 = $$createType7;
+        const $$createField1_0 = $$createType9;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("preview" in $$parsedSource) {
+            $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
+        }
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField1_0($$parsedSource["result"]);
+        }
+        return new BioMutationOutput($$parsedSource as Partial<BioMutationOutput>);
+    }
+}
+
+export class BioSensorOutput {
+    "report": config$0.BioSensorReport;
+
+    /** Creates a new BioSensorOutput instance. */
+    constructor($$source: Partial<BioSensorOutput> = {}) {
+        if (!("report" in $$source)) {
+            this["report"] = (new config$0.BioSensorReport());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BioSensorOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BioSensorOutput {
+        const $$createField0_0 = $$createType10;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("report" in $$parsedSource) {
+            $$parsedSource["report"] = $$createField0_0($$parsedSource["report"]);
+        }
+        return new BioSensorOutput($$parsedSource as Partial<BioSensorOutput>);
+    }
+}
+
+export class ConfigStatusOutput {
+    "report": config$0.StatusReport;
+
+    /** Creates a new ConfigStatusOutput instance. */
+    constructor($$source: Partial<ConfigStatusOutput> = {}) {
+        if (!("report" in $$source)) {
+            this["report"] = (new config$0.StatusReport());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ConfigStatusOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ConfigStatusOutput {
+        const $$createField0_0 = $$createType11;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("report" in $$parsedSource) {
+            $$parsedSource["report"] = $$createField0_0($$parsedSource["report"]);
+        }
+        return new ConfigStatusOutput($$parsedSource as Partial<ConfigStatusOutput>);
+    }
+}
+
+export class CredentialDeleteOutput {
+    "preview": credentials$0.DeletePreview;
+    "result": credentials$0.DeleteResult | null;
+
+    /** Creates a new CredentialDeleteOutput instance. */
+    constructor($$source: Partial<CredentialDeleteOutput> = {}) {
+        if (!("preview" in $$source)) {
+            this["preview"] = (new credentials$0.DeletePreview());
+        }
+        if (!("result" in $$source)) {
+            this["result"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CredentialDeleteOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CredentialDeleteOutput {
+        const $$createField0_0 = $$createType12;
+        const $$createField1_0 = $$createType14;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("preview" in $$parsedSource) {
+            $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
+        }
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField1_0($$parsedSource["result"]);
+        }
+        return new CredentialDeleteOutput($$parsedSource as Partial<CredentialDeleteOutput>);
+    }
+}
+
+export class CredentialUpdateOutput {
+    "preview": credentials$0.UpdateUserPreview;
+    "result": credentials$0.UpdateUserResult | null;
+
+    /** Creates a new CredentialUpdateOutput instance. */
+    constructor($$source: Partial<CredentialUpdateOutput> = {}) {
+        if (!("preview" in $$source)) {
+            this["preview"] = (new credentials$0.UpdateUserPreview());
+        }
+        if (!("result" in $$source)) {
+            this["result"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CredentialUpdateOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CredentialUpdateOutput {
+        const $$createField0_0 = $$createType15;
+        const $$createField1_0 = $$createType17;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("preview" in $$parsedSource) {
+            $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
+        }
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField1_0($$parsedSource["result"]);
+        }
+        return new CredentialUpdateOutput($$parsedSource as Partial<CredentialUpdateOutput>);
+    }
+}
+
+export class CredentialsOutput {
+    "report": credentials$0.InventoryReport;
+
+    /** Creates a new CredentialsOutput instance. */
+    constructor($$source: Partial<CredentialsOutput> = {}) {
+        if (!("report" in $$source)) {
+            this["report"] = (new credentials$0.InventoryReport());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CredentialsOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CredentialsOutput {
+        const $$createField0_0 = $$createType18;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("report" in $$parsedSource) {
+            $$parsedSource["report"] = $$createField0_0($$parsedSource["report"]);
+        }
+        return new CredentialsOutput($$parsedSource as Partial<CredentialsOutput>);
+    }
+}
 
 export enum ErrorCategory {
     /**
@@ -25,6 +317,204 @@ export enum ErrorCategory {
     ErrorInvalidState = "invalid-state",
     ErrorCanceled = "canceled",
 };
+
+export class GetAssertionOutput {
+    "result": webauthn$0.GetAssertionResult;
+
+    /** Creates a new GetAssertionOutput instance. */
+    constructor($$source: Partial<GetAssertionOutput> = {}) {
+        if (!("result" in $$source)) {
+            this["result"] = (new webauthn$0.GetAssertionResult());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new GetAssertionOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): GetAssertionOutput {
+        const $$createField0_0 = $$createType19;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField0_0($$parsedSource["result"]);
+        }
+        return new GetAssertionOutput($$parsedSource as Partial<GetAssertionOutput>);
+    }
+}
+
+export class InspectInfo {
+    "versions": protocol$0.Versions;
+    "extensions"?: extension$0.ExtensionIdentifier[];
+    "aaguid": uuid$0.UUID;
+    "options"?: { [_ in protocol$0.Option]?: boolean };
+    "maxMsgSize"?: number | null;
+    "pinUvAuthProtocols"?: protocol$0.PinUvAuthProtocol[];
+    "maxCredentialCountInList"?: number | null;
+    "maxCredentialIdLength"?: number | null;
+    "transports"?: string[];
+    "algorithms"?: credential$0.PublicKeyCredentialParameters[];
+    "maxSerializedLargeBlobArray"?: number | null;
+    "forcePINChange"?: boolean | null;
+    "minPINLength"?: number | null;
+    "firmwareVersion"?: number | null;
+    "maxCredBlobLength"?: number | null;
+    "maxRPIDsForSetMinPINLength"?: number | null;
+    "preferredPlatformUvAttempts"?: number | null;
+    "uvModality"?: protocol$0.UserVerify | null;
+    "certifications"?: { [_ in string]?: number };
+    "remainingDiscoverableCredentials"?: number | null;
+    "vendorPrototypeConfigCommands"?: number[];
+    "attestationFormats"?: string[];
+    "uvCountSinceLastPinEntry"?: number | null;
+    "longTouchForReset"?: boolean | null;
+    "encIdentifier"?: string;
+    "transportsForReset"?: string[];
+    "pinComplexityPolicy"?: boolean | null;
+    "pinComplexityPolicyURL"?: string | null;
+    "maxPINLength"?: number | null;
+    "encCredStoreState"?: string;
+    "authenticatorConfigCommands"?: number[];
+    "uvModalityLabel"?: string;
+    "conformanceFindings": conformance$0.Finding[];
+
+    /** Creates a new InspectInfo instance. */
+    constructor($$source: Partial<InspectInfo> = {}) {
+        if (!("versions" in $$source)) {
+            this["versions"] = [];
+        }
+        if (!("aaguid" in $$source)) {
+            this["aaguid"] = "";
+        }
+        if (!("conformanceFindings" in $$source)) {
+            this["conformanceFindings"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new InspectInfo instance from a string or object.
+     */
+    static createFrom($$source: any = {}): InspectInfo {
+        const $$createField0_0 = $$createType20;
+        const $$createField1_0 = $$createType22;
+        const $$createField3_0 = $$createType23;
+        const $$createField5_0 = $$createType24;
+        const $$createField8_0 = $$createType25;
+        const $$createField9_0 = $$createType27;
+        const $$createField18_0 = $$createType28;
+        const $$createField20_0 = $$createType29;
+        const $$createField21_0 = $$createType25;
+        const $$createField24_0 = $Create.ByteSlice;
+        const $$createField25_0 = $$createType25;
+        const $$createField29_0 = $Create.ByteSlice;
+        const $$createField30_0 = $$createType29;
+        const $$createField32_0 = $$createType31;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("versions" in $$parsedSource) {
+            $$parsedSource["versions"] = $$createField0_0($$parsedSource["versions"]);
+        }
+        if ("extensions" in $$parsedSource) {
+            $$parsedSource["extensions"] = $$createField1_0($$parsedSource["extensions"]);
+        }
+        if ("options" in $$parsedSource) {
+            $$parsedSource["options"] = $$createField3_0($$parsedSource["options"]);
+        }
+        if ("pinUvAuthProtocols" in $$parsedSource) {
+            $$parsedSource["pinUvAuthProtocols"] = $$createField5_0($$parsedSource["pinUvAuthProtocols"]);
+        }
+        if ("transports" in $$parsedSource) {
+            $$parsedSource["transports"] = $$createField8_0($$parsedSource["transports"]);
+        }
+        if ("algorithms" in $$parsedSource) {
+            $$parsedSource["algorithms"] = $$createField9_0($$parsedSource["algorithms"]);
+        }
+        if ("certifications" in $$parsedSource) {
+            $$parsedSource["certifications"] = $$createField18_0($$parsedSource["certifications"]);
+        }
+        if ("vendorPrototypeConfigCommands" in $$parsedSource) {
+            $$parsedSource["vendorPrototypeConfigCommands"] = $$createField20_0($$parsedSource["vendorPrototypeConfigCommands"]);
+        }
+        if ("attestationFormats" in $$parsedSource) {
+            $$parsedSource["attestationFormats"] = $$createField21_0($$parsedSource["attestationFormats"]);
+        }
+        if ("encIdentifier" in $$parsedSource) {
+            $$parsedSource["encIdentifier"] = $$createField24_0($$parsedSource["encIdentifier"]);
+        }
+        if ("transportsForReset" in $$parsedSource) {
+            $$parsedSource["transportsForReset"] = $$createField25_0($$parsedSource["transportsForReset"]);
+        }
+        if ("encCredStoreState" in $$parsedSource) {
+            $$parsedSource["encCredStoreState"] = $$createField29_0($$parsedSource["encCredStoreState"]);
+        }
+        if ("authenticatorConfigCommands" in $$parsedSource) {
+            $$parsedSource["authenticatorConfigCommands"] = $$createField30_0($$parsedSource["authenticatorConfigCommands"]);
+        }
+        if ("conformanceFindings" in $$parsedSource) {
+            $$parsedSource["conformanceFindings"] = $$createField32_0($$parsedSource["conformanceFindings"]);
+        }
+        return new InspectInfo($$parsedSource as Partial<InspectInfo>);
+    }
+}
+
+export class InspectOutput {
+    "result": InspectResult;
+
+    /** Creates a new InspectOutput instance. */
+    constructor($$source: Partial<InspectOutput> = {}) {
+        if (!("result" in $$source)) {
+            this["result"] = (new InspectResult());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new InspectOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): InspectOutput {
+        const $$createField0_0 = $$createType32;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField0_0($$parsedSource["result"]);
+        }
+        return new InspectOutput($$parsedSource as Partial<InspectOutput>);
+    }
+}
+
+export class InspectResult {
+    "device": report$0.DeviceReport;
+    "info": InspectInfo;
+
+    /** Creates a new InspectResult instance. */
+    constructor($$source: Partial<InspectResult> = {}) {
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("info" in $$source)) {
+            this["info"] = (new InspectInfo());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new InspectResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): InspectResult {
+        const $$createField0_0 = $$createType33;
+        const $$createField1_0 = $$createType34;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
+        }
+        if ("info" in $$parsedSource) {
+            $$parsedSource["info"] = $$createField1_0($$parsedSource["info"]);
+        }
+        return new InspectResult($$parsedSource as Partial<InspectResult>);
+    }
+}
 
 export enum InteractionKind {
     /**
@@ -60,6 +550,122 @@ export class InteractionRequest {
     static createFrom($$source: any = {}): InteractionRequest {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new InteractionRequest($$parsedSource as Partial<InteractionRequest>);
+    }
+}
+
+export class LargeBlobListOutput {
+    "report": largeblobs$0.ListReport;
+
+    /** Creates a new LargeBlobListOutput instance. */
+    constructor($$source: Partial<LargeBlobListOutput> = {}) {
+        if (!("report" in $$source)) {
+            this["report"] = (new largeblobs$0.ListReport());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LargeBlobListOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LargeBlobListOutput {
+        const $$createField0_0 = $$createType35;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("report" in $$parsedSource) {
+            $$parsedSource["report"] = $$createField0_0($$parsedSource["report"]);
+        }
+        return new LargeBlobListOutput($$parsedSource as Partial<LargeBlobListOutput>);
+    }
+}
+
+export class LargeBlobMutationOutput {
+    "preview": largeblobs$0.MutationPreview;
+    "result": largeblobs$0.MutationResult | null;
+
+    /** Creates a new LargeBlobMutationOutput instance. */
+    constructor($$source: Partial<LargeBlobMutationOutput> = {}) {
+        if (!("preview" in $$source)) {
+            this["preview"] = (new largeblobs$0.MutationPreview());
+        }
+        if (!("result" in $$source)) {
+            this["result"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LargeBlobMutationOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LargeBlobMutationOutput {
+        const $$createField0_0 = $$createType36;
+        const $$createField1_0 = $$createType38;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("preview" in $$parsedSource) {
+            $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
+        }
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField1_0($$parsedSource["result"]);
+        }
+        return new LargeBlobMutationOutput($$parsedSource as Partial<LargeBlobMutationOutput>);
+    }
+}
+
+export class LargeBlobReadOutput {
+    "report": largeblobs$0.ReadReport;
+
+    /** Creates a new LargeBlobReadOutput instance. */
+    constructor($$source: Partial<LargeBlobReadOutput> = {}) {
+        if (!("report" in $$source)) {
+            this["report"] = (new largeblobs$0.ReadReport());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LargeBlobReadOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LargeBlobReadOutput {
+        const $$createField0_0 = $$createType39;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("report" in $$parsedSource) {
+            $$parsedSource["report"] = $$createField0_0($$parsedSource["report"]);
+        }
+        return new LargeBlobReadOutput($$parsedSource as Partial<LargeBlobReadOutput>);
+    }
+}
+
+export class MakeCredentialOutput {
+    "preview": webauthn$0.MakeCredentialPreview;
+    "result": webauthn$0.MakeCredentialResult | null;
+
+    /** Creates a new MakeCredentialOutput instance. */
+    constructor($$source: Partial<MakeCredentialOutput> = {}) {
+        if (!("preview" in $$source)) {
+            this["preview"] = (new webauthn$0.MakeCredentialPreview());
+        }
+        if (!("result" in $$source)) {
+            this["result"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MakeCredentialOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MakeCredentialOutput {
+        const $$createField0_0 = $$createType40;
+        const $$createField1_0 = $$createType42;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("preview" in $$parsedSource) {
+            $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
+        }
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField1_0($$parsedSource["result"]);
+        }
+        return new MakeCredentialOutput($$parsedSource as Partial<MakeCredentialOutput>);
     }
 }
 
@@ -119,8 +725,6 @@ export enum OperationKind {
     OperationGetAssertion = "webauthn.getAssertion",
 };
 
-export type OperationResult = any;
-
 export enum OperationStage {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -132,6 +736,72 @@ export enum OperationStage {
     OperationStageEnumeratingCredentials = "enumerating-credentials",
     OperationStageCapturingBioSample = "capturing-bio-sample",
 };
+
+export class PINOutput {
+    "preview": config$0.PINMutationPreview;
+    "result": config$0.PINMutationResult | null;
+
+    /** Creates a new PINOutput instance. */
+    constructor($$source: Partial<PINOutput> = {}) {
+        if (!("preview" in $$source)) {
+            this["preview"] = (new config$0.PINMutationPreview());
+        }
+        if (!("result" in $$source)) {
+            this["result"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PINOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PINOutput {
+        const $$createField0_0 = $$createType43;
+        const $$createField1_0 = $$createType45;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("preview" in $$parsedSource) {
+            $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
+        }
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField1_0($$parsedSource["result"]);
+        }
+        return new PINOutput($$parsedSource as Partial<PINOutput>);
+    }
+}
+
+export class ResetFactoryOutput {
+    "preview": config$0.ResetPreview;
+    "result": config$0.ResetResult | null;
+
+    /** Creates a new ResetFactoryOutput instance. */
+    constructor($$source: Partial<ResetFactoryOutput> = {}) {
+        if (!("preview" in $$source)) {
+            this["preview"] = (new config$0.ResetPreview());
+        }
+        if (!("result" in $$source)) {
+            this["result"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ResetFactoryOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ResetFactoryOutput {
+        const $$createField0_0 = $$createType46;
+        const $$createField1_0 = $$createType48;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("preview" in $$parsedSource) {
+            $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
+        }
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField1_0($$parsedSource["result"]);
+        }
+        return new ResetFactoryOutput($$parsedSource as Partial<ResetFactoryOutput>);
+    }
+}
 
 export class SessionInfo {
     "device": report$0.DeviceReport;
@@ -153,7 +823,7 @@ export class SessionInfo {
      * Creates a new SessionInfo instance from a string or object.
      */
     static createFrom($$source: any = {}): SessionInfo {
-        const $$createField0_0 = $$createType0;
+        const $$createField0_0 = $$createType33;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
@@ -173,4 +843,57 @@ export enum VerificationFlow {
 };
 
 // Private type creation functions
-const $$createType0 = report$0.DeviceReport.createFrom;
+const $$createType0 = config$0.AuthenticatorConfigPreview.createFrom;
+const $$createType1 = config$0.AuthenticatorConfigResult.createFrom;
+const $$createType2 = $Create.Nullable($$createType1);
+const $$createType3 = config$0.BioEnrollPreview.createFrom;
+const $$createType4 = config$0.BioEnrollResult.createFrom;
+const $$createType5 = $Create.Nullable($$createType4);
+const $$createType6 = config$0.BioListReport.createFrom;
+const $$createType7 = config$0.BioMutationPreview.createFrom;
+const $$createType8 = config$0.BioMutationResult.createFrom;
+const $$createType9 = $Create.Nullable($$createType8);
+const $$createType10 = config$0.BioSensorReport.createFrom;
+const $$createType11 = config$0.StatusReport.createFrom;
+const $$createType12 = credentials$0.DeletePreview.createFrom;
+const $$createType13 = credentials$0.DeleteResult.createFrom;
+const $$createType14 = $Create.Nullable($$createType13);
+const $$createType15 = credentials$0.UpdateUserPreview.createFrom;
+const $$createType16 = credentials$0.UpdateUserResult.createFrom;
+const $$createType17 = $Create.Nullable($$createType16);
+const $$createType18 = credentials$0.InventoryReport.createFrom;
+const $$createType19 = webauthn$0.GetAssertionResult.createFrom;
+var $$createType20 = (function $$initCreateType20(...args: any[]): any {
+    if ($$createType20 === $$initCreateType20) {
+        $$createType20 = $$createType21;
+    }
+    return $$createType20(...args);
+});
+const $$createType21 = $Create.Array($Create.Any);
+const $$createType22 = $Create.Array($Create.Any);
+const $$createType23 = $Create.Map($Create.Any, $Create.Any);
+const $$createType24 = $Create.Array($Create.Any);
+const $$createType25 = $Create.Array($Create.Any);
+const $$createType26 = credential$0.PublicKeyCredentialParameters.createFrom;
+const $$createType27 = $Create.Array($$createType26);
+const $$createType28 = $Create.Map($Create.Any, $Create.Any);
+const $$createType29 = $Create.Array($Create.Any);
+const $$createType30 = conformance$0.Finding.createFrom;
+const $$createType31 = $Create.Array($$createType30);
+const $$createType32 = InspectResult.createFrom;
+const $$createType33 = report$0.DeviceReport.createFrom;
+const $$createType34 = InspectInfo.createFrom;
+const $$createType35 = largeblobs$0.ListReport.createFrom;
+const $$createType36 = largeblobs$0.MutationPreview.createFrom;
+const $$createType37 = largeblobs$0.MutationResult.createFrom;
+const $$createType38 = $Create.Nullable($$createType37);
+const $$createType39 = largeblobs$0.ReadReport.createFrom;
+const $$createType40 = webauthn$0.MakeCredentialPreview.createFrom;
+const $$createType41 = webauthn$0.MakeCredentialResult.createFrom;
+const $$createType42 = $Create.Nullable($$createType41);
+const $$createType43 = config$0.PINMutationPreview.createFrom;
+const $$createType44 = config$0.PINMutationResult.createFrom;
+const $$createType45 = $Create.Nullable($$createType44);
+const $$createType46 = config$0.ResetPreview.createFrom;
+const $$createType47 = config$0.ResetResult.createFrom;
+const $$createType48 = $Create.Nullable($$createType47);

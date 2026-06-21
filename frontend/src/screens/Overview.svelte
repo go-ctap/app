@@ -1,12 +1,12 @@
 <script lang="ts">
   import { loadOverview, loadOverviewMDS } from "$lib/controller";
-  import { bioSensorReport, inspectResult, mdsLookupResult, operationError } from "$lib/ctapkit-results";
+  import { bioSensorReport, inspectResult, operationError } from "$lib/ctapkit-results";
   import { sessionStateLabel } from "$lib/format";
   import {
     overviewBioSensorEnvelope,
     overviewEnvelope,
     overviewLoading,
-    overviewMDSEnvelope,
+    overviewMDSLookup,
     overviewMDSLoading,
     selectedDevice,
     selectedSelector,
@@ -33,15 +33,15 @@
   let selector = $derived($selectedSelector);
   let envelope = $derived($overviewEnvelope);
   let bioSensorEnvelope = $derived($overviewBioSensorEnvelope);
-  let mdsEnvelope = $derived($overviewMDSEnvelope);
+  let mdsLookup = $derived($overviewMDSLookup);
   let loading = $derived($overviewLoading);
   let mdsLoading = $derived($overviewMDSLoading);
   let failureMessage = $derived(operationError(envelope));
-  let mdsFailureMessage = $derived(operationError(mdsEnvelope));
+  let mdsFailureMessage = $derived(mdsLookup?.error?.message || null);
   let reloadDisabled = $derived(loading || $sessionBusy);
 
   let report = $derived(inspectResult(envelope));
-  let mdsResult = $derived(mdsLookupResult(mdsEnvelope));
+  let mdsResult = $derived(mdsLookup?.result ?? null);
   let bioSensor = $derived(bioSensorReport(bioSensorEnvelope));
   let hasReport = $derived(Boolean(report));
 

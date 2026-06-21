@@ -1,8 +1,8 @@
 import { get } from "svelte/store";
-import type { OperationEvent } from "../../bindings/github.com/go-ctap/kit/model";
+import { OperationKind, type OperationEvent } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import {
-  OperationEnvelope,
+  InspectEnvelope,
   RuntimeErrorEnvelope,
   type InteractionPrompt,
   type InteractionAnswer,
@@ -36,7 +36,7 @@ import {
   overviewBioSensorEnvelope,
   overviewEnvelope,
   overviewLoading,
-  overviewMDSEnvelope,
+  overviewMDSLookup,
   overviewMDSLoading,
   pendingInteraction,
   selectedSelector,
@@ -46,7 +46,7 @@ import {
   setStatusOperation,
   setStatusOutcome,
   summarizeEnvelope,
-  type MDSLookupState,
+  type MDSLookupViewState,
 } from "./stores";
 import { inspectResult, operationError } from "./ctapkit-results.js";
 
@@ -58,12 +58,12 @@ function messageFromError(error: unknown) {
   return error instanceof Error ? error.message : String(error || m.unexpected_error());
 }
 
-function failureMDSEnvelope(error: unknown): MDSLookupState {
+function failureMDSLookup(error: unknown): MDSLookupViewState {
   return { error: runtimeErrorFrom(error) };
 }
 
 function failureEnvelope(error: unknown): Envelope {
-  return new OperationEnvelope({ error: runtimeErrorFrom(error) });
+  return new InspectEnvelope({ kind: OperationKind.OperationInspect, error: runtimeErrorFrom(error) });
 }
 
 function inspectResultFromEnvelope(envelope: Envelope) {
@@ -360,20 +360,12 @@ export async function shutdownWorkbench() {
   }
 }
 
-export async function refreshSessionList() {
-  try {
-    sessions.set((await api.sessions()).map((snapshot) => statusFromSession(snapshot)));
-  } catch {
-    sessions.set([]);
-  }
-}
-
 export async function loadOverview(selector = get(selectedSelector)) {
   selector = selector.trim();
   if (!selector) {
     overviewEnvelope.set(null);
     overviewBioSensorEnvelope.set(null);
-    overviewMDSEnvelope.set(null);
+    overviewMDSLookup.set(null);
     overviewLoading.set(false);
     overviewMDSLoading.set(false);
     return;
@@ -383,7 +375,7 @@ export async function loadOverview(selector = get(selectedSelector)) {
   mdsEpoch++;
   overviewLoading.set(true);
   overviewBioSensorEnvelope.set(null);
-  overviewMDSEnvelope.set(null);
+  overviewMDSLookup.set(null);
   overviewMDSLoading.set(false);
   try {
     beginOperation(m.overview_inspection(), "overview-dashboard");
@@ -443,7 +435,7 @@ export async function loadOverviewMDS(aaguid: string, refresh = false, selector 
   selector = selector.trim();
   const epoch = ++mdsEpoch;
   if (!aaguid || !selector) {
-    overviewMDSEnvelope.set(null);
+    overviewMDSLookup.set(null);
     overviewMDSLoading.set(false);
     return;
   }
@@ -452,10 +444,10 @@ export async function loadOverviewMDS(aaguid: string, refresh = false, selector 
   try {
     const envelope = await api.lookupMDS({ aaguid, refresh });
     if (epoch !== mdsEpoch || selector !== get(selectedSelector)) return;
-    overviewMDSEnvelope.set({ result: envelope.result });
+    overviewMDSLookup.set({ result: envelope.result });
   } catch (error) {
     if (epoch === mdsEpoch && selector === get(selectedSelector)) {
-      overviewMDSEnvelope.set(failureMDSEnvelope(error));
+      overviewMDSLookup.set(failureMDSLookup(error));
     }
   } finally {
     if (epoch === mdsEpoch) {

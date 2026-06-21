@@ -1,15 +1,54 @@
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
-import type { OperationEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type {
+  AuthenticatorConfigEnvelope,
+  BioEnrollEnvelope,
+  BioListEnvelope,
+  BioMutationEnvelope,
+  BioSensorEnvelope,
+  ConfigStatusEnvelope,
+  CredentialDeleteEnvelope,
+  CredentialUpdateEnvelope,
+  CredentialsEnvelope,
+  GetAssertionEnvelope,
+  InspectEnvelope,
+  LargeBlobListEnvelope,
+  LargeBlobMutationEnvelope,
+  LargeBlobReadEnvelope,
+  MakeCredentialEnvelope,
+  PINEnvelope,
+  ResetFactoryEnvelope,
+} from "../../bindings/github.com/go-ctap/kit/service";
 import type { OverviewBioSensorReport, OverviewInspectResult } from "./overview-types.js";
-import type { MDSLookupState } from "./stores.js";
 
-type InspectOutput = {
-  result?: OverviewInspectResult;
-};
+type Envelope =
+  | InspectEnvelope
+  | CredentialsEnvelope
+  | CredentialDeleteEnvelope
+  | CredentialUpdateEnvelope
+  | LargeBlobReadEnvelope
+  | LargeBlobListEnvelope
+  | LargeBlobMutationEnvelope
+  | ConfigStatusEnvelope
+  | PINEnvelope
+  | AuthenticatorConfigEnvelope
+  | BioSensorEnvelope
+  | BioListEnvelope
+  | BioEnrollEnvelope
+  | BioMutationEnvelope
+  | ResetFactoryEnvelope
+  | MakeCredentialEnvelope
+  | GetAssertionEnvelope;
 
-type BioSensorOutput = {
-  report?: OverviewBioSensorReport;
-};
+type PreviewEnvelope =
+  | CredentialDeleteEnvelope
+  | CredentialUpdateEnvelope
+  | LargeBlobMutationEnvelope
+  | PINEnvelope
+  | AuthenticatorConfigEnvelope
+  | BioEnrollEnvelope
+  | BioMutationEnvelope
+  | ResetFactoryEnvelope
+  | MakeCredentialEnvelope;
 
 type CountSummary = {
   credentials?: number;
@@ -20,43 +59,8 @@ type CountSummary = {
   warnings?: number;
 };
 
-type CredentialsOutput = {
-  report?: {
-    groups?: unknown[];
-    summary?: {
-      totalCredentials?: number;
-    };
-  };
-};
-
-type BioListOutput = {
-  report?: {
-    enrollments?: unknown[];
-  };
-};
-
-type BioEnrollOutput = {
-  preview?: {
-    warnings?: unknown[];
-  };
-  result?: {
-    samples?: unknown[];
-  } | null;
-};
-
-type LargeBlobListOutput = {
-  report?: {
-    credentials?: unknown[];
-    array?: {
-      blobCount?: number;
-    };
-  };
-};
-
 type PreviewResultOutput = {
-  preview?: {
-    warnings?: unknown[];
-  };
+  preview?: { warnings?: unknown[] };
   result?: unknown | null;
 };
 
@@ -71,29 +75,25 @@ export type OperationEnvelopeLogData = {
   operationId?: string;
   sessionId?: string;
   kind?: OperationKind;
-  error?: OperationEnvelope["error"];
+  error?: Envelope["error"];
   result?: OperationResultSummary;
 };
 
-export function inspectResult(envelope: OperationEnvelope | null | undefined): OverviewInspectResult | null {
-  if (!isOperation(envelope, OperationKind.OperationInspect)) return null;
-  return (envelope.result as InspectOutput).result ?? null;
+export function inspectResult(envelope: Envelope | null | undefined): OverviewInspectResult | null {
+  if (!isInspectEnvelope(envelope) || envelope.error || !envelope.result) return null;
+  return envelope.result.result;
 }
 
-export function bioSensorReport(envelope: OperationEnvelope | null | undefined): OverviewBioSensorReport | null {
-  if (!isOperation(envelope, OperationKind.OperationBioSensorInfo)) return null;
-  return (envelope.result as BioSensorOutput).report ?? null;
+export function bioSensorReport(envelope: Envelope | null | undefined): OverviewBioSensorReport | null {
+  if (!isBioSensorEnvelope(envelope) || envelope.error || !envelope.result) return null;
+  return envelope.result.report;
 }
 
-export function mdsLookupResult(envelope: MDSLookupState | null | undefined) {
-  return envelope?.result ?? null;
-}
-
-export function operationError(envelope: OperationEnvelope | MDSLookupState | null | undefined) {
+export function operationError(envelope: Envelope | null | undefined) {
   return envelope?.error?.message || null;
 }
 
-export function operationEnvelopeLogData(envelope: OperationEnvelope | null | undefined): OperationEnvelopeLogData | undefined {
+export function operationEnvelopeLogData(envelope: Envelope | null | undefined): OperationEnvelopeLogData | undefined {
   if (!envelope) return undefined;
   return {
     ...(envelope.operationId ? { operationId: envelope.operationId } : {}),
@@ -104,65 +104,79 @@ export function operationEnvelopeLogData(envelope: OperationEnvelope | null | un
   };
 }
 
-export function operationResultSummary(envelope: OperationEnvelope): OperationResultSummary | undefined {
+export function operationResultSummary(envelope: Envelope): OperationResultSummary | undefined {
   if (envelope.error || !envelope.result) return undefined;
-  switch (envelope.kind) {
-    case OperationKind.OperationInspect:
-    case OperationKind.OperationBioSensorInfo:
-    case OperationKind.OperationConfigStatus:
-    case OperationKind.OperationReadLargeBlob:
-    case OperationKind.OperationGetAssertion:
-      return { kind: envelope.kind };
-    case OperationKind.OperationListCredentials:
-      return credentialListSummary(envelope.result as CredentialsOutput);
-    case OperationKind.OperationBioList:
-      return bioListSummary(envelope.result as BioListOutput);
-    case OperationKind.OperationBioEnroll:
-      return bioEnrollSummary(envelope.result as BioEnrollOutput);
-    case OperationKind.OperationListLargeBlobs:
-      return largeBlobListSummary(envelope.result as LargeBlobListOutput);
-    case OperationKind.OperationDeleteCredential:
-    case OperationKind.OperationUpdateCredentialUser:
-    case OperationKind.OperationWriteLargeBlob:
-    case OperationKind.OperationDeleteLargeBlob:
-    case OperationKind.OperationGarbageCollectLargeBlobs:
-    case OperationKind.OperationSetPIN:
-    case OperationKind.OperationChangePIN:
-    case OperationKind.OperationSetAlwaysUV:
-    case OperationKind.OperationSetMinPINLength:
-    case OperationKind.OperationBioRename:
-    case OperationKind.OperationBioRemove:
-    case OperationKind.OperationResetFactory:
-    case OperationKind.OperationMakeCredential:
-      return previewResultSummary(envelope.kind, envelope.result as PreviewResultOutput);
-    default:
-      return { kind: envelope.kind };
-  }
+
+  if (isCredentialsEnvelope(envelope)) return credentialListSummary(envelope.result);
+  if (isBioListEnvelope(envelope)) return bioListSummary(envelope.result);
+  if (isBioEnrollEnvelope(envelope)) return bioEnrollSummary(envelope.result);
+  if (isLargeBlobListEnvelope(envelope)) return largeBlobListSummary(envelope.result);
+  if (isPreviewEnvelope(envelope)) return previewResultSummary(envelope.kind, envelope.result);
+
+  return { kind: envelope.kind };
 }
 
-function isOperation(envelope: OperationEnvelope | null | undefined, kind: OperationKind) {
-  return Boolean(envelope && !envelope.error && envelope.kind === kind && envelope.result);
+function isInspectEnvelope(envelope: Envelope | null | undefined): envelope is InspectEnvelope {
+  return Boolean(envelope && envelope.kind === OperationKind.OperationInspect);
 }
 
-function credentialListSummary(output: CredentialsOutput): OperationResultSummary {
-  const credentials = output.report?.summary?.totalCredentials;
+function isBioSensorEnvelope(envelope: Envelope | null | undefined): envelope is BioSensorEnvelope {
+  return Boolean(envelope && envelope.kind === OperationKind.OperationBioSensorInfo);
+}
+
+function isCredentialsEnvelope(envelope: Envelope): envelope is CredentialsEnvelope {
+  return envelope.kind === OperationKind.OperationListCredentials;
+}
+
+function isBioListEnvelope(envelope: Envelope): envelope is BioListEnvelope {
+  return envelope.kind === OperationKind.OperationBioList;
+}
+
+function isBioEnrollEnvelope(envelope: Envelope): envelope is BioEnrollEnvelope {
+  return envelope.kind === OperationKind.OperationBioEnroll;
+}
+
+function isLargeBlobListEnvelope(envelope: Envelope): envelope is LargeBlobListEnvelope {
+  return envelope.kind === OperationKind.OperationListLargeBlobs;
+}
+
+function isPreviewEnvelope(envelope: Envelope): envelope is PreviewEnvelope {
+  return [
+    OperationKind.OperationDeleteCredential,
+    OperationKind.OperationUpdateCredentialUser,
+    OperationKind.OperationWriteLargeBlob,
+    OperationKind.OperationDeleteLargeBlob,
+    OperationKind.OperationGarbageCollectLargeBlobs,
+    OperationKind.OperationSetPIN,
+    OperationKind.OperationChangePIN,
+    OperationKind.OperationSetAlwaysUV,
+    OperationKind.OperationSetMinPINLength,
+    OperationKind.OperationBioRename,
+    OperationKind.OperationBioRemove,
+    OperationKind.OperationResetFactory,
+    OperationKind.OperationMakeCredential,
+  ].includes(envelope.kind);
+}
+
+function credentialListSummary(output: NonNullable<CredentialsEnvelope["result"]>): OperationResultSummary {
+  const credentials = output.report.summary.totalCredentials;
   return {
     kind: OperationKind.OperationListCredentials,
     counts: {
-      ...(output.report?.groups ? { groups: output.report.groups.length } : {}),
+      ...(output.report.groups ? { groups: output.report.groups.length } : {}),
       ...(credentials !== undefined ? { credentials } : {}),
     },
   };
 }
 
-function bioListSummary(output: BioListOutput): OperationResultSummary {
+function bioListSummary(output: NonNullable<BioListEnvelope["result"]>): OperationResultSummary {
   return {
     kind: OperationKind.OperationBioList,
-    counts: output.report?.enrollments ? { enrollments: output.report.enrollments.length } : undefined,
+    counts: { enrollments: output.report.enrollments.length },
   };
 }
 
-function bioEnrollSummary(output: BioEnrollOutput): OperationResultSummary {
+function bioEnrollSummary(output: NonNullable<BioEnrollEnvelope["result"]>): OperationResultSummary {
   return {
     kind: OperationKind.OperationBioEnroll,
     completed: Boolean(output.result),
@@ -174,12 +188,12 @@ function bioEnrollSummary(output: BioEnrollOutput): OperationResultSummary {
   };
 }
 
-function largeBlobListSummary(output: LargeBlobListOutput): OperationResultSummary {
-  const blobCount = output.report?.array?.blobCount;
+function largeBlobListSummary(output: NonNullable<LargeBlobListEnvelope["result"]>): OperationResultSummary {
+  const blobCount = output.report.array.blobCount;
   return {
     kind: OperationKind.OperationListLargeBlobs,
     counts: {
-      ...(output.report?.credentials ? { credentials: output.report.credentials.length } : {}),
+      ...(output.report.credentials ? { credentials: output.report.credentials.length } : {}),
       ...(blobCount !== undefined ? { blobs: blobCount } : {}),
     },
   };

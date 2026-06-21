@@ -5,6 +5,13 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as report$0 from "../report/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as safety$0 from "../safety/models.js";
+
 export enum AlwaysUVTarget {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -14,3 +21,943 @@ export enum AlwaysUVTarget {
     AlwaysUVTargetEnable = "enable",
     AlwaysUVTargetDisable = "disable",
 };
+
+export enum AuthenticatorConfigOperation {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    AuthenticatorConfigAlwaysUV = "alwaysUv",
+    AuthenticatorConfigMinPINLength = "setMinPINLength",
+};
+
+export class AuthenticatorConfigPreview {
+    "operation": AuthenticatorConfigOperation;
+    "device": report$0.DeviceReport;
+    "authenticatorConfig": AuthenticatorConfigStatus;
+    "target"?: AlwaysUVTarget;
+    "currentAlwaysUv"?: boolean | null;
+    "requestedAlwaysUv"?: boolean;
+    "currentMinPINLength"?: number | null;
+    "requestedMinPINLength"?: number | null;
+    "maxPINLength"?: number | null;
+    "minPinLengthRPIDs"?: string[];
+    "forceChangePin"?: boolean;
+    "pinComplexityPolicy"?: boolean;
+    "mode": safety$0.PreviewMode;
+    "warnings"?: safety$0.Warning[];
+
+    /** Creates a new AuthenticatorConfigPreview instance. */
+    constructor($$source: Partial<AuthenticatorConfigPreview> = {}) {
+        if (!("operation" in $$source)) {
+            this["operation"] = AuthenticatorConfigOperation.$zero;
+        }
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("authenticatorConfig" in $$source)) {
+            this["authenticatorConfig"] = (new AuthenticatorConfigStatus());
+        }
+        if (!("mode" in $$source)) {
+            this["mode"] = safety$0.PreviewMode.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AuthenticatorConfigPreview instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AuthenticatorConfigPreview {
+        const $$createField1_0 = $$createType0;
+        const $$createField2_0 = $$createType1;
+        const $$createField9_0 = $$createType2;
+        const $$createField13_0 = $$createType4;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField1_0($$parsedSource["device"]);
+        }
+        if ("authenticatorConfig" in $$parsedSource) {
+            $$parsedSource["authenticatorConfig"] = $$createField2_0($$parsedSource["authenticatorConfig"]);
+        }
+        if ("minPinLengthRPIDs" in $$parsedSource) {
+            $$parsedSource["minPinLengthRPIDs"] = $$createField9_0($$parsedSource["minPinLengthRPIDs"]);
+        }
+        if ("warnings" in $$parsedSource) {
+            $$parsedSource["warnings"] = $$createField13_0($$parsedSource["warnings"]);
+        }
+        return new AuthenticatorConfigPreview($$parsedSource as Partial<AuthenticatorConfigPreview>);
+    }
+}
+
+export class AuthenticatorConfigResult {
+    "operation": AuthenticatorConfigOperation;
+    "deviceId": string;
+    "target"?: AlwaysUVTarget;
+    "newMinPINLength"?: number;
+    "state": StateValue;
+
+    /** Creates a new AuthenticatorConfigResult instance. */
+    constructor($$source: Partial<AuthenticatorConfigResult> = {}) {
+        if (!("operation" in $$source)) {
+            this["operation"] = AuthenticatorConfigOperation.$zero;
+        }
+        if (!("deviceId" in $$source)) {
+            this["deviceId"] = "";
+        }
+        if (!("state" in $$source)) {
+            this["state"] = StateValue.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AuthenticatorConfigResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AuthenticatorConfigResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new AuthenticatorConfigResult($$parsedSource as Partial<AuthenticatorConfigResult>);
+    }
+}
+
+export class AuthenticatorConfigStatus {
+    "state": StateValue;
+    "supported": boolean;
+    "configured"?: boolean | null;
+    "previewOnly"?: boolean;
+    "uvAcfg": CapabilityState;
+    "alwaysUv": CapabilityState;
+    "setMinPINLength": CapabilityState;
+
+    /** Creates a new AuthenticatorConfigStatus instance. */
+    constructor($$source: Partial<AuthenticatorConfigStatus> = {}) {
+        if (!("state" in $$source)) {
+            this["state"] = StateValue.$zero;
+        }
+        if (!("supported" in $$source)) {
+            this["supported"] = false;
+        }
+        if (!("uvAcfg" in $$source)) {
+            this["uvAcfg"] = (new CapabilityState());
+        }
+        if (!("alwaysUv" in $$source)) {
+            this["alwaysUv"] = (new CapabilityState());
+        }
+        if (!("setMinPINLength" in $$source)) {
+            this["setMinPINLength"] = (new CapabilityState());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AuthenticatorConfigStatus instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AuthenticatorConfigStatus {
+        const $$createField4_0 = $$createType5;
+        const $$createField5_0 = $$createType5;
+        const $$createField6_0 = $$createType5;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("uvAcfg" in $$parsedSource) {
+            $$parsedSource["uvAcfg"] = $$createField4_0($$parsedSource["uvAcfg"]);
+        }
+        if ("alwaysUv" in $$parsedSource) {
+            $$parsedSource["alwaysUv"] = $$createField5_0($$parsedSource["alwaysUv"]);
+        }
+        if ("setMinPINLength" in $$parsedSource) {
+            $$parsedSource["setMinPINLength"] = $$createField6_0($$parsedSource["setMinPINLength"]);
+        }
+        return new AuthenticatorConfigStatus($$parsedSource as Partial<AuthenticatorConfigStatus>);
+    }
+}
+
+export class BioEnrollPreview {
+    "device": report$0.DeviceReport;
+    "previewOnly": boolean;
+    "timeoutMilliseconds": number;
+    "mode": safety$0.PreviewMode;
+    "warnings"?: safety$0.Warning[];
+
+    /** Creates a new BioEnrollPreview instance. */
+    constructor($$source: Partial<BioEnrollPreview> = {}) {
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("previewOnly" in $$source)) {
+            this["previewOnly"] = false;
+        }
+        if (!("timeoutMilliseconds" in $$source)) {
+            this["timeoutMilliseconds"] = 0;
+        }
+        if (!("mode" in $$source)) {
+            this["mode"] = safety$0.PreviewMode.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BioEnrollPreview instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BioEnrollPreview {
+        const $$createField0_0 = $$createType0;
+        const $$createField4_0 = $$createType4;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
+        }
+        if ("warnings" in $$parsedSource) {
+            $$parsedSource["warnings"] = $$createField4_0($$parsedSource["warnings"]);
+        }
+        return new BioEnrollPreview($$parsedSource as Partial<BioEnrollPreview>);
+    }
+}
+
+export class BioEnrollResult {
+    "deviceId": string;
+    "previewOnly": boolean;
+    "templateIDHex": string;
+    "samples"?: BioEnrollSample[];
+    "lastEnrollSampleStatus"?: string;
+    "remainingSamples"?: number | null;
+    "cancelAttempted": boolean;
+    "cancelSucceeded": boolean;
+
+    /** Creates a new BioEnrollResult instance. */
+    constructor($$source: Partial<BioEnrollResult> = {}) {
+        if (!("deviceId" in $$source)) {
+            this["deviceId"] = "";
+        }
+        if (!("previewOnly" in $$source)) {
+            this["previewOnly"] = false;
+        }
+        if (!("templateIDHex" in $$source)) {
+            this["templateIDHex"] = "";
+        }
+        if (!("cancelAttempted" in $$source)) {
+            this["cancelAttempted"] = false;
+        }
+        if (!("cancelSucceeded" in $$source)) {
+            this["cancelSucceeded"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BioEnrollResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BioEnrollResult {
+        const $$createField3_0 = $$createType7;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("samples" in $$parsedSource) {
+            $$parsedSource["samples"] = $$createField3_0($$parsedSource["samples"]);
+        }
+        return new BioEnrollResult($$parsedSource as Partial<BioEnrollResult>);
+    }
+}
+
+export class BioEnrollSample {
+    "status": string;
+    "remainingSamples"?: number | null;
+
+    /** Creates a new BioEnrollSample instance. */
+    constructor($$source: Partial<BioEnrollSample> = {}) {
+        if (!("status" in $$source)) {
+            this["status"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BioEnrollSample instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BioEnrollSample {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new BioEnrollSample($$parsedSource as Partial<BioEnrollSample>);
+    }
+}
+
+export class BioEnrollmentRecord {
+    "templateIDHex": string;
+    "friendlyName"?: string;
+
+    /** Creates a new BioEnrollmentRecord instance. */
+    constructor($$source: Partial<BioEnrollmentRecord> = {}) {
+        if (!("templateIDHex" in $$source)) {
+            this["templateIDHex"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BioEnrollmentRecord instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BioEnrollmentRecord {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new BioEnrollmentRecord($$parsedSource as Partial<BioEnrollmentRecord>);
+    }
+}
+
+export class BioListReport {
+    "device": report$0.DeviceReport;
+    "supported": boolean;
+    "previewOnly": boolean;
+    "enrollments": BioEnrollmentRecord[];
+
+    /** Creates a new BioListReport instance. */
+    constructor($$source: Partial<BioListReport> = {}) {
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("supported" in $$source)) {
+            this["supported"] = false;
+        }
+        if (!("previewOnly" in $$source)) {
+            this["previewOnly"] = false;
+        }
+        if (!("enrollments" in $$source)) {
+            this["enrollments"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BioListReport instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BioListReport {
+        const $$createField0_0 = $$createType0;
+        const $$createField3_0 = $$createType9;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
+        }
+        if ("enrollments" in $$parsedSource) {
+            $$parsedSource["enrollments"] = $$createField3_0($$parsedSource["enrollments"]);
+        }
+        return new BioListReport($$parsedSource as Partial<BioListReport>);
+    }
+}
+
+export enum BioModality {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    BioModalityFingerprint = "fingerprint",
+};
+
+export enum BioMutationOperation {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    BioMutationRename = "rename",
+    BioMutationRemove = "remove",
+};
+
+export class BioMutationPreview {
+    "operation": BioMutationOperation;
+    "device": report$0.DeviceReport;
+    "previewOnly": boolean;
+    "templateIDHex": string;
+    "friendlyName"?: string;
+    "mode": safety$0.PreviewMode;
+    "warnings"?: safety$0.Warning[];
+
+    /** Creates a new BioMutationPreview instance. */
+    constructor($$source: Partial<BioMutationPreview> = {}) {
+        if (!("operation" in $$source)) {
+            this["operation"] = BioMutationOperation.$zero;
+        }
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("previewOnly" in $$source)) {
+            this["previewOnly"] = false;
+        }
+        if (!("templateIDHex" in $$source)) {
+            this["templateIDHex"] = "";
+        }
+        if (!("mode" in $$source)) {
+            this["mode"] = safety$0.PreviewMode.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BioMutationPreview instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BioMutationPreview {
+        const $$createField1_0 = $$createType0;
+        const $$createField6_0 = $$createType4;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField1_0($$parsedSource["device"]);
+        }
+        if ("warnings" in $$parsedSource) {
+            $$parsedSource["warnings"] = $$createField6_0($$parsedSource["warnings"]);
+        }
+        return new BioMutationPreview($$parsedSource as Partial<BioMutationPreview>);
+    }
+}
+
+export class BioMutationResult {
+    "operation": BioMutationOperation;
+    "deviceId": string;
+    "previewOnly": boolean;
+    "templateIDHex": string;
+    "friendlyName"?: string;
+
+    /** Creates a new BioMutationResult instance. */
+    constructor($$source: Partial<BioMutationResult> = {}) {
+        if (!("operation" in $$source)) {
+            this["operation"] = BioMutationOperation.$zero;
+        }
+        if (!("deviceId" in $$source)) {
+            this["deviceId"] = "";
+        }
+        if (!("previewOnly" in $$source)) {
+            this["previewOnly"] = false;
+        }
+        if (!("templateIDHex" in $$source)) {
+            this["templateIDHex"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BioMutationResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BioMutationResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new BioMutationResult($$parsedSource as Partial<BioMutationResult>);
+    }
+}
+
+export class BioSensorReport {
+    "device": report$0.DeviceReport;
+    "supported": boolean;
+    "previewOnly": boolean;
+    "modality"?: BioModality | null;
+    "fingerprintKind"?: FingerprintKind | null;
+    "maxCaptureSamplesRequiredForEnroll"?: number | null;
+    "maxTemplateFriendlyName"?: number | null;
+
+    /** Creates a new BioSensorReport instance. */
+    constructor($$source: Partial<BioSensorReport> = {}) {
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("supported" in $$source)) {
+            this["supported"] = false;
+        }
+        if (!("previewOnly" in $$source)) {
+            this["previewOnly"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BioSensorReport instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BioSensorReport {
+        const $$createField0_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
+        }
+        return new BioSensorReport($$parsedSource as Partial<BioSensorReport>);
+    }
+}
+
+export class BioStatus {
+    "state": StateValue;
+    "supported": boolean;
+    "configured"?: boolean | null;
+    "previewOnly"?: boolean;
+    "uvBioEnroll": CapabilityState;
+    "uvModality"?: number | null;
+    "uvModalityLabel"?: string;
+
+    /** Creates a new BioStatus instance. */
+    constructor($$source: Partial<BioStatus> = {}) {
+        if (!("state" in $$source)) {
+            this["state"] = StateValue.$zero;
+        }
+        if (!("supported" in $$source)) {
+            this["supported"] = false;
+        }
+        if (!("uvBioEnroll" in $$source)) {
+            this["uvBioEnroll"] = (new CapabilityState());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new BioStatus instance from a string or object.
+     */
+    static createFrom($$source: any = {}): BioStatus {
+        const $$createField4_0 = $$createType5;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("uvBioEnroll" in $$parsedSource) {
+            $$parsedSource["uvBioEnroll"] = $$createField4_0($$parsedSource["uvBioEnroll"]);
+        }
+        return new BioStatus($$parsedSource as Partial<BioStatus>);
+    }
+}
+
+export class CapabilityState {
+    "state": StateValue;
+    "supported": boolean;
+    "configured"?: boolean | null;
+    "previewOnly"?: boolean;
+
+    /** Creates a new CapabilityState instance. */
+    constructor($$source: Partial<CapabilityState> = {}) {
+        if (!("state" in $$source)) {
+            this["state"] = StateValue.$zero;
+        }
+        if (!("supported" in $$source)) {
+            this["supported"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CapabilityState instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CapabilityState {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new CapabilityState($$parsedSource as Partial<CapabilityState>);
+    }
+}
+
+export enum FingerprintKind {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    FingerprintKindTouch = "touch",
+    FingerprintKindSwipe = "swipe",
+};
+
+export class LimitsStatus {
+    "minPINLength"?: number | null;
+    "maxPINLength"?: number | null;
+    "maxRPIDsForSetMinPINLength"?: number | null;
+    "preferredPlatformUvAttempts"?: number | null;
+    "uvCountSinceLastPinEntry"?: number | null;
+
+    /** Creates a new LimitsStatus instance. */
+    constructor($$source: Partial<LimitsStatus> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LimitsStatus instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LimitsStatus {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new LimitsStatus($$parsedSource as Partial<LimitsStatus>);
+    }
+}
+
+export enum PINMutationOperation {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    PINMutationSet = "set",
+    PINMutationChange = "change",
+};
+
+export class PINMutationPreview {
+    "operation": PINMutationOperation;
+    "device": report$0.DeviceReport;
+    "pin": PINStatus;
+    "mode": safety$0.PreviewMode;
+    "warnings"?: safety$0.Warning[];
+
+    /** Creates a new PINMutationPreview instance. */
+    constructor($$source: Partial<PINMutationPreview> = {}) {
+        if (!("operation" in $$source)) {
+            this["operation"] = PINMutationOperation.$zero;
+        }
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("pin" in $$source)) {
+            this["pin"] = (new PINStatus());
+        }
+        if (!("mode" in $$source)) {
+            this["mode"] = safety$0.PreviewMode.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PINMutationPreview instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PINMutationPreview {
+        const $$createField1_0 = $$createType0;
+        const $$createField2_0 = $$createType10;
+        const $$createField4_0 = $$createType4;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField1_0($$parsedSource["device"]);
+        }
+        if ("pin" in $$parsedSource) {
+            $$parsedSource["pin"] = $$createField2_0($$parsedSource["pin"]);
+        }
+        if ("warnings" in $$parsedSource) {
+            $$parsedSource["warnings"] = $$createField4_0($$parsedSource["warnings"]);
+        }
+        return new PINMutationPreview($$parsedSource as Partial<PINMutationPreview>);
+    }
+}
+
+export class PINMutationResult {
+    "operation": PINMutationOperation;
+    "deviceId": string;
+    "pinState": StateValue;
+
+    /** Creates a new PINMutationResult instance. */
+    constructor($$source: Partial<PINMutationResult> = {}) {
+        if (!("operation" in $$source)) {
+            this["operation"] = PINMutationOperation.$zero;
+        }
+        if (!("deviceId" in $$source)) {
+            this["deviceId"] = "";
+        }
+        if (!("pinState" in $$source)) {
+            this["pinState"] = StateValue.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PINMutationResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PINMutationResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new PINMutationResult($$parsedSource as Partial<PINMutationResult>);
+    }
+}
+
+export class PINStatus {
+    "state": StateValue;
+    "supported": boolean;
+    "configured"?: boolean | null;
+    "protocolSupported": boolean;
+    "minPINLength"?: number | null;
+    "maxPINLength"?: number | null;
+    "forcePINChange"?: boolean | null;
+    "pinComplexityPolicy"?: boolean | null;
+    "pinComplexityPolicyURL"?: string | null;
+    "retries": RetryState;
+
+    /** Creates a new PINStatus instance. */
+    constructor($$source: Partial<PINStatus> = {}) {
+        if (!("state" in $$source)) {
+            this["state"] = StateValue.$zero;
+        }
+        if (!("supported" in $$source)) {
+            this["supported"] = false;
+        }
+        if (!("protocolSupported" in $$source)) {
+            this["protocolSupported"] = false;
+        }
+        if (!("retries" in $$source)) {
+            this["retries"] = (new RetryState());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PINStatus instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PINStatus {
+        const $$createField9_0 = $$createType11;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("retries" in $$parsedSource) {
+            $$parsedSource["retries"] = $$createField9_0($$parsedSource["retries"]);
+        }
+        return new PINStatus($$parsedSource as Partial<PINStatus>);
+    }
+}
+
+export class ResetHints {
+    "longTouchForReset": StateValue;
+    "transportsForReset"?: string[];
+
+    /** Creates a new ResetHints instance. */
+    constructor($$source: Partial<ResetHints> = {}) {
+        if (!("longTouchForReset" in $$source)) {
+            this["longTouchForReset"] = StateValue.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ResetHints instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ResetHints {
+        const $$createField1_0 = $$createType2;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("transportsForReset" in $$parsedSource) {
+            $$parsedSource["transportsForReset"] = $$createField1_0($$parsedSource["transportsForReset"]);
+        }
+        return new ResetHints($$parsedSource as Partial<ResetHints>);
+    }
+}
+
+export class ResetPreview {
+    "device": report$0.DeviceReport;
+    "resetHints": ResetHints;
+    "mode": safety$0.PreviewMode;
+    "warnings"?: safety$0.Warning[];
+
+    /** Creates a new ResetPreview instance. */
+    constructor($$source: Partial<ResetPreview> = {}) {
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("resetHints" in $$source)) {
+            this["resetHints"] = (new ResetHints());
+        }
+        if (!("mode" in $$source)) {
+            this["mode"] = safety$0.PreviewMode.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ResetPreview instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ResetPreview {
+        const $$createField0_0 = $$createType0;
+        const $$createField1_0 = $$createType12;
+        const $$createField3_0 = $$createType4;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
+        }
+        if ("resetHints" in $$parsedSource) {
+            $$parsedSource["resetHints"] = $$createField1_0($$parsedSource["resetHints"]);
+        }
+        if ("warnings" in $$parsedSource) {
+            $$parsedSource["warnings"] = $$createField3_0($$parsedSource["warnings"]);
+        }
+        return new ResetPreview($$parsedSource as Partial<ResetPreview>);
+    }
+}
+
+export class ResetResult {
+    "deviceId": string;
+    "reset": boolean;
+
+    /** Creates a new ResetResult instance. */
+    constructor($$source: Partial<ResetResult> = {}) {
+        if (!("deviceId" in $$source)) {
+            this["deviceId"] = "";
+        }
+        if (!("reset" in $$source)) {
+            this["reset"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ResetResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ResetResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ResetResult($$parsedSource as Partial<ResetResult>);
+    }
+}
+
+export class RetryState {
+    "state": StateValue;
+    "remaining"?: number | null;
+    "powerCycleState"?: boolean | null;
+    "error"?: string;
+
+    /** Creates a new RetryState instance. */
+    constructor($$source: Partial<RetryState> = {}) {
+        if (!("state" in $$source)) {
+            this["state"] = StateValue.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new RetryState instance from a string or object.
+     */
+    static createFrom($$source: any = {}): RetryState {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new RetryState($$parsedSource as Partial<RetryState>);
+    }
+}
+
+export enum StateValue {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    StateSupported = "supported",
+    StateUnsupported = "unsupported",
+    StateUnknown = "unknown",
+    StateConfigured = "configured",
+    StateNotConfigured = "not_configured",
+    StatePreviewOnly = "preview_only",
+};
+
+export class StatusReport {
+    "device": report$0.DeviceReport;
+    "pin": PINStatus;
+    "uv": UVStatus;
+    "bio": BioStatus;
+    "authenticatorConfig": AuthenticatorConfigStatus;
+    "resetHints": ResetHints;
+    "limits": LimitsStatus;
+
+    /** Creates a new StatusReport instance. */
+    constructor($$source: Partial<StatusReport> = {}) {
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("pin" in $$source)) {
+            this["pin"] = (new PINStatus());
+        }
+        if (!("uv" in $$source)) {
+            this["uv"] = (new UVStatus());
+        }
+        if (!("bio" in $$source)) {
+            this["bio"] = (new BioStatus());
+        }
+        if (!("authenticatorConfig" in $$source)) {
+            this["authenticatorConfig"] = (new AuthenticatorConfigStatus());
+        }
+        if (!("resetHints" in $$source)) {
+            this["resetHints"] = (new ResetHints());
+        }
+        if (!("limits" in $$source)) {
+            this["limits"] = (new LimitsStatus());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new StatusReport instance from a string or object.
+     */
+    static createFrom($$source: any = {}): StatusReport {
+        const $$createField0_0 = $$createType0;
+        const $$createField1_0 = $$createType10;
+        const $$createField2_0 = $$createType13;
+        const $$createField3_0 = $$createType14;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType12;
+        const $$createField6_0 = $$createType15;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
+        }
+        if ("pin" in $$parsedSource) {
+            $$parsedSource["pin"] = $$createField1_0($$parsedSource["pin"]);
+        }
+        if ("uv" in $$parsedSource) {
+            $$parsedSource["uv"] = $$createField2_0($$parsedSource["uv"]);
+        }
+        if ("bio" in $$parsedSource) {
+            $$parsedSource["bio"] = $$createField3_0($$parsedSource["bio"]);
+        }
+        if ("authenticatorConfig" in $$parsedSource) {
+            $$parsedSource["authenticatorConfig"] = $$createField4_0($$parsedSource["authenticatorConfig"]);
+        }
+        if ("resetHints" in $$parsedSource) {
+            $$parsedSource["resetHints"] = $$createField5_0($$parsedSource["resetHints"]);
+        }
+        if ("limits" in $$parsedSource) {
+            $$parsedSource["limits"] = $$createField6_0($$parsedSource["limits"]);
+        }
+        return new StatusReport($$parsedSource as Partial<StatusReport>);
+    }
+}
+
+export class UVStatus {
+    "state": StateValue;
+    "supported": boolean;
+    "configured"?: boolean | null;
+    "previewOnly"?: boolean;
+    "retries": RetryState;
+
+    /** Creates a new UVStatus instance. */
+    constructor($$source: Partial<UVStatus> = {}) {
+        if (!("state" in $$source)) {
+            this["state"] = StateValue.$zero;
+        }
+        if (!("supported" in $$source)) {
+            this["supported"] = false;
+        }
+        if (!("retries" in $$source)) {
+            this["retries"] = (new RetryState());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new UVStatus instance from a string or object.
+     */
+    static createFrom($$source: any = {}): UVStatus {
+        const $$createField4_0 = $$createType11;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("retries" in $$parsedSource) {
+            $$parsedSource["retries"] = $$createField4_0($$parsedSource["retries"]);
+        }
+        return new UVStatus($$parsedSource as Partial<UVStatus>);
+    }
+}
+
+// Private type creation functions
+const $$createType0 = report$0.DeviceReport.createFrom;
+const $$createType1 = AuthenticatorConfigStatus.createFrom;
+const $$createType2 = $Create.Array($Create.Any);
+const $$createType3 = safety$0.Warning.createFrom;
+const $$createType4 = $Create.Array($$createType3);
+const $$createType5 = CapabilityState.createFrom;
+const $$createType6 = BioEnrollSample.createFrom;
+const $$createType7 = $Create.Array($$createType6);
+const $$createType8 = BioEnrollmentRecord.createFrom;
+const $$createType9 = $Create.Array($$createType8);
+const $$createType10 = PINStatus.createFrom;
+const $$createType11 = RetryState.createFrom;
+const $$createType12 = ResetHints.createFrom;
+const $$createType13 = UVStatus.createFrom;
+const $$createType14 = BioStatus.createFrom;
+const $$createType15 = LimitsStatus.createFrom;
