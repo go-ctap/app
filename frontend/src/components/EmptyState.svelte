@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import { CircleDashed } from "@lucide/svelte";
-  import { Card } from "$lib/components/ui/card/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
+  import { cn } from "$lib/utils.js";
   import { m } from "../paraglide/messages.js";
 
   type Props = {
@@ -23,55 +24,56 @@
   }: Props = $props();
 </script>
 
-<Card class="empty-state" data-variant={variant}>
-  <div class="empty-state__icon" aria-hidden="true">
-    {#if icon}
-      {@render icon()}
-    {:else}
-      <CircleDashed size={24} />
-    {/if}
-  </div>
-  {#if eyebrow}
-    <p class="eyebrow">{eyebrow}</p>
-  {/if}
-  <h2>{title}</h2>
-  {#if message}
-    <p>{message}</p>
-  {/if}
-  {#if actions}
-    <div class="actions cluster">
-      {@render actions()}
+<Card.Root class={cn("grid place-items-center content-center border-dashed text-center", variant === "compact" ? "min-h-40" : "min-h-[calc(100vh-9rem)]")}>
+  <Card.Header class="justify-items-center">
+    <div class="empty-icon" aria-hidden="true">
+      {#if icon}
+        {@render icon()}
+      {:else}
+        <CircleDashed size={24} />
+      {/if}
     </div>
+    {#if eyebrow}
+      <p class="empty-eyebrow">{eyebrow}</p>
+    {/if}
+    <Card.Title>{title}</Card.Title>
+    {#if message}
+      <Card.Description>{message}</Card.Description>
+    {/if}
+  </Card.Header>
+  {#if actions}
+    <Card.Content>
+      <div class="empty-actions">
+        {@render actions()}
+      </div>
+    </Card.Content>
   {/if}
-</Card>
+</Card.Root>
 
 <style>
 @layer blocks {
-    .eyebrow,
-    h2,
-    p {
-      margin: 0;
-    }
+  .empty-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--border);
+    margin-bottom: var(--space-2);
+  }
 
-    .eyebrow {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
+  .empty-eyebrow {
+    margin: 0;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
 
-    h2 {
-      color: var(--foreground);
-      font-size: 1rem;
-    }
-
-    p {
-      max-width: 34rem;
-      line-height: 1.55;
-    }
-
-    .actions {
-      margin-top: var(--space-2);
-      --cluster-justify: center;
-    }
+  .empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
+  }
 }
 </style>

@@ -4,7 +4,7 @@
 
 <script lang="ts">
   import { Button } from "$lib/components/ui/button/index.js";
-  import { Card } from "$lib/components/ui/card/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
   import type { OverviewHeroModel, OverviewHeroSignalGroup } from "$lib/overview-rules";
   import StatusBadge from "../components/StatusBadge.svelte";
   import { m } from "../paraglide/messages.js";
@@ -40,8 +40,8 @@
   }
 </script>
 
-<Card class="hero-panel workbench-panel sidebar-layout" data-padding="none" data-overflow="hidden">
-  <div class="hero-main">
+<Card.Root class="grid min-w-0 overflow-hidden py-0 min-[1020px]:grid-cols-[minmax(0,1fr)_24rem]">
+  <Card.Content class="grid min-w-0 gap-5 p-5">
     <header class="hero-header">
       <div class="hero-identity">
         <div class="token-icon">
@@ -77,20 +77,13 @@
         <OverviewSignalGroup {group} />
       {/each}
     </div>
-  </div>
+  </Card.Content>
 
   <OverviewMetadataPanel {hero} loading={mdsLoading} onRefresh={onRefreshMDS} />
-</Card>
+</Card.Root>
 
 <style>
 @layer blocks {
-    .hero-main {
-      display: grid;
-      gap: var(--space-5);
-      min-width: 0;
-      padding: var(--space-5);
-    }
-
     .hero-header {
       display: flex;
       align-items: flex-start;
@@ -169,12 +162,6 @@
     .signal-grid {
       --switcher-space: var(--space-4);
       --switcher-threshold: 42rem;
-    }
-
-    @media (min-width: 1020px) {
-      :global(.hero-panel) {
-        --sidebar-width: 24rem;
-      }
     }
 
     @media (max-width: 720px) {

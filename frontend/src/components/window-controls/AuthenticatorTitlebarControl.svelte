@@ -56,15 +56,17 @@
 
       <Select.Portal>
         <Select.Content side="bottom" align="start" sideOffset={6}>
-          {#each $devices as device (selectorFromDevice(device))}
-            {@const selector = selectorFromDevice(device)}
-            <Select.Item value={selector} label={labelDevice(device)}>
-              <span>{deviceName(device)}</span>
-              <span class="auth-titlebar__item-detail">{transportLabel(device.transport)} - {deviceDetail(device) || selector}</span>
-            </Select.Item>
-          {:else}
-            <Select.Label>{m.no_authenticators_connected()}</Select.Label>
-          {/each}
+          <Select.Group>
+            {#each $devices as device (selectorFromDevice(device))}
+              {@const selector = selectorFromDevice(device)}
+              <Select.Item value={selector} label={labelDevice(device)}>
+                <span>{deviceName(device)}</span>
+                <span class="auth-item-detail">{transportLabel(device.transport)} - {deviceDetail(device) || selector}</span>
+              </Select.Item>
+            {:else}
+              <Select.Label>{m.no_authenticators_connected()}</Select.Label>
+            {/each}
+          </Select.Group>
         </Select.Content>
       </Select.Portal>
     </Select.Root>
@@ -73,7 +75,7 @@
       <Tooltip.Trigger>
         {#snippet child({ props })}
           <Button {...props} variant="ghost" size="icon-sm" type="button" aria-label={m.refresh_devices()} disabled={disabled} onclick={handleRefresh}>
-            <RefreshCw size={15} strokeWidth={2} aria-hidden="true" />
+            <RefreshCw aria-hidden="true" />
           </Button>
         {/snippet}
       </Tooltip.Trigger>
@@ -88,7 +90,7 @@
       <Tooltip.Trigger>
         {#snippet child({ props })}
           <Button {...props} variant="ghost" size="icon-sm" type="button" aria-label={m.clear_selection()} disabled={!$selectedSelector || disabled} onclick={handleClear}>
-            <X size={15} strokeWidth={2} aria-hidden="true" />
+            <X aria-hidden="true" />
           </Button>
         {/snippet}
       </Tooltip.Trigger>
@@ -114,7 +116,7 @@
       opacity: 0.76;
     }
 
-    .auth-titlebar__item-detail {
+    .auth-item-detail {
       color: var(--muted-foreground);
     }
 }

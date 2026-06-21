@@ -8,17 +8,17 @@
 </script>
 
 <script lang="ts">
+  import { Badge, type BadgeVariant } from "$lib/components/ui/badge/index.js";
   import type { OverviewHeroSignal, OverviewHeroSignalGroup } from "$lib/overview-rules";
 
   let { group }: { group: OverviewHeroSignalGroup } = $props();
 
   let Icon = $derived(ICONS[group.id] || Info);
 
-  function signalTone(status: OverviewHeroSignal["status"]) {
-    if (status === "supported" || status === "configured" || status === "enabled") return "ok";
-    if (status === "warning" || status === "not configured" || status === "disabled") return "warn";
-    if (status === "informational") return "info";
-    return "muted";
+  function signalVariant(status: OverviewHeroSignal["status"]): BadgeVariant {
+    if (status === "supported" || status === "configured" || status === "enabled") return "default";
+    if (status === "warning" || status === "not configured" || status === "disabled") return "secondary";
+    return "outline";
   }
 </script>
 
@@ -30,7 +30,6 @@
 
   <div class="signals">
     {#each group.signals as signal (signal.id)}
-      {@const tone = signalTone(signal.status)}
       <article class="signal-row" title={signal.tooltip}>
         <div class="signal-copy">
           <div class="signal-title">
@@ -45,10 +44,7 @@
             {/if}
           </code>
         </div>
-        <div class="signal-status" data-tone={tone}>
-          <span aria-hidden="true"></span>
-          <strong>{signal.statusLabel}</strong>
-        </div>
+        <Badge variant={signalVariant(signal.status)}>{signal.statusLabel}</Badge>
       </article>
     {/each}
   </div>
@@ -144,38 +140,6 @@
 
     code strong {
       color: var(--foreground);
-    }
-
-    .signal-status {
-      display: inline-flex;
-      align-items: center;
-      align-self: start;
-      gap: 6px;
-      padding-top: 2px;
-      font-size: 0.75rem;
-    }
-
-    .signal-status span {
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: currentColor;
-    }
-
-    .signal-status[data-tone="ok"] {
-      color: var(--primary);
-    }
-
-    .signal-status[data-tone="warn"] {
-      color: var(--chart-3);
-    }
-
-    .signal-status[data-tone="info"] {
-      color: var(--muted-foreground);
-    }
-
-    .signal-status[data-tone="muted"] {
-      color: var(--muted-foreground);
     }
 
     @media (max-width: 520px) {

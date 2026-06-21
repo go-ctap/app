@@ -66,7 +66,7 @@
       <p>{hero.mdsDescription}</p>
     </div>
     <Button variant="outline" type="button" onclick={onRefresh} disabled={loading || !hero.aaguidAvailable}>
-      <RefreshCw size={14} class={loading ? "u-spin" : undefined} />
+      <RefreshCw data-icon="inline-start" class={loading ? "u-spin" : undefined} />
       {loading ? m.mds_refreshing() : m.mds_refresh()}
     </Button>
   </header>
@@ -75,8 +75,8 @@
     <div class="aaguid-header cluster">
       <span>{m.mds_aaguid()}</span>
       {#if hero.aaguidAvailable}
-        <Button class="tiny-button" variant="ghost" size="icon-xs" type="button" onclick={copyAaguid} aria-label={m.copy_label({ label: "AAGUID" })}>
-          <Copy size={12} />
+        <Button variant="ghost" size="icon-xs" type="button" onclick={copyAaguid} aria-label={m.copy_label({ label: "AAGUID" })}>
+          <Copy />
         </Button>
       {/if}
     </div>
@@ -223,12 +223,6 @@
 
     dd[data-tone="error"] {
       color: var(--destructive);
-    }
-
-    :global(.tiny-button) {
-      width: 24px;
-      min-height: 24px;
-      padding: 0;
     }
 
     @media (min-width: 1020px) {

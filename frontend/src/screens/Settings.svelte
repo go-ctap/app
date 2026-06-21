@@ -9,29 +9,31 @@
 </script>
 
 <section class="settings-screen flow" aria-labelledby="settings-title">
-  <header class="settings-screen__header">
+  <header class="settings-header">
     <div>
       <h1 id="settings-title">{m.settings()}</h1>
       <p>{m.settings_description()}</p>
     </div>
   </header>
 
-  <section class="settings-screen__section" aria-labelledby="settings-language-title">
-    <div class="settings-screen__section-copy">
+  <section class="settings-section" aria-labelledby="settings-language-title">
+    <div class="settings-copy">
       <h2 id="settings-language-title">{m.language()}</h2>
       <p>{m.settings_language_description()}</p>
     </div>
 
-    <div class="settings-screen__field">
+    <div class="settings-field">
       <span>{m.language()}</span>
       <Select.Root type="single" value={$currentLocale} onValueChange={handleLocaleChange}>
-        <Select.Trigger aria-label={m.language()}>
+        <Select.Trigger class="w-full min-h-[38px]" aria-label={m.language()}>
           {localeLabel($currentLocale)}
         </Select.Trigger>
         <Select.Content side="bottom" align="end">
-          {#each availableLocales as locale (locale)}
-            <Select.Item value={locale} label={localeLabel(locale)} />
-          {/each}
+          <Select.Group>
+            {#each availableLocales as locale (locale)}
+              <Select.Item value={locale} label={localeLabel(locale)} />
+            {/each}
+          </Select.Group>
         </Select.Content>
       </Select.Root>
     </div>
@@ -46,30 +48,30 @@
       --flow-space: var(--space-4);
     }
 
-    .settings-screen__header,
-    .settings-screen__section {
+    .settings-header,
+    .settings-section {
       min-width: 0;
     }
 
-    .settings-screen__header h1,
-    .settings-screen__header p,
-    .settings-screen__section h2,
-    .settings-screen__section p {
+    .settings-header h1,
+    .settings-header p,
+    .settings-section h2,
+    .settings-section p {
       margin: 0;
     }
 
-    .settings-screen__header h1 {
+    .settings-header h1 {
       font-size: 1.3rem;
       letter-spacing: 0;
     }
 
-    .settings-screen__header p,
-    .settings-screen__section p {
+    .settings-header p,
+    .settings-section p {
       color: var(--muted-foreground);
       line-height: 1.55;
     }
 
-    .settings-screen__section {
+    .settings-section {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(13rem, 18rem);
       gap: var(--space-5);
@@ -78,17 +80,17 @@
       padding-top: var(--space-4);
     }
 
-    .settings-screen__section-copy {
+    .settings-copy {
       display: grid;
       gap: var(--space-2);
       min-width: 0;
     }
 
-    .settings-screen__section h2 {
+    .settings-section h2 {
       font-size: 0.96rem;
     }
 
-    .settings-screen__field {
+    .settings-field {
       display: grid;
       gap: var(--space-2);
       min-width: 0;
@@ -97,15 +99,8 @@
       font-weight: 700;
     }
 
-    :global(.settings-screen__field [data-slot="select-trigger"]) {
-      width: 100%;
-      min-height: 38px;
-      color: var(--foreground);
-      font-weight: 400;
-    }
-
     @media (max-width: 720px) {
-      .settings-screen__section {
+      .settings-section {
         grid-template-columns: minmax(0, 1fr);
       }
     }

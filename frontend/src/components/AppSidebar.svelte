@@ -1,7 +1,7 @@
 <script lang="ts">
-    import {Activity, Gauge, Settings, ShieldCheck} from "@lucide/svelte";
+  import { Activity, Gauge, Settings, ShieldCheck } from "@lucide/svelte";
   import { Button } from "$lib/components/ui/button/index.js";
-  import { Card } from "$lib/components/ui/card/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
   import type { ActiveScreen, StatusBarState } from "$lib/stores";
   import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
   import type { SessionStatus } from "$lib/api";
@@ -24,7 +24,6 @@
     { id: "settings", label: m.settings(), icon: Settings },
   ];
 
-  let statusTone = $derived(statusToneFor(sessionStatus.state, statusBar.lastOutcome?.tone));
   let statusTitle = $derived(statusBar.activeOperation?.label || statusBar.lastOutcome?.title || sessionStateLabel(sessionStatus.state));
   let statusDetail = $derived.by(() => {
     if (statusBar.activeOperation?.event?.message) return statusBar.activeOperation.event.message;
@@ -33,51 +32,46 @@
     return m.no_token_selected();
   });
 
-  function statusToneFor(state: string, outcomeTone?: string) {
-    if (state === "opening" || state === "running") return "busy";
-    if (state === "stale" || state === "error" || outcomeTone === "error") return "bad";
-    if (state === "ready" || outcomeTone === "success") return "ok";
-    if (outcomeTone === "warning") return "warn";
-    return "neutral";
-  }
 </script>
 
 <aside class="app-sidebar" aria-label={m.main_navigation()}>
-  <div class="app-sidebar__brand" aria-label={m.app_title()}>
-    <span class="app-sidebar__mark" aria-hidden="true">
+  <div class="sidebar-brand" aria-label={m.app_title()}>
+    <span class="sidebar-mark" aria-hidden="true">
       <ShieldCheck size={20} strokeWidth={2.25} />
     </span>
-    <span class="app-sidebar__brand-copy">
-      <span class="app-sidebar__title">{m.app_title()}</span>
-      <span class="app-sidebar__subtitle">{m.app_subtitle()}</span>
+    <span class="sidebar-brand-copy">
+      <span class="sidebar-title">{m.app_title()}</span>
+      <span class="sidebar-subtitle">{m.app_subtitle()}</span>
     </span>
   </div>
 
-  <nav class="app-sidebar__nav" aria-label={m.screen()}>
+  <nav class="sidebar-nav" aria-label={m.screen()}>
     {#each navItems as item (item.id)}
       <Button
         type="button"
         variant={activeScreen === item.id ? "secondary" : "ghost"}
-        class="app-sidebar__nav-item"
+        class="w-full justify-start text-left max-[900px]:justify-center max-[900px]:px-0"
         data-active={activeScreen === item.id ? "true" : undefined}
         aria-current={activeScreen === item.id ? "page" : undefined}
         aria-label={item.label}
         onclick={() => onNavigate(item.id)}
       >
-        <item.icon size={17} strokeWidth={2}/>
-        <span>{item.label}</span>
+        <item.icon data-icon="inline-start" />
+        <span class="sidebar-nav-label">{item.label}</span>
       </Button>
     {/each}
   </nav>
 
-  <Card class="app-sidebar__status" data-tone={statusTone} aria-label={m.current_activity()}>
-    <div class="app-sidebar__status-header">
-      <Activity size={15} strokeWidth={2} />
-      <span>{sessionStateLabel(sessionStatus.state)}</span>
-    </div>
-    <p class="app-sidebar__status-title">{statusTitle}</p>
-    <p class="app-sidebar__status-detail">{statusDetail}</p>
-  </Card>
+  <Card.Root size="sm" class="min-w-0 max-[900px]:place-items-center" aria-label={m.current_activity()}>
+    <Card.Header class="flex items-center gap-2 text-muted-foreground text-[0.72rem] font-bold uppercase">
+      <Activity />
+      <span class="max-[900px]:hidden">{sessionStateLabel(sessionStatus.state)}</span>
+    </Card.Header>
+    <Card.Content>
+      <Card.Title class="truncate text-[0.84rem] leading-tight max-[900px]:hidden">{statusTitle}</Card.Title>
+      <Card.Description class="line-clamp-2 text-[0.76rem] leading-snug max-[900px]:hidden">{statusDetail}</Card.Description>
+    </Card.Content>
+  </Card.Root>
 </aside>
 
 <style>
@@ -93,7 +87,7 @@
       padding: var(--space-4);
     }
 
-    .app-sidebar__brand {
+    .sidebar-brand {
       display: grid;
       grid-template-columns: 36px minmax(0, 1fr);
       gap: var(--space-3);
@@ -101,7 +95,7 @@
       min-width: 0;
     }
 
-    .app-sidebar__mark {
+    .sidebar-mark {
       display: grid;
       place-items: center;
       width: 36px;
@@ -112,98 +106,35 @@
       color: var(--card);
     }
 
-    .app-sidebar__brand-copy {
+    .sidebar-brand-copy {
       display: grid;
       min-width: 0;
       gap: 2px;
       line-height: 1.15;
     }
 
-    .app-sidebar__title,
-    .app-sidebar__subtitle,
-    .app-sidebar__status-title,
-    .app-sidebar__status-detail {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .app-sidebar__title,
-    .app-sidebar__status-title {
+    .sidebar-title,
+    .sidebar-subtitle,
+    .sidebar-title {
       color: var(--foreground);
       font-weight: 700;
     }
 
-    .app-sidebar__title {
+    .sidebar-title {
       font-size: 0.92rem;
     }
 
-    .app-sidebar__subtitle {
+    .sidebar-subtitle {
       color: var(--muted-foreground);
       font-size: 0.72rem;
       white-space: nowrap;
     }
 
-    .app-sidebar__nav {
+    .sidebar-nav {
       display: grid;
       align-content: start;
       gap: var(--space-1);
       min-width: 0;
-    }
-
-    :global(.app-sidebar__nav-item) {
-      justify-content: flex-start;
-      width: 100%;
-      min-height: 38px;
-      border-color: transparent;
-      background: transparent;
-      color: var(--muted-foreground);
-      padding: 0 var(--space-3);
-      text-align: left;
-    }
-
-    :global(.app-sidebar__nav-item[data-active="true"]) {
-      font-weight: 700;
-    }
-
-    :global(.app-sidebar__status) {
-      display: grid;
-      gap: var(--space-2);
-      min-width: 0;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--card);
-      padding: var(--space-3);
-    }
-
-    .app-sidebar__status-header {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-      color: var(--muted-foreground);
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .app-sidebar__status-title,
-    .app-sidebar__status-detail {
-      margin: 0;
-    }
-
-    .app-sidebar__status-title {
-      font-size: 0.84rem;
-      line-height: 1.25;
-      white-space: nowrap;
-    }
-
-    .app-sidebar__status-detail {
-      display: -webkit-box;
-      color: var(--muted-foreground);
-      font-size: 0.76rem;
-      line-height: 1.35;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
     }
 
     @media (max-width: 900px) {
@@ -212,27 +143,14 @@
         padding: var(--space-3);
       }
 
-      .app-sidebar__brand {
+      .sidebar-brand {
         grid-template-columns: 1fr;
         justify-items: center;
       }
 
-      .app-sidebar__brand-copy,
-      :global(.app-sidebar__nav-item span),
-      .app-sidebar__status-title,
-      .app-sidebar__status-detail,
-      .app-sidebar__status-header span {
+      .sidebar-brand-copy,
+      .sidebar-nav-label {
         display: none;
-      }
-
-      :global(.app-sidebar__nav-item) {
-        justify-content: center;
-        padding: 0;
-      }
-
-      :global(.app-sidebar__status) {
-        place-items: center;
-        padding: var(--space-2);
       }
     }
 }

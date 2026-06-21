@@ -30,58 +30,6 @@
     font: inherit;
   }
 
-  button,
-  select,
-  input,
-  textarea {
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--card);
-    color: var(--foreground);
-  }
-
-  button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    min-height: 32px;
-    padding: 0 var(--space-3);
-    cursor: pointer;
-    touch-action: manipulation;
-  }
-
-  button:focus-visible,
-  input:focus-visible,
-  select:focus-visible,
-  textarea:focus-visible,
-  a:focus-visible,
-  summary:focus-visible,
-  [tabindex]:focus-visible {
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
-  }
-
-  button:hover:not(:disabled) {
-    border-color: var(--ring);
-    background: var(--muted);
-  }
-
-  button:disabled,
-  select:disabled,
-  input:disabled,
-  textarea:disabled {
-    cursor: not-allowed;
-    opacity: 0.58;
-  }
-
-  select,
-  input,
-  textarea {
-    min-height: 32px;
-    padding: 0 var(--space-2);
-  }
-
   a {
     color: var(--primary);
   }

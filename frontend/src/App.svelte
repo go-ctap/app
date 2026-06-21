@@ -86,17 +86,20 @@
 		<section class="app-workspace">
 			<header class="app-header">
 				<WindowTitlebar
-					class="titlebar-content"
 					nativeWindowControlsOverlay={false}
 				>
-					<AuthenticatorTitlebarControl refreshing={refreshing} />
-					<div class="titlebar-drag-space" aria-hidden="true"></div>
-					<WindowControls />
+					<div class="titlebar-content">
+						<AuthenticatorTitlebarControl refreshing={refreshing} />
+						<div class="titlebar-drag-space" aria-hidden="true"></div>
+						<WindowControls />
+					</div>
 				</WindowTitlebar>
 			</header>
 
 			{#if $appError}
-				<Alert class="app-alert" variant="destructive" role="alert">{$appError}</Alert>
+				<div class="app-alert">
+					<Alert variant="destructive" role="alert">{$appError}</Alert>
+				</div>
 			{/if}
 
 			<main class="main-view">
@@ -125,13 +128,12 @@
 					<span>{toast}</span>
 
 					<Button
-						class="toast__dismiss"
 						variant="ghost"
 						size="icon-xs"
 						type="button"
 						aria-label={m.close()}
 						onclick={() => dismissToast(index)}
-					><X size={14} aria-hidden="true" /></Button>
+					><X aria-hidden="true" /></Button>
 				</div>
 			{/each}
 		</div>
@@ -161,7 +163,7 @@
 			background: color-mix(in srgb, var(--card) 92%, transparent);
 			box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 70%, transparent);
 		}
-		:global(.titlebar-content) {
+		.titlebar-content {
 			display: grid;
 			grid-template-columns: minmax(18rem, 38rem) minmax(2rem, 1fr) auto;
 			align-items: center;
@@ -180,18 +182,12 @@
 			overflow: auto;
 			padding: var(--space-4);
 		}
-		:global(.app-alert) {
+		.app-alert {
 			position: fixed;
 			top: 70px;
 			right: var(--space-4);
 			left: calc(16rem + var(--space-4));
 			z-index: 20;
-			border: 1px solid color-mix(in srgb, var(--destructive) 34%, var(--border));
-			border-radius: var(--radius);
-			background: color-mix(in srgb, var(--destructive) 10%, var(--background));
-			color: var(--destructive);
-			padding: var(--space-3) var(--space-4);
-			box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
 		}
 		.empty-workbench {
 			display: grid;
@@ -234,21 +230,14 @@
 			box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
 			font-size: 0.875rem;
 		}
-		:global(.toast__dismiss) {
-			width: 24px;
-			height: 24px;
-			min-height: 24px;
-			flex: 0 0 auto;
-			padding: 0;
-		}
 		@media (max-width: 900px) {
 			.app-shell {
 				grid-template-columns: 5rem minmax(0, 1fr);
 			}
-			:global(.app-alert) {
+			.app-alert {
 				left: calc(5rem + var(--space-4));
 			}
-			:global(.titlebar-content) {
+			.titlebar-content {
 				grid-template-columns: minmax(0, 1fr) minmax(1rem, 1fr) auto;
 				padding-left: var(--space-3);
 			}

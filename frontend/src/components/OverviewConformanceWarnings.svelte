@@ -3,7 +3,7 @@
 </script>
 
 <script lang="ts">
-  import { Card } from "$lib/components/ui/card/index.js";
+  import * as Alert from "$lib/components/ui/alert/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
   import type { OverviewConformanceWarning } from "$lib/overview-rules";
   import { m } from "../paraglide/messages.js";
@@ -12,17 +12,13 @@
 </script>
 
 {#if warnings.length}
-  <Card class="workbench-panel" data-tone="danger">
-    <header class="workbench-panel__header" data-layout="icon">
-      <TriangleAlert size={18} />
-      <div>
-        <h2>{m.conformance_warnings()}</h2>
-        <p>{m.conformance_warnings_description()}</p>
-      </div>
-    </header>
+  <Alert.Root variant="destructive">
+    <TriangleAlert />
+    <Alert.Title>{m.conformance_warnings()}</Alert.Title>
+    <Alert.Description>{m.conformance_warnings_description()}</Alert.Description>
 
-    <div class="workbench-table-frame" data-tone="danger">
-      <Table.Root class="workbench-table">
+    <div class="table-frame">
+      <Table.Root class="min-w-[58rem]">
         <Table.Header>
           <Table.Row>
             <Table.Head>{m.warning()}</Table.Head>
@@ -37,28 +33,27 @@
               <Table.Cell><strong>{warning.name}</strong></Table.Cell>
               <Table.Cell><strong>{warning.value || m.not_reported()}</strong></Table.Cell>
               <Table.Cell><code>{warning.source}</code></Table.Cell>
-              <Table.Cell>{warning.description}</Table.Cell>
+              <Table.Cell class="whitespace-normal">{warning.description}</Table.Cell>
             </Table.Row>
           {/each}
         </Table.Body>
       </Table.Root>
     </div>
-  </Card>
+  </Alert.Root>
 {/if}
 
 <style>
 @layer blocks {
-    h2,
-    p {
-      margin: 0;
-    }
+  .table-frame {
+    grid-column: 1 / -1;
+    min-width: 0;
+    overflow: auto;
+    border: 1px solid var(--border);
+    margin-top: var(--space-3);
+  }
 
-    h2 {
-      font-size: 1rem;
-    }
-
-    code {
-      overflow-wrap: anywhere;
-    }
+  code {
+    overflow-wrap: anywhere;
+  }
 }
 </style>

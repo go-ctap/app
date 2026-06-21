@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Badge } from "$lib/components/ui/badge/index.js";
+  import { Badge, type BadgeVariant } from "$lib/components/ui/badge/index.js";
   import * as Collapsible from "$lib/components/ui/collapsible/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
   import type { OverviewMDSObservation } from "$lib/overview-rules";
@@ -12,18 +12,24 @@
     if (severity === "warning") return m.severity_warning();
     return m.severity_info();
   }
+
+  function variant(severity: OverviewMDSObservation["severity"]): BadgeVariant {
+    if (severity === "critical") return "destructive";
+    if (severity === "warning") return "secondary";
+    return "outline";
+  }
 </script>
 
 {#if observations.length}
-  <Collapsible.Root class="workbench-disclosure observations-panel">
-    <Collapsible.Trigger>
+  <Collapsible.Root class="min-w-0 overflow-hidden border bg-card">
+    <Collapsible.Trigger class="flex w-full cursor-pointer items-center justify-between gap-3 border-0 bg-transparent p-4 font-bold text-foreground">
       <span>{m.mds_observations_title()}</span>
-      <Badge variant="outline" class="count">{m.items_count({ count: observations.length })}</Badge>
+      <Badge variant="outline">{m.items_count({ count: observations.length })}</Badge>
     </Collapsible.Trigger>
-    <Collapsible.Content class="workbench-disclosure__content">
-      <p class="workbench-panel__copy">{m.mds_observations_description()}</p>
-      <div class="workbench-table-frame">
-        <Table.Root class="workbench-table">
+    <Collapsible.Content class="grid gap-3 border-t p-4">
+      <p class="description">{m.mds_observations_description()}</p>
+      <div class="table-frame">
+        <Table.Root class="min-w-[72rem]">
           <Table.Header>
             <Table.Row>
               <Table.Head>{m.severity()}</Table.Head>
@@ -37,12 +43,12 @@
           <Table.Body>
             {#each observations as observation (`${observation.severity}:${observation.source}:${observation.finding}`)}
               <Table.Row>
-                <Table.Cell><Badge variant="outline" class="severity" data-severity={observation.severity}>{label(observation.severity)}</Badge></Table.Cell>
+                <Table.Cell><Badge variant={variant(observation.severity)}>{label(observation.severity)}</Badge></Table.Cell>
                 <Table.Cell><strong>{observation.finding}</strong></Table.Cell>
                 <Table.Cell><strong>{observation.token || m.not_reported()}</strong></Table.Cell>
                 <Table.Cell><strong>{observation.mds || m.not_reported()}</strong></Table.Cell>
                 <Table.Cell><code>{observation.source}</code></Table.Cell>
-                <Table.Cell>{observation.description}</Table.Cell>
+                <Table.Cell class="whitespace-normal">{observation.description}</Table.Cell>
               </Table.Row>
             {/each}
           </Table.Body>
@@ -54,40 +60,21 @@
 
 <style>
 @layer blocks {
-    :global(.observations-panel) {
-      --table-min-width: 72rem;
-    }
+  .description {
+    margin: 0;
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
 
-    :global(.count),
-    :global(.severity) {
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 3px 8px;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
+  .table-frame {
+    min-width: 0;
+    overflow: auto;
+    border: 1px solid var(--border);
+  }
 
-    p {
-      margin: 0;
-    }
-
-    :global(.severity[data-severity="critical"]) {
-      border-color: color-mix(in srgb, var(--destructive) 34%, var(--border));
-      background: color-mix(in srgb, var(--destructive) 10%, var(--background));
-      color: var(--destructive);
-    }
-
-    :global(.severity[data-severity="warning"]) {
-      background: var(--muted);
-      color: var(--chart-3);
-    }
-
-    :global(.severity[data-severity="info"]) {
-      color: var(--muted-foreground);
-    }
-
-    code {
-      overflow-wrap: anywhere;
-    }
+  code {
+    overflow-wrap: anywhere;
+  }
 }
 </style>

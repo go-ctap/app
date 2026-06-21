@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button/index.js";
-  import { Card } from "$lib/components/ui/card/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
   import { sanitizedJson } from "$lib/redaction";
   import { m } from "../paraglide/messages.js";
 
@@ -18,29 +18,62 @@
   }
 </script>
 
-<Card class="json-view workbench-panel" data-variant={variant} data-padding={variant === "card" ? "default" : "none"}>
-  {#if variant !== "code"}
-    <header class="cluster">
+{#if variant === "card"}
+  <Card.Root>
+    <Card.Header>
+      <Card.Title>{title}</Card.Title>
+      <Card.Action>
+        <Button variant="outline" type="button" onclick={copy}>{m.copy()}</Button>
+      </Card.Action>
+    </Card.Header>
+    <Card.Content>
+      <div class="json-frame">
+        <pre>{source}</pre>
+      </div>
+    </Card.Content>
+  </Card.Root>
+{:else}
+  {#if variant === "bare"}
+    <div class="json-toolbar">
       <h3>{title}</h3>
       <Button variant="outline" type="button" onclick={copy}>{m.copy()}</Button>
-    </header>
+    </div>
   {/if}
-
-  <div class="workbench-code-frame">
+  <div class="json-frame">
     <pre>{source}</pre>
   </div>
-</Card>
+{/if}
 
 <style>
 @layer blocks {
-    header {
-      --cluster-justify: space-between;
-      --cluster-space: var(--space-3);
-    }
+  .json-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
 
-    h3 {
-      margin: 0;
-      font-size: 0.95rem;
-    }
+  h3 {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .json-frame {
+    max-height: 26rem;
+    min-width: 0;
+    overflow: auto;
+    border: 1px solid var(--border);
+    background: var(--muted);
+  }
+
+  .json-frame pre {
+    min-width: max-content;
+    margin: 0;
+    padding: var(--space-3);
+    color: var(--foreground);
+    font-size: 0.82rem;
+    line-height: 1.55;
+    white-space: pre;
+  }
 }
 </style>

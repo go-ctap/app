@@ -3,6 +3,7 @@
   import { X } from "@lucide/svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
+  import { cn } from "$lib/utils.js";
   import { m } from "../paraglide/messages.js";
 
   type Props = {
@@ -74,7 +75,11 @@
 
 <Dialog.Root open={true} onOpenChange={(open) => !open && close()}>
     <Dialog.Content
-      class="dialog-shell-content"
+      class={cn(
+        "max-h-[calc(100vh-2rem)] w-[min(32rem,100%)] overflow-auto",
+        wide && "w-[min(52rem,100%)] max-w-[calc(100%-2rem)]",
+        destructive && "border-destructive/40"
+      )}
       showCloseButton={false}
       bind:ref={dialog}
       data-size={wide ? "wide" : "default"}
@@ -86,7 +91,7 @@
       onCloseAutoFocus={handleCloseAutoFocus}
       onkeydown={handleKeydown}
     >
-      <header class="dialog-header">
+      <Dialog.Header class="flex justify-between gap-4">
         <div>
           {#if eyebrow}
             <p class="eyebrow">{eyebrow}</p>
@@ -94,9 +99,9 @@
           <Dialog.Title>{title}</Dialog.Title>
         </div>
         <Button variant="ghost" size="icon-sm" type="button" aria-label={closeLabel} onclick={close}>
-          <X size={16} />
+          <X />
         </Button>
-      </header>
+      </Dialog.Header>
 
       <div class="dialog-body">
         {@render children?.()}
@@ -105,38 +110,16 @@
       {#if actions}
         {@render actions()}
       {:else}
-        <footer class="dialog-actions cluster">
+        <Dialog.Footer class="flex justify-end gap-2">
           <Button variant={destructive ? "destructive" : "default"} data-primary type="button" onclick={primary}>Continue</Button>
           <Button variant="outline" type="button" onclick={close}>{closeLabel}</Button>
-        </footer>
+        </Dialog.Footer>
       {/if}
     </Dialog.Content>
 </Dialog.Root>
 
 <style>
 @layer blocks {
-    :global(.dialog-shell-content) {
-      width: min(32rem, 100%);
-      max-height: calc(100vh - 2rem);
-      overflow: auto;
-      padding: var(--space-5);
-    }
-
-    :global(.dialog-shell-content[data-size="wide"]) {
-      width: min(52rem, 100%);
-      max-width: calc(100% - 2rem);
-    }
-
-    :global(.dialog-shell-content[data-tone="destructive"]) {
-      border-color: color-mix(in srgb, var(--destructive) 34%, var(--border));
-    }
-
-    .dialog-header {
-      display: flex;
-      justify-content: space-between;
-      gap: var(--space-4);
-    }
-
     .eyebrow {
       margin: 0;
     }
@@ -153,10 +136,5 @@
       gap: var(--space-3);
       min-width: 0;
     }
-
-    .dialog-actions {
-      --cluster-justify: flex-end;
-    }
-
 }
 </style>
