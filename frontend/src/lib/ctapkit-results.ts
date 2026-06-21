@@ -1,54 +1,14 @@
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import type {
-  AuthenticatorConfigEnvelope,
   BioEnrollEnvelope,
   BioListEnvelope,
-  BioMutationEnvelope,
   BioSensorEnvelope,
-  ConfigStatusEnvelope,
-  CredentialDeleteEnvelope,
-  CredentialUpdateEnvelope,
   CredentialsEnvelope,
-  GetAssertionEnvelope,
   InspectEnvelope,
   LargeBlobListEnvelope,
-  LargeBlobMutationEnvelope,
-  LargeBlobReadEnvelope,
-  MakeCredentialEnvelope,
-  PINEnvelope,
-  ResetFactoryEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
+import type { OperationEnvelope } from "./api.js";
 import type { OverviewBioSensorReport, OverviewInspectResult } from "./overview-types.js";
-
-type Envelope =
-  | InspectEnvelope
-  | CredentialsEnvelope
-  | CredentialDeleteEnvelope
-  | CredentialUpdateEnvelope
-  | LargeBlobReadEnvelope
-  | LargeBlobListEnvelope
-  | LargeBlobMutationEnvelope
-  | ConfigStatusEnvelope
-  | PINEnvelope
-  | AuthenticatorConfigEnvelope
-  | BioSensorEnvelope
-  | BioListEnvelope
-  | BioEnrollEnvelope
-  | BioMutationEnvelope
-  | ResetFactoryEnvelope
-  | MakeCredentialEnvelope
-  | GetAssertionEnvelope;
-
-type PreviewEnvelope =
-  | CredentialDeleteEnvelope
-  | CredentialUpdateEnvelope
-  | LargeBlobMutationEnvelope
-  | PINEnvelope
-  | AuthenticatorConfigEnvelope
-  | BioEnrollEnvelope
-  | BioMutationEnvelope
-  | ResetFactoryEnvelope
-  | MakeCredentialEnvelope;
 
 type CountSummary = {
   credentials?: number;
@@ -75,25 +35,25 @@ export type OperationEnvelopeLogData = {
   operationId?: string;
   sessionId?: string;
   kind?: OperationKind;
-  error?: Envelope["error"];
+  error?: OperationEnvelope["error"];
   result?: OperationResultSummary;
 };
 
-export function inspectResult(envelope: Envelope | null | undefined): OverviewInspectResult | null {
+export function inspectResult(envelope: OperationEnvelope | null | undefined): OverviewInspectResult | null {
   if (!isInspectEnvelope(envelope) || envelope.error || !envelope.result) return null;
   return envelope.result.result;
 }
 
-export function bioSensorReport(envelope: Envelope | null | undefined): OverviewBioSensorReport | null {
+export function bioSensorReport(envelope: OperationEnvelope | null | undefined): OverviewBioSensorReport | null {
   if (!isBioSensorEnvelope(envelope) || envelope.error || !envelope.result) return null;
   return envelope.result.report;
 }
 
-export function operationError(envelope: Envelope | null | undefined) {
+export function operationError(envelope: OperationEnvelope | null | undefined) {
   return envelope?.error?.message || null;
 }
 
-export function operationEnvelopeLogData(envelope: Envelope | null | undefined): OperationEnvelopeLogData | undefined {
+export function operationEnvelopeLogData(envelope: OperationEnvelope | null | undefined): OperationEnvelopeLogData | undefined {
   if (!envelope) return undefined;
   return {
     ...(envelope.operationId ? { operationId: envelope.operationId } : {}),
@@ -104,7 +64,7 @@ export function operationEnvelopeLogData(envelope: Envelope | null | undefined):
   };
 }
 
-export function operationResultSummary(envelope: Envelope): OperationResultSummary | undefined {
+export function operationResultSummary(envelope: OperationEnvelope): OperationResultSummary | undefined {
   if (envelope.error || !envelope.result) return undefined;
 
   if (isCredentialsEnvelope(envelope)) return credentialListSummary(envelope.result);
@@ -116,31 +76,31 @@ export function operationResultSummary(envelope: Envelope): OperationResultSumma
   return { kind: envelope.kind };
 }
 
-function isInspectEnvelope(envelope: Envelope | null | undefined): envelope is InspectEnvelope {
+function isInspectEnvelope(envelope: OperationEnvelope | null | undefined): envelope is InspectEnvelope {
   return Boolean(envelope && envelope.kind === OperationKind.OperationInspect);
 }
 
-function isBioSensorEnvelope(envelope: Envelope | null | undefined): envelope is BioSensorEnvelope {
+function isBioSensorEnvelope(envelope: OperationEnvelope | null | undefined): envelope is BioSensorEnvelope {
   return Boolean(envelope && envelope.kind === OperationKind.OperationBioSensorInfo);
 }
 
-function isCredentialsEnvelope(envelope: Envelope): envelope is CredentialsEnvelope {
+function isCredentialsEnvelope(envelope: OperationEnvelope): envelope is CredentialsEnvelope {
   return envelope.kind === OperationKind.OperationListCredentials;
 }
 
-function isBioListEnvelope(envelope: Envelope): envelope is BioListEnvelope {
+function isBioListEnvelope(envelope: OperationEnvelope): envelope is BioListEnvelope {
   return envelope.kind === OperationKind.OperationBioList;
 }
 
-function isBioEnrollEnvelope(envelope: Envelope): envelope is BioEnrollEnvelope {
+function isBioEnrollEnvelope(envelope: OperationEnvelope): envelope is BioEnrollEnvelope {
   return envelope.kind === OperationKind.OperationBioEnroll;
 }
 
-function isLargeBlobListEnvelope(envelope: Envelope): envelope is LargeBlobListEnvelope {
+function isLargeBlobListEnvelope(envelope: OperationEnvelope): envelope is LargeBlobListEnvelope {
   return envelope.kind === OperationKind.OperationListLargeBlobs;
 }
 
-function isPreviewEnvelope(envelope: Envelope): envelope is PreviewEnvelope {
+function isPreviewEnvelope(envelope: OperationEnvelope): envelope is OperationEnvelope & { result: PreviewResultOutput } {
   return [
     OperationKind.OperationDeleteCredential,
     OperationKind.OperationUpdateCredentialUser,

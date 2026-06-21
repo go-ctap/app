@@ -18,7 +18,7 @@ import {
   sessionMatches,
   statusFromSession,
   type Discovery,
-  type Envelope,
+  type OperationEnvelope,
   type SessionStatus,
 } from "./api";
 import { operationStageLabel } from "./format";
@@ -28,7 +28,6 @@ import {
   appendLogEntry,
   appError,
   applyDiscovery,
-  applyEnvelope,
   beginOperation,
   clearWorkbenchScreenCaches,
   devices as deviceStore,
@@ -46,6 +45,7 @@ import {
   setStatusOperation,
   setStatusOutcome,
   summarizeEnvelope,
+  type ActiveScreen,
   type MDSLookupViewState,
 } from "./stores";
 import { inspectResult, operationError } from "./ctapkit-results.js";
@@ -62,27 +62,33 @@ function failureMDSLookup(error: unknown): MDSLookupViewState {
   return { error: runtimeErrorFrom(error) };
 }
 
-function failureEnvelope(error: unknown): Envelope {
+function failureEnvelope(error: unknown): OperationEnvelope {
   return new InspectEnvelope({ kind: OperationKind.OperationInspect, error: runtimeErrorFrom(error) });
 }
 
-function inspectResultFromEnvelope(envelope: Envelope) {
+function inspectResultFromEnvelope(envelope: OperationEnvelope) {
   const result = inspectResult(envelope);
   if (!result) throw new Error("inspect result is required");
   return result;
 }
 
-function shouldLoadBioSensor(envelope: Envelope) {
+function shouldLoadBioSensor(envelope: OperationEnvelope) {
   const options = inspectResultFromEnvelope(envelope).info.options ?? {};
   return options.bioEnroll === true || options.uvBioEnroll === true;
 }
 
-function aaguidFromEnvelope(envelope: Envelope) {
+function aaguidFromEnvelope(envelope: OperationEnvelope) {
   return String(inspectResultFromEnvelope(envelope).info.aaguid).trim();
 }
 
+function overviewAutoLoadKey() {
+  const selector = get(selectedSelector).trim();
+  const sessionId = get(sessionStatus).sessionId || "";
+  return selector && sessionId ? `${selector}:${sessionId}` : "";
+}
+
 function shouldAutoLoadOverview() {
-  return get(activeScreen) === "overview" && Boolean(get(selectedSelector));
+  return get(activeScreen) === "overview" && Boolean(overviewAutoLoadKey()) && !get(overviewEnvelope) && !get(overviewLoading);
 }
 
 function selectedSessionId() {
@@ -237,15 +243,18 @@ async function discoverAndSelect(preferredSelector: string, autoSelectSingle = f
   return selectFromDevices(discoveredDevices, selector);
 }
 
+async function maybeLoadOverview() {
+  if (!shouldAutoLoadOverview()) return;
+  await loadOverview(get(selectedSelector));
+}
+
 export async function bootstrap() {
   const epoch = ++lifecycleEpoch;
   try {
     const discovery = await discoverAndSelect(get(selectedSelector), true);
     if (epoch !== lifecycleEpoch) return;
-    const changed = applyDiscovery(discovery);
-    if ((changed || get(selectedSelector)) && get(activeScreen) === "overview") {
-      await loadOverview(get(selectedSelector));
-    }
+    applyDiscovery(discovery);
+    await maybeLoadOverview();
   } catch (error) {
     if (epoch === lifecycleEpoch) {
       appError.set(messageFromError(error));
@@ -259,7 +268,7 @@ export async function refreshDiscovery() {
     const previous = get(selectedSelector);
     const discovery = await discoverAndSelect(previous);
     if (epoch !== lifecycleEpoch) return;
-    const changed = applyDiscovery(discovery);
+    applyDiscovery(discovery);
     const logEntryId = appendLogEntry({
       tone: discovery.error ? "error" : "info",
       source: "discovery",
@@ -279,9 +288,7 @@ export async function refreshDiscovery() {
       message: discovery.error ? discovery.error.message : m.authenticators_found({ count: discovery.devices.length }),
       logEntryId,
     });
-    if ((changed || get(selectedSelector) !== previous) && shouldAutoLoadOverview()) {
-      await loadOverview(get(selectedSelector));
-    }
+    await maybeLoadOverview();
   } catch (error) {
     if (epoch === lifecycleEpoch) {
       appError.set(messageFromError(error));
@@ -321,14 +328,18 @@ export async function selectToken(selector: string) {
       message: selectionMessage(discovery, selector),
       logEntryId,
     });
-    if (get(activeScreen) === "overview" && get(selectedSelector)) {
-      await loadOverview(get(selectedSelector));
-    }
+    await maybeLoadOverview();
   } catch (error) {
     if (epoch === lifecycleEpoch) {
       appError.set(messageFromError(error));
     }
   }
+}
+
+export async function navigateToScreen(screen: ActiveScreen) {
+  if (get(activeScreen) === screen) return;
+  activeScreen.set(screen);
+  await maybeLoadOverview();
 }
 
 export async function answerPendingInteraction(answer: Omit<InteractionAnswer, "interactionId">) {
@@ -383,7 +394,6 @@ export async function loadOverview(selector = get(selectedSelector)) {
     const envelope = await api.inspect({ sessionId });
     if (epoch !== overviewEpoch || selector !== get(selectedSelector)) return;
     overviewEnvelope.set(envelope);
-    applyEnvelope(envelope);
     const aaguid = !operationError(envelope) ? aaguidFromEnvelope(envelope) : "";
     if (aaguid) {
       void loadOverviewMDS(aaguid, false, selector);
@@ -393,7 +403,6 @@ export async function loadOverview(selector = get(selectedSelector)) {
         const bioEnvelope = await api.bioSensorInfo({ sessionId });
         if (epoch !== overviewEpoch || selector !== get(selectedSelector)) return;
         overviewBioSensorEnvelope.set(bioEnvelope);
-        applyEnvelope(bioEnvelope);
       } catch {
         if (epoch === overviewEpoch && selector === get(selectedSelector)) {
           overviewBioSensorEnvelope.set(null);

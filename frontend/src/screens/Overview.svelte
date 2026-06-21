@@ -58,16 +58,6 @@
   let warningCount = $derived(overviewRows.filter((row) => row.status === "warning").length);
   let loadingRows = $derived([m.transport(), m.session(), "AAGUID", m.versions()]);
   let currentSessionLabel = $derived(sessionStateLabel($sessionStatus.state));
-  let lastAutoLoadKey = "";
-
-  $effect(() => {
-    const sessionId = $sessionStatus.sessionId || "";
-    const autoLoadKey = `${selector}:${sessionId}`;
-    if (!selector || !sessionId || envelope || loading || lastAutoLoadKey === autoLoadKey) return;
-
-    lastAutoLoadKey = autoLoadKey;
-    void loadOverview(selector);
-  });
 
   function reloadOverview() {
     return loadOverview(selector);

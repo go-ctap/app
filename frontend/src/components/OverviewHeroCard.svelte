@@ -117,6 +117,8 @@
     .token-icon {
       display: grid;
       place-items: center;
+      width: 64px;
+      height: 64px;
       overflow: hidden;
       border: 1px solid var(--border);
       border-radius: var(--radius);

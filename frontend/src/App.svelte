@@ -2,15 +2,15 @@
 	import './app.css';
 	import { onMount } from "svelte";
 	import { Events } from "@wailsio/runtime";
-	import { ShieldCheck, X } from "@lucide/svelte";
+	import { ShieldCheck } from "@lucide/svelte";
 	import { Alert } from "$lib/components/ui/alert/index.js";
-	import { Button } from "$lib/components/ui/button/index.js";
 	import type * as kitservice from "../bindings/github.com/go-ctap/kit/service/models";
 
 	import {
 		bootstrap,
 		handleInteractionRequested,
 		handleOperationProgress,
+		navigateToScreen,
 		shutdownWorkbench
 	} from "$lib/controller";
 
@@ -21,13 +21,13 @@
 		selectedDevice,
 		sessionStatus,
 		statusBar,
-		toasts,
 		type ActiveScreen
 	} from "$lib/stores";
 
 	import { currentLocale } from "$lib/i18n";
 	import { m } from "./paraglide/messages.js";
 	import AppSidebar from "./components/AppSidebar.svelte";
+	import EmptyState from "./components/EmptyState.svelte";
 	import InteractionModal from "./components/InteractionModal.svelte";
 	import { AuthenticatorTitlebarControl, WindowControls, WindowTitlebar } from "./components/window-controls";
 	import Overview from "./screens/Overview.svelte";
@@ -40,11 +40,7 @@
 	let noDevices = $derived(initialized && !refreshing && $devices.length === 0);
 
 	function navigate(screen: ActiveScreen) {
-		activeScreen.set(screen);
-	}
-
-	function dismissToast(index: number) {
-		toasts.update((items) => items.filter((_, itemIndex) => itemIndex !== index));
+		void navigateToScreen(screen);
 	}
 
 	onMount(() => {
@@ -106,14 +102,15 @@
 				{#if $activeScreen === "settings"}
 					<Settings />
 				{:else if noDevices}
-					<section
-						class="empty-workbench"
-						aria-label={m.no_authenticators_connected()}
+					<EmptyState
+						title={m.no_authenticators_connected()}
+						message={m.no_authenticators_connected_message()}
+						variant="workspace"
 					>
-						<ShieldCheck size={34} strokeWidth={1.8} />
-						<h1>{m.no_authenticators_connected()}</h1>
-						<p>{m.no_authenticators_connected_message()}</p>
-					</section>
+						{#snippet icon()}
+							<ShieldCheck size={34} strokeWidth={1.8} />
+						{/snippet}
+					</EmptyState>
 				{:else}
 					<Overview />
 				{/if}
@@ -121,22 +118,6 @@
 		</section>
 
 		<InteractionModal />
-
-		<div class="toast-stack flow" aria-live="polite">
-			{#each $toasts as toast, index (`${index}:${toast}`)}
-				<div class="toast">
-					<span>{toast}</span>
-
-					<Button
-						variant="ghost"
-						size="icon-xs"
-						type="button"
-						aria-label={m.close()}
-						onclick={() => dismissToast(index)}
-					><X aria-hidden="true" /></Button>
-				</div>
-			{/each}
-		</div>
 	</div>
 {/key}
 
@@ -191,47 +172,6 @@
 			right: var(--space-4);
 			left: calc(17.5rem + var(--space-4));
 			z-index: 20;
-		}
-		.empty-workbench {
-			display: grid;
-			place-items: center;
-			align-content: center;
-			gap: var(--space-2);
-			min-height: calc(100vh - 8rem);
-			color: var(--muted-foreground);
-			text-align: center;
-		}
-		.empty-workbench h1 {
-			margin: var(--space-2) 0 0;
-			color: var(--foreground);
-			font-size: 1.15rem;
-		}
-		.empty-workbench p {
-			max-width: 34rem;
-			margin: 0;
-			line-height: 1.55;
-		}
-		.toast-stack {
-			position: fixed;
-			right: var(--space-4);
-			bottom: var(--space-4);
-			z-index: 30;
-			display: grid;
-			gap: var(--space-2);
-			max-width: min(24rem, calc(100vw - 2rem));
-		}
-		.toast {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			gap: var(--space-3);
-			border: 1px solid var(--border);
-			border-radius: var(--radius);
-			background: var(--popover);
-			color: var(--foreground);
-			padding: var(--space-2) var(--space-3);
-			box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
-			font-size: 0.875rem;
 		}
 		@media (max-width: 900px) {
 			.app-shell {

@@ -75,7 +75,7 @@
       <Tooltip.Trigger>
         {#snippet child({ props })}
           <Button {...props} variant="ghost" size="icon-sm" type="button" aria-label={m.refresh_devices()} disabled={disabled} onclick={handleRefresh}>
-            <RefreshCw aria-hidden="true" />
+            <RefreshCw data-icon="inline-start" aria-hidden="true" />
           </Button>
         {/snippet}
       </Tooltip.Trigger>
@@ -90,7 +90,7 @@
       <Tooltip.Trigger>
         {#snippet child({ props })}
           <Button {...props} variant="ghost" size="icon-sm" type="button" aria-label={m.clear_selection()} disabled={!$selectedSelector || disabled} onclick={handleClear}>
-            <X aria-hidden="true" />
+            <X data-icon="inline-start" aria-hidden="true" />
           </Button>
         {/snippet}
       </Tooltip.Trigger>

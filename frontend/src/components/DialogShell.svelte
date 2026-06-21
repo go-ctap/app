@@ -99,7 +99,7 @@
           <Dialog.Title>{title}</Dialog.Title>
         </div>
         <Button variant="ghost" size="icon-sm" type="button" aria-label={closeLabel} onclick={close}>
-          <X />
+          <X data-icon="inline-start" />
         </Button>
       </Dialog.Header>
 

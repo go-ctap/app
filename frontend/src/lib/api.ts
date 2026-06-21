@@ -46,7 +46,7 @@ import {
 } from "../../bindings/github.com/go-ctap/kit/service";
 
 export type OperationError = RuntimeErrorEnvelope;
-export type Envelope =
+export type OperationEnvelope =
   | InspectEnvelope
   | CredentialsEnvelope
   | CredentialDeleteEnvelope

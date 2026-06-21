@@ -1,4 +1,4 @@
-import { cleanup, render, waitFor } from "@testing-library/svelte";
+import { cleanup, render } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setAppLocale } from "$lib/i18n";
 import {
@@ -42,7 +42,7 @@ describe("Overview", () => {
     cleanup();
   });
 
-  it("loads the overview when returning with an existing selected session", async () => {
+  it("does not own overview autoload lifecycle", () => {
     selectedSelector.set("token-1");
     sessionStatus.set({
       state: "ready",
@@ -53,6 +53,6 @@ describe("Overview", () => {
 
     render(Overview);
 
-    await waitFor(() => expect(controllerMocks.loadOverview).toHaveBeenCalledWith("token-1"));
+    expect(controllerMocks.loadOverview).not.toHaveBeenCalled();
   });
 });

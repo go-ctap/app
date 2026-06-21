@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
-import type { BioSensorEnvelope, CredentialsEnvelope, InspectEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type { BioSensorEnvelope, CredentialsEnvelope, InspectEnvelope, PINEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
+import type { OperationEnvelope } from "./api";
 import { bioSensorReport, inspectResult, operationEnvelopeLogData } from "./ctapkit-results";
 import type { OverviewBioSensorReport, OverviewInspectResult } from "./overview-types";
 
@@ -54,7 +55,7 @@ describe("ctapkit result extractors", () => {
   });
 
   it("summarizes operation log data without generic result sniffing", () => {
-    const envelope = {
+    const envelope: OperationEnvelope = {
       operationId: "op-1",
       sessionId: "session-1",
       kind: OperationKind.OperationListCredentials,
@@ -75,6 +76,34 @@ describe("ctapkit result extractors", () => {
         counts: {
           groups: 1,
           credentials: 2,
+        },
+      },
+    });
+  });
+
+  it("summarizes typed preview envelopes through the canonical operation envelope", () => {
+    const envelope: OperationEnvelope = {
+      operationId: "op-2",
+      sessionId: "session-1",
+      kind: OperationKind.OperationSetPIN,
+      result: {
+        preview: {
+          warnings: [{ message: "short pin" }],
+        },
+        result: null,
+      },
+    } as PINEnvelope;
+
+    expect(operationEnvelopeLogData(envelope)).toEqual({
+      operationId: "op-2",
+      sessionId: "session-1",
+      kind: OperationKind.OperationSetPIN,
+      result: {
+        kind: OperationKind.OperationSetPIN,
+        completed: false,
+        hasPreview: true,
+        counts: {
+          warnings: 1,
         },
       },
     });
