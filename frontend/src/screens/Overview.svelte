@@ -1,7 +1,5 @@
 <script lang="ts">
   import { loadOverview, loadOverviewMDS } from "$lib/controller";
-  import { bioSensorReport, inspectResult, operationError } from "$lib/ctapkit-results";
-  import { sessionStateLabel } from "$lib/format";
   import {
     overviewBioSensorEnvelope,
     overviewEnvelope,
@@ -13,15 +11,7 @@
     sessionBusy,
     sessionStatus,
   } from "$lib/stores";
-  import {
-    buildOverviewConformanceWarnings,
-    buildOverviewHero,
-    buildOverviewHeroSignalGroups,
-    buildOverviewMDSObservations,
-    buildOverviewRows,
-    groupOverviewRows,
-  } from "$lib/overview-rules";
-  import { sanitizedJson } from "$lib/redaction";
+  import { buildOverviewViewModel } from "$lib/overview-view-model";
   import EmptyState from "../components/EmptyState.svelte";
   import { m } from "../paraglide/messages.js";
   import OverviewCapabilityMatrix from "../components/OverviewCapabilityMatrix.svelte";
@@ -31,77 +21,61 @@
   import OverviewMDSObservations from "../components/OverviewMDSObservations.svelte";
   import OverviewRawInspectionData from "../components/OverviewRawInspectionData.svelte";
 
-  let selector = $derived($selectedSelector);
-  let envelope = $derived($overviewEnvelope);
-  let bioSensorEnvelope = $derived($overviewBioSensorEnvelope);
-  let mdsLookup = $derived($overviewMDSLookup);
-  let loading = $derived($overviewLoading);
-  let mdsLoading = $derived($overviewMDSLoading);
-  let failureMessage = $derived(operationError(envelope));
-  let mdsFailureMessage = $derived(mdsLookup?.error?.message || null);
-  let reloadDisabled = $derived(loading || $sessionBusy);
-
-  let report = $derived(inspectResult(envelope));
-  let mdsResult = $derived(mdsLookup?.result ?? null);
-  let bioSensor = $derived(bioSensorReport(bioSensorEnvelope));
-  let hasReport = $derived(Boolean(report));
-
-  let device = $derived(report?.device || $selectedDevice);
-  let info = $derived(report?.info);
-
-  let hero = $derived(buildOverviewHero({ info, device, mds: mdsResult, mdsLoading, mdsError: mdsFailureMessage }));
-  let signalGroups = $derived(buildOverviewHeroSignalGroups({ info }));
-  let overviewRows = $derived(buildOverviewRows({ info, device, bioSensor }));
-  let overviewGroups = $derived(groupOverviewRows(overviewRows));
-  let conformanceWarnings = $derived(buildOverviewConformanceWarnings({ info }));
-  let mdsObservations = $derived(buildOverviewMDSObservations({ info, mds: mdsResult }));
-  let warningCount = $derived(overviewRows.filter((row) => row.status === "warning").length);
-  let loadingRows = $derived([m.transport(), m.session(), "AAGUID", m.versions()]);
-  let currentSessionLabel = $derived(sessionStateLabel($sessionStatus.state));
+  let overview = $derived(buildOverviewViewModel({
+    selectedSelector: $selectedSelector,
+    selectedDevice: $selectedDevice,
+    sessionStatus: $sessionStatus,
+    sessionBusy: $sessionBusy,
+    overviewEnvelope: $overviewEnvelope,
+    overviewBioSensorEnvelope: $overviewBioSensorEnvelope,
+    overviewMDSLookup: $overviewMDSLookup,
+    overviewLoading: $overviewLoading,
+    overviewMDSLoading: $overviewMDSLoading,
+  }));
 
   function reloadOverview() {
-    return loadOverview(selector);
+    return loadOverview(overview.selector);
   }
 
   function refreshMDS() {
-    if (hero.aaguidAvailable) {
-      return loadOverviewMDS(hero.aaguid, true, selector);
+    if (overview.hero.aaguidAvailable) {
+      return loadOverviewMDS(overview.hero.aaguid, true, overview.selector);
     }
   }
 
   async function copyReport() {
-    await navigator.clipboard?.writeText(sanitizedJson(info ?? null));
+    await navigator.clipboard?.writeText(overview.rawInspectionJson);
   }
 </script>
 
-{#if !selector}
+{#if !overview.selector}
   <EmptyState title={m.choose_authenticator()} message={m.choose_authenticator_message()} />
-{:else if !hasReport && !loading && !failureMessage}
+{:else if !overview.hasReport && !overview.loading && !overview.failureMessage}
   <EmptyState title={m.overview_not_loaded()} message={m.overview_not_loaded_message()} />
 {:else}
   <section class="overview-screen flow">
-    {#if failureMessage}
-      <div class="overview-alert" role="alert">{failureMessage}</div>
+    {#if overview.failureMessage}
+      <div class="overview-alert" role="alert">{overview.failureMessage}</div>
     {/if}
 
-    {#if hasReport}
+    {#if overview.hasReport}
       <OverviewHeroCard
-        {hero}
-        {signalGroups}
-        sessionState={$sessionStatus.state}
-        sessionLabel={currentSessionLabel}
-        {loading}
-        {mdsLoading}
-        {reloadDisabled}
+        hero={overview.hero}
+        signalGroups={overview.signalGroups}
+        sessionState={overview.sessionState}
+        sessionLabel={overview.sessionLabel}
+        loading={overview.loading}
+        mdsLoading={overview.mdsLoading}
+        reloadDisabled={overview.reloadDisabled}
         onReload={reloadOverview}
         onRefreshMDS={refreshMDS}
       />
-      <OverviewConformanceWarnings warnings={conformanceWarnings} />
-      <OverviewCapabilityMatrix groups={overviewGroups} {warningCount} />
-      <OverviewMDSObservations observations={mdsObservations} />
-      <OverviewRawInspectionData {info} onCopy={copyReport} />
-    {:else if loading}
-      <OverviewLoadingCard rows={loadingRows} />
+      <OverviewConformanceWarnings warnings={overview.conformanceWarnings} />
+      <OverviewCapabilityMatrix groups={overview.overviewGroups} warningCount={overview.warningCount} />
+      <OverviewMDSObservations observations={overview.mdsObservations} />
+      <OverviewRawInspectionData info={overview.info} onCopy={copyReport} />
+    {:else if overview.loading}
+      <OverviewLoadingCard rows={overview.loadingRows} />
     {/if}
   </section>
 {/if}

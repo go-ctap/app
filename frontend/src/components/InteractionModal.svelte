@@ -7,13 +7,15 @@
   import { m } from "../paraglide/messages.js";
 
   let pin = $state("");
+  let submitting = $state(false);
 
   let prompt = $derived($pendingInteraction);
   let kind = $derived(prompt?.request?.kind || "confirm");
   let destructive = $derived(Boolean(prompt?.request?.destructive));
 
   async function answer(confirmed: boolean, canceled = false) {
-    if (!prompt) return;
+    if (!prompt || submitting) return;
+    submitting = true;
     try {
       await answerPendingInteraction({
         ...(confirmed && kind === "pin" ? { pin } : {}),
@@ -22,6 +24,7 @@
       });
     } finally {
       pin = "";
+      submitting = false;
     }
   }
 </script>
@@ -47,16 +50,16 @@
     {#if kind === "pin"}
       <label class="field">
         <span>{m.pin()}</span>
-        <input bind:value={pin} name="authenticator-pin" type="password" autocomplete="off" data-dialog-initial-focus />
+        <input bind:value={pin} name="authenticator-pin" type="password" autocomplete="off" disabled={submitting} data-dialog-initial-focus />
       </label>
     {/if}
 
     {#snippet actions()}
       <div class="actions cluster">
-        <Button variant={destructive ? "destructive" : "default"} data-primary type="button" onclick={() => answer(true)}>
+        <Button variant={destructive ? "destructive" : "default"} data-primary type="button" disabled={submitting} onclick={() => answer(true)}>
           {kind === "pin" ? m.send_pin() : m.continue_action()}
         </Button>
-        <Button variant="outline" type="button" onclick={() => answer(false, true)}>{m.cancel()}</Button>
+        <Button variant="outline" type="button" disabled={submitting} onclick={() => answer(false, true)}>{m.cancel()}</Button>
       </div>
     {/snippet}
   </DialogShell>

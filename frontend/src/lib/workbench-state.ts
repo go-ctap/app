@@ -2,6 +2,7 @@ import { get } from "svelte/store";
 import type { Discovery, OperationEnvelope } from "./api.js";
 import { operationEnvelopeLogData } from "./ctapkit-results.js";
 import { sanitizeDisplayData } from "./redaction.js";
+import { currentSessionId } from "./session-boundary.js";
 import {
   activeScreen,
   appError,
@@ -24,7 +25,7 @@ import {
   type StatusBarAction,
   type StatusBarOutcome,
   type WorkbenchLogEntry,
-} from "./stores.js";
+} from "./app-state.js";
 import { m } from "../paraglide/messages.js";
 
 const LOG_LIMIT = 250;
@@ -95,6 +96,7 @@ export function beginOperation(label: string, detailId?: string) {
     },
   });
   setStatusOperation({
+    sessionId: currentSessionId() || undefined,
     label,
     detailId,
     logEntryId,

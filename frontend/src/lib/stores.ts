@@ -1,97 +1,38 @@
-import { derived, writable } from "svelte/store";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { OperationEvent } from "../../bindings/github.com/go-ctap/kit/model";
-import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
-import type { InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
-import type { OperationEnvelope, OperationError, SessionStatus } from "./api";
-
-export type MDSLookupViewState = {
-  result?: LookupResult;
-  error?: OperationError | null;
-};
-
-export type ActiveOperation = {
-  operationId?: string;
-  sessionId?: string;
-  label?: string;
-  detailId?: string;
-  logEntryId?: string;
-  event?: Partial<OperationEvent>;
-};
-
-export type StatusBarAction = {
-  id: string;
-  label: string;
-  tone?: "default" | "danger" | "quiet";
-  run: () => void | Promise<void>;
-};
-
-export type StatusBarOutcome = {
-  tone: "success" | "error" | "info" | "warning";
-  title: string;
-  message?: string;
-  detailId?: string;
-  logEntryId?: string;
-  retry?: () => void | Promise<void>;
-};
-
-export type WorkbenchLogEntry = {
-  id: string;
-  timestamp: string;
-  tone: "success" | "error" | "info" | "warning";
-  source: string;
-  title: string;
-  message?: string;
-  operationId?: string;
-  stage?: string;
-  screen?: string;
-  selector?: string;
-  detailId?: string;
-  data?: unknown;
-};
-
-export type StatusBarState = {
-  activeOperation: ActiveOperation | null;
-  lastOutcome: StatusBarOutcome | null;
-  actions: StatusBarAction[];
-};
-
-export const devices = writable<DeviceReport[]>([]);
-export const selectedSelector = writable("");
-export const selectedDevice = writable<DeviceReport | null>(null);
-export const selectionVersion = writable(0);
-export type ActiveScreen = "overview" | "settings";
-
-export const activeScreen = writable<ActiveScreen>("overview");
-export const operationStatus = writable<ActiveOperation | null>(null);
-export const statusBar = writable<StatusBarState>({ activeOperation: null, lastOutcome: null, actions: [] });
-export const workbenchLog = writable<WorkbenchLogEntry[]>([]);
-export const selectedLogEntryId = writable("");
-export const sessionStatus = writable<SessionStatus>({ state: "idle", selectedSelector: "", selectedDevice: null });
-export const sessions = writable<SessionStatus[]>([]);
-export const overviewEnvelope = writable<OperationEnvelope | null>(null);
-export const overviewBioSensorEnvelope = writable<OperationEnvelope | null>(null);
-export const overviewMDSLookup = writable<MDSLookupViewState | null>(null);
-export const overviewLoading = writable(false);
-export const overviewMDSLoading = writable(false);
-export const pendingInteraction = writable<InteractionPrompt | null>(null);
-export const appError = writable<string | null>(null);
-
-export const hasSelection = derived(selectedSelector, ($selectedSelector) => $selectedSelector.trim().length > 0);
-export const sessionBusy = derived(sessionStatus, ($sessionStatus) => $sessionStatus.state === "opening" || $sessionStatus.state === "running");
-export const sessionProblem = derived(sessionStatus, ($sessionStatus) => $sessionStatus.state === "stale" || $sessionStatus.state === "error");
+import { readonly } from "svelte/store";
+import * as state from "./app-state.js";
 
 export {
-  appendLogEntry,
-  applyDiscovery,
-  beginOperation,
-  clearWorkbenchScreenCaches,
-  currentSelector,
-  finishOperation,
-  focusLogEntry,
+  type ActiveOperation,
+  type ActiveScreen,
+  type MDSLookupViewState,
+  type StatusBarAction,
+  type StatusBarOutcome,
+  type StatusBarState,
+  type WorkbenchLogEntry,
+} from "./app-state.js";
+
+export {
   sanitizeLogData,
-  setStatusActions,
-  setStatusOperation,
-  setStatusOutcome,
-  summarizeEnvelope,
 } from "./workbench-state.js";
+
+export const devices = readonly(state.devices);
+export const selectedSelector = readonly(state.selectedSelector);
+export const selectedDevice = readonly(state.selectedDevice);
+export const selectionVersion = readonly(state.selectionVersion);
+export const activeScreen = readonly(state.activeScreen);
+export const operationStatus = readonly(state.operationStatus);
+export const statusBar = readonly(state.statusBar);
+export const workbenchLog = readonly(state.workbenchLog);
+export const selectedLogEntryId = readonly(state.selectedLogEntryId);
+export const sessionStatus = readonly(state.sessionStatus);
+export const sessions = readonly(state.sessions);
+export const overviewEnvelope = readonly(state.overviewEnvelope);
+export const overviewBioSensorEnvelope = readonly(state.overviewBioSensorEnvelope);
+export const overviewMDSLookup = readonly(state.overviewMDSLookup);
+export const overviewLoading = readonly(state.overviewLoading);
+export const overviewMDSLoading = readonly(state.overviewMDSLoading);
+export const pendingInteraction = readonly(state.pendingInteraction);
+export const appError = readonly(state.appError);
+export const hasSelection = readonly(state.hasSelection);
+export const sessionBusy = readonly(state.sessionBusy);
+export const sessionProblem = readonly(state.sessionProblem);

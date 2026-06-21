@@ -2,15 +2,10 @@ import { cleanup, render } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setAppLocale } from "$lib/i18n";
 import {
-  overviewBioSensorEnvelope,
-  overviewEnvelope,
-  overviewLoading,
-  overviewMDSLoading,
-  overviewMDSLookup,
-  selectedDevice,
   selectedSelector,
   sessionStatus,
-} from "$lib/stores";
+} from "$lib/app-state";
+import { resetAppStateForTest } from "$lib/store-test-utils";
 import Overview from "./Overview.svelte";
 
 const controllerMocks = vi.hoisted(() => ({
@@ -28,14 +23,7 @@ describe("Overview", () => {
     setAppLocale("en");
     controllerMocks.loadOverview.mockClear();
     controllerMocks.loadOverviewMDS.mockClear();
-    selectedSelector.set("");
-    selectedDevice.set(null);
-    sessionStatus.set({ state: "idle", selectedSelector: "", selectedDevice: null });
-    overviewEnvelope.set(null);
-    overviewBioSensorEnvelope.set(null);
-    overviewMDSLookup.set(null);
-    overviewLoading.set(false);
-    overviewMDSLoading.set(false);
+    resetAppStateForTest();
   });
 
   afterEach(() => {

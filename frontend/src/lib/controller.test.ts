@@ -2,27 +2,22 @@ import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { InteractionPrompt, MDSLookupEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
+import type { InteractionPrompt, MDSLookupEnvelope, OperationEventEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
 import { setAppLocale } from "$lib/i18n";
 import {
   activeScreen,
-  appError,
   devices,
-  operationStatus,
   overviewBioSensorEnvelope,
   overviewEnvelope,
-  overviewLoading,
-  overviewMDSLoading,
   overviewMDSLookup,
   pendingInteraction,
   selectedDevice,
-  selectedLogEntryId,
   selectedSelector,
   sessionStatus,
-  sessions,
   statusBar,
   workbenchLog,
-} from "./stores";
+} from "./app-state";
+import { resetAppStateForTest } from "./store-test-utils";
 
 const serviceMocks = vi.hoisted(() => ({
   BioSensorInfo: vi.fn(),
@@ -99,31 +94,11 @@ function inspectEnvelope(item: DeviceReport) {
   };
 }
 
-function resetStores() {
-  activeScreen.set("overview");
-  appError.set(null);
-  devices.set([]);
-  operationStatus.set(null);
-  overviewBioSensorEnvelope.set(null);
-  overviewEnvelope.set(null);
-  overviewLoading.set(false);
-  overviewMDSLoading.set(false);
-  overviewMDSLookup.set(null);
-  pendingInteraction.set(null);
-  selectedDevice.set(null);
-  selectedLogEntryId.set("");
-  selectedSelector.set("");
-  sessionStatus.set({ state: "idle", selectedSelector: "", selectedDevice: null });
-  sessions.set([]);
-  statusBar.set({ activeOperation: null, lastOutcome: null, actions: [] });
-  workbenchLog.set([]);
-}
-
 describe("controller lifecycle", () => {
   beforeEach(() => {
     setAppLocale("en");
     vi.clearAllMocks();
-    resetStores();
+    resetAppStateForTest();
     serviceMocks.BioSensorInfo.mockResolvedValue(null);
     serviceMocks.CancelOperation.mockResolvedValue(true);
     serviceMocks.CloseAllSessions.mockResolvedValue([]);
@@ -190,6 +165,7 @@ describe("controller lifecycle", () => {
       sessionId: "session-token-1",
       request: { kind: "confirm" },
     } as InteractionPrompt);
+    sessionStatus.set({ state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
 
     await selectToken("");
 
@@ -243,5 +219,64 @@ describe("controller lifecycle", () => {
     await Promise.all([loadFirst, loadSecond]);
 
     expect(get(overviewMDSLookup)?.result?.entry?.aaguid).toBe("current");
+  });
+
+  it("ignores stale operation events and accepts current-session events", async () => {
+    const token = device("token-1");
+    const { handleOperationProgress } = await import("./controller");
+    selectedSelector.set("token-1");
+    selectedDevice.set(token);
+    sessionStatus.set({ state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+
+    handleOperationProgress({
+      operationId: "operation-stale",
+      sessionId: "session-stale",
+      event: { stage: "enumerating-rps", message: "stale" },
+    } as OperationEventEnvelope);
+
+    expect(get(workbenchLog)).toHaveLength(0);
+    expect(get(statusBar).activeOperation).toBeNull();
+
+    handleOperationProgress({
+      operationId: "operation-current",
+      sessionId: "session-token-1",
+      event: { stage: "enumerating-rps", message: "current" },
+    } as OperationEventEnvelope);
+
+    expect(get(workbenchLog)).toHaveLength(1);
+    expect(get(statusBar).activeOperation?.operationId).toBe("operation-current");
+  });
+
+  it("cancels stale interaction prompts and only exposes current-session prompts", async () => {
+    const token = device("token-1");
+    const { handleInteractionRequested } = await import("./controller");
+    selectedSelector.set("token-1");
+    selectedDevice.set(token);
+    sessionStatus.set({ state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+
+    handleInteractionRequested({
+      interactionId: "interaction-stale",
+      operationId: "operation-stale",
+      sessionId: "session-stale",
+      request: { kind: "confirm" },
+    } as InteractionPrompt);
+
+    await vi.waitFor(() => expect(serviceMocks.ResolveInteraction).toHaveBeenCalledWith({
+      interactionId: "interaction-stale",
+      confirmed: false,
+      canceled: true,
+    }));
+    expect(get(pendingInteraction)).toBeNull();
+    expect(get(workbenchLog)).toHaveLength(0);
+
+    handleInteractionRequested({
+      interactionId: "interaction-current",
+      operationId: "operation-current",
+      sessionId: "session-token-1",
+      request: { kind: "confirm" },
+    } as InteractionPrompt);
+
+    expect(get(pendingInteraction)?.interactionId).toBe("interaction-current");
+    expect(get(workbenchLog)).toHaveLength(1);
   });
 });

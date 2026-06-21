@@ -3,7 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { InteractionKind, InteractionRequest } from "../../bindings/github.com/go-ctap/kit/model";
 import { InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
-import { pendingInteraction } from "$lib/stores";
+import { pendingInteraction } from "$lib/app-state";
+import { resetAppStateForTest } from "$lib/store-test-utils";
 import InteractionModal from "./InteractionModal.svelte";
 
 const { answerPendingInteraction } = vi.hoisted(() => ({
@@ -33,11 +34,10 @@ function pinPrompt() {
 describe("InteractionModal", () => {
   beforeEach(() => {
     answerPendingInteraction.mockClear();
-    pendingInteraction.set(null);
+    resetAppStateForTest();
   });
 
   afterEach(() => {
-    pendingInteraction.set(null);
     cleanup();
   });
 
@@ -81,5 +81,21 @@ describe("InteractionModal", () => {
       confirmed: false,
       canceled: true,
     });
+  });
+
+  it("submits a PIN prompt only once while resolution is pending", async () => {
+    const user = userEvent.setup();
+    let resolveAnswer!: () => void;
+    answerPendingInteraction.mockReturnValueOnce(new Promise<boolean>((resolve) => {
+      resolveAnswer = () => resolve(true);
+    }));
+    pendingInteraction.set(pinPrompt());
+    render(InteractionModal);
+
+    const input = await screen.findByLabelText("PIN");
+    await user.type(input, "123456{Enter}{Enter}");
+
+    expect(answerPendingInteraction).toHaveBeenCalledTimes(1);
+    resolveAnswer();
   });
 });

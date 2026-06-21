@@ -44,8 +44,6 @@
 	}
 
 	onMount(() => {
-		activeScreen.set("overview");
-
 		const offProgress = Events.On("ctapkit:operation-event", (event: WailsDataEvent<kitservice.OperationEventEnvelope>) => {
 			handleOperationProgress(event.data);
 		});
