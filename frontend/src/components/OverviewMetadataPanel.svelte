@@ -3,6 +3,7 @@
 </script>
 
 <script lang="ts">
+  import { Button } from "$lib/components/ui/button/index.js";
   import type { OverviewHeroFact, OverviewHeroModel } from "$lib/overview-rules";
   import { m } from "../paraglide/messages.js";
 
@@ -64,19 +65,19 @@
       <h2>{m.metadata_service()}</h2>
       <p>{hero.mdsDescription}</p>
     </div>
-    <button type="button" onclick={onRefresh} disabled={loading || !hero.aaguidAvailable}>
+    <Button variant="outline" type="button" onclick={onRefresh} disabled={loading || !hero.aaguidAvailable}>
       <RefreshCw size={14} class={loading ? "u-spin" : undefined} />
       {loading ? m.mds_refreshing() : m.mds_refresh()}
-    </button>
+    </Button>
   </header>
 
   <section class="aaguid-section">
     <div class="aaguid-header cluster">
       <span>{m.mds_aaguid()}</span>
       {#if hero.aaguidAvailable}
-        <button class="tiny-button" type="button" onclick={copyAaguid} aria-label={m.copy_label({ label: "AAGUID" })}>
+        <Button class="tiny-button" variant="ghost" size="icon-xs" type="button" onclick={copyAaguid} aria-label={m.copy_label({ label: "AAGUID" })}>
           <Copy size={12} />
-        </button>
+        </Button>
       {/if}
     </div>
     <code title={hero.aaguid}>{hero.aaguid}</code>
@@ -93,8 +94,8 @@
       align-content: start;
       gap: var(--space-4);
       min-width: 0;
-      border-top: 1px solid var(--color-border);
-      background: var(--color-panel-soft);
+      border-top: 1px solid var(--border);
+      background: var(--muted);
       padding: var(--space-5);
     }
 
@@ -117,14 +118,14 @@
 
     h3,
     .aaguid-header {
-      color: var(--color-text-muted);
+      color: var(--muted-foreground);
       font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
     }
 
     p {
-      color: var(--color-text-muted);
+      color: var(--muted-foreground);
       font-size: 0.8rem;
       line-height: 1.55;
     }
@@ -134,7 +135,7 @@
       display: grid;
       gap: var(--space-2);
       min-width: 0;
-      border-top: 1px solid var(--color-border);
+      border-top: 1px solid var(--border);
       padding-top: var(--space-3);
     }
 
@@ -154,7 +155,7 @@
       display: block;
       min-width: 0;
       overflow: hidden;
-      color: var(--color-text);
+      color: var(--foreground);
       font-size: 0.75rem;
       font-weight: 700;
       text-overflow: ellipsis;
@@ -167,7 +168,7 @@
     }
 
     .fact-row {
-      border-top: 1px solid var(--color-border);
+      border-top: 1px solid var(--border);
       padding: var(--space-2) 0;
     }
 
@@ -183,12 +184,12 @@
     }
 
     dt {
-      color: var(--color-text-muted);
+      color: var(--muted-foreground);
     }
 
     dd {
       overflow: hidden;
-      color: var(--color-text);
+      color: var(--foreground);
       font-weight: 700;
       text-align: right;
       text-overflow: ellipsis;
@@ -209,22 +210,22 @@
     }
 
     dd[data-tone="muted"] {
-      color: var(--color-text-muted);
+      color: var(--muted-foreground);
     }
 
     dd[data-tone="success"] {
-      color: var(--color-success);
+      color: var(--primary);
     }
 
     dd[data-tone="warning"] {
-      color: var(--color-warning);
+      color: var(--chart-3);
     }
 
     dd[data-tone="error"] {
-      color: var(--color-danger);
+      color: var(--destructive);
     }
 
-    .tiny-button {
+    :global(.tiny-button) {
       width: 24px;
       min-height: 24px;
       padding: 0;
@@ -233,7 +234,7 @@
     @media (min-width: 1020px) {
       .metadata-panel {
         border-top: 0;
-        border-left: 1px solid var(--color-border);
+        border-left: 1px solid var(--border);
       }
     }
 }

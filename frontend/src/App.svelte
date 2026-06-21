@@ -3,6 +3,8 @@
 	import { onMount } from "svelte";
 	import { Events } from "@wailsio/runtime";
 	import { ShieldCheck, X } from "@lucide/svelte";
+	import { Alert } from "$lib/components/ui/alert/index.js";
+	import { Button } from "$lib/components/ui/button/index.js";
 	import type * as kitservice from "../bindings/github.com/go-ctap/kit/service/models";
 
 	import {
@@ -94,7 +96,7 @@
 			</header>
 
 			{#if $appError}
-				<div class="app-alert" role="alert">{$appError}</div>
+				<Alert class="app-alert" variant="destructive" role="alert">{$appError}</Alert>
 			{/if}
 
 			<main class="main-view">
@@ -122,12 +124,14 @@
 				<div class="toast">
 					<span>{toast}</span>
 
-					<button
+					<Button
 						class="toast__dismiss"
+						variant="ghost"
+						size="icon-xs"
 						type="button"
 						aria-label={m.close()}
 						onclick={() => dismissToast(index)}
-					><X size={14} aria-hidden="true" /></button>
+					><X size={14} aria-hidden="true" /></Button>
 				</div>
 			{/each}
 		</div>
@@ -141,8 +145,8 @@
 			grid-template-columns: 16rem minmax(0, 1fr);
 			min-width: 0;
 			height: 100vh;
-			background: var(--color-bg);
-			color: var(--color-text);
+			background: var(--background);
+			color: var(--foreground);
 		}
 		.app-workspace {
 			display: grid;
@@ -153,9 +157,9 @@
 		.app-header {
 			z-index: 10;
 			min-width: 0;
-			border-bottom: 1px solid var(--color-border);
-			background: color-mix(in srgb, var(--color-panel) 92%, transparent);
-			box-shadow: var(--shadow-hairline);
+			border-bottom: 1px solid var(--border);
+			background: color-mix(in srgb, var(--card) 92%, transparent);
+			box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 70%, transparent);
 		}
 		:global(.titlebar-content) {
 			display: grid;
@@ -176,18 +180,18 @@
 			overflow: auto;
 			padding: var(--space-4);
 		}
-		.app-alert {
+		:global(.app-alert) {
 			position: fixed;
 			top: 70px;
 			right: var(--space-4);
 			left: calc(16rem + var(--space-4));
 			z-index: 20;
-			border: 1px solid var(--color-danger-border);
-			border-radius: var(--radius-panel);
-			background: var(--color-danger-bg);
-			color: var(--color-danger-text);
+			border: 1px solid color-mix(in srgb, var(--destructive) 34%, var(--border));
+			border-radius: var(--radius);
+			background: color-mix(in srgb, var(--destructive) 10%, var(--background));
+			color: var(--destructive);
 			padding: var(--space-3) var(--space-4);
-			box-shadow: var(--shadow-panel);
+			box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
 		}
 		.empty-workbench {
 			display: grid;
@@ -195,12 +199,12 @@
 			align-content: center;
 			gap: var(--space-2);
 			min-height: calc(100vh - 8rem);
-			color: var(--color-text-muted);
+			color: var(--muted-foreground);
 			text-align: center;
 		}
 		.empty-workbench h1 {
 			margin: var(--space-2) 0 0;
-			color: var(--color-text);
+			color: var(--foreground);
 			font-size: 1.15rem;
 		}
 		.empty-workbench p {
@@ -222,15 +226,15 @@
 			align-items: center;
 			justify-content: space-between;
 			gap: var(--space-3);
-			border: 1px solid var(--color-border);
-			border-radius: var(--radius-panel);
-			background: var(--color-popover);
-			color: var(--color-text);
+			border: 1px solid var(--border);
+			border-radius: var(--radius);
+			background: var(--popover);
+			color: var(--foreground);
 			padding: var(--space-2) var(--space-3);
-			box-shadow: var(--shadow-panel);
+			box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
 			font-size: 0.875rem;
 		}
-		.toast__dismiss {
+		:global(.toast__dismiss) {
 			width: 24px;
 			height: 24px;
 			min-height: 24px;
@@ -241,7 +245,7 @@
 			.app-shell {
 				grid-template-columns: 5rem minmax(0, 1fr);
 			}
-			.app-alert {
+			:global(.app-alert) {
 				left: calc(5rem + var(--space-4));
 			}
 			:global(.titlebar-content) {

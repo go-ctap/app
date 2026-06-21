@@ -3,6 +3,8 @@
 </script>
 
 <script lang="ts">
+  import { Card } from "$lib/components/ui/card/index.js";
+  import * as Table from "$lib/components/ui/table/index.js";
   import type { OverviewConformanceWarning } from "$lib/overview-rules";
   import { m } from "../paraglide/messages.js";
 
@@ -10,7 +12,7 @@
 </script>
 
 {#if warnings.length}
-  <section class="workbench-panel" data-tone="danger">
+  <Card class="workbench-panel" data-tone="danger">
     <header class="workbench-panel__header" data-layout="icon">
       <TriangleAlert size={18} />
       <div>
@@ -20,28 +22,28 @@
     </header>
 
     <div class="workbench-table-frame" data-tone="danger">
-      <table class="workbench-table">
-        <thead>
-          <tr>
-            <th>{m.warning()}</th>
-            <th>{m.finding()}</th>
-            <th>{m.source()}</th>
-            <th>{m.description()}</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table.Root class="workbench-table">
+        <Table.Header>
+          <Table.Row>
+            <Table.Head>{m.warning()}</Table.Head>
+            <Table.Head>{m.finding()}</Table.Head>
+            <Table.Head>{m.source()}</Table.Head>
+            <Table.Head>{m.description()}</Table.Head>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
           {#each warnings as warning (`${warning.name}:${warning.source}`)}
-            <tr>
-              <td><strong>{warning.name}</strong></td>
-              <td><strong>{warning.value || m.not_reported()}</strong></td>
-              <td><code>{warning.source}</code></td>
-              <td>{warning.description}</td>
-            </tr>
+            <Table.Row>
+              <Table.Cell><strong>{warning.name}</strong></Table.Cell>
+              <Table.Cell><strong>{warning.value || m.not_reported()}</strong></Table.Cell>
+              <Table.Cell><code>{warning.source}</code></Table.Cell>
+              <Table.Cell>{warning.description}</Table.Cell>
+            </Table.Row>
           {/each}
-        </tbody>
-      </table>
+        </Table.Body>
+      </Table.Root>
     </div>
-  </section>
+  </Card>
 {/if}
 
 <style>

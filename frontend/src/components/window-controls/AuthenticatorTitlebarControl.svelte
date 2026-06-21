@@ -1,10 +1,12 @@
 <script lang="ts">
-  import { Check, ChevronDown, RefreshCw, ShieldCheck, X } from "@lucide/svelte";
-  import { Select, Tooltip } from "bits-ui";
+  import { RefreshCw, X } from "@lucide/svelte";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Select from "$lib/components/ui/select/index.js";
+  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import type { DeviceReport } from "../../../bindings/github.com/go-ctap/kit/model/report";
   import { refreshDiscovery, selectToken } from "$lib/controller";
-  import { devices, selectedDevice, selectedSelector, sessionBusy, sessionStatus } from "$lib/stores";
-  import { deviceDetail, deviceName, labelDevice, sessionStateLabel } from "$lib/format";
+  import { devices, selectedDevice, selectedSelector, sessionBusy } from "$lib/stores";
+  import { deviceDetail, deviceName, labelDevice } from "$lib/format";
   import { selectorFromDevice } from "$lib/api";
   import { m } from "../../paraglide/messages.js";
 
@@ -17,12 +19,6 @@
 
   let disabled = $derived(refreshing || localRefreshing || $sessionBusy);
   let selectedName = $derived($selectedDevice ? deviceName($selectedDevice) : m.no_token_selected());
-  let selectedDetail = $derived.by(() => {
-    if ($selectedDevice) return deviceDetail($selectedDevice);
-    return $devices.length ? m.select_authenticator() : m.no_authenticators_connected();
-  });
-  let selectedTransport = $derived($selectedDevice ? transportLabel($selectedDevice.transport) : m.transport());
-  let sessionText = $derived(sessionStateLabel($sessionStatus.state));
   let selectItems = $derived($devices.map((device) => ({ value: selectorFromDevice(device), label: labelDevice(device) })));
 
   async function handleSelect(value: string | string[]) {
@@ -60,28 +56,26 @@
 
       <Select.Portal>
         <Select.Content side="bottom" align="start" sideOffset={6}>
-          <Select.Viewport>
-            {#each $devices as device (selectorFromDevice(device))}
-              {@const selector = selectorFromDevice(device)}
-              <Select.Item value={selector} label={labelDevice(device)}>
-                {#snippet children({ selected })}
-                  {deviceName(device)}{transportLabel(device.transport)} - {deviceDetail(device) || selector}
-                  {#if selected}
-                    <Check size={15} strokeWidth={2.2} aria-hidden="true" />
-                  {/if}
-                {/snippet}
-              </Select.Item>
-            {:else}
-              {m.no_authenticators_connected()}
-            {/each}
-          </Select.Viewport>
+          {#each $devices as device (selectorFromDevice(device))}
+            {@const selector = selectorFromDevice(device)}
+            <Select.Item value={selector} label={labelDevice(device)}>
+              <span>{deviceName(device)}</span>
+              <span class="auth-titlebar__item-detail">{transportLabel(device.transport)} - {deviceDetail(device) || selector}</span>
+            </Select.Item>
+          {:else}
+            <Select.Label>{m.no_authenticators_connected()}</Select.Label>
+          {/each}
         </Select.Content>
       </Select.Portal>
     </Select.Root>
 
     <Tooltip.Root>
-      <Tooltip.Trigger type="button" aria-label={m.refresh_devices()} disabled={disabled} onclick={handleRefresh}>
-        <RefreshCw size={15} strokeWidth={2} aria-hidden="true" />
+      <Tooltip.Trigger>
+        {#snippet child({ props })}
+          <Button {...props} variant="ghost" size="icon-sm" type="button" aria-label={m.refresh_devices()} disabled={disabled} onclick={handleRefresh}>
+            <RefreshCw size={15} strokeWidth={2} aria-hidden="true" />
+          </Button>
+        {/snippet}
       </Tooltip.Trigger>
       <Tooltip.Portal>
         <Tooltip.Content side="bottom" sideOffset={7}>
@@ -91,8 +85,12 @@
     </Tooltip.Root>
 
     <Tooltip.Root>
-      <Tooltip.Trigger type="button" aria-label={m.clear_selection()} disabled={!$selectedSelector || disabled} onclick={handleClear}>
-        <X size={15} strokeWidth={2} aria-hidden="true" />
+      <Tooltip.Trigger>
+        {#snippet child({ props })}
+          <Button {...props} variant="ghost" size="icon-sm" type="button" aria-label={m.clear_selection()} disabled={!$selectedSelector || disabled} onclick={handleClear}>
+            <X size={15} strokeWidth={2} aria-hidden="true" />
+          </Button>
+        {/snippet}
       </Tooltip.Trigger>
       <Tooltip.Portal>
         <Tooltip.Content side="bottom" sideOffset={7}>
@@ -104,5 +102,20 @@
 </Tooltip.Provider>
 
 <style>
+@layer blocks {
+    .auth-titlebar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      min-width: 0;
+    }
 
+    .auth-titlebar[data-busy="true"] {
+      opacity: 0.76;
+    }
+
+    .auth-titlebar__item-detail {
+      color: var(--muted-foreground);
+    }
+}
 </style>

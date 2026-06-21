@@ -21,9 +21,17 @@ export default defineConfig({
             emitTsDeclarations: true
         }),
         svelte({preprocess: vitePreprocess()}),
-        wails("./bindings")
+        ...(process.env.VITEST ? [] : [wails("./bindings")])
     ],
     resolve: {
-        alias: {$lib: fileURLToPath(new URL("./src/lib", import.meta.url))}
+        conditions: process.env.VITEST ? ["browser"] : undefined,
+        alias: {
+            $lib: fileURLToPath(new URL("./src/lib", import.meta.url)),
+            ...(process.env.VITEST ? {"@wailsio/runtime": fileURLToPath(new URL("./src/test/wails-runtime.ts", import.meta.url))} : {})
+        }
+    },
+    test: {
+        environment: "jsdom",
+        setupFiles: ["./src/test/setup.ts"]
     }
 });

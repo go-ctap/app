@@ -18,7 +18,8 @@ describe("Settings", () => {
 
     render(Settings);
 
-    await user.selectOptions(screen.getByRole("combobox", { name: "Language" }), "ru");
+    await user.click(screen.getByRole("button", { name: "Language" }));
+    await user.click(screen.getByText("Russian"));
 
     expect(localStorage.getItem("fidoapp.locale")).toBe("ru");
     expect(document.documentElement.lang).toBe("ru");

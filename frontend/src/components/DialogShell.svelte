@@ -1,7 +1,8 @@
 <script lang="ts">
   import { tick, type Snippet } from "svelte";
-  import { Dialog } from "bits-ui";
   import { X } from "@lucide/svelte";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Dialog from "$lib/components/ui/dialog/index.js";
   import { m } from "../paraglide/messages.js";
 
   type Props = {
@@ -72,9 +73,9 @@
 </script>
 
 <Dialog.Root open={true} onOpenChange={(open) => !open && close()}>
-  <Dialog.Portal>
-    <Dialog.Overlay />
     <Dialog.Content
+      class="dialog-shell-content"
+      showCloseButton={false}
       bind:ref={dialog}
       data-size={wide ? "wide" : "default"}
       data-tone={destructive ? "destructive" : "neutral"}
@@ -90,11 +91,11 @@
           {#if eyebrow}
             <p class="eyebrow">{eyebrow}</p>
           {/if}
-          <Dialog.Title level={2}>{title}</Dialog.Title>
+          <Dialog.Title>{title}</Dialog.Title>
         </div>
-        <Dialog.Close type="button" aria-label={closeLabel}>
+        <Button variant="ghost" size="icon-sm" type="button" aria-label={closeLabel} onclick={close}>
           <X size={16} />
-        </Dialog.Close>
+        </Button>
       </header>
 
       <div class="dialog-body">
@@ -105,16 +106,31 @@
         {@render actions()}
       {:else}
         <footer class="dialog-actions cluster">
-          <button class="primary" data-tone={destructive ? "destructive" : "neutral"} data-primary type="button" onclick={primary}>Continue</button>
-          <button type="button" onclick={close}>{closeLabel}</button>
+          <Button variant={destructive ? "destructive" : "default"} data-primary type="button" onclick={primary}>Continue</Button>
+          <Button variant="outline" type="button" onclick={close}>{closeLabel}</Button>
         </footer>
       {/if}
     </Dialog.Content>
-  </Dialog.Portal>
 </Dialog.Root>
 
 <style>
 @layer blocks {
+    :global(.dialog-shell-content) {
+      width: min(32rem, 100%);
+      max-height: calc(100vh - 2rem);
+      overflow: auto;
+      padding: var(--space-5);
+    }
+
+    :global(.dialog-shell-content[data-size="wide"]) {
+      width: min(52rem, 100%);
+      max-width: calc(100% - 2rem);
+    }
+
+    :global(.dialog-shell-content[data-tone="destructive"]) {
+      border-color: color-mix(in srgb, var(--destructive) 34%, var(--border));
+    }
+
     .dialog-header {
       display: flex;
       justify-content: space-between;
@@ -126,7 +142,7 @@
     }
 
     .eyebrow {
-      color: var(--color-text-muted);
+      color: var(--muted-foreground);
       font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
@@ -142,20 +158,5 @@
       --cluster-justify: flex-end;
     }
 
-    .primary {
-      border-color: var(--color-accent);
-      background: var(--color-accent);
-      color: white;
-    }
-
-    .primary:hover:not(:disabled) {
-      border-color: var(--color-accent-hover);
-      background: var(--color-accent-hover);
-    }
-
-    .primary[data-tone="destructive"] {
-      border-color: var(--color-danger);
-      background: var(--color-danger);
-    }
 }
 </style>

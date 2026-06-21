@@ -114,10 +114,10 @@
     }
 
     .overview-alert {
-      border: 1px solid var(--color-danger-border);
-      border-radius: var(--radius-panel);
-      background: var(--color-danger-bg);
-      color: var(--color-danger-text);
+      border: 1px solid color-mix(in srgb, var(--destructive) 34%, var(--border));
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--destructive) 10%, var(--background));
+      color: var(--destructive);
       padding: var(--space-3) var(--space-4);
     }
 }

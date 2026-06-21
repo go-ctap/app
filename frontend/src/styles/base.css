@@ -14,13 +14,13 @@
   body {
     margin: 0;
     min-width: 320px;
-    font-family: var(--font-ui);
+    font-family: var(--font-mono);
     color-scheme: light;
-    color: var(--color-text);
-    background: var(--color-bg);
+    color: var(--foreground);
+    background: var(--background);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
-    -webkit-tap-highlight-color: color-mix(in srgb, var(--color-accent) 18%, transparent);
+    -webkit-tap-highlight-color: color-mix(in srgb, var(--primary) 18%, transparent);
   }
 
   button,
@@ -34,10 +34,10 @@
   select,
   input,
   textarea {
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-control);
-    background: var(--color-panel);
-    color: var(--color-text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--foreground);
   }
 
   button {
@@ -58,13 +58,13 @@
   a:focus-visible,
   summary:focus-visible,
   [tabindex]:focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--primary);
     outline-offset: 2px;
   }
 
   button:hover:not(:disabled) {
-    border-color: var(--color-border-strong);
-    background: var(--color-panel-soft);
+    border-color: var(--ring);
+    background: var(--muted);
   }
 
   button:disabled,
@@ -83,7 +83,7 @@
   }
 
   a {
-    color: var(--color-accent);
+    color: var(--primary);
   }
 
   code,

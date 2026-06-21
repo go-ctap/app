@@ -1,5 +1,7 @@
 <script lang="ts">
     import {Activity, Gauge, Settings, ShieldCheck} from "@lucide/svelte";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import { Card } from "$lib/components/ui/card/index.js";
   import type { ActiveScreen, StatusBarState } from "$lib/stores";
   import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
   import type { SessionStatus } from "$lib/api";
@@ -53,8 +55,9 @@
 
   <nav class="app-sidebar__nav" aria-label={m.screen()}>
     {#each navItems as item (item.id)}
-      <button
+      <Button
         type="button"
+        variant={activeScreen === item.id ? "secondary" : "ghost"}
         class="app-sidebar__nav-item"
         data-active={activeScreen === item.id ? "true" : undefined}
         aria-current={activeScreen === item.id ? "page" : undefined}
@@ -63,18 +66,18 @@
       >
         <item.icon size={17} strokeWidth={2}/>
         <span>{item.label}</span>
-      </button>
+      </Button>
     {/each}
   </nav>
 
-  <section class="app-sidebar__status" data-tone={statusTone} aria-label={m.current_activity()}>
+  <Card class="app-sidebar__status" data-tone={statusTone} aria-label={m.current_activity()}>
     <div class="app-sidebar__status-header">
       <Activity size={15} strokeWidth={2} />
       <span>{sessionStateLabel(sessionStatus.state)}</span>
     </div>
     <p class="app-sidebar__status-title">{statusTitle}</p>
     <p class="app-sidebar__status-detail">{statusDetail}</p>
-  </section>
+  </Card>
 </aside>
 
 <style>
@@ -85,8 +88,8 @@
       gap: var(--space-5);
       min-width: 0;
       height: 100vh;
-      border-right: 1px solid var(--color-border);
-      background: color-mix(in srgb, var(--color-panel) 86%, var(--color-bg));
+      border-right: 1px solid var(--border);
+      background: color-mix(in srgb, var(--card) 86%, var(--background));
       padding: var(--space-4);
     }
 
@@ -103,10 +106,10 @@
       place-items: center;
       width: 36px;
       height: 36px;
-      border: 1px solid color-mix(in srgb, var(--color-text) 18%, var(--color-border));
-      border-radius: var(--radius-control);
-      background: var(--color-text);
-      color: var(--color-panel);
+      border: 1px solid color-mix(in srgb, var(--foreground) 18%, var(--border));
+      border-radius: var(--radius);
+      background: var(--foreground);
+      color: var(--card);
     }
 
     .app-sidebar__brand-copy {
@@ -127,7 +130,7 @@
 
     .app-sidebar__title,
     .app-sidebar__status-title {
-      color: var(--color-text);
+      color: var(--foreground);
       font-weight: 700;
     }
 
@@ -136,7 +139,7 @@
     }
 
     .app-sidebar__subtitle {
-      color: var(--color-text-muted);
+      color: var(--muted-foreground);
       font-size: 0.72rem;
       white-space: nowrap;
     }
@@ -148,36 +151,28 @@
       min-width: 0;
     }
 
-    .app-sidebar__nav-item {
+    :global(.app-sidebar__nav-item) {
       justify-content: flex-start;
       width: 100%;
       min-height: 38px;
       border-color: transparent;
       background: transparent;
-      color: var(--color-text-muted);
+      color: var(--muted-foreground);
       padding: 0 var(--space-3);
       text-align: left;
     }
 
-    .app-sidebar__nav-item:hover:not(:disabled),
-    .app-sidebar__nav-item[data-active="true"] {
-      border-color: color-mix(in srgb, var(--color-accent) 16%, transparent);
-      background: color-mix(in srgb, var(--color-accent-soft) 72%, transparent);
-      color: var(--color-text);
-    }
-
-    .app-sidebar__nav-item[data-active="true"] {
+    :global(.app-sidebar__nav-item[data-active="true"]) {
       font-weight: 700;
-      box-shadow: inset 3px 0 0 var(--color-accent);
     }
 
-    .app-sidebar__status {
+    :global(.app-sidebar__status) {
       display: grid;
       gap: var(--space-2);
       min-width: 0;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-panel);
-      background: var(--color-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
       padding: var(--space-3);
     }
 
@@ -185,7 +180,7 @@
       display: flex;
       align-items: center;
       gap: var(--space-2);
-      color: var(--color-text-muted);
+      color: var(--muted-foreground);
       font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
@@ -204,28 +199,11 @@
 
     .app-sidebar__status-detail {
       display: -webkit-box;
-      color: var(--color-text-muted);
+      color: var(--muted-foreground);
       font-size: 0.76rem;
       line-height: 1.35;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
-    }
-
-    .app-sidebar__status[data-tone="ok"] {
-      border-color: color-mix(in srgb, var(--color-success) 28%, var(--color-border));
-    }
-
-    .app-sidebar__status[data-tone="busy"] {
-      border-color: color-mix(in srgb, var(--color-info) 30%, var(--color-border));
-    }
-
-    .app-sidebar__status[data-tone="warn"] {
-      border-color: color-mix(in srgb, var(--color-warning) 30%, var(--color-border));
-    }
-
-    .app-sidebar__status[data-tone="bad"] {
-      border-color: var(--color-danger-border);
-      background: color-mix(in srgb, var(--color-danger-bg) 58%, var(--color-panel));
     }
 
     @media (max-width: 900px) {
@@ -240,19 +218,19 @@
       }
 
       .app-sidebar__brand-copy,
-      .app-sidebar__nav-item span,
+      :global(.app-sidebar__nav-item span),
       .app-sidebar__status-title,
       .app-sidebar__status-detail,
       .app-sidebar__status-header span {
         display: none;
       }
 
-      .app-sidebar__nav-item {
+      :global(.app-sidebar__nav-item) {
         justify-content: center;
         padding: 0;
       }
 
-      .app-sidebar__status {
+      :global(.app-sidebar__status) {
         place-items: center;
         padding: var(--space-2);
       }

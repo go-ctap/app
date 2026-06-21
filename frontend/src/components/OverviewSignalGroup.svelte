@@ -66,16 +66,16 @@
       display: flex;
       align-items: center;
       gap: var(--space-2);
-      border-bottom: 1px solid var(--color-border);
+      border-bottom: 1px solid var(--border);
       padding-bottom: var(--space-2);
-      color: var(--color-text-muted);
+      color: var(--muted-foreground);
     }
 
     h3 {
       min-width: 0;
       overflow: hidden;
       margin: 0;
-      color: var(--color-text);
+      color: var(--foreground);
       font-size: 0.9rem;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -91,7 +91,7 @@
       grid-template-columns: minmax(0, 1fr) auto;
       gap: var(--space-3);
       min-width: 0;
-      border-top: 1px solid var(--color-border);
+      border-top: 1px solid var(--border);
       padding: var(--space-3) 0;
     }
 
@@ -126,10 +126,10 @@
       max-width: 100%;
       gap: var(--space-1);
       overflow: hidden;
-      border: 1px solid var(--color-border);
+      border: 1px solid var(--border);
       border-radius: 4px;
-      background: var(--color-panel-soft);
-      color: var(--color-text-muted);
+      background: var(--muted);
+      color: var(--muted-foreground);
       padding: 2px 6px;
       font-size: 0.72rem;
     }
@@ -143,7 +143,7 @@
     }
 
     code strong {
-      color: var(--color-text);
+      color: var(--foreground);
     }
 
     .signal-status {
@@ -163,19 +163,19 @@
     }
 
     .signal-status[data-tone="ok"] {
-      color: var(--color-success);
+      color: var(--primary);
     }
 
     .signal-status[data-tone="warn"] {
-      color: var(--color-warning);
+      color: var(--chart-3);
     }
 
     .signal-status[data-tone="info"] {
-      color: var(--color-info);
+      color: var(--muted-foreground);
     }
 
     .signal-status[data-tone="muted"] {
-      color: var(--color-text-muted);
+      color: var(--muted-foreground);
     }
 
     @media (max-width: 520px) {

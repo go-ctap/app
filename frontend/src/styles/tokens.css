@@ -1,46 +1,10 @@
 @layer tokens {
-  @font-face {
-    font-family: Inter;
-    src: url("/Inter-Medium.ttf") format("truetype");
-    font-weight: 400;
-  }
-
   :root {
-    --font-ui: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    --font-mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
-
-    --color-bg: #f4f6f5;
-    --color-panel: #ffffff;
-    --color-panel-soft: #f9fbfa;
-    --color-popover: #ffffff;
-    --color-border: #d8dfdc;
-    --color-border-strong: #b4c0bc;
-    --color-text: #17211d;
-    --color-text-muted: #68736f;
-    --color-text-soft: #87918d;
-    --color-accent: #236b58;
-    --color-accent-hover: #1d5e4d;
-    --color-accent-soft: #e6f0ec;
-    --color-danger: #a83f3f;
-    --color-danger-bg: #fff0f0;
-    --color-danger-border: #e5b7b7;
-    --color-danger-text: #842f2f;
-    --color-warning: #8d651e;
-    --color-warning-bg: #fff6df;
-    --color-success: #26724f;
-    --color-info: #2a6687;
-
-    --radius-control: 5px;
-    --radius-panel: 7px;
-
     --space-1: 4px;
     --space-2: 8px;
     --space-3: 12px;
     --space-4: 16px;
     --space-5: 20px;
     --space-6: 24px;
-
-    --shadow-hairline: 0 1px 0 rgb(0 0 0 / 0.03);
-    --shadow-panel: 0 8px 24px rgb(23 33 29 / 0.08);
   }
 }

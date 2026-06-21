@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Badge, type BadgeVariant } from "$lib/components/ui/badge/index.js";
   import { stateLabel } from "$lib/format";
   import { m } from "../paraglide/messages.js";
 
@@ -23,53 +24,26 @@
     if (["stale", "error", "invalid-session"].includes(raw)) return "bad";
     return "neutral";
   });
+  let badgeVariant: BadgeVariant = $derived.by(() => {
+    if (resolvedTone === "bad") return "destructive";
+    if (resolvedTone === "warn") return "secondary";
+    if (resolvedTone === "ok") return "default";
+    return "outline";
+  });
 </script>
 
-<span class="status-badge" data-tone={resolvedTone} title={help || text}>
+<Badge variant={badgeVariant} data-tone={resolvedTone} title={help || text}>
   <span class="dot" aria-hidden="true"></span>
   <span>{text}</span>
-</span>
+</Badge>
 
 <style>
 @layer blocks {
-    .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      max-width: 100%;
-      border: 1px solid var(--color-border);
-      border-radius: 999px;
-      background: var(--color-panel-soft);
-      color: var(--color-text-muted);
-      padding: 3px 8px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      line-height: 1.2;
-    }
-
     .dot {
       width: 6px;
       height: 6px;
       border-radius: 999px;
       background: currentColor;
-    }
-
-    .status-badge[data-tone="ok"] {
-      border-color: color-mix(in srgb, var(--color-success) 30%, var(--color-border));
-      background: color-mix(in srgb, var(--color-success) 10%, white);
-      color: var(--color-success);
-    }
-
-    .status-badge[data-tone="bad"] {
-      border-color: var(--color-danger-border);
-      background: var(--color-danger-bg);
-      color: var(--color-danger-text);
-    }
-
-    .status-badge[data-tone="warn"] {
-      border-color: color-mix(in srgb, var(--color-warning) 28%, var(--color-border));
-      background: var(--color-warning-bg);
-      color: var(--color-warning);
     }
 }
 </style>

@@ -3,6 +3,8 @@
 </script>
 
 <script lang="ts">
+  import { Button } from "$lib/components/ui/button/index.js";
+  import { Card } from "$lib/components/ui/card/index.js";
   import type { OverviewHeroModel, OverviewHeroSignalGroup } from "$lib/overview-rules";
   import StatusBadge from "../components/StatusBadge.svelte";
   import { m } from "../paraglide/messages.js";
@@ -38,7 +40,7 @@
   }
 </script>
 
-<section class="hero-panel workbench-panel sidebar-layout" data-padding="none" data-overflow="hidden">
+<Card class="hero-panel workbench-panel sidebar-layout" data-padding="none" data-overflow="hidden">
   <div class="hero-main">
     <header class="hero-header">
       <div class="hero-identity">
@@ -59,9 +61,9 @@
         </div>
       </div>
 
-      <button type="button" onclick={onReload} disabled={reloadDisabled}>
+      <Button variant="outline" type="button" onclick={onReload} disabled={reloadDisabled}>
         {loading ? m.reloading() : m.reload_overview()}
-      </button>
+      </Button>
     </header>
 
     <div class="hero-description flow">
@@ -78,14 +80,10 @@
   </div>
 
   <OverviewMetadataPanel {hero} loading={mdsLoading} onRefresh={onRefreshMDS} />
-</section>
+</Card>
 
 <style>
 @layer blocks {
-    .hero-panel {
-      box-shadow: var(--shadow-hairline);
-    }
-
     .hero-main {
       display: grid;
       gap: var(--space-5);
@@ -114,10 +112,10 @@
       width: 48px;
       height: 48px;
       overflow: hidden;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-panel);
-      background: var(--color-panel-soft);
-      color: var(--color-text-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--muted);
+      color: var(--muted-foreground);
     }
 
     .token-icon img {
@@ -141,7 +139,7 @@
 
     h1 {
       overflow: hidden;
-      color: var(--color-text);
+      color: var(--foreground);
       font-size: 1.35rem;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -153,12 +151,12 @@
     }
 
     p {
-      color: var(--color-text-muted);
+      color: var(--muted-foreground);
       line-height: 1.55;
     }
 
     .eyebrow {
-      color: var(--color-text-soft);
+      color: var(--muted-foreground);
       font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
@@ -174,7 +172,7 @@
     }
 
     @media (min-width: 1020px) {
-      .hero-panel {
+      :global(.hero-panel) {
         --sidebar-width: 24rem;
       }
     }

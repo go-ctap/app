@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from "$lib/components/ui/button/index.js";
   import { answerPendingInteraction } from "$lib/controller";
   import { pendingInteraction } from "$lib/stores";
   import DialogShell from "./DialogShell.svelte";
@@ -52,10 +53,10 @@
 
     {#snippet actions()}
       <div class="actions cluster">
-        <button class="primary" data-tone={destructive ? "destructive" : "neutral"} data-primary type="button" onclick={() => answer(true)}>
+        <Button variant={destructive ? "destructive" : "default"} data-primary type="button" onclick={() => answer(true)}>
           {kind === "pin" ? m.send_pin() : m.continue_action()}
-        </button>
-        <button type="button" onclick={() => answer(false, true)}>{m.cancel()}</button>
+        </Button>
+        <Button variant="outline" type="button" onclick={() => answer(false, true)}>{m.cancel()}</Button>
       </div>
     {/snippet}
   </DialogShell>
@@ -65,7 +66,7 @@
 @layer blocks {
     .muted {
       margin: 0;
-      color: var(--color-text-muted);
+      color: var(--muted-foreground);
       font-size: 0.875rem;
     }
 
@@ -84,15 +85,5 @@
       --cluster-justify: flex-end;
     }
 
-    .primary {
-      border-color: var(--color-accent);
-      background: var(--color-accent);
-      color: white;
-    }
-
-    .primary[data-tone="destructive"] {
-      border-color: var(--color-danger);
-      background: var(--color-danger);
-    }
 }
 </style>

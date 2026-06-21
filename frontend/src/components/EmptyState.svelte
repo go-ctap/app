@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import { CircleDashed } from "@lucide/svelte";
+  import { Card } from "$lib/components/ui/card/index.js";
   import { m } from "../paraglide/messages.js";
 
   type Props = {
@@ -22,7 +23,7 @@
   }: Props = $props();
 </script>
 
-<section class="empty-state" data-variant={variant}>
+<Card class="empty-state" data-variant={variant}>
   <div class="empty-state__icon" aria-hidden="true">
     {#if icon}
       {@render icon()}
@@ -42,7 +43,7 @@
       {@render actions()}
     </div>
   {/if}
-</section>
+</Card>
 
 <style>
 @layer blocks {
@@ -59,7 +60,7 @@
     }
 
     h2 {
-      color: var(--color-text);
+      color: var(--foreground);
       font-size: 1rem;
     }
 

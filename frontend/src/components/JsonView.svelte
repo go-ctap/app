@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Button } from "$lib/components/ui/button/index.js";
+  import { Card } from "$lib/components/ui/card/index.js";
   import { sanitizedJson } from "$lib/redaction";
   import { m } from "../paraglide/messages.js";
 
@@ -16,27 +18,21 @@
   }
 </script>
 
-<section class="json-view workbench-panel" data-variant={variant} data-padding={variant === "card" ? "default" : "none"}>
+<Card class="json-view workbench-panel" data-variant={variant} data-padding={variant === "card" ? "default" : "none"}>
   {#if variant !== "code"}
     <header class="cluster">
       <h3>{title}</h3>
-      <button type="button" onclick={copy}>{m.copy()}</button>
+      <Button variant="outline" type="button" onclick={copy}>{m.copy()}</Button>
     </header>
   {/if}
 
   <div class="workbench-code-frame">
     <pre>{source}</pre>
   </div>
-</section>
+</Card>
 
 <style>
 @layer blocks {
-    .json-view {
-      gap: var(--space-3);
-      border: 0;
-      background: transparent;
-    }
-
     header {
       --cluster-justify: space-between;
       --cluster-space: var(--space-3);

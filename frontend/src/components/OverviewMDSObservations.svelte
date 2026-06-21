@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { Badge } from "$lib/components/ui/badge/index.js";
+  import * as Collapsible from "$lib/components/ui/collapsible/index.js";
+  import * as Table from "$lib/components/ui/table/index.js";
   import type { OverviewMDSObservation } from "$lib/overview-rules";
   import { m } from "../paraglide/messages.js";
 
@@ -12,52 +15,52 @@
 </script>
 
 {#if observations.length}
-  <details class="workbench-disclosure observations-panel">
-    <summary>
+  <Collapsible.Root class="workbench-disclosure observations-panel">
+    <Collapsible.Trigger>
       <span>{m.mds_observations_title()}</span>
-      <span class="count">{m.items_count({ count: observations.length })}</span>
-    </summary>
-    <div class="workbench-disclosure__content">
+      <Badge variant="outline" class="count">{m.items_count({ count: observations.length })}</Badge>
+    </Collapsible.Trigger>
+    <Collapsible.Content class="workbench-disclosure__content">
       <p class="workbench-panel__copy">{m.mds_observations_description()}</p>
       <div class="workbench-table-frame">
-        <table class="workbench-table">
-          <thead>
-            <tr>
-              <th>{m.severity()}</th>
-              <th>{m.finding()}</th>
-              <th>{m.token()}</th>
-              <th>MDS</th>
-              <th>{m.source()}</th>
-              <th>{m.description()}</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table.Root class="workbench-table">
+          <Table.Header>
+            <Table.Row>
+              <Table.Head>{m.severity()}</Table.Head>
+              <Table.Head>{m.finding()}</Table.Head>
+              <Table.Head>{m.token()}</Table.Head>
+              <Table.Head>MDS</Table.Head>
+              <Table.Head>{m.source()}</Table.Head>
+              <Table.Head>{m.description()}</Table.Head>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
             {#each observations as observation (`${observation.severity}:${observation.source}:${observation.finding}`)}
-              <tr>
-                <td><span class="severity" data-severity={observation.severity}>{label(observation.severity)}</span></td>
-                <td><strong>{observation.finding}</strong></td>
-                <td><strong>{observation.token || m.not_reported()}</strong></td>
-                <td><strong>{observation.mds || m.not_reported()}</strong></td>
-                <td><code>{observation.source}</code></td>
-                <td>{observation.description}</td>
-              </tr>
+              <Table.Row>
+                <Table.Cell><Badge variant="outline" class="severity" data-severity={observation.severity}>{label(observation.severity)}</Badge></Table.Cell>
+                <Table.Cell><strong>{observation.finding}</strong></Table.Cell>
+                <Table.Cell><strong>{observation.token || m.not_reported()}</strong></Table.Cell>
+                <Table.Cell><strong>{observation.mds || m.not_reported()}</strong></Table.Cell>
+                <Table.Cell><code>{observation.source}</code></Table.Cell>
+                <Table.Cell>{observation.description}</Table.Cell>
+              </Table.Row>
             {/each}
-          </tbody>
-        </table>
+          </Table.Body>
+        </Table.Root>
       </div>
-    </div>
-  </details>
+    </Collapsible.Content>
+  </Collapsible.Root>
 {/if}
 
 <style>
 @layer blocks {
-    .observations-panel {
+    :global(.observations-panel) {
       --table-min-width: 72rem;
     }
 
-    .count,
-    .severity {
-      border: 1px solid var(--color-border);
+    :global(.count),
+    :global(.severity) {
+      border: 1px solid var(--border);
       border-radius: 999px;
       padding: 3px 8px;
       font-size: 0.75rem;
@@ -68,19 +71,19 @@
       margin: 0;
     }
 
-    .severity[data-severity="critical"] {
-      border-color: var(--color-danger-border);
-      background: var(--color-danger-bg);
-      color: var(--color-danger-text);
+    :global(.severity[data-severity="critical"]) {
+      border-color: color-mix(in srgb, var(--destructive) 34%, var(--border));
+      background: color-mix(in srgb, var(--destructive) 10%, var(--background));
+      color: var(--destructive);
     }
 
-    .severity[data-severity="warning"] {
-      background: var(--color-warning-bg);
-      color: var(--color-warning);
+    :global(.severity[data-severity="warning"]) {
+      background: var(--muted);
+      color: var(--chart-3);
     }
 
-    .severity[data-severity="info"] {
-      color: var(--color-info);
+    :global(.severity[data-severity="info"]) {
+      color: var(--muted-foreground);
     }
 
     code {

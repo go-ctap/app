@@ -19,16 +19,15 @@
 - Do not hand-edit `frontend/bindings/` unless intentionally updating generated Wails artifacts.
 
 ## Frontend
-- Tailwind is rejected as a frontend foundation. Do not add new Tailwind utilities, config, plugins, abstractions, or Tailwind-dependent patterns.
-- `shadcn-svelte` is not the design system. Do not build new screens shadcn-first, and do not install new shadcn components except as a temporary migration bridge.
-- Existing Tailwind/shadcn code is technical debt, not precedent. Remove it when touching affected UI in a meaningful way.
-- Build UI with Svelte components, vanilla CSS, CSS custom properties, and product-specific component boundaries.
+- `shadcn-svelte` is the preferred source for accessible UI primitives and locally owned component code.
+- Inspect `frontend/components.json` before adding shadcn components. Add components through the `shadcn-svelte` CLI/registry, then customize the generated local files intentionally.
+- The `lyra` shadcn style is the visual baseline. Product CSS should provide layout, density, Wails shell behavior, and domain state hooks, not a parallel custom design system.
+- Tailwind is acceptable inside shadcn-generated UI primitives and small primitive wrappers. Product screens and workbench components should prefer shadcn primitives plus minimal CSS classes for layout and state.
 - Frontend CSS must follow CUBE CSS strictly: CSS/global rules first, then Composition, Utility, Block, and Exception.
 - `data-*` attributes are the required CUBE Exception mechanism for real state/variant deviations. They are not an escape hatch from CUBE.
-- Do not introduce BEM-style modifier classes, Tailwind-like utility piles, ad hoc scoped styling, or component variants that bypass the CUBE layers.
-- Use Bits UI directly for complex accessible behavior: dialogs, menus, popovers, selects, tabs, tooltips, focus-managed interactions.
-- Use https://bits-ui.com/llms.txt to read Bits UI documentation
-- Screens compose product/workbench components. Product components compose small UI components. UI components may wrap Bits UI.
+- Do not introduce Tailwind-like utility piles, custom visual themes, or component variants that bypass Lyra/shadcn styling and the CUBE layers.
+- Do not import `bits-ui` directly outside generated/local shadcn UI components under `frontend/src/lib/components/ui/`. App/product code should consume shadcn components instead.
+- Screens compose product/workbench components. Product components compose small UI components and shadcn UI primitives.
 - Keep state in stores/controllers under `frontend/src/lib/`; screens should not call raw generated bindings directly.
 
 ## Local Map
@@ -40,5 +39,5 @@
 ## Verify
 - Backend: `go test ./... -count=1`.
 - Session, locking, interaction, or cancellation changes: also consider `go test -race ./... -count=1`.
-- Frontend: `cd frontend; npm run build`.
+- Frontend: `cd frontend; pnpm run build`.
 - UI smoke tests must use the real Wails window. Wails 3 dev runtime is not reliable through browser automation; ask the user to run `wails3 dev` or `task dev`.
