@@ -10,6 +10,7 @@
 ## Hard Rules
 - Never log, store, dump, or render PINs, `pinUvAuthToken`, reset confirmations, or other secrets.
 - Treat generated Wails bindings and `ctapkit/service` DTOs as first-party contracts. Do not add defensive optional chaining, fallback object construction, or "unknown JSON" normalization around fields that are required by those Go types; open `../ctapkit` and the generated bindings when in doubt.
+- `OperationEnvelope.result` is the only weak generated operation boundary (`OperationResult = any`). Unpack it only through named typed extractors under `frontend/src/lib/`; screens and UI builders must not use `resultOf()`, `objectValue()`, `Partial<>`, or `Record<string, unknown>` to normalize generated DTOs. `MDSLookupEnvelope.result` is already a typed `LookupResult`; use it directly.
 - Startup discovery may automatically select and open a session only when exactly one authenticator is discovered. When multiple authenticators are discovered, wait for an explicit device selection.
 - The selected device is the session boundary: changing selection must close any existing open session, resolve/cancel pending interactions, clear per-device screen state, and open one session for the newly selected device. The app should not expose manual session management controls.
 - Clearing selection or app shutdown must close open sessions and resolve/cancel pending interactions.

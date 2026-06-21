@@ -1,6 +1,5 @@
 import { m } from "../paraglide/messages.js";
-import type { CtapConformanceFinding, CtapConformanceFindingId, CtapFindingValue } from "./overview-ctap23.js";
-import type { OverviewConformanceWarning, OverviewHeroModel, OverviewRowStatus } from "./overview-types.js";
+import type { CtapConformanceFinding, CtapFindingValue, OverviewConformanceWarning, OverviewHeroModel, OverviewRowStatus } from "./overview-types.js";
 
 export { m };
 
@@ -65,6 +64,64 @@ type CtapWarningMessageArgs = {
   version: string;
 };
 
+export const CTAP_CONFORMANCE_FINDING_IDS = [
+  "versions_required",
+  "fido22_forbidden",
+  "pin_uv_auth_protocols_list_empty",
+  "pin_uv_auth_protocols_list_duplicate",
+  "transports_list_empty",
+  "transports_list_duplicate",
+  "algorithms_list_empty",
+  "algorithms_list_duplicate",
+  "transports_for_reset_list_empty",
+  "transports_for_reset_list_duplicate",
+  "attestation_formats_list_empty",
+  "attestation_formats_list_duplicate",
+  "attestation_formats_none",
+  "max_credential_count_in_list_positive",
+  "max_credential_id_length_positive",
+  "max_msg_size_minimum",
+  "preferred_platform_uv_attempts_minimum",
+  "ctap23_hmac_secret",
+  "ctap23_rk_uv_state",
+  "ctap23_pin_uv_auth_token",
+  "ctap23_pin_protocol_two",
+  "credblob_requires_credprotect",
+  "credblob_requires_limit",
+  "credblob_limit_invalid",
+  "credblob_limit_without_extension",
+  "largeblob_mode_conflict",
+  "largeblob_extensions_conflict",
+  "largeblob_key_incomplete",
+  "largeblobs_requires_limit",
+  "largeblobs_limit_invalid",
+  "largeblobs_limit_without_command",
+  "min_pin_extension_without_option",
+  "set_min_pin_without_extension",
+  "set_min_pin_without_uv",
+  "set_min_pin_command_missing",
+  "max_rpids_without_set_min_pin",
+  "max_rpids_missing_with_set_min_pin",
+  "min_pin_length_invalid",
+  "min_pin_without_client_pin",
+  "min_pin_missing",
+  "max_pin_length_invalid",
+  "max_pin_without_client_pin",
+  "pin_complexity_extension_without_set_min_pin",
+  "pin_complexity_without_client_pin",
+  "no_mc_ga_without_client_pin",
+  "uv_bio_enroll_without_bio_enroll",
+  "uv_acfg_without_authnr_cfg",
+  "config_commands_without_authnr_cfg",
+  "always_uv_conflict",
+  "always_uv_command_missing",
+  "enterprise_attestation_command_missing",
+  "vendor_prototype_command_missing",
+  "long_touch_command_missing",
+] as const;
+
+type CtapConformanceFindingId = (typeof CTAP_CONFORMANCE_FINDING_IDS)[number];
+
 type CtapWarningMessages = {
   name: () => string;
   description: (args: CtapWarningMessageArgs) => string;
@@ -76,11 +133,6 @@ const CTAP_WARNING_MESSAGES = {
     name: m.overview_ctap_warning_versions_required_name,
     description: m.overview_ctap_warning_versions_required_description,
     value: m.overview_ctap_warning_versions_required_value,
-  },
-  aaguid_required: {
-    name: m.overview_ctap_warning_aaguid_required_name,
-    description: m.overview_ctap_warning_aaguid_required_description,
-    value: m.overview_ctap_warning_aaguid_required_value,
   },
   fido22_forbidden: {
     name: m.overview_ctap_warning_fido22_forbidden_name,
@@ -117,6 +169,31 @@ const CTAP_WARNING_MESSAGES = {
     description: m.overview_ctap_warning_algorithms_list_duplicate_description,
     value: m.overview_ctap_warning_algorithms_list_duplicate_value,
   },
+  transports_for_reset_list_empty: {
+    name: m.overview_ctap_warning_transports_for_reset_list_empty_name,
+    description: m.overview_ctap_warning_transports_for_reset_list_empty_description,
+    value: m.overview_ctap_warning_transports_for_reset_list_empty_value,
+  },
+  transports_for_reset_list_duplicate: {
+    name: m.overview_ctap_warning_transports_for_reset_list_duplicate_name,
+    description: m.overview_ctap_warning_transports_for_reset_list_duplicate_description,
+    value: m.overview_ctap_warning_transports_for_reset_list_duplicate_value,
+  },
+  attestation_formats_list_empty: {
+    name: m.overview_ctap_warning_attestation_formats_list_empty_name,
+    description: m.overview_ctap_warning_attestation_formats_list_empty_description,
+    value: m.overview_ctap_warning_attestation_formats_list_empty_value,
+  },
+  attestation_formats_list_duplicate: {
+    name: m.overview_ctap_warning_attestation_formats_list_duplicate_name,
+    description: m.overview_ctap_warning_attestation_formats_list_duplicate_description,
+    value: m.overview_ctap_warning_attestation_formats_list_duplicate_value,
+  },
+  attestation_formats_none: {
+    name: m.overview_ctap_warning_attestation_formats_none_name,
+    description: m.overview_ctap_warning_attestation_formats_none_description,
+    value: m.overview_ctap_warning_attestation_formats_none_value,
+  },
   max_credential_count_in_list_positive: {
     name: m.overview_ctap_warning_max_credential_count_in_list_positive_name,
     description: m.overview_ctap_warning_max_credential_count_in_list_positive_description,
@@ -146,16 +223,6 @@ const CTAP_WARNING_MESSAGES = {
     name: m.overview_ctap_warning_ctap23_rk_uv_state_name,
     description: m.overview_ctap_warning_ctap23_rk_uv_state_description,
     value: m.overview_ctap_warning_ctap23_rk_uv_state_value,
-  },
-  ctap23_rk_cred_mgmt: {
-    name: m.overview_ctap_warning_ctap23_rk_cred_mgmt_name,
-    description: m.overview_ctap_warning_ctap23_rk_cred_mgmt_description,
-    value: m.overview_ctap_warning_ctap23_rk_cred_mgmt_value,
-  },
-  ctap23_cred_protect: {
-    name: m.overview_ctap_warning_ctap23_cred_protect_name,
-    description: m.overview_ctap_warning_ctap23_cred_protect_description,
-    value: m.overview_ctap_warning_ctap23_cred_protect_value,
   },
   ctap23_pin_uv_auth_token: {
     name: m.overview_ctap_warning_ctap23_pin_uv_auth_token_name,
@@ -192,6 +259,11 @@ const CTAP_WARNING_MESSAGES = {
     description: m.overview_ctap_warning_largeblob_mode_conflict_description,
     value: m.overview_ctap_warning_largeblob_mode_conflict_value,
   },
+  largeblob_extensions_conflict: {
+    name: m.overview_ctap_warning_largeblob_extensions_conflict_name,
+    description: m.overview_ctap_warning_largeblob_extensions_conflict_description,
+    value: m.overview_ctap_warning_largeblob_extensions_conflict_value,
+  },
   largeblob_key_incomplete: {
     name: m.overview_ctap_warning_largeblob_key_incomplete_name,
     description: m.overview_ctap_warning_largeblob_key_incomplete_description,
@@ -217,6 +289,11 @@ const CTAP_WARNING_MESSAGES = {
     description: m.overview_ctap_warning_min_pin_extension_without_option_description,
     value: m.overview_ctap_warning_min_pin_extension_without_option_value,
   },
+  set_min_pin_without_extension: {
+    name: m.overview_ctap_warning_set_min_pin_without_extension_name,
+    description: m.overview_ctap_warning_set_min_pin_without_extension_description,
+    value: m.overview_ctap_warning_set_min_pin_without_extension_value,
+  },
   set_min_pin_without_uv: {
     name: m.overview_ctap_warning_set_min_pin_without_uv_name,
     description: m.overview_ctap_warning_set_min_pin_without_uv_description,
@@ -227,15 +304,15 @@ const CTAP_WARNING_MESSAGES = {
     description: m.overview_ctap_warning_set_min_pin_command_missing_description,
     value: m.overview_ctap_warning_set_min_pin_command_missing_value,
   },
-  max_rpids_invalid: {
-    name: m.overview_ctap_warning_max_rpids_invalid_name,
-    description: m.overview_ctap_warning_max_rpids_invalid_description,
-    value: m.overview_ctap_warning_max_rpids_invalid_value,
-  },
   max_rpids_without_set_min_pin: {
     name: m.overview_ctap_warning_max_rpids_without_set_min_pin_name,
     description: m.overview_ctap_warning_max_rpids_without_set_min_pin_description,
     value: m.overview_ctap_warning_max_rpids_without_set_min_pin_value,
+  },
+  max_rpids_missing_with_set_min_pin: {
+    name: m.overview_ctap_warning_max_rpids_missing_with_set_min_pin_name,
+    description: m.overview_ctap_warning_max_rpids_missing_with_set_min_pin_description,
+    value: m.overview_ctap_warning_max_rpids_missing_with_set_min_pin_value,
   },
   min_pin_length_invalid: {
     name: m.overview_ctap_warning_min_pin_length_invalid_name,
@@ -287,10 +364,20 @@ const CTAP_WARNING_MESSAGES = {
     description: m.overview_ctap_warning_uv_acfg_without_authnr_cfg_description,
     value: m.overview_ctap_warning_uv_acfg_without_authnr_cfg_value,
   },
+  config_commands_without_authnr_cfg: {
+    name: m.overview_ctap_warning_config_commands_without_authnr_cfg_name,
+    description: m.overview_ctap_warning_config_commands_without_authnr_cfg_description,
+    value: m.overview_ctap_warning_config_commands_without_authnr_cfg_value,
+  },
   always_uv_conflict: {
     name: m.overview_ctap_warning_always_uv_conflict_name,
     description: m.overview_ctap_warning_always_uv_conflict_description,
     value: m.overview_ctap_warning_always_uv_conflict_value,
+  },
+  always_uv_command_missing: {
+    name: m.overview_ctap_warning_always_uv_command_missing_name,
+    description: m.overview_ctap_warning_always_uv_command_missing_description,
+    value: m.overview_ctap_warning_always_uv_command_missing_value,
   },
   enterprise_attestation_command_missing: {
     name: m.overview_ctap_warning_enterprise_attestation_command_missing_name,
@@ -310,12 +397,13 @@ const CTAP_WARNING_MESSAGES = {
 } satisfies Record<CtapConformanceFindingId, CtapWarningMessages>;
 
 export function localizeCtapWarning(finding: CtapConformanceFinding): OverviewConformanceWarning {
+  const id = finding.id as CtapConformanceFindingId;
   const warningValue = localizeCtapWarningValue(finding.value);
-  const messages = CTAP_WARNING_MESSAGES[finding.id];
+  const messages = CTAP_WARNING_MESSAGES[id];
   const args = ctapWarningArgs(finding, warningValue);
 
   return {
-    id: finding.id,
+    id,
     name: messages.name(),
     description: messages.description(args),
     value: messages.value(args),
@@ -327,7 +415,7 @@ function ctapWarningArgs(finding: CtapConformanceFinding, warningValue: string):
   const args = finding.args ?? {};
 
   return {
-    id: finding.id,
+    id: finding.id as CtapConformanceFindingId,
     source: finding.source,
     value: warningValue,
     field: stringArg(args.field, finding.source),
@@ -349,9 +437,12 @@ function numberArg(input: unknown, fallback: number) {
 }
 
 function localizeCtapWarningValue(input: CtapFindingValue) {
-  if (input.kind === "literal") return input.value;
+  if (input.kind === "literal") return input.value ?? "";
   if (input.kind === "input") return formatCtapValueInput(input.input);
-  if (input.kind === "list") return input.items.length ? input.items.map(formatCtapValueInput).join(", ") : value.emptyList();
+  if (input.kind === "list") {
+    const items = input.items ?? [];
+    return items.length ? items.map(formatCtapValueInput).join(", ") : value.emptyList();
+  }
 
   switch (input.id) {
     case "empty_list":
@@ -366,7 +457,7 @@ function localizeCtapWarningValue(input: CtapFindingValue) {
       return value.notReported();
   }
 
-  return assertNever(input.id);
+  throw new Error(`Unexpected CTAP warning value: ${String(input.id)}`);
 }
 
 function formatCtapValueInput(input: unknown) {
@@ -377,10 +468,6 @@ function formatCtapValueInput(input: unknown) {
   } catch {
     return String(input);
   }
-}
-
-function assertNever(input: never): never {
-  throw new Error(`Unexpected CTAP warning value: ${String(input)}`);
 }
 
 export function overviewGroupLabel(name: string) {

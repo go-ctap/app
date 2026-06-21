@@ -1,6 +1,5 @@
 import { m } from "./overview-i18n.js";
 import type { OverviewContext, OverviewHeroSignal, OverviewHeroSignalGroup, OverviewHeroSignalId, OverviewRowStatus } from "./overview-types.js";
-import { boolOption, hasOwn, objectValue } from "./overview-utils.js";
 
 type SignalConfig = {
   title: string;
@@ -14,10 +13,11 @@ type SignalConfig = {
   absentNote?: string;
 };
 
+type OverviewOptions = NonNullable<NonNullable<OverviewContext["info"]>["options"]>;
+
 export function buildOverviewHeroSignalGroups(context: OverviewContext = {}): OverviewHeroSignalGroup[] {
-  const info = objectValue(context.info);
-  const options = objectValue(info.options);
-  const optionsKnown = hasOwn(info, "options");
+  const options = context.info?.options;
+  const optionsKnown = options !== undefined;
 
   return [
     {
@@ -70,7 +70,7 @@ export function buildOverviewHeroSignalGroups(context: OverviewContext = {}): Ov
   ];
 }
 
-function upSignal(options: Record<string, unknown>, optionsKnown: boolean): OverviewHeroSignal {
+function upSignal(options: OverviewOptions | undefined, optionsKnown: boolean): OverviewHeroSignal {
   return signal("up", options, optionsKnown, {
     title: m.overview_signal_up_title(),
     tooltip: m.overview_signal_up_tooltip(),
@@ -86,7 +86,7 @@ function upSignal(options: Record<string, unknown>, optionsKnown: boolean): Over
 
 function defaultFalseSignal(
   id: OverviewHeroSignalId,
-  options: Record<string, unknown>,
+  options: OverviewOptions | undefined,
   optionsKnown: boolean,
   title: string,
   tooltip: string,
@@ -104,8 +104,8 @@ function defaultFalseSignal(
   });
 }
 
-function signal(id: OverviewHeroSignalId, options: Record<string, unknown>, optionsKnown: boolean, config: SignalConfig): OverviewHeroSignal {
-  const option = boolOption(options, id);
+function signal(id: OverviewHeroSignalId, options: OverviewOptions | undefined, optionsKnown: boolean, config: SignalConfig): OverviewHeroSignal {
+  const option = optionValue(options, id);
   const base = { id, flag: id, title: config.title, tooltip: config.tooltip };
 
   if (!optionsKnown) {
@@ -124,4 +124,12 @@ function signal(id: OverviewHeroSignalId, options: Record<string, unknown>, opti
     status: config.absentStatus,
     statusLabel: config.absentLabel,
   };
+}
+
+function optionValue(options: OverviewOptions | undefined, key: string): boolean | undefined {
+  if (!options || !Object.prototype.hasOwnProperty.call(options, key)) return undefined;
+  const value = (options as { [key: string]: boolean | undefined })[key];
+  if (value === true) return true;
+  if (value === false) return false;
+  return undefined;
 }

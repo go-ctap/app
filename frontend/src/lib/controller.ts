@@ -1,6 +1,5 @@
 import { get } from "svelte/store";
 import type { OperationEvent } from "../../bindings/github.com/go-ctap/kit/model";
-import type { AuthenticatorGetInfoResponse } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import {
   OperationEnvelope,
@@ -22,7 +21,7 @@ import {
   type Envelope,
   type SessionStatus,
 } from "./api";
-import { operationFailed, operationStageLabel } from "./format";
+import { operationStageLabel } from "./format";
 import { m } from "../paraglide/messages.js";
 import {
   activeScreen,
@@ -49,24 +48,18 @@ import {
   summarizeEnvelope,
   type MDSLookupState,
 } from "./stores";
+import { inspectResult, operationError } from "./ctapkit-results.js";
 
 let lifecycleEpoch = 0;
 let overviewEpoch = 0;
 let mdsEpoch = 0;
-
-type InspectOutput = {
-  result: {
-    device: unknown;
-    info: AuthenticatorGetInfoResponse;
-  };
-};
 
 function messageFromError(error: unknown) {
   return error instanceof Error ? error.message : String(error || m.unexpected_error());
 }
 
 function failureMDSEnvelope(error: unknown): MDSLookupState {
-  return { error: { message: messageFromError(error) } };
+  return { error: runtimeErrorFrom(error) };
 }
 
 function failureEnvelope(error: unknown): Envelope {
@@ -74,7 +67,9 @@ function failureEnvelope(error: unknown): Envelope {
 }
 
 function inspectResultFromEnvelope(envelope: Envelope) {
-  return (envelope.result as InspectOutput).result;
+  const result = inspectResult(envelope);
+  if (!result) throw new Error("inspect result is required");
+  return result;
 }
 
 function shouldLoadBioSensor(envelope: Envelope) {
@@ -130,6 +125,20 @@ function discoverySnapshot(
   return discovery;
 }
 
+function activeOperationId() {
+  return get(statusBar).activeOperation?.operationId || get(pendingInteraction)?.operationId || "";
+}
+
+async function cancelActiveOperation() {
+  const operationId = activeOperationId();
+  if (!operationId) return;
+  try {
+    await api.cancelOperation({ operationId });
+  } catch {
+    // Closing the session remains the authoritative cleanup boundary.
+  }
+}
+
 async function cancelPendingInteraction() {
   try {
     await answerPendingInteraction({ confirmed: false, canceled: true });
@@ -139,6 +148,7 @@ async function cancelPendingInteraction() {
 }
 
 async function closeOpenSessions() {
+  await cancelActiveOperation();
   await cancelPendingInteraction();
   const snapshots = await api.sessions();
   if (snapshots.some(sessionIsOpen)) {
@@ -382,11 +392,11 @@ export async function loadOverview(selector = get(selectedSelector)) {
     if (epoch !== overviewEpoch || selector !== get(selectedSelector)) return;
     overviewEnvelope.set(envelope);
     applyEnvelope(envelope);
-    const aaguid = !operationFailed(envelope) ? aaguidFromEnvelope(envelope) : "";
+    const aaguid = !operationError(envelope) ? aaguidFromEnvelope(envelope) : "";
     if (aaguid) {
       void loadOverviewMDS(aaguid, false, selector);
     }
-    if (!operationFailed(envelope) && shouldLoadBioSensor(envelope)) {
+    if (!operationError(envelope) && shouldLoadBioSensor(envelope)) {
       try {
         const bioEnvelope = await api.bioSensorInfo({ sessionId });
         if (epoch !== overviewEpoch || selector !== get(selectedSelector)) return;
@@ -400,7 +410,7 @@ export async function loadOverview(selector = get(selectedSelector)) {
     }
     summarizeEnvelope(m.overview_inspection(), envelope, "overview-dashboard", () => loadOverview(selector));
     applySessionError(envelope.error);
-    if (operationFailed(envelope)) {
+    if (operationError(envelope)) {
       appError.set(null);
     }
   } catch (error) {
@@ -442,7 +452,7 @@ export async function loadOverviewMDS(aaguid: string, refresh = false, selector 
   try {
     const envelope = await api.lookupMDS({ aaguid, refresh });
     if (epoch !== mdsEpoch || selector !== get(selectedSelector)) return;
-    overviewMDSEnvelope.set(envelope);
+    overviewMDSEnvelope.set({ result: envelope.result });
   } catch (error) {
     if (epoch === mdsEpoch && selector === get(selectedSelector)) {
       overviewMDSEnvelope.set(failureMDSEnvelope(error));

@@ -1,11 +1,16 @@
 import { derived, get, writable } from "svelte/store";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { OperationEvent } from "../../bindings/github.com/go-ctap/kit/model";
-import type { InteractionPrompt, MDSLookupEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
+import type { InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
 import type { Discovery, Envelope, OperationError, SessionStatus } from "./api";
+import { operationEnvelopeLogData } from "./ctapkit-results.js";
 import { m } from "../paraglide/messages.js";
 
-export type MDSLookupState = MDSLookupEnvelope | { error: OperationError };
+export type MDSLookupState = {
+  result?: LookupResult;
+  error?: OperationError | null;
+};
 
 export type ActiveOperation = {
   operationId?: string;
@@ -101,45 +106,6 @@ function nextLogEntryId() {
   return `log-${logSequence}`;
 }
 
-function recordValue(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
-}
-
-function compactCounts(value: unknown) {
-  const counts: Record<string, number> = {};
-  for (const [key, item] of Object.entries(recordValue(value))) {
-    if (Array.isArray(item)) {
-      counts[key] = item.length;
-    }
-  }
-  return Object.keys(counts).length ? counts : undefined;
-}
-
-function compactResult(value: unknown) {
-  const source = recordValue(value);
-  if (!Object.keys(source).length) return undefined;
-  const result = recordValue(source.result ?? source.report ?? source);
-  const summary = source.summary ?? source.message ?? result.summary ?? result.message;
-  const kind = source.kind ?? result.kind ?? result.operationKind;
-  const counts = compactCounts(result);
-  return {
-    ...(kind ? { kind } : {}),
-    ...(summary ? { summary } : {}),
-    ...(counts ? { counts } : {}),
-  };
-}
-
-function compactEnvelope(envelope: Envelope | null | undefined) {
-  if (!envelope) return undefined;
-  return {
-    ...(envelope.operationId ? { operationId: envelope.operationId } : {}),
-    ...(envelope.sessionId ? { sessionId: envelope.sessionId } : {}),
-    ...(envelope.kind ? { kind: envelope.kind } : {}),
-    ...(envelope.error ? { error: envelope.error } : {}),
-    ...(envelope.result ? { result: compactResult(envelope.result) } : {}),
-  };
-}
-
 function normalizeFieldName(value: string) {
   return value.replace(/[^a-z0-9]/gi, "").toLowerCase();
 }
@@ -158,11 +124,6 @@ export function sanitizeLogData(value: unknown, depth = 0): unknown {
     output[key] = isSecretFieldName(key) ? REDACTED : sanitizeLogData(item, depth + 1);
   }
   return output;
-}
-
-function operationResultMessage(envelope: Envelope) {
-  const result = envelope.result as { summary?: string; message?: string };
-  return result.summary || result.message || m.operation_finished_successfully();
 }
 
 export function appendLogEntry(entry: Omit<WorkbenchLogEntry, "id" | "timestamp"> & { id?: string; timestamp?: string }) {
@@ -294,7 +255,7 @@ export function summarizeEnvelope(label: string, envelope: Envelope | null | und
       screen: get(activeScreen),
       selector: currentSelector(),
       detailId,
-      data: compactEnvelope(envelope),
+      data: operationEnvelopeLogData(envelope),
     });
     setStatusOutcome({
       tone: "error",
@@ -310,17 +271,17 @@ export function summarizeEnvelope(label: string, envelope: Envelope | null | und
     tone: "success",
     source: "operation",
     title: m.operation_complete_with_label({ label }),
-    message: operationResultMessage(envelope),
+    message: m.operation_finished_successfully(),
     operationId: envelope.operationId,
     screen: get(activeScreen),
     selector: currentSelector(),
     detailId,
-    data: compactEnvelope(envelope),
+    data: operationEnvelopeLogData(envelope),
   });
   setStatusOutcome({
     tone: "success",
     title: m.operation_complete_with_label({ label }),
-    message: operationResultMessage(envelope),
+    message: m.operation_finished_successfully(),
     detailId,
     logEntryId,
   });

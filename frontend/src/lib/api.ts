@@ -2,14 +2,29 @@ import * as service from "../../bindings/fidobench/ctapkitservice";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import {
   RuntimeErrorEnvelope,
+  type AlwaysUVRequest,
+  type BioEnrollRequest,
+  type BioRemoveRequest,
+  type BioRenameRequest,
   type CancelOperationRequest,
+  type CredentialDeleteRequest,
+  type CredentialUpdateRequest,
   type DiscoverRequest,
+  type GetAssertionRequest,
   type InteractionAnswer,
+  type LargeBlobGarbageCollectRequest,
+  type LargeBlobMutationRequest,
+  type LargeBlobReadRequest,
   type MDSLookupEnvelope,
   type MDSLookupRequest,
+  type MakeCredentialRequest,
+  type MinPINLengthRequest,
   type OpenSessionRequest,
   type OperationEnvelope,
   type OperationRequest,
+  type PINChangeRequest,
+  type PINSetRequest,
+  type ResetFactoryRequest,
   type SessionID,
   type SessionSnapshot,
 } from "../../bindings/github.com/go-ctap/kit/service";
@@ -146,6 +161,86 @@ export const api = {
 
   bioSensorInfo(request: OperationRequest): Promise<OperationEnvelope> {
     return service.BioSensorInfo(request);
+  },
+
+  listCredentials(request: OperationRequest): Promise<OperationEnvelope> {
+    return service.ListCredentials(request);
+  },
+
+  deleteCredential(request: CredentialDeleteRequest): Promise<OperationEnvelope> {
+    return service.DeleteCredential(request);
+  },
+
+  updateCredentialUser(request: CredentialUpdateRequest): Promise<OperationEnvelope> {
+    return service.UpdateCredentialUser(request);
+  },
+
+  readLargeBlob(request: LargeBlobReadRequest): Promise<OperationEnvelope> {
+    return service.ReadLargeBlob(request);
+  },
+
+  listLargeBlobs(request: OperationRequest): Promise<OperationEnvelope> {
+    return service.ListLargeBlobs(request);
+  },
+
+  writeLargeBlob(request: LargeBlobMutationRequest): Promise<OperationEnvelope> {
+    return service.WriteLargeBlob(request);
+  },
+
+  deleteLargeBlob(request: LargeBlobMutationRequest): Promise<OperationEnvelope> {
+    return service.DeleteLargeBlob(request);
+  },
+
+  garbageCollectLargeBlobs(request: LargeBlobGarbageCollectRequest): Promise<OperationEnvelope> {
+    return service.GarbageCollectLargeBlobs(request);
+  },
+
+  configStatus(request: OperationRequest): Promise<OperationEnvelope> {
+    return service.ConfigStatus(request);
+  },
+
+  setPIN(request: PINSetRequest): Promise<OperationEnvelope> {
+    return service.SetPIN(request);
+  },
+
+  changePIN(request: PINChangeRequest): Promise<OperationEnvelope> {
+    return service.ChangePIN(request);
+  },
+
+  setAlwaysUV(request: AlwaysUVRequest): Promise<OperationEnvelope> {
+    return service.SetAlwaysUV(request);
+  },
+
+  setMinPINLength(request: MinPINLengthRequest): Promise<OperationEnvelope> {
+    return service.SetMinPINLength(request);
+  },
+
+  bioList(request: OperationRequest): Promise<OperationEnvelope> {
+    return service.BioList(request);
+  },
+
+  bioEnroll(request: BioEnrollRequest): Promise<OperationEnvelope> {
+    return service.BioEnroll(request);
+  },
+
+  bioRename(request: BioRenameRequest): Promise<OperationEnvelope> {
+    return service.BioRename(request);
+  },
+
+  bioRemove(request: BioRemoveRequest): Promise<OperationEnvelope> {
+    return service.BioRemove(request);
+  },
+
+  resetFactory(request: ResetFactoryRequest): Promise<OperationEnvelope> {
+    return service.ResetFactory(request);
+  },
+
+  makeCredential(request: MakeCredentialRequest): Promise<OperationEnvelope> {
+    return service.MakeCredential(request);
+  },
+
+  getAssertion(request: GetAssertionRequest): Promise<OperationEnvelope> {
+    return service.GetAssertion(request);
   },
 
   lookupMDS(request: MDSLookupRequest): Promise<MDSLookupEnvelope> {

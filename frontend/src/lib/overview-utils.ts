@@ -6,32 +6,26 @@ const COSE_ALGORITHM_NAMES = new Map<number, string>([
   [-257, "RS256"],
 ]);
 
-export function objectValue(input: unknown): Record<string, unknown> {
-  return input && typeof input === "object" && !Array.isArray(input) ? (input as Record<string, unknown>) : {};
-}
-
 export function arrayValue(input: unknown): unknown[] {
   return Array.isArray(input) ? input : [];
 }
 
-export function hasOwn(input: Record<string, unknown>, key: string) {
+export function hasOwn(input: object | null | undefined, key: string) {
+  if (!input) return false;
   return Object.prototype.hasOwnProperty.call(input, key);
 }
 
-export function boolOption(options: Record<string, unknown>, key: string): boolean | undefined {
+export function boolOption(options: object | null | undefined, key: string): boolean | undefined {
   if (!hasOwn(options, key)) return undefined;
-  if (options[key] === true) return true;
-  if (options[key] === false) return false;
+  const value = (options as { [key: string]: unknown })[key];
+  if (value === true) return true;
+  if (value === false) return false;
   return undefined;
 }
 
 export function textValue(input: unknown, fallback = "") {
   if (input === null || input === undefined || input === "") return fallback;
   return String(input);
-}
-
-export function numberValue(input: unknown): number | undefined {
-  return typeof input === "number" && Number.isFinite(input) ? input : undefined;
 }
 
 export function integerValue(input: unknown): number | undefined {
@@ -43,20 +37,8 @@ export function unsignedIntegerValue(input: unknown): number | undefined {
   return amount !== undefined && amount >= 0 ? amount : undefined;
 }
 
-export function formatBoolean(input: boolean | undefined) {
-  if (input === true) return "true";
-  if (input === false) return "false";
-  return value.absent();
-}
-
 export function inlineList(items: unknown[], fallback = value.stateUnknown()) {
   return items.length ? items.map((item) => String(formatListItem(item))).join(", ") : fallback;
-}
-
-export function formatMap(input: Record<string, unknown>) {
-  return Object.entries(input)
-    .map(([key, item]) => `${key}: ${formatListItem(item)}`)
-    .join(", ");
 }
 
 export function formatListItem(input: unknown): string | number | boolean {

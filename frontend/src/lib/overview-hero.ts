@@ -1,3 +1,4 @@
+import type { LookupResult, MetadataStatement, PayloadEntry, StatusReport } from "../../bindings/github.com/go-ctap/kit/model/mds";
 import { m, mdsDescriptionText, mdsStateText } from "./overview-i18n.js";
 import type {
   OverviewContext,
@@ -5,14 +6,10 @@ import type {
   OverviewHeroFact,
   OverviewHeroFactTone,
   OverviewHeroModel,
-  OverviewMDSLookupResult,
-  OverviewMDSMetadataStatement,
   OverviewMDSObservation,
   OverviewMDSObservationSeverity,
-  OverviewMDSPayloadEntry,
-  OverviewMDSStatusReport,
 } from "./overview-types.js";
-import { arrayValue, formatAaguid, formatDateTime, hasOwn, mdsUrlLabel, objectValue, safeMDSImage, textValue } from "./overview-utils.js";
+import { formatAaguid, formatDateTime, mdsUrlLabel, safeMDSImage, textValue } from "./overview-utils.js";
 
 const DANGEROUS_MDS_STATUSES = new Set([
   "REVOKED",
@@ -22,28 +19,30 @@ const DANGEROUS_MDS_STATUSES = new Set([
   "USER_KEY_PHYSICAL_COMPROMISE",
 ]);
 
+type TextLike = string | number | boolean | null | undefined;
+
 export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHeroModel {
-  const info = objectValue(context.info);
-  const device = objectValue(context.device);
-  const mdsResult = mdsLookupResult(context.mds);
-  const entry = mdsPayloadEntry(mdsResult.entry);
-  const statement = mdsMetadataStatement(entry.metadataStatement);
-  const latestStatus = mdsStatusReport(arrayValue(entry.statusReports)[0]);
-  const rawAaguid = info.aaguid ?? mdsResult.aaguid;
+  const info = context.info ?? null;
+  const device = context.device ?? null;
+  const mdsResult = context.mds ?? null;
+  const entry = mdsResult?.entry ?? null;
+  const statement = entry?.metadataStatement ?? null;
+  const latestStatus = entry?.statusReports?.[0] ?? null;
+  const rawAaguid = info?.aaguid || mdsResult?.aaguid;
   const aaguid = formatAaguid(rawAaguid);
-  const deviceName = [device.manufacturer, device.product].filter(Boolean).join(" ") || textValue(device.product, "");
+  const deviceName = [device?.manufacturer, device?.product].filter(Boolean).join(" ") || textValue(device?.product, "");
   const mdsName = preferredMDSName(statement);
-  const found = mdsResult.found === true;
-  const hasLookup = hasLookupResult(mdsResult);
-  const status = textValue(latestStatus.status, "");
-  const mdsState = resolveMDSState(context, mdsResult, found, hasLookup);
+  const found = mdsResult?.found === true;
+  const hasLookup = Boolean(mdsResult);
+  const status = textValue(latestStatus?.status, "");
+  const mdsState = resolveMDSState(context, found, hasLookup);
 
   return {
     title: deviceName || mdsName || m.selected_authenticator(),
-    subtitle: textValue(statement.description, "") || m.current_authenticator_overview(),
+    subtitle: textValue(statement?.description, "") || m.current_authenticator_overview(),
     aaguid,
     aaguidAvailable: hasAaguid(rawAaguid, aaguid),
-    iconSrc: safeMDSImage(statement.icon) || safeMDSImage(statement.iconDark) || "",
+    iconSrc: safeMDSImage(statement?.icon) || safeMDSImage(statement?.iconDark) || "",
     mdsState,
     mdsStateLabel: mdsStateText(mdsState),
     mdsDescription: mdsDescriptionText(mdsState, context.mdsError),
@@ -53,10 +52,7 @@ export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHe
 }
 
 export function buildOverviewMDSObservations(context: OverviewContext = {}): OverviewMDSObservation[] {
-  const mdsResult = mdsLookupResult(context.mds);
-  const entry = mdsPayloadEntry(mdsResult.entry);
-  const statusReports = arrayValue(entry.statusReports).map(mdsStatusReport);
-  const latest = statusReports[0];
+  const latest = context.mds?.entry?.statusReports?.[0] ?? null;
   const status = textValue(latest?.status, "");
   if (!status || !DANGEROUS_MDS_STATUSES.has(status)) return [];
 
@@ -70,29 +66,8 @@ export function buildOverviewMDSObservations(context: OverviewContext = {}): Ove
   )];
 }
 
-function mdsLookupResult(input: unknown) {
-  return objectValue(input) as Partial<OverviewMDSLookupResult> & Record<string, unknown>;
-}
-
-function mdsPayloadEntry(input: unknown) {
-  return objectValue(input) as OverviewMDSPayloadEntry & Record<string, unknown>;
-}
-
-function mdsMetadataStatement(input: unknown) {
-  return objectValue(input) as OverviewMDSMetadataStatement & Record<string, unknown>;
-}
-
-function mdsStatusReport(input: unknown) {
-  return objectValue(input) as OverviewMDSStatusReport & Record<string, unknown>;
-}
-
-function hasLookupResult(result: Record<string, unknown>) {
-  return hasOwn(result, "found") || hasOwn(result, "blobNumber") || hasOwn(result, "source") || hasOwn(result, "cached") || hasOwn(result, "cachedAt");
-}
-
 function resolveMDSState(
   context: OverviewHeroContext,
-  _mdsResult: Record<string, unknown>,
   found: boolean,
   hasLookup: boolean,
 ): OverviewHeroModel["mdsState"] {
@@ -112,75 +87,75 @@ function heroFact(label: string, factValue: string, tone: OverviewHeroFactTone =
   };
 }
 
-function optionalHeroFact(label: string, input: unknown, found: boolean, options: { href?: string; tone?: OverviewHeroFactTone } = {}) {
+function optionalHeroFact(label: string, input: TextLike, found: boolean, options: { href?: string; tone?: OverviewHeroFactTone } = {}) {
   if (!found) return null;
   const text = textValue(input, "");
   return text ? heroFact(label, text, options.tone || "default", false, options.href) : null;
 }
 
-function fipsHeroFacts(statusReport: OverviewMDSStatusReport, status: string, found: boolean) {
-  if (!found || !isFipsStatus(status)) return [];
+function fipsHeroFacts(statusReport: StatusReport | null, status: string, found: boolean) {
+  if (!statusReport || !found || !isFipsStatus(status)) return [];
   return [
     optionalHeroFact(m.mds_fips_revision(), statusReport.fipsRevision, found),
     optionalHeroFact(m.mds_fips_physical_security_level(), statusReport.fipsPhysicalSecurityLevel, found),
   ].filter((fact): fact is OverviewHeroFact => Boolean(fact));
 }
 
-function preferredMDSName(statement: OverviewMDSMetadataStatement & Record<string, unknown>) {
-  const names = objectValue(statement.friendlyNames);
-  return textValue(names["en-US"], "") || textValue(names.en, "") || textValue(Object.values(names)[0], "") || textValue(statement.description, "");
+function preferredMDSName(statement: MetadataStatement | null) {
+  const names = statement?.friendlyNames ?? {};
+  return textValue(names["en-US"], "") || textValue(names.en, "") || textValue(Object.values(names).find(Boolean), "") || textValue(statement?.description, "");
 }
 
 function statusReportFacts(
-  latestStatus: OverviewMDSStatusReport,
-  entry: OverviewMDSPayloadEntry,
+  latestStatus: StatusReport | null,
+  entry: PayloadEntry | null,
   status: string,
   found: boolean,
   mdsState: OverviewHeroModel["mdsState"],
 ) {
   return [
     heroFact(m.mds_status(), mdsText(status, found), mdsState === "found" ? statusTone(status) : "muted", !found),
-    heroFact(m.mds_effective_date(), mdsText(latestStatus.effectiveDate, found), found ? "default" : "muted", !found),
-    heroFact(m.mds_last_status_change(), mdsText(entry.timeOfLastStatusChange, found), found ? "default" : "muted", !found),
-    optionalHeroFact(m.mds_certificate_number(), latestStatus.certificateNumber, found),
-    optionalHeroFact(m.mds_sunset_date(), latestStatus.sunsetDate, found),
-    optionalHeroFact(m.mds_status_url(), mdsUrlLabel(latestStatus.url), found, { href: externalUrl(latestStatus.url) }),
+    heroFact(m.mds_effective_date(), mdsText(latestStatus?.effectiveDate, found), found ? "default" : "muted", !found),
+    heroFact(m.mds_last_status_change(), mdsText(entry?.timeOfLastStatusChange, found), found ? "default" : "muted", !found),
+    optionalHeroFact(m.mds_certificate_number(), latestStatus?.certificateNumber, found),
+    optionalHeroFact(m.mds_sunset_date(), latestStatus?.sunsetDate, found),
+    optionalHeroFact(m.mds_status_url(), mdsUrlLabel(latestStatus?.url), found, { href: externalUrl(latestStatus?.url) }),
     ...fipsHeroFacts(latestStatus, status, found),
   ].filter((fact): fact is OverviewHeroFact => Boolean(fact));
 }
 
-function metadataBlobFacts(result: Partial<OverviewMDSLookupResult>, hasLookup: boolean) {
-  const sourceUrl = externalUrl(result.source);
+function metadataBlobFacts(result: LookupResult | null, hasLookup: boolean) {
+  const sourceUrl = externalUrl(result?.source);
   return [
-    heroFact(m.source(), mdsSourceText(result.source, hasLookup), hasLookup ? "default" : "muted", !hasLookup, sourceUrl),
-    heroFact(m.mds_blob_number(), mdsText(result.blobNumber, hasLookup), hasLookup ? "default" : "muted", !hasLookup),
+    heroFact(m.source(), mdsSourceText(result?.source, hasLookup), hasLookup ? "default" : "muted", !hasLookup, sourceUrl),
+    heroFact(m.mds_blob_number(), mdsText(result?.blobNumber, hasLookup), hasLookup ? "default" : "muted", !hasLookup),
     heroFact(m.mds_blob_load(), mdsBlobLoadText(result, hasLookup), hasLookup ? "default" : "muted", !hasLookup),
     heroFact(m.mds_snapshot_saved(), mdsCachedAtText(result, hasLookup), hasLookup ? "default" : "muted", !hasLookup),
   ];
 }
 
-function mdsSourceText(input: unknown, hasLookup: boolean) {
+function mdsSourceText(input: TextLike, hasLookup: boolean) {
   if (!hasLookup) return m.mds_placeholder();
   return mdsUrlLabel(input) || m.not_reported();
 }
 
-function mdsBlobLoadText(result: Partial<OverviewMDSLookupResult>, hasLookup: boolean) {
+function mdsBlobLoadText(result: LookupResult | null, hasLookup: boolean) {
   if (!hasLookup) return m.mds_placeholder();
-  if (result.cached === true) return m.mds_blob_source_cached();
-  if (result.cached === false) return m.mds_blob_source_fetched();
+  if (result?.cached === true) return m.mds_blob_source_cached();
+  if (result?.cached === false) return m.mds_blob_source_fetched();
   return m.not_reported();
 }
 
-function mdsCachedAtText(result: Partial<OverviewMDSLookupResult>, hasLookup: boolean) {
+function mdsCachedAtText(result: LookupResult | null, hasLookup: boolean) {
   if (!hasLookup) return m.mds_placeholder();
-  return formatDateTime(result.cachedAt) || m.not_reported();
+  return formatDateTime(result?.cachedAt) || m.not_reported();
 }
 
-function mdsText(input: unknown, available: boolean) {
+function mdsText(input: TextLike, available: boolean) {
   return textValue(input, available ? m.not_reported() : m.mds_placeholder());
 }
 
-function externalUrl(input: unknown) {
+function externalUrl(input: string | null | undefined) {
   const text = textValue(input, "");
   if (!text) return "";
   try {
@@ -191,12 +166,12 @@ function externalUrl(input: unknown) {
   }
 }
 
-function hasAaguid(rawAaguid: unknown, formattedAaguid: string) {
+function hasAaguid(rawAaguid: TextLike, formattedAaguid: string) {
   return textValue(rawAaguid, "").trim().length > 0 && formattedAaguid !== m.not_reported();
 }
 
-function statusTone(input: unknown): OverviewHeroFactTone {
-  const status = String(input || "").toUpperCase();
+function statusTone(input: string): OverviewHeroFactTone {
+  const status = input.toUpperCase();
   if (!status) return "muted";
   if (status.includes("REVOKED") || status.includes("USER_VERIFICATION_BYPASS") || status.includes("ATTESTATION_KEY_COMPROMISE")) return "error";
   if (status.includes("UPDATE_AVAILABLE") || status.includes("NOT_FIDO_CERTIFIED") || status.includes("RETIRED") || status.includes("SELF_ASSERTION_SUBMITTED")) return "warning";
@@ -204,11 +179,11 @@ function statusTone(input: unknown): OverviewHeroFactTone {
   return "default";
 }
 
-function isFipsStatus(input: unknown) {
-  return String(input || "").toUpperCase().startsWith("FIPS140_CERTIFIED_");
+function isFipsStatus(input: string) {
+  return input.toUpperCase().startsWith("FIPS140_CERTIFIED_");
 }
 
-function formatStatusReport(statusReport: OverviewMDSStatusReport | undefined) {
+function formatStatusReport(statusReport: StatusReport | null) {
   if (!statusReport) return m.not_reported();
   const status = textValue(statusReport.status, m.not_reported());
   const version = textValue(statusReport.authenticatorVersion, "");

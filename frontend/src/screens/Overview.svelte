@@ -1,6 +1,7 @@
 <script lang="ts">
   import { loadOverview, loadOverviewMDS } from "$lib/controller";
-  import { operationFailed, resultOf, sessionStateLabel } from "$lib/format";
+  import { bioSensorReport, inspectResult, mdsLookupResult, operationError } from "$lib/ctapkit-results";
+  import { sessionStateLabel } from "$lib/format";
   import {
     overviewBioSensorEnvelope,
     overviewEnvelope,
@@ -20,7 +21,6 @@
     buildOverviewRows,
     groupOverviewRows,
   } from "$lib/overview-rules";
-  import { overviewBioSensorReport, overviewInspectResult, overviewMDSResult } from "$lib/overview-adapters";
   import EmptyState from "../components/EmptyState.svelte";
   import { m } from "../paraglide/messages.js";
   import OverviewCapabilityMatrix from "../components/OverviewCapabilityMatrix.svelte";
@@ -36,24 +36,24 @@
   let mdsEnvelope = $derived($overviewMDSEnvelope);
   let loading = $derived($overviewLoading);
   let mdsLoading = $derived($overviewMDSLoading);
-  let failureMessage = $derived(operationFailed(envelope));
-  let mdsFailureMessage = $derived(operationFailed(mdsEnvelope));
+  let failureMessage = $derived(operationError(envelope));
+  let mdsFailureMessage = $derived(operationError(mdsEnvelope));
   let reloadDisabled = $derived(loading || $sessionBusy);
 
-  let report = $derived(overviewInspectResult(resultOf(envelope)));
-  let mdsResult = $derived(overviewMDSResult(resultOf(mdsEnvelope)));
-  let bioSensorReport = $derived(overviewBioSensorReport(resultOf(bioSensorEnvelope)));
+  let report = $derived(inspectResult(envelope));
+  let mdsResult = $derived(mdsLookupResult(mdsEnvelope));
+  let bioSensor = $derived(bioSensorReport(bioSensorEnvelope));
   let hasReport = $derived(Boolean(report));
 
-  let device = $derived(report?.device || $selectedDevice || {});
-  let info = $derived(report?.info || {});
+  let device = $derived(report?.device || $selectedDevice);
+  let info = $derived(report?.info);
 
-  let hero = $derived(buildOverviewHero({ info, device, mds: mdsResult || {}, mdsLoading, mdsError: mdsFailureMessage }));
+  let hero = $derived(buildOverviewHero({ info, device, mds: mdsResult, mdsLoading, mdsError: mdsFailureMessage }));
   let signalGroups = $derived(buildOverviewHeroSignalGroups({ info }));
-  let overviewRows = $derived(buildOverviewRows({ info, device, bioSensor: bioSensorReport || {} }));
+  let overviewRows = $derived(buildOverviewRows({ info, device, bioSensor }));
   let overviewGroups = $derived(groupOverviewRows(overviewRows));
   let conformanceWarnings = $derived(buildOverviewConformanceWarnings({ info }));
-  let mdsObservations = $derived(buildOverviewMDSObservations({ info, mds: mdsResult || {} }));
+  let mdsObservations = $derived(buildOverviewMDSObservations({ info, mds: mdsResult }));
   let warningCount = $derived(overviewRows.filter((row) => row.status === "warning").length);
   let loadingRows = $derived([m.transport(), m.session(), "AAGUID", m.versions()]);
   let currentSessionLabel = $derived(sessionStateLabel($sessionStatus.state));
