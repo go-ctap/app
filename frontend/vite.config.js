@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import { svelte, vitePreprocess } from "@sveltejs/vite-plugin-svelte";
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import wails from '@wailsio/runtime/plugins/vite'
@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
       host: "127.0.0.1"
     },
     test: {
+      environment: "jsdom",
       setupFiles: ["./src/test/setup.ts"],
       alias: {
         "@wailsio/runtime": fileURLToPath(new URL("./src/test/wails-runtime.ts", import.meta.url)),
@@ -29,7 +30,9 @@ export default defineConfig(({ mode }) => {
       testing ? null : wails("./bindings"),
     ].filter(Boolean),
     resolve: {
+      conditions: testing ? ["browser"] : undefined,
       alias: {
+        "/src": fileURLToPath(new URL("./src", import.meta.url)),
         $lib: fileURLToPath(new URL("./src/lib", import.meta.url)),
       },
     },

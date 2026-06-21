@@ -1,13 +1,14 @@
 <script lang="ts">
+  import type { OverviewInspectResult } from "$lib/overview-types";
   import JsonView from "../components/JsonView.svelte";
   import { m } from "../paraglide/messages.js";
 
-  let { info = null, onCopy = () => {} }: { info?: unknown; onCopy?: () => void | Promise<void> } = $props();
+  let { info = null, onCopy = () => {} }: { info?: OverviewInspectResult["info"] | null; onCopy?: () => void | Promise<void> } = $props();
 </script>
 
-<details class="raw-panel">
+<details class="workbench-disclosure">
   <summary>{m.raw_inspection_data()}</summary>
-  <div class="content">
+  <div class="workbench-disclosure__content">
     <div class="toolbar">
       <span><code>ctapkit</code> {m.raw_operation_response()}</span>
       <button type="button" onclick={onCopy}>{m.copy_json()}</button>
@@ -17,27 +18,6 @@
 </details>
 
 <style>
-  .raw-panel {
-    min-width: 0;
-    overflow: hidden;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-panel);
-    background: var(--color-panel);
-  }
-
-  summary {
-    cursor: pointer;
-    padding: var(--space-4);
-    font-weight: 700;
-  }
-
-  .content {
-    display: grid;
-    gap: var(--space-3);
-    border-top: 1px solid var(--color-border);
-    padding: var(--space-4);
-  }
-
   .toolbar {
     display: flex;
     align-items: center;

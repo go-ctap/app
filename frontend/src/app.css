@@ -1,4 +1,8 @@
+@layer tokens, base, composition, utilities, blocks, exceptions;
+
 @import "./styles/tokens.css";
 @import "./styles/base.css";
 @import "./styles/composition.css";
 @import "./styles/utilities.css";
+@import "./styles/blocks.css";
+@import "./styles/exceptions.css";

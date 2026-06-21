@@ -38,7 +38,7 @@
   }
 </script>
 
-<section class="hero-panel sidebar-layout">
+<section class="hero-panel workbench-panel sidebar-layout" data-padding="none" data-overflow="hidden">
   <div class="hero-main">
     <header class="hero-header">
       <div class="hero-identity">
@@ -82,11 +82,6 @@
 
 <style>
   .hero-panel {
-    min-width: 0;
-    overflow: hidden;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-panel);
-    background: var(--color-panel);
     box-shadow: var(--shadow-hairline);
   }
 
@@ -146,7 +141,7 @@
   h1 {
     overflow: hidden;
     color: var(--color-text);
-    font-size: clamp(1.2rem, 2vw, 1.55rem);
+    font-size: 1.35rem;
     text-overflow: ellipsis;
     white-space: nowrap;
   }

@@ -12,15 +12,15 @@
 </script>
 
 {#if observations.length}
-  <details class="observations-panel">
+  <details class="workbench-disclosure observations-panel">
     <summary>
       <span>{m.mds_observations_title()}</span>
       <span class="count">{m.items_count({ count: observations.length })}</span>
     </summary>
-    <div class="content">
-      <p>{m.mds_observations_description()}</p>
-      <div class="table-wrap">
-        <table>
+    <div class="workbench-disclosure__content">
+      <p class="workbench-panel__copy">{m.mds_observations_description()}</p>
+      <div class="workbench-table-frame">
+        <table class="workbench-table">
           <thead>
             <tr>
               <th>{m.severity()}</th>
@@ -51,20 +51,7 @@
 
 <style>
   .observations-panel {
-    min-width: 0;
-    overflow: hidden;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-panel);
-    background: var(--color-panel);
-  }
-
-  summary {
-    display: flex;
-    cursor: pointer;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-4);
-    font-weight: 700;
+    --table-min-width: 72rem;
   }
 
   .count,
@@ -76,49 +63,8 @@
     font-weight: 700;
   }
 
-  .content {
-    display: grid;
-    gap: var(--space-3);
-    border-top: 1px solid var(--color-border);
-    padding: var(--space-4);
-  }
-
   p {
     margin: 0;
-    color: var(--color-text-muted);
-    font-size: 0.875rem;
-    line-height: 1.5;
-  }
-
-  .table-wrap {
-    overflow: auto;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-control);
-  }
-
-  table {
-    width: 100%;
-    min-width: 72rem;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-  }
-
-  th,
-  td {
-    border-bottom: 1px solid var(--color-border);
-    padding: var(--space-3);
-    text-align: left;
-    vertical-align: top;
-  }
-
-  th {
-    color: var(--color-text-muted);
-    font-size: 0.75rem;
-    text-transform: uppercase;
-  }
-
-  tbody tr:last-child td {
-    border-bottom: 0;
   }
 
   .severity[data-severity="critical"] {

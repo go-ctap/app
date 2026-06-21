@@ -22,8 +22,8 @@
   let { groups = [], warningCount = 0 }: { groups?: OverviewGroup[]; warningCount?: number } = $props();
 </script>
 
-<section class="matrix-panel">
-  <header>
+<section class="matrix-panel workbench-panel">
+  <header class="workbench-panel__header">
     <div>
       <h2>{m.capability_matrix()}</h2>
       <p>{m.capability_matrix_description()}</p>
@@ -33,13 +33,13 @@
     {/if}
   </header>
 
-  <div class="table-wrap">
-    <table>
+  <div class="workbench-table-frame">
+    <table class="workbench-table">
       <thead>
         <tr>
           <th>{m.name()}</th>
           <th>{m.description()}</th>
-          <th class="status-col">{m.status()}</th>
+          <th class="workbench-table__status">{m.status()}</th>
           <th>{m.value()}</th>
         </tr>
       </thead>
@@ -63,7 +63,7 @@
                 {/if}
               </td>
               <td>{row.description}</td>
-              <td class="status-col">
+              <td class="workbench-table__status">
                 <StatusBadge
                   value={row.status}
                   label={overviewStatusLabel(row.status)}
@@ -86,19 +86,7 @@
 
 <style>
   .matrix-panel {
-    display: grid;
-    gap: var(--space-4);
-    min-width: 0;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-panel);
-    background: var(--color-panel);
-    padding: var(--space-4);
-  }
-
-  header {
-    display: flex;
-    justify-content: space-between;
-    gap: var(--space-3);
+    --table-min-width: 58rem;
   }
 
   h2,
@@ -110,12 +98,6 @@
     font-size: 1rem;
   }
 
-  p {
-    color: var(--color-text-muted);
-    font-size: 0.875rem;
-    line-height: 1.5;
-  }
-
   .count-badge {
     align-self: start;
     border: 1px solid var(--color-border);
@@ -125,39 +107,6 @@
     padding: 3px 8px;
     font-size: 0.75rem;
     font-weight: 700;
-  }
-
-  .table-wrap {
-    min-width: 0;
-    overflow: auto;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-control);
-  }
-
-  table {
-    width: 100%;
-    min-width: 58rem;
-    border-collapse: collapse;
-    font-size: 0.85rem;
-  }
-
-  th,
-  td {
-    border-bottom: 1px solid var(--color-border);
-    padding: var(--space-3);
-    text-align: left;
-    vertical-align: top;
-  }
-
-  th {
-    color: var(--color-text-muted);
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-
-  tbody tr:last-child td {
-    border-bottom: 0;
   }
 
   .group-row td {
@@ -182,11 +131,6 @@
 
   tr[data-state="muted"] {
     color: var(--color-text-muted);
-  }
-
-  .status-col {
-    text-align: right;
-    white-space: nowrap;
   }
 
   .empty-cell {

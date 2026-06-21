@@ -4,8 +4,8 @@
   let { rows = [] }: { rows?: string[] } = $props();
 </script>
 
-<section class="loading-panel">
-  <header>
+<section class="loading-panel workbench-panel">
+  <header class="workbench-panel__header">
     <h2>{m.inspection_in_progress()}</h2>
     <p>{m.reading_authenticator_metadata()}</p>
   </header>
@@ -23,12 +23,6 @@
 
 <style>
   .loading-panel {
-    display: grid;
-    gap: var(--space-4);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-panel);
-    background: var(--color-panel);
-    padding: var(--space-4);
   }
 
   h2,
@@ -40,7 +34,6 @@
     font-size: 1rem;
   }
 
-  p,
   td:first-child {
     color: var(--color-text-muted);
   }

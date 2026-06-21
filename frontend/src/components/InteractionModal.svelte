@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { answerPendingInteraction } from "../lib/controller";
-  import { pendingInteraction } from "../lib/stores";
+  import { answerPendingInteraction } from "$lib/controller";
+  import { pendingInteraction } from "$lib/stores";
   import DialogShell from "./DialogShell.svelte";
   import JsonView from "./JsonView.svelte";
   import { m } from "../paraglide/messages.js";
@@ -46,13 +46,13 @@
     {#if kind === "pin"}
       <label class="field">
         <span>{m.pin()}</span>
-        <input bind:value={pin} type="password" autocomplete="off" />
+        <input bind:value={pin} type="password" autocomplete="off" data-dialog-initial-focus />
       </label>
     {/if}
 
     {#snippet actions()}
       <div class="actions cluster">
-        <button class="primary" data-tone={destructive ? "destructive" : "neutral"} type="button" onclick={() => answer(true)}>
+        <button class="primary" data-tone={destructive ? "destructive" : "neutral"} data-primary type="button" onclick={() => answer(true)}>
           {kind === "pin" ? m.send_pin() : m.continue_action()}
         </button>
         <button type="button" onclick={() => answer(false, true)}>{m.cancel()}</button>

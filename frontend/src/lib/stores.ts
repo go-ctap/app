@@ -5,6 +5,7 @@ import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/m
 import type { InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
 import type { Discovery, Envelope, OperationError, SessionStatus } from "./api";
 import { operationEnvelopeLogData } from "./ctapkit-results.js";
+import { sanitizeDisplayData } from "./redaction.js";
 import { m } from "../paraglide/messages.js";
 
 export type MDSLookupViewState = {
@@ -84,46 +85,14 @@ export const sessionProblem = derived(sessionStatus, ($sessionStatus) => $sessio
 
 const LOG_LIMIT = 250;
 let logSequence = 0;
-const REDACTED = "[redacted]";
-const SECRET_FIELD_NAMES = new Set([
-  "pin",
-  "pinCode",
-  "currentPIN",
-  "pinUvAuthToken",
-  "pinUVAuthToken",
-  "newPIN",
-  "newPin",
-  "oldPIN",
-  "oldPin",
-  "confirmationMessage",
-  "resetConfirmation",
-  "resetPhrase",
-]);
-const NORMALIZED_SECRET_FIELD_NAMES = new Set([...SECRET_FIELD_NAMES].map(normalizeFieldName));
 
 function nextLogEntryId() {
   logSequence += 1;
   return `log-${logSequence}`;
 }
 
-function normalizeFieldName(value: string) {
-  return value.replace(/[^a-z0-9]/gi, "").toLowerCase();
-}
-
-function isSecretFieldName(key: string) {
-  return NORMALIZED_SECRET_FIELD_NAMES.has(normalizeFieldName(key));
-}
-
 export function sanitizeLogData(value: unknown, depth = 0): unknown {
-  if (depth > 6) return "[truncated]";
-  if (!value || typeof value !== "object") return value;
-  if (Array.isArray(value)) return value.map((item) => sanitizeLogData(item, depth + 1));
-
-  const output: Record<string, unknown> = {};
-  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
-    output[key] = isSecretFieldName(key) ? REDACTED : sanitizeLogData(item, depth + 1);
-  }
-  return output;
+  return sanitizeDisplayData(value, depth);
 }
 
 export function appendLogEntry(entry: Omit<WorkbenchLogEntry, "id" | "timestamp"> & { id?: string; timestamp?: string }) {

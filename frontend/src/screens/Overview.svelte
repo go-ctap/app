@@ -21,6 +21,7 @@
     buildOverviewRows,
     groupOverviewRows,
   } from "$lib/overview-rules";
+  import { sanitizedJson } from "$lib/redaction";
   import EmptyState from "../components/EmptyState.svelte";
   import { m } from "../paraglide/messages.js";
   import OverviewCapabilityMatrix from "../components/OverviewCapabilityMatrix.svelte";
@@ -69,7 +70,7 @@
   }
 
   async function copyReport() {
-    await navigator.clipboard?.writeText(JSON.stringify(report ?? null, null, 2));
+    await navigator.clipboard?.writeText(sanitizedJson(info ?? null));
   }
 </script>
 

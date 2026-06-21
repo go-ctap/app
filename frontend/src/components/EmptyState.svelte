@@ -23,7 +23,7 @@
 </script>
 
 <section class="empty-state" data-variant={variant}>
-  <div class="empty-icon" aria-hidden="true">
+  <div class="empty-state__icon" aria-hidden="true">
     {#if icon}
       {@render icon()}
     {:else}
@@ -45,35 +45,6 @@
 </section>
 
 <style>
-  .empty-state {
-    display: grid;
-    place-items: center;
-    align-content: center;
-    gap: var(--space-2);
-    min-height: calc(100vh - 9rem);
-    border: 1px dashed var(--color-border);
-    border-radius: var(--radius-panel);
-    background: color-mix(in srgb, var(--color-panel) 65%, transparent);
-    color: var(--color-text-muted);
-    padding: var(--space-6);
-    text-align: center;
-  }
-
-  .empty-state[data-variant="compact"] {
-    min-height: 10rem;
-    padding: var(--space-4);
-  }
-
-  .empty-icon {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-panel);
-    background: var(--color-panel);
-  }
-
   .eyebrow,
   h2,
   p {

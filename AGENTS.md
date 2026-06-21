@@ -27,6 +27,7 @@
 - `data-*` attributes are the required CUBE Exception mechanism for real state/variant deviations. They are not an escape hatch from CUBE.
 - Do not introduce BEM-style modifier classes, Tailwind-like utility piles, ad hoc scoped styling, or component variants that bypass the CUBE layers.
 - Use Bits UI directly for complex accessible behavior: dialogs, menus, popovers, selects, tabs, tooltips, focus-managed interactions.
+- Use https://bits-ui.com/llms.txt to read Bits UI documentation
 - Screens compose product/workbench components. Product components compose small UI components. UI components may wrap Bits UI.
 - Keep state in stores/controllers under `frontend/src/lib/`; screens should not call raw generated bindings directly.
 

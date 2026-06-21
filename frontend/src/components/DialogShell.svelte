@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { onMount, tick, type Snippet } from "svelte";
+  import { tick, type Snippet } from "svelte";
+  import { Dialog } from "bits-ui";
   import { X } from "@lucide/svelte";
   import { m } from "../paraglide/messages.js";
 
@@ -28,13 +29,17 @@
   }: Props = $props();
 
   let dialog: HTMLDivElement | null = $state(null);
-  let restoreTo: Element | null = null;
+  let restoreTo: Element | null = typeof document !== "undefined" ? document.activeElement : null;
+
+  function focusInitialTarget() {
+    const focusTarget =
+      dialog?.querySelector<HTMLElement>("[data-dialog-initial-focus]") ||
+      dialog?.querySelector<HTMLElement>("[data-primary]") ||
+      dialog;
+    focusTarget?.focus();
+  }
 
   function handleKeydown(event: KeyboardEvent) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      close();
-    }
     if (event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
       const target = event.target as HTMLElement;
       if (target?.tagName !== "TEXTAREA") {
@@ -54,97 +59,69 @@
     }
   }
 
-  onMount(async () => {
-    restoreTo = document.activeElement;
+  async function handleOpenAutoFocus(event: Event) {
+    event.preventDefault();
     await tick();
-    const focusTarget = dialog?.querySelector<HTMLElement>("input, select, textarea, button, [tabindex]:not([tabindex='-1'])");
-    focusTarget?.focus();
-    return () => {
-      if (restoreTo instanceof HTMLElement) restoreTo.focus();
-    };
-  });
+    focusInitialTarget();
+  }
+
+  function handleCloseAutoFocus(event: Event) {
+    event.preventDefault();
+    if (restoreTo instanceof HTMLElement) restoreTo.focus();
+  }
 </script>
 
-<div class="dialog-backdrop" role="presentation">
-  <div
-    bind:this={dialog}
-    class="dialog-panel"
-    data-size={wide ? "wide" : "default"}
-    data-tone={destructive ? "destructive" : "neutral"}
-    role="dialog"
-    tabindex="-1"
-    aria-modal="true"
-    aria-label={title}
-    onkeydown={handleKeydown}
-  >
-    <header class="dialog-header">
-      <div>
-        {#if eyebrow}
-          <p class="eyebrow">{eyebrow}</p>
-        {/if}
-        <h2>{title}</h2>
+<Dialog.Root open={true} onOpenChange={(open) => !open && close()}>
+  <Dialog.Portal>
+    <Dialog.Overlay />
+    <Dialog.Content
+      bind:ref={dialog}
+      data-size={wide ? "wide" : "default"}
+      data-tone={destructive ? "destructive" : "neutral"}
+      tabindex="-1"
+      aria-label={title}
+      trapFocus={true}
+      onOpenAutoFocus={handleOpenAutoFocus}
+      onCloseAutoFocus={handleCloseAutoFocus}
+      onkeydown={handleKeydown}
+    >
+      <header class="dialog-header">
+        <div>
+          {#if eyebrow}
+            <p class="eyebrow">{eyebrow}</p>
+          {/if}
+          <Dialog.Title level={2}>{title}</Dialog.Title>
+        </div>
+        <Dialog.Close type="button" aria-label={closeLabel}>
+          <X size={16} />
+        </Dialog.Close>
+      </header>
+
+      <div class="dialog-body">
+        {@render children?.()}
       </div>
-      <button class="icon-close" type="button" onclick={close} aria-label={closeLabel}>
-        <X size={16} />
-      </button>
-    </header>
 
-    <div class="dialog-body">
-      {@render children?.()}
-    </div>
-
-    {#if actions}
-      {@render actions()}
-    {:else}
-      <footer class="dialog-actions cluster">
-        <button class="primary" data-tone={destructive ? "destructive" : "neutral"} data-primary type="button" onclick={primary}>Continue</button>
-        <button type="button" onclick={close}>{closeLabel}</button>
-      </footer>
-    {/if}
-  </div>
-</div>
+      {#if actions}
+        {@render actions()}
+      {:else}
+        <footer class="dialog-actions cluster">
+          <button class="primary" data-tone={destructive ? "destructive" : "neutral"} data-primary type="button" onclick={primary}>Continue</button>
+          <button type="button" onclick={close}>{closeLabel}</button>
+        </footer>
+      {/if}
+    </Dialog.Content>
+  </Dialog.Portal>
+</Dialog.Root>
 
 <style>
-  .dialog-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    display: grid;
-    place-items: center;
-    background: rgb(16 22 20 / 0.36);
-    padding: var(--space-4);
-  }
-
-  .dialog-panel {
-    display: grid;
-    gap: var(--space-4);
-    width: min(32rem, 100%);
-    max-height: calc(100vh - 2rem);
-    overflow: auto;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-panel);
-    background: var(--color-panel);
-    box-shadow: var(--shadow-panel);
-    padding: var(--space-5);
-  }
-
-  .dialog-panel[data-size="wide"] {
-    width: min(52rem, 100%);
-  }
-
   .dialog-header {
     display: flex;
     justify-content: space-between;
     gap: var(--space-4);
   }
 
-  h2,
   .eyebrow {
     margin: 0;
-  }
-
-  h2 {
-    font-size: 1.05rem;
   }
 
   .eyebrow {
@@ -180,9 +157,4 @@
     background: var(--color-danger);
   }
 
-  .icon-close {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-  }
 </style>

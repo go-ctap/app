@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { stateLabel } from "../lib/format";
+  import { stateLabel } from "$lib/format";
   import { m } from "../paraglide/messages.js";
 
   type Props = {

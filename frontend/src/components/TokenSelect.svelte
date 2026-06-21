@@ -56,7 +56,7 @@
 
   function handleChange(event: Event) {
     const nextValue = (event.currentTarget as HTMLSelectElement).value;
-    if (!nextValue || nextValue === value) return;
+    if (nextValue === value) return;
     void onSelect(nextValue);
   }
 </script>

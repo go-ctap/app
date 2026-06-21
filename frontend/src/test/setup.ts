@@ -1,3 +1,5 @@
+import "@testing-library/jest-dom/vitest";
+
 if (!("window" in globalThis)) {
   Object.defineProperty(globalThis, "window", {
     value: {
