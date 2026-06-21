@@ -25,7 +25,7 @@
     <div class="settings-field">
       <span>{m.language()}</span>
       <Select.Root type="single" value={$currentLocale} onValueChange={handleLocaleChange}>
-        <Select.Trigger class="w-full min-h-[38px]" aria-label={m.language()}>
+        <Select.Trigger class="settings-language-trigger" aria-label={m.language()}>
           {localeLabel($currentLocale)}
         </Select.Trigger>
         <Select.Content side="bottom" align="end">
@@ -97,6 +97,11 @@
       color: var(--muted-foreground);
       font-size: 0.78rem;
       font-weight: 700;
+    }
+
+    :global(.settings-language-trigger) {
+      width: 100%;
+      min-height: 38px;
     }
 
     @media (max-width: 720px) {

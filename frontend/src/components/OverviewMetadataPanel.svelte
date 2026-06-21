@@ -4,6 +4,7 @@
 
 <script lang="ts">
   import { Button } from "$lib/components/ui/button/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
   import type { OverviewHeroFact, OverviewHeroModel } from "$lib/overview-rules";
   import { m } from "../paraglide/messages.js";
 
@@ -59,61 +60,47 @@
   </section>
 {/snippet}
 
-<aside class="metadata-panel" aria-label={m.metadata_service()}>
-  <header>
-    <div>
-      <h2>{m.metadata_service()}</h2>
-      <p>{hero.mdsDescription}</p>
-    </div>
-    <Button variant="outline" type="button" onclick={onRefresh} disabled={loading || !hero.aaguidAvailable}>
-      <RefreshCw data-icon="inline-start" class={loading ? "u-spin" : undefined} />
-      {loading ? m.mds_refreshing() : m.mds_refresh()}
-    </Button>
-  </header>
+<Card.Root class="mds-card" aria-label={m.metadata_service()}>
+  <Card.Header>
+    <Card.Title>{m.metadata_service()}</Card.Title>
+    <Card.Description>{hero.mdsDescription}</Card.Description>
+    <Card.Action>
+      <Button variant="outline" type="button" onclick={onRefresh} disabled={loading || !hero.aaguidAvailable}>
+        <RefreshCw data-icon="inline-start" class={loading ? "u-spin" : undefined} />
+        {loading ? m.mds_refreshing() : m.mds_refresh()}
+      </Button>
+    </Card.Action>
+  </Card.Header>
 
-  <section class="aaguid-section">
-    <div class="aaguid-header cluster">
-      <span>{m.mds_aaguid()}</span>
-      {#if hero.aaguidAvailable}
-        <Button variant="ghost" size="icon-xs" type="button" onclick={copyAaguid} aria-label={m.copy_label({ label: "AAGUID" })}>
-          <Copy />
-        </Button>
-      {/if}
-    </div>
-    <code title={hero.aaguid}>{hero.aaguid}</code>
-  </section>
+  <Card.Content class="mds-content">
+    <section class="aaguid-section">
+      <div class="aaguid-header cluster">
+        <span>{m.mds_aaguid()}</span>
+        {#if hero.aaguidAvailable}
+          <Button variant="ghost" size="icon-xs" type="button" onclick={copyAaguid} aria-label={m.copy_label({ label: "AAGUID" })}>
+            <Copy />
+          </Button>
+        {/if}
+      </div>
+      <code title={hero.aaguid}>{hero.aaguid}</code>
+    </section>
 
-  {@render factSection(m.mds_latest_status_report(), hero.mdsStatusFacts)}
-  {@render factSection(m.mds_metadata_blob(), hero.mdsBlobFacts)}
-</aside>
+    {@render factSection(m.mds_latest_status_report(), hero.mdsStatusFacts)}
+    {@render factSection(m.mds_metadata_blob(), hero.mdsBlobFacts)}
+  </Card.Content>
+</Card.Root>
 
 <style>
 @layer blocks {
-    .metadata-panel {
+    :global(.mds-card) {
+      min-width: 0;
+    }
+
+    :global(.mds-content) {
       display: grid;
       align-content: start;
       gap: var(--space-4);
       min-width: 0;
-      border-top: 1px solid var(--border);
-      background: var(--muted);
-      padding: var(--space-5);
-    }
-
-    header {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: var(--space-3);
-      align-items: start;
-    }
-
-    h2,
-    h3,
-    p {
-      margin: 0;
-    }
-
-    h2 {
-      font-size: 0.95rem;
     }
 
     h3,
@@ -124,10 +111,8 @@
       text-transform: uppercase;
     }
 
-    p {
-      color: var(--muted-foreground);
-      font-size: 0.8rem;
-      line-height: 1.55;
+    h3 {
+      margin: 0;
     }
 
     .aaguid-section,
@@ -225,11 +210,5 @@
       color: var(--destructive);
     }
 
-    @media (min-width: 1020px) {
-      .metadata-panel {
-        border-top: 0;
-        border-left: 1px solid var(--border);
-      }
-    }
 }
 </style>

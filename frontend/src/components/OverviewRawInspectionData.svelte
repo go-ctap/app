@@ -8,9 +8,9 @@
   let { info = null, onCopy = () => {} }: { info?: OverviewInspectResult["info"] | null; onCopy?: () => void | Promise<void> } = $props();
 </script>
 
-<Collapsible.Root class="min-w-0 overflow-hidden border bg-card">
-  <Collapsible.Trigger class="flex w-full cursor-pointer items-center border-0 bg-transparent p-4 font-bold text-foreground">{m.raw_inspection_data()}</Collapsible.Trigger>
-  <Collapsible.Content class="grid gap-3 border-t p-4">
+<Collapsible.Root class="raw-inspection">
+  <Collapsible.Trigger class="raw-inspection-trigger">{m.raw_inspection_data()}</Collapsible.Trigger>
+  <Collapsible.Content class="raw-inspection-content">
     <div class="toolbar">
       <span><code>ctapkit</code> {m.raw_operation_response()}</span>
       <Button variant="outline" type="button" onclick={onCopy}>{m.copy_json()}</Button>
@@ -21,6 +21,32 @@
 
 <style>
 @layer blocks {
+  :global(.raw-inspection) {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+
+  :global(.raw-inspection-trigger) {
+    display: flex;
+    width: 100%;
+    cursor: pointer;
+    align-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--foreground);
+    padding: var(--space-4);
+    font-weight: 700;
+  }
+
+  :global(.raw-inspection-content) {
+    display: grid;
+    gap: var(--space-3);
+    border-top: 1px solid var(--border);
+    padding: var(--space-4);
+  }
+
   .toolbar {
     display: flex;
     align-items: center;

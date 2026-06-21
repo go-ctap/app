@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Activity, Gauge, Settings, ShieldCheck } from "@lucide/svelte";
   import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
+  import * as Item from "$lib/components/ui/item/index.js";
   import type { ActiveScreen, StatusBarState } from "$lib/stores";
   import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
   import type { SessionStatus } from "$lib/api";
@@ -50,7 +50,7 @@
       <Button
         type="button"
         variant={activeScreen === item.id ? "secondary" : "ghost"}
-        class="w-full justify-start text-left max-[900px]:justify-center max-[900px]:px-0"
+        class="sidebar-nav-button"
         data-active={activeScreen === item.id ? "true" : undefined}
         aria-current={activeScreen === item.id ? "page" : undefined}
         aria-label={item.label}
@@ -62,29 +62,27 @@
     {/each}
   </nav>
 
-  <Card.Root size="sm" class="min-w-0 max-[900px]:place-items-center" aria-label={m.current_activity()}>
-    <Card.Header class="flex items-center gap-2 text-muted-foreground text-[0.72rem] font-bold uppercase">
-      <Activity />
-      <span class="max-[900px]:hidden">{sessionStateLabel(sessionStatus.state)}</span>
-    </Card.Header>
-    <Card.Content>
-      <Card.Title class="truncate text-[0.84rem] leading-tight max-[900px]:hidden">{statusTitle}</Card.Title>
-      <Card.Description class="line-clamp-2 text-[0.76rem] leading-snug max-[900px]:hidden">{statusDetail}</Card.Description>
-    </Card.Content>
-  </Card.Root>
+  <Item.Root variant="outline" size="sm" class="sidebar-status" aria-label={m.current_activity()}>
+    <Item.Media variant="icon">
+      <Activity aria-hidden="true" />
+    </Item.Media>
+    <Item.Content>
+      <span class="sidebar-status-copy">{sessionStateLabel(sessionStatus.state)}</span>
+      <Item.Title class="sidebar-status-title w-full line-clamp-2">{statusTitle}</Item.Title>
+      <Item.Description class="sidebar-status-detail line-clamp-3">{statusDetail}</Item.Description>
+    </Item.Content>
+  </Item.Root>
 </aside>
 
 <style>
 @layer blocks {
     .app-sidebar {
       display: grid;
-      grid-template-rows: auto minmax(0, 1fr) auto;
-      gap: var(--space-5);
+      grid-template-rows: 58px minmax(0, 1fr) auto;
       min-width: 0;
       height: 100vh;
       border-right: 1px solid var(--border);
       background: color-mix(in srgb, var(--card) 86%, var(--background));
-      padding: var(--space-4);
     }
 
     .sidebar-brand {
@@ -93,6 +91,11 @@
       gap: var(--space-3);
       align-items: center;
       min-width: 0;
+      border-bottom: 1px solid var(--topbar-border, var(--border));
+      background: var(--topbar-background, var(--card));
+      padding: 0 var(--space-4);
+      --wails-non-client-region: caption;
+      --wails-draggable: drag;
     }
 
     .sidebar-mark {
@@ -114,10 +117,12 @@
     }
 
     .sidebar-title,
-    .sidebar-subtitle,
-    .sidebar-title {
+    .sidebar-subtitle {
+      overflow: hidden;
       color: var(--foreground);
       font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .sidebar-title {
@@ -127,7 +132,6 @@
     .sidebar-subtitle {
       color: var(--muted-foreground);
       font-size: 0.72rem;
-      white-space: nowrap;
     }
 
     .sidebar-nav {
@@ -135,22 +139,80 @@
       align-content: start;
       gap: var(--space-1);
       min-width: 0;
+      padding: var(--space-4);
+    }
+
+    .sidebar-nav :global(.sidebar-nav-button) {
+      width: 100%;
+      justify-content: flex-start;
+      text-align: left;
+    }
+
+    :global(.sidebar-status) {
+      width: auto;
+      min-width: 0;
+      margin: 0 var(--space-3) var(--space-3);
+      align-items: flex-start;
+    }
+
+    :global(.sidebar-status [data-slot="item-media"]) {
+      color: var(--muted-foreground);
+    }
+
+    .sidebar-status-copy {
+      font-size: 0.72rem;
+      font-weight: 700;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    :global(.sidebar-status [data-slot="item-content"]) {
+      min-width: 0;
+      gap: var(--space-1);
+    }
+
+    :global(.sidebar-status-title) {
+      width: 100%;
+      font-size: 0.84rem;
+      line-height: 1.3;
+      overflow-wrap: anywhere;
+    }
+
+    :global(.sidebar-status-detail) {
+      font-size: 0.76rem;
+      line-height: 1.45;
     }
 
     @media (max-width: 900px) {
-      .app-sidebar {
-        gap: var(--space-4);
-        padding: var(--space-3);
-      }
-
       .sidebar-brand {
         grid-template-columns: 1fr;
         justify-items: center;
+        padding: 0 var(--space-3);
+      }
+
+      .sidebar-nav {
+        padding: var(--space-3);
+      }
+
+      :global(.sidebar-status) {
+        margin: 0 var(--space-3) var(--space-3);
       }
 
       .sidebar-brand-copy,
-      .sidebar-nav-label {
+      .sidebar-nav-label,
+      .sidebar-status-copy,
+      :global(.sidebar-status-title),
+      :global(.sidebar-status-detail) {
         display: none;
+      }
+
+      .sidebar-nav :global(.sidebar-nav-button) {
+        justify-content: center;
+        padding-inline: 0;
+      }
+
+      :global(.sidebar-status) {
+        place-items: center;
       }
     }
 }

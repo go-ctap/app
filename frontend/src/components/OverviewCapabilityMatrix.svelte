@@ -39,7 +39,7 @@
   <Card.Content>
     <div class="table-frame">
       <Table.Root class="min-w-[58rem]">
-        <Table.Header>
+        <Table.Header class="[&_tr]:bg-muted/40">
           <Table.Row>
             <Table.Head>{m.name()}</Table.Head>
             <Table.Head>{m.description()}</Table.Head>
@@ -50,7 +50,7 @@
         <Table.Body>
           {#each groups as group (group.name)}
             {@const GroupIcon = GROUP_ICONS[group.rows[0]?.group] || Info}
-            <Table.Row>
+            <Table.Row class="bg-muted/30 hover:bg-muted/30">
               <Table.Cell colspan={4}>
                 <span class="group-label">
                   <GroupIcon size={15} />

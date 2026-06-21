@@ -1,8 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Copy, Minus, Square, X } from "@lucide/svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+  import Icons from "./Icons.svelte";
+  import WindowControlButton from "./WindowControlButton.svelte";
   import { closeWindow, isWindowMaximized, minimizeWindow, toggleMaximizeWindow } from "./window";
   import { m } from "../../paraglide/messages.js";
 
@@ -34,86 +33,23 @@
   }
 </script>
 
-<Tooltip.Provider delayDuration={450} skipDelayDuration={80}>
-  <div class="window-controls" data-window-drag-exclude aria-label={m.window_controls()}>
-    <Tooltip.Root>
-      <Tooltip.Trigger>
-        {#snippet child({ props })}
-          <Button
-            {...props}
-            class="h-full min-h-0 w-[46px] rounded-none border-0 bg-transparent p-0 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
-            variant="ghost"
-            style="--wails-non-client-region: minimize"
-            data-window-region="minimize"
-            type="button"
-            aria-label={m.minimize_window()}
-            onclick={handleMinimize}
-          >
-            <Minus aria-hidden="true" />
-          </Button>
-        {/snippet}
-      </Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Content side="bottom" sideOffset={7}>
-          {m.minimize_window()}
-        </Tooltip.Content>
-      </Tooltip.Portal>
-    </Tooltip.Root>
+<div class="window-controls" aria-label={m.window_controls()}>
+  <WindowControlButton label={m.minimize()} region="minimize" onclick={handleMinimize}>
+    <Icons icon="minimizeWin" aria-hidden="true" />
+  </WindowControlButton>
 
-    <Tooltip.Root>
-      <Tooltip.Trigger>
-        {#snippet child({ props })}
-          <Button
-            {...props}
-            class="h-full min-h-0 w-[46px] rounded-none border-0 bg-transparent p-0 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
-            variant="ghost"
-            style="--wails-non-client-region: maximize"
-            data-window-region="maximize"
-            type="button"
-            aria-label={maximized ? m.restore_window() : m.maximize_window()}
-            onclick={handleToggleMaximize}
-          >
-            {#if maximized}
-              <Copy aria-hidden="true" />
-            {:else}
-              <Square aria-hidden="true" />
-            {/if}
-          </Button>
-        {/snippet}
-      </Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Content side="bottom" sideOffset={7}>
-          {maximized ? m.restore_window() : m.maximize_window()}
-        </Tooltip.Content>
-      </Tooltip.Portal>
-    </Tooltip.Root>
+  <WindowControlButton label={maximized ? m.restore() : m.maximize()} region="maximize" onclick={handleToggleMaximize}>
+    {#if maximized}
+      <Icons icon="maximizeRestoreWin" aria-hidden="true" />
+    {:else}
+      <Icons icon="maximizeWin" aria-hidden="true" />
+    {/if}
+  </WindowControlButton>
 
-    <Tooltip.Root>
-      <Tooltip.Trigger>
-        {#snippet child({ props })}
-          <Button
-            {...props}
-            class="h-full min-h-0 w-[46px] rounded-none border-0 bg-transparent p-0 text-muted-foreground hover:bg-destructive hover:text-background"
-            variant="ghost"
-            style="--wails-non-client-region: close"
-            data-action="close"
-            data-window-region="close"
-            type="button"
-            aria-label={m.close_window()}
-            onclick={handleClose}
-          >
-            <X aria-hidden="true" />
-          </Button>
-        {/snippet}
-      </Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Content side="bottom" sideOffset={7}>
-          {m.close_window()}
-        </Tooltip.Content>
-      </Tooltip.Portal>
-    </Tooltip.Root>
-  </div>
-</Tooltip.Provider>
+  <WindowControlButton label={m.close()} region="close" action="close" onclick={handleClose}>
+    <Icons icon="closeWin" aria-hidden="true" />
+  </WindowControlButton>
+</div>
 
 <style>
 @layer blocks {

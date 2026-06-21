@@ -1,8 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import { CircleDashed } from "@lucide/svelte";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { cn } from "$lib/utils.js";
+  import * as Empty from "$lib/components/ui/empty/index.js";
   import { m } from "../paraglide/messages.js";
 
   type Props = {
@@ -24,43 +23,34 @@
   }: Props = $props();
 </script>
 
-<Card.Root class={cn("grid place-items-center content-center border-dashed text-center", variant === "compact" ? "min-h-40" : "min-h-[calc(100vh-9rem)]")}>
-  <Card.Header class="justify-items-center">
-    <div class="empty-icon" aria-hidden="true">
+<Empty.Root class="empty-state" data-variant={variant}>
+  <Empty.Header>
+    <Empty.Media variant="icon" aria-hidden="true">
       {#if icon}
         {@render icon()}
       {:else}
-        <CircleDashed size={24} />
+        <CircleDashed />
       {/if}
-    </div>
+    </Empty.Media>
     {#if eyebrow}
       <p class="empty-eyebrow">{eyebrow}</p>
     {/if}
-    <Card.Title>{title}</Card.Title>
+    <Empty.Title>{title}</Empty.Title>
     {#if message}
-      <Card.Description>{message}</Card.Description>
+      <Empty.Description>{message}</Empty.Description>
     {/if}
-  </Card.Header>
+  </Empty.Header>
   {#if actions}
-    <Card.Content>
+    <Empty.Content>
       <div class="empty-actions">
         {@render actions()}
       </div>
-    </Card.Content>
+    </Empty.Content>
   {/if}
-</Card.Root>
+</Empty.Root>
 
 <style>
 @layer blocks {
-  .empty-icon {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border: 1px solid var(--border);
-    margin-bottom: var(--space-2);
-  }
-
   .empty-eyebrow {
     margin: 0;
     color: var(--muted-foreground);
@@ -74,6 +64,39 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: var(--space-2);
+  }
+
+  :global(.empty-state) {
+    min-height: max(100%, calc(100vh - 9rem));
+    border: 1px dashed color-mix(in srgb, var(--muted-foreground) 42%, var(--border));
+    background:
+      linear-gradient(var(--card), var(--card)) padding-box,
+      color-mix(in srgb, var(--muted) 22%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--background) 75%, transparent);
+    text-align: center;
+  }
+
+  :global(.empty-state [data-slot="empty-icon"]) {
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--muted) 55%, transparent);
+  }
+
+  :global(.empty-state [data-slot="empty-header"]) {
+    width: min(100%, 34rem);
+    max-width: none;
+  }
+
+  :global(.empty-state [data-slot="empty-title"]),
+  :global(.empty-state [data-slot="empty-description"]) {
+    width: 100%;
+  }
+
+  :global(.empty-state [data-slot="empty-description"]) {
+    max-width: 30rem;
+  }
+
+  :global(.empty-state[data-variant="compact"]) {
+    min-height: 10rem;
   }
 }
 </style>

@@ -48,9 +48,9 @@
 </script>
 
 <Tooltip.Provider delayDuration={450} skipDelayDuration={80}>
-  <div class="auth-titlebar" data-window-drag-exclude data-busy={disabled ? "true" : undefined}>
+  <div class="auth-titlebar" data-busy={disabled ? "true" : undefined}>
     <Select.Root type="single" value={$selectedSelector} onValueChange={handleSelect} disabled={disabled} items={selectItems}>
-      <Select.Trigger aria-label={m.select_authenticator()} data-window-drag-exclude>
+      <Select.Trigger aria-label={m.select_authenticator()}>
         {selectedName}
       </Select.Trigger>
 
@@ -109,7 +109,14 @@
       display: flex;
       align-items: center;
       gap: var(--space-2);
+      width: 100%;
+      height: 100%;
       min-width: 0;
+    }
+
+    .auth-titlebar :global(button),
+    .auth-titlebar :global([role="button"]) {
+      --wails-draggable: no-drag;
     }
 
     .auth-titlebar[data-busy="true"] {

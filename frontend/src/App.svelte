@@ -144,11 +144,13 @@
 	@layer blocks {
 		.app-shell {
 			display: grid;
-			grid-template-columns: 16rem minmax(0, 1fr);
+			grid-template-columns: 17.5rem minmax(0, 1fr);
 			min-width: 0;
 			height: 100vh;
 			background: var(--background);
 			color: var(--foreground);
+			--topbar-background: color-mix(in srgb, var(--card) 92%, var(--background));
+			--topbar-border: var(--border);
 		}
 		.app-workspace {
 			display: grid;
@@ -159,14 +161,13 @@
 		.app-header {
 			z-index: 10;
 			min-width: 0;
-			border-bottom: 1px solid var(--border);
-			background: color-mix(in srgb, var(--card) 92%, transparent);
-			box-shadow: 0 1px 0 color-mix(in srgb, var(--border) 70%, transparent);
+			border-bottom: 1px solid var(--topbar-border);
+			background: var(--topbar-background);
 		}
 		.titlebar-content {
 			display: grid;
 			grid-template-columns: minmax(18rem, 38rem) minmax(2rem, 1fr) auto;
-			align-items: center;
+			align-items: stretch;
 			height: 58px;
 			min-width: 0;
 			padding: 0 0 0 var(--space-4);
@@ -175,8 +176,10 @@
 			min-width: 0;
 			height: 100%;
 			--wails-non-client-region: caption;
+			--wails-draggable: drag;
 		}
 		.main-view {
+			display: grid;
 			min-width: 0;
 			min-height: 0;
 			overflow: auto;
@@ -186,7 +189,7 @@
 			position: fixed;
 			top: 70px;
 			right: var(--space-4);
-			left: calc(16rem + var(--space-4));
+			left: calc(17.5rem + var(--space-4));
 			z-index: 20;
 		}
 		.empty-workbench {

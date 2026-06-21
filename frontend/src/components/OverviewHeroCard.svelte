@@ -40,70 +40,83 @@
   }
 </script>
 
-<Card.Root class="grid min-w-0 overflow-hidden py-0 min-[1020px]:grid-cols-[minmax(0,1fr)_24rem]">
-  <Card.Content class="grid min-w-0 gap-5 p-5">
-    <header class="hero-header">
+<div class="overview-summary-grid">
+  <Card.Root class="hero-card">
+    <Card.Header class="hero-header">
       <div class="hero-identity">
         <div class="token-icon">
           {#if hero.iconSrc}
-            <img src={hero.iconSrc} width="48" height="48" alt="" />
+            <img src={hero.iconSrc} alt="" />
           {:else}
             <ShieldCheck size={24} strokeWidth={2.1} />
           {/if}
         </div>
         <div class="hero-copy">
-          <div class="badges cluster">
-            <StatusBadge value={sessionState} label={sessionLabel} />
-            <StatusBadge value={hero.mdsState} label={hero.mdsStateLabel} tone={mdsTone(hero.mdsState)} />
+          <Card.Title class="hero-title"><h1>{hero.title}</h1></Card.Title>
+          <div class="hero-meta">
+            <div class="badges cluster">
+              <StatusBadge value={sessionState} label={sessionLabel} />
+              <StatusBadge value={hero.mdsState} label={hero.mdsStateLabel} tone={mdsTone(hero.mdsState)} />
+            </div>
+            <Card.Description class="hero-subtitle">{hero.subtitle}</Card.Description>
           </div>
-          <h1>{hero.title}</h1>
-          <p>{hero.subtitle}</p>
         </div>
       </div>
 
-      <Button variant="outline" type="button" onclick={onReload} disabled={reloadDisabled}>
-        {loading ? m.reloading() : m.reload_overview()}
-      </Button>
-    </header>
+      <Card.Action>
+        <Button variant="outline" type="button" onclick={onReload} disabled={reloadDisabled}>
+          {loading ? m.reloading() : m.reload_overview()}
+        </Button>
+      </Card.Action>
+    </Card.Header>
 
-    <div class="hero-description flow">
-      <p class="eyebrow">{m.overview_hero_heading()}</p>
-      <h2>{m.overview_hero_title()}</h2>
-      <p>{m.overview_hero_description()}</p>
-    </div>
+    <Card.Content class="hero-content">
+      <div class="hero-description flow">
+        <p class="eyebrow">{m.overview_hero_heading()}</p>
+        <h2>{m.overview_hero_title()}</h2>
+        <p>{m.overview_hero_description()}</p>
+      </div>
 
-    <div class="signal-grid switcher">
-      {#each signalGroups as group (group.id)}
-        <OverviewSignalGroup {group} />
-      {/each}
-    </div>
-  </Card.Content>
+      <div class="signal-grid switcher">
+        {#each signalGroups as group (group.id)}
+          <OverviewSignalGroup {group} />
+        {/each}
+      </div>
+    </Card.Content>
+  </Card.Root>
 
   <OverviewMetadataPanel {hero} loading={mdsLoading} onRefresh={onRefreshMDS} />
-</Card.Root>
+</div>
 
 <style>
 @layer blocks {
-    .hero-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
+    .overview-summary-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-4);
+      min-width: 0;
+    }
+
+    :global(.hero-card) {
+      min-width: 0;
+    }
+
+    :global(.hero-header) {
       gap: var(--space-4);
       min-width: 0;
     }
 
     .hero-identity {
       display: grid;
-      grid-template-columns: 48px minmax(0, 1fr);
+      grid-template-columns: 64px minmax(0, 1fr);
       gap: var(--space-3);
+      align-items: center;
       min-width: 0;
     }
 
     .token-icon {
       display: grid;
       place-items: center;
-      width: 48px;
-      height: 48px;
       overflow: hidden;
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -120,20 +133,51 @@
 
     .hero-copy {
       display: grid;
-      gap: var(--space-2);
+      align-content: center;
+      gap: var(--space-1);
+      min-width: 0;
+      min-height: 64px;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      column-gap: var(--space-3);
+      row-gap: var(--space-1);
+      align-items: baseline;
       min-width: 0;
     }
 
-    h1,
+    .hero-meta .badges {
+      flex: 0 0 auto;
+      --cluster-align: baseline;
+      --cluster-space: var(--space-1);
+    }
+
     h2,
     p {
       margin: 0;
     }
 
-    h1 {
+    :global(.hero-title) {
       overflow: hidden;
       color: var(--foreground);
       font-size: 1.35rem;
+      line-height: 1.1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    :global(.hero-title h1) {
+      margin: 0;
+      font: inherit;
+    }
+
+    :global(.hero-subtitle) {
+      min-width: 12rem;
+      overflow: hidden;
+      flex: 1 1 16rem;
+      line-height: 1.2;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -164,9 +208,29 @@
       --switcher-threshold: 42rem;
     }
 
+    :global(.hero-content) {
+      display: grid;
+      gap: var(--space-5);
+      min-width: 0;
+    }
+
+    @media (min-width: 1020px) {
+      .overview-summary-grid {
+        grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr);
+      }
+    }
+
     @media (max-width: 720px) {
-      .hero-header {
+      :global(.hero-header) {
         display: grid;
+      }
+
+      .hero-meta {
+        display: grid;
+      }
+
+      :global(.hero-subtitle) {
+        min-width: 0;
       }
     }
 }

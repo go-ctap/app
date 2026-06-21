@@ -21,15 +21,15 @@
 </script>
 
 {#if observations.length}
-  <Collapsible.Root class="min-w-0 overflow-hidden border bg-card">
-    <Collapsible.Trigger class="flex w-full cursor-pointer items-center justify-between gap-3 border-0 bg-transparent p-4 font-bold text-foreground">
+  <Collapsible.Root class="mds-observations">
+    <Collapsible.Trigger class="mds-observations-trigger">
       <span>{m.mds_observations_title()}</span>
       <Badge variant="outline">{m.items_count({ count: observations.length })}</Badge>
     </Collapsible.Trigger>
-    <Collapsible.Content class="grid gap-3 border-t p-4">
+    <Collapsible.Content class="mds-observations-content">
       <p class="description">{m.mds_observations_description()}</p>
       <div class="table-frame">
-        <Table.Root class="min-w-[72rem]">
+        <Table.Root class="observations-table">
           <Table.Header>
             <Table.Row>
               <Table.Head>{m.severity()}</Table.Head>
@@ -60,6 +60,38 @@
 
 <style>
 @layer blocks {
+  :global(.mds-observations) {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--card);
+  }
+
+  :global(.mds-observations-trigger) {
+    display: flex;
+    width: 100%;
+    cursor: pointer;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    border: 0;
+    background: transparent;
+    color: var(--foreground);
+    padding: var(--space-4);
+    font-weight: 700;
+  }
+
+  :global(.mds-observations-content) {
+    display: grid;
+    gap: var(--space-3);
+    border-top: 1px solid var(--border);
+    padding: var(--space-4);
+  }
+
+  :global(.observations-table) {
+    min-width: 72rem;
+  }
+
   .description {
     margin: 0;
     color: var(--muted-foreground);

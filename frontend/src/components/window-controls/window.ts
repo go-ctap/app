@@ -1,8 +1,4 @@
-import { System, Window as WailsWindow } from "@wailsio/runtime";
-
-export function startWindowDrag() {
-  System.invoke("wails:drag");
-}
+import { Window as WailsWindow } from "@wailsio/runtime";
 
 export function minimizeWindow() {
   return WailsWindow.Minimise();
