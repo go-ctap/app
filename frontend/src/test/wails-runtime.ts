@@ -27,6 +27,14 @@ export const Events = {
 
 export const System = {
   IsWindows: () => false,
+  invoke: () => undefined,
+};
+
+export const Window = {
+  Close: () => Promise.resolve(),
+  IsMaximised: () => Promise.resolve(false),
+  Minimise: () => Promise.resolve(),
+  ToggleMaximise: () => Promise.resolve(),
 };
 
 export class CancellablePromise<T> extends Promise<T> {}

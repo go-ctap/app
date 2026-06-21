@@ -78,7 +78,7 @@
       bind:ref={dialog}
       data-size={wide ? "wide" : "default"}
       data-tone={destructive ? "destructive" : "neutral"}
-      tabindex="-1"
+      tabindex={-1}
       aria-label={title}
       trapFocus={true}
       onOpenAutoFocus={handleOpenAutoFocus}

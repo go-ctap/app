@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { Activity, Gauge, Settings, ShieldCheck } from "@lucide/svelte";
+    import {Activity, Gauge, Settings, ShieldCheck} from "@lucide/svelte";
   import type { ActiveScreen, StatusBarState } from "$lib/stores";
   import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
   import type { SessionStatus } from "$lib/api";
   import { deviceName, sessionStateLabel } from "$lib/format";
   import { m } from "../paraglide/messages.js";
+  import {type Component} from "svelte";
 
   type Props = {
     activeScreen: ActiveScreen;
@@ -16,7 +17,7 @@
 
   let { activeScreen, sessionStatus, selectedDevice, statusBar, onNavigate }: Props = $props();
 
-  const navItems: { id: ActiveScreen; label: string; icon: typeof Gauge }[] = [
+  const navItems: { id: ActiveScreen; label: string; icon: Component }[] = [
     { id: "overview", label: m.overview(), icon: Gauge },
     { id: "settings", label: m.settings(), icon: Settings },
   ];
@@ -60,7 +61,7 @@
         aria-label={item.label}
         onclick={() => onNavigate(item.id)}
       >
-        <item.icon size={17} strokeWidth={2} />
+        <item.icon size={17} strokeWidth={2}/>
         <span>{item.label}</span>
       </button>
     {/each}
