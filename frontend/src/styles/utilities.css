@@ -33,4 +33,10 @@
       transform: rotate(360deg);
     }
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .u-spin {
+      animation: none;
+    }
+  }
 }

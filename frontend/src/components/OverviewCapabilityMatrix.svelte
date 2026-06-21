@@ -85,58 +85,60 @@
 </section>
 
 <style>
-  .matrix-panel {
-    --table-min-width: 58rem;
-  }
+@layer blocks {
+    .matrix-panel {
+      --table-min-width: 58rem;
+    }
 
-  h2,
-  p {
-    margin: 0;
-  }
+    h2,
+    p {
+      margin: 0;
+    }
 
-  h2 {
-    font-size: 1rem;
-  }
+    h2 {
+      font-size: 1rem;
+    }
 
-  .count-badge {
-    align-self: start;
-    border: 1px solid var(--color-border);
-    border-radius: 999px;
-    background: var(--color-warning-bg);
-    color: var(--color-warning);
-    padding: 3px 8px;
-    font-size: 0.75rem;
-    font-weight: 700;
-  }
+    .count-badge {
+      align-self: start;
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      background: var(--color-warning-bg);
+      color: var(--color-warning);
+      padding: 3px 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
 
-  .group-row td {
-    background: var(--color-panel-soft);
-    color: var(--color-text);
-    font-weight: 700;
-  }
+    .group-row td {
+      background: var(--color-panel-soft);
+      color: var(--color-text);
+      font-weight: 700;
+    }
 
-  .group-row span {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-  }
+    .group-row span {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
 
-  small {
-    display: block;
-    margin-top: var(--space-1);
-    color: var(--color-text-muted);
-    font-family: var(--font-mono);
-    overflow-wrap: anywhere;
-  }
+    small {
+      display: block;
+      margin-top: var(--space-1);
+      color: var(--color-text-muted);
+      font-family: var(--font-mono);
+      overflow-wrap: anywhere;
+    }
 
-  tr[data-state="muted"] {
-    color: var(--color-text-muted);
-  }
+    tr[data-state="muted"] {
+      color: var(--color-text-muted);
+    }
 
-  .empty-cell {
-    height: 6rem;
-    color: var(--color-text-muted);
-    text-align: center;
-    vertical-align: middle;
-  }
+    .empty-cell {
+      height: 6rem;
+      color: var(--color-text-muted);
+      text-align: center;
+      vertical-align: middle;
+    }
+}
 </style>

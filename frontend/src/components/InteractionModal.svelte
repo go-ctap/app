@@ -15,7 +15,7 @@
     if (!prompt) return;
     try {
       await answerPendingInteraction({
-        pin,
+        ...(confirmed && kind === "pin" ? { pin } : {}),
         confirmed,
         canceled,
       });
@@ -46,7 +46,7 @@
     {#if kind === "pin"}
       <label class="field">
         <span>{m.pin()}</span>
-        <input bind:value={pin} type="password" autocomplete="off" data-dialog-initial-focus />
+        <input bind:value={pin} name="authenticator-pin" type="password" autocomplete="off" data-dialog-initial-focus />
       </label>
     {/if}
 
@@ -62,35 +62,37 @@
 {/if}
 
 <style>
-  .muted {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: 0.875rem;
-  }
+@layer blocks {
+    .muted {
+      margin: 0;
+      color: var(--color-text-muted);
+      font-size: 0.875rem;
+    }
 
-  .field {
-    display: grid;
-    gap: var(--space-2);
-    font-size: 0.875rem;
-    font-weight: 700;
-  }
+    .field {
+      display: grid;
+      gap: var(--space-2);
+      font-size: 0.875rem;
+      font-weight: 700;
+    }
 
-  input {
-    width: 100%;
-  }
+    input {
+      width: 100%;
+    }
 
-  .actions {
-    --cluster-justify: flex-end;
-  }
+    .actions {
+      --cluster-justify: flex-end;
+    }
 
-  .primary {
-    border-color: var(--color-accent);
-    background: var(--color-accent);
-    color: white;
-  }
+    .primary {
+      border-color: var(--color-accent);
+      background: var(--color-accent);
+      color: white;
+    }
 
-  .primary[data-tone="destructive"] {
-    border-color: var(--color-danger);
-    background: var(--color-danger);
-  }
+    .primary[data-tone="destructive"] {
+      border-color: var(--color-danger);
+      background: var(--color-danger);
+    }
+}
 </style>

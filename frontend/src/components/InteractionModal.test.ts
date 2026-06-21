@@ -72,12 +72,12 @@ describe("InteractionModal", () => {
     pendingInteraction.set(pinPrompt());
     render(InteractionModal);
 
-    await screen.findByRole("dialog");
+    const input = await screen.findByLabelText("PIN");
+    await user.type(input, "123456");
     await user.keyboard("{Escape}");
 
     expect(answerPendingInteraction).toHaveBeenCalledTimes(1);
     expect(answerPendingInteraction).toHaveBeenCalledWith({
-      pin: "",
       confirmed: false,
       canceled: true,
     });

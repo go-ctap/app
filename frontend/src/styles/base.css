@@ -15,10 +15,12 @@
     margin: 0;
     min-width: 320px;
     font-family: var(--font-ui);
+    color-scheme: light;
     color: var(--color-text);
     background: var(--color-bg);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: color-mix(in srgb, var(--color-accent) 18%, transparent);
   }
 
   button,
@@ -46,6 +48,18 @@
     min-height: 32px;
     padding: 0 var(--space-3);
     cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  a:focus-visible,
+  summary:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
   }
 
   button:hover:not(:disabled) {

@@ -30,19 +30,21 @@
 </section>
 
 <style>
-  .json-view {
-    gap: var(--space-3);
-    border: 0;
-    background: transparent;
-  }
+@layer blocks {
+    .json-view {
+      gap: var(--space-3);
+      border: 0;
+      background: transparent;
+    }
 
-  header {
-    --cluster-justify: space-between;
-    --cluster-space: var(--space-3);
-  }
+    header {
+      --cluster-justify: space-between;
+      --cluster-space: var(--space-3);
+    }
 
-  h3 {
-    margin: 0;
-    font-size: 0.95rem;
-  }
+    h3 {
+      margin: 0;
+      font-size: 0.95rem;
+    }
+}
 </style>

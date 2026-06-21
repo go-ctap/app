@@ -63,7 +63,9 @@ export const devices = writable<DeviceReport[]>([]);
 export const selectedSelector = writable("");
 export const selectedDevice = writable<DeviceReport | null>(null);
 export const selectionVersion = writable(0);
-export const activeScreen = writable("overview");
+export type ActiveScreen = "overview" | "settings";
+
+export const activeScreen = writable<ActiveScreen>("overview");
 export const operationStatus = writable<ActiveOperation | null>(null);
 export const statusBar = writable<StatusBarState>({ activeOperation: null, lastOutcome: null, actions: [] });
 export const workbenchLog = writable<WorkbenchLogEntry[]>([]);

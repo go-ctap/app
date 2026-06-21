@@ -44,7 +44,7 @@
       <div class="hero-identity">
         <div class="token-icon">
           {#if hero.iconSrc}
-            <img src={hero.iconSrc} alt="" />
+            <img src={hero.iconSrc} width="48" height="48" alt="" />
           {:else}
             <ShieldCheck size={24} strokeWidth={2.1} />
           {/if}
@@ -81,106 +81,108 @@
 </section>
 
 <style>
-  .hero-panel {
-    box-shadow: var(--shadow-hairline);
-  }
-
-  .hero-main {
-    display: grid;
-    gap: var(--space-5);
-    min-width: 0;
-    padding: var(--space-5);
-  }
-
-  .hero-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--space-4);
-    min-width: 0;
-  }
-
-  .hero-identity {
-    display: grid;
-    grid-template-columns: 48px minmax(0, 1fr);
-    gap: var(--space-3);
-    min-width: 0;
-  }
-
-  .token-icon {
-    display: grid;
-    place-items: center;
-    width: 48px;
-    height: 48px;
-    overflow: hidden;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-panel);
-    background: var(--color-panel-soft);
-    color: var(--color-text-muted);
-  }
-
-  .token-icon img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    padding: var(--space-2);
-  }
-
-  .hero-copy {
-    display: grid;
-    gap: var(--space-2);
-    min-width: 0;
-  }
-
-  h1,
-  h2,
-  p {
-    margin: 0;
-  }
-
-  h1 {
-    overflow: hidden;
-    color: var(--color-text);
-    font-size: 1.35rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  h2 {
-    max-width: 50rem;
-    font-size: 1.25rem;
-  }
-
-  p {
-    color: var(--color-text-muted);
-    line-height: 1.55;
-  }
-
-  .eyebrow {
-    color: var(--color-text-soft);
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-
-  .hero-description {
-    --flow-space: var(--space-2);
-  }
-
-  .signal-grid {
-    --switcher-space: var(--space-4);
-    --switcher-threshold: 42rem;
-  }
-
-  @media (min-width: 1020px) {
+@layer blocks {
     .hero-panel {
-      --sidebar-width: 24rem;
+      box-shadow: var(--shadow-hairline);
     }
-  }
 
-  @media (max-width: 720px) {
-    .hero-header {
+    .hero-main {
       display: grid;
+      gap: var(--space-5);
+      min-width: 0;
+      padding: var(--space-5);
     }
-  }
+
+    .hero-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--space-4);
+      min-width: 0;
+    }
+
+    .hero-identity {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr);
+      gap: var(--space-3);
+      min-width: 0;
+    }
+
+    .token-icon {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      overflow: hidden;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-panel);
+      background: var(--color-panel-soft);
+      color: var(--color-text-muted);
+    }
+
+    .token-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: var(--space-2);
+    }
+
+    .hero-copy {
+      display: grid;
+      gap: var(--space-2);
+      min-width: 0;
+    }
+
+    h1,
+    h2,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      overflow: hidden;
+      color: var(--color-text);
+      font-size: 1.35rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    h2 {
+      max-width: 50rem;
+      font-size: 1.25rem;
+    }
+
+    p {
+      color: var(--color-text-muted);
+      line-height: 1.55;
+    }
+
+    .eyebrow {
+      color: var(--color-text-soft);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .hero-description {
+      --flow-space: var(--space-2);
+    }
+
+    .signal-grid {
+      --switcher-space: var(--space-4);
+      --switcher-threshold: 42rem;
+    }
+
+    @media (min-width: 1020px) {
+      .hero-panel {
+        --sidebar-width: 24rem;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .hero-header {
+        display: grid;
+      }
+    }
+}
 </style>

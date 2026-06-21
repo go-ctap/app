@@ -50,39 +50,41 @@
 {/if}
 
 <style>
-  .observations-panel {
-    --table-min-width: 72rem;
-  }
+@layer blocks {
+    .observations-panel {
+      --table-min-width: 72rem;
+    }
 
-  .count,
-  .severity {
-    border: 1px solid var(--color-border);
-    border-radius: 999px;
-    padding: 3px 8px;
-    font-size: 0.75rem;
-    font-weight: 700;
-  }
+    .count,
+    .severity {
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
 
-  p {
-    margin: 0;
-  }
+    p {
+      margin: 0;
+    }
 
-  .severity[data-severity="critical"] {
-    border-color: var(--color-danger-border);
-    background: var(--color-danger-bg);
-    color: var(--color-danger-text);
-  }
+    .severity[data-severity="critical"] {
+      border-color: var(--color-danger-border);
+      background: var(--color-danger-bg);
+      color: var(--color-danger-text);
+    }
 
-  .severity[data-severity="warning"] {
-    background: var(--color-warning-bg);
-    color: var(--color-warning);
-  }
+    .severity[data-severity="warning"] {
+      background: var(--color-warning-bg);
+      color: var(--color-warning);
+    }
 
-  .severity[data-severity="info"] {
-    color: var(--color-info);
-  }
+    .severity[data-severity="info"] {
+      color: var(--color-info);
+    }
 
-  code {
-    overflow-wrap: anywhere;
-  }
+    code {
+      overflow-wrap: anywhere;
+    }
+}
 </style>

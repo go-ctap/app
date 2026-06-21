@@ -45,30 +45,32 @@
 </section>
 
 <style>
-  .eyebrow,
-  h2,
-  p {
-    margin: 0;
-  }
+@layer blocks {
+    .eyebrow,
+    h2,
+    p {
+      margin: 0;
+    }
 
-  .eyebrow {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
+    .eyebrow {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
 
-  h2 {
-    color: var(--color-text);
-    font-size: 1rem;
-  }
+    h2 {
+      color: var(--color-text);
+      font-size: 1rem;
+    }
 
-  p {
-    max-width: 34rem;
-    line-height: 1.55;
-  }
+    p {
+      max-width: 34rem;
+      line-height: 1.55;
+    }
 
-  .actions {
-    margin-top: var(--space-2);
-    --cluster-justify: center;
-  }
+    .actions {
+      margin-top: var(--space-2);
+      --cluster-justify: center;
+    }
+}
 </style>

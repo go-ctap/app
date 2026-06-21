@@ -54,3 +54,17 @@ if (!("MouseEvent" in globalThis)) {
     configurable: true,
   });
 }
+
+if (!HTMLElement.prototype.hasPointerCapture) {
+  Object.defineProperty(HTMLElement.prototype, "hasPointerCapture", {
+    value: () => false,
+    configurable: true,
+  });
+}
+
+if (!HTMLElement.prototype.releasePointerCapture) {
+  Object.defineProperty(HTMLElement.prototype, "releasePointerCapture", {
+    value: () => {},
+    configurable: true,
+  });
+}

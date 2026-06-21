@@ -45,16 +45,18 @@
 {/if}
 
 <style>
-  h2,
-  p {
-    margin: 0;
-  }
+@layer blocks {
+    h2,
+    p {
+      margin: 0;
+    }
 
-  h2 {
-    font-size: 1rem;
-  }
+    h2 {
+      font-size: 1rem;
+    }
 
-  code {
-    overflow-wrap: anywhere;
-  }
+    code {
+      overflow-wrap: anywhere;
+    }
+}
 </style>

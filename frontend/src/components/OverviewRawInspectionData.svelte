@@ -18,12 +18,14 @@
 </details>
 
 <style>
-  .toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    color: var(--color-text-muted);
-    font-size: 0.875rem;
-  }
+@layer blocks {
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      color: var(--color-text-muted);
+      font-size: 0.875rem;
+    }
+}
 </style>

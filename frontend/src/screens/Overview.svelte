@@ -107,16 +107,18 @@
 {/if}
 
 <style>
-  .overview-screen {
-    min-width: 0;
-    --flow-space: var(--space-4);
-  }
+@layer blocks {
+    .overview-screen {
+      min-width: 0;
+      --flow-space: var(--space-4);
+    }
 
-  .overview-alert {
-    border: 1px solid var(--color-danger-border);
-    border-radius: var(--radius-panel);
-    background: var(--color-danger-bg);
-    color: var(--color-danger-text);
-    padding: var(--space-3) var(--space-4);
-  }
+    .overview-alert {
+      border: 1px solid var(--color-danger-border);
+      border-radius: var(--radius-panel);
+      background: var(--color-danger-bg);
+      color: var(--color-danger-text);
+      padding: var(--space-3) var(--space-4);
+    }
+}
 </style>

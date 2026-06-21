@@ -55,131 +55,133 @@
 </section>
 
 <style>
-  .signal-group {
-    display: grid;
-    align-content: start;
-    min-width: 0;
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: var(--space-2);
-    color: var(--color-text-muted);
-  }
-
-  h3 {
-    min-width: 0;
-    overflow: hidden;
-    margin: 0;
-    color: var(--color-text);
-    font-size: 0.9rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .signals {
-    display: grid;
-    min-width: 0;
-  }
-
-  .signal-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: var(--space-3);
-    min-width: 0;
-    border-top: 1px solid var(--color-border);
-    padding: var(--space-3) 0;
-  }
-
-  .signal-row:first-child {
-    border-top: 0;
-  }
-
-  .signal-copy {
-    display: grid;
-    gap: var(--space-2);
-    min-width: 0;
-  }
-
-  .signal-title {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
-    min-width: 0;
-    font-size: 0.875rem;
-    font-weight: 700;
-  }
-
-  .signal-title span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  code {
-    display: inline-flex;
-    width: fit-content;
-    max-width: 100%;
-    gap: var(--space-1);
-    overflow: hidden;
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
-    background: var(--color-panel-soft);
-    color: var(--color-text-muted);
-    padding: 2px 6px;
-    font-size: 0.72rem;
-  }
-
-  code span,
-  code strong {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  code strong {
-    color: var(--color-text);
-  }
-
-  .signal-status {
-    display: inline-flex;
-    align-items: center;
-    align-self: start;
-    gap: 6px;
-    padding-top: 2px;
-    font-size: 0.75rem;
-  }
-
-  .signal-status span {
-    width: 7px;
-    height: 7px;
-    border-radius: 999px;
-    background: currentColor;
-  }
-
-  .signal-status[data-tone="ok"] {
-    color: var(--color-success);
-  }
-
-  .signal-status[data-tone="warn"] {
-    color: var(--color-warning);
-  }
-
-  .signal-status[data-tone="info"] {
-    color: var(--color-info);
-  }
-
-  .signal-status[data-tone="muted"] {
-    color: var(--color-text-muted);
-  }
-
-  @media (max-width: 520px) {
-    .signal-row {
-      grid-template-columns: 1fr;
+@layer blocks {
+    .signal-group {
+      display: grid;
+      align-content: start;
+      min-width: 0;
     }
-  }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      border-bottom: 1px solid var(--color-border);
+      padding-bottom: var(--space-2);
+      color: var(--color-text-muted);
+    }
+
+    h3 {
+      min-width: 0;
+      overflow: hidden;
+      margin: 0;
+      color: var(--color-text);
+      font-size: 0.9rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .signals {
+      display: grid;
+      min-width: 0;
+    }
+
+    .signal-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: var(--space-3);
+      min-width: 0;
+      border-top: 1px solid var(--color-border);
+      padding: var(--space-3) 0;
+    }
+
+    .signal-row:first-child {
+      border-top: 0;
+    }
+
+    .signal-copy {
+      display: grid;
+      gap: var(--space-2);
+      min-width: 0;
+    }
+
+    .signal-title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      min-width: 0;
+      font-size: 0.875rem;
+      font-weight: 700;
+    }
+
+    .signal-title span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    code {
+      display: inline-flex;
+      width: fit-content;
+      max-width: 100%;
+      gap: var(--space-1);
+      overflow: hidden;
+      border: 1px solid var(--color-border);
+      border-radius: 4px;
+      background: var(--color-panel-soft);
+      color: var(--color-text-muted);
+      padding: 2px 6px;
+      font-size: 0.72rem;
+    }
+
+    code span,
+    code strong {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    code strong {
+      color: var(--color-text);
+    }
+
+    .signal-status {
+      display: inline-flex;
+      align-items: center;
+      align-self: start;
+      gap: 6px;
+      padding-top: 2px;
+      font-size: 0.75rem;
+    }
+
+    .signal-status span {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: currentColor;
+    }
+
+    .signal-status[data-tone="ok"] {
+      color: var(--color-success);
+    }
+
+    .signal-status[data-tone="warn"] {
+      color: var(--color-warning);
+    }
+
+    .signal-status[data-tone="info"] {
+      color: var(--color-info);
+    }
+
+    .signal-status[data-tone="muted"] {
+      color: var(--color-text-muted);
+    }
+
+    @media (max-width: 520px) {
+      .signal-row {
+        grid-template-columns: 1fr;
+      }
+    }
+}
 </style>

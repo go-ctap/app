@@ -114,47 +114,48 @@
 </Dialog.Root>
 
 <style>
-  .dialog-header {
-    display: flex;
-    justify-content: space-between;
-    gap: var(--space-4);
-  }
+@layer blocks {
+    .dialog-header {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-4);
+    }
 
-  .eyebrow {
-    margin: 0;
-  }
+    .eyebrow {
+      margin: 0;
+    }
 
-  .eyebrow {
-    color: var(--color-text-muted);
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
+    .eyebrow {
+      color: var(--color-text-muted);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
 
-  .dialog-body {
-    display: grid;
-    gap: var(--space-3);
-    min-width: 0;
-  }
+    .dialog-body {
+      display: grid;
+      gap: var(--space-3);
+      min-width: 0;
+    }
 
-  .dialog-actions {
-    --cluster-justify: flex-end;
-  }
+    .dialog-actions {
+      --cluster-justify: flex-end;
+    }
 
-  .primary {
-    border-color: var(--color-accent);
-    background: var(--color-accent);
-    color: white;
-  }
+    .primary {
+      border-color: var(--color-accent);
+      background: var(--color-accent);
+      color: white;
+    }
 
-  .primary:hover:not(:disabled) {
-    border-color: var(--color-accent-hover);
-    background: var(--color-accent-hover);
-  }
+    .primary:hover:not(:disabled) {
+      border-color: var(--color-accent-hover);
+      background: var(--color-accent-hover);
+    }
 
-  .primary[data-tone="destructive"] {
-    border-color: var(--color-danger);
-    background: var(--color-danger);
-  }
-
+    .primary[data-tone="destructive"] {
+      border-color: var(--color-danger);
+      background: var(--color-danger);
+    }
+}
 </style>
