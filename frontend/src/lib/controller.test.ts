@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { InteractionPrompt, MDSLookupEnvelope, OperationEventEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
+import type { CredentialsEnvelope, InteractionPrompt, MDSLookupEnvelope, OperationEventEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
@@ -15,6 +15,7 @@ import {
   seedOverviewBioSensorEnvelopeForTest,
   seedOverviewEnvelopeForTest,
   seedOverviewMDSForTest,
+  seedPasskeysEnvelopeForTest,
   seedPendingInteractionForTest,
   seedSelectionForTest,
 } from "./store-test-utils";
@@ -23,6 +24,7 @@ import {
   overviewBioSensorEnvelope,
   overviewEnvelope,
   overviewMDS,
+  passkeysEnvelope,
   pendingInteraction,
   selectedSelector,
   statusBar,
@@ -35,6 +37,7 @@ const serviceMocks = vi.hoisted(() => ({
   CloseAllSessions: vi.fn(),
   Discover: vi.fn(),
   Inspect: vi.fn(),
+  ListCredentials: vi.fn(),
   LookupMDS: vi.fn(),
   OpenSession: vi.fn(),
   ResolveInteraction: vi.fn(),
@@ -104,6 +107,42 @@ function inspectEnvelope(item: DeviceReport) {
   };
 }
 
+function credentialsEnvelope(item: DeviceReport, sessionId = `session-${item.deviceId}`, credentialIDHex = "cafe"): CredentialsEnvelope {
+  return {
+    operationId: `credentials-${item.deviceId}`,
+    sessionId,
+    kind: OperationKind.OperationListCredentials,
+    result: {
+      report: {
+        device: item,
+        support: {
+          credentialManagement: true,
+          previewOnly: false,
+          readOnlyPermission: false,
+        },
+        summary: {
+          existingResidentCredentialsCount: 1,
+          maxPossibleRemainingResidentCredentialsCount: 8,
+          totalRPs: 1,
+          totalCredentials: 1,
+        },
+        groups: [{
+          rpID: "example.com",
+          rpName: "Example",
+          rpIDHashHex: "abcd",
+          credentials: [{
+            credentialIDHex,
+            credentialType: "public-key",
+            userIDHex: "01",
+            userName: "user@example.com",
+            displayName: "Example User",
+          }],
+        }],
+      },
+    },
+  } as CredentialsEnvelope;
+}
+
 describe("controller lifecycle", () => {
   beforeEach(() => {
     setAppLocale("en");
@@ -112,6 +151,7 @@ describe("controller lifecycle", () => {
     serviceMocks.BioSensorInfo.mockResolvedValue(null);
     serviceMocks.CancelOperation.mockResolvedValue(true);
     serviceMocks.CloseAllSessions.mockResolvedValue([]);
+    serviceMocks.ListCredentials.mockResolvedValue(null);
     serviceMocks.LookupMDS.mockResolvedValue({ result: {} } as MDSLookupEnvelope);
     serviceMocks.ResolveInteraction.mockResolvedValue(true);
     serviceMocks.Sessions.mockResolvedValue([]);
@@ -158,6 +198,22 @@ describe("controller lifecycle", () => {
     expect(serviceMocks.Inspect).toHaveBeenCalledTimes(1);
   });
 
+  it("loads passkeys once when navigating to passkeys with an existing selected session", async () => {
+    const token = device("token-1");
+    const { navigateToScreen } = await import("./controller");
+    seedDevicesForTest([token]);
+    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedActiveScreenForTest("settings");
+    serviceMocks.ListCredentials.mockResolvedValue(credentialsEnvelope(token));
+
+    await navigateToScreen("passkeys");
+    await navigateToScreen("passkeys");
+
+    expect(get(activeScreen)).toBe("passkeys");
+    expect(serviceMocks.ListCredentials).toHaveBeenCalledTimes(1);
+    expect(serviceMocks.ListCredentials).toHaveBeenCalledWith({ sessionId: "session-token-1" });
+  });
+
   it("clearing selection clears per-device state and resolves pending interaction", async () => {
     const token = device("token-1");
     const { selectToken } = await import("./controller");
@@ -166,6 +222,7 @@ describe("controller lifecycle", () => {
     seedOverviewEnvelopeForTest(inspectEnvelope(token));
     seedOverviewBioSensorEnvelopeForTest(inspectEnvelope(token));
     seedOverviewMDSForTest(null);
+    seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     seedPendingInteractionForTest({
       interactionId: "interaction-1",
       operationId: "operation-1",
@@ -179,6 +236,7 @@ describe("controller lifecycle", () => {
     expect(get(overviewEnvelope)).toBeNull();
     expect(get(overviewBioSensorEnvelope)).toBeNull();
     expect(get(overviewMDS).data).toBeNull();
+    expect(get(passkeysEnvelope)).toBeNull();
     expect(get(pendingInteraction)).toBeNull();
     expect(serviceMocks.CancelOperation).toHaveBeenCalledWith({ operationId: "operation-1" });
     expect(serviceMocks.ResolveInteraction).toHaveBeenCalledWith({
@@ -225,6 +283,32 @@ describe("controller lifecycle", () => {
     await Promise.all([loadFirst, loadSecond]);
 
     expect(get(overviewMDS).data?.entry?.aaguid).toBe("current");
+  });
+
+  it("ignores stale passkeys responses after selection changes", async () => {
+    const token1 = device("token-1");
+    const token2 = device("token-2");
+    const firstCredentials = deferred<CredentialsEnvelope>();
+    const secondCredentials = deferred<CredentialsEnvelope>();
+    const { loadPasskeys } = await import("./controller");
+    seedDevicesForTest([token1, token2]);
+    seedActiveScreenForTest("passkeys");
+    seedSelectionForTest("token-1", token1, { state: "ready", selectedSelector: "token-1", selectedDevice: token1, sessionId: "session-token-1" });
+    serviceMocks.ListCredentials.mockReturnValueOnce(firstCredentials.promise);
+
+    const loadFirst = loadPasskeys("token-1");
+    await vi.waitFor(() => expect(serviceMocks.ListCredentials).toHaveBeenCalledTimes(1));
+
+    seedSelectionForTest("token-2", token2, { state: "ready", selectedSelector: "token-2", selectedDevice: token2, sessionId: "session-token-2" });
+    serviceMocks.ListCredentials.mockReturnValueOnce(secondCredentials.promise);
+    const loadSecond = loadPasskeys("token-2");
+    await vi.waitFor(() => expect(serviceMocks.ListCredentials).toHaveBeenCalledTimes(2));
+
+    firstCredentials.resolve(credentialsEnvelope(token1, "session-token-1", "stale"));
+    secondCredentials.resolve(credentialsEnvelope(token2, "session-token-2", "current"));
+    await Promise.all([loadFirst, loadSecond]);
+
+    expect(get(passkeysEnvelope)?.sessionId).toBe("session-token-2");
   });
 
   it("ignores stale operation events and accepts current-session events", async () => {

@@ -48,7 +48,7 @@ export type StatusBarState = {
   actions: StatusBarAction[];
 };
 
-export type ActiveScreen = "overview" | "settings";
+export type ActiveScreen = "overview" | "passkeys" | "settings";
 
 export const activeScreen = writable<ActiveScreen>("overview");
 export const operationStatus = writable<ActiveOperation | null>(null);

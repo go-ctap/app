@@ -1,6 +1,6 @@
 import { get } from "svelte/store";
 
-import type { InteractionPrompt, OperationEventEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type { InteractionPrompt, OperationEventEnvelope, RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { pendingInteraction } from "./features/interaction/state.js";
 import { sessionStatus } from "./features/session/state.js";
@@ -38,4 +38,14 @@ export function currentSessionActiveOperationId() {
   if (prompt && prompt.operationId && prompt.sessionId === current) return prompt.operationId;
 
   return "";
+}
+
+export function applyInvalidSessionError(error: RuntimeErrorEnvelope | null | undefined) {
+  if (error?.category !== "invalid-session") return;
+  pendingInteraction.set(null);
+  sessionStatus.update((state) => ({
+    ...state,
+    state: "stale",
+    error,
+  }));
 }

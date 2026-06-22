@@ -14,7 +14,6 @@ import {
   isCurrentOverviewEpoch,
 } from "./controller-epochs.js";
 import { inspectResult, operationError } from "./ctapkit-results.js";
-import { pendingInteraction } from "./features/interaction/state.js";
 import {
   errorLoadState,
   idleLoadState,
@@ -35,7 +34,7 @@ import {
   appError,
 } from "./features/workbench/state.js";
 import { runtimeErrorFrom } from "./runtime-error.js";
-import { selectedSessionId } from "./session-boundary.js";
+import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
 import { appendLogEntry, beginOperation, setStatusOutcome, summarizeEnvelope } from "./workbench-state.js";
 
 function failureEnvelope(error: RuntimeErrorEnvelope): OperationEnvelope {
@@ -142,7 +141,7 @@ export async function loadOverview(selector = get(selectedSelector)) {
       }
     }
     summarizeEnvelope(m.overview_inspection(), envelope, "overview-dashboard", () => loadOverview(selector));
-    applySessionError(envelope.error);
+    applyInvalidSessionError(envelope.error);
     if (operationError(envelope)) {
       appError.set(null);
     }
@@ -153,7 +152,7 @@ export async function loadOverview(selector = get(selectedSelector)) {
       overviewInspection.set(errorLoadState(runtimeError, envelope));
       overviewBioSensor.set(idleLoadState());
       summarizeEnvelope(m.overview_inspection(), envelope, "overview-dashboard", () => loadOverview(selector));
-      applySessionError(envelope.error);
+      applyInvalidSessionError(envelope.error);
     }
   } finally {
     if (isCurrentOverviewEpoch(epoch)) {
@@ -161,16 +160,6 @@ export async function loadOverview(selector = get(selectedSelector)) {
       if (current.state === "loading") overviewInspection.set(idleLoadState());
     }
   }
-}
-
-function applySessionError(error: RuntimeErrorEnvelope | null | undefined) {
-  if (error?.category !== "invalid-session") return;
-  pendingInteraction.set(null);
-  sessionStatus.update((state) => ({
-    ...state,
-    state: "stale",
-    error,
-  }));
 }
 
 export async function loadOverviewMDS(aaguid: string, refresh = false, selector = get(selectedSelector)) {

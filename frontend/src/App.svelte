@@ -39,6 +39,7 @@
 
 	import { m } from "./paraglide/messages.js";
 	import Overview from "./screens/Overview.svelte";
+	import Passkeys from "./screens/Passkeys.svelte";
 	import Settings from "./screens/Settings.svelte";
 
 	type WailsDataEvent<T> = { data: T };
@@ -138,6 +139,8 @@
 			<main class="main-view">
 				{#if $activeScreen === "settings"}
 					<Settings />
+				{:else if $activeScreen === "passkeys"}
+					<Passkeys />
 				{:else if noDevices}
 					<EmptyState
 						title={m.no_authenticators_connected()}

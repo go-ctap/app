@@ -9,7 +9,7 @@ describe("AppSidebar", () => {
     cleanup();
   });
 
-  it("switches to settings from the live navigation", async () => {
+  it("switches screens from the live navigation", async () => {
     const user = userEvent.setup();
     const onNavigate = vi.fn();
 
@@ -27,8 +27,10 @@ describe("AppSidebar", () => {
       },
     });
 
+    await user.click(screen.getByRole("button", { name: "Passkeys" }));
     await user.click(screen.getByRole("button", { name: "Settings" }));
 
+    expect(onNavigate).toHaveBeenCalledWith("passkeys");
     expect(onNavigate).toHaveBeenCalledWith("settings");
   });
 });

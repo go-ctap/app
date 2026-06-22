@@ -10,6 +10,7 @@ import {
   overviewInspection,
   overviewMDS,
 } from "./features/overview/state.js";
+import { passkeysInventory } from "./features/passkeys/state.js";
 import {
   devices,
   selectedDevice,
@@ -149,6 +150,7 @@ export function clearWorkbenchScreenCaches() {
   overviewInspection.set(idleLoadState());
   overviewBioSensor.set(idleLoadState());
   overviewMDS.set(idleLoadState());
+  passkeysInventory.set(idleLoadState());
   selectionVersion.update((value) => value + 1);
 }
 

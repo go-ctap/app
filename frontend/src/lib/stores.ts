@@ -2,6 +2,7 @@ import { readonly } from "svelte/store";
 
 import * as interaction from "./features/interaction/state.js";
 import * as overview from "./features/overview/state.js";
+import * as passkeys from "./features/passkeys/state.js";
 import * as session from "./features/session/state.js";
 import * as workbench from "./features/workbench/state.js";
 
@@ -27,5 +28,9 @@ export const overviewEnvelope = overview.overviewEnvelope;
 export const overviewBioSensorEnvelope = overview.overviewBioSensorEnvelope;
 export const overviewLoading = overview.overviewLoading;
 export const overviewMDSLoading = overview.overviewMDSLoading;
+
+export const passkeysInventory = readonly(passkeys.passkeysInventory);
+export const passkeysEnvelope = passkeys.passkeysEnvelope;
+export const passkeysLoading = passkeys.passkeysLoading;
 
 export const pendingInteraction = readonly(interaction.pendingInteraction);

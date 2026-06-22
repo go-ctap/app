@@ -1,22 +1,10 @@
 import { derived, writable } from "svelte/store";
 
 import type { LookupResult } from "../../../../bindings/github.com/go-ctap/kit/model/mds";
-import type { RuntimeErrorEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
 
 import type { OperationEnvelope } from "$lib/api";
-
-export type LoadStateName = "idle" | "loading" | "ready" | "error" | "stale";
-
-export type LoadState<T> = {
-  state: LoadStateName;
-  data: T | null;
-  error: RuntimeErrorEnvelope | null;
-};
-
-export const idleLoadState = <T>(): LoadState<T> => ({ state: "idle", data: null, error: null });
-export const loadingLoadState = <T>(data: T | null = null): LoadState<T> => ({ state: "loading", data, error: null });
-export const readyLoadState = <T>(data: T): LoadState<T> => ({ state: "ready", data, error: null });
-export const errorLoadState = <T>(error: RuntimeErrorEnvelope, data: T | null = null): LoadState<T> => ({ state: "error", data, error });
+import { idleLoadState, type LoadState } from "$lib/load-state";
+export { errorLoadState, idleLoadState, loadingLoadState, readyLoadState, type LoadState } from "$lib/load-state";
 
 export const overviewInspection = writable<LoadState<OperationEnvelope>>(idleLoadState());
 export const overviewBioSensor = writable<LoadState<OperationEnvelope>>(idleLoadState());

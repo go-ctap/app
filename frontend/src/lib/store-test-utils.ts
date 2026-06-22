@@ -1,6 +1,6 @@
 import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { InteractionPrompt, RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type { CredentialsEnvelope, InteractionPrompt, RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
 import type { OperationEnvelope } from "./api.js";
 import { resetInteractionStateForTest, pendingInteraction } from "./features/interaction/state.js";
@@ -12,6 +12,10 @@ import {
   readyLoadState,
   resetOverviewStateForTest,
 } from "./features/overview/state.js";
+import {
+  passkeysInventory,
+  resetPasskeysStateForTest,
+} from "./features/passkeys/state.js";
 import {
   devices,
   selectedDevice,
@@ -31,6 +35,7 @@ export function resetAppStateForTest() {
   resetWorkbenchStateForTest();
   resetInteractionStateForTest();
   resetOverviewStateForTest();
+  resetPasskeysStateForTest();
 }
 
 export function seedActiveScreenForTest(screen: ActiveScreen) {
@@ -69,4 +74,12 @@ export function seedOverviewMDSForTest(data: LookupResult | null, error?: Runtim
     return;
   }
   overviewMDS.set(readyLoadState(data));
+}
+
+export function seedPasskeysEnvelopeForTest(envelope: CredentialsEnvelope | null, error?: RuntimeErrorEnvelope | null) {
+  if (error) {
+    passkeysInventory.set({ state: "error", data: envelope, error });
+    return;
+  }
+  passkeysInventory.set(envelope ? readyLoadState(envelope) : idleLoadState());
 }

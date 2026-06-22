@@ -15,6 +15,7 @@ import {
   type ResetFactoryOutput,
 } from "../../bindings/github.com/go-ctap/kit/model";
 import type { BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
+import type { InventoryReport } from "../../bindings/github.com/go-ctap/kit/model/credentials";
 import type {
   AuthenticatorConfigEnvelope,
   BioEnrollEnvelope,
@@ -60,6 +61,11 @@ export function bioSensorReport(envelope: OperationEnvelope | null | undefined):
   return envelope.result.report;
 }
 
+export function credentialsReport(envelope: OperationEnvelope | null | undefined): InventoryReport | null {
+  if (!isCredentialsEnvelope(envelope) || envelope.error || !envelope.result) return null;
+  return envelope.result.report;
+}
+
 export function operationError(envelope: OperationEnvelope | null | undefined) {
   if (!envelope || !envelope.error) return null;
   return envelope.error.message;
@@ -102,8 +108,8 @@ function isBioSensorEnvelope(envelope: OperationEnvelope | null | undefined): en
   return Boolean(envelope && envelope.kind === OperationKind.OperationBioSensorInfo);
 }
 
-function isCredentialsEnvelope(envelope: OperationEnvelope): envelope is CredentialsEnvelope {
-  return envelope.kind === OperationKind.OperationListCredentials;
+function isCredentialsEnvelope(envelope: OperationEnvelope | null | undefined): envelope is CredentialsEnvelope {
+  return Boolean(envelope && envelope.kind === OperationKind.OperationListCredentials);
 }
 
 function isBioListEnvelope(envelope: OperationEnvelope): envelope is BioListEnvelope {

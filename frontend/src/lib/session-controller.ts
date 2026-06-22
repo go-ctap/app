@@ -23,6 +23,7 @@ import {
 } from "./features/workbench/state.js";
 import { cancelPendingInteraction } from "./interaction-controller.js";
 import { invalidateOverviewLoads, maybeLoadOverview } from "./overview-controller.js";
+import { invalidatePasskeysLoads, maybeLoadPasskeys } from "./passkeys-controller.js";
 import { runtimeErrorFrom } from "./runtime-error.js";
 import { currentSessionActiveOperationId } from "./session-boundary.js";
 import {
@@ -171,6 +172,7 @@ export async function bootstrap() {
     if (!isCurrentLifecycleEpoch(epoch)) return;
     applyDiscovery(discovery);
     await maybeLoadOverview();
+    await maybeLoadPasskeys();
   } catch (error) {
     if (isCurrentLifecycleEpoch(epoch)) {
       appError.set(messageFromError(error));
@@ -205,6 +207,7 @@ export async function refreshDiscovery() {
       logEntryId,
     });
     await maybeLoadOverview();
+    await maybeLoadPasskeys();
   } catch (error) {
     if (isCurrentLifecycleEpoch(epoch)) {
       appError.set(messageFromError(error));
@@ -215,6 +218,7 @@ export async function refreshDiscovery() {
 export async function selectToken(selector: string) {
   const epoch = beginLifecycleEpoch();
   invalidateOverviewLoads();
+  invalidatePasskeysLoads();
   clearWorkbenchScreenCaches();
   try {
     if (selector.trim()) {
@@ -244,6 +248,7 @@ export async function selectToken(selector: string) {
       logEntryId,
     });
     await maybeLoadOverview();
+    await maybeLoadPasskeys();
   } catch (error) {
     if (isCurrentLifecycleEpoch(epoch)) {
       appError.set(messageFromError(error));
@@ -255,6 +260,7 @@ export async function navigateToScreen(screen: ActiveScreen) {
   if (get(activeScreen) === screen) return;
   activeScreen.set(screen);
   await maybeLoadOverview();
+  await maybeLoadPasskeys();
 }
 
 export async function shutdownWorkbench() {

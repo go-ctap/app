@@ -8,6 +8,9 @@ export {
   loadOverviewMDS,
 } from "./overview-controller.js";
 export {
+  loadPasskeys,
+} from "./passkeys-controller.js";
+export {
   bootstrap,
   navigateToScreen,
   refreshDiscovery,
