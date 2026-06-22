@@ -65,13 +65,15 @@ export type OperationEnvelope =
   | MakeCredentialEnvelope
   | GetAssertionEnvelope;
 
+export type SessionState = "idle" | "opening" | "ready" | "running" | "stale" | "closed" | "error";
+
 export type SessionStatus = {
   sessionId?: SessionID;
   selectedSelector: string;
   selectedDevice: DeviceReport | null;
   deviceId?: string;
   deviceLabel?: string;
-  state: "idle" | "opening" | "ready" | "running" | "stale" | "closed" | "error" | string;
+  state: SessionState;
   activeOperation?: string;
   openedAt?: string;
   updatedAt?: string;

@@ -16,13 +16,15 @@ import {
 import {
   activeScreen,
   appError,
+  type ActiveScreen,
+} from "./features/workbench/state.js";
+import {
   devices as deviceStore,
-  pendingInteraction,
   selectedSelector,
   sessions,
   sessionStatus,
-  type ActiveScreen,
-} from "./app-state.js";
+} from "./features/session/state.js";
+import { pendingInteraction } from "./features/interaction/state.js";
 import {
   beginLifecycleEpoch,
   isCurrentLifecycleEpoch,

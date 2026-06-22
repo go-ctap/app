@@ -1,6 +1,6 @@
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { OperationEnvelope, SessionStatus } from "./api.js";
-import type { MDSLookupViewState } from "./app-state.js";
+import type { LoadState, MDSLookupViewState } from "./features/overview/state.js";
 import { bioSensorReport, inspectResult, operationError } from "./ctapkit-results.js";
 import { sessionStateLabel } from "./format.js";
 import {
@@ -22,6 +22,8 @@ export type OverviewViewModelInput = {
   overviewEnvelope: OperationEnvelope | null;
   overviewBioSensorEnvelope: OperationEnvelope | null;
   overviewMDSLookup: MDSLookupViewState | null;
+  overviewBioSensorState?: LoadState<OperationEnvelope>;
+  overviewMDSState?: LoadState<unknown>;
   overviewLoading: boolean;
   overviewMDSLoading: boolean;
 };
@@ -46,6 +48,10 @@ export function buildOverviewViewModel(input: OverviewViewModelInput) {
     loading,
     mdsLoading,
     failureMessage,
+    degradedMessages: [
+      input.overviewBioSensorState?.error?.message,
+      input.overviewMDSState?.error?.message,
+    ].filter((message): message is string => Boolean(message)),
     reloadDisabled: loading || input.sessionBusy,
     hasReport: Boolean(report),
     info,

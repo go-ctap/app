@@ -16,8 +16,17 @@ import {
   sessionStatus,
   statusBar,
   workbenchLog,
-} from "./app-state";
-import { resetAppStateForTest } from "./store-test-utils";
+} from "./stores";
+import {
+  resetAppStateForTest,
+  seedActiveScreenForTest,
+  seedDevicesForTest,
+  seedOverviewBioSensorEnvelopeForTest,
+  seedOverviewEnvelopeForTest,
+  seedOverviewMDSForTest,
+  seedPendingInteractionForTest,
+  seedSelectionForTest,
+} from "./store-test-utils";
 
 const serviceMocks = vi.hoisted(() => ({
   BioSensorInfo: vi.fn(),
@@ -136,11 +145,9 @@ describe("controller lifecycle", () => {
   it("loads overview once when navigating back to overview with an existing selected session", async () => {
     const token = device("token-1");
     const { navigateToScreen } = await import("./controller");
-    devices.set([token]);
-    selectedSelector.set("token-1");
-    selectedDevice.set(token);
-    sessionStatus.set({ state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
-    activeScreen.set("settings");
+    seedDevicesForTest([token]);
+    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedActiveScreenForTest("settings");
     serviceMocks.Inspect.mockResolvedValue(inspectEnvelope(token));
 
     await navigateToScreen("overview");
@@ -153,19 +160,17 @@ describe("controller lifecycle", () => {
   it("clearing selection clears per-device state and resolves pending interaction", async () => {
     const token = device("token-1");
     const { selectToken } = await import("./controller");
-    devices.set([token]);
-    selectedSelector.set("token-1");
-    selectedDevice.set(token);
-    overviewEnvelope.set(inspectEnvelope(token));
-    overviewBioSensorEnvelope.set(inspectEnvelope(token));
-    overviewMDSLookup.set({ result: null });
-    pendingInteraction.set({
+    seedDevicesForTest([token]);
+    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedOverviewEnvelopeForTest(inspectEnvelope(token));
+    seedOverviewBioSensorEnvelopeForTest(inspectEnvelope(token));
+    seedOverviewMDSForTest({ result: null });
+    seedPendingInteractionForTest({
       interactionId: "interaction-1",
       operationId: "operation-1",
       sessionId: "session-token-1",
       request: { kind: "confirm" },
     } as InteractionPrompt);
-    sessionStatus.set({ state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
 
     await selectToken("");
 
@@ -190,7 +195,7 @@ describe("controller lifecycle", () => {
     const firstMDS = deferred<MDSLookupEnvelope>();
     const secondMDS = deferred<MDSLookupEnvelope>();
     const { loadOverviewMDS, selectToken } = await import("./controller");
-    devices.set([token1, token2]);
+    seedDevicesForTest([token1, token2]);
     serviceMocks.OpenSession
       .mockResolvedValueOnce(snapshot(token1))
       .mockResolvedValueOnce(snapshot(token2));
@@ -208,10 +213,10 @@ describe("controller lifecycle", () => {
     await Promise.all([selectFirst, selectSecond]);
     expect(get(overviewEnvelope)?.sessionId).toBe("session-token-2");
 
-    selectedSelector.set("token-1");
+    seedSelectionForTest("token-1", token1, { state: "ready", selectedSelector: "token-1", selectedDevice: token1, sessionId: "session-token-1" });
     serviceMocks.LookupMDS.mockReturnValueOnce(firstMDS.promise).mockReturnValueOnce(secondMDS.promise);
     const loadFirst = loadOverviewMDS("aaguid-1", false, "token-1");
-    selectedSelector.set("token-2");
+    seedSelectionForTest("token-2", token2, { state: "ready", selectedSelector: "token-2", selectedDevice: token2, sessionId: "session-token-2" });
     const loadSecond = loadOverviewMDS("aaguid-2", false, "token-2");
 
     firstMDS.resolve({ result: { entry: { aaguid: "stale" } } } as MDSLookupEnvelope);
@@ -224,9 +229,7 @@ describe("controller lifecycle", () => {
   it("ignores stale operation events and accepts current-session events", async () => {
     const token = device("token-1");
     const { handleOperationProgress } = await import("./controller");
-    selectedSelector.set("token-1");
-    selectedDevice.set(token);
-    sessionStatus.set({ state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
 
     handleOperationProgress({
       operationId: "operation-stale",
@@ -250,9 +253,7 @@ describe("controller lifecycle", () => {
   it("cancels stale interaction prompts and only exposes current-session prompts", async () => {
     const token = device("token-1");
     const { handleInteractionRequested } = await import("./controller");
-    selectedSelector.set("token-1");
-    selectedDevice.set(token);
-    sessionStatus.set({ state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
 
     handleInteractionRequested({
       interactionId: "interaction-stale",

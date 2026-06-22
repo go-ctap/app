@@ -3,65 +3,58 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Select from "$lib/components/ui/select/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
-  import type { DeviceReport } from "../../../bindings/github.com/go-ctap/kit/model/report";
-  import { refreshDiscovery, selectToken } from "$lib/controller";
-  import { devices, selectedDevice, selectedSelector, sessionBusy } from "$lib/stores";
-  import { deviceDetail, deviceName, labelDevice } from "$lib/format";
-  import { selectorFromDevice } from "$lib/api";
+  import type { AuthenticatorTitlebarModel } from "$lib/shell-view-model";
   import { m } from "../../paraglide/messages.js";
 
   type Props = {
-    refreshing?: boolean;
+    model: AuthenticatorTitlebarModel;
+    onSelect: (value: string) => void | Promise<void>;
+    onClear: () => void | Promise<void>;
+    onRefresh: () => void | Promise<void>;
   };
 
-  let { refreshing = false }: Props = $props();
+  let { model, onSelect, onClear, onRefresh }: Props = $props();
   let localRefreshing = $state(false);
 
-  let disabled = $derived(refreshing || localRefreshing || $sessionBusy);
-  let selectedName = $derived($selectedDevice ? deviceName($selectedDevice) : m.no_token_selected());
-  let selectItems = $derived($devices.map((device) => ({ value: selectorFromDevice(device), label: labelDevice(device) })));
+  let disabled = $derived(model.busy || localRefreshing);
+  let clearDisabled = $derived(model.clearDisabled || localRefreshing);
 
   async function handleSelect(value: string | string[]) {
     if (Array.isArray(value)) return;
-    if (value === $selectedSelector || disabled) return;
-    await selectToken(value);
+    if (value === model.selectedValue || disabled) return;
+    await onSelect(value);
   }
 
   async function handleClear() {
-    if (!$selectedSelector || disabled) return;
-    await selectToken("");
+    if (clearDisabled) return;
+    await onClear();
   }
 
   async function handleRefresh() {
     if (disabled) return;
     localRefreshing = true;
     try {
-      await refreshDiscovery();
+      await onRefresh();
     } finally {
       localRefreshing = false;
     }
-  }
-
-  function transportLabel(value: DeviceReport["transport"]) {
-    return String(value || m.state_unknown()).replaceAll("-", " ");
   }
 </script>
 
 <Tooltip.Provider delayDuration={450} skipDelayDuration={80}>
   <div class="auth-titlebar" data-busy={disabled ? "true" : undefined}>
-    <Select.Root type="single" value={$selectedSelector} onValueChange={handleSelect} disabled={disabled} items={selectItems}>
+    <Select.Root type="single" value={model.selectedValue} onValueChange={handleSelect} disabled={disabled} items={model.items}>
       <Select.Trigger aria-label={m.select_authenticator()}>
-        {selectedName}
+        {model.selectedLabel}
       </Select.Trigger>
 
       <Select.Portal>
         <Select.Content side="bottom" align="start" sideOffset={6}>
           <Select.Group>
-            {#each $devices as device (selectorFromDevice(device))}
-              {@const selector = selectorFromDevice(device)}
-              <Select.Item value={selector} label={labelDevice(device)}>
-                <span>{deviceName(device)}</span>
-                <span class="auth-item-detail">{transportLabel(device.transport)} - {deviceDetail(device) || selector}</span>
+            {#each model.items as item (item.value)}
+              <Select.Item value={item.value} label={item.label}>
+                <span>{item.name}</span>
+                <span class="auth-item-detail">{item.detail}</span>
               </Select.Item>
             {:else}
               <Select.Label>{m.no_authenticators_connected()}</Select.Label>
@@ -89,7 +82,7 @@
     <Tooltip.Root>
       <Tooltip.Trigger>
         {#snippet child({ props })}
-          <Button {...props} variant="ghost" size="icon-sm" type="button" aria-label={m.clear_selection()} disabled={!$selectedSelector || disabled} onclick={handleClear}>
+          <Button {...props} variant="ghost" size="icon-sm" type="button" aria-label={m.clear_selection()} disabled={clearDisabled} onclick={handleClear}>
             <X data-icon="inline-start" aria-hidden="true" />
           </Button>
         {/snippet}

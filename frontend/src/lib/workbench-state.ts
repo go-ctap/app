@@ -4,28 +4,31 @@ import { operationEnvelopeLogData } from "./ctapkit-results.js";
 import { sanitizeDisplayData } from "./redaction.js";
 import { currentSessionId } from "./session-boundary.js";
 import {
-  activeScreen,
-  appError,
-  devices,
   operationStatus,
-  overviewBioSensorEnvelope,
-  overviewEnvelope,
-  overviewLoading,
-  overviewMDSLoading,
-  overviewMDSLookup,
-  pendingInteraction,
-  selectedDevice,
   selectedLogEntryId,
-  selectedSelector,
-  selectionVersion,
-  sessionStatus,
   statusBar,
   workbenchLog,
   type ActiveOperation,
   type StatusBarAction,
   type StatusBarOutcome,
   type WorkbenchLogEntry,
-} from "./app-state.js";
+  activeScreen,
+  appError,
+} from "./features/workbench/state.js";
+import {
+  devices,
+  selectedDevice,
+  selectedSelector,
+  selectionVersion,
+  sessionStatus,
+} from "./features/session/state.js";
+import { pendingInteraction } from "./features/interaction/state.js";
+import {
+  idleLoadState,
+  overviewBioSensor,
+  overviewInspection,
+  overviewMDS,
+} from "./features/overview/state.js";
 import { m } from "../paraglide/messages.js";
 
 const LOG_LIMIT = 250;
@@ -141,11 +144,9 @@ export function setStatusActions(actions: StatusBarAction[]) {
 }
 
 export function clearWorkbenchScreenCaches() {
-  overviewEnvelope.set(null);
-  overviewBioSensorEnvelope.set(null);
-  overviewMDSLookup.set(null);
-  overviewLoading.set(false);
-  overviewMDSLoading.set(false);
+  overviewInspection.set(idleLoadState());
+  overviewBioSensor.set(idleLoadState());
+  overviewMDS.set(idleLoadState());
   selectionVersion.update((value) => value + 1);
 }
 

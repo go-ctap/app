@@ -76,9 +76,8 @@
 <Dialog.Root open={true} onOpenChange={(open) => !open && close()}>
     <Dialog.Content
       class={cn(
-        "max-h-[calc(100vh-2rem)] w-[min(32rem,100%)] overflow-auto",
-        wide && "w-[min(52rem,100%)] max-w-[calc(100%-2rem)]",
-        destructive && "border-destructive/40"
+        "dialog-shell-content",
+        wide && "dialog-shell-content-wide"
       )}
       showCloseButton={false}
       bind:ref={dialog}
@@ -91,7 +90,7 @@
       onCloseAutoFocus={handleCloseAutoFocus}
       onkeydown={handleKeydown}
     >
-      <Dialog.Header class="flex justify-between gap-4">
+      <Dialog.Header class="dialog-shell-header">
         <div>
           {#if eyebrow}
             <p class="eyebrow">{eyebrow}</p>
@@ -110,7 +109,7 @@
       {#if actions}
         {@render actions()}
       {:else}
-        <Dialog.Footer class="flex justify-end gap-2">
+        <Dialog.Footer class="dialog-shell-footer">
           <Button variant={destructive ? "destructive" : "default"} data-primary type="button" onclick={primary}>Continue</Button>
           <Button variant="outline" type="button" onclick={close}>{closeLabel}</Button>
         </Dialog.Footer>
@@ -120,6 +119,36 @@
 
 <style>
 @layer blocks {
+    :global(.dialog-shell-content) {
+      width: min(32rem, 100%);
+      max-height: calc(100vh - 2rem);
+      overflow: auto;
+    }
+
+    :global(.dialog-shell-content-wide) {
+      width: min(52rem, 100%);
+      max-width: calc(100% - 2rem);
+    }
+
+    :global(.dialog-shell-content[data-tone="destructive"]) {
+      border-color: color-mix(in srgb, var(--destructive) 40%, var(--border));
+    }
+
+    :global(.dialog-shell-header),
+    :global(.dialog-shell-footer) {
+      display: flex;
+      gap: var(--space-4);
+    }
+
+    :global(.dialog-shell-header) {
+      justify-content: space-between;
+    }
+
+    :global(.dialog-shell-footer) {
+      justify-content: flex-end;
+      gap: var(--space-2);
+    }
+
     .eyebrow {
       margin: 0;
     }

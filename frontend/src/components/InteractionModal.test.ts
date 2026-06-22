@@ -3,17 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { InteractionKind, InteractionRequest } from "../../bindings/github.com/go-ctap/kit/model";
 import { InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
-import { pendingInteraction } from "$lib/app-state";
 import { resetAppStateForTest } from "$lib/store-test-utils";
+import { buildInteractionModalModel } from "$lib/shell-view-model";
 import InteractionModal from "./InteractionModal.svelte";
-
-const { answerPendingInteraction } = vi.hoisted(() => ({
-  answerPendingInteraction: vi.fn(async () => true),
-}));
-
-vi.mock("../lib/controller", () => ({
-  answerPendingInteraction,
-}));
 
 function pinPrompt() {
   return new InteractionPrompt({
@@ -32,8 +24,10 @@ function pinPrompt() {
 }
 
 describe("InteractionModal", () => {
+  let onAnswer = vi.fn(async () => true);
+
   beforeEach(() => {
-    answerPendingInteraction.mockClear();
+    onAnswer = vi.fn(async () => true);
     resetAppStateForTest();
   });
 
@@ -42,8 +36,9 @@ describe("InteractionModal", () => {
   });
 
   it("focuses the PIN input when a PIN prompt opens", async () => {
-    pendingInteraction.set(pinPrompt());
-    render(InteractionModal);
+    render(InteractionModal, {
+      props: { model: buildInteractionModalModel(pinPrompt()), onAnswer },
+    });
 
     const input = await screen.findByLabelText("PIN");
     await waitFor(() => expect(input).toHaveFocus());
@@ -51,14 +46,15 @@ describe("InteractionModal", () => {
 
   it("submits the PIN prompt from Enter without rendering preview secrets", async () => {
     const user = userEvent.setup();
-    pendingInteraction.set(pinPrompt());
-    render(InteractionModal);
+    render(InteractionModal, {
+      props: { model: buildInteractionModalModel(pinPrompt()), onAnswer },
+    });
 
     const input = await screen.findByLabelText("PIN");
     await user.type(input, "123456{Enter}");
 
-    expect(answerPendingInteraction).toHaveBeenCalledTimes(1);
-    expect(answerPendingInteraction).toHaveBeenCalledWith({
+    expect(onAnswer).toHaveBeenCalledTimes(1);
+    expect(onAnswer).toHaveBeenCalledWith({
       pin: "123456",
       confirmed: true,
       canceled: false,
@@ -69,15 +65,16 @@ describe("InteractionModal", () => {
 
   it("cancels the prompt from Escape", async () => {
     const user = userEvent.setup();
-    pendingInteraction.set(pinPrompt());
-    render(InteractionModal);
+    render(InteractionModal, {
+      props: { model: buildInteractionModalModel(pinPrompt()), onAnswer },
+    });
 
     const input = await screen.findByLabelText("PIN");
     await user.type(input, "123456");
     await user.keyboard("{Escape}");
 
-    expect(answerPendingInteraction).toHaveBeenCalledTimes(1);
-    expect(answerPendingInteraction).toHaveBeenCalledWith({
+    expect(onAnswer).toHaveBeenCalledTimes(1);
+    expect(onAnswer).toHaveBeenCalledWith({
       confirmed: false,
       canceled: true,
     });
@@ -86,16 +83,17 @@ describe("InteractionModal", () => {
   it("submits a PIN prompt only once while resolution is pending", async () => {
     const user = userEvent.setup();
     let resolveAnswer!: () => void;
-    answerPendingInteraction.mockReturnValueOnce(new Promise<boolean>((resolve) => {
+    onAnswer.mockReturnValueOnce(new Promise<boolean>((resolve) => {
       resolveAnswer = () => resolve(true);
     }));
-    pendingInteraction.set(pinPrompt());
-    render(InteractionModal);
+    render(InteractionModal, {
+      props: { model: buildInteractionModalModel(pinPrompt()), onAnswer },
+    });
 
     const input = await screen.findByLabelText("PIN");
     await user.type(input, "123456{Enter}{Enter}");
 
-    expect(answerPendingInteraction).toHaveBeenCalledTimes(1);
+    expect(onAnswer).toHaveBeenCalledTimes(1);
     resolveAnswer();
   });
 });

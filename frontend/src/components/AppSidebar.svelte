@@ -2,35 +2,22 @@
   import { Activity, Gauge, Settings, ShieldCheck } from "@lucide/svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Item from "$lib/components/ui/item/index.js";
-  import type { ActiveScreen, StatusBarState } from "$lib/stores";
-  import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-  import type { SessionStatus } from "$lib/api";
-  import { deviceName, sessionStateLabel } from "$lib/format";
+  import type { ActiveScreen } from "$lib/stores";
+  import type { SidebarModel } from "$lib/shell-view-model";
   import { m } from "../paraglide/messages.js";
   import {type Component} from "svelte";
 
   type Props = {
-    activeScreen: ActiveScreen;
-    sessionStatus: SessionStatus;
-    selectedDevice: DeviceReport | null;
-    statusBar: StatusBarState;
+    model: SidebarModel;
     onNavigate: (screen: ActiveScreen) => void;
   };
 
-  let { activeScreen, sessionStatus, selectedDevice, statusBar, onNavigate }: Props = $props();
+  let { model, onNavigate }: Props = $props();
 
   const navItems: { id: ActiveScreen; label: string; icon: Component }[] = [
     { id: "overview", label: m.overview(), icon: Gauge },
     { id: "settings", label: m.settings(), icon: Settings },
   ];
-
-  let statusTitle = $derived(statusBar.activeOperation?.label || statusBar.lastOutcome?.title || sessionStateLabel(sessionStatus.state));
-  let statusDetail = $derived.by(() => {
-    if (statusBar.activeOperation?.event?.message) return statusBar.activeOperation.event.message;
-    if (statusBar.lastOutcome?.message) return statusBar.lastOutcome.message;
-    if (selectedDevice) return deviceName(selectedDevice);
-    return m.no_token_selected();
-  });
 
 </script>
 
@@ -49,10 +36,10 @@
     {#each navItems as item (item.id)}
       <Button
         type="button"
-        variant={activeScreen === item.id ? "secondary" : "ghost"}
+        variant={model.activeScreen === item.id ? "secondary" : "ghost"}
         class="sidebar-nav-button"
-        data-active={activeScreen === item.id ? "true" : undefined}
-        aria-current={activeScreen === item.id ? "page" : undefined}
+        data-active={model.activeScreen === item.id ? "true" : undefined}
+        aria-current={model.activeScreen === item.id ? "page" : undefined}
         aria-label={item.label}
         onclick={() => onNavigate(item.id)}
       >
@@ -67,9 +54,9 @@
       <Activity aria-hidden="true" />
     </Item.Media>
     <Item.Content>
-      <span class="sidebar-status-copy">{sessionStateLabel(sessionStatus.state)}</span>
-      <Item.Title class="sidebar-status-title w-full line-clamp-2">{statusTitle}</Item.Title>
-      <Item.Description class="sidebar-status-detail line-clamp-3">{statusDetail}</Item.Description>
+      <span class="sidebar-status-copy">{model.status.stateLabel}</span>
+      <Item.Title class="sidebar-status-title">{model.status.title}</Item.Title>
+      <Item.Description class="sidebar-status-detail">{model.status.detail}</Item.Description>
     </Item.Content>
   </Item.Root>
 </aside>
@@ -176,11 +163,19 @@
       font-size: 0.84rem;
       line-height: 1.3;
       overflow-wrap: anywhere;
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
     }
 
     :global(.sidebar-status-detail) {
       font-size: 0.76rem;
       line-height: 1.45;
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
     }
 
     @media (max-width: 900px) {

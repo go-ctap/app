@@ -48,7 +48,7 @@
                 <Table.Cell><strong>{observation.token || m.not_reported()}</strong></Table.Cell>
                 <Table.Cell><strong>{observation.mds || m.not_reported()}</strong></Table.Cell>
                 <Table.Cell><code>{observation.source}</code></Table.Cell>
-                <Table.Cell class="whitespace-normal">{observation.description}</Table.Cell>
+                <Table.Cell class="text-cell">{observation.description}</Table.Cell>
               </Table.Row>
             {/each}
           </Table.Body>
@@ -103,6 +103,10 @@
     min-width: 0;
     overflow: auto;
     border: 1px solid var(--border);
+  }
+
+  :global(.text-cell) {
+    white-space: normal;
   }
 
   code {

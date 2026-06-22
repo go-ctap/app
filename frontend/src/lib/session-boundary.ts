@@ -1,6 +1,8 @@
 import { get } from "svelte/store";
 import type { InteractionPrompt, OperationEventEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
-import { pendingInteraction, sessionStatus, statusBar } from "./app-state.js";
+import { sessionStatus } from "./features/session/state.js";
+import { pendingInteraction } from "./features/interaction/state.js";
+import { statusBar } from "./features/workbench/state.js";
 
 export function currentSessionId() {
   return get(sessionStatus).sessionId || "";
@@ -31,7 +33,7 @@ export function currentSessionActiveOperationId() {
   if (activeOperation?.operationId && activeOperation.sessionId === current) return activeOperation.operationId;
 
   const prompt = get(pendingInteraction);
-  if (prompt?.operationId && prompt.sessionId === current) return prompt.operationId;
+  if (prompt && prompt.operationId && prompt.sessionId === current) return prompt.operationId;
 
   return "";
 }

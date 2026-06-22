@@ -7,18 +7,25 @@ import {
   type OperationEnvelope,
 } from "./api.js";
 import {
-  activeScreen,
-  appError,
-  overviewBioSensorEnvelope,
-  overviewEnvelope,
-  overviewLoading,
-  overviewMDSLoading,
-  overviewMDSLookup,
-  pendingInteraction,
   selectedSelector,
   sessionStatus,
-  type MDSLookupViewState,
-} from "./app-state.js";
+} from "./features/session/state.js";
+import {
+  activeScreen,
+  appError,
+} from "./features/workbench/state.js";
+import { pendingInteraction } from "./features/interaction/state.js";
+import {
+  errorLoadState,
+  idleLoadState,
+  loadingLoadState,
+  overviewBioSensor,
+  overviewEnvelope,
+  overviewInspection,
+  overviewLoading,
+  overviewMDS,
+  readyLoadState,
+} from "./features/overview/state.js";
 import { inspectResult, operationError } from "./ctapkit-results.js";
 import {
   beginMDSEpoch,
@@ -29,15 +36,32 @@ import {
   isCurrentOverviewEpoch,
 } from "./controller-epochs.js";
 import { selectedSessionId } from "./session-boundary.js";
-import { beginOperation, summarizeEnvelope } from "./workbench-state.js";
+import { appendLogEntry, beginOperation, setStatusOutcome, summarizeEnvelope } from "./workbench-state.js";
 import { m } from "../paraglide/messages.js";
-
-function failureMDSLookup(error: unknown): MDSLookupViewState {
-  return { error: runtimeErrorFrom(error) };
-}
 
 function failureEnvelope(error: unknown): OperationEnvelope {
   return new InspectEnvelope({ kind: OperationKind.OperationInspect, error: runtimeErrorFrom(error) });
+}
+
+function reportDegradedOverviewLoad(label: string, error: RuntimeErrorEnvelope) {
+  const logEntryId = appendLogEntry({
+    tone: "warning",
+    source: "overview",
+    title: m.operation_failed_with_label({ label }),
+    message: error.message,
+    screen: get(activeScreen),
+    selector: get(selectedSelector),
+    data: {
+      label,
+      error,
+    },
+  });
+  setStatusOutcome({
+    tone: "warning",
+    title: m.operation_failed_with_label({ label }),
+    message: error.message,
+    logEntryId,
+  });
 }
 
 function inspectResultFromEnvelope(envelope: OperationEnvelope) {
@@ -78,38 +102,43 @@ export function invalidateOverviewLoads() {
 export async function loadOverview(selector = get(selectedSelector)) {
   selector = selector.trim();
   if (!selector) {
-    overviewEnvelope.set(null);
-    overviewBioSensorEnvelope.set(null);
-    overviewMDSLookup.set(null);
-    overviewLoading.set(false);
-    overviewMDSLoading.set(false);
+    overviewInspection.set(idleLoadState());
+    overviewBioSensor.set(idleLoadState());
+    overviewMDS.set(idleLoadState());
     return;
   }
 
   const epoch = beginOverviewEpoch();
   bumpMDSEpoch();
-  overviewLoading.set(true);
-  overviewBioSensorEnvelope.set(null);
-  overviewMDSLookup.set(null);
-  overviewMDSLoading.set(false);
+  overviewInspection.set(loadingLoadState());
+  overviewBioSensor.set(idleLoadState());
+  overviewMDS.set(idleLoadState());
   try {
     beginOperation(m.overview_inspection(), "overview-dashboard");
     const sessionId = selectedSessionId();
     const envelope = await api.inspect({ sessionId });
     if (!isCurrentOverviewEpoch(epoch) || selector !== get(selectedSelector)) return;
-    overviewEnvelope.set(envelope);
+    overviewInspection.set(readyLoadState(envelope));
     const aaguid = !operationError(envelope) ? aaguidFromEnvelope(envelope) : "";
     if (aaguid) {
       void loadOverviewMDS(aaguid, false, selector);
     }
     if (!operationError(envelope) && shouldLoadBioSensor(envelope)) {
+      overviewBioSensor.set(loadingLoadState());
       try {
         const bioEnvelope = await api.bioSensorInfo({ sessionId });
         if (!isCurrentOverviewEpoch(epoch) || selector !== get(selectedSelector)) return;
-        overviewBioSensorEnvelope.set(bioEnvelope);
-      } catch {
+        if (bioEnvelope.error) {
+          overviewBioSensor.set(errorLoadState(bioEnvelope.error, bioEnvelope));
+          reportDegradedOverviewLoad(m.biometrics(), bioEnvelope.error);
+        } else {
+          overviewBioSensor.set(readyLoadState(bioEnvelope));
+        }
+      } catch (error) {
         if (isCurrentOverviewEpoch(epoch) && selector === get(selectedSelector)) {
-          overviewBioSensorEnvelope.set(null);
+          const runtimeError = runtimeErrorFrom(error);
+          overviewBioSensor.set(errorLoadState(runtimeError));
+          reportDegradedOverviewLoad(m.biometrics(), runtimeError);
         }
       }
     }
@@ -121,14 +150,15 @@ export async function loadOverview(selector = get(selectedSelector)) {
   } catch (error) {
     if (isCurrentOverviewEpoch(epoch) && selector === get(selectedSelector)) {
       const envelope = failureEnvelope(error);
-      overviewEnvelope.set(envelope);
-      overviewBioSensorEnvelope.set(null);
+      overviewInspection.set(errorLoadState(envelope.error || runtimeErrorFrom(error), envelope));
+      overviewBioSensor.set(idleLoadState());
       summarizeEnvelope(m.overview_inspection(), envelope, "overview-dashboard", () => loadOverview(selector));
       applySessionError(envelope.error);
     }
   } finally {
     if (isCurrentOverviewEpoch(epoch)) {
-      overviewLoading.set(false);
+      const current = get(overviewInspection);
+      if (current.state === "loading") overviewInspection.set(idleLoadState());
     }
   }
 }
@@ -148,23 +178,25 @@ export async function loadOverviewMDS(aaguid: string, refresh = false, selector 
   selector = selector.trim();
   const epoch = beginMDSEpoch();
   if (!aaguid || !selector) {
-    overviewMDSLookup.set(null);
-    overviewMDSLoading.set(false);
+    overviewMDS.set(idleLoadState());
     return;
   }
 
-  overviewMDSLoading.set(true);
+  overviewMDS.set(loadingLoadState());
   try {
     const envelope = await api.lookupMDS({ aaguid, refresh });
     if (!isCurrentMDSEpoch(epoch) || selector !== get(selectedSelector)) return;
-    overviewMDSLookup.set({ result: envelope.result });
+    overviewMDS.set(readyLoadState(envelope.result));
   } catch (error) {
     if (isCurrentMDSEpoch(epoch) && selector === get(selectedSelector)) {
-      overviewMDSLookup.set(failureMDSLookup(error));
+      const runtimeError = runtimeErrorFrom(error);
+      overviewMDS.set(errorLoadState(runtimeError));
+      reportDegradedOverviewLoad(m.metadata_service(), runtimeError);
     }
   } finally {
     if (isCurrentMDSEpoch(epoch)) {
-      overviewMDSLoading.set(false);
+      const current = get(overviewMDS);
+      if (current.state === "loading") overviewMDS.set(idleLoadState());
     }
   }
 }

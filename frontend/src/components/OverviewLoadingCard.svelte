@@ -17,11 +17,24 @@
       <Table.Body>
         {#each rows as label (label)}
           <Table.Row>
-            <Table.Cell class="text-muted-foreground">{label}</Table.Cell>
-            <Table.Cell><Skeleton class="h-4 w-32" /></Table.Cell>
+            <Table.Cell class="loading-label">{label}</Table.Cell>
+            <Table.Cell><Skeleton class="loading-skeleton" /></Table.Cell>
           </Table.Row>
         {/each}
       </Table.Body>
     </Table.Root>
   </Card.Content>
 </Card.Root>
+
+<style>
+@layer blocks {
+  :global(.loading-label) {
+    color: var(--muted-foreground);
+  }
+
+  :global(.loading-skeleton) {
+    width: 8rem;
+    height: 1rem;
+  }
+}
+</style>

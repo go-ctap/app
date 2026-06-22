@@ -8,9 +8,12 @@
 
 	import {
 		bootstrap,
+		answerPendingInteraction,
 		handleInteractionRequested,
 		handleOperationProgress,
 		navigateToScreen,
+		refreshDiscovery,
+		selectToken,
 		shutdownWorkbench
 	} from "$lib/controller";
 
@@ -18,11 +21,16 @@
 		activeScreen,
 		appError,
 		devices,
+		pendingInteraction,
 		selectedDevice,
+		selectedSelector,
+		sessionBusy,
 		sessionStatus,
 		statusBar,
 		type ActiveScreen
 	} from "$lib/stores";
+	import { buildAuthenticatorTitlebarModel, buildInteractionModalModel, buildSidebarModel } from "$lib/shell-view-model";
+	import type { InteractionModalAnswer } from "./components/InteractionModal.svelte";
 
 	import { currentLocale } from "$lib/i18n";
 	import { m } from "./paraglide/messages.js";
@@ -38,9 +46,38 @@
 	let refreshing = $state(false);
 	let initialized = $state(false);
 	let noDevices = $derived(initialized && !refreshing && $devices.length === 0);
+	let titlebarModel = $derived(buildAuthenticatorTitlebarModel({
+		devices: $devices,
+		selectedDevice: $selectedDevice,
+		selectedSelector: $selectedSelector,
+		busy: refreshing || $sessionBusy,
+	}));
+	let sidebarModel = $derived(buildSidebarModel({
+		activeScreen: $activeScreen,
+		sessionStatus: $sessionStatus,
+		selectedDevice: $selectedDevice,
+		statusBar: $statusBar,
+	}));
+	let interactionModalModel = $derived($pendingInteraction ? buildInteractionModalModel($pendingInteraction) : null);
 
 	function navigate(screen: ActiveScreen) {
 		void navigateToScreen(screen);
+	}
+
+	function handleSelectToken(selector: string) {
+		void selectToken(selector);
+	}
+
+	function handleClearSelection() {
+		void selectToken("");
+	}
+
+	function handleRefreshDiscovery() {
+		void refreshDiscovery();
+	}
+
+	function handleInteractionAnswer(answer: InteractionModalAnswer) {
+		void answerPendingInteraction(answer);
 	}
 
 	onMount(() => {
@@ -70,10 +107,7 @@
 {#key $currentLocale}
 	<div class="app-shell">
 		<AppSidebar
-			activeScreen={$activeScreen}
-			sessionStatus={$sessionStatus}
-			selectedDevice={$selectedDevice}
-			statusBar={$statusBar}
+			model={sidebarModel}
 			onNavigate={navigate}
 		/>
 
@@ -83,7 +117,12 @@
 					nativeWindowControlsOverlay={false}
 				>
 					<div class="titlebar-content">
-						<AuthenticatorTitlebarControl refreshing={refreshing} />
+						<AuthenticatorTitlebarControl
+							model={titlebarModel}
+							onSelect={handleSelectToken}
+							onClear={handleClearSelection}
+							onRefresh={handleRefreshDiscovery}
+						/>
 						<div class="titlebar-drag-space" aria-hidden="true"></div>
 						<WindowControls />
 					</div>
@@ -115,7 +154,7 @@
 			</main>
 		</section>
 
-		<InteractionModal />
+		<InteractionModal model={interactionModalModel} onAnswer={handleInteractionAnswer} />
 	</div>
 {/key}
 

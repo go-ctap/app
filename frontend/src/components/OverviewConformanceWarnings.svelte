@@ -20,8 +20,8 @@
 
     <Card.Content>
       <div class="table-frame">
-        <Table.Root class="min-w-[58rem]">
-          <Table.Header class="[&_tr]:bg-muted/40">
+        <Table.Root class="warnings-table">
+          <Table.Header class="warnings-table-header">
             <Table.Row>
               <Table.Head>{m.finding()}</Table.Head>
               <Table.Head>{m.source()}</Table.Head>
@@ -33,7 +33,7 @@
               <Table.Row>
                 <Table.Cell><strong>{warning.value || m.not_reported()}</strong></Table.Cell>
                 <Table.Cell><code>{warning.source}</code></Table.Cell>
-                <Table.Cell class="whitespace-normal">{warning.description}</Table.Cell>
+                <Table.Cell class="text-cell">{warning.description}</Table.Cell>
               </Table.Row>
             {/each}
           </Table.Body>
@@ -49,6 +49,18 @@
     min-width: 0;
     overflow: auto;
     border: 1px solid var(--border);
+  }
+
+  :global(.warnings-table) {
+    min-width: 58rem;
+  }
+
+  :global(.warnings-table-header tr) {
+    background: color-mix(in srgb, var(--muted) 40%, transparent);
+  }
+
+  :global(.text-cell) {
+    white-space: normal;
   }
 
   code {

@@ -2,8 +2,10 @@
   import { loadOverview, loadOverviewMDS } from "$lib/controller";
   import {
     overviewBioSensorEnvelope,
+    overviewBioSensor,
     overviewEnvelope,
     overviewLoading,
+    overviewMDS,
     overviewMDSLookup,
     overviewMDSLoading,
     selectedDevice,
@@ -29,6 +31,8 @@
     overviewEnvelope: $overviewEnvelope,
     overviewBioSensorEnvelope: $overviewBioSensorEnvelope,
     overviewMDSLookup: $overviewMDSLookup,
+    overviewBioSensorState: $overviewBioSensor,
+    overviewMDSState: $overviewMDS,
     overviewLoading: $overviewLoading,
     overviewMDSLoading: $overviewMDSLoading,
   }));
@@ -50,13 +54,17 @@
 
 {#if !overview.selector}
   <EmptyState title={m.choose_authenticator()} message={m.choose_authenticator_message()} />
-{:else if !overview.hasReport && !overview.loading && !overview.failureMessage}
+{:else if !overview.hasReport && !overview.loading && !overview.failureMessage && overview.degradedMessages.length === 0}
   <EmptyState title={m.overview_not_loaded()} message={m.overview_not_loaded_message()} />
 {:else}
   <section class="overview-screen flow">
     {#if overview.failureMessage}
       <div class="overview-alert" role="alert">{overview.failureMessage}</div>
     {/if}
+
+    {#each overview.degradedMessages as message (message)}
+      <div class="overview-alert" data-tone="warning" role="status">{message}</div>
+    {/each}
 
     {#if overview.hasReport}
       <OverviewHeroCard
@@ -93,6 +101,12 @@
       background: color-mix(in srgb, var(--destructive) 10%, var(--background));
       color: var(--destructive);
       padding: var(--space-3) var(--space-4);
+    }
+
+    .overview-alert[data-tone="warning"] {
+      border-color: color-mix(in srgb, var(--primary) 34%, var(--border));
+      background: color-mix(in srgb, var(--primary) 8%, var(--background));
+      color: var(--foreground);
     }
 }
 </style>

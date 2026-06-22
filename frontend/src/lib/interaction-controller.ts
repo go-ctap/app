@@ -1,7 +1,9 @@
 import { get } from "svelte/store";
 import type { InteractionAnswer, InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
 import { api } from "./api.js";
-import { activeScreen, pendingInteraction, selectedSelector } from "./app-state.js";
+import { selectedSelector } from "./features/session/state.js";
+import { pendingInteraction } from "./features/interaction/state.js";
+import { activeScreen } from "./features/workbench/state.js";
 import { operationStageLabel } from "./format.js";
 import { appendLogEntry } from "./workbench-state.js";
 import { interactionMatchesCurrentSession } from "./session-boundary.js";
@@ -80,7 +82,7 @@ export function handleInteractionRequested(data: InteractionPrompt) {
       operationId: data.operationId,
       interactionId: data.interactionId,
       request: {
-        kind: data.request.kind || m.interaction(),
+        kind: data.request.kind,
         permission: data.request.permission,
         destructive: data.request.destructive,
         hasPreview: Boolean(data.request.preview),

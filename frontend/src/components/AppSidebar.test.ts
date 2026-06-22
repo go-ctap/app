@@ -14,10 +14,14 @@ describe("AppSidebar", () => {
 
     render(AppSidebar, {
       props: {
-        activeScreen: "overview",
-        sessionStatus: { state: "idle", selectedSelector: "", selectedDevice: null },
-        selectedDevice: null,
-        statusBar: { activeOperation: null, lastOutcome: null, actions: [] },
+        model: {
+          activeScreen: "overview",
+          status: {
+            stateLabel: "Idle",
+            title: "Idle",
+            detail: "No token selected",
+          },
+        },
         onNavigate,
       },
     });

@@ -38,19 +38,19 @@
 
   <Card.Content>
     <div class="table-frame">
-      <Table.Root class="min-w-[58rem]">
-        <Table.Header class="[&_tr]:bg-muted/40">
+      <Table.Root class="capability-table">
+        <Table.Header class="capability-table-header">
           <Table.Row>
             <Table.Head>{m.name()}</Table.Head>
             <Table.Head>{m.description()}</Table.Head>
-            <Table.Head class="text-right">{m.status()}</Table.Head>
+            <Table.Head class="status-column">{m.status()}</Table.Head>
             <Table.Head>{m.value()}</Table.Head>
           </Table.Row>
         </Table.Header>
         <Table.Body>
           {#each groups as group (group.name)}
             {@const GroupIcon = GROUP_ICONS[group.rows[0]?.group] || Info}
-            <Table.Row class="bg-muted/30 hover:bg-muted/30">
+            <Table.Row class="capability-group-row">
               <Table.Cell colspan={4}>
                 <span class="group-label">
                   <GroupIcon size={15} />
@@ -59,15 +59,15 @@
               </Table.Cell>
             </Table.Row>
             {#each group.rows as row (`${row.group}:${row.name}`)}
-              <Table.Row class="data-[state=muted]:text-muted-foreground" data-state={row.status === "unsupported" ? "muted" : undefined}>
+              <Table.Row data-state={row.status === "unsupported" ? "muted" : undefined}>
                 <Table.Cell>
                   <strong>{row.name}</strong>
                   {#if row.source}
                     <small>{row.source}</small>
                   {/if}
                 </Table.Cell>
-                <Table.Cell class="whitespace-normal">{row.description}</Table.Cell>
-                <Table.Cell class="text-right">
+                <Table.Cell class="text-cell">{row.description}</Table.Cell>
+                <Table.Cell class="status-column">
                   <StatusBadge
                     value={row.status}
                     label={overviewStatusLabel(row.status)}
@@ -75,12 +75,12 @@
                     tone={row.status === "unsupported" ? "neutral" : "auto"}
                   />
                 </Table.Cell>
-                <Table.Cell class="whitespace-normal"><strong>{row.value || m.not_reported()}</strong></Table.Cell>
+                <Table.Cell class="text-cell"><strong>{row.value || m.not_reported()}</strong></Table.Cell>
               </Table.Row>
             {/each}
           {:else}
             <Table.Row>
-              <Table.Cell colspan={4} class="h-24 text-center text-muted-foreground">{m.no_getinfo_fields_reported()}</Table.Cell>
+              <Table.Cell colspan={4} class="empty-cell">{m.no_getinfo_fields_reported()}</Table.Cell>
             </Table.Row>
           {/each}
         </Table.Body>
@@ -95,6 +95,37 @@
     min-width: 0;
     overflow: auto;
     border: 1px solid var(--border);
+  }
+
+  :global(.capability-table) {
+    min-width: 58rem;
+  }
+
+  :global(.capability-table-header tr),
+  :global(.capability-group-row) {
+    background: color-mix(in srgb, var(--muted) 40%, transparent);
+  }
+
+  :global(.capability-group-row:hover) {
+    background: color-mix(in srgb, var(--muted) 40%, transparent);
+  }
+
+  :global(.capability-table [data-state="muted"]) {
+    color: var(--muted-foreground);
+  }
+
+  :global(.status-column) {
+    text-align: right;
+  }
+
+  :global(.text-cell) {
+    white-space: normal;
+  }
+
+  :global(.empty-cell) {
+    height: 6rem;
+    color: var(--muted-foreground);
+    text-align: center;
   }
 
   .group-label {
