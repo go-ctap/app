@@ -9,6 +9,8 @@
 
 <script lang="ts">
   import { Badge, type BadgeVariant } from "$lib/components/ui/badge/index.js";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import type { OverviewHeroSignalGroup, OverviewRowStatus } from "$lib/overview-rules";
 
   let { group }: { group: OverviewHeroSignalGroup } = $props();
@@ -28,26 +30,41 @@
     <h3>{group.title}</h3>
   </header>
 
-  <div class="signals">
-    {#each group.signals as signal (signal.id)}
-      <article class="signal-row" title={signal.tooltip}>
-        <div class="signal-copy">
-          <div class="signal-title">
-            <span>{signal.title}</span>
-            <Info size={12} aria-label={signal.tooltip} />
+  <Tooltip.Provider delayDuration={350} skipDelayDuration={80}>
+    <div class="signals">
+      {#each group.signals as signal (signal.id)}
+        <article class="signal-row">
+          <div class="signal-copy">
+            <div class="signal-title">
+              <span>{signal.title}</span>
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  {#snippet child({ props })}
+                    <Button {...props} variant="ghost" size="icon-xs" type="button" aria-label={signal.tooltip}>
+                      <Info data-icon="inline-start" aria-hidden="true" />
+                    </Button>
+                  {/snippet}
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content side="top" sideOffset={6}>
+                    {signal.tooltip}
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </div>
+            <code>
+              <span>{signal.flag}</span>
+              <strong>{signal.value}</strong>
+              {#if signal.valueNote}
+                <span>{signal.valueNote}</span>
+              {/if}
+            </code>
           </div>
-          <code title={`${signal.flag} ${signal.value}${signal.valueNote ? ` (${signal.valueNote})` : ""}`}>
-            <span>{signal.flag}</span>
-            <strong>{signal.value}</strong>
-            {#if signal.valueNote}
-              <span>{signal.valueNote}</span>
-            {/if}
-          </code>
-        </div>
-        <Badge variant={signalVariant(signal.status)}>{signal.statusLabel}</Badge>
-      </article>
-    {/each}
-  </div>
+          <Badge variant={signalVariant(signal.status)}>{signal.statusLabel}</Badge>
+        </article>
+      {/each}
+    </div>
+  </Tooltip.Provider>
 </section>
 
 <style>
