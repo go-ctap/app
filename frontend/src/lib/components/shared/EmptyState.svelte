@@ -1,7 +1,9 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
   import { CircleDashed } from "@lucide/svelte";
+  import type { Snippet } from "svelte";
+
   import * as Empty from "$lib/components/ui/empty/index.js";
+
   import { m } from "../../../paraglide/messages.js";
 
   type Props = {

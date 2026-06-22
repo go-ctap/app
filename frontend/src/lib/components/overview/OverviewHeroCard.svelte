@@ -3,10 +3,11 @@
 </script>
 
 <script lang="ts">
+  import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import type { OverviewHeroPresentation, OverviewHeroSignalGroup, OverviewMDSState } from "$lib/overview-rules";
-  import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
+
   import { m } from "../../../paraglide/messages.js";
   import OverviewMetadataPanel from "./OverviewMetadataPanel.svelte";
   import OverviewSignalGroup from "./OverviewSignalGroup.svelte";

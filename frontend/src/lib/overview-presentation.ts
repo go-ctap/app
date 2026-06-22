@@ -1,9 +1,10 @@
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
+import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+
+import { m } from "../paraglide/messages.js";
 import type { OperationEnvelope } from "./api.js";
-import type { SessionStatus } from "./session-model.js";
-import type { LoadState } from "./features/overview/state.js";
 import { bioSensorReport, inspectResult, operationError } from "./ctapkit-results.js";
+import type { LoadState } from "./features/overview/state.js";
 import { sessionStateLabel } from "./format.js";
 import {
   buildOverviewConformanceWarnings,
@@ -14,7 +15,7 @@ import {
   groupOverviewRows,
 } from "./overview-rules.js";
 import { sanitizedJson } from "./redaction.js";
-import { m } from "../paraglide/messages.js";
+import type { SessionStatus } from "./session-model.js";
 
 export type OverviewPresentationInput = {
   selectedSelector: string;

@@ -1,11 +1,13 @@
 <script lang="ts">
   import { Activity, Gauge, Settings, ShieldCheck } from "@lucide/svelte";
+  import {type Component} from "svelte";
+
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Item from "$lib/components/ui/item/index.js";
-  import type { ActiveScreen } from "$lib/stores";
   import type { SidebarPresentation } from "$lib/shell-presentation";
+  import type { ActiveScreen } from "$lib/stores";
+
   import { m } from "../../../paraglide/messages.js";
-  import {type Component} from "svelte";
 
   type Props = {
     presentation: SidebarPresentation;

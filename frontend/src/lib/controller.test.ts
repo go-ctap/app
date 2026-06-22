@@ -1,23 +1,13 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import type { InteractionPrompt, MDSLookupEnvelope, OperationEventEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
+import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+
 import { setAppLocale } from "$lib/i18n";
-import {
-  activeScreen,
-  devices,
-  overviewBioSensorEnvelope,
-  overviewEnvelope,
-  overviewMDS,
-  pendingInteraction,
-  selectedDevice,
-  selectedSelector,
-  sessionStatus,
-  statusBar,
-  workbenchLog,
-} from "./stores";
+
 import {
   resetAppStateForTest,
   seedActiveScreenForTest,
@@ -28,6 +18,16 @@ import {
   seedPendingInteractionForTest,
   seedSelectionForTest,
 } from "./store-test-utils";
+import {
+  activeScreen,
+  overviewBioSensorEnvelope,
+  overviewEnvelope,
+  overviewMDS,
+  pendingInteraction,
+  selectedSelector,
+  statusBar,
+  workbenchLog,
+} from "./stores";
 
 const serviceMocks = vi.hoisted(() => ({
   BioSensorInfo: vi.fn(),

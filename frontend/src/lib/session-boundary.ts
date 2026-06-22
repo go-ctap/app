@@ -1,7 +1,9 @@
 import { get } from "svelte/store";
+
 import type { InteractionPrompt, OperationEventEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
-import { sessionStatus } from "./features/session/state.js";
+
 import { pendingInteraction } from "./features/interaction/state.js";
+import { sessionStatus } from "./features/session/state.js";
 import { statusBar } from "./features/workbench/state.js";
 
 export function currentSessionId() {

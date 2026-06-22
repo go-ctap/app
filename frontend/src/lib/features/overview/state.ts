@@ -1,7 +1,9 @@
 import { derived, writable } from "svelte/store";
+
 import type { LookupResult } from "../../../../bindings/github.com/go-ctap/kit/model/mds";
 import type { RuntimeErrorEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
-import type { OperationEnvelope } from "../../api";
+
+import type { OperationEnvelope } from "$lib/api";
 
 export type LoadStateName = "idle" | "loading" | "ready" | "error" | "stale";
 

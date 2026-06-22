@@ -1,6 +1,6 @@
+import { CommonValueID, FindingValueKind, type Finding, type FindingValue } from "../../bindings/github.com/go-ctap/kit/model/conformance";
+
 import { m } from "../paraglide/messages.js";
-import { CommonValueID, FindingValueKind } from "../../bindings/github.com/go-ctap/kit/model/conformance";
-import type { Finding, FindingValue } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import type { OverviewConformanceWarning, OverviewMDSState, OverviewRowStatus } from "./overview-types.js";
 
 export { m };

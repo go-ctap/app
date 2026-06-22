@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { sanitizeDisplayData } from "./redaction";
 import { sanitizeLogData } from "./workbench-state";
 

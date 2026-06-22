@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+
+import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
+import { OperationKind, type InspectResult } from "../../bindings/github.com/go-ctap/kit/model";
+import { BioModality, type BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
+import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type {
   BioEnrollEnvelope,
   BioSensorEnvelope,
@@ -11,11 +14,8 @@ import type {
   PINEnvelope,
   ResetFactoryEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
-import type { InspectResult } from "../../bindings/github.com/go-ctap/kit/model";
-import { BioModality } from "../../bindings/github.com/go-ctap/kit/model/config";
-import type { BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
+import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+
 import type { OperationEnvelope } from "./api";
 import { bioSensorReport, inspectResult, operationEnvelopeLogData } from "./ctapkit-results";
 

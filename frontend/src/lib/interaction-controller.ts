@@ -1,13 +1,15 @@
 import { get } from "svelte/store";
+
 import type { InteractionAnswer, InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
+
+import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
-import { selectedSelector } from "./features/session/state.js";
 import { pendingInteraction } from "./features/interaction/state.js";
+import { selectedSelector } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { operationStageLabel } from "./format.js";
-import { appendLogEntry } from "./workbench-state.js";
 import { interactionMatchesCurrentSession } from "./session-boundary.js";
-import { m } from "../paraglide/messages.js";
+import { appendLogEntry } from "./workbench-state.js";
 
 const resolvingInteractions = new Set<string>();
 

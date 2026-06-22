@@ -1,4 +1,5 @@
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+
 import { m } from "../paraglide/messages.js";
 
 export function labelDevice(device: DeviceReport | null | undefined) {

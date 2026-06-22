@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import { CommonValueID, FindingID, FindingValueKind } from "../../bindings/github.com/go-ctap/kit/model/conformance";
+
 import { buildOverviewConformanceWarnings } from "./overview-conformance";
 import { CTAP_CONFORMANCE_FINDING_IDS, localizeCtapWarning } from "./overview-i18n";
 

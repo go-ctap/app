@@ -1,8 +1,30 @@
 import { get } from "svelte/store";
+
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+
+import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
+import {
+  beginLifecycleEpoch,
+  isCurrentLifecycleEpoch,
+} from "./controller-epochs.js";
+import { pendingInteraction } from "./features/interaction/state.js";
+import {
+  devices as deviceStore,
+  selectedSelector,
+  sessions,
+  sessionStatus,
+} from "./features/session/state.js";
+import {
+  activeScreen,
+  appError,
+  type ActiveScreen,
+} from "./features/workbench/state.js";
+import { cancelPendingInteraction } from "./interaction-controller.js";
+import { invalidateOverviewLoads, maybeLoadOverview } from "./overview-controller.js";
 import { runtimeErrorFrom } from "./runtime-error.js";
+import { currentSessionActiveOperationId } from "./session-boundary.js";
 import {
   idleSessionStatus,
   reportForSelector,
@@ -14,32 +36,12 @@ import {
   type SessionStatus,
 } from "./session-model.js";
 import {
-  activeScreen,
-  appError,
-  type ActiveScreen,
-} from "./features/workbench/state.js";
-import {
-  devices as deviceStore,
-  selectedSelector,
-  sessions,
-  sessionStatus,
-} from "./features/session/state.js";
-import { pendingInteraction } from "./features/interaction/state.js";
-import {
-  beginLifecycleEpoch,
-  isCurrentLifecycleEpoch,
-} from "./controller-epochs.js";
-import { cancelPendingInteraction } from "./interaction-controller.js";
-import { invalidateOverviewLoads, maybeLoadOverview } from "./overview-controller.js";
-import { currentSessionActiveOperationId } from "./session-boundary.js";
-import {
   appendLogEntry,
   applyDiscovery,
   clearWorkbenchScreenCaches,
   finishOperation,
   setStatusOutcome,
 } from "./workbench-state.js";
-import { m } from "../paraglide/messages.js";
 
 function messageFromError(error: unknown) {
   return error instanceof Error ? error.message : String(error || m.unexpected_error());

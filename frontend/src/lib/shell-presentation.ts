@@ -1,9 +1,10 @@
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
-import type { ActiveScreen, StatusBarState } from "./stores.js";
-import { selectorFromDevice, type SessionStatus } from "./session-model.js";
-import { deviceDetail, deviceName, labelDevice, sessionStateLabel } from "./format.js";
+
 import { m } from "../paraglide/messages.js";
+import { deviceDetail, deviceName, labelDevice, sessionStateLabel } from "./format.js";
+import { selectorFromDevice, type SessionStatus } from "./session-model.js";
+import type { ActiveScreen, StatusBarState } from "./stores.js";
 
 export type AuthenticatorTitlebarItem = {
   value: string;

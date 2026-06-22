@@ -1,16 +1,9 @@
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
+import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { InteractionPrompt, RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+
 import type { OperationEnvelope } from "./api.js";
-import type { SessionStatus } from "./session-model.js";
 import { resetInteractionStateForTest, pendingInteraction } from "./features/interaction/state.js";
-import {
-  devices,
-  selectedDevice,
-  selectedSelector,
-  sessionStatus,
-  resetSessionStateForTest,
-} from "./features/session/state.js";
 import {
   idleLoadState,
   overviewBioSensor,
@@ -20,9 +13,17 @@ import {
   resetOverviewStateForTest,
 } from "./features/overview/state.js";
 import {
+  devices,
+  selectedDevice,
+  selectedSelector,
+  sessionStatus,
+  resetSessionStateForTest,
+} from "./features/session/state.js";
+import {
   activeScreen,
   resetWorkbenchStateForTest,
 } from "./features/workbench/state.js";
+import type { SessionStatus } from "./session-model.js";
 import type { ActiveScreen } from "./stores.js";
 
 export function resetAppStateForTest() {

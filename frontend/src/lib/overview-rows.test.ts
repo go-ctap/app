@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+
 import { ExtensionIdentifier } from "../../bindings/github.com/go-ctap/ctap/extension";
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import type { InspectInfo } from "../../bindings/github.com/go-ctap/kit/model";
+
 import { setAppLocale } from "./i18n";
 import { buildOverviewRows } from "./overview-rows";
 import type { OverviewRow } from "./overview-types";

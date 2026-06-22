@@ -1,8 +1,11 @@
 import { cleanup, render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { setAppLocale } from "$lib/i18n";
+
 import { RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+
+import { setAppLocale } from "$lib/i18n";
 import { resetAppStateForTest, seedOverviewMDSForTest, seedSelectionForTest } from "$lib/store-test-utils";
+
 import Overview from "./Overview.svelte";
 
 const controllerMocks = vi.hoisted(() => ({

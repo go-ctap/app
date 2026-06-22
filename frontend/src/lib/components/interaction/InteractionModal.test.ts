@@ -1,10 +1,13 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { InteractionKind, InteractionRequest } from "../../../../bindings/github.com/go-ctap/kit/model";
 import { InteractionPrompt } from "../../../../bindings/github.com/go-ctap/kit/service";
-import { resetAppStateForTest } from "$lib/store-test-utils";
+
 import { buildInteractionModalPresentation } from "$lib/shell-presentation";
+import { resetAppStateForTest } from "$lib/store-test-utils";
+
 import InteractionModal from "./InteractionModal.svelte";
 
 function pinPrompt() {

@@ -1,11 +1,13 @@
 import { get } from "svelte/store";
+
 import type { OperationEvent } from "../../bindings/github.com/go-ctap/kit/model";
 import type { OperationEventEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+
 import { selectedSelector } from "./features/session/state.js";
 import { activeScreen, statusBar } from "./features/workbench/state.js";
 import { operationStageLabel } from "./format.js";
-import { appendLogEntry, setStatusOperation } from "./workbench-state.js";
 import { operationEventMatchesCurrentSession } from "./session-boundary.js";
+import { appendLogEntry, setStatusOperation } from "./workbench-state.js";
 
 function progressLabel(value: OperationEvent) {
   if (value.completed !== undefined && value.total !== undefined) {

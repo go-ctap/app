@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { tick, type Snippet } from "svelte";
   import { X } from "@lucide/svelte";
+  import { tick, type Snippet } from "svelte";
+
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import { cn } from "$lib/utils.js";
+
   import { m } from "../../../paraglide/messages.js";
 
   type Props = {

@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import Icons from "./Icons.svelte";
-  import WindowControlButton from "./WindowControlButton.svelte";
-  import { closeWindow, isWindowMaximized, minimizeWindow, toggleMaximizeWindow } from "./window";
+
   import { m } from "../../../paraglide/messages.js";
+  import Icons from "./Icons.svelte";
+  import { closeWindow, isWindowMaximized, minimizeWindow, toggleMaximizeWindow } from "./window";
+  import WindowControlButton from "./WindowControlButton.svelte";
 
   let maximized = $state(false);
 

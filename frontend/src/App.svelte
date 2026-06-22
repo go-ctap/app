@@ -1,11 +1,17 @@
 <script lang="ts">
 	import './app.css';
-	import { onMount } from "svelte";
-	import { Events } from "@wailsio/runtime";
+
 	import { ShieldCheck } from "@lucide/svelte";
-	import { Alert } from "$lib/components/ui/alert/index.js";
+	import { Events } from "@wailsio/runtime";
+	import { onMount } from "svelte";
+
 	import type * as kitservice from "../bindings/github.com/go-ctap/kit/service/models";
 
+	import InteractionModal, { type InteractionModalAnswer } from "$lib/components/interaction/InteractionModal.svelte";
+	import EmptyState from "$lib/components/shared/EmptyState.svelte";
+	import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
+	import { Alert } from "$lib/components/ui/alert/index.js";
+	import { AuthenticatorTitlebarControl, WindowControls, WindowTitlebar } from "$lib/components/window-controls";
 	import {
 		bootstrap,
 		answerPendingInteraction,
@@ -16,7 +22,8 @@
 		selectToken,
 		shutdownWorkbench
 	} from "$lib/controller";
-
+	import { currentLocale } from "$lib/i18n";
+	import { buildAuthenticatorTitlebarPresentation, buildInteractionModalPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
 	import {
 		activeScreen,
 		appError,
@@ -29,15 +36,8 @@
 		statusBar,
 		type ActiveScreen
 	} from "$lib/stores";
-	import { buildAuthenticatorTitlebarPresentation, buildInteractionModalPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
-	import type { InteractionModalAnswer } from "$lib/components/interaction/InteractionModal.svelte";
 
-	import { currentLocale } from "$lib/i18n";
 	import { m } from "./paraglide/messages.js";
-	import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
-	import EmptyState from "$lib/components/shared/EmptyState.svelte";
-	import InteractionModal from "$lib/components/interaction/InteractionModal.svelte";
-	import { AuthenticatorTitlebarControl, WindowControls, WindowTitlebar } from "$lib/components/window-controls";
 	import Overview from "./screens/Overview.svelte";
 	import Settings from "./screens/Settings.svelte";
 

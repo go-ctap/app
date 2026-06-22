@@ -1,9 +1,22 @@
 import { get } from "svelte/store";
+
+import { m } from "../paraglide/messages.js";
 import type { OperationEnvelope } from "./api.js";
-import type { Discovery } from "./session-model.js";
 import { operationEnvelopeLogData } from "./ctapkit-results.js";
-import { sanitizeDisplayData } from "./redaction.js";
-import { currentSessionId } from "./session-boundary.js";
+import { pendingInteraction } from "./features/interaction/state.js";
+import {
+  idleLoadState,
+  overviewBioSensor,
+  overviewInspection,
+  overviewMDS,
+} from "./features/overview/state.js";
+import {
+  devices,
+  selectedDevice,
+  selectedSelector,
+  selectionVersion,
+  sessionStatus,
+} from "./features/session/state.js";
 import {
   operationStatus,
   selectedLogEntryId,
@@ -16,21 +29,9 @@ import {
   activeScreen,
   appError,
 } from "./features/workbench/state.js";
-import {
-  devices,
-  selectedDevice,
-  selectedSelector,
-  selectionVersion,
-  sessionStatus,
-} from "./features/session/state.js";
-import { pendingInteraction } from "./features/interaction/state.js";
-import {
-  idleLoadState,
-  overviewBioSensor,
-  overviewInspection,
-  overviewMDS,
-} from "./features/overview/state.js";
-import { m } from "../paraglide/messages.js";
+import { sanitizeDisplayData } from "./redaction.js";
+import { currentSessionId } from "./session-boundary.js";
+import type { Discovery } from "./session-model.js";
 
 const LOG_LIMIT = 250;
 let logSequence = 0;

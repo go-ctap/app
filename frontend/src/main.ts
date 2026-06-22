@@ -1,9 +1,12 @@
 // @ts-ignore
 import "./app.css";
-import App from "./App.svelte";
+
 import { Events, System } from "@wailsio/runtime";
 import { mount } from "svelte";
+
 import { initLocale } from "$lib/i18n";
+
+import App from "./App.svelte";
 
 async function syncTheme() {
   try {

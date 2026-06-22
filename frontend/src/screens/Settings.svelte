@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as Select from "$lib/components/ui/select/index.js";
   import { availableLocales, currentLocale, localeLabel, setAppLocale } from "$lib/i18n";
+
   import { m } from "../paraglide/messages.js";
 
   function handleLocaleChange(value: string | string[]) {

@@ -1,8 +1,10 @@
 <script lang="ts">
+  import type { InspectInfo } from "../../../../bindings/github.com/go-ctap/kit/model";
+
+  import JsonView from "$lib/components/shared/JsonView.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Collapsible from "$lib/components/ui/collapsible/index.js";
-  import type { InspectInfo } from "../../../../bindings/github.com/go-ctap/kit/model";
-  import JsonView from "$lib/components/shared/JsonView.svelte";
+
   import { m } from "../../../paraglide/messages.js";
 
   let { info = null, onCopy = () => {} }: { info?: InspectInfo | null; onCopy?: () => void | Promise<void> } = $props();

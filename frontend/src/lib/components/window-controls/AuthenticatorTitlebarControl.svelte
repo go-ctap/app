@@ -1,9 +1,11 @@
 <script lang="ts">
   import { RefreshCw, X } from "@lucide/svelte";
+
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Select from "$lib/components/ui/select/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import type { AuthenticatorTitlebarPresentation } from "$lib/shell-presentation";
+
   import { m } from "../../../paraglide/messages.js";
 
   type Props = {

@@ -1,7 +1,7 @@
 import type { InspectInfo } from "../../bindings/github.com/go-ctap/kit/model";
 import type { BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
+import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 
 export type OverviewRowStatus =
   | "supported"

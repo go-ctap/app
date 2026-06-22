@@ -15,11 +15,12 @@
 </script>
 
 <script lang="ts">
+  import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
   import { overviewStatusLabel, type OverviewGroup } from "$lib/overview-rules";
-  import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
+
   import { m } from "../../../paraglide/messages.js";
 
   let { groups = [], warningCount = 0 }: { groups?: OverviewGroup[]; warningCount?: number } = $props();

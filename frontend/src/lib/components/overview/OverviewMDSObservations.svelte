@@ -3,6 +3,7 @@
   import * as Collapsible from "$lib/components/ui/collapsible/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
   import type { OverviewMDSObservation, OverviewMDSObservationSeverity } from "$lib/overview-rules";
+
   import { m } from "../../../paraglide/messages.js";
 
   let { observations = [] }: { observations?: OverviewMDSObservation[] } = $props();

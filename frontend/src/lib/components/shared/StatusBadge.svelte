@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Badge, type BadgeVariant } from "$lib/components/ui/badge/index.js";
   import { stateLabel } from "$lib/format";
+
   import { m } from "../../../paraglide/messages.js";
 
   type Props = {

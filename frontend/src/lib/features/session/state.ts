@@ -1,5 +1,7 @@
 import { derived, writable } from "svelte/store";
+
 import type { DeviceReport } from "../../../../bindings/github.com/go-ctap/kit/model/report";
+
 import type { SessionStatus } from "$lib/session-model";
 
 export const devices = writable<DeviceReport[]>([]);

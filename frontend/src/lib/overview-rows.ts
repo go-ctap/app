@@ -1,12 +1,20 @@
-import { m, value } from "./overview-i18n.js";
 import { Option } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import type { InspectInfo } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { InspectAlgorithms, InspectBooleanField, InspectCertifications, InspectNumberField, InspectOptions } from "./overview-dto-types.js";
-import type { MessageText, OverviewContext, OverviewRow, OverviewRowStatus } from "./overview-types.js";
+
 import { CTAP_2_3_VERSION, FORBIDDEN_VERSION_IDS, certificationLevelValid, formatConfigCommand } from "./overview-ctap23.js";
+import type { InspectAlgorithms, InspectBooleanField, InspectCertifications, InspectNumberField, InspectOptions } from "./overview-dto-types.js";
+import { m, value } from "./overview-i18n.js";
 import { CERTIFICATION_ROWS, EXTENSION_ROWS, certificationRangeLabel, formatCertificationValue } from "./overview-matrix-rules.js";
+import {
+  byteLength,
+  compactSecretValue,
+  formatListItem,
+  hasDuplicateListItems,
+  inlineList,
+} from "./overview-raw-format.js";
 import { row } from "./overview-shared.js";
+import type { MessageText, OverviewContext, OverviewRow, OverviewRowStatus } from "./overview-types.js";
 import {
   algorithmListItemKey,
   formatAaguid,
@@ -17,13 +25,6 @@ import {
   unsignedIntegerListItemKey,
   unsignedIntegerValue,
 } from "./overview-utils.js";
-import {
-  byteLength,
-  compactSecretValue,
-  formatListItem,
-  hasDuplicateListItems,
-  inlineList,
-} from "./overview-raw-format.js";
 
 type OverviewOptionKey = Option;
 

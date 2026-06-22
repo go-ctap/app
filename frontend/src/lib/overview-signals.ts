@@ -1,6 +1,7 @@
-import { m } from "./overview-i18n.js";
 import { Option } from "../../bindings/github.com/go-ctap/ctap/protocol";
+
 import type { InspectOptions } from "./overview-dto-types.js";
+import { m } from "./overview-i18n.js";
 import type { OverviewContext, OverviewHeroSignal, OverviewHeroSignalGroup, OverviewHeroSignalId, OverviewRowStatus } from "./overview-types.js";
 
 type SignalConfig = {

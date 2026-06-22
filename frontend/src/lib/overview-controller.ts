@@ -1,16 +1,19 @@
 import { get } from "svelte/store";
+
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import { InspectEnvelope, RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+
+import { m } from "../paraglide/messages.js";
 import { api, type OperationEnvelope } from "./api.js";
-import { runtimeErrorFrom } from "./runtime-error.js";
 import {
-  selectedSelector,
-  sessionStatus,
-} from "./features/session/state.js";
-import {
-  activeScreen,
-  appError,
-} from "./features/workbench/state.js";
+  beginMDSEpoch,
+  beginOverviewEpoch,
+  bumpOverviewEpoch,
+  bumpMDSEpoch,
+  isCurrentMDSEpoch,
+  isCurrentOverviewEpoch,
+} from "./controller-epochs.js";
+import { inspectResult, operationError } from "./ctapkit-results.js";
 import { pendingInteraction } from "./features/interaction/state.js";
 import {
   errorLoadState,
@@ -23,18 +26,17 @@ import {
   overviewMDS,
   readyLoadState,
 } from "./features/overview/state.js";
-import { inspectResult, operationError } from "./ctapkit-results.js";
 import {
-  beginMDSEpoch,
-  beginOverviewEpoch,
-  bumpOverviewEpoch,
-  bumpMDSEpoch,
-  isCurrentMDSEpoch,
-  isCurrentOverviewEpoch,
-} from "./controller-epochs.js";
+  selectedSelector,
+  sessionStatus,
+} from "./features/session/state.js";
+import {
+  activeScreen,
+  appError,
+} from "./features/workbench/state.js";
+import { runtimeErrorFrom } from "./runtime-error.js";
 import { selectedSessionId } from "./session-boundary.js";
 import { appendLogEntry, beginOperation, setStatusOutcome, summarizeEnvelope } from "./workbench-state.js";
-import { m } from "../paraglide/messages.js";
 
 function failureEnvelope(error: RuntimeErrorEnvelope): OperationEnvelope {
   return new InspectEnvelope({ kind: OperationKind.OperationInspect, error });

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
   import { System } from "@wailsio/runtime";
+  import type { Snippet } from "svelte";
 
   type Props = {
     label: string;

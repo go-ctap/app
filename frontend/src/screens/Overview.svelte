@@ -1,5 +1,13 @@
 <script lang="ts">
+  import OverviewCapabilityMatrix from "$lib/components/overview/OverviewCapabilityMatrix.svelte";
+  import OverviewConformanceWarnings from "$lib/components/overview/OverviewConformanceWarnings.svelte";
+  import OverviewHeroCard from "$lib/components/overview/OverviewHeroCard.svelte";
+  import OverviewLoadingCard from "$lib/components/overview/OverviewLoadingCard.svelte";
+  import OverviewMDSObservations from "$lib/components/overview/OverviewMDSObservations.svelte";
+  import OverviewRawInspectionData from "$lib/components/overview/OverviewRawInspectionData.svelte";
+  import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import { loadOverview, loadOverviewMDS } from "$lib/controller";
+  import { buildOverviewPresentation } from "$lib/overview-presentation";
   import {
     overviewBioSensorEnvelope,
     overviewBioSensor,
@@ -12,15 +20,8 @@
     sessionBusy,
     sessionStatus,
   } from "$lib/stores";
-  import { buildOverviewPresentation } from "$lib/overview-presentation";
-  import EmptyState from "$lib/components/shared/EmptyState.svelte";
+
   import { m } from "../paraglide/messages.js";
-  import OverviewCapabilityMatrix from "$lib/components/overview/OverviewCapabilityMatrix.svelte";
-  import OverviewConformanceWarnings from "$lib/components/overview/OverviewConformanceWarnings.svelte";
-  import OverviewHeroCard from "$lib/components/overview/OverviewHeroCard.svelte";
-  import OverviewLoadingCard from "$lib/components/overview/OverviewLoadingCard.svelte";
-  import OverviewMDSObservations from "$lib/components/overview/OverviewMDSObservations.svelte";
-  import OverviewRawInspectionData from "$lib/components/overview/OverviewRawInspectionData.svelte";
 
   let overview = $derived(buildOverviewPresentation({
     selectedSelector: $selectedSelector,

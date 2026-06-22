@@ -1,5 +1,6 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import JsonView from "./JsonView.svelte";
 
 describe("JsonView", () => {

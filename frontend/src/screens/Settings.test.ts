@@ -1,7 +1,9 @@
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { setAppLocale } from "$lib/i18n";
+
 import Settings from "./Settings.svelte";
 
 describe("Settings", () => {

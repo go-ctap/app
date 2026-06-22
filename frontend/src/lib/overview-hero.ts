@@ -1,4 +1,5 @@
 import type { LookupResult, MetadataStatement, PayloadEntry, StatusReport } from "../../bindings/github.com/go-ctap/kit/model/mds";
+
 import { m, mdsDescriptionText, mdsStateText } from "./overview-i18n.js";
 import type {
   OverviewContext,

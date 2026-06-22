@@ -1,4 +1,5 @@
 import { writable } from "svelte/store";
+
 import type { OperationEvent } from "../../../../bindings/github.com/go-ctap/kit/model";
 
 export type ActiveOperation = {

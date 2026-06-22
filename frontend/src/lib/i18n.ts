@@ -1,4 +1,6 @@
 import { writable } from "svelte/store";
+
+import { m } from "../paraglide/messages.js";
 import {
   baseLocale,
   getLocale,
@@ -8,7 +10,6 @@ import {
   setLocale,
   type Locale,
 } from "../paraglide/runtime.js";
-import { m } from "../paraglide/messages.js";
 
 const STORAGE_KEY = "fidoapp.locale";
 

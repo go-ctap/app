@@ -1,18 +1,20 @@
-import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
-import type {
-  AuthenticatorConfigOutput,
-  BioEnrollOutput,
-  BioListOutput,
-  BioMutationOutput,
-  CredentialDeleteOutput,
-  CredentialUpdateOutput,
-  CredentialsOutput,
-  LargeBlobListOutput,
-  LargeBlobMutationOutput,
-  MakeCredentialOutput,
-  PINOutput,
-  ResetFactoryOutput,
+import {
+  OperationKind,
+  type AuthenticatorConfigOutput,
+  type BioEnrollOutput,
+  type BioListOutput,
+  type BioMutationOutput,
+  type CredentialDeleteOutput,
+  type CredentialUpdateOutput,
+  type CredentialsOutput,
+  type InspectResult,
+  type LargeBlobListOutput,
+  type LargeBlobMutationOutput,
+  type MakeCredentialOutput,
+  type PINOutput,
+  type ResetFactoryOutput,
 } from "../../bindings/github.com/go-ctap/kit/model";
+import type { BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
 import type {
   AuthenticatorConfigEnvelope,
   BioEnrollEnvelope,
@@ -27,11 +29,9 @@ import type {
   LargeBlobMutationEnvelope,
   MakeCredentialEnvelope,
   PINEnvelope,
-  RuntimeErrorEnvelope,
   ResetFactoryEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
-import type { InspectResult } from "../../bindings/github.com/go-ctap/kit/model";
-import type { BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
+
 import type { OperationEnvelope } from "./api.js";
 
 type CountSummary = {

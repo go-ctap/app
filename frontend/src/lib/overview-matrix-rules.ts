@@ -1,5 +1,5 @@
-import { m, value } from "./overview-i18n.js";
 import { CERTIFICATION_LEVEL_RANGES, certificationLevelRange } from "./overview-ctap23.js";
+import { m, value } from "./overview-i18n.js";
 import { formatListItem } from "./overview-raw-format.js";
 import { unsignedIntegerValue } from "./overview-utils.js";
 
