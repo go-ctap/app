@@ -3,25 +3,25 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Select from "$lib/components/ui/select/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
-  import type { AuthenticatorTitlebarModel } from "$lib/shell-view-model";
+  import type { AuthenticatorTitlebarPresentation } from "$lib/shell-presentation";
   import { m } from "../../paraglide/messages.js";
 
   type Props = {
-    model: AuthenticatorTitlebarModel;
+    presentation: AuthenticatorTitlebarPresentation;
     onSelect: (value: string) => void | Promise<void>;
     onClear: () => void | Promise<void>;
     onRefresh: () => void | Promise<void>;
   };
 
-  let { model, onSelect, onClear, onRefresh }: Props = $props();
+  let { presentation, onSelect, onClear, onRefresh }: Props = $props();
   let localRefreshing = $state(false);
 
-  let disabled = $derived(model.busy || localRefreshing);
-  let clearDisabled = $derived(model.clearDisabled || localRefreshing);
+  let disabled = $derived(presentation.busy || localRefreshing);
+  let clearDisabled = $derived(presentation.clearDisabled || localRefreshing);
 
   async function handleSelect(value: string | string[]) {
     if (Array.isArray(value)) return;
-    if (value === model.selectedValue || disabled) return;
+    if (value === presentation.selectedValue || disabled) return;
     await onSelect(value);
   }
 
@@ -43,15 +43,15 @@
 
 <Tooltip.Provider delayDuration={450} skipDelayDuration={80}>
   <div class="auth-titlebar" data-busy={disabled ? "true" : undefined}>
-    <Select.Root type="single" value={model.selectedValue} onValueChange={handleSelect} disabled={disabled} items={model.items}>
+    <Select.Root type="single" value={presentation.selectedValue} onValueChange={handleSelect} disabled={disabled} items={presentation.items}>
       <Select.Trigger aria-label={m.select_authenticator()}>
-        {model.selectedLabel}
+        {presentation.selectedLabel}
       </Select.Trigger>
 
       <Select.Portal>
         <Select.Content side="bottom" align="start" sideOffset={6}>
           <Select.Group>
-            {#each model.items as item (item.value)}
+            {#each presentation.items as item (item.value)}
               <Select.Item value={item.value} label={item.label}>
                 <span>{item.name}</span>
                 <span class="auth-item-detail">{item.detail}</span>

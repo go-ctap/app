@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { InteractionKind, InteractionRequest } from "../../bindings/github.com/go-ctap/kit/model";
 import { InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
 import { resetAppStateForTest } from "$lib/store-test-utils";
-import { buildInteractionModalModel } from "$lib/shell-view-model";
+import { buildInteractionModalPresentation } from "$lib/shell-presentation";
 import InteractionModal from "./InteractionModal.svelte";
 
 function pinPrompt() {
@@ -37,7 +37,7 @@ describe("InteractionModal", () => {
 
   it("focuses the PIN input when a PIN prompt opens", async () => {
     render(InteractionModal, {
-      props: { model: buildInteractionModalModel(pinPrompt()), onAnswer },
+      props: { presentation: buildInteractionModalPresentation(pinPrompt()), onAnswer },
     });
 
     const input = await screen.findByLabelText("PIN");
@@ -47,7 +47,7 @@ describe("InteractionModal", () => {
   it("submits the PIN prompt from Enter without rendering preview secrets", async () => {
     const user = userEvent.setup();
     render(InteractionModal, {
-      props: { model: buildInteractionModalModel(pinPrompt()), onAnswer },
+      props: { presentation: buildInteractionModalPresentation(pinPrompt()), onAnswer },
     });
 
     const input = await screen.findByLabelText("PIN");
@@ -66,7 +66,7 @@ describe("InteractionModal", () => {
   it("cancels the prompt from Escape", async () => {
     const user = userEvent.setup();
     render(InteractionModal, {
-      props: { model: buildInteractionModalModel(pinPrompt()), onAnswer },
+      props: { presentation: buildInteractionModalPresentation(pinPrompt()), onAnswer },
     });
 
     const input = await screen.findByLabelText("PIN");
@@ -87,7 +87,7 @@ describe("InteractionModal", () => {
       resolveAnswer = () => resolve(true);
     }));
     render(InteractionModal, {
-      props: { model: buildInteractionModalModel(pinPrompt()), onAnswer },
+      props: { presentation: buildInteractionModalPresentation(pinPrompt()), onAnswer },
     });
 
     const input = await screen.findByLabelText("PIN");

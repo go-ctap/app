@@ -13,7 +13,7 @@
     sessionBusy,
     sessionStatus,
   } from "$lib/stores";
-  import { buildOverviewViewModel } from "$lib/overview-view-model";
+  import { buildOverviewPresentation } from "$lib/overview-presentation";
   import EmptyState from "../components/EmptyState.svelte";
   import { m } from "../paraglide/messages.js";
   import OverviewCapabilityMatrix from "../components/OverviewCapabilityMatrix.svelte";
@@ -23,7 +23,7 @@
   import OverviewMDSObservations from "../components/OverviewMDSObservations.svelte";
   import OverviewRawInspectionData from "../components/OverviewRawInspectionData.svelte";
 
-  let overview = $derived(buildOverviewViewModel({
+  let overview = $derived(buildOverviewPresentation({
     selectedSelector: $selectedSelector,
     selectedDevice: $selectedDevice,
     sessionStatus: $sessionStatus,

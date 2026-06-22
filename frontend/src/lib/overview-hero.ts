@@ -5,7 +5,7 @@ import type {
   OverviewHeroContext,
   OverviewHeroFact,
   OverviewHeroFactTone,
-  OverviewHeroModel,
+  OverviewHeroPresentation,
   OverviewMDSObservation,
   OverviewMDSObservationSeverity,
 } from "./overview-types.js";
@@ -21,7 +21,7 @@ const DANGEROUS_MDS_STATUSES = new Set([
 
 type TextLike = string | number | boolean | null | undefined;
 
-export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHeroModel {
+export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHeroPresentation {
   const info = context.info ?? null;
   const device = context.device ?? null;
   const mdsResult = context.mds ?? null;
@@ -70,7 +70,7 @@ function resolveMDSState(
   context: OverviewHeroContext,
   found: boolean,
   hasLookup: boolean,
-): OverviewHeroModel["mdsState"] {
+): OverviewHeroPresentation["mdsState"] {
   if (context.mdsLoading) return "loading";
   if (context.mdsError) return "error";
   if (found) return "found";
@@ -111,7 +111,7 @@ function statusReportFacts(
   entry: PayloadEntry | null,
   status: string,
   found: boolean,
-  mdsState: OverviewHeroModel["mdsState"],
+  mdsState: OverviewHeroPresentation["mdsState"],
 ) {
   return [
     heroFact(m.mds_status(), mdsText(status, found), mdsState === "found" ? statusTone(status) : "muted", !found),

@@ -1,4 +1,5 @@
-import type { AuthenticatorGetInfoResponse } from "../../bindings/github.com/go-ctap/ctap/protocol";
+import type { InspectInfo } from "../../bindings/github.com/go-ctap/kit/model";
+import type { BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
 
@@ -87,7 +88,7 @@ export type OverviewHeroFact = {
   href?: string;
 };
 
-export type OverviewHeroModel = {
+export type OverviewHeroPresentation = {
   title: string;
   subtitle: string;
   aaguid: string;
@@ -100,45 +101,10 @@ export type OverviewHeroModel = {
   mdsBlobFacts: OverviewHeroFact[];
 };
 
-export type CtapFindingValue = {
-  kind: "common" | "literal" | "input" | "list" | string;
-  id?: "empty_list" | "extension_reported_command_missing" | "mutually_exclusive_support_reported" | "not_listed" | "not_reported" | string;
-  value?: string;
-  input?: unknown;
-  items?: unknown[];
-};
-
-export type CtapConformanceFinding = {
-  id: string;
-  source: string;
-  value: CtapFindingValue;
-  args?: Record<string, unknown>;
-};
-
-export type OverviewInspectInfo = AuthenticatorGetInfoResponse & {
-  uvModalityLabel?: string;
-  conformanceFindings: CtapConformanceFinding[];
-};
-
-export type OverviewInspectResult = {
-  device: DeviceReport;
-  info: OverviewInspectInfo;
-};
-
-export type OverviewBioSensorReport = {
-  device: DeviceReport;
-  supported: boolean;
-  previewOnly: boolean;
-  modality?: string | null;
-  fingerprintKind?: string | null;
-  maxCaptureSamplesRequiredForEnroll?: number | null;
-  maxTemplateFriendlyName?: number | null;
-};
-
 export type OverviewContext = {
-  info?: OverviewInspectInfo | null;
+  info?: InspectInfo | null;
   device?: DeviceReport | null;
-  bioSensor?: OverviewBioSensorReport | null;
+  bioSensor?: BioSensorReport | null;
   mds?: LookupResult | null;
 };
 

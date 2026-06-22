@@ -1,5 +1,7 @@
 import { m } from "../paraglide/messages.js";
-import type { CtapConformanceFinding, CtapFindingValue, OverviewConformanceWarning, OverviewHeroModel, OverviewRowStatus } from "./overview-types.js";
+import { CommonValueID, FindingValueKind } from "../../bindings/github.com/go-ctap/kit/model/conformance";
+import type { Finding, FindingValue } from "../../bindings/github.com/go-ctap/kit/model/conformance";
+import type { OverviewConformanceWarning, OverviewHeroPresentation, OverviewRowStatus } from "./overview-types.js";
 
 export { m };
 
@@ -52,7 +54,7 @@ export const value = {
 };
 
 type CtapWarningMessageArgs = {
-  id: CtapConformanceFindingId;
+  id: ConformanceFindingId;
   source: string;
   value: string;
   field: string;
@@ -120,7 +122,7 @@ export const CTAP_CONFORMANCE_FINDING_IDS = [
   "long_touch_command_missing",
 ] as const;
 
-type CtapConformanceFindingId = (typeof CTAP_CONFORMANCE_FINDING_IDS)[number];
+type ConformanceFindingId = (typeof CTAP_CONFORMANCE_FINDING_IDS)[number];
 
 type CtapWarningMessages = {
   name: () => string;
@@ -394,10 +396,10 @@ const CTAP_WARNING_MESSAGES = {
     description: m.overview_ctap_warning_long_touch_command_missing_description,
     value: m.overview_ctap_warning_long_touch_command_missing_value,
   }
-} satisfies Record<CtapConformanceFindingId, CtapWarningMessages>;
+} satisfies Record<ConformanceFindingId, CtapWarningMessages>;
 
-export function localizeCtapWarning(finding: CtapConformanceFinding): OverviewConformanceWarning {
-  const id = finding.id as CtapConformanceFindingId;
+export function localizeCtapWarning(finding: Finding): OverviewConformanceWarning {
+  const id = finding.id as ConformanceFindingId;
   const warningValue = localizeCtapWarningValue(finding.value);
   const messages = CTAP_WARNING_MESSAGES[id];
   const args = ctapWarningArgs(finding, warningValue);
@@ -411,11 +413,11 @@ export function localizeCtapWarning(finding: CtapConformanceFinding): OverviewCo
   };
 }
 
-function ctapWarningArgs(finding: CtapConformanceFinding, warningValue: string): CtapWarningMessageArgs {
+function ctapWarningArgs(finding: Finding, warningValue: string): CtapWarningMessageArgs {
   const args = finding.args ?? {};
 
   return {
-    id: finding.id as CtapConformanceFindingId,
+    id: finding.id as ConformanceFindingId,
     source: finding.source,
     value: warningValue,
     field: stringArg(args.field, finding.source),
@@ -436,24 +438,24 @@ function numberArg(input: unknown, fallback: number) {
   return typeof input === "number" && Number.isFinite(input) ? input : fallback;
 }
 
-function localizeCtapWarningValue(input: CtapFindingValue) {
-  if (input.kind === "literal") return input.value ?? "";
-  if (input.kind === "input") return formatCtapValueInput(input.input);
-  if (input.kind === "list") {
+function localizeCtapWarningValue(input: FindingValue) {
+  if (input.kind === FindingValueKind.FindingValueLiteral) return input.value ?? "";
+  if (input.kind === FindingValueKind.FindingValueInput) return formatCtapValueInput(input.input);
+  if (input.kind === FindingValueKind.FindingValueList) {
     const items = input.items ?? [];
     return items.length ? items.map(formatCtapValueInput).join(", ") : value.emptyList();
   }
 
   switch (input.id) {
-    case "empty_list":
+    case CommonValueID.CommonValueEmptyList:
       return value.emptyList();
-    case "extension_reported_command_missing":
+    case CommonValueID.CommonValueExtensionReportedCommandMissing:
       return value.extensionReportedCommandMissing();
-    case "mutually_exclusive_support_reported":
+    case CommonValueID.CommonValueMutuallyExclusiveSupportReported:
       return value.mutuallyExclusiveSupportReported();
-    case "not_listed":
+    case CommonValueID.CommonValueNotListed:
       return value.notListed();
-    case "not_reported":
+    case CommonValueID.CommonValueNotReported:
       return value.notReported();
   }
 
@@ -500,8 +502,8 @@ export function overviewStatusLabel(status: OverviewRowStatus) {
   return labels[status];
 }
 
-export function mdsStateText(state: OverviewHeroModel["mdsState"]) {
-  const labels: Record<OverviewHeroModel["mdsState"], string> = {
+export function mdsStateText(state: OverviewHeroPresentation["mdsState"]) {
+  const labels: Record<OverviewHeroPresentation["mdsState"], string> = {
     loading: m.mds_loading(),
     found: m.mds_verified(),
     missing: m.mds_not_found(),
@@ -511,7 +513,7 @@ export function mdsStateText(state: OverviewHeroModel["mdsState"]) {
   return labels[state];
 }
 
-export function mdsDescriptionText(state: OverviewHeroModel["mdsState"], error?: string | null) {
+export function mdsDescriptionText(state: OverviewHeroPresentation["mdsState"], error?: string | null) {
   if (state === "loading") return m.mds_loading_description();
   if (state === "found") return m.mds_verified_description();
   if (state === "missing") return m.mds_not_found_description();

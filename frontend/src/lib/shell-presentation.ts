@@ -13,7 +13,7 @@ export type AuthenticatorTitlebarItem = {
   detail: string;
 };
 
-export type AuthenticatorTitlebarModel = {
+export type AuthenticatorTitlebarPresentation = {
   items: AuthenticatorTitlebarItem[];
   selectedValue: string;
   selectedLabel: string;
@@ -21,18 +21,18 @@ export type AuthenticatorTitlebarModel = {
   clearDisabled: boolean;
 };
 
-export type SidebarStatusModel = {
+export type SidebarStatusPresentation = {
   stateLabel: string;
   title: string;
   detail: string;
 };
 
-export type SidebarModel = {
+export type SidebarPresentation = {
   activeScreen: ActiveScreen;
-  status: SidebarStatusModel;
+  status: SidebarStatusPresentation;
 };
 
-export type InteractionModalModel = {
+export type InteractionModalPresentation = {
   open: boolean;
   title: string;
   eyebrow: string;
@@ -43,12 +43,12 @@ export type InteractionModalModel = {
   kind: string;
 };
 
-export function buildAuthenticatorTitlebarModel(input: {
+export function buildAuthenticatorTitlebarPresentation(input: {
   devices: DeviceReport[];
   selectedDevice: DeviceReport | null;
   selectedSelector: string;
   busy: boolean;
-}): AuthenticatorTitlebarModel {
+}): AuthenticatorTitlebarPresentation {
   return {
     items: input.devices.map((device) => {
       const value = selectorFromDevice(device);
@@ -68,12 +68,12 @@ export function buildAuthenticatorTitlebarModel(input: {
   };
 }
 
-export function buildSidebarModel(input: {
+export function buildSidebarPresentation(input: {
   activeScreen: ActiveScreen;
   sessionStatus: SessionStatus;
   selectedDevice: DeviceReport | null;
   statusBar: StatusBarState;
-}): SidebarModel {
+}): SidebarPresentation {
   const active = input.statusBar.activeOperation;
   const outcome = input.statusBar.lastOutcome;
   return {
@@ -86,7 +86,7 @@ export function buildSidebarModel(input: {
   };
 }
 
-export function buildInteractionModalModel(prompt: InteractionPrompt): InteractionModalModel {
+export function buildInteractionModalPresentation(prompt: InteractionPrompt): InteractionModalPresentation {
   const request = prompt.request;
   const kind = request.kind;
   const destructive = request.destructive === true;

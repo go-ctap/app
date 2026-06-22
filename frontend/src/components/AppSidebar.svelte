@@ -3,16 +3,16 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Item from "$lib/components/ui/item/index.js";
   import type { ActiveScreen } from "$lib/stores";
-  import type { SidebarModel } from "$lib/shell-view-model";
+  import type { SidebarPresentation } from "$lib/shell-presentation";
   import { m } from "../paraglide/messages.js";
   import {type Component} from "svelte";
 
   type Props = {
-    model: SidebarModel;
+    presentation: SidebarPresentation;
     onNavigate: (screen: ActiveScreen) => void;
   };
 
-  let { model, onNavigate }: Props = $props();
+  let { presentation, onNavigate }: Props = $props();
 
   const navItems: { id: ActiveScreen; label: string; icon: Component }[] = [
     { id: "overview", label: m.overview(), icon: Gauge },
@@ -36,10 +36,10 @@
     {#each navItems as item (item.id)}
       <Button
         type="button"
-        variant={model.activeScreen === item.id ? "secondary" : "ghost"}
+        variant={presentation.activeScreen === item.id ? "secondary" : "ghost"}
         class="sidebar-nav-button"
-        data-active={model.activeScreen === item.id ? "true" : undefined}
-        aria-current={model.activeScreen === item.id ? "page" : undefined}
+        data-active={presentation.activeScreen === item.id ? "true" : undefined}
+        aria-current={presentation.activeScreen === item.id ? "page" : undefined}
         aria-label={item.label}
         onclick={() => onNavigate(item.id)}
       >
@@ -54,9 +54,9 @@
       <Activity aria-hidden="true" />
     </Item.Media>
     <Item.Content>
-      <span class="sidebar-status-copy">{model.status.stateLabel}</span>
-      <Item.Title class="sidebar-status-title">{model.status.title}</Item.Title>
-      <Item.Description class="sidebar-status-detail">{model.status.detail}</Item.Description>
+      <span class="sidebar-status-copy">{presentation.status.stateLabel}</span>
+      <Item.Title class="sidebar-status-title">{presentation.status.title}</Item.Title>
+      <Item.Description class="sidebar-status-detail">{presentation.status.detail}</Item.Description>
     </Item.Content>
   </Item.Root>
 </aside>

@@ -16,7 +16,7 @@ describe("AuthenticatorTitlebarControl", () => {
 
     render(AuthenticatorTitlebarControl, {
       props: {
-        model: {
+        presentation: {
           items: [{ value: "token-1", label: "Token 1", name: "Token 1", detail: "hid - token-1" }],
           selectedValue: "token-1",
           selectedLabel: "Token 1",

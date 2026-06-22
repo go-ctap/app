@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { ExtensionIdentifier } from "../../bindings/github.com/go-ctap/ctap/extension";
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
+import type { InspectInfo } from "../../bindings/github.com/go-ctap/kit/model";
 import { setAppLocale } from "./i18n";
 import { buildOverviewRows } from "./overview-rows";
-import type { OverviewInspectInfo, OverviewRow } from "./overview-types";
+import type { OverviewRow } from "./overview-types";
 
-function info(input: Partial<OverviewInspectInfo> = {}): OverviewInspectInfo {
+function info(input: Partial<InspectInfo> = {}): InspectInfo {
   return {
     versions: ["FIDO_2_1" as Version],
     aaguid: "00000000-0000-0000-0000-000000000000",

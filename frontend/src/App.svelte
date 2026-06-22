@@ -29,7 +29,7 @@
 		statusBar,
 		type ActiveScreen
 	} from "$lib/stores";
-	import { buildAuthenticatorTitlebarModel, buildInteractionModalModel, buildSidebarModel } from "$lib/shell-view-model";
+	import { buildAuthenticatorTitlebarPresentation, buildInteractionModalPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
 	import type { InteractionModalAnswer } from "./components/InteractionModal.svelte";
 
 	import { currentLocale } from "$lib/i18n";
@@ -46,19 +46,19 @@
 	let refreshing = $state(false);
 	let initialized = $state(false);
 	let noDevices = $derived(initialized && !refreshing && $devices.length === 0);
-	let titlebarModel = $derived(buildAuthenticatorTitlebarModel({
+	let titlebarPresentation = $derived(buildAuthenticatorTitlebarPresentation({
 		devices: $devices,
 		selectedDevice: $selectedDevice,
 		selectedSelector: $selectedSelector,
 		busy: refreshing || $sessionBusy,
 	}));
-	let sidebarModel = $derived(buildSidebarModel({
+	let sidebarPresentation = $derived(buildSidebarPresentation({
 		activeScreen: $activeScreen,
 		sessionStatus: $sessionStatus,
 		selectedDevice: $selectedDevice,
 		statusBar: $statusBar,
 	}));
-	let interactionModalModel = $derived($pendingInteraction ? buildInteractionModalModel($pendingInteraction) : null);
+	let interactionModalPresentation = $derived($pendingInteraction ? buildInteractionModalPresentation($pendingInteraction) : null);
 
 	function navigate(screen: ActiveScreen) {
 		void navigateToScreen(screen);
@@ -107,7 +107,7 @@
 {#key $currentLocale}
 	<div class="app-shell">
 		<AppSidebar
-			model={sidebarModel}
+			presentation={sidebarPresentation}
 			onNavigate={navigate}
 		/>
 
@@ -118,7 +118,7 @@
 				>
 					<div class="titlebar-content">
 						<AuthenticatorTitlebarControl
-							model={titlebarModel}
+							presentation={titlebarPresentation}
 							onSelect={handleSelectToken}
 							onClear={handleClearSelection}
 							onRefresh={handleRefreshDiscovery}
@@ -154,7 +154,7 @@
 			</main>
 		</section>
 
-		<InteractionModal model={interactionModalModel} onAnswer={handleInteractionAnswer} />
+		<InteractionModal presentation={interactionModalPresentation} onAnswer={handleInteractionAnswer} />
 	</div>
 {/key}
 

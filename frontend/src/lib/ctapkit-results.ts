@@ -15,8 +15,9 @@ import type {
   PINEnvelope,
   ResetFactoryEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
+import type { InspectResult } from "../../bindings/github.com/go-ctap/kit/model";
+import type { BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
 import type { OperationEnvelope } from "./api.js";
-import type { OverviewBioSensorReport, OverviewInspectResult } from "./overview-types.js";
 
 type CountSummary = {
   credentials?: number;
@@ -42,12 +43,12 @@ export type OperationEnvelopeLogData = {
   result?: OperationResultSummary;
 };
 
-export function inspectResult(envelope: OperationEnvelope | null | undefined): OverviewInspectResult | null {
+export function inspectResult(envelope: OperationEnvelope | null | undefined): InspectResult | null {
   if (!isInspectEnvelope(envelope) || envelope.error || !envelope.result) return null;
   return envelope.result.result;
 }
 
-export function bioSensorReport(envelope: OperationEnvelope | null | undefined): OverviewBioSensorReport | null {
+export function bioSensorReport(envelope: OperationEnvelope | null | undefined): BioSensorReport | null {
   if (!isBioSensorEnvelope(envelope) || envelope.error || !envelope.result) return null;
   return envelope.result.report;
 }

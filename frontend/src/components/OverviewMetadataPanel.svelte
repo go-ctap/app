@@ -5,7 +5,7 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
-  import type { OverviewHeroFact, OverviewHeroModel } from "$lib/overview-rules";
+  import type { OverviewHeroFact, OverviewHeroPresentation } from "$lib/overview-rules";
   import { m } from "../paraglide/messages.js";
 
   let {
@@ -13,7 +13,7 @@
     loading = false,
     onRefresh = () => {},
   }: {
-    hero: OverviewHeroModel;
+    hero: OverviewHeroPresentation;
     loading?: boolean;
     onRefresh?: () => void | Promise<void>;
   } = $props();

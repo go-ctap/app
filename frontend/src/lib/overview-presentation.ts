@@ -14,7 +14,7 @@ import {
 import { sanitizedJson } from "./redaction.js";
 import { m } from "../paraglide/messages.js";
 
-export type OverviewViewModelInput = {
+export type OverviewPresentationInput = {
   selectedSelector: string;
   selectedDevice: DeviceReport | null;
   sessionStatus: SessionStatus;
@@ -28,7 +28,9 @@ export type OverviewViewModelInput = {
   overviewMDSLoading: boolean;
 };
 
-export function buildOverviewViewModel(input: OverviewViewModelInput) {
+export type OverviewPresentation = ReturnType<typeof buildOverviewPresentation>;
+
+export function buildOverviewPresentation(input: OverviewPresentationInput) {
   const selector = input.selectedSelector;
   const envelope = input.overviewEnvelope;
   const mdsLookup = input.overviewMDSLookup;

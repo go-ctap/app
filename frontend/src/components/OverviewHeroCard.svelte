@@ -5,7 +5,7 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
-  import type { OverviewHeroModel, OverviewHeroSignalGroup } from "$lib/overview-rules";
+  import type { OverviewHeroPresentation, OverviewHeroSignalGroup } from "$lib/overview-rules";
   import StatusBadge from "../components/StatusBadge.svelte";
   import { m } from "../paraglide/messages.js";
   import OverviewMetadataPanel from "./OverviewMetadataPanel.svelte";
@@ -22,7 +22,7 @@
     onReload = () => {},
     onRefreshMDS = () => {},
   }: {
-    hero: OverviewHeroModel;
+    hero: OverviewHeroPresentation;
     signalGroups?: OverviewHeroSignalGroup[];
     sessionState?: string;
     sessionLabel?: string;
@@ -33,7 +33,7 @@
     onRefreshMDS?: () => void | Promise<void>;
   } = $props();
 
-  function mdsTone(state: OverviewHeroModel["mdsState"]) {
+  function mdsTone(state: OverviewHeroPresentation["mdsState"]) {
     if (state === "error") return "bad";
     if (state === "found") return "ok";
     return "neutral";

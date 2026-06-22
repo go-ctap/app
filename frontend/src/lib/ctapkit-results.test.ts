@@ -12,9 +12,11 @@ import type {
 } from "../../bindings/github.com/go-ctap/kit/service";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
+import type { InspectResult } from "../../bindings/github.com/go-ctap/kit/model";
+import { BioModality } from "../../bindings/github.com/go-ctap/kit/model/config";
+import type { BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
 import type { OperationEnvelope } from "./api";
 import { bioSensorReport, inspectResult, operationEnvelopeLogData } from "./ctapkit-results";
-import type { OverviewBioSensorReport, OverviewInspectResult } from "./overview-types";
 
 const device: DeviceReport = {
   deviceId: "dev-1",
@@ -27,7 +29,7 @@ const device: DeviceReport = {
 
 describe("ctapkit result extractors", () => {
   it("extracts the nested inspect result from an operation envelope", () => {
-    const result: OverviewInspectResult = {
+    const result: InspectResult = {
       device,
       info: {
         versions: ["FIDO_2_1" as Version],
@@ -51,11 +53,11 @@ describe("ctapkit result extractors", () => {
   });
 
   it("extracts the nested bio sensor report from an operation envelope", () => {
-    const report: OverviewBioSensorReport = {
+    const report: BioSensorReport = {
       device,
       supported: true,
       previewOnly: false,
-      modality: "fingerprint",
+      modality: BioModality.BioModalityFingerprint,
     };
 
     const envelope = { kind: OperationKind.OperationBioSensorInfo, result: { report } } as BioSensorEnvelope;

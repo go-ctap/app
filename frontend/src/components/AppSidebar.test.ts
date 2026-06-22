@@ -14,7 +14,7 @@ describe("AppSidebar", () => {
 
     render(AppSidebar, {
       props: {
-        model: {
+        presentation: {
           activeScreen: "overview",
           status: {
             stateLabel: "Idle",

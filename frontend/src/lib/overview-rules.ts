@@ -5,7 +5,7 @@ export type {
   OverviewHeroContext,
   OverviewHeroFact,
   OverviewHeroFactTone,
-  OverviewHeroModel,
+  OverviewHeroPresentation,
   OverviewHeroSignal,
   OverviewHeroSignalGroup,
   OverviewHeroSignalGroupId,
