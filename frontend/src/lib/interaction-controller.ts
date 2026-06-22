@@ -57,7 +57,8 @@ export async function answerPendingInteraction(answer: Omit<InteractionAnswer, "
     });
   } finally {
     resolvingInteractions.delete(interactionId);
-    if (get(pendingInteraction)?.interactionId === interactionId) {
+    const currentPrompt = get(pendingInteraction);
+    if (currentPrompt && currentPrompt.interactionId === interactionId) {
       pendingInteraction.set(null);
     }
   }

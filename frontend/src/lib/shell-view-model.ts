@@ -52,12 +52,13 @@ export function buildAuthenticatorTitlebarModel(input: {
   return {
     items: input.devices.map((device) => {
       const value = selectorFromDevice(device);
-      const transport = String(device.transport || m.state_unknown()).replaceAll("-", " ");
+      const transport = String(device.transport);
+      const detail = [transport, deviceDetail(device) || value].filter(Boolean).join(" - ");
       return {
         value,
         label: labelDevice(device),
         name: deviceName(device),
-        detail: `${transport} - ${deviceDetail(device) || value}`,
+        detail,
       };
     }),
     selectedValue: input.selectedSelector,

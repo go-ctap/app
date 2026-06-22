@@ -39,8 +39,8 @@ import { selectedSessionId } from "./session-boundary.js";
 import { appendLogEntry, beginOperation, setStatusOutcome, summarizeEnvelope } from "./workbench-state.js";
 import { m } from "../paraglide/messages.js";
 
-function failureEnvelope(error: unknown): OperationEnvelope {
-  return new InspectEnvelope({ kind: OperationKind.OperationInspect, error: runtimeErrorFrom(error) });
+function failureEnvelope(error: RuntimeErrorEnvelope): OperationEnvelope {
+  return new InspectEnvelope({ kind: OperationKind.OperationInspect, error });
 }
 
 function reportDegradedOverviewLoad(label: string, error: RuntimeErrorEnvelope) {
@@ -149,8 +149,9 @@ export async function loadOverview(selector = get(selectedSelector)) {
     }
   } catch (error) {
     if (isCurrentOverviewEpoch(epoch) && selector === get(selectedSelector)) {
-      const envelope = failureEnvelope(error);
-      overviewInspection.set(errorLoadState(envelope.error || runtimeErrorFrom(error), envelope));
+      const runtimeError = runtimeErrorFrom(error);
+      const envelope = failureEnvelope(runtimeError);
+      overviewInspection.set(errorLoadState(runtimeError, envelope));
       overviewBioSensor.set(idleLoadState());
       summarizeEnvelope(m.overview_inspection(), envelope, "overview-dashboard", () => loadOverview(selector));
       applySessionError(envelope.error);

@@ -50,7 +50,8 @@ export function bioSensorReport(envelope: OperationEnvelope | null | undefined):
 }
 
 export function operationError(envelope: OperationEnvelope | null | undefined) {
-  return envelope?.error?.message || null;
+  if (!envelope || !envelope.error) return null;
+  return envelope.error.message;
 }
 
 export function operationEnvelopeLogData(envelope: OperationEnvelope | null | undefined): OperationEnvelopeLogData | undefined {
