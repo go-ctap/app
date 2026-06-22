@@ -1,5 +1,6 @@
 import { m } from "./overview-i18n.js";
 import { Option } from "../../bindings/github.com/go-ctap/ctap/protocol";
+import type { InspectOptions } from "./overview-dto-types.js";
 import type { OverviewContext, OverviewHeroSignal, OverviewHeroSignalGroup, OverviewHeroSignalId, OverviewRowStatus } from "./overview-types.js";
 
 type SignalConfig = {
@@ -14,7 +15,6 @@ type SignalConfig = {
   absentNote?: string;
 };
 
-type OverviewOptions = NonNullable<NonNullable<OverviewContext["info"]>["options"]>;
 type OverviewOptionKey = Option;
 type OverviewOptionSignalId = Exclude<OverviewHeroSignalId, "pinUvAuthToken"> | "pinUvAuthToken";
 
@@ -86,7 +86,7 @@ export function buildOverviewHeroSignalGroups(context: OverviewContext = {}): Ov
   ];
 }
 
-function upSignal(options: OverviewOptions | undefined, optionsKnown: boolean): OverviewHeroSignal {
+function upSignal(options: InspectOptions | undefined, optionsKnown: boolean): OverviewHeroSignal {
   return signal("up", optionKey.up, options, optionsKnown, {
     title: m.overview_signal_up_title(),
     tooltip: m.overview_signal_up_tooltip(),
@@ -103,7 +103,7 @@ function upSignal(options: OverviewOptions | undefined, optionsKnown: boolean): 
 function defaultFalseSignal(
   id: OverviewOptionSignalId,
   key: OverviewOptionKey,
-  options: OverviewOptions | undefined,
+  options: InspectOptions | undefined,
   optionsKnown: boolean,
   title: string,
   tooltip: string,
@@ -121,7 +121,7 @@ function defaultFalseSignal(
   });
 }
 
-function signal(id: OverviewOptionSignalId, key: OverviewOptionKey, options: OverviewOptions | undefined, optionsKnown: boolean, config: SignalConfig): OverviewHeroSignal {
+function signal(id: OverviewOptionSignalId, key: OverviewOptionKey, options: InspectOptions | undefined, optionsKnown: boolean, config: SignalConfig): OverviewHeroSignal {
   const option = optionValue(options, key);
   const base = { id, flag: id, title: config.title, tooltip: config.tooltip };
 
@@ -143,7 +143,7 @@ function signal(id: OverviewOptionSignalId, key: OverviewOptionKey, options: Ove
   };
 }
 
-function optionValue(options: OverviewOptions | undefined, key: OverviewOptionKey): boolean | undefined {
+function optionValue(options: InspectOptions | undefined, key: OverviewOptionKey): boolean | undefined {
   if (!options || !Object.prototype.hasOwnProperty.call(options, key)) return undefined;
   const value = options[key];
   if (value === true) return true;

@@ -47,7 +47,7 @@ describe("Overview", () => {
       selectedDevice: null,
       sessionId: "session-1",
     });
-    seedOverviewMDSForTest({ error: new RuntimeErrorEnvelope({ message: "MDS offline" }) });
+    seedOverviewMDSForTest(null, new RuntimeErrorEnvelope({ message: "MDS offline" }));
 
     render(Overview);
 

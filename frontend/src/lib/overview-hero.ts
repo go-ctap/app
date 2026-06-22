@@ -8,6 +8,7 @@ import type {
   OverviewHeroPresentation,
   OverviewMDSObservation,
   OverviewMDSObservationSeverity,
+  OverviewMDSState,
 } from "./overview-types.js";
 import { formatAaguid, formatDateTime, mdsUrlLabel, safeMDSImage, textValue } from "./overview-utils.js";
 
@@ -70,7 +71,7 @@ function resolveMDSState(
   context: OverviewHeroContext,
   found: boolean,
   hasLookup: boolean,
-): OverviewHeroPresentation["mdsState"] {
+): OverviewMDSState {
   if (context.mdsLoading) return "loading";
   if (context.mdsError) return "error";
   if (found) return "found";
@@ -111,7 +112,7 @@ function statusReportFacts(
   entry: PayloadEntry | null,
   status: string,
   found: boolean,
-  mdsState: OverviewHeroPresentation["mdsState"],
+  mdsState: OverviewMDSState,
 ) {
   return [
     heroFact(m.mds_status(), mdsText(status, found), mdsState === "found" ? statusTone(status) : "muted", !found),

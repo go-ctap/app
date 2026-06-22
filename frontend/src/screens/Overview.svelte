@@ -6,7 +6,6 @@
     overviewEnvelope,
     overviewLoading,
     overviewMDS,
-    overviewMDSLookup,
     overviewMDSLoading,
     selectedDevice,
     selectedSelector,
@@ -14,14 +13,14 @@
     sessionStatus,
   } from "$lib/stores";
   import { buildOverviewPresentation } from "$lib/overview-presentation";
-  import EmptyState from "../components/EmptyState.svelte";
+  import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import { m } from "../paraglide/messages.js";
-  import OverviewCapabilityMatrix from "../components/OverviewCapabilityMatrix.svelte";
-  import OverviewConformanceWarnings from "../components/OverviewConformanceWarnings.svelte";
-  import OverviewHeroCard from "../components/OverviewHeroCard.svelte";
-  import OverviewLoadingCard from "../components/OverviewLoadingCard.svelte";
-  import OverviewMDSObservations from "../components/OverviewMDSObservations.svelte";
-  import OverviewRawInspectionData from "../components/OverviewRawInspectionData.svelte";
+  import OverviewCapabilityMatrix from "$lib/components/overview/OverviewCapabilityMatrix.svelte";
+  import OverviewConformanceWarnings from "$lib/components/overview/OverviewConformanceWarnings.svelte";
+  import OverviewHeroCard from "$lib/components/overview/OverviewHeroCard.svelte";
+  import OverviewLoadingCard from "$lib/components/overview/OverviewLoadingCard.svelte";
+  import OverviewMDSObservations from "$lib/components/overview/OverviewMDSObservations.svelte";
+  import OverviewRawInspectionData from "$lib/components/overview/OverviewRawInspectionData.svelte";
 
   let overview = $derived(buildOverviewPresentation({
     selectedSelector: $selectedSelector,
@@ -30,7 +29,6 @@
     sessionBusy: $sessionBusy,
     overviewEnvelope: $overviewEnvelope,
     overviewBioSensorEnvelope: $overviewBioSensorEnvelope,
-    overviewMDSLookup: $overviewMDSLookup,
     overviewBioSensorState: $overviewBioSensor,
     overviewMDSState: $overviewMDS,
     overviewLoading: $overviewLoading,

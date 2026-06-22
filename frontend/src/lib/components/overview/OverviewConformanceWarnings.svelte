@@ -3,7 +3,7 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
   import type { OverviewConformanceWarning } from "$lib/overview-rules";
-  import { m } from "../paraglide/messages.js";
+  import { m } from "../../../paraglide/messages.js";
 
   let { warnings = [] }: { warnings?: OverviewConformanceWarning[] } = $props();
 </script>

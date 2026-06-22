@@ -1,7 +1,7 @@
 import { m } from "../paraglide/messages.js";
 import { CommonValueID, FindingValueKind } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import type { Finding, FindingValue } from "../../bindings/github.com/go-ctap/kit/model/conformance";
-import type { OverviewConformanceWarning, OverviewHeroPresentation, OverviewRowStatus } from "./overview-types.js";
+import type { OverviewConformanceWarning, OverviewMDSState, OverviewRowStatus } from "./overview-types.js";
 
 export { m };
 
@@ -502,8 +502,8 @@ export function overviewStatusLabel(status: OverviewRowStatus) {
   return labels[status];
 }
 
-export function mdsStateText(state: OverviewHeroPresentation["mdsState"]) {
-  const labels: Record<OverviewHeroPresentation["mdsState"], string> = {
+export function mdsStateText(state: OverviewMDSState) {
+  const labels: Record<OverviewMDSState, string> = {
     loading: m.mds_loading(),
     found: m.mds_verified(),
     missing: m.mds_not_found(),
@@ -513,7 +513,7 @@ export function mdsStateText(state: OverviewHeroPresentation["mdsState"]) {
   return labels[state];
 }
 
-export function mdsDescriptionText(state: OverviewHeroPresentation["mdsState"], error?: string | null) {
+export function mdsDescriptionText(state: OverviewMDSState, error?: string | null) {
   if (state === "loading") return m.mds_loading_description();
   if (state === "found") return m.mds_verified_description();
   if (state === "missing") return m.mds_not_found_description();

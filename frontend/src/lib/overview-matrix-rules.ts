@@ -1,6 +1,7 @@
 import { m, value } from "./overview-i18n.js";
 import { CERTIFICATION_LEVEL_RANGES, certificationLevelRange } from "./overview-ctap23.js";
-import { formatListItem, unsignedIntegerValue } from "./overview-utils.js";
+import { formatListItem } from "./overview-raw-format.js";
+import { unsignedIntegerValue } from "./overview-utils.js";
 
 export const EXTENSION_ROWS = [
   { id: "credProtect", name: m.matrix_name_credential_protection, description: m.matrix_desc_cred_protect },

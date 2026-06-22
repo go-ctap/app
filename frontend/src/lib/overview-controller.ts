@@ -1,11 +1,8 @@
 import { get } from "svelte/store";
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import { InspectEnvelope, RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
-import {
-  api,
-  runtimeErrorFrom,
-  type OperationEnvelope,
-} from "./api.js";
+import { api, type OperationEnvelope } from "./api.js";
+import { runtimeErrorFrom } from "./runtime-error.js";
 import {
   selectedSelector,
   sessionStatus,

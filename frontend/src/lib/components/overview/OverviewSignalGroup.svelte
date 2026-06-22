@@ -9,13 +9,13 @@
 
 <script lang="ts">
   import { Badge, type BadgeVariant } from "$lib/components/ui/badge/index.js";
-  import type { OverviewHeroSignal, OverviewHeroSignalGroup } from "$lib/overview-rules";
+  import type { OverviewHeroSignalGroup, OverviewRowStatus } from "$lib/overview-rules";
 
   let { group }: { group: OverviewHeroSignalGroup } = $props();
 
   let Icon = $derived(ICONS[group.id] || Info);
 
-  function signalVariant(status: OverviewHeroSignal["status"]): BadgeVariant {
+  function signalVariant(status: OverviewRowStatus): BadgeVariant {
     if (status === "supported" || status === "configured" || status === "enabled") return "default";
     if (status === "warning" || status === "not configured" || status === "disabled") return "secondary";
     return "outline";

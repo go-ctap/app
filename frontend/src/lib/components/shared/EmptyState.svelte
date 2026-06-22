@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import { CircleDashed } from "@lucide/svelte";
   import * as Empty from "$lib/components/ui/empty/index.js";
-  import { m } from "../paraglide/messages.js";
+  import { m } from "../../../paraglide/messages.js";
 
   type Props = {
     title?: string;

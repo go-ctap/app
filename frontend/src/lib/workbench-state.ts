@@ -1,5 +1,6 @@
 import { get } from "svelte/store";
-import type { Discovery, OperationEnvelope } from "./api.js";
+import type { OperationEnvelope } from "./api.js";
+import type { Discovery } from "./session-model.js";
 import { operationEnvelopeLogData } from "./ctapkit-results.js";
 import { sanitizeDisplayData } from "./redaction.js";
 import { currentSessionId } from "./session-boundary.js";

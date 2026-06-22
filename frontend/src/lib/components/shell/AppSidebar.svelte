@@ -4,7 +4,7 @@
   import * as Item from "$lib/components/ui/item/index.js";
   import type { ActiveScreen } from "$lib/stores";
   import type { SidebarPresentation } from "$lib/shell-presentation";
-  import { m } from "../paraglide/messages.js";
+  import { m } from "../../../paraglide/messages.js";
   import {type Component} from "svelte";
 
   type Props = {

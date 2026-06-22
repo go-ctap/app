@@ -1,10 +1,10 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button/index.js";
   import type { InteractionModalPresentation } from "$lib/shell-presentation";
-  import DialogShell from "./DialogShell.svelte";
-  import JsonView from "./JsonView.svelte";
+  import DialogShell from "$lib/components/shared/DialogShell.svelte";
+  import JsonView from "$lib/components/shared/JsonView.svelte";
   import SensitivePinField from "./SensitivePinField.svelte";
-  import { m } from "../paraglide/messages.js";
+  import { m } from "../../../paraglide/messages.js";
 
   export type InteractionModalAnswer = {
     pin?: string;

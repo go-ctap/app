@@ -37,7 +37,7 @@
 ## Local Map
 - Backend entrypoint: `main.go`; Wails service: `auth_service.go`.
 - Frontend shell: `frontend/src/App.svelte`.
-- Screens: `frontend/src/screens/`; reusable components: `frontend/src/components/`; app stores/controllers, typed extractors, and presentation builders: `frontend/src/lib/`. Do not use `frontend/src/lib/` for DTO mirrors.
+- Screens: `frontend/src/screens/`; reusable product/workbench components: `frontend/src/lib/components/` grouped by domain, with shadcn primitives under `frontend/src/lib/components/ui/`; app stores/controllers, typed extractors, and presentation builders: `frontend/src/lib/`. Do not use `frontend/src/lib/` for DTO mirrors.
 - OpenSpec files under `openspec/` are history and requirements, not architectural handcuffs.
 
 ## Verify

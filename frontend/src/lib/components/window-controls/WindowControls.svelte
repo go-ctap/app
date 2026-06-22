@@ -3,7 +3,7 @@
   import Icons from "./Icons.svelte";
   import WindowControlButton from "./WindowControlButton.svelte";
   import { closeWindow, isWindowMaximized, minimizeWindow, toggleMaximizeWindow } from "./window";
-  import { m } from "../../paraglide/messages.js";
+  import { m } from "../../../paraglide/messages.js";
 
   let maximized = $state(false);
 

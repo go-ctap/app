@@ -1,6 +1,8 @@
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { OperationEnvelope, SessionStatus } from "./api.js";
-import type { LoadState, MDSLookupViewState } from "./features/overview/state.js";
+import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
+import type { OperationEnvelope } from "./api.js";
+import type { SessionStatus } from "./session-model.js";
+import type { LoadState } from "./features/overview/state.js";
 import { bioSensorReport, inspectResult, operationError } from "./ctapkit-results.js";
 import { sessionStateLabel } from "./format.js";
 import {
@@ -21,9 +23,8 @@ export type OverviewPresentationInput = {
   sessionBusy: boolean;
   overviewEnvelope: OperationEnvelope | null;
   overviewBioSensorEnvelope: OperationEnvelope | null;
-  overviewMDSLookup: MDSLookupViewState | null;
   overviewBioSensorState?: LoadState<OperationEnvelope>;
-  overviewMDSState?: LoadState<unknown>;
+  overviewMDSState?: LoadState<LookupResult | null>;
   overviewLoading: boolean;
   overviewMDSLoading: boolean;
 };
@@ -33,15 +34,14 @@ export type OverviewPresentation = ReturnType<typeof buildOverviewPresentation>;
 export function buildOverviewPresentation(input: OverviewPresentationInput) {
   const selector = input.selectedSelector;
   const envelope = input.overviewEnvelope;
-  const mdsLookup = input.overviewMDSLookup;
   const loading = input.overviewLoading;
   const mdsLoading = input.overviewMDSLoading;
   const failureMessage = operationError(envelope);
-  const mdsFailureMessage = mdsLookup?.error?.message || null;
+  const mdsFailureMessage = input.overviewMDSState?.error?.message || null;
   const report = inspectResult(envelope);
   const info = report?.info;
   const device = report?.device || input.selectedDevice;
-  const mdsResult = mdsLookup?.result ?? null;
+  const mdsResult = input.overviewMDSState?.data ?? null;
   const bioSensor = bioSensorReport(input.overviewBioSensorEnvelope);
   const overviewRows = buildOverviewRows({ info, device, bioSensor });
 

@@ -80,6 +80,8 @@ export type OverviewHeroSignalGroup = {
 
 export type OverviewHeroFactTone = "default" | "success" | "warning" | "error" | "muted";
 
+export type OverviewMDSState = "loading" | "found" | "missing" | "error" | "idle";
+
 export type OverviewHeroFact = {
   label: string;
   value: string;
@@ -94,7 +96,7 @@ export type OverviewHeroPresentation = {
   aaguid: string;
   aaguidAvailable: boolean;
   iconSrc: string;
-  mdsState: "loading" | "found" | "missing" | "error" | "idle";
+  mdsState: OverviewMDSState;
   mdsStateLabel: string;
   mdsDescription: string;
   mdsStatusFacts: OverviewHeroFact[];

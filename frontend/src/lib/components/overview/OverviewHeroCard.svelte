@@ -5,9 +5,9 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
-  import type { OverviewHeroPresentation, OverviewHeroSignalGroup } from "$lib/overview-rules";
-  import StatusBadge from "../components/StatusBadge.svelte";
-  import { m } from "../paraglide/messages.js";
+  import type { OverviewHeroPresentation, OverviewHeroSignalGroup, OverviewMDSState } from "$lib/overview-rules";
+  import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
+  import { m } from "../../../paraglide/messages.js";
   import OverviewMetadataPanel from "./OverviewMetadataPanel.svelte";
   import OverviewSignalGroup from "./OverviewSignalGroup.svelte";
 
@@ -33,7 +33,7 @@
     onRefreshMDS?: () => void | Promise<void>;
   } = $props();
 
-  function mdsTone(state: OverviewHeroPresentation["mdsState"]) {
+  function mdsTone(state: OverviewMDSState) {
     if (state === "error") return "bad";
     if (state === "found") return "ok";
     return "neutral";

@@ -1,5 +1,19 @@
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import type {
+  AuthenticatorConfigOutput,
+  BioEnrollOutput,
+  BioListOutput,
+  BioMutationOutput,
+  CredentialDeleteOutput,
+  CredentialUpdateOutput,
+  CredentialsOutput,
+  LargeBlobListOutput,
+  LargeBlobMutationOutput,
+  MakeCredentialOutput,
+  PINOutput,
+  ResetFactoryOutput,
+} from "../../bindings/github.com/go-ctap/kit/model";
+import type {
   AuthenticatorConfigEnvelope,
   BioEnrollEnvelope,
   BioListEnvelope,
@@ -13,6 +27,7 @@ import type {
   LargeBlobMutationEnvelope,
   MakeCredentialEnvelope,
   PINEnvelope,
+  RuntimeErrorEnvelope,
   ResetFactoryEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
 import type { InspectResult } from "../../bindings/github.com/go-ctap/kit/model";
@@ -35,14 +50,6 @@ export type OperationResultSummary = {
   counts?: CountSummary;
 };
 
-export type OperationEnvelopeLogData = {
-  operationId?: string;
-  sessionId?: string;
-  kind?: OperationKind;
-  error?: OperationEnvelope["error"];
-  result?: OperationResultSummary;
-};
-
 export function inspectResult(envelope: OperationEnvelope | null | undefined): InspectResult | null {
   if (!isInspectEnvelope(envelope) || envelope.error || !envelope.result) return null;
   return envelope.result.result;
@@ -58,14 +65,13 @@ export function operationError(envelope: OperationEnvelope | null | undefined) {
   return envelope.error.message;
 }
 
-export function operationEnvelopeLogData(envelope: OperationEnvelope | null | undefined): OperationEnvelopeLogData | undefined {
-  if (!envelope) return undefined;
+export function operationEnvelopeLogData(envelope: OperationEnvelope) {
   return {
-    ...(envelope.operationId ? { operationId: envelope.operationId } : {}),
-    ...(envelope.sessionId ? { sessionId: envelope.sessionId } : {}),
-    ...(envelope.kind ? { kind: envelope.kind } : {}),
-    ...(envelope.error ? { error: envelope.error } : {}),
-    ...(envelope.result ? { result: operationResultSummary(envelope) } : {}),
+    operationId: envelope.operationId,
+    sessionId: envelope.sessionId,
+    kind: envelope.kind,
+    error: envelope.error ?? null,
+    result: operationResultSummary(envelope) ?? null,
   };
 }
 
@@ -157,7 +163,7 @@ function isMakeCredentialEnvelope(envelope: OperationEnvelope): envelope is Make
   return envelope.kind === OperationKind.OperationMakeCredential;
 }
 
-function credentialListSummary(output: NonNullable<CredentialsEnvelope["result"]>): OperationResultSummary {
+function credentialListSummary(output: CredentialsOutput): OperationResultSummary {
   const credentials = output.report.summary.totalCredentials;
   return {
     kind: OperationKind.OperationListCredentials,
@@ -168,14 +174,14 @@ function credentialListSummary(output: NonNullable<CredentialsEnvelope["result"]
   };
 }
 
-function bioListSummary(output: NonNullable<BioListEnvelope["result"]>): OperationResultSummary {
+function bioListSummary(output: BioListOutput): OperationResultSummary {
   return {
     kind: OperationKind.OperationBioList,
     counts: { enrollments: output.report.enrollments.length },
   };
 }
 
-function bioEnrollSummary(output: NonNullable<BioEnrollEnvelope["result"]>): OperationResultSummary {
+function bioEnrollSummary(output: BioEnrollOutput): OperationResultSummary {
   return {
     kind: OperationKind.OperationBioEnroll,
     completed: Boolean(output.result),
@@ -187,7 +193,7 @@ function bioEnrollSummary(output: NonNullable<BioEnrollEnvelope["result"]>): Ope
   };
 }
 
-function largeBlobListSummary(output: NonNullable<LargeBlobListEnvelope["result"]>): OperationResultSummary {
+function largeBlobListSummary(output: LargeBlobListOutput): OperationResultSummary {
   const blobCount = output.report.array.blobCount;
   return {
     kind: OperationKind.OperationListLargeBlobs,
@@ -198,35 +204,35 @@ function largeBlobListSummary(output: NonNullable<LargeBlobListEnvelope["result"
   };
 }
 
-function credentialDeleteSummary(output: NonNullable<CredentialDeleteEnvelope["result"]>): OperationResultSummary {
+function credentialDeleteSummary(output: CredentialDeleteOutput): OperationResultSummary {
   return completedPreviewSummary(OperationKind.OperationDeleteCredential, Boolean(output.result), output.preview.warnings?.length);
 }
 
-function credentialUpdateSummary(output: NonNullable<CredentialUpdateEnvelope["result"]>): OperationResultSummary {
+function credentialUpdateSummary(output: CredentialUpdateOutput): OperationResultSummary {
   return completedPreviewSummary(OperationKind.OperationUpdateCredentialUser, Boolean(output.result), output.preview.warnings?.length);
 }
 
-function largeBlobMutationSummary(kind: OperationKind, output: NonNullable<LargeBlobMutationEnvelope["result"]>): OperationResultSummary {
+function largeBlobMutationSummary(kind: OperationKind, output: LargeBlobMutationOutput): OperationResultSummary {
   return completedPreviewSummary(kind, Boolean(output.result), output.preview.warnings?.length);
 }
 
-function pinSummary(kind: OperationKind, output: NonNullable<PINEnvelope["result"]>): OperationResultSummary {
+function pinSummary(kind: OperationKind, output: PINOutput): OperationResultSummary {
   return completedPreviewSummary(kind, Boolean(output.result), output.preview.warnings?.length);
 }
 
-function authenticatorConfigSummary(kind: OperationKind, output: NonNullable<AuthenticatorConfigEnvelope["result"]>): OperationResultSummary {
+function authenticatorConfigSummary(kind: OperationKind, output: AuthenticatorConfigOutput): OperationResultSummary {
   return completedPreviewSummary(kind, Boolean(output.result), output.preview.warnings?.length);
 }
 
-function bioMutationSummary(kind: OperationKind, output: NonNullable<BioMutationEnvelope["result"]>): OperationResultSummary {
+function bioMutationSummary(kind: OperationKind, output: BioMutationOutput): OperationResultSummary {
   return completedPreviewSummary(kind, Boolean(output.result), output.preview.warnings?.length);
 }
 
-function resetFactorySummary(output: NonNullable<ResetFactoryEnvelope["result"]>): OperationResultSummary {
+function resetFactorySummary(output: ResetFactoryOutput): OperationResultSummary {
   return completedPreviewSummary(OperationKind.OperationResetFactory, Boolean(output.result), output.preview.warnings?.length);
 }
 
-function makeCredentialSummary(output: NonNullable<MakeCredentialEnvelope["result"]>): OperationResultSummary {
+function makeCredentialSummary(output: MakeCredentialOutput): OperationResultSummary {
   return completedPreviewSummary(OperationKind.OperationMakeCredential, Boolean(output.result), output.preview.warnings?.length);
 }
 

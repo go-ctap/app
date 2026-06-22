@@ -2,35 +2,30 @@ import { m, value } from "./overview-i18n.js";
 import { Option } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import type { InspectInfo } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import type { InspectAlgorithms, InspectBooleanField, InspectCertifications, InspectNumberField, InspectOptions } from "./overview-dto-types.js";
 import type { MessageText, OverviewContext, OverviewRow, OverviewRowStatus } from "./overview-types.js";
 import { CTAP_2_3_VERSION, FORBIDDEN_VERSION_IDS, certificationLevelValid, formatConfigCommand } from "./overview-ctap23.js";
 import { CERTIFICATION_ROWS, EXTENSION_ROWS, certificationRangeLabel, formatCertificationValue } from "./overview-matrix-rules.js";
 import { row } from "./overview-shared.js";
 import {
   algorithmListItemKey,
-  byteLength,
-  compactSecretValue,
   formatAaguid,
   formatAlgorithm,
   formatIntegerHex,
-  formatListItem,
   formatNumberWithUnit,
-  hasDuplicateListItems,
-  inlineList,
   textValue,
   unsignedIntegerListItemKey,
   unsignedIntegerValue,
 } from "./overview-utils.js";
+import {
+  byteLength,
+  compactSecretValue,
+  formatListItem,
+  hasDuplicateListItems,
+  inlineList,
+} from "./overview-raw-format.js";
 
-type OverviewOptions = NonNullable<InspectInfo["options"]>;
 type OverviewOptionKey = Option;
-type NumberInfoKey = {
-  [K in keyof InspectInfo]-?: Exclude<InspectInfo[K], null | undefined> extends number ? K : never;
-}[keyof InspectInfo];
-type BooleanInfoKey = {
-  [K in keyof InspectInfo]-?: Exclude<InspectInfo[K], null | undefined> extends boolean ? K : never;
-}[keyof InspectInfo];
-type Certifications = NonNullable<InspectInfo["certifications"]>;
 
 const optionKey = {
   alwaysUv: Option.OptionAlwaysUv,
@@ -179,7 +174,7 @@ function versionRow(name: string, description: MessageText, known: boolean, vers
   return row("Protocol", name, description, known ? versions.includes(version) ? "supported" : "unsupported" : "unknown", formatProtocolVersion(version), `versions.${version}`);
 }
 
-function algorithmListRow(info: InspectInfo, algorithms: NonNullable<InspectInfo["algorithms"]>) {
+function algorithmListRow(info: InspectInfo, algorithms: InspectAlgorithms) {
   const known = info.algorithms !== undefined;
   if (!known) return row("Protocol", m.matrix_name_reported_cose_algorithms, m.matrix_desc_algorithms, "unknown", value.notReported(), "algorithms");
   if (!algorithms.length) return row("Protocol", m.matrix_name_reported_cose_algorithms, m.matrix_desc_algorithms, "warning", value.emptyList(), "algorithms");
@@ -199,27 +194,27 @@ function triStateOptionRow(group: string, name: MessageText, description: Messag
   return row(group, name, description, absentStatus, value.absent(), source);
 }
 
-function upRow(options: OverviewOptions | undefined) {
+function upRow(options: InspectOptions | undefined) {
   const up = optionValue(options, optionKey.up);
   if (up === false) return row("Verification", m.matrix_name_user_presence_touch, m.matrix_desc_up_false, "unsupported", "false", "options.up");
   return row("Verification", m.matrix_name_user_presence_touch, m.matrix_desc_up_true, "supported", up === true ? "true" : value.defaultTrue(), "options.up");
 }
 
-function clientPinRow(options: OverviewOptions | undefined) {
+function clientPinRow(options: InspectOptions | undefined) {
   const clientPin = optionValue(options, optionKey.clientPin);
   if (clientPin === true) return row("Verification", m.matrix_name_client_pin, m.matrix_desc_client_pin_set, "configured", value.pinSet(), "options.clientPin");
   if (clientPin === false) return row("Verification", m.matrix_name_client_pin, m.matrix_desc_client_pin_not_set, "not configured", value.pinNotSet(), "options.clientPin");
   return row("Verification", m.matrix_name_client_pin, m.matrix_desc_client_pin_absent, "unsupported", value.absent(), "options.clientPin");
 }
 
-function uvRow(options: OverviewOptions | undefined) {
+function uvRow(options: InspectOptions | undefined) {
   const uv = optionValue(options, optionKey.uv);
   if (uv === true) return row("Verification", m.matrix_name_built_in_user_verification, m.matrix_desc_uv_configured, "configured", value.configured(), "options.uv");
   if (uv === false) return row("Verification", m.matrix_name_built_in_user_verification, m.matrix_desc_uv_not_configured, "not configured", value.notConfigured(), "options.uv");
   return row("Verification", m.matrix_name_built_in_user_verification, m.matrix_desc_uv_absent, "unsupported", value.absent(), "options.uv");
 }
 
-function noMcGaPermissionsRow(options: OverviewOptions | undefined) {
+function noMcGaPermissionsRow(options: InspectOptions | undefined) {
   const noMcGa = optionValue(options, optionKey.noMcGaPermissionsWithClientPin);
   if (noMcGa === true) {
     return row("Verification", m.matrix_name_client_pin_token_mc_ga_permissions, m.matrix_desc_no_mc_ga_permissions_true, "warning", value.notAvailableThroughClientPinToken(), "options.noMcGaPermissionsWithClientPin");
@@ -227,7 +222,7 @@ function noMcGaPermissionsRow(options: OverviewOptions | undefined) {
   return row("Verification", m.matrix_name_client_pin_token_mc_ga_permissions, m.matrix_desc_no_mc_ga_permissions_false, "informational", noMcGa === false ? value.available() : value.availableByDefault(), "options.noMcGaPermissionsWithClientPin");
 }
 
-function makeCredUvRow(options: OverviewOptions | undefined) {
+function makeCredUvRow(options: InspectOptions | undefined) {
   const makeCredUvNotRqd = optionValue(options, optionKey.makeCredUvNotRqd);
   if (makeCredUvNotRqd === true) {
     return row("Policy", m.matrix_name_non_discoverable_credential_uv_requirement, m.matrix_desc_make_cred_uv_skipped, "informational", value.uvMayBeSkipped(), "options.makeCredUvNotRqd");
@@ -278,7 +273,7 @@ function maxCredBlobLengthRow(info: InspectInfo, extensionsKnown: boolean, exten
   return row("Storage", m.matrix_name_max_credblob_length, m.matrix_desc_max_credblob_length, "informational", value.bytes(amount), source);
 }
 
-function booleanFeatureRow(group: string, name: MessageText, description: MessageText, info: InspectInfo, source: BooleanInfoKey, trueStatus: OverviewRowStatus, falseStatus: OverviewRowStatus, absentStatus: OverviewRowStatus) {
+function booleanFeatureRow(group: string, name: MessageText, description: MessageText, info: InspectInfo, source: InspectBooleanField, trueStatus: OverviewRowStatus, falseStatus: OverviewRowStatus, absentStatus: OverviewRowStatus) {
   if (!reported(info, source)) return row(group, name, description, absentStatus, value.absent(), source);
   const input = info[source];
   if (input === true) return row(group, name, description, trueStatus, "true", source);
@@ -313,7 +308,7 @@ function resetTransportsRow(info: InspectInfo) {
   return row("Management", m.matrix_name_reset_transports, m.matrix_desc_reset_transports, listStatus(true, transports), inlineList(transports, value.emptyList()), "transportsForReset");
 }
 
-function maxRpidsForSetMinPinLengthRow(info: InspectInfo, options: OverviewOptions | undefined) {
+function maxRpidsForSetMinPinLengthRow(info: InspectInfo, options: InspectOptions | undefined) {
   const source = "maxRPIDsForSetMinPINLength";
   const setMinPinLength = optionValue(options, optionKey.setMinPINLength) === true;
   if (!reported(info, source)) return row("Policy", m.matrix_name_rp_ids_for_minimum_pin_length, m.matrix_desc_max_rpids_for_set_min_pin_length, setMinPinLength ? "warning" : "unknown", setMinPinLength ? value.missingSetMinPinLength() : value.notReported(), source);
@@ -338,7 +333,7 @@ function maxMsgSizeRow(info: InspectInfo) {
   return row("Limits", m.matrix_name_max_message_size, m.matrix_desc_max_msg_size, "informational", value.bytes(amount), source);
 }
 
-function minPinLengthRow(options: OverviewOptions | undefined, info: InspectInfo) {
+function minPinLengthRow(options: InspectOptions | undefined, info: InspectInfo) {
   const source = "minPINLength";
   const clientPinSupported = reported(options, optionKey.clientPin);
   if (!reported(info, source)) return row("Limits", m.matrix_name_minimum_pin_length, m.matrix_desc_min_pin_length, clientPinSupported ? "warning" : "unknown", clientPinSupported ? value.missingClientPin() : value.notReported(), source);
@@ -350,7 +345,7 @@ function minPinLengthRow(options: OverviewOptions | undefined, info: InspectInfo
   return row("Limits", m.matrix_name_minimum_pin_length, m.matrix_desc_min_pin_length, "informational", value.codePoints(amount), source);
 }
 
-function maxPinLengthRow(options: OverviewOptions | undefined, info: InspectInfo) {
+function maxPinLengthRow(options: InspectOptions | undefined, info: InspectInfo) {
   const source = "maxPINLength";
   const clientPinSupported = reported(options, optionKey.clientPin);
   if (!reported(info, source)) return row("Limits", m.matrix_name_maximum_pin_length, m.matrix_desc_max_pin_default, clientPinSupported ? "informational" : "unknown", clientPinSupported ? value.defaultCodePoints(63) : value.notReported(), source);
@@ -362,7 +357,7 @@ function maxPinLengthRow(options: OverviewOptions | undefined, info: InspectInfo
   return row("Limits", m.matrix_name_maximum_pin_length, m.matrix_desc_max_pin, "informational", value.codePoints(amount), source);
 }
 
-function uintRow(group: string, name: MessageText, description: MessageText, info: InspectInfo, source: NumberInfoKey, unit: "bytes" | "codePoints" | "" = "", minimum = 0) {
+function uintRow(group: string, name: MessageText, description: MessageText, info: InspectInfo, source: InspectNumberField, unit: "bytes" | "codePoints" | "" = "", minimum = 0) {
   if (!reported(info, source)) return row(group, name, description, "unknown", value.notReported(), source);
   const input = info[source];
   const amount = unsignedIntegerValue(input);
@@ -378,7 +373,7 @@ function attestationFormatsRow(known: boolean, attestationFormats: string[]) {
   return row("Attestation", m.matrix_name_attestation_formats, m.matrix_desc_attestation_formats, "informational", inlineList(attestationFormats), "attestationFormats");
 }
 
-function certificationsRow(known: boolean, certifications: Certifications) {
+function certificationsRow(known: boolean, certifications: InspectCertifications) {
   if (!known) return row("Attestation", m.mds_certification, m.matrix_desc_fido_certification, "unknown", value.certificationsNotReported(), "certifications");
   const entries = Object.entries(certifications);
   if (!entries.length) return row("Attestation", m.mds_certification, m.matrix_desc_fido_certification, "unsupported", value.notListed(), "certifications");
@@ -392,7 +387,7 @@ function reported<T extends object, K extends keyof T>(source: T | null | undefi
   return Boolean(source && Object.prototype.hasOwnProperty.call(source, key));
 }
 
-function optionValue(options: OverviewOptions | undefined, key: OverviewOptionKey): boolean | undefined {
+function optionValue(options: InspectOptions | undefined, key: OverviewOptionKey): boolean | undefined {
   if (!options || !reported(options, key)) return undefined;
   const item = options[key];
   if (item === true) return true;

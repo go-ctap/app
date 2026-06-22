@@ -30,14 +30,14 @@
 		type ActiveScreen
 	} from "$lib/stores";
 	import { buildAuthenticatorTitlebarPresentation, buildInteractionModalPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
-	import type { InteractionModalAnswer } from "./components/InteractionModal.svelte";
+	import type { InteractionModalAnswer } from "$lib/components/interaction/InteractionModal.svelte";
 
 	import { currentLocale } from "$lib/i18n";
 	import { m } from "./paraglide/messages.js";
-	import AppSidebar from "./components/AppSidebar.svelte";
-	import EmptyState from "./components/EmptyState.svelte";
-	import InteractionModal from "./components/InteractionModal.svelte";
-	import { AuthenticatorTitlebarControl, WindowControls, WindowTitlebar } from "./components/window-controls";
+	import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
+	import EmptyState from "$lib/components/shared/EmptyState.svelte";
+	import InteractionModal from "$lib/components/interaction/InteractionModal.svelte";
+	import { AuthenticatorTitlebarControl, WindowControls, WindowTitlebar } from "$lib/components/window-controls";
 	import Overview from "./screens/Overview.svelte";
 	import Settings from "./screens/Settings.svelte";
 

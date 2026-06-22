@@ -2,6 +2,7 @@ import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import type { InteractionPrompt, MDSLookupEnvelope, OperationEventEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
 import { setAppLocale } from "$lib/i18n";
 import {
@@ -9,7 +10,7 @@ import {
   devices,
   overviewBioSensorEnvelope,
   overviewEnvelope,
-  overviewMDSLookup,
+  overviewMDS,
   pendingInteraction,
   selectedDevice,
   selectedSelector,
@@ -63,7 +64,7 @@ function device(id: string): DeviceReport {
     deviceId: id,
     ordinalAlias: id,
     stableId: true,
-    transport: "hid" as DeviceReport["transport"],
+    transport: Mode.ModeHID,
     path: id,
     vendorId: 1,
     productId: 2,
@@ -164,7 +165,7 @@ describe("controller lifecycle", () => {
     seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
     seedOverviewEnvelopeForTest(inspectEnvelope(token));
     seedOverviewBioSensorEnvelopeForTest(inspectEnvelope(token));
-    seedOverviewMDSForTest({ result: null });
+    seedOverviewMDSForTest(null);
     seedPendingInteractionForTest({
       interactionId: "interaction-1",
       operationId: "operation-1",
@@ -177,7 +178,7 @@ describe("controller lifecycle", () => {
     expect(get(selectedSelector)).toBe("");
     expect(get(overviewEnvelope)).toBeNull();
     expect(get(overviewBioSensorEnvelope)).toBeNull();
-    expect(get(overviewMDSLookup)).toBeNull();
+    expect(get(overviewMDS).data).toBeNull();
     expect(get(pendingInteraction)).toBeNull();
     expect(serviceMocks.CancelOperation).toHaveBeenCalledWith({ operationId: "operation-1" });
     expect(serviceMocks.ResolveInteraction).toHaveBeenCalledWith({
@@ -223,7 +224,7 @@ describe("controller lifecycle", () => {
     secondMDS.resolve({ result: { entry: { aaguid: "current" } } } as MDSLookupEnvelope);
     await Promise.all([loadFirst, loadSecond]);
 
-    expect(get(overviewMDSLookup)?.result?.entry?.aaguid).toBe("current");
+    expect(get(overviewMDS).data?.entry?.aaguid).toBe("current");
   });
 
   it("ignores stale operation events and accepts current-session events", async () => {

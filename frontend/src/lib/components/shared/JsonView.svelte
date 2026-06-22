@@ -2,7 +2,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { sanitizedJson } from "$lib/redaction";
-  import { m } from "../paraglide/messages.js";
+  import { m } from "../../../paraglide/messages.js";
 
   type Props = {
     value: unknown;

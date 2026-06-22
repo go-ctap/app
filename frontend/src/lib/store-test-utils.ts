@@ -1,7 +1,8 @@
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
-import type { SessionStatus } from "./api.js";
+import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
+import type { InteractionPrompt, RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 import type { OperationEnvelope } from "./api.js";
+import type { SessionStatus } from "./session-model.js";
 import { resetInteractionStateForTest, pendingInteraction } from "./features/interaction/state.js";
 import {
   devices,
@@ -16,7 +17,6 @@ import {
   overviewInspection,
   overviewMDS,
   readyLoadState,
-  type MDSLookupViewState,
   resetOverviewStateForTest,
 } from "./features/overview/state.js";
 import {
@@ -58,14 +58,14 @@ export function seedOverviewBioSensorEnvelopeForTest(envelope: OperationEnvelope
   overviewBioSensor.set(envelope ? readyLoadState(envelope) : idleLoadState());
 }
 
-export function seedOverviewMDSForTest(view: MDSLookupViewState | null) {
-  if (!view) {
+export function seedOverviewMDSForTest(data: LookupResult | null, error?: RuntimeErrorEnvelope | null) {
+  if (error) {
+    overviewMDS.set({ state: "error", data, error });
+    return;
+  }
+  if (!data) {
     overviewMDS.set(idleLoadState());
     return;
   }
-  if (view.error) {
-    overviewMDS.set({ state: "error", data: view.result ?? null, error: view.error });
-    return;
-  }
-  overviewMDS.set(readyLoadState(view.result ?? null));
+  overviewMDS.set(readyLoadState(data));
 }

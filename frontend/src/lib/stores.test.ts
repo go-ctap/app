@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { sanitizeDisplayData } from "./redaction";
-import { sanitizeLogData } from "./stores";
+import { sanitizeLogData } from "./workbench-state";
 
 describe("sanitizeDisplayData", () => {
   it("redacts interaction and PIN mutation secrets without hiding CTAP capability fields", () => {

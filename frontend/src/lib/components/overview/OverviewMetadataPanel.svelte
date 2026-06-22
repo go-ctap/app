@@ -6,7 +6,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import type { OverviewHeroFact, OverviewHeroPresentation } from "$lib/overview-rules";
-  import { m } from "../paraglide/messages.js";
+  import { m } from "../../../paraglide/messages.js";
 
   let {
     hero,

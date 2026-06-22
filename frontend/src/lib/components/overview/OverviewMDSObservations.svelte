@@ -2,18 +2,18 @@
   import { Badge, type BadgeVariant } from "$lib/components/ui/badge/index.js";
   import * as Collapsible from "$lib/components/ui/collapsible/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
-  import type { OverviewMDSObservation } from "$lib/overview-rules";
-  import { m } from "../paraglide/messages.js";
+  import type { OverviewMDSObservation, OverviewMDSObservationSeverity } from "$lib/overview-rules";
+  import { m } from "../../../paraglide/messages.js";
 
   let { observations = [] }: { observations?: OverviewMDSObservation[] } = $props();
 
-  function label(severity: OverviewMDSObservation["severity"]) {
+  function label(severity: OverviewMDSObservationSeverity) {
     if (severity === "critical") return m.severity_critical();
     if (severity === "warning") return m.severity_warning();
     return m.severity_info();
   }
 
-  function variant(severity: OverviewMDSObservation["severity"]): BadgeVariant {
+  function variant(severity: OverviewMDSObservationSeverity): BadgeVariant {
     if (severity === "critical") return "destructive";
     if (severity === "warning") return "secondary";
     return "outline";

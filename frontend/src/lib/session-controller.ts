@@ -1,18 +1,18 @@
 import { get } from "svelte/store";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import { api } from "./api.js";
+import { runtimeErrorFrom } from "./runtime-error.js";
 import {
-  api,
   idleSessionStatus,
   reportForSelector,
-  runtimeErrorFrom,
   selectorFromDevice,
   sessionIsOpen,
   sessionMatches,
   statusFromSession,
   type Discovery,
   type SessionStatus,
-} from "./api.js";
+} from "./session-model.js";
 import {
   activeScreen,
   appError,

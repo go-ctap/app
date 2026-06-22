@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import type {
   BioEnrollEnvelope,
   BioSensorEnvelope,
@@ -21,7 +22,7 @@ import { bioSensorReport, inspectResult, operationEnvelopeLogData } from "./ctap
 const device: DeviceReport = {
   deviceId: "dev-1",
   stableId: true,
-  transport: "hid" as DeviceReport["transport"],
+  transport: Mode.ModeHID,
   path: "path",
   vendorId: 1,
   productId: 2,
@@ -82,6 +83,7 @@ describe("ctapkit result extractors", () => {
       operationId: "op-1",
       sessionId: "session-1",
       kind: OperationKind.OperationListCredentials,
+      error: null,
       result: {
         kind: OperationKind.OperationListCredentials,
         counts: {
@@ -109,6 +111,7 @@ describe("ctapkit result extractors", () => {
       operationId: "op-2",
       sessionId: "session-1",
       kind: OperationKind.OperationSetPIN,
+      error: null,
       result: {
         kind: OperationKind.OperationSetPIN,
         completed: false,
@@ -135,7 +138,7 @@ describe("ctapkit result extractors", () => {
       },
     } as LargeBlobMutationEnvelope;
 
-    expect(operationEnvelopeLogData(envelope)?.result).toEqual({
+    expect(operationEnvelopeLogData(envelope).result).toEqual({
       kind: OperationKind.OperationWriteLargeBlob,
       completed: true,
       hasPreview: true,
@@ -160,7 +163,7 @@ describe("ctapkit result extractors", () => {
       },
     } as unknown as BioEnrollEnvelope;
 
-    expect(operationEnvelopeLogData(envelope)?.result).toEqual({
+    expect(operationEnvelopeLogData(envelope).result).toEqual({
       kind: OperationKind.OperationBioEnroll,
       completed: true,
       hasPreview: true,
@@ -184,7 +187,7 @@ describe("ctapkit result extractors", () => {
       },
     } as ResetFactoryEnvelope;
 
-    expect(operationEnvelopeLogData(envelope)?.result).toEqual({
+    expect(operationEnvelopeLogData(envelope).result).toEqual({
       kind: OperationKind.OperationResetFactory,
       completed: false,
       hasPreview: true,
@@ -209,7 +212,7 @@ describe("ctapkit result extractors", () => {
       },
     } as unknown as MakeCredentialEnvelope;
 
-    expect(operationEnvelopeLogData(envelope)?.result).toEqual({
+    expect(operationEnvelopeLogData(envelope).result).toEqual({
       kind: OperationKind.OperationMakeCredential,
       completed: true,
       hasPreview: true,
