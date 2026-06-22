@@ -111,7 +111,7 @@ describe("controller lifecycle", () => {
     serviceMocks.BioSensorInfo.mockResolvedValue(null);
     serviceMocks.CancelOperation.mockResolvedValue(true);
     serviceMocks.CloseAllSessions.mockResolvedValue([]);
-    serviceMocks.LookupMDS.mockResolvedValue({ result: null } as MDSLookupEnvelope);
+    serviceMocks.LookupMDS.mockResolvedValue({ result: {} } as MDSLookupEnvelope);
     serviceMocks.ResolveInteraction.mockResolvedValue(true);
     serviceMocks.Sessions.mockResolvedValue([]);
   });

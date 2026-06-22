@@ -1,4 +1,5 @@
 import { m } from "./overview-i18n.js";
+import { Option } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import type { OverviewContext, OverviewHeroSignal, OverviewHeroSignalGroup, OverviewHeroSignalId, OverviewRowStatus } from "./overview-types.js";
 
 type SignalConfig = {
@@ -14,6 +15,21 @@ type SignalConfig = {
 };
 
 type OverviewOptions = NonNullable<NonNullable<OverviewContext["info"]>["options"]>;
+type OverviewOptionKey = Option;
+type OverviewOptionSignalId = Exclude<OverviewHeroSignalId, "pinUvAuthToken"> | "pinUvAuthToken";
+
+const optionKey = {
+  alwaysUv: Option.OptionAlwaysUv,
+  authnrCfg: Option.OptionAuthenticatorConfig,
+  clientPin: Option.OptionClientPIN,
+  credMgmt: Option.OptionCredentialManagement,
+  largeBlobs: Option.OptionLargeBlobs,
+  pinUvAuthToken: Option.OptionPinUvAuthToken,
+  rk: Option.OptionResidentKeys,
+  setMinPINLength: Option.OptionSetMinPINLength,
+  up: Option.OptionUserPresence,
+  uv: Option.OptionUserVerification,
+} as const satisfies Record<OverviewOptionSignalId, OverviewOptionKey>;
 
 export function buildOverviewHeroSignalGroups(context: OverviewContext = {}): OverviewHeroSignalGroup[] {
   const options = context.info?.options;
@@ -25,7 +41,7 @@ export function buildOverviewHeroSignalGroups(context: OverviewContext = {}): Ov
       title: m.overview_signal_group_authentication(),
       signals: [
         upSignal(options, optionsKnown),
-        signal("clientPin", options, optionsKnown, {
+        signal("clientPin", optionKey.clientPin, options, optionsKnown, {
           title: m.overview_signal_client_pin_title(),
           tooltip: m.overview_signal_client_pin_tooltip(),
           trueStatus: "configured",
@@ -35,7 +51,7 @@ export function buildOverviewHeroSignalGroups(context: OverviewContext = {}): Ov
           absentStatus: "unsupported",
           absentLabel: m.status_unsupported(),
         }),
-        signal("uv", options, optionsKnown, {
+        signal("uv", optionKey.uv, options, optionsKnown, {
           title: m.overview_signal_uv_title(),
           tooltip: m.overview_signal_uv_tooltip(),
           trueStatus: "configured",
@@ -45,8 +61,8 @@ export function buildOverviewHeroSignalGroups(context: OverviewContext = {}): Ov
           absentStatus: "unsupported",
           absentLabel: m.status_unsupported(),
         }),
-        defaultFalseSignal("pinUvAuthToken", options, optionsKnown, m.overview_signal_pin_uv_auth_token_title(), m.overview_signal_pin_uv_auth_token_tooltip()),
-        defaultFalseSignal("alwaysUv", options, optionsKnown, m.overview_signal_always_uv_title(), m.overview_signal_always_uv_tooltip(), {
+        defaultFalseSignal("pinUvAuthToken", optionKey.pinUvAuthToken, options, optionsKnown, m.overview_signal_pin_uv_auth_token_title(), m.overview_signal_pin_uv_auth_token_tooltip()),
+        defaultFalseSignal("alwaysUv", optionKey.alwaysUv, options, optionsKnown, m.overview_signal_always_uv_title(), m.overview_signal_always_uv_tooltip(), {
           trueStatus: "enabled",
           trueLabel: m.status_enabled(),
           falseStatus: "disabled",
@@ -60,18 +76,18 @@ export function buildOverviewHeroSignalGroups(context: OverviewContext = {}): Ov
       id: "credentials-management",
       title: m.overview_signal_group_credentials_management(),
       signals: [
-        defaultFalseSignal("rk", options, optionsKnown, m.overview_signal_rk_title(), m.overview_signal_rk_tooltip()),
-        defaultFalseSignal("credMgmt", options, optionsKnown, m.overview_signal_cred_mgmt_title(), m.overview_signal_cred_mgmt_tooltip()),
-        defaultFalseSignal("largeBlobs", options, optionsKnown, m.overview_signal_large_blobs_title(), m.overview_signal_large_blobs_tooltip()),
-        defaultFalseSignal("authnrCfg", options, optionsKnown, m.overview_signal_authnr_cfg_title(), m.overview_signal_authnr_cfg_tooltip()),
-        defaultFalseSignal("setMinPINLength", options, optionsKnown, m.overview_signal_set_min_pin_length_title(), m.overview_signal_set_min_pin_length_tooltip()),
+        defaultFalseSignal("rk", optionKey.rk, options, optionsKnown, m.overview_signal_rk_title(), m.overview_signal_rk_tooltip()),
+        defaultFalseSignal("credMgmt", optionKey.credMgmt, options, optionsKnown, m.overview_signal_cred_mgmt_title(), m.overview_signal_cred_mgmt_tooltip()),
+        defaultFalseSignal("largeBlobs", optionKey.largeBlobs, options, optionsKnown, m.overview_signal_large_blobs_title(), m.overview_signal_large_blobs_tooltip()),
+        defaultFalseSignal("authnrCfg", optionKey.authnrCfg, options, optionsKnown, m.overview_signal_authnr_cfg_title(), m.overview_signal_authnr_cfg_tooltip()),
+        defaultFalseSignal("setMinPINLength", optionKey.setMinPINLength, options, optionsKnown, m.overview_signal_set_min_pin_length_title(), m.overview_signal_set_min_pin_length_tooltip()),
       ],
     },
   ];
 }
 
 function upSignal(options: OverviewOptions | undefined, optionsKnown: boolean): OverviewHeroSignal {
-  return signal("up", options, optionsKnown, {
+  return signal("up", optionKey.up, options, optionsKnown, {
     title: m.overview_signal_up_title(),
     tooltip: m.overview_signal_up_tooltip(),
     trueStatus: "supported",
@@ -85,14 +101,15 @@ function upSignal(options: OverviewOptions | undefined, optionsKnown: boolean): 
 }
 
 function defaultFalseSignal(
-  id: OverviewHeroSignalId,
+  id: OverviewOptionSignalId,
+  key: OverviewOptionKey,
   options: OverviewOptions | undefined,
   optionsKnown: boolean,
   title: string,
   tooltip: string,
   overrides: Partial<Pick<SignalConfig, "trueStatus" | "trueLabel" | "falseStatus" | "falseLabel" | "absentStatus" | "absentLabel">> = {},
 ): OverviewHeroSignal {
-  return signal(id, options, optionsKnown, {
+  return signal(id, key, options, optionsKnown, {
     title,
     tooltip,
     trueStatus: overrides.trueStatus ?? "supported",
@@ -104,8 +121,8 @@ function defaultFalseSignal(
   });
 }
 
-function signal(id: OverviewHeroSignalId, options: OverviewOptions | undefined, optionsKnown: boolean, config: SignalConfig): OverviewHeroSignal {
-  const option = optionValue(options, id);
+function signal(id: OverviewOptionSignalId, key: OverviewOptionKey, options: OverviewOptions | undefined, optionsKnown: boolean, config: SignalConfig): OverviewHeroSignal {
+  const option = optionValue(options, key);
   const base = { id, flag: id, title: config.title, tooltip: config.tooltip };
 
   if (!optionsKnown) {
@@ -126,9 +143,9 @@ function signal(id: OverviewHeroSignalId, options: OverviewOptions | undefined, 
   };
 }
 
-function optionValue(options: OverviewOptions | undefined, key: string): boolean | undefined {
+function optionValue(options: OverviewOptions | undefined, key: OverviewOptionKey): boolean | undefined {
   if (!options || !Object.prototype.hasOwnProperty.call(options, key)) return undefined;
-  const value = (options as { [key: string]: boolean | undefined })[key];
+  const value = options[key];
   if (value === true) return true;
   if (value === false) return false;
   return undefined;

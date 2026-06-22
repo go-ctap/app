@@ -6,23 +6,6 @@ const COSE_ALGORITHM_NAMES = new Map<number, string>([
   [-257, "RS256"],
 ]);
 
-export function arrayValue(input: unknown): unknown[] {
-  return Array.isArray(input) ? input : [];
-}
-
-export function hasOwn(input: object | null | undefined, key: string) {
-  if (!input) return false;
-  return Object.prototype.hasOwnProperty.call(input, key);
-}
-
-export function boolOption(options: object | null | undefined, key: string): boolean | undefined {
-  if (!hasOwn(options, key)) return undefined;
-  const value = (options as { [key: string]: unknown })[key];
-  if (value === true) return true;
-  if (value === false) return false;
-  return undefined;
-}
-
 export function textValue(input: unknown, fallback = "") {
   if (input === null || input === undefined || input === "") return fallback;
   return String(input);
@@ -37,7 +20,7 @@ export function unsignedIntegerValue(input: unknown): number | undefined {
   return amount !== undefined && amount >= 0 ? amount : undefined;
 }
 
-export function inlineList(items: unknown[], fallback = value.stateUnknown()) {
+export function inlineList(items: readonly unknown[], fallback = value.stateUnknown()) {
   return items.length ? items.map((item) => String(formatListItem(item))).join(", ") : fallback;
 }
 
@@ -172,7 +155,7 @@ export function defaultListItemKey(input: unknown) {
   return stringify(input);
 }
 
-export function hasDuplicateListItems(items: unknown[], key = defaultListItemKey) {
+export function hasDuplicateListItems(items: readonly unknown[], key = defaultListItemKey) {
   const seen = new Set<string>();
   for (const item of items) {
     const itemKey = key(item);
