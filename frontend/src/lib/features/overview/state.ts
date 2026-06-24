@@ -10,7 +10,7 @@ export const overviewInspection = writable<LoadState<OperationEnvelope>>(idleLoa
 export const overviewBioSensor = writable<LoadState<OperationEnvelope>>(idleLoadState());
 export const overviewMDS = writable<LoadState<LookupResult | null>>(idleLoadState());
 
-export const overviewEnvelope = derived(overviewInspection, ($state) => $state.data);
+export const overviewInspectionEnvelope = derived(overviewInspection, ($state) => $state.data);
 export const overviewBioSensorEnvelope = derived(overviewBioSensor, ($state) => $state.data);
 export const overviewLoading = derived(overviewInspection, ($state) => $state.state === "loading");
 export const overviewMDSLoading = derived(overviewMDS, ($state) => $state.state === "loading");

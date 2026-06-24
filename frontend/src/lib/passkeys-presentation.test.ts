@@ -47,7 +47,6 @@ describe("buildPasskeysPresentation", () => {
     const presentation = buildPasskeysPresentation({
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionStatus: { state: "ready", selectedSelector: "token-1", selectedDevice: null, sessionId: "session-1" },
       sessionBusy: false,
       envelope: credentials,
       inventoryState: readyLoadState(credentials),
@@ -80,7 +79,6 @@ describe("buildPasskeysPresentation", () => {
     const presentation = buildPasskeysPresentation({
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionStatus: { state: "ready", selectedSelector: "token-1", selectedDevice: null, sessionId: "session-1" },
       sessionBusy: false,
       envelope: credentials,
       inventoryState: idleLoadState(),

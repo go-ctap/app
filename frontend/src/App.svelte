@@ -7,7 +7,7 @@
 
 	import type * as kitservice from "../bindings/github.com/go-ctap/kit/service/models";
 
-	import InteractionModal, { type InteractionModalAnswer } from "$lib/components/interaction/InteractionModal.svelte";
+	import InteractionModal from "$lib/components/interaction/InteractionModal.svelte";
 	import EmptyState from "$lib/components/shared/EmptyState.svelte";
 	import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
 	import { Alert } from "$lib/components/ui/alert/index.js";
@@ -77,7 +77,7 @@
 		void refreshDiscovery();
 	}
 
-	function handleInteractionAnswer(answer: InteractionModalAnswer) {
+	function handleInteractionAnswer(answer: kitservice.InteractionAnswer) {
 		void answerPendingInteraction(answer);
 	}
 

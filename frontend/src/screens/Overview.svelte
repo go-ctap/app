@@ -37,12 +37,12 @@
   }));
 
   function reloadOverview() {
-    return loadOverview(overview.selector);
+    return loadOverview();
   }
 
   function refreshMDS() {
     if (overview.hero.aaguidAvailable) {
-      return loadOverviewMDS(overview.hero.aaguid, true, overview.selector);
+      return loadOverviewMDS(overview.hero.aaguid);
     }
   }
 

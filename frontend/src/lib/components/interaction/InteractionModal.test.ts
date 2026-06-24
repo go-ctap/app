@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { InteractionKind, InteractionRequest } from "../../../../bindings/github.com/go-ctap/kit/model";
-import { InteractionPrompt } from "../../../../bindings/github.com/go-ctap/kit/service";
+import { InteractionAnswer, InteractionPrompt } from "../../../../bindings/github.com/go-ctap/kit/service";
 
 import { buildInteractionModalPresentation } from "$lib/shell-presentation";
 import { resetAppStateForTest } from "$lib/store-test-utils";
@@ -57,11 +57,12 @@ describe("InteractionModal", () => {
     await user.type(input, "123456{Enter}");
 
     expect(onAnswer).toHaveBeenCalledTimes(1);
-    expect(onAnswer).toHaveBeenCalledWith({
+    expect(onAnswer).toHaveBeenCalledWith(new InteractionAnswer({
+      interactionId: "interaction-1",
       pin: "123456",
       confirmed: true,
       canceled: false,
-    });
+    }));
     expect(screen.queryByText("secret-token")).not.toBeInTheDocument();
     expect(screen.getByText((_, element) => element?.tagName === "PRE" && element.textContent?.includes('"pinUvAuthToken": "[redacted]"'))).toBeInTheDocument();
   });
@@ -77,10 +78,11 @@ describe("InteractionModal", () => {
     await user.keyboard("{Escape}");
 
     expect(onAnswer).toHaveBeenCalledTimes(1);
-    expect(onAnswer).toHaveBeenCalledWith({
+    expect(onAnswer).toHaveBeenCalledWith(new InteractionAnswer({
+      interactionId: "interaction-1",
       confirmed: false,
       canceled: true,
-    });
+    }));
   });
 
   it("submits a PIN prompt only once while resolution is pending", async () => {

@@ -1,77 +1,24 @@
 import { get } from "svelte/store";
 
+import { ResolveInteraction } from "../../bindings/fidobench/ctapkitservice";
 import type { InteractionAnswer, InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { m } from "../paraglide/messages.js";
-import { api } from "./api.js";
 import { pendingInteraction } from "./features/interaction/state.js";
 import { selectedSelector } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { operationStageLabel } from "./format.js";
-import { interactionMatchesCurrentSession } from "./session-boundary.js";
 import { appendLogEntry } from "./workbench-state.js";
 
-const resolvingInteractions = new Set<string>();
-
-async function cancelInteractionPrompt(prompt: InteractionPrompt) {
+export async function answerPendingInteraction(answer: InteractionAnswer) {
   try {
-    await api.resolveInteraction({
-      interactionId: prompt.interactionId,
-      confirmed: false,
-      canceled: true,
-    });
-  } catch {
-    // Stale prompts are outside the current UI boundary; best-effort cancel is enough.
-  }
-}
-
-export async function cancelPendingInteraction() {
-  const prompt = get(pendingInteraction);
-  if (!prompt) return;
-  try {
-    await answerPendingInteraction({ confirmed: false, canceled: true });
-  } catch {
-    pendingInteraction.set(null);
-  }
-}
-
-export async function answerPendingInteraction(answer: Omit<InteractionAnswer, "interactionId">) {
-  const prompt = get(pendingInteraction);
-  if (!prompt) {
-    pendingInteraction.set(null);
-    return false;
-  }
-
-  if (!interactionMatchesCurrentSession(prompt)) {
-    pendingInteraction.set(null);
-    await cancelInteractionPrompt(prompt);
-    return false;
-  }
-
-  const interactionId = prompt.interactionId;
-  if (resolvingInteractions.has(interactionId)) return false;
-
-  resolvingInteractions.add(interactionId);
-  try {
-    return await api.resolveInteraction({
-      ...answer,
-      interactionId,
-    });
+    return await ResolveInteraction(answer);
   } finally {
-    resolvingInteractions.delete(interactionId);
-    const currentPrompt = get(pendingInteraction);
-    if (currentPrompt && currentPrompt.interactionId === interactionId) {
-      pendingInteraction.set(null);
-    }
+    pendingInteraction.set(null);
   }
 }
 
 export function handleInteractionRequested(data: InteractionPrompt) {
-  if (!interactionMatchesCurrentSession(data)) {
-    void cancelInteractionPrompt(data);
-    return;
-  }
-
   pendingInteraction.set(data);
   appendLogEntry({
     tone: "warning",

@@ -1,25 +1,16 @@
 import { get } from "svelte/store";
 
-import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
-import { InspectEnvelope, RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type { RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { m } from "../paraglide/messages.js";
 import { api, type OperationEnvelope } from "./api.js";
-import {
-  beginMDSEpoch,
-  beginOverviewEpoch,
-  bumpOverviewEpoch,
-  bumpMDSEpoch,
-  isCurrentMDSEpoch,
-  isCurrentOverviewEpoch,
-} from "./controller-epochs.js";
 import { inspectResult, operationError } from "./ctapkit-results.js";
 import {
   errorLoadState,
   idleLoadState,
   loadingLoadState,
   overviewBioSensor,
-  overviewEnvelope,
+  overviewInspectionEnvelope,
   overviewInspection,
   overviewLoading,
   overviewMDS,
@@ -35,11 +26,7 @@ import {
 } from "./features/workbench/state.js";
 import { runtimeErrorFrom } from "./runtime-error.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
-import { appendLogEntry, beginOperation, setStatusOutcome, summarizeEnvelope } from "./workbench-state.js";
-
-function failureEnvelope(error: RuntimeErrorEnvelope): OperationEnvelope {
-  return new InspectEnvelope({ kind: OperationKind.OperationInspect, error });
-}
+import { appendLogEntry, beginOperation, setStatusOutcome, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
 
 function reportDegradedOverviewLoad(label: string, error: RuntimeErrorEnvelope) {
   const logEntryId = appendLogEntry({
@@ -84,21 +71,16 @@ function overviewAutoLoadKey() {
 }
 
 function shouldAutoLoadOverview() {
-  return get(activeScreen) === "overview" && Boolean(overviewAutoLoadKey()) && !get(overviewEnvelope) && !get(overviewLoading);
+  return get(activeScreen) === "overview" && Boolean(overviewAutoLoadKey()) && !get(overviewInspectionEnvelope) && !get(overviewLoading);
 }
 
 export async function maybeLoadOverview() {
   if (!shouldAutoLoadOverview()) return;
-  await loadOverview(get(selectedSelector));
+  await loadOverview();
 }
 
-export function invalidateOverviewLoads() {
-  bumpOverviewEpoch();
-  bumpMDSEpoch();
-}
-
-export async function loadOverview(selector = get(selectedSelector)) {
-  selector = selector.trim();
+export async function loadOverview() {
+  const selector = get(selectedSelector).trim();
   if (!selector) {
     overviewInspection.set(idleLoadState());
     overviewBioSensor.set(idleLoadState());
@@ -106,8 +88,6 @@ export async function loadOverview(selector = get(selectedSelector)) {
     return;
   }
 
-  const epoch = beginOverviewEpoch();
-  bumpMDSEpoch();
   overviewInspection.set(loadingLoadState());
   overviewBioSensor.set(idleLoadState());
   overviewMDS.set(idleLoadState());
@@ -115,17 +95,15 @@ export async function loadOverview(selector = get(selectedSelector)) {
     beginOperation(m.overview_inspection(), "overview-dashboard");
     const sessionId = selectedSessionId();
     const envelope = await api.inspect({ sessionId });
-    if (!isCurrentOverviewEpoch(epoch) || selector !== get(selectedSelector)) return;
     overviewInspection.set(readyLoadState(envelope));
     const aaguid = !operationError(envelope) ? aaguidFromEnvelope(envelope) : "";
     if (aaguid) {
-      void loadOverviewMDS(aaguid, false, selector);
+      void loadOverviewMDS(aaguid);
     }
     if (!operationError(envelope) && shouldLoadBioSensor(envelope)) {
       overviewBioSensor.set(loadingLoadState());
       try {
         const bioEnvelope = await api.bioSensorInfo({ sessionId });
-        if (!isCurrentOverviewEpoch(epoch) || selector !== get(selectedSelector)) return;
         if (bioEnvelope.error) {
           overviewBioSensor.set(errorLoadState(bioEnvelope.error, bioEnvelope));
           reportDegradedOverviewLoad(m.biometrics(), bioEnvelope.error);
@@ -133,39 +111,31 @@ export async function loadOverview(selector = get(selectedSelector)) {
           overviewBioSensor.set(readyLoadState(bioEnvelope));
         }
       } catch (error) {
-        if (isCurrentOverviewEpoch(epoch) && selector === get(selectedSelector)) {
-          const runtimeError = runtimeErrorFrom(error);
-          overviewBioSensor.set(errorLoadState(runtimeError));
-          reportDegradedOverviewLoad(m.biometrics(), runtimeError);
-        }
+        const runtimeError = runtimeErrorFrom(error);
+        overviewBioSensor.set(errorLoadState(runtimeError));
+        reportDegradedOverviewLoad(m.biometrics(), runtimeError);
       }
     }
-    summarizeEnvelope(m.overview_inspection(), envelope, "overview-dashboard", () => loadOverview(selector));
+    summarizeEnvelope(m.overview_inspection(), envelope, "overview-dashboard", () => loadOverview());
     applyInvalidSessionError(envelope.error);
     if (operationError(envelope)) {
       appError.set(null);
     }
   } catch (error) {
-    if (isCurrentOverviewEpoch(epoch) && selector === get(selectedSelector)) {
-      const runtimeError = runtimeErrorFrom(error);
-      const envelope = failureEnvelope(runtimeError);
-      overviewInspection.set(errorLoadState(runtimeError, envelope));
-      overviewBioSensor.set(idleLoadState());
-      summarizeEnvelope(m.overview_inspection(), envelope, "overview-dashboard", () => loadOverview(selector));
-      applyInvalidSessionError(envelope.error);
-    }
+    const runtimeError = runtimeErrorFrom(error);
+    overviewInspection.set(errorLoadState(runtimeError));
+    overviewBioSensor.set(idleLoadState());
+    summarizeOperationFailure(m.overview_inspection(), runtimeError, "overview-dashboard", () => loadOverview());
+    applyInvalidSessionError(runtimeError);
   } finally {
-    if (isCurrentOverviewEpoch(epoch)) {
-      const current = get(overviewInspection);
-      if (current.state === "loading") overviewInspection.set(idleLoadState());
-    }
+    const current = get(overviewInspection);
+    if (current.state === "loading") overviewInspection.set(idleLoadState());
   }
 }
 
-export async function loadOverviewMDS(aaguid: string, refresh = false, selector = get(selectedSelector)) {
+export async function loadOverviewMDS(aaguid: string, refresh = false) {
   aaguid = aaguid.trim();
-  selector = selector.trim();
-  const epoch = beginMDSEpoch();
+  const selector = get(selectedSelector).trim();
   if (!aaguid || !selector) {
     overviewMDS.set(idleLoadState());
     return;
@@ -174,18 +144,13 @@ export async function loadOverviewMDS(aaguid: string, refresh = false, selector 
   overviewMDS.set(loadingLoadState());
   try {
     const envelope = await api.lookupMDS({ aaguid, refresh });
-    if (!isCurrentMDSEpoch(epoch) || selector !== get(selectedSelector)) return;
     overviewMDS.set(readyLoadState(envelope.result));
   } catch (error) {
-    if (isCurrentMDSEpoch(epoch) && selector === get(selectedSelector)) {
-      const runtimeError = runtimeErrorFrom(error);
-      overviewMDS.set(errorLoadState(runtimeError));
-      reportDegradedOverviewLoad(m.metadata_service(), runtimeError);
-    }
+    const runtimeError = runtimeErrorFrom(error);
+    overviewMDS.set(errorLoadState(runtimeError));
+    reportDegradedOverviewLoad(m.metadata_service(), runtimeError);
   } finally {
-    if (isCurrentMDSEpoch(epoch)) {
-      const current = get(overviewMDS);
-      if (current.state === "loading") overviewMDS.set(idleLoadState());
-    }
+    const current = get(overviewMDS);
+    if (current.state === "loading") overviewMDS.set(idleLoadState());
   }
 }

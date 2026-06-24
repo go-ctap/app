@@ -6,7 +6,6 @@ import type { OperationEnvelope } from "./api.js";
 import { credentialsReport, operationError } from "./ctapkit-results.js";
 import type { LoadState } from "./load-state.js";
 import { sanitizedJson } from "./redaction.js";
-import type { SessionStatus } from "./session-model.js";
 
 export type PasskeyTableRow = {
   id: string;
@@ -31,7 +30,6 @@ export type PasskeyTableRow = {
 export type PasskeysPresentationInput = {
   selectedSelector: string;
   selectedDevice: DeviceReport | null;
-  sessionStatus: SessionStatus;
   sessionBusy: boolean;
   envelope: OperationEnvelope | null;
   inventoryState: LoadState<OperationEnvelope>;

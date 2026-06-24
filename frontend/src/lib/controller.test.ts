@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { ErrorCategory, OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { CredentialsEnvelope, InteractionPrompt, MDSLookupEnvelope, OperationEventEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
@@ -24,16 +24,17 @@ import {
   overviewBioSensorEnvelope,
   overviewEnvelope,
   overviewMDS,
+  passkeysInventory,
   passkeysEnvelope,
   pendingInteraction,
   selectedSelector,
+  sessionStatus,
   statusBar,
   workbenchLog,
 } from "./stores";
 
 const serviceMocks = vi.hoisted(() => ({
   BioSensorInfo: vi.fn(),
-  CancelOperation: vi.fn(),
   CloseAllSessions: vi.fn(),
   Discover: vi.fn(),
   Inspect: vi.fn(),
@@ -45,22 +46,6 @@ const serviceMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("../../bindings/fidobench/ctapkitservice", () => serviceMocks);
-
-type Deferred<T> = {
-  promise: Promise<T>;
-  resolve: (value: T) => void;
-  reject: (reason?: unknown) => void;
-};
-
-function deferred<T>(): Deferred<T> {
-  let resolve!: (value: T) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<T>((promiseResolve, promiseReject) => {
-    resolve = promiseResolve;
-    reject = promiseReject;
-  });
-  return { promise, resolve, reject };
-}
 
 function device(id: string): DeviceReport {
   return {
@@ -149,7 +134,6 @@ describe("controller lifecycle", () => {
     vi.clearAllMocks();
     resetAppStateForTest();
     serviceMocks.BioSensorInfo.mockResolvedValue(null);
-    serviceMocks.CancelOperation.mockResolvedValue(true);
     serviceMocks.CloseAllSessions.mockResolvedValue([]);
     serviceMocks.ListCredentials.mockResolvedValue(null);
     serviceMocks.LookupMDS.mockResolvedValue({ result: {} } as MDSLookupEnvelope);
@@ -214,7 +198,62 @@ describe("controller lifecycle", () => {
     expect(serviceMocks.ListCredentials).toHaveBeenCalledWith({ sessionId: "session-token-1" });
   });
 
-  it("clearing selection clears per-device state and resolves pending interaction", async () => {
+  it("keeps passkeys transport failures as load errors without synthetic credentials envelopes", async () => {
+    const token = device("token-1");
+    const { loadPasskeys } = await import("./controller");
+    seedDevicesForTest([token]);
+    seedActiveScreenForTest("passkeys");
+    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    serviceMocks.ListCredentials.mockRejectedValue(new Error("bridge offline"));
+
+    await loadPasskeys();
+
+    const inventory = get(passkeysInventory);
+    expect(inventory.state).toBe("error");
+    expect(inventory.data).toBeNull();
+    expect(inventory.error?.message).toBe("bridge offline");
+    expect(get(passkeysEnvelope)).toBeNull();
+    expect(get(statusBar).activeOperation).toBeNull();
+    expect(get(statusBar).lastOutcome?.message).toBe("bridge offline");
+    expect(get(workbenchLog)[0]).toMatchObject({
+      tone: "error",
+      source: "operation",
+      message: "bridge offline",
+    });
+    expect(get(workbenchLog)[0]).not.toHaveProperty("operationId");
+  });
+
+  it("turns invalid session responses into a session error without retaining the expired session id", async () => {
+    const token = device("token-1");
+    const { loadPasskeys } = await import("./controller");
+    seedDevicesForTest([token]);
+    seedActiveScreenForTest("passkeys");
+    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedPendingInteractionForTest({
+      interactionId: "interaction-1",
+      operationId: "operation-1",
+      sessionId: "session-token-1",
+      request: { kind: "confirm" },
+    } as InteractionPrompt);
+    serviceMocks.ListCredentials.mockResolvedValue({
+      operationId: "credentials-token-1",
+      sessionId: "session-token-1",
+      kind: OperationKind.OperationListCredentials,
+      error: { category: ErrorCategory.ErrorInvalidSession, message: "session expired" },
+    } as CredentialsEnvelope);
+
+    await loadPasskeys();
+
+    expect(get(sessionStatus)).toMatchObject({
+      state: "error",
+      selectedSelector: "token-1",
+      error: { category: ErrorCategory.ErrorInvalidSession, message: "session expired" },
+    });
+    expect(get(sessionStatus).sessionId).toBeUndefined();
+    expect(get(pendingInteraction)).toBeNull();
+  });
+
+  it("clearing selection clears per-device state and pending interaction", async () => {
     const token = device("token-1");
     const { selectToken } = await import("./controller");
     seedDevicesForTest([token]);
@@ -238,92 +277,34 @@ describe("controller lifecycle", () => {
     expect(get(overviewMDS).data).toBeNull();
     expect(get(passkeysEnvelope)).toBeNull();
     expect(get(pendingInteraction)).toBeNull();
-    expect(serviceMocks.CancelOperation).toHaveBeenCalledWith({ operationId: "operation-1" });
-    expect(serviceMocks.ResolveInteraction).toHaveBeenCalledWith({
-      interactionId: "interaction-1",
-      confirmed: false,
-      canceled: true,
+    expect(serviceMocks.ResolveInteraction).not.toHaveBeenCalled();
+  });
+
+  it("keeps overview transport failures as load errors without synthetic inspect envelopes", async () => {
+    const token = device("token-1");
+    const { loadOverview } = await import("./controller");
+    seedDevicesForTest([token]);
+    seedActiveScreenForTest("overview");
+    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    serviceMocks.Inspect.mockRejectedValue(new Error("inspect bridge offline"));
+
+    await loadOverview();
+
+    expect(get(overviewEnvelope)).toBeNull();
+    expect(get(statusBar).activeOperation).toBeNull();
+    expect(get(statusBar).lastOutcome?.message).toBe("inspect bridge offline");
+    expect(get(workbenchLog)[0]).toMatchObject({
+      tone: "error",
+      source: "operation",
+      message: "inspect bridge offline",
     });
+    expect(get(workbenchLog)[0]).not.toHaveProperty("operationId");
   });
 
-  it("ignores stale overview and MDS responses after selection changes", async () => {
-    const token1 = device("token-1");
-    const token2 = device("token-2");
-    const firstInspect = deferred<ReturnType<typeof inspectEnvelope>>();
-    const secondInspect = deferred<ReturnType<typeof inspectEnvelope>>();
-    const firstMDS = deferred<MDSLookupEnvelope>();
-    const secondMDS = deferred<MDSLookupEnvelope>();
-    const { loadOverviewMDS, selectToken } = await import("./controller");
-    seedDevicesForTest([token1, token2]);
-    serviceMocks.OpenSession
-      .mockResolvedValueOnce(snapshot(token1))
-      .mockResolvedValueOnce(snapshot(token2));
-    serviceMocks.Inspect
-      .mockReturnValueOnce(firstInspect.promise)
-      .mockReturnValueOnce(secondInspect.promise);
-
-    const selectFirst = selectToken("token-1");
-    await vi.waitFor(() => expect(serviceMocks.Inspect).toHaveBeenCalledTimes(1));
-    const selectSecond = selectToken("token-2");
-    await vi.waitFor(() => expect(serviceMocks.Inspect).toHaveBeenCalledTimes(2));
-
-    firstInspect.resolve(inspectEnvelope(token1));
-    secondInspect.resolve(inspectEnvelope(token2));
-    await Promise.all([selectFirst, selectSecond]);
-    expect(get(overviewEnvelope)?.sessionId).toBe("session-token-2");
-
-    seedSelectionForTest("token-1", token1, { state: "ready", selectedSelector: "token-1", selectedDevice: token1, sessionId: "session-token-1" });
-    serviceMocks.LookupMDS.mockReturnValueOnce(firstMDS.promise).mockReturnValueOnce(secondMDS.promise);
-    const loadFirst = loadOverviewMDS("aaguid-1", false, "token-1");
-    seedSelectionForTest("token-2", token2, { state: "ready", selectedSelector: "token-2", selectedDevice: token2, sessionId: "session-token-2" });
-    const loadSecond = loadOverviewMDS("aaguid-2", false, "token-2");
-
-    firstMDS.resolve({ result: { entry: { aaguid: "stale" } } } as MDSLookupEnvelope);
-    secondMDS.resolve({ result: { entry: { aaguid: "current" } } } as MDSLookupEnvelope);
-    await Promise.all([loadFirst, loadSecond]);
-
-    expect(get(overviewMDS).data?.entry?.aaguid).toBe("current");
-  });
-
-  it("ignores stale passkeys responses after selection changes", async () => {
-    const token1 = device("token-1");
-    const token2 = device("token-2");
-    const firstCredentials = deferred<CredentialsEnvelope>();
-    const secondCredentials = deferred<CredentialsEnvelope>();
-    const { loadPasskeys } = await import("./controller");
-    seedDevicesForTest([token1, token2]);
-    seedActiveScreenForTest("passkeys");
-    seedSelectionForTest("token-1", token1, { state: "ready", selectedSelector: "token-1", selectedDevice: token1, sessionId: "session-token-1" });
-    serviceMocks.ListCredentials.mockReturnValueOnce(firstCredentials.promise);
-
-    const loadFirst = loadPasskeys("token-1");
-    await vi.waitFor(() => expect(serviceMocks.ListCredentials).toHaveBeenCalledTimes(1));
-
-    seedSelectionForTest("token-2", token2, { state: "ready", selectedSelector: "token-2", selectedDevice: token2, sessionId: "session-token-2" });
-    serviceMocks.ListCredentials.mockReturnValueOnce(secondCredentials.promise);
-    const loadSecond = loadPasskeys("token-2");
-    await vi.waitFor(() => expect(serviceMocks.ListCredentials).toHaveBeenCalledTimes(2));
-
-    firstCredentials.resolve(credentialsEnvelope(token1, "session-token-1", "stale"));
-    secondCredentials.resolve(credentialsEnvelope(token2, "session-token-2", "current"));
-    await Promise.all([loadFirst, loadSecond]);
-
-    expect(get(passkeysEnvelope)?.sessionId).toBe("session-token-2");
-  });
-
-  it("ignores stale operation events and accepts current-session events", async () => {
+  it("records operation events from the runtime", async () => {
     const token = device("token-1");
     const { handleOperationProgress } = await import("./controller");
     seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
-
-    handleOperationProgress({
-      operationId: "operation-stale",
-      sessionId: "session-stale",
-      event: { stage: "enumerating-rps", message: "stale" },
-    } as OperationEventEnvelope);
-
-    expect(get(workbenchLog)).toHaveLength(0);
-    expect(get(statusBar).activeOperation).toBeNull();
 
     handleOperationProgress({
       operationId: "operation-current",
@@ -335,25 +316,10 @@ describe("controller lifecycle", () => {
     expect(get(statusBar).activeOperation?.operationId).toBe("operation-current");
   });
 
-  it("cancels stale interaction prompts and only exposes current-session prompts", async () => {
+  it("exposes interaction prompts from the runtime", async () => {
     const token = device("token-1");
     const { handleInteractionRequested } = await import("./controller");
     seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
-
-    handleInteractionRequested({
-      interactionId: "interaction-stale",
-      operationId: "operation-stale",
-      sessionId: "session-stale",
-      request: { kind: "confirm" },
-    } as InteractionPrompt);
-
-    await vi.waitFor(() => expect(serviceMocks.ResolveInteraction).toHaveBeenCalledWith({
-      interactionId: "interaction-stale",
-      confirmed: false,
-      canceled: true,
-    }));
-    expect(get(pendingInteraction)).toBeNull();
-    expect(get(workbenchLog)).toHaveLength(0);
 
     handleInteractionRequested({
       interactionId: "interaction-current",
@@ -364,5 +330,6 @@ describe("controller lifecycle", () => {
 
     expect(get(pendingInteraction)?.interactionId).toBe("interaction-current");
     expect(get(workbenchLog)).toHaveLength(1);
+    expect(serviceMocks.ResolveInteraction).not.toHaveBeenCalled();
   });
 });

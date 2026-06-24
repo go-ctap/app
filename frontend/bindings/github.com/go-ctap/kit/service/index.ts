@@ -23,6 +23,7 @@ export {
     GetAssertionEnvelope,
     GetAssertionRequest,
     InspectEnvelope,
+    InteractionAnswer,
     InteractionPrompt,
     LargeBlobGarbageCollectRequest,
     LargeBlobListEnvelope,
@@ -38,7 +39,9 @@ export {
     OpenSessionRequest,
     OperationEventEnvelope,
     OperationRequest,
+    PINChangeRequest,
     PINEnvelope,
+    PINSetRequest,
     ResetFactoryEnvelope,
     ResetFactoryRequest,
     RuntimeErrorEnvelope,
@@ -46,10 +49,7 @@ export {
 } from "./models.js";
 
 export type {
-    InteractionAnswer,
     InteractionID,
     OperationID,
-    PINChangeRequest,
-    PINSetRequest,
     SessionID
 } from "./models.js";

@@ -24,7 +24,7 @@ export const appError = readonly(workbench.appError);
 
 export const overviewBioSensor = readonly(overview.overviewBioSensor);
 export const overviewMDS = readonly(overview.overviewMDS);
-export const overviewEnvelope = overview.overviewEnvelope;
+export const overviewEnvelope = overview.overviewInspectionEnvelope;
 export const overviewBioSensorEnvelope = overview.overviewBioSensorEnvelope;
 export const overviewLoading = overview.overviewLoading;
 export const overviewMDSLoading = overview.overviewMDSLoading;

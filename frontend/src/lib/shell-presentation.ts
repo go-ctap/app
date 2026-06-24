@@ -34,6 +34,7 @@ export type SidebarPresentation = {
 
 export type InteractionModalPresentation = {
   open: boolean;
+  interactionId: string;
   title: string;
   eyebrow: string;
   destructive: boolean;
@@ -92,6 +93,7 @@ export function buildInteractionModalPresentation(prompt: InteractionPrompt): In
   const destructive = request.destructive === true;
   return {
     open: true,
+    interactionId: prompt.interactionId,
     title: destructive ? m.confirm_destructive_operation() : m.authenticator_needs_you(),
     eyebrow: String(kind),
     destructive,

@@ -751,7 +751,29 @@ export class InspectEnvelope {
     }
 }
 
-export type InteractionAnswer = any;
+export class InteractionAnswer {
+    "interactionId": InteractionID;
+    "pin"?: string;
+    "confirmed"?: boolean;
+    "canceled"?: boolean;
+
+    /** Creates a new InteractionAnswer instance. */
+    constructor($$source: Partial<InteractionAnswer> = {}) {
+        if (!("interactionId" in $$source)) {
+            this["interactionId"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new InteractionAnswer instance from a string or object.
+     */
+    static createFrom($$source: any = {}): InteractionAnswer {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new InteractionAnswer($$parsedSource as Partial<InteractionAnswer>);
+    }
+}
 
 export type InteractionID = string;
 
@@ -1258,7 +1280,43 @@ export class OperationRequest {
     }
 }
 
-export type PINChangeRequest = any;
+export class PINChangeRequest {
+    "sessionId": SessionID;
+    "verificationFlow"?: model$0.VerificationFlow;
+
+    /**
+     * CurrentPIN and NewPIN are accepted from JSON for UI/service input, but
+     * MarshalJSON omits them so request values cannot accidentally expose PINs.
+     */
+    "currentPIN": string;
+    "newPIN": string;
+    "confirmed"?: boolean;
+    "confirmationMessage"?: string;
+    "dryRun"?: boolean;
+
+    /** Creates a new PINChangeRequest instance. */
+    constructor($$source: Partial<PINChangeRequest> = {}) {
+        if (!("sessionId" in $$source)) {
+            this["sessionId"] = "";
+        }
+        if (!("currentPIN" in $$source)) {
+            this["currentPIN"] = "";
+        }
+        if (!("newPIN" in $$source)) {
+            this["newPIN"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PINChangeRequest instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PINChangeRequest {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new PINChangeRequest($$parsedSource as Partial<PINChangeRequest>);
+    }
+}
 
 export class PINEnvelope {
     "operationId": OperationID;
@@ -1299,7 +1357,39 @@ export class PINEnvelope {
     }
 }
 
-export type PINSetRequest = any;
+export class PINSetRequest {
+    "sessionId": SessionID;
+    "verificationFlow"?: model$0.VerificationFlow;
+
+    /**
+     * NewPIN is accepted from JSON for UI/service input, but MarshalJSON omits
+     * it so request values cannot accidentally expose PINs in logs or events.
+     */
+    "newPIN": string;
+    "confirmed"?: boolean;
+    "confirmationMessage"?: string;
+    "dryRun"?: boolean;
+
+    /** Creates a new PINSetRequest instance. */
+    constructor($$source: Partial<PINSetRequest> = {}) {
+        if (!("sessionId" in $$source)) {
+            this["sessionId"] = "";
+        }
+        if (!("newPIN" in $$source)) {
+            this["newPIN"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PINSetRequest instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PINSetRequest {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new PINSetRequest($$parsedSource as Partial<PINSetRequest>);
+    }
+}
 
 export class ResetFactoryEnvelope {
     "operationId": OperationID;

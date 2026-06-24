@@ -1,6 +1,6 @@
 import type { RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
-export type LoadStateName = "idle" | "loading" | "ready" | "error" | "stale";
+export type LoadStateName = "idle" | "loading" | "ready" | "error";
 
 export type LoadState<T> = {
   state: LoadStateName;

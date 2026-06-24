@@ -5,10 +5,6 @@ import { RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/serv
 
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
-import {
-  beginLifecycleEpoch,
-  isCurrentLifecycleEpoch,
-} from "./controller-epochs.js";
 import { pendingInteraction } from "./features/interaction/state.js";
 import {
   devices as deviceStore,
@@ -21,11 +17,9 @@ import {
   appError,
   type ActiveScreen,
 } from "./features/workbench/state.js";
-import { cancelPendingInteraction } from "./interaction-controller.js";
-import { invalidateOverviewLoads, maybeLoadOverview } from "./overview-controller.js";
-import { invalidatePasskeysLoads, maybeLoadPasskeys } from "./passkeys-controller.js";
+import { maybeLoadOverview } from "./overview-controller.js";
+import { maybeLoadPasskeys } from "./passkeys-controller.js";
 import { runtimeErrorFrom } from "./runtime-error.js";
-import { currentSessionActiveOperationId } from "./session-boundary.js";
 import {
   idleSessionStatus,
   reportForSelector,
@@ -82,24 +76,15 @@ function discoverySnapshot(
   return discovery;
 }
 
-async function cancelActiveOperation() {
-  const operationId = currentSessionActiveOperationId();
-  if (!operationId) return;
-  try {
-    await api.cancelOperation({ operationId });
-  } catch {
-    // Closing the session remains the authoritative cleanup boundary.
-  }
-}
-
 async function closeOpenSessions() {
-  await cancelActiveOperation();
-  await cancelPendingInteraction();
-  const snapshots = await api.sessions();
-  if (snapshots.some(sessionIsOpen)) {
-    await api.closeAllSessions();
+  try {
+    const snapshots = await api.sessions();
+    if (snapshots.some(sessionIsOpen)) {
+      await api.closeAllSessions();
+    }
+  } finally {
+    finishOperation();
   }
-  finishOperation();
 }
 
 async function openSessionForDevice(devices: DeviceReport[], selector: string): Promise<Discovery> {
@@ -166,26 +151,20 @@ async function discoverAndSelect(preferredSelector: string, autoSelectSingle = f
 }
 
 export async function bootstrap() {
-  const epoch = beginLifecycleEpoch();
   try {
     const discovery = await discoverAndSelect(get(selectedSelector), true);
-    if (!isCurrentLifecycleEpoch(epoch)) return;
     applyDiscovery(discovery);
     await maybeLoadOverview();
     await maybeLoadPasskeys();
   } catch (error) {
-    if (isCurrentLifecycleEpoch(epoch)) {
-      appError.set(messageFromError(error));
-    }
+    appError.set(messageFromError(error));
   }
 }
 
 export async function refreshDiscovery() {
-  const epoch = beginLifecycleEpoch();
   try {
     const previous = get(selectedSelector);
     const discovery = await discoverAndSelect(previous);
-    if (!isCurrentLifecycleEpoch(epoch)) return;
     applyDiscovery(discovery);
     const logEntryId = appendLogEntry({
       tone: discovery.error ? "error" : "info",
@@ -209,16 +188,11 @@ export async function refreshDiscovery() {
     await maybeLoadOverview();
     await maybeLoadPasskeys();
   } catch (error) {
-    if (isCurrentLifecycleEpoch(epoch)) {
-      appError.set(messageFromError(error));
-    }
+    appError.set(messageFromError(error));
   }
 }
 
 export async function selectToken(selector: string) {
-  const epoch = beginLifecycleEpoch();
-  invalidateOverviewLoads();
-  invalidatePasskeysLoads();
   clearWorkbenchScreenCaches();
   try {
     if (selector.trim()) {
@@ -226,7 +200,6 @@ export async function selectToken(selector: string) {
       sessionStatus.set(idleSessionStatus(selector.trim(), device, "opening"));
     }
     const discovery = await selectFromDevices(get(deviceStore), selector);
-    if (!isCurrentLifecycleEpoch(epoch)) return;
     applyDiscovery(discovery);
     const logEntryId = appendLogEntry({
       tone: discovery.error ? "error" : "info",
@@ -250,9 +223,7 @@ export async function selectToken(selector: string) {
     await maybeLoadOverview();
     await maybeLoadPasskeys();
   } catch (error) {
-    if (isCurrentLifecycleEpoch(epoch)) {
-      appError.set(messageFromError(error));
-    }
+    appError.set(messageFromError(error));
   }
 }
 
@@ -267,9 +238,8 @@ export async function shutdownWorkbench() {
   try {
     await closeOpenSessions();
   } finally {
-    const selector = get(selectedSelector);
     sessions.set([]);
-    sessionStatus.set(idleSessionStatus(selector, reportForSelector(get(deviceStore), selector), selector ? "closed" : "idle"));
+    sessionStatus.set(idleSessionStatus("", null));
     pendingInteraction.set(null);
     finishOperation();
   }

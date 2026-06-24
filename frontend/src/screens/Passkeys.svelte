@@ -17,7 +17,6 @@
     selectedDevice,
     selectedSelector,
     sessionBusy,
-    sessionStatus,
   } from "$lib/stores";
 
   import { m } from "../paraglide/messages.js";
@@ -26,7 +25,6 @@
   let passkeys = $derived(buildPasskeysPresentation({
     selectedSelector: $selectedSelector,
     selectedDevice: $selectedDevice,
-    sessionStatus: $sessionStatus,
     sessionBusy: $sessionBusy,
     envelope: $passkeysEnvelope,
     inventoryState: $passkeysInventory,
@@ -35,7 +33,7 @@
   }));
 
   function reloadPasskeys() {
-    return loadPasskeys(passkeys.selector);
+    return loadPasskeys();
   }
 
   function selectRow(rowId: string) {
@@ -110,7 +108,7 @@
         </Card.Content>
       </Card.Root>
     {:else if passkeys.emptyInventory}
-      <EmptyState title={m.no_passkeys_found()} message={m.no_passkeys_found_message()} />
+      <EmptyState title={m.no_passkeys_found()} message={m.no_passkeys_found_message()} variant="compact" />
     {:else if passkeys.hasReport}
       <div class="passkeys-content-grid">
         <Card.Root class="passkeys-table-card">

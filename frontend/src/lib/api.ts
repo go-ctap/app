@@ -10,7 +10,6 @@ import {
   type BioRemoveRequest,
   type BioRenameRequest,
   type BioSensorEnvelope,
-  type CancelOperationRequest,
   type ConfigStatusEnvelope,
   type CredentialDeleteEnvelope,
   type CredentialDeleteRequest,
@@ -21,7 +20,6 @@ import {
   type GetAssertionEnvelope,
   type GetAssertionRequest,
   type InspectEnvelope,
-  type InteractionAnswer,
   type LargeBlobGarbageCollectRequest,
   type LargeBlobListEnvelope,
   type LargeBlobMutationEnvelope,
@@ -82,14 +80,6 @@ export const api = {
 
   closeAllSessions(): Promise<SessionSnapshot[]> {
     return service.CloseAllSessions();
-  },
-
-  cancelOperation(request: CancelOperationRequest): Promise<boolean> {
-    return service.CancelOperation(request);
-  },
-
-  resolveInteraction(answer: InteractionAnswer): Promise<boolean> {
-    return service.ResolveInteraction(answer);
   },
 
   inspect(request: OperationRequest): Promise<InspectEnvelope> {

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { InteractionAnswer } from "../../../../bindings/github.com/go-ctap/kit/service";
+
   import DialogShell from "$lib/components/shared/DialogShell.svelte";
   import JsonView from "$lib/components/shared/JsonView.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -7,18 +9,12 @@
   import { m } from "../../../paraglide/messages.js";
   import SensitivePinField from "./SensitivePinField.svelte";
 
-  export type InteractionModalAnswer = {
-    pin?: string;
-    confirmed: boolean;
-    canceled: boolean;
-  };
-
   let {
     presentation,
     onAnswer,
   }: {
     presentation: InteractionModalPresentation | null;
-    onAnswer: (answer: InteractionModalAnswer) => void | Promise<void>;
+    onAnswer: (answer: InteractionAnswer) => void | Promise<void>;
   } = $props();
 
   let pin = $state("");
@@ -28,11 +24,12 @@
     if (!presentation || submitting) return;
     submitting = true;
     try {
-      await onAnswer({
+      await onAnswer(new InteractionAnswer({
+        interactionId: presentation.interactionId,
         ...(confirmed && presentation.kind === "pin" ? { pin } : {}),
         confirmed,
         canceled,
-      });
+      }));
     } finally {
       pin = "";
       submitting = false;

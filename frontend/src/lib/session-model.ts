@@ -1,7 +1,7 @@
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { RuntimeErrorEnvelope, SessionID, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
 
-export type SessionState = "idle" | "opening" | "ready" | "running" | "stale" | "closed" | "error";
+export type SessionState = "idle" | "opening" | "ready" | "running" | "error";
 
 export type SessionStatus = {
   sessionId?: SessionID;
@@ -42,7 +42,7 @@ export function labelForDevice(device: DeviceReport) {
 export function idleSessionStatus(
   selectedSelector: string,
   selectedDevice: DeviceReport | null,
-  state: SessionState = selectedSelector ? "closed" : "idle",
+  state: SessionState = "idle",
   error?: RuntimeErrorEnvelope | null,
 ): SessionStatus {
   const status: SessionStatus = {
@@ -79,7 +79,7 @@ export function statusFromSession(
     selectedDevice: device,
     deviceId: device.deviceId,
     deviceLabel: labelForDevice(device),
-    state: stateOverride || (snapshot.info.closed ? "closed" : snapshot.running ? "running" : "ready"),
+    state: stateOverride || (snapshot.running ? "running" : "ready"),
     openedAt: String(snapshot.openedAt),
     updatedAt: String(snapshot.updatedAt),
   };

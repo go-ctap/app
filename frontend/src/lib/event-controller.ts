@@ -6,7 +6,6 @@ import type { OperationEventEnvelope } from "../../bindings/github.com/go-ctap/k
 import { selectedSelector } from "./features/session/state.js";
 import { activeScreen, statusBar } from "./features/workbench/state.js";
 import { operationStageLabel } from "./format.js";
-import { operationEventMatchesCurrentSession } from "./session-boundary.js";
 import { appendLogEntry, setStatusOperation } from "./workbench-state.js";
 
 function progressLabel(value: OperationEvent) {
@@ -28,8 +27,6 @@ function operationEventData(data: OperationEventEnvelope) {
 }
 
 export function handleOperationProgress(data: OperationEventEnvelope) {
-  if (!operationEventMatchesCurrentSession(data)) return;
-
   if (!data.operationId) {
     setStatusOperation(null);
     return;

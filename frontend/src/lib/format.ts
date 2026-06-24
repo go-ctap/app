@@ -29,7 +29,7 @@ export function stateLabel(value: unknown) {
 
 export function sessionStateLabel(value: unknown) {
   const raw = String(value || "");
-  if (["idle", "opening", "ready", "running", "stale", "closed", "error"].includes(raw)) {
+  if (["idle", "opening", "ready", "running", "error"].includes(raw)) {
     return sessionStateText(raw);
   }
   return raw ? m.unknown_session_state({ state: raw.replaceAll("_", " ") }) : m.state_unknown();
@@ -60,8 +60,6 @@ function sessionStateText(raw: string) {
     opening: m.session_opening(),
     ready: m.session_ready(),
     running: m.session_running(),
-    stale: m.session_stale(),
-    closed: m.session_closed(),
     error: m.session_error(),
   };
   return labels[raw] || raw;

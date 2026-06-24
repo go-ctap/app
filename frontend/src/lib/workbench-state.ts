@@ -110,7 +110,7 @@ export function beginOperation(label: string, detailId?: string) {
       message: m.operation_running_with_label({ label }),
     },
   });
-  sessionStatus.update((state) => state.selectedSelector ? { ...state, state: "running" } : state);
+  sessionStatus.update((state) => state.sessionId ? { ...state, state: "running" } : state);
   return logEntryId;
 }
 
@@ -140,10 +140,6 @@ export function setStatusOutcome(outcome: StatusBarOutcome | null) {
     next = { ...outcome, logEntryId };
   }
   statusBar.update((state) => ({ ...state, lastOutcome: next }));
-}
-
-export function setStatusActions(actions: StatusBarAction[]) {
-  statusBar.update((state) => ({ ...state, actions }));
 }
 
 export function clearWorkbenchScreenCaches() {
@@ -197,6 +193,32 @@ export function summarizeEnvelope(label: string, envelope: OperationEnvelope | n
     message: m.operation_finished_successfully(),
     detailId,
     logEntryId,
+  });
+}
+
+export function summarizeOperationFailure(label: string, error: { message: string }, detailId?: string, retry?: () => void | Promise<void>) {
+  finishOperation();
+  const logEntryId = appendLogEntry({
+    tone: "error",
+    source: "operation",
+    title: m.operation_failed_with_label({ label }),
+    message: error.message,
+    screen: get(activeScreen),
+    selector: currentSelector(),
+    detailId,
+    data: {
+      label,
+      detailId,
+      error,
+    },
+  });
+  setStatusOutcome({
+    tone: "error",
+    title: m.operation_failed_with_label({ label }),
+    message: error.message,
+    detailId,
+    logEntryId,
+    retry,
   });
 }
 

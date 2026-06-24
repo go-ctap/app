@@ -11,9 +11,7 @@ export const selectionVersion = writable(0);
 export const sessionStatus = writable<SessionStatus>({ state: "idle", selectedSelector: "", selectedDevice: null });
 export const sessions = writable<SessionStatus[]>([]);
 
-export const hasSelection = derived(selectedSelector, ($selectedSelector) => $selectedSelector.trim().length > 0);
 export const sessionBusy = derived(sessionStatus, ($sessionStatus) => $sessionStatus.state === "opening" || $sessionStatus.state === "running");
-export const sessionProblem = derived(sessionStatus, ($sessionStatus) => $sessionStatus.state === "stale" || $sessionStatus.state === "error");
 
 export function resetSessionStateForTest() {
   devices.set([]);
