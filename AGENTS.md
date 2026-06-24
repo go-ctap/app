@@ -26,6 +26,7 @@
 - Local frontend types are allowed only for genuine presentation shapes: rows, badges, modal props, sidebar/titlebar state, status/log display, and similar UI-only structures.
 - View models are allowed only when they aggregate multiple UI states/stores or transform generated DTOs into a real presentation structure. Do not introduce `*Model`, `*ViewModel`, `*Info`, or `*Report` types that merely mirror generated DTOs, and do not add adapter/wrapper layers "just in case".
 - `shadcn-svelte` is the preferred source for accessible UI primitives and locally owned component code.
+- Before creating custom UI for controls, feedback, layout, overlays, or data display, always check existing shadcn-svelte components first; if a suitable primitive exists, use or add it instead of hand-rolling equivalent markup.
 - Inspect `frontend/components.json` before adding shadcn components. Add components through the `shadcn-svelte` CLI/registry, then customize the generated local files intentionally.
 - The `lyra` shadcn style is the visual baseline. Product CSS should provide layout, density, Wails shell behavior, and domain state hooks, not a parallel custom design system.
 - Tailwind is acceptable inside shadcn-generated UI primitives and small primitive wrappers. Product screens and workbench components should prefer shadcn primitives plus minimal CSS classes for layout and state.
