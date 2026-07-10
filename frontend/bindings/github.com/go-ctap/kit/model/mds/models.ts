@@ -11,9 +11,6 @@ import * as protocol$0 from "../../../ctap/protocol/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as uuid$0 from "../../../../google/uuid/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as time$0 from "../../../../../time/models.js";
 
 /**
  * AuthenticatorStatus is an MDS authenticator status value.
@@ -236,7 +233,7 @@ export class LookupResult {
     "blobNumber": number;
     "source": string;
     "cached": boolean;
-    "cachedAt": time$0.Time;
+    "cachedAt": string;
 
     /** Creates a new LookupResult instance. */
     constructor($$source: Partial<LookupResult> = {}) {
@@ -256,7 +253,7 @@ export class LookupResult {
             this["cached"] = false;
         }
         if (!("cachedAt" in $$source)) {
-            this["cachedAt"] = null;
+            this["cachedAt"] = "0001-01-01T00:00:00.000Z";
         }
 
         Object.assign(this, $$source);

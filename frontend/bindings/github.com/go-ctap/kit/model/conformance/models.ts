@@ -5,35 +5,158 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
-export enum CommonValueID {
+export class Evidence {
+    "path": FieldPath;
+    "state": EvidenceState;
+    "values": string[];
+
+    /** Creates a new Evidence instance. */
+    constructor($$source: Partial<Evidence> = {}) {
+        if (!("path" in $$source)) {
+            this["path"] = "";
+        }
+        if (!("state" in $$source)) {
+            this["state"] = EvidenceState.$zero;
+        }
+        if (!("values" in $$source)) {
+            this["values"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Evidence instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Evidence {
+        const $$createField2_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("values" in $$parsedSource) {
+            $$parsedSource["values"] = $$createField2_0($$parsedSource["values"]);
+        }
+        return new Evidence($$parsedSource as Partial<Evidence>);
+    }
+}
+
+export enum EvidenceGapID {
     /**
      * The Go zero value for the underlying type of the enum.
      */
     $zero = "",
 
-    CommonValueEmptyList = "empty_list",
-    CommonValueExtensionReportedCommandMissing = "extension_reported_command_missing",
-    CommonValueMutuallyExclusiveSupportReported = "mutually_exclusive_support_reported",
-    CommonValueNotListed = "not_listed",
-    CommonValueNotReported = "not_reported",
+    EvidenceGapAuthenticatorUIUnknown = "authenticator_ui_unknown",
+    EvidenceGapImplicitCredProtectUnknown = "implicit_cred_protect_unknown",
+    EvidenceGapBuiltInPINEntryUnknown = "built_in_pin_entry_unknown",
 };
 
+export enum EvidenceState {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    EvidenceAbsent = "absent",
+    EvidencePresentEmpty = "present_empty",
+    EvidencePresent = "present",
+    EvidenceFalse = "false",
+    EvidenceTrue = "true",
+    EvidenceValue = "value",
+};
+
+export class Expectation {
+    "subjects": FieldPath[];
+    "quantifier": ExpectationQuantifier;
+    "kind": ExpectationKind;
+    "values": string[];
+
+    /** Creates a new Expectation instance. */
+    constructor($$source: Partial<Expectation> = {}) {
+        if (!("subjects" in $$source)) {
+            this["subjects"] = [];
+        }
+        if (!("quantifier" in $$source)) {
+            this["quantifier"] = ExpectationQuantifier.$zero;
+        }
+        if (!("kind" in $$source)) {
+            this["kind"] = ExpectationKind.$zero;
+        }
+        if (!("values" in $$source)) {
+            this["values"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Expectation instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Expectation {
+        const $$createField0_0 = $$createType1;
+        const $$createField3_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("subjects" in $$parsedSource) {
+            $$parsedSource["subjects"] = $$createField0_0($$parsedSource["subjects"]);
+        }
+        if ("values" in $$parsedSource) {
+            $$parsedSource["values"] = $$createField3_0($$parsedSource["values"]);
+        }
+        return new Expectation($$parsedSource as Partial<Expectation>);
+    }
+}
+
+export enum ExpectationKind {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    ExpectationRequired = "required",
+    ExpectationAbsent = "absent",
+    ExpectationNonEmpty = "non_empty",
+    ExpectationUnique = "unique",
+    ExpectationMinimum = "minimum",
+    ExpectationRange = "range",
+    ExpectationContains = "contains",
+    ExpectationExcludes = "excludes",
+    ExpectationTrue = "true",
+    ExpectationNotBoth = "not_both",
+};
+
+export enum ExpectationQuantifier {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    ExpectationAll = "all",
+    ExpectationAny = "any",
+};
+
+export type FieldPath = string;
+
 export class Finding {
-    "id": FindingID;
-    "source": string;
-    "value": FindingValue;
-    "args"?: { [_ in string]?: any };
+    "ruleId": RuleID;
+    "profile": Profile;
+    "expectations": Expectation[];
+    "evidence": Evidence[];
+    "references": RequirementRef[];
 
     /** Creates a new Finding instance. */
     constructor($$source: Partial<Finding> = {}) {
-        if (!("id" in $$source)) {
-            this["id"] = FindingID.$zero;
+        if (!("ruleId" in $$source)) {
+            this["ruleId"] = RuleID.$zero;
         }
-        if (!("source" in $$source)) {
-            this["source"] = "";
+        if (!("profile" in $$source)) {
+            this["profile"] = Profile.$zero;
         }
-        if (!("value" in $$source)) {
-            this["value"] = (new FindingValue());
+        if (!("expectations" in $$source)) {
+            this["expectations"] = [];
+        }
+        if (!("evidence" in $$source)) {
+            this["evidence"] = [];
+        }
+        if (!("references" in $$source)) {
+            this["references"] = [];
         }
 
         Object.assign(this, $$source);
@@ -43,122 +166,308 @@ export class Finding {
      * Creates a new Finding instance from a string or object.
      */
     static createFrom($$source: any = {}): Finding {
-        const $$createField2_0 = $$createType0;
-        const $$createField3_0 = $$createType1;
+        const $$createField2_0 = $$createType3;
+        const $$createField3_0 = $$createType5;
+        const $$createField4_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("value" in $$parsedSource) {
-            $$parsedSource["value"] = $$createField2_0($$parsedSource["value"]);
+        if ("expectations" in $$parsedSource) {
+            $$parsedSource["expectations"] = $$createField2_0($$parsedSource["expectations"]);
         }
-        if ("args" in $$parsedSource) {
-            $$parsedSource["args"] = $$createField3_0($$parsedSource["args"]);
+        if ("evidence" in $$parsedSource) {
+            $$parsedSource["evidence"] = $$createField3_0($$parsedSource["evidence"]);
+        }
+        if ("references" in $$parsedSource) {
+            $$parsedSource["references"] = $$createField4_0($$parsedSource["references"]);
         }
         return new Finding($$parsedSource as Partial<Finding>);
     }
 }
 
-export enum FindingID {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
+export class Inconclusive {
+    "ruleId": RuleID;
+    "profile": Profile;
+    "reason": EvidenceGapID;
+    "expectations": Expectation[];
+    "evidence": Evidence[];
+    "references": RequirementRef[];
 
-    FindingVersionsRequired = "versions_required",
-    FindingFIDO22Forbidden = "fido22_forbidden",
-    FindingPinUVAuthProtocolsListEmpty = "pin_uv_auth_protocols_list_empty",
-    FindingPinUVAuthProtocolsListDuplicate = "pin_uv_auth_protocols_list_duplicate",
-    FindingTransportsListEmpty = "transports_list_empty",
-    FindingTransportsListDuplicate = "transports_list_duplicate",
-    FindingAlgorithmsListEmpty = "algorithms_list_empty",
-    FindingAlgorithmsListDuplicate = "algorithms_list_duplicate",
-    FindingTransportsForResetListEmpty = "transports_for_reset_list_empty",
-    FindingTransportsForResetListDuplicate = "transports_for_reset_list_duplicate",
-    FindingAttestationFormatsListEmpty = "attestation_formats_list_empty",
-    FindingAttestationFormatsListDuplicate = "attestation_formats_list_duplicate",
-    FindingAttestationFormatsNone = "attestation_formats_none",
-    FindingMaxCredentialCountInListPositive = "max_credential_count_in_list_positive",
-    FindingMaxCredentialIDLengthPositive = "max_credential_id_length_positive",
-    FindingMaxMsgSizeMinimum = "max_msg_size_minimum",
-    FindingPreferredPlatformUVAttemptsMinimum = "preferred_platform_uv_attempts_minimum",
-    FindingCTAP23HMACSecret = "ctap23_hmac_secret",
-    FindingCTAP23RKUVState = "ctap23_rk_uv_state",
-    FindingCTAP23PinUVAuthToken = "ctap23_pin_uv_auth_token",
-    FindingCTAP23PinProtocolTwo = "ctap23_pin_protocol_two",
-    FindingCredBlobRequiresCredProtect = "credblob_requires_credprotect",
-    FindingCredBlobRequiresLimit = "credblob_requires_limit",
-    FindingCredBlobLimitInvalid = "credblob_limit_invalid",
-    FindingCredBlobLimitWithoutExtension = "credblob_limit_without_extension",
-    FindingLargeBlobModeConflict = "largeblob_mode_conflict",
-    FindingLargeBlobExtensionsConflict = "largeblob_extensions_conflict",
-    FindingLargeBlobKeyIncomplete = "largeblob_key_incomplete",
-    FindingLargeBlobsRequiresLimit = "largeblobs_requires_limit",
-    FindingLargeBlobsLimitInvalid = "largeblobs_limit_invalid",
-    FindingLargeBlobsLimitWithoutCommand = "largeblobs_limit_without_command",
-    FindingMinPINExtensionWithoutOption = "min_pin_extension_without_option",
-    FindingSetMinPINWithoutExtension = "set_min_pin_without_extension",
-    FindingSetMinPINWithoutUV = "set_min_pin_without_uv",
-    FindingSetMinPINCommandMissing = "set_min_pin_command_missing",
-    FindingMaxRPIDsWithoutSetMinPIN = "max_rpids_without_set_min_pin",
-    FindingMaxRPIDsMissingWithSetMinPIN = "max_rpids_missing_with_set_min_pin",
-    FindingMinPINLengthInvalid = "min_pin_length_invalid",
-    FindingMinPINWithoutClientPIN = "min_pin_without_client_pin",
-    FindingMinPINMissing = "min_pin_missing",
-    FindingMaxPINLengthInvalid = "max_pin_length_invalid",
-    FindingMaxPINWithoutClientPIN = "max_pin_without_client_pin",
-    FindingPinComplexityExtensionWithoutSetPIN = "pin_complexity_extension_without_set_min_pin",
-    FindingPinComplexityWithoutClientPIN = "pin_complexity_without_client_pin",
-    FindingNoMCGAWithoutClientPIN = "no_mc_ga_without_client_pin",
-    FindingUVBioEnrollWithoutBioEnroll = "uv_bio_enroll_without_bio_enroll",
-    FindingUVAcfgWithoutAuthnrCfg = "uv_acfg_without_authnr_cfg",
-    FindingConfigCommandsWithoutAuthnrCfg = "config_commands_without_authnr_cfg",
-    FindingAlwaysUVConflict = "always_uv_conflict",
-    FindingAlwaysUVCommandMissing = "always_uv_command_missing",
-    FindingEnterpriseAttestationCommandMissing = "enterprise_attestation_command_missing",
-    FindingVendorPrototypeCommandMissing = "vendor_prototype_command_missing",
-    FindingLongTouchCommandMissing = "long_touch_command_missing",
-};
-
-export class FindingValue {
-    "kind": FindingValueKind;
-    "id"?: CommonValueID;
-    "value"?: string;
-    "input"?: any;
-    "items"?: any[];
-
-    /** Creates a new FindingValue instance. */
-    constructor($$source: Partial<FindingValue> = {}) {
-        if (!("kind" in $$source)) {
-            this["kind"] = FindingValueKind.$zero;
+    /** Creates a new Inconclusive instance. */
+    constructor($$source: Partial<Inconclusive> = {}) {
+        if (!("ruleId" in $$source)) {
+            this["ruleId"] = RuleID.$zero;
+        }
+        if (!("profile" in $$source)) {
+            this["profile"] = Profile.$zero;
+        }
+        if (!("reason" in $$source)) {
+            this["reason"] = EvidenceGapID.$zero;
+        }
+        if (!("expectations" in $$source)) {
+            this["expectations"] = [];
+        }
+        if (!("evidence" in $$source)) {
+            this["evidence"] = [];
+        }
+        if (!("references" in $$source)) {
+            this["references"] = [];
         }
 
         Object.assign(this, $$source);
     }
 
     /**
-     * Creates a new FindingValue instance from a string or object.
+     * Creates a new Inconclusive instance from a string or object.
      */
-    static createFrom($$source: any = {}): FindingValue {
-        const $$createField4_0 = $$createType2;
+    static createFrom($$source: any = {}): Inconclusive {
+        const $$createField3_0 = $$createType3;
+        const $$createField4_0 = $$createType5;
+        const $$createField5_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("items" in $$parsedSource) {
-            $$parsedSource["items"] = $$createField4_0($$parsedSource["items"]);
+        if ("expectations" in $$parsedSource) {
+            $$parsedSource["expectations"] = $$createField3_0($$parsedSource["expectations"]);
         }
-        return new FindingValue($$parsedSource as Partial<FindingValue>);
+        if ("evidence" in $$parsedSource) {
+            $$parsedSource["evidence"] = $$createField4_0($$parsedSource["evidence"]);
+        }
+        if ("references" in $$parsedSource) {
+            $$parsedSource["references"] = $$createField5_0($$parsedSource["references"]);
+        }
+        return new Inconclusive($$parsedSource as Partial<Inconclusive>);
     }
 }
 
-export enum FindingValueKind {
+/**
+ * Profile is an authenticator protocol profile advertised in GetInfo. A
+ * profile is deliberately distinct from SpecificationID: the former is a
+ * runtime claim while the latter identifies an immutable normative document.
+ */
+export enum Profile {
     /**
      * The Go zero value for the underlying type of the enum.
      */
     $zero = "",
 
-    FindingValueCommon = "common",
-    FindingValueLiteral = "literal",
-    FindingValueInput = "input",
-    FindingValueList = "list",
+    ProfileFIDO20 = "FIDO_2_0",
+    ProfileFIDO21Pre = "FIDO_2_1_PRE",
+    ProfileFIDO21 = "FIDO_2_1",
+    ProfileFIDO23 = "FIDO_2_3",
+    ProfileU2FV2 = "U2F_V2",
 };
 
+/**
+ * Report is a static assessment of the information observable in one
+ * authenticatorGetInfo response. Target is nil and no normative rules are run
+ * when the response does not advertise a stable supported FIDO2 profile. A
+ * report is not a replacement for protocol-level certification testing.
+ */
+export class Report {
+    "target": Target | null;
+    "advertisedProfiles": Profile[];
+    "findings": Finding[];
+    "inconclusive": Inconclusive[];
+
+    /** Creates a new Report instance. */
+    constructor($$source: Partial<Report> = {}) {
+        if (!("target" in $$source)) {
+            this["target"] = null;
+        }
+        if (!("advertisedProfiles" in $$source)) {
+            this["advertisedProfiles"] = [];
+        }
+        if (!("findings" in $$source)) {
+            this["findings"] = [];
+        }
+        if (!("inconclusive" in $$source)) {
+            this["inconclusive"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Report instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Report {
+        const $$createField0_0 = $$createType9;
+        const $$createField1_0 = $$createType10;
+        const $$createField2_0 = $$createType12;
+        const $$createField3_0 = $$createType14;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("target" in $$parsedSource) {
+            $$parsedSource["target"] = $$createField0_0($$parsedSource["target"]);
+        }
+        if ("advertisedProfiles" in $$parsedSource) {
+            $$parsedSource["advertisedProfiles"] = $$createField1_0($$parsedSource["advertisedProfiles"]);
+        }
+        if ("findings" in $$parsedSource) {
+            $$parsedSource["findings"] = $$createField2_0($$parsedSource["findings"]);
+        }
+        if ("inconclusive" in $$parsedSource) {
+            $$parsedSource["inconclusive"] = $$createField3_0($$parsedSource["inconclusive"]);
+        }
+        return new Report($$parsedSource as Partial<Report>);
+    }
+}
+
+export type RequirementID = string;
+
+export enum RequirementLevel {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    RequirementConstraint = "CONSTRAINT",
+    RequirementMust = "MUST",
+    RequirementMustNot = "MUST_NOT",
+};
+
+export class RequirementRef {
+    "id": RequirementID;
+    "specification": SpecificationID;
+    "section": string;
+    "clause": string;
+    "url": string;
+    "level": RequirementLevel;
+
+    /** Creates a new RequirementRef instance. */
+    constructor($$source: Partial<RequirementRef> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("specification" in $$source)) {
+            this["specification"] = SpecificationID.$zero;
+        }
+        if (!("section" in $$source)) {
+            this["section"] = "";
+        }
+        if (!("clause" in $$source)) {
+            this["clause"] = "";
+        }
+        if (!("url" in $$source)) {
+            this["url"] = "";
+        }
+        if (!("level" in $$source)) {
+            this["level"] = RequirementLevel.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new RequirementRef instance from a string or object.
+     */
+    static createFrom($$source: any = {}): RequirementRef {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new RequirementRef($$parsedSource as Partial<RequirementRef>);
+    }
+}
+
+export enum RuleID {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    RuleVersionsRequired = "ctap.get_info.versions.required",
+    RulePinUVAuthProtocolsNonEmpty = "ctap.get_info.pin_uv_auth_protocols.nonempty",
+    RulePinUVAuthProtocolsUnique = "ctap.get_info.pin_uv_auth_protocols.unique",
+    RuleTransportsNonEmpty = "ctap.get_info.transports.nonempty",
+    RuleTransportsUnique = "ctap.get_info.transports.unique",
+    RuleAlgorithmsNonEmpty = "ctap.get_info.algorithms.nonempty",
+    RuleAlgorithmsUnique = "ctap.get_info.algorithms.unique",
+    RuleTransportsForResetNonEmpty = "ctap.get_info.transports_for_reset.nonempty",
+    RuleTransportsForResetUnique = "ctap.get_info.transports_for_reset.unique",
+    RuleAttestationFormatsNonEmpty = "ctap.get_info.attestation_formats.nonempty",
+    RuleAttestationFormatsUnique = "ctap.get_info.attestation_formats.unique",
+    RuleAttestationFormatsNoneOmitted = "ctap.get_info.attestation_formats.none_omitted",
+    RuleCertificationLevelRange = "ctap.get_info.certifications.level_range",
+    RuleMaxCredentialCountPositive = "ctap.get_info.max_credential_count_in_list.positive",
+    RuleMaxCredentialIDLengthPositive = "ctap.get_info.max_credential_id_length.positive",
+    RulePreferredPlatformUVAttemptsPositive = "ctap.get_info.preferred_platform_uv_attempts.positive",
+    RuleProfileHMACSecretRequired = "ctap.profile.hmac_secret.required",
+    RuleProfileRKUVCapabilityRequired = "ctap.profile.rk.user_verification_capability_required",
+    RuleProfileRKCredentialManagementRequired = "ctap.profile.rk.credential_management_required",
+    RuleProfileCredentialProtectionRequired = "ctap.profile.user_verification.cred_protect_required",
+    RuleProfilePinUVAuthTokenRequired = "ctap.profile.pin_uv_auth_token.required",
+    RuleProfilePinUVProtocolTwoRequired = "ctap.profile.pin_uv_protocol_2.required",
+    RuleCredBlobRequiresCredProtect = "ctap.get_info.cred_blob.cred_protect_required",
+    RuleCredBlobRequiresMaxLength = "ctap.get_info.cred_blob.max_length_required",
+    RuleCredBlobMaxLengthMinimum = "ctap.get_info.cred_blob.max_length_minimum",
+    RuleCredBlobMaxLengthRequiresExtension = "ctap.get_info.cred_blob.max_length_requires_extension",
+    RuleLargeBlobModesMutuallyExclusive = "ctap.get_info.large_blob.modes_mutually_exclusive",
+    RuleLargeBlobExtensionsMutuallyExclusive = "ctap.get_info.large_blob.extensions_mutually_exclusive",
+    RuleLargeBlobKeyRequiresCommand = "ctap.get_info.large_blob_key.command_required",
+    RuleLargeBlobsRequiresCapacity = "ctap.get_info.large_blobs.capacity_required",
+    RuleLargeBlobsCapacityMinimum = "ctap.get_info.large_blobs.capacity_minimum",
+    RuleLargeBlobsCapacityRequiresCommand = "ctap.get_info.large_blobs.capacity_requires_command",
+    RuleSetMinPINRequiresPINCapability = "ctap.get_info.set_min_pin_length.pin_capability_required",
+    RuleSetMinPINSupportConsistency = "ctap.get_info.set_min_pin_length.support_consistency",
+    RuleAuthenticatorConfigSupportConsistency = "ctap.get_info.authenticator_config.support_consistency",
+    RuleConfigCommandRequired = "ctap.get_info.authenticator_config.command_required",
+    RuleConfigCommandPrerequisite = "ctap.get_info.authenticator_config.command_prerequisite",
+    RuleMinPINLengthMinimum = "ctap.get_info.min_pin_length.minimum",
+    RuleMinPINLengthRequiresClientPIN = "ctap.get_info.min_pin_length.requires_client_pin",
+    RuleClientPINRequiresMinPINLength = "ctap.get_info.client_pin.min_pin_length_required",
+    RuleMaxPINLengthMinimum = "ctap.get_info.max_pin_length.minimum",
+    RuleMaxPINLengthRequiresClientPIN = "ctap.get_info.max_pin_length.requires_client_pin",
+    RulePinComplexityRequiresClientPIN = "ctap.get_info.pin_complexity.requires_client_pin",
+    RuleNoMCGARequiresClientPIN = "ctap.get_info.no_mc_ga_permissions.requires_client_pin",
+    RuleUVBioEnrollRequiresBioEnroll = "ctap.get_info.uv_bio_enroll.requires_bio_enroll",
+    RuleUVAcfgRequiresAuthnrCfg = "ctap.get_info.uv_acfg.requires_authnr_cfg",
+    RuleAlwaysUVConflictsWithMakeCredUVNotRqd = "ctap.get_info.always_uv.conflicts_with_make_cred_uv_not_required",
+    RuleAlwaysUVU2FRequiresBuiltInUV = "ctap.get_info.always_uv.u2f_requires_built_in_uv",
+};
+
+export enum SpecificationID {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    SpecificationCTAP20 = "ctap-2.0-ps-20190130",
+    SpecificationCTAP21 = "ctap-2.1-ps-20210615",
+    SpecificationCTAP23 = "ctap-2.3-ps-20260226",
+};
+
+export class Target {
+    "specification": SpecificationID;
+    "profile": Profile;
+
+    /** Creates a new Target instance. */
+    constructor($$source: Partial<Target> = {}) {
+        if (!("specification" in $$source)) {
+            this["specification"] = SpecificationID.$zero;
+        }
+        if (!("profile" in $$source)) {
+            this["profile"] = Profile.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Target instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Target {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Target($$parsedSource as Partial<Target>);
+    }
+}
+
 // Private type creation functions
-const $$createType0 = FindingValue.createFrom;
-const $$createType1 = $Create.Map($Create.Any, $Create.Any);
-const $$createType2 = $Create.Array($Create.Any);
+const $$createType0 = $Create.Array($Create.Any);
+const $$createType1 = $Create.Array($Create.Any);
+const $$createType2 = Expectation.createFrom;
+const $$createType3 = $Create.Array($$createType2);
+const $$createType4 = Evidence.createFrom;
+const $$createType5 = $Create.Array($$createType4);
+const $$createType6 = RequirementRef.createFrom;
+const $$createType7 = $Create.Array($$createType6);
+const $$createType8 = Target.createFrom;
+const $$createType9 = $Create.Nullable($$createType8);
+const $$createType10 = $Create.Array($Create.Any);
+const $$createType11 = Finding.createFrom;
+const $$createType12 = $Create.Array($$createType11);
+const $$createType13 = Inconclusive.createFrom;
+const $$createType14 = $Create.Array($$createType13);

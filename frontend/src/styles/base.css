@@ -9,6 +9,7 @@
     min-height: 100vh;
     height: 100vh;
     overflow: hidden;
+    background: transparent;
   }
 
   body {
@@ -17,7 +18,7 @@
     font-family: var(--font-mono);
     color-scheme: light;
     color: var(--foreground);
-    background: var(--background);
+    background: transparent;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-tap-highlight-color: color-mix(in srgb, var(--primary) 18%, transparent);

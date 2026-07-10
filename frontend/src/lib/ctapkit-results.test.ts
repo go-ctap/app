@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import { OperationKind, type InspectResult } from "../../bindings/github.com/go-ctap/kit/model";
 import { BioModality, type BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
+import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type {
   BioEnrollEnvelope,
@@ -35,7 +36,7 @@ describe("ctapkit result extractors", () => {
       info: {
         versions: ["FIDO_2_1" as Version],
         aaguid: "00000000-0000-0000-0000-000000000000",
-        conformanceFindings: [],
+        conformance: new Report(),
       },
     };
 
@@ -47,7 +48,7 @@ describe("ctapkit result extractors", () => {
   it("does not extract inspect output from another operation kind", () => {
     const envelope = {
       kind: OperationKind.OperationBioSensorInfo,
-      result: { result: { device, info: { versions: [], aaguid: "", conformanceFindings: [] } } },
+      result: { result: { device, info: { versions: [], aaguid: "", conformance: new Report() } } },
     } as unknown as BioSensorEnvelope;
 
     expect(inspectResult(envelope)).toBeNull();

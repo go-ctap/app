@@ -1,5 +1,11 @@
 import type { InspectInfo } from "../../bindings/github.com/go-ctap/kit/model";
 import type { BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
+import type {
+  Profile,
+  RequirementRef,
+  RuleID,
+  Target,
+} from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 
@@ -28,12 +34,27 @@ export type OverviewGroup = {
   rows: OverviewRow[];
 };
 
-export type OverviewConformanceWarning = {
-  id?: string;
+export type OverviewConformanceStatus = "passed" | "findings" | "inconclusive" | "unresolved";
+
+export type OverviewConformanceAssessment = {
+  id: RuleID | "target_unresolved";
+  kind: "finding" | "inconclusive" | "unresolved";
+  profile: Profile | null;
   name: string;
   description: string;
-  value: string;
+  expectations: string[];
+  evidence: string[];
+  reason?: string;
   source: string;
+  references: RequirementRef[];
+};
+
+export type OverviewConformancePresentation = {
+  status: OverviewConformanceStatus;
+  target: Target | null;
+  assessments: OverviewConformanceAssessment[];
+  findingCount: number;
+  inconclusiveCount: number;
 };
 
 export type OverviewMDSObservationSeverity = "critical" | "warning" | "info";

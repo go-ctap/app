@@ -1,6 +1,6 @@
 <script lang="ts">
   import OverviewCapabilityMatrix from "$lib/components/overview/OverviewCapabilityMatrix.svelte";
-  import OverviewConformanceWarnings from "$lib/components/overview/OverviewConformanceWarnings.svelte";
+  import OverviewConformance from "$lib/components/overview/OverviewConformance.svelte";
   import OverviewHeroCard from "$lib/components/overview/OverviewHeroCard.svelte";
   import OverviewLoadingCard from "$lib/components/overview/OverviewLoadingCard.svelte";
   import OverviewMDSObservations from "$lib/components/overview/OverviewMDSObservations.svelte";
@@ -77,7 +77,11 @@
         onReload={reloadOverview}
         onRefreshMDS={refreshMDS}
       />
-      <OverviewConformanceWarnings warnings={overview.conformanceWarnings} />
+      {#if overview.conformance}
+        {#key overview.info}
+          <OverviewConformance presentation={overview.conformance} />
+        {/key}
+      {/if}
       <OverviewCapabilityMatrix groups={overview.overviewGroups} warningCount={overview.warningCount} />
       <OverviewMDSObservations observations={overview.mdsObservations} />
       <OverviewRawInspectionData info={overview.info} onCopy={copyReport} />

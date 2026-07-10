@@ -2,8 +2,6 @@ go 1.26.3
 
 use (
 	.
-	../ctapkit
-	../go-ctaphid
-	../wails/v3
-	../wails/webview2
+	../kit
+	../hid
 )

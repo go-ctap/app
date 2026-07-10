@@ -1,5 +1,7 @@
 export type {
-  OverviewConformanceWarning,
+  OverviewConformanceAssessment,
+  OverviewConformancePresentation,
+  OverviewConformanceStatus,
   OverviewContext,
   OverviewGroup,
   OverviewHeroContext,
@@ -20,7 +22,7 @@ export type {
 export { buildOverviewHero, buildOverviewMDSObservations } from "./overview-hero.js";
 export { buildOverviewHeroSignalGroups } from "./overview-signals.js";
 export { buildOverviewRows } from "./overview-rows.js";
-export { buildOverviewConformanceWarnings } from "./overview-conformance.js";
+export { buildOverviewConformancePresentation } from "./overview-conformance.js";
 export { groupOverviewRows, groupSummary, overviewRowKnown, overviewRowSupported, overviewStatusLabel } from "./overview-shared.js";
 export { formatAlgorithm } from "./overview-utils.js";
 export { inlineList } from "./overview-raw-format.js";

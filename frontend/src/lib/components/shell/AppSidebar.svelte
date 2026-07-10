@@ -71,8 +71,8 @@
       grid-template-rows: 58px minmax(0, 1fr) auto;
       min-width: 0;
       height: 100vh;
-      border-right: 1px solid var(--border);
-      background: color-mix(in srgb, var(--card) 86%, var(--background));
+      border-right: 1px solid var(--window-border);
+      background: transparent;
     }
 
     .sidebar-brand {

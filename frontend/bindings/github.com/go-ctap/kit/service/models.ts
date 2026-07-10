@@ -29,9 +29,6 @@ import * as webauthn$0 from "../model/webauthn/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as transport$0 from "../transport/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as time$0 from "../../../../time/models.js";
 
 export class AlwaysUVRequest {
     "sessionId": SessionID;
@@ -1285,8 +1282,8 @@ export class PINChangeRequest {
     "verificationFlow"?: model$0.VerificationFlow;
 
     /**
-     * CurrentPIN and NewPIN are accepted from JSON for UI/service input, but
-     * MarshalJSON omits them so request values cannot accidentally expose PINs.
+     * CurrentPIN and NewPIN participate in JSON transport. Consumers own
+     * redaction at the application boundary and must not log or persist them.
      */
     "currentPIN": string;
     "newPIN": string;
@@ -1362,8 +1359,8 @@ export class PINSetRequest {
     "verificationFlow"?: model$0.VerificationFlow;
 
     /**
-     * NewPIN is accepted from JSON for UI/service input, but MarshalJSON omits
-     * it so request values cannot accidentally expose PINs in logs or events.
+     * NewPIN participates in JSON transport. Consumers own redaction at the
+     * application boundary and must not log or persist serialized requests.
      */
     "newPIN": string;
     "confirmed"?: boolean;
@@ -1483,8 +1480,8 @@ export class SessionSnapshot {
     "id": SessionID;
     "info": model$0.SessionInfo;
     "running"?: boolean;
-    "openedAt": time$0.Time;
-    "updatedAt": time$0.Time;
+    "openedAt": string;
+    "updatedAt": string;
 
     /** Creates a new SessionSnapshot instance. */
     constructor($$source: Partial<SessionSnapshot> = {}) {
@@ -1495,10 +1492,10 @@ export class SessionSnapshot {
             this["info"] = (new model$0.SessionInfo());
         }
         if (!("openedAt" in $$source)) {
-            this["openedAt"] = null;
+            this["openedAt"] = "0001-01-01T00:00:00.000Z";
         }
         if (!("updatedAt" in $$source)) {
-            this["updatedAt"] = null;
+            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
         }
 
         Object.assign(this, $$source);

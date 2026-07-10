@@ -12,7 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@wailsio/runtime": "file:../../wails/v3/internal/runtime/desktop/@wailsio/runtime"
+    "@wailsio/runtime": "^3.0.0-alpha.94"
   },
   "devDependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.2.8",

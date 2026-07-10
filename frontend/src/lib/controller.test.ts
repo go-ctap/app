@@ -2,6 +2,7 @@ import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ErrorCategory, OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { CredentialsEnvelope, InteractionPrompt, MDSLookupEnvelope, OperationEventEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
@@ -85,7 +86,7 @@ function inspectEnvelope(item: DeviceReport) {
           versions: [],
           aaguid: "",
           options: {},
-          conformanceFindings: [],
+          conformance: new Report(),
         },
       },
     },

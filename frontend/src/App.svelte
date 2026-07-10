@@ -168,10 +168,12 @@
 			grid-template-columns: 17.5rem minmax(0, 1fr);
 			min-width: 0;
 			height: 100vh;
-			background: var(--background);
+			overflow: hidden;
+			border-radius: var(--window-radius);
+			background: var(--window-surface);
 			color: var(--foreground);
-			--topbar-background: color-mix(in srgb, var(--card) 92%, var(--background));
-			--topbar-border: var(--border);
+			--topbar-background: transparent;
+			--topbar-border: var(--window-border);
 		}
 		.app-workspace {
 			display: grid;

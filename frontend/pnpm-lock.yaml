@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@wailsio/runtime':
-        specifier: file:../../wails/v3/internal/runtime/desktop/@wailsio/runtime
-        version: file:../../wails/v3/internal/runtime/desktop/@wailsio/runtime
+        specifier: ^3.0.0-alpha.94
+        version: 3.0.0-alpha.94
     devDependencies:
       '@fontsource-variable/jetbrains-mono':
         specifier: ^5.2.8
@@ -537,8 +537,8 @@ packages:
   '@vitest/utils@4.1.9':
     resolution: {integrity: sha512-A51o8ymO5PpqlWNnBP9ZHPXDIpuMtTLlGSjN7la4US+LJzoUMyhwjA5QXlm39JexgwHKW4Xjs8Z2d3dLCXOeuA==}
 
-  '@wailsio/runtime@file:../../wails/v3/internal/runtime/desktop/@wailsio/runtime':
-    resolution: {directory: ../../wails/v3/internal/runtime/desktop/@wailsio/runtime, type: directory}
+  '@wailsio/runtime@3.0.0-alpha.94':
+    resolution: {integrity: sha512-jtOtyWLDLop9NfU373sA43NjyGntxDFUIHY6kzmArz5HGn66Ok3vl9N2nIyVs7cArvADxk/mBBZ9wXOX7R0NFA==}
 
   acorn@8.17.0:
     resolution: {integrity: sha512-xRQbDb9BnwDafYNn6Vwl839DYVjqXYb1XVGtWAZ1kcDc6iwAL4hg3B1dZlRiuENFeO2H53gFG3in621AdERVAg==}
@@ -1605,7 +1605,7 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.0
 
-  '@wailsio/runtime@file:../../wails/v3/internal/runtime/desktop/@wailsio/runtime': {}
+  '@wailsio/runtime@3.0.0-alpha.94': {}
 
   acorn@8.17.0: {}
 

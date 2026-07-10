@@ -7,7 +7,7 @@ import { bioSensorReport, inspectResult, operationError } from "./ctapkit-result
 import type { LoadState } from "./features/overview/state.js";
 import { sessionStateLabel } from "./format.js";
 import {
-  buildOverviewConformanceWarnings,
+  buildOverviewConformancePresentation,
   buildOverviewHero,
   buildOverviewHeroSignalGroups,
   buildOverviewMDSObservations,
@@ -62,7 +62,7 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
     hero: buildOverviewHero({ info, device, mds: mdsResult, mdsLoading, mdsError: mdsFailureMessage }),
     signalGroups: buildOverviewHeroSignalGroups({ info }),
     overviewGroups: groupOverviewRows(overviewRows),
-    conformanceWarnings: buildOverviewConformanceWarnings({ info }),
+    conformance: buildOverviewConformancePresentation({ info }),
     mdsObservations: buildOverviewMDSObservations({ info, mds: mdsResult }),
     warningCount: overviewRows.filter((row) => row.status === "warning").length,
     loadingRows: [m.transport(), m.session(), "AAGUID", m.versions()],

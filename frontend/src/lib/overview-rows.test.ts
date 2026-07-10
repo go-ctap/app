@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ExtensionIdentifier } from "../../bindings/github.com/go-ctap/ctap/extension";
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import type { InspectInfo } from "../../bindings/github.com/go-ctap/kit/model";
+import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 
 import { setAppLocale } from "./i18n";
 import { buildOverviewRows } from "./overview-rows";
@@ -12,7 +13,7 @@ function info(input: Partial<InspectInfo> = {}): InspectInfo {
   return {
     versions: ["FIDO_2_1" as Version],
     aaguid: "00000000-0000-0000-0000-000000000000",
-    conformanceFindings: [],
+    conformance: new Report(),
     ...input,
   };
 }
@@ -39,7 +40,7 @@ describe("buildOverviewRows", () => {
     });
 
     expect(rowBySource(rows, "options.setMinPINLength").status).toBe("supported");
-    expect(rowBySource(rows, "extensions.largeBlobKey + options.largeBlobs").status).toBe("supported");
+    expect(rowBySource(rows, "extensions.largeBlobKey").status).toBe("supported");
     expect(rowBySource(rows, "options.largeBlobs").value).toContain("2048");
   });
 
@@ -65,7 +66,7 @@ describe("buildOverviewRows", () => {
     expect(rowBySource(absentRows, "options.clientPin").value).toBe("Absent");
   });
 
-  it("keeps numeric limit warning and default behavior", () => {
+  it("keeps numeric limits informational in the presentation matrix", () => {
     setAppLocale("en");
 
     const rows = buildOverviewRows({
@@ -79,11 +80,11 @@ describe("buildOverviewRows", () => {
       }),
     });
 
-    expect(rowBySource(rows, "maxMsgSize").status).toBe("warning");
+    expect(rowBySource(rows, "maxMsgSize").status).toBe("informational");
     expect(rowBySource(rows, "maxMsgSize").value).toContain("512");
-    expect(rowBySource(rows, "minPINLength").status).toBe("warning");
+    expect(rowBySource(rows, "minPINLength").status).toBe("informational");
     expect(rowBySource(rows, "minPINLength").value).toContain("3");
-    expect(rowBySource(rows, "maxPINLength").status).toBe("warning");
+    expect(rowBySource(rows, "maxPINLength").status).toBe("informational");
     expect(rowBySource(rows, "maxPINLength").value).toContain("7");
 
     const defaultRows = buildOverviewRows({

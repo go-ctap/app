@@ -57,9 +57,12 @@ func main() {
 		Title:     "FIDO Authenticator Workbench",
 		Frameless: true,
 		Mac: application.MacWindow{
-			InvisibleTitleBarHeight: 50,
-			Backdrop:                application.MacBackdropTranslucent,
-			TitleBar:                application.MacTitleBarHiddenInset,
+			Backdrop: application.MacBackdropLiquidGlass,
+			LiquidGlass: application.MacLiquidGlass{
+				Style:        application.LiquidGlassStyleDark,
+				Material:     application.NSVisualEffectMaterialAuto,
+				CornerRadius: 8.0,
+			},
 		},
 		Windows: application.WindowsWindow{
 			NonClientRegionSupport:     true,

@@ -6,7 +6,7 @@
         <key>CFBundleName</key>
             <string>My Product</string>
         <key>CFBundleExecutable</key>
-            <string>fidoapp.exe</string>
+            <string>fidoapp</string>
         <key>CFBundleIdentifier</key>
             <string>com.example.fidoapp</string>
         <key>CFBundleVersion</key>

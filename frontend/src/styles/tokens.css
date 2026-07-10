@@ -6,5 +6,8 @@
     --space-4: 16px;
     --space-5: 20px;
     --space-6: 24px;
+    --window-radius: 8px;
+    --window-surface: color-mix(in srgb, var(--background) 72%, transparent);
+    --window-border: color-mix(in srgb, var(--border) 72%, transparent);
   }
 }

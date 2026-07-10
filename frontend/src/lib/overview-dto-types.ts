@@ -1,14 +1,17 @@
-import type { PublicKeyCredentialParameters } from "../../bindings/github.com/go-ctap/ctap/credential";
-import type { Option } from "../../bindings/github.com/go-ctap/ctap/protocol";
+import type { InspectInfo } from "../../bindings/github.com/go-ctap/kit/model";
 
-export type InspectOptions = { [_ in Option]?: boolean };
-export type InspectCertifications = { [_ in string]?: number };
-export type InspectAlgorithms = PublicKeyCredentialParameters[];
+export type InspectOptions = NonNullable<InspectInfo["options"]>;
+export type InspectCertifications = NonNullable<InspectInfo["certifications"]>;
+export type InspectAlgorithms = NonNullable<InspectInfo["algorithms"]>;
 
 export type InspectNumberField =
   | "firmwareVersion"
   | "maxCredentialCountInList"
   | "maxCredentialIdLength"
+  | "maxCredBlobLength"
+  | "maxRPIDsForSetMinPINLength"
+  | "maxSerializedLargeBlobArray"
+  | "minPINLength"
   | "preferredPlatformUvAttempts"
   | "remainingDiscoverableCredentials"
   | "uvCountSinceLastPinEntry"
