@@ -65,10 +65,6 @@ describe("buildPasskeysPresentation", () => {
     expect(presentation.hasReport).toBe(true);
     expect(presentation.emptyInventory).toBe(true);
     expect(presentation.rows).toHaveLength(0);
-    expect(presentation.summaryItems.slice(0, 2)).toEqual([
-      { label: "Relying parties", value: "0" },
-      { label: "Credentials", value: "0" },
-    ]);
   });
 
   it("builds flat credential rows and support badges", () => {

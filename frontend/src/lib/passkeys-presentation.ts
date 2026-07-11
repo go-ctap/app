@@ -200,7 +200,6 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
   const selectedCredentialID = input.selectedCredentialID ?? "";
   const selectedRow = allRows.find((row) => row.id === selectedCredentialID) ?? null;
   const support = report?.support;
-  const summary = report?.summary;
   const loading = input.inventoryState.phase === "loading" || input.inventoryState.phase === "refreshing";
   const mutationsBlocked = input.inventoryState.stale || loading || input.sessionBusy || !input.sessionReady;
 
@@ -239,12 +238,6 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
     emptyFilteredResult: Boolean(report && allRows.length > 0 && rows.length === 0),
     capacity: passkeysCapacity(report),
     selectedDeviceName: input.selectedDevice?.product || input.selectedDevice?.deviceId || m.authenticator(),
-    summaryItems: [
-      { label: m.relying_parties(), value: summary ? String(summary.totalRPs) : m.not_reported() },
-      { label: m.credentials(), value: summary ? String(summary.totalCredentials) : m.not_reported() },
-      { label: m.existing_resident_credentials(), value: summary ? String(summary.existingResidentCredentialsCount) : m.not_reported() },
-      { label: m.remaining_resident_capacity(), value: summary ? String(summary.maxPossibleRemainingResidentCredentialsCount) : m.not_reported() },
-    ],
     supportItems: [
       { label: m.credential_management_support(), value: support?.credentialManagement ?? false },
       { label: m.credential_management_preview(), value: support?.previewOnly ?? false },

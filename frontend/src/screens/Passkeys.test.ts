@@ -275,6 +275,26 @@ describe("Passkeys", () => {
     expect(screen.getByLabelText("Resident credentials")).toBeInTheDocument();
   });
 
+  it("presents inventory as one fact and capacity as remaining space", () => {
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      selectedSelector: "token-1",
+      selectedDevice: null,
+      sessionId: "session-1",
+    });
+    seedPasskeysEnvelopeForTest(credentialsEnvelope());
+
+    render(Passkeys);
+
+    const inventory = screen.getByRole("region", { name: "Credential inventory" });
+    expect(within(inventory).getByText("1 credentials")).toBeInTheDocument();
+    expect(within(inventory).getByText("1 relying parties")).toBeInTheDocument();
+
+    const capacity = screen.getByRole("region", { name: "Remaining resident capacity" });
+    expect(within(capacity).getByText("4")).toBeInTheDocument();
+    expect(within(capacity).queryByText("1 stored · up to 4 remaining")).not.toBeInTheDocument();
+  });
+
   it("renders every passkey as a flat table row without RP collapsibles", async () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {

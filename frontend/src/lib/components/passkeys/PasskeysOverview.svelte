@@ -24,6 +24,7 @@
 
   let verificationValue = $state<"auto" | "pin">("auto");
   let support = $derived(presentation.report?.support ?? null);
+  let summary = $derived(presentation.report?.summary ?? null);
 
   $effect(() => {
     verificationValue = verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto";
@@ -84,33 +85,22 @@
 
   <Card.Content>
     <div class="passkeys-overview-grid">
-      <div class="passkeys-overview-metrics" aria-label={m.credential_inventory()}>
-        {#each presentation.summaryItems.slice(0, 2) as item (item.label)}
-          <div class="passkeys-overview-metric">
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-          </div>
-        {/each}
-      </div>
+      <section class="passkeys-inventory-summary" aria-labelledby="passkeys-inventory-title">
+        <span class="sr-only" id="passkeys-inventory-title">{m.credential_inventory()}</span>
+        {#if summary}
+          <strong>{m.credentials_count({ count: summary.totalCredentials })}</strong>
+          <small>{m.relying_parties_count({ count: summary.totalRPs })}</small>
+        {:else}
+          <strong>{m.not_reported()}</strong>
+        {/if}
+      </section>
 
       <section class="passkeys-capacity" aria-labelledby="passkeys-capacity-title">
         <div class="passkeys-capacity-heading">
-          <div>
-            <span id="passkeys-capacity-title">{m.remaining_resident_capacity()}</span>
-            {#if presentation.capacity}
-              <strong>
-                {m.passkeys_capacity_summary({
-                  stored: presentation.capacity.stored,
-                  remaining: presentation.capacity.remainingUpperBound,
-                })}
-              </strong>
-            {:else}
-              <strong>{m.capacity_not_reported()}</strong>
-            {/if}
-          </div>
-          {#if presentation.capacity}
-            <span>{Math.round(presentation.capacity.percentage)}%</span>
-          {/if}
+          <span id="passkeys-capacity-title">{m.remaining_resident_capacity()}</span>
+          <strong>
+            {presentation.capacity?.remainingUpperBound ?? m.capacity_not_reported()}
+          </strong>
         </div>
         {#if presentation.capacity}
           <Progress
@@ -187,7 +177,7 @@
 
   .passkeys-overview-grid,
   .passkeys-overview-controls,
-  .passkeys-overview-metrics,
+  .passkeys-inventory-summary,
   .passkeys-capabilities,
   .passkeys-verification,
   .passkeys-capacity-heading {
@@ -196,25 +186,18 @@
 
   .passkeys-overview-grid {
     display: grid;
-    grid-template-columns: minmax(16rem, 0.8fr) minmax(18rem, 1.2fr);
+    grid-template-columns: minmax(15rem, 0.75fr) minmax(18rem, 1.25fr);
     gap: var(--space-4);
-    align-items: stretch;
+    align-items: center;
   }
 
-  .passkeys-overview-metrics {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-2);
-  }
-
-  .passkeys-overview-metric,
+  .passkeys-inventory-summary,
   .passkeys-capacity {
     display: grid;
     gap: var(--space-2);
-    padding: var(--space-3);
+    align-content: center;
   }
 
-  .passkeys-overview-metric span,
   .passkeys-capacity-heading span,
   .passkeys-verification > span {
     color: var(--muted-foreground);
@@ -223,22 +206,17 @@
     text-transform: uppercase;
   }
 
-  .passkeys-overview-metric strong {
+  .passkeys-inventory-summary strong,
+  .passkeys-capacity-heading strong {
     font-size: 1rem;
   }
 
-  .passkeys-capacity {
-    align-content: center;
+  .passkeys-inventory-summary small {
+    color: var(--muted-foreground);
+    font-size: 0.72rem;
   }
 
   .passkeys-capacity-heading {
-    display: flex;
-    align-items: start;
-    justify-content: space-between;
-    gap: var(--space-3);
-  }
-
-  .passkeys-capacity-heading > div {
     display: grid;
     gap: var(--space-1);
   }
@@ -275,12 +253,6 @@
 
     .passkeys-verification {
       justify-content: start;
-    }
-  }
-
-  @media (max-width: 520px) {
-    .passkeys-overview-metrics {
-      grid-template-columns: minmax(0, 1fr);
     }
   }
 }
