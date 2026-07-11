@@ -1,5 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "aaguid_copied": "AAGUID copied",
   "about_label": "About Label {label}",
   "active_ratio": "{supported} of {total} active",
   "activity": "Activity",
@@ -129,6 +130,7 @@
   "continue_action": "Continue",
   "continue_on_authenticator": "Continue on the authenticator.",
   "copy": "Copy",
+  "copy_failed": "Could not copy to clipboard",
   "copy_json": "Copy JSON",
   "copy_label": "Copy {label}",
   "could_not_close_session": "Could not close session",
@@ -222,6 +224,7 @@
   "inspection_in_progress": "Inspection in progress",
   "interaction": "Interaction",
   "items_count": "{count} items",
+  "json_copied": "JSON copied",
   "lab_description": "Build and replay WebAuthn MakeCredential and GetAssertion requests.",
   "lab_title": "WebAuthn lab",
   "language": "Language",

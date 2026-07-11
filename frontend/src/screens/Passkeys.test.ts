@@ -1,4 +1,5 @@
-import { cleanup, render, screen, within } from "@testing-library/svelte";
+import { Clipboard } from "@wailsio/runtime";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { get } from "svelte/store";
 import { tick } from "svelte";
@@ -28,6 +29,7 @@ const controllerMocks = vi.hoisted(() => ({
   reloadPasskeys: vi.fn(() => Promise.resolve(true)),
 }));
 const toastMocks = vi.hoisted(() => ({ success: vi.fn() }));
+const clipboardSetText = vi.spyOn(Clipboard, "SetText");
 
 vi.mock("$lib/controller", async (importOriginal) => ({
   ...(await importOriginal<typeof import("$lib/controller")>()),
@@ -124,6 +126,8 @@ describe("Passkeys", () => {
     setAppLocale("en");
     controllerMocks.loadPasskeys.mockClear();
     controllerMocks.reloadPasskeys.mockClear();
+    clipboardSetText.mockReset();
+    clipboardSetText.mockResolvedValue();
     toastMocks.success.mockClear();
     resetAppStateForTest();
   });
@@ -171,6 +175,11 @@ describe("Passkeys", () => {
     expect(details).toHaveAttribute("id", "passkey-row-details-cafe");
     expect(within(details).getByText("public-key")).toBeInTheDocument();
     expect(within(details).getAllByText("01").length).toBeGreaterThan(0);
+    const copyJson = within(details).getByRole("button", { name: "Copy JSON" });
+    expect(copyJson).toBeInTheDocument();
+    await user.click(copyJson);
+    await waitFor(() => expect(clipboardSetText).toHaveBeenCalledOnce());
+    await waitFor(() => expect(toastMocks.success).toHaveBeenCalledWith("JSON copied"));
     expect(credential).toHaveAttribute("aria-expanded", "true");
     expect(record).toHaveAttribute("aria-selected", "true");
   });

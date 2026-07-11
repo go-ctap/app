@@ -21,6 +21,11 @@ export const Call = {
   ByID: () => Promise.reject(new Error("Wails calls are unavailable in unit tests")),
 };
 
+export const Clipboard = {
+  SetText: (_text: string) => Promise.resolve(),
+  Text: () => Promise.resolve(""),
+};
+
 export const Events = {
   On: () => () => {},
 };

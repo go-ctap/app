@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { copyToClipboard } from "$lib/clipboard";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { sanitizedJson } from "$lib/redaction";
@@ -12,10 +13,10 @@
   };
 
   let { value, title = m.raw_json(), variant = "card" }: Props = $props();
-  let source = $derived(sanitizedJson(value));
+  let source = $derived(sanitizedJson(value) ?? "null");
 
   async function copy() {
-    await navigator.clipboard?.writeText(source);
+    await copyToClipboard(source, m.json_copied());
   }
 </script>
 

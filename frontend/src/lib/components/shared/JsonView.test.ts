@@ -1,18 +1,18 @@
+import { Clipboard } from "@wailsio/runtime";
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import JsonView from "./JsonView.svelte";
 
 describe("JsonView", () => {
-  const writeText = vi.fn(async () => {});
+  const setText = vi.spyOn(Clipboard, "SetText");
 
   beforeEach(() => {
-    writeText.mockClear();
-    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    setText.mockReset();
+    setText.mockResolvedValue();
   });
 
   afterEach(() => {
-    vi.unstubAllGlobals();
     cleanup();
   });
 
@@ -32,7 +32,7 @@ describe("JsonView", () => {
 
     screen.getByRole("button", { name: "Copy" }).click();
 
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith(JSON.stringify({
+    await waitFor(() => expect(setText).toHaveBeenCalledWith(JSON.stringify({
       pin: "[redacted]",
       options: { pinUvAuthToken: true },
     }, null, 2)));

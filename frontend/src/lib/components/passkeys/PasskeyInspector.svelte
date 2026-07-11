@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ChevronDown, Copy, Pencil, Trash2 } from "@lucide/svelte";
-  import { toast } from "svelte-sonner";
 
+  import { copyToClipboard } from "$lib/clipboard";
   import JsonView from "$lib/components/shared/JsonView.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
@@ -11,6 +11,7 @@
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import type { PasskeysMutationState } from "$lib/features/passkeys/state";
   import type { PasskeyCredentialRow } from "$lib/passkeys-presentation";
+  import { sanitizedJson } from "$lib/redaction";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -41,6 +42,7 @@
       mutation.phase === "previewing",
     ),
   );
+  let rawJson = $derived(sanitizedJson(row.raw) ?? "null");
 
   function credProtectLabel(level: number | null) {
     if (level === 1) return m.cred_protect_level_1();
@@ -51,12 +53,6 @@
 
   function compactCredProtectLabel(level: number | null) {
     return level ? `UV ${level}` : "UV —";
-  }
-
-  async function copyValue(value: string, successMessage: string) {
-    if (!navigator.clipboard) return;
-    await navigator.clipboard.writeText(value);
-    toast.success(successMessage);
   }
 </script>
 
@@ -141,7 +137,7 @@
                       type="button"
                       aria-label={m.copy_label({ label: m.user_id_hex() })}
                       disabled={!row.raw.credential.userIDHex}
-                      onclick={() => copyValue(row.userIDHex, m.user_id_copied())}
+                      onclick={() => copyToClipboard(row.userIDHex, m.user_id_copied())}
                     >
                       <Copy data-icon="inline-start" aria-hidden="true" />
                     </Button>
@@ -176,7 +172,7 @@
                       size="icon-xs"
                       type="button"
                       aria-label={m.copy_label({ label: m.credential_id() })}
-                      onclick={() => copyValue(row.credentialIDHex, m.credential_id_copied())}
+                      onclick={() => copyToClipboard(row.credentialIDHex, m.credential_id_copied())}
                     >
                       <Copy data-icon="inline-start" aria-hidden="true" />
                     </Button>
@@ -233,20 +229,44 @@
         </div>
       </section>
 
-      <Separator class="passkey-raw-separator" />
+    </div>
 
-      <Collapsible.Root class="passkey-raw">
+    <Separator class="passkey-raw-separator" />
+
+    <Collapsible.Root class="passkey-raw">
+      <div class="passkey-raw-header">
         <Collapsible.Trigger
-          class={buttonVariants({ variant: "ghost", class: "passkey-raw-trigger" })}
+          class={buttonVariants({ variant: "ghost", size: "sm", class: "passkey-raw-trigger" })}
         >
           <span>{m.raw_credential_details()}</span>
           <ChevronDown class="passkey-raw-chevron" aria-hidden="true" />
         </Collapsible.Trigger>
-        <Collapsible.Content class="passkey-raw-content">
-          <JsonView value={row.raw} variant="code" />
-        </Collapsible.Content>
-      </Collapsible.Root>
-    </div>
+
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            {#snippet child({ props })}
+              <Button
+                {...props}
+                variant="ghost"
+                size="icon-sm"
+                type="button"
+                aria-label={m.copy_json()}
+                onclick={() => copyToClipboard(rawJson, m.json_copied())}
+              >
+                <Copy data-icon="inline-start" aria-hidden="true" />
+              </Button>
+            {/snippet}
+          </Tooltip.Trigger>
+          <Tooltip.Portal>
+            <Tooltip.Content side="top">{m.copy_json()}</Tooltip.Content>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+      </div>
+
+      <Collapsible.Content class="passkey-raw-content">
+        <JsonView value={row.raw} variant="code" />
+      </Collapsible.Content>
+    </Collapsible.Root>
   </section>
 </Tooltip.Provider>
 
@@ -378,14 +398,17 @@
     overflow-wrap: anywhere;
   }
 
-  :global(.passkey-raw-separator),
-  :global(.passkey-raw) {
-    grid-column: 1 / -1;
-  }
-
   :global(.passkey-raw) {
     display: grid;
     min-width: 0;
+  }
+
+  .passkey-raw-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    min-width: 0;
+    padding-right: var(--space-3);
   }
 
   :global(.passkey-raw-trigger) {
@@ -393,6 +416,17 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
+    height: auto;
+    min-width: 0;
+    padding: var(--space-3);
+    text-align: left;
+  }
+
+  :global(.passkey-raw-trigger span) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .passkey-raw-chevron {
@@ -401,6 +435,7 @@
 
   :global(.passkey-raw-content) {
     min-width: 0;
+    padding: 0 var(--space-3) var(--space-3);
   }
 
   @media (max-width: 900px) {

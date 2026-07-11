@@ -6,6 +6,7 @@
   import OverviewMDSObservations from "$lib/components/overview/OverviewMDSObservations.svelte";
   import OverviewRawInspectionData from "$lib/components/overview/OverviewRawInspectionData.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
+  import { copyToClipboard } from "$lib/clipboard";
   import { loadOverview, loadOverviewMDS } from "$lib/controller";
   import { buildOverviewPresentation } from "$lib/overview-presentation";
   import {
@@ -46,8 +47,8 @@
     }
   }
 
-  async function copyReport() {
-    await navigator.clipboard?.writeText(overview.rawInspectionJson);
+  function copyReport() {
+    return copyToClipboard(overview.rawInspectionJson, m.json_copied());
   }
 </script>
 

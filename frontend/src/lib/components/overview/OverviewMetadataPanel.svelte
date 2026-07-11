@@ -3,6 +3,7 @@
 </script>
 
 <script lang="ts">
+  import { copyToClipboard } from "$lib/clipboard";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import type { OverviewHeroFact, OverviewHeroPresentation } from "$lib/overview-rules";
@@ -21,7 +22,7 @@
 
   async function copyAaguid() {
     if (hero.aaguidAvailable) {
-      await navigator.clipboard?.writeText(hero.aaguid);
+      await copyToClipboard(hero.aaguid, m.aaguid_copied());
     }
   }
 

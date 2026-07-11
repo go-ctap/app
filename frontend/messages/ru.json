@@ -1,5 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
+  "aaguid_copied": "AAGUID скопирован",
   "about_label": "о метка {label}",
   "active_ratio": "Активно: {supported} из {total}",
   "activity": "Активность",
@@ -129,6 +130,7 @@
   "continue_action": "Продолжить",
   "continue_on_authenticator": "Продолжите на аутентификаторе.",
   "copy": "Копировать",
+  "copy_failed": "Не удалось скопировать в буфер обмена",
   "copy_json": "Копировать JSON",
   "copy_label": "Копировать {label}",
   "could_not_close_session": "Не удалось закрыть сессию",
@@ -222,6 +224,7 @@
   "inspection_in_progress": "Инспекция выполняется",
   "interaction": "Взаимодействие",
   "items_count": "Элементов: {count}",
+  "json_copied": "JSON скопирован",
   "lab_description": "Собирайте и повторяйте WebAuthn-запросы MakeCredential и GetAssertion.",
   "lab_title": "Лаборатория WebAuthn",
   "language": "Язык",
