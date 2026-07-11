@@ -1,5 +1,6 @@
 import { get } from "svelte/store";
 
+import { ErrorCategory } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
@@ -8,6 +9,7 @@ import { api } from "./api.js";
 import { pendingInteraction } from "./features/interaction/state.js";
 import {
   devices as deviceStore,
+  selectedDevice as selectedDeviceStore,
   selectedSelector,
   sessions,
   sessionStatus,
@@ -136,6 +138,55 @@ async function selectFromDevices(devices: DeviceReport[], selector: string): Pro
       runtimeError,
     );
   }
+}
+
+function recoverySelection(devices: DeviceReport[], selector: string) {
+  const listed = reportForSelector(devices, selector);
+  if (listed) return { devices, device: listed };
+
+  const selected = get(selectedDeviceStore);
+  const remembered = selected ? reportForSelector([selected], selector) : null;
+  return remembered
+    ? { devices: [...devices, remembered], device: remembered }
+    : { devices, device: null };
+}
+
+/**
+ * Restores the selected authenticator session without crossing the per-device
+ * screen-state boundary. Callers can then retry their own forced operation
+ * while last-known-good presentation data remains intact.
+ */
+export async function ensureSelectedSessionReady(): Promise<boolean> {
+  const current = get(sessionStatus);
+  if (current.state === "ready" && current.sessionId) return true;
+  if (current.state === "opening" || current.state === "running") return false;
+
+  const selector = get(selectedSelector).trim();
+  if (!selector) return false;
+
+  const recovery = recoverySelection(get(deviceStore), selector);
+  if (!recovery.device) {
+    const error = new RuntimeErrorEnvelope({
+      category: ErrorCategory.ErrorTransportFailure,
+      message: m.selected_authenticator_disconnected_message(),
+    });
+    applyDiscovery(discoverySnapshot(
+      recovery.devices,
+      selector,
+      get(selectedDeviceStore),
+      idleSessionStatus(selector, get(selectedDeviceStore), "error", error),
+      error,
+    ));
+    return false;
+  }
+
+  pendingInteraction.set(null);
+  sessionStatus.set(idleSessionStatus(selector, recovery.device, "opening"));
+  const discovery = await selectFromDevices(recovery.devices, selector);
+  applyDiscovery(discovery);
+
+  const recovered = get(sessionStatus);
+  return recovered.state === "ready" && Boolean(recovered.sessionId);
 }
 
 async function discoverAndSelect(preferredSelector: string): Promise<Discovery> {

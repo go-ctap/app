@@ -17,11 +17,6 @@ describe("AppSidebar", () => {
       props: {
         presentation: {
           activeScreen: "overview",
-          status: {
-            stateLabel: "Idle",
-            title: "Idle",
-            detail: "No token selected",
-          },
         },
         onNavigate,
       },

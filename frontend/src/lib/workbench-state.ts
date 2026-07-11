@@ -1,5 +1,6 @@
 import { get } from "svelte/store";
 
+import { ErrorCategory, type ErrorCategory as ErrorCategoryValue } from "../../bindings/github.com/go-ctap/kit/model";
 import { m } from "../paraglide/messages.js";
 import type { OperationEnvelope } from "./api.js";
 import { operationEnvelopeLogData } from "./ctapkit-results.js";
@@ -10,7 +11,7 @@ import {
   overviewInspection,
   overviewMDS,
 } from "./features/overview/state.js";
-import { passkeysInventory } from "./features/passkeys/state.js";
+import { resetPasskeysDeviceState } from "./features/passkeys/state.js";
 import {
   devices,
   selectedDevice,
@@ -24,7 +25,6 @@ import {
   statusBar,
   workbenchLog,
   type ActiveOperation,
-  type StatusBarAction,
   type StatusBarOutcome,
   type WorkbenchLogEntry,
   activeScreen,
@@ -36,6 +36,12 @@ import type { Discovery } from "./session-model.js";
 
 const LOG_LIMIT = 250;
 let logSequence = 0;
+
+const RETRYABLE_ERROR_CATEGORIES = new Set<ErrorCategoryValue>([
+  ErrorCategory.ErrorTransportFailure,
+  ErrorCategory.ErrorTimeout,
+  ErrorCategory.ErrorBusy,
+]);
 
 function nextLogEntryId() {
   logSequence += 1;
@@ -117,7 +123,11 @@ export function beginOperation(label: string, detailId?: string) {
 export function finishOperation() {
   setStatusOperation(null);
   pendingInteraction.set(null);
-  sessionStatus.update((state) => state.state === "running" ? { ...state, state: "ready" } : state);
+  sessionStatus.update((state) => {
+    if (state.state !== "running") return state;
+    const { activeOperation: _activeOperation, ...rest } = state;
+    return { ...rest, state: "ready" };
+  });
 }
 
 export function setStatusOutcome(outcome: StatusBarOutcome | null) {
@@ -146,7 +156,7 @@ export function clearWorkbenchScreenCaches() {
   overviewInspection.set(idleLoadState());
   overviewBioSensor.set(idleLoadState());
   overviewMDS.set(idleLoadState());
-  passkeysInventory.set(idleLoadState());
+  resetPasskeysDeviceState();
   selectionVersion.update((value) => value + 1);
 }
 
@@ -155,10 +165,12 @@ export function summarizeEnvelope(label: string, envelope: OperationEnvelope | n
   finishOperation();
   const error = envelope.error;
   if (error) {
+    const canceled = error.category === ErrorCategory.ErrorCanceled;
+    const title = canceled ? m.operation_canceled_with_label({ label }) : m.operation_failed_with_label({ label });
     const logEntryId = appendLogEntry({
-      tone: "error",
+      tone: canceled ? "info" : "error",
       source: "operation",
-      title: m.operation_failed_with_label({ label }),
+      title,
       message: error.message,
       operationId: envelope.operationId,
       screen: get(activeScreen),
@@ -167,12 +179,12 @@ export function summarizeEnvelope(label: string, envelope: OperationEnvelope | n
       data: operationEnvelopeLogData(envelope),
     });
     setStatusOutcome({
-      tone: "error",
-      title: m.operation_failed_with_label({ label }),
+      tone: canceled ? "info" : "error",
+      title,
       message: error.message,
       detailId,
       logEntryId,
-      retry,
+      retry: !canceled && error.category && RETRYABLE_ERROR_CATEGORIES.has(error.category) ? retry : undefined,
     });
     return;
   }
@@ -196,12 +208,19 @@ export function summarizeEnvelope(label: string, envelope: OperationEnvelope | n
   });
 }
 
-export function summarizeOperationFailure(label: string, error: { message: string }, detailId?: string, retry?: () => void | Promise<void>) {
+export function summarizeOperationFailure(
+  label: string,
+  error: { message: string; category?: ErrorCategoryValue },
+  detailId?: string,
+  retry?: () => void | Promise<void>,
+) {
   finishOperation();
+  const canceled = error.category === ErrorCategory.ErrorCanceled;
+  const title = canceled ? m.operation_canceled_with_label({ label }) : m.operation_failed_with_label({ label });
   const logEntryId = appendLogEntry({
-    tone: "error",
+    tone: canceled ? "info" : "error",
     source: "operation",
-    title: m.operation_failed_with_label({ label }),
+    title,
     message: error.message,
     screen: get(activeScreen),
     selector: currentSelector(),
@@ -213,12 +232,12 @@ export function summarizeOperationFailure(label: string, error: { message: strin
     },
   });
   setStatusOutcome({
-    tone: "error",
-    title: m.operation_failed_with_label({ label }),
+    tone: canceled ? "info" : "error",
+    title,
     message: error.message,
     detailId,
     logEntryId,
-    retry,
+    retry: !canceled && error.category && RETRYABLE_ERROR_CATEGORIES.has(error.category) ? retry : undefined,
   });
 }
 

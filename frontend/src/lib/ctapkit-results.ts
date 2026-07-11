@@ -15,7 +15,13 @@ import {
   type ResetFactoryOutput,
 } from "../../bindings/github.com/go-ctap/kit/model";
 import type { BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
-import type { InventoryReport } from "../../bindings/github.com/go-ctap/kit/model/credentials";
+import type {
+  DeletePreview,
+  DeleteResult,
+  InventoryReport,
+  UpdateUserPreview,
+  UpdateUserResult,
+} from "../../bindings/github.com/go-ctap/kit/model/credentials";
 import type {
   AuthenticatorConfigEnvelope,
   BioEnrollEnvelope,
@@ -66,6 +72,36 @@ export function credentialsReport(envelope: OperationEnvelope | null | undefined
   return envelope.result.report;
 }
 
+export function credentialDeleteOutput(envelope: OperationEnvelope | null | undefined): CredentialDeleteOutput | null {
+  if (!isCredentialDeleteEnvelopeValue(envelope) || envelope.error || !envelope.result) return null;
+  return envelope.result;
+}
+
+export function credentialDeletePreview(envelope: OperationEnvelope | null | undefined): DeletePreview | null {
+  const output = credentialDeleteOutput(envelope);
+  return output ? output.preview : null;
+}
+
+export function credentialDeleteResult(envelope: OperationEnvelope | null | undefined): DeleteResult | null {
+  const output = credentialDeleteOutput(envelope);
+  return output ? output.result : null;
+}
+
+export function credentialUpdateOutput(envelope: OperationEnvelope | null | undefined): CredentialUpdateOutput | null {
+  if (!isCredentialUpdateEnvelopeValue(envelope) || envelope.error || !envelope.result) return null;
+  return envelope.result;
+}
+
+export function credentialUpdatePreview(envelope: OperationEnvelope | null | undefined): UpdateUserPreview | null {
+  const output = credentialUpdateOutput(envelope);
+  return output ? output.preview : null;
+}
+
+export function credentialUpdateResult(envelope: OperationEnvelope | null | undefined): UpdateUserResult | null {
+  const output = credentialUpdateOutput(envelope);
+  return output ? output.result : null;
+}
+
 export function operationError(envelope: OperationEnvelope | null | undefined) {
   if (!envelope || !envelope.error) return null;
   return envelope.error.message;
@@ -110,6 +146,14 @@ function isBioSensorEnvelope(envelope: OperationEnvelope | null | undefined): en
 
 function isCredentialsEnvelope(envelope: OperationEnvelope | null | undefined): envelope is CredentialsEnvelope {
   return Boolean(envelope && envelope.kind === OperationKind.OperationListCredentials);
+}
+
+function isCredentialDeleteEnvelopeValue(envelope: OperationEnvelope | null | undefined): envelope is CredentialDeleteEnvelope {
+  return Boolean(envelope && envelope.kind === OperationKind.OperationDeleteCredential);
+}
+
+function isCredentialUpdateEnvelopeValue(envelope: OperationEnvelope | null | undefined): envelope is CredentialUpdateEnvelope {
+  return Boolean(envelope && envelope.kind === OperationKind.OperationUpdateCredentialUser);
 }
 
 function isBioListEnvelope(envelope: OperationEnvelope): envelope is BioListEnvelope {

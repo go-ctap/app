@@ -10,22 +10,26 @@
 	import InteractionModal from "$lib/components/interaction/InteractionModal.svelte";
 	import EmptyState from "$lib/components/shared/EmptyState.svelte";
 	import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
+	import ShellStatusBar from "$lib/components/shell/ShellStatusBar.svelte";
 	import { Alert } from "$lib/components/ui/alert/index.js";
+	import { Toaster } from "$lib/components/ui/sonner/index.js";
 	import { AuthenticatorTitlebarControl, WindowControls, WindowTitlebar } from "$lib/components/window-controls";
 	import {
 		bootstrap,
 		answerPendingInteraction,
+		cancelActiveOperation,
 		handleDiscoveryChanged,
 		handleInteractionRequested,
 		handleOperationProgress,
 		navigateToScreen,
 		refreshDiscovery,
+		retryLastStatusOutcome,
 		selectToken,
 		startDiscoveryMonitoring,
 		shutdownWorkbench
 	} from "$lib/controller";
 	import { currentLocale } from "$lib/i18n";
-	import { buildAuthenticatorTitlebarPresentation, buildInteractionModalPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
+	import { buildAuthenticatorTitlebarPresentation, buildInteractionModalPresentation, buildShellStatusPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
 	import {
 		activeScreen,
 		appError,
@@ -57,6 +61,8 @@
 	}));
 	let sidebarPresentation = $derived(buildSidebarPresentation({
 		activeScreen: $activeScreen,
+	}));
+	let shellStatusPresentation = $derived(buildShellStatusPresentation({
 		sessionStatus: $sessionStatus,
 		selectedDevice: $selectedDevice,
 		statusBar: $statusBar,
@@ -81,6 +87,14 @@
 
 	function handleInteractionAnswer(answer: kitservice.InteractionAnswer) {
 		void answerPendingInteraction(answer);
+	}
+
+	function handleCancelOperation() {
+		void cancelActiveOperation();
+	}
+
+	function handleRetryStatusOutcome() {
+		void retryLastStatusOutcome();
 	}
 
 	onMount(() => {
@@ -167,11 +181,23 @@
 					<Overview />
 				{/if}
 			</main>
+
+			<ShellStatusBar
+				presentation={shellStatusPresentation}
+				onCancel={handleCancelOperation}
+				onRetry={handleRetryStatusOutcome}
+			/>
 		</section>
 
 		<InteractionModal presentation={interactionModalPresentation} onAnswer={handleInteractionAnswer} />
 	</div>
 {/key}
+
+<Toaster
+	position="bottom-right"
+	offset={{ bottom: "3.5rem", right: "2rem" }}
+	mobileOffset={{ bottom: "3.25rem", right: "1rem" }}
+/>
 
 <style>
 	@layer blocks {
@@ -189,7 +215,7 @@
 		}
 		.app-workspace {
 			display: grid;
-			grid-template-rows: 58px minmax(0, 1fr);
+			grid-template-rows: 58px minmax(0, 1fr) auto;
 			min-width: 0;
 			min-height: 0;
 		}

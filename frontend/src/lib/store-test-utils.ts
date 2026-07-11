@@ -13,7 +13,9 @@ import {
   resetOverviewStateForTest,
 } from "./features/overview/state.js";
 import {
-  passkeysInventory,
+  completePasskeysInventoryLoad,
+  emptyPasskeysInventoryState,
+  passkeysInventoryState,
   resetPasskeysStateForTest,
 } from "./features/passkeys/state.js";
 import {
@@ -78,8 +80,18 @@ export function seedOverviewMDSForTest(data: LookupResult | null, error?: Runtim
 
 export function seedPasskeysEnvelopeForTest(envelope: CredentialsEnvelope | null, error?: RuntimeErrorEnvelope | null) {
   if (error) {
-    passkeysInventory.set({ state: "error", data: envelope, error });
+    passkeysInventoryState.set({
+      ...emptyPasskeysInventoryState(),
+      phase: "error",
+      lastSuccessfulEnvelope: envelope,
+      runtimeError: error,
+      stale: Boolean(envelope),
+    });
     return;
   }
-  passkeysInventory.set(envelope ? readyLoadState(envelope) : idleLoadState());
+  if (!envelope) {
+    passkeysInventoryState.set(emptyPasskeysInventoryState());
+    return;
+  }
+  completePasskeysInventoryLoad(envelope, "2026-06-22T00:00:00.000Z");
 }

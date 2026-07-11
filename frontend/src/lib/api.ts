@@ -10,9 +10,11 @@ import {
   type BioRemoveRequest,
   type BioRenameRequest,
   type BioSensorEnvelope,
+  type CancelOperationRequest,
   type ConfigStatusEnvelope,
   type CredentialDeleteEnvelope,
   type CredentialDeleteRequest,
+  type CredentialListRequest,
   type CredentialUpdateEnvelope,
   type CredentialUpdateRequest,
   type CredentialsEnvelope,
@@ -90,6 +92,10 @@ export const api = {
     return service.CloseAllSessions();
   },
 
+  cancelOperation(request: CancelOperationRequest): Promise<boolean> {
+    return service.CancelOperation(request);
+  },
+
   inspect(request: OperationRequest): Promise<InspectEnvelope> {
     return service.Inspect(request);
   },
@@ -98,7 +104,7 @@ export const api = {
     return service.BioSensorInfo(request);
   },
 
-  listCredentials(request: OperationRequest): Promise<CredentialsEnvelope> {
+  listCredentials(request: CredentialListRequest): Promise<CredentialsEnvelope> {
     return service.ListCredentials(request);
   },
 

@@ -1,9 +1,8 @@
 <script lang="ts">
-  import { Activity, Gauge, KeyRound, Settings, ShieldCheck } from "@lucide/svelte";
+  import { Gauge, KeyRound, Settings, ShieldCheck } from "@lucide/svelte";
   import {type Component} from "svelte";
 
   import { Button } from "$lib/components/ui/button/index.js";
-  import * as Item from "$lib/components/ui/item/index.js";
   import type { SidebarPresentation } from "$lib/shell-presentation";
   import type { ActiveScreen } from "$lib/stores";
 
@@ -52,23 +51,13 @@
     {/each}
   </nav>
 
-  <Item.Root variant="outline" size="sm" class="sidebar-status" aria-label={m.current_activity()}>
-    <Item.Media variant="icon">
-      <Activity aria-hidden="true" />
-    </Item.Media>
-    <Item.Content>
-      <span class="sidebar-status-copy">{presentation.status.stateLabel}</span>
-      <Item.Title class="sidebar-status-title">{presentation.status.title}</Item.Title>
-      <Item.Description class="sidebar-status-detail">{presentation.status.detail}</Item.Description>
-    </Item.Content>
-  </Item.Root>
 </aside>
 
 <style>
 @layer blocks {
     .app-sidebar {
       display: grid;
-      grid-template-rows: 58px minmax(0, 1fr) auto;
+      grid-template-rows: 58px minmax(0, 1fr);
       min-width: 0;
       height: 100vh;
       border-right: 1px solid var(--window-border);
@@ -138,49 +127,6 @@
       text-align: left;
     }
 
-    :global(.sidebar-status) {
-      width: auto;
-      min-width: 0;
-      margin: 0 var(--space-3) var(--space-3);
-      align-items: flex-start;
-    }
-
-    :global(.sidebar-status [data-slot="item-media"]) {
-      color: var(--muted-foreground);
-    }
-
-    .sidebar-status-copy {
-      font-size: 0.72rem;
-      font-weight: 700;
-      line-height: 1;
-      text-transform: uppercase;
-    }
-
-    :global(.sidebar-status [data-slot="item-content"]) {
-      min-width: 0;
-      gap: var(--space-1);
-    }
-
-    :global(.sidebar-status-title) {
-      width: 100%;
-      font-size: 0.84rem;
-      line-height: 1.3;
-      overflow-wrap: anywhere;
-      display: -webkit-box;
-      overflow: hidden;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-    }
-
-    :global(.sidebar-status-detail) {
-      font-size: 0.76rem;
-      line-height: 1.45;
-      display: -webkit-box;
-      overflow: hidden;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 3;
-    }
-
     @media (max-width: 900px) {
       .sidebar-brand {
         grid-template-columns: 1fr;
@@ -192,25 +138,14 @@
         padding: var(--space-3);
       }
 
-      :global(.sidebar-status) {
-        margin: 0 var(--space-3) var(--space-3);
-      }
-
       .sidebar-brand-copy,
-      .sidebar-nav-label,
-      .sidebar-status-copy,
-      :global(.sidebar-status-title),
-      :global(.sidebar-status-detail) {
+      .sidebar-nav-label {
         display: none;
       }
 
       .sidebar-nav :global(.sidebar-nav-button) {
         justify-content: center;
         padding-inline: 0;
-      }
-
-      :global(.sidebar-status) {
-        place-items: center;
       }
     }
 }

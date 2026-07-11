@@ -25,7 +25,7 @@ import {
   appError,
   devices,
   overviewEnvelope,
-  passkeysEnvelope,
+  passkeysInventoryState,
   pendingInteraction,
   selectedDevice,
   selectedSelector,
@@ -129,7 +129,7 @@ describe("discovery controller", () => {
       selectedDevice: refreshed,
     });
     expect(get(overviewEnvelope)).toBe(inspection);
-    expect(get(passkeysEnvelope)).toBe(inventory);
+    expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(inventory);
     expect(get(pendingInteraction)).toBe(prompt);
   });
 
@@ -198,7 +198,7 @@ describe("discovery controller", () => {
     expect(get(sessionStatus).sessionId).toBeUndefined();
     expect(get(pendingInteraction)).toBeNull();
     expect(get(overviewEnvelope)).toBeNull();
-    expect(get(passkeysEnvelope)).toBeNull();
+    expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBeNull();
     expect(get(statusBar).activeOperation).toBeNull();
     expect(get(workbenchLog)[0]).toMatchObject({
       tone: "warning",

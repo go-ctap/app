@@ -15,6 +15,7 @@ export {
     ConfigStatusEnvelope,
     CredentialDeleteEnvelope,
     CredentialDeleteRequest,
+    CredentialListRequest,
     CredentialUpdateEnvelope,
     CredentialUpdateRequest,
     CredentialsEnvelope,

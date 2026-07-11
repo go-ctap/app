@@ -1,6 +1,7 @@
 import { writable } from "svelte/store";
 
 import type { OperationEvent } from "../../../../bindings/github.com/go-ctap/kit/model";
+import type { RuntimeErrorEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
 
 export type ActiveOperation = {
   operationId?: string;
@@ -9,13 +10,9 @@ export type ActiveOperation = {
   detailId?: string;
   logEntryId?: string;
   event?: Partial<OperationEvent>;
-};
-
-export type StatusBarAction = {
-  id: string;
-  label: string;
-  tone?: "default" | "danger" | "quiet";
-  run: () => void | Promise<void>;
+  cancelPending?: boolean;
+  cancelRequested?: boolean;
+  cancelError?: RuntimeErrorEnvelope | null;
 };
 
 export type StatusBarOutcome = {
@@ -45,14 +42,13 @@ export type WorkbenchLogEntry = {
 export type StatusBarState = {
   activeOperation: ActiveOperation | null;
   lastOutcome: StatusBarOutcome | null;
-  actions: StatusBarAction[];
 };
 
 export type ActiveScreen = "overview" | "passkeys" | "settings";
 
 export const activeScreen = writable<ActiveScreen>("overview");
 export const operationStatus = writable<ActiveOperation | null>(null);
-export const statusBar = writable<StatusBarState>({ activeOperation: null, lastOutcome: null, actions: [] });
+export const statusBar = writable<StatusBarState>({ activeOperation: null, lastOutcome: null });
 export const workbenchLog = writable<WorkbenchLogEntry[]>([]);
 export const selectedLogEntryId = writable("");
 export const appError = writable<string | null>(null);
@@ -60,7 +56,7 @@ export const appError = writable<string | null>(null);
 export function resetWorkbenchStateForTest() {
   activeScreen.set("overview");
   operationStatus.set(null);
-  statusBar.set({ activeOperation: null, lastOutcome: null, actions: [] });
+  statusBar.set({ activeOperation: null, lastOutcome: null });
   workbenchLog.set([]);
   selectedLogEntryId.set("");
   appError.set(null);

@@ -103,7 +103,7 @@ export function Inspect(req: service$0.OperationRequest): $CancellablePromise<se
     });
 }
 
-export function ListCredentials(req: service$0.OperationRequest): $CancellablePromise<service$0.CredentialsEnvelope> {
+export function ListCredentials(req: service$0.CredentialListRequest): $CancellablePromise<service$0.CredentialsEnvelope> {
     return $Call.ByID(2164995207, req).then(($result: any) => {
         return $$createType13($result);
     });

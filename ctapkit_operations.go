@@ -10,7 +10,7 @@ func (s *CtapkitService) Inspect(ctx context.Context, req kitservice.OperationRe
 	return s.core.Inspect(ctx, req)
 }
 
-func (s *CtapkitService) ListCredentials(ctx context.Context, req kitservice.OperationRequest) (kitservice.CredentialsEnvelope, error) {
+func (s *CtapkitService) ListCredentials(ctx context.Context, req kitservice.CredentialListRequest) (kitservice.CredentialsEnvelope, error) {
 	return s.core.ListCredentials(ctx, req)
 }
 

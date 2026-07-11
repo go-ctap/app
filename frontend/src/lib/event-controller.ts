@@ -3,7 +3,7 @@ import { get } from "svelte/store";
 import type { OperationEvent } from "../../bindings/github.com/go-ctap/kit/model";
 import type { OperationEventEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
-import { selectedSelector } from "./features/session/state.js";
+import { selectedSelector, sessionStatus } from "./features/session/state.js";
 import { activeScreen, statusBar } from "./features/workbench/state.js";
 import { operationStageLabel } from "./format.js";
 import { appendLogEntry, setStatusOperation } from "./workbench-state.js";
@@ -45,5 +45,11 @@ export function handleOperationProgress(data: OperationEventEnvelope) {
   });
 
   const currentOperation = get(statusBar).activeOperation;
-  setStatusOperation(currentOperation ? { ...currentOperation, ...data, logEntryId } : { ...data, logEntryId });
+  const canMerge = currentOperation && (!currentOperation.operationId || currentOperation.operationId === data.operationId);
+  setStatusOperation(canMerge ? { ...currentOperation, ...data, logEntryId } : { ...data, logEntryId });
+  sessionStatus.update((session) => (
+    session.sessionId === data.sessionId && session.state !== "error"
+      ? { ...session, state: "running", activeOperation: data.operationId }
+      : session
+  ));
 }

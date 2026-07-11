@@ -27,7 +27,7 @@
   });
   let badgeVariant: BadgeVariant = $derived.by(() => {
     if (resolvedTone === "bad") return "destructive";
-    if (resolvedTone === "warn") return "secondary";
+    if (resolvedTone === "warn") return "warning";
     if (resolvedTone === "ok") return "default";
     return "outline";
   });

@@ -10,6 +10,14 @@ export {
   type ActiveScreen,
   type StatusBarState,
 } from "./features/workbench/state.js";
+export type {
+  CredentialUpdateForm,
+  CredentialUpdateValidationError,
+  PasskeysInventoryPhase,
+  PasskeysInventoryState,
+  PasskeysMutationState,
+  PasskeysStatusFilter,
+} from "./features/passkeys/state.js";
 
 export const devices = readonly(session.devices);
 export const selectedSelector = readonly(session.selectedSelector);
@@ -29,8 +37,11 @@ export const overviewBioSensorEnvelope = overview.overviewBioSensorEnvelope;
 export const overviewLoading = overview.overviewLoading;
 export const overviewMDSLoading = overview.overviewMDSLoading;
 
-export const passkeysInventory = readonly(passkeys.passkeysInventory);
-export const passkeysEnvelope = passkeys.passkeysEnvelope;
-export const passkeysLoading = passkeys.passkeysLoading;
+export const passkeysInventoryState = readonly(passkeys.passkeysInventoryState);
+export const passkeysQuery = readonly(passkeys.passkeysQuery);
+export const passkeysStatusFilter = readonly(passkeys.passkeysStatusFilter);
+export const passkeysSelectedCredentialID = readonly(passkeys.passkeysSelectedCredentialID);
+export const passkeysVerificationFlow = readonly(passkeys.passkeysVerificationFlow);
+export const passkeysMutation = readonly(passkeys.passkeysMutation);
 
 export const pendingInteraction = readonly(interaction.pendingInteraction);

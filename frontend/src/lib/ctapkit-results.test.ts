@@ -8,6 +8,8 @@ import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/r
 import type {
   BioEnrollEnvelope,
   BioSensorEnvelope,
+  CredentialDeleteEnvelope,
+  CredentialUpdateEnvelope,
   CredentialsEnvelope,
   InspectEnvelope,
   LargeBlobMutationEnvelope,
@@ -18,7 +20,15 @@ import type {
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import type { OperationEnvelope } from "./api";
-import { bioSensorReport, inspectResult, operationEnvelopeLogData } from "./ctapkit-results";
+import {
+  bioSensorReport,
+  credentialDeletePreview,
+  credentialDeleteResult,
+  credentialUpdatePreview,
+  credentialUpdateResult,
+  inspectResult,
+  operationEnvelopeLogData,
+} from "./ctapkit-results";
 
 const device: DeviceReport = {
   deviceId: "dev-1",
@@ -221,5 +231,38 @@ describe("ctapkit result extractors", () => {
         warnings: 1,
       },
     });
+  });
+
+  it("extracts credential mutation previews and completed results without generic traversal", () => {
+    const update = {
+      kind: OperationKind.OperationUpdateCredentialUser,
+      result: {
+        preview: {
+          credentialIDHex: "cafe",
+          rpID: "example.test",
+          current: { userIDHex: "01" },
+          proposed: { userIDHex: "02" },
+        },
+        result: {
+          deviceId: "dev-1",
+          credentialIDHex: "cafe",
+          rpID: "example.test",
+          previous: { userIDHex: "01" },
+          current: { userIDHex: "02" },
+        },
+      },
+    } as CredentialUpdateEnvelope;
+    const deletion = {
+      kind: OperationKind.OperationDeleteCredential,
+      result: {
+        preview: { credentialIDHex: "cafe", rpID: "example.test" },
+        result: { deviceId: "dev-1", credentialIDHex: "cafe", rpID: "example.test" },
+      },
+    } as CredentialDeleteEnvelope;
+
+    expect(credentialUpdatePreview(update)?.proposed.userIDHex).toBe("02");
+    expect(credentialUpdateResult(update)?.current.userIDHex).toBe("02");
+    expect(credentialDeletePreview(deletion)?.credentialIDHex).toBe("cafe");
+    expect(credentialDeleteResult(deletion)?.deviceId).toBe("dev-1");
   });
 });

@@ -1,0 +1,287 @@
+<script lang="ts">
+  import { RefreshCw } from "@lucide/svelte";
+
+  import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
+
+  import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
+  import { Progress } from "$lib/components/ui/progress/index.js";
+  import { Spinner } from "$lib/components/ui/spinner/index.js";
+  import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
+  import type { PasskeysPresentation } from "$lib/passkeys-presentation";
+
+  import { m } from "../../../paraglide/messages.js";
+
+  type Props = {
+    presentation: PasskeysPresentation;
+    verificationFlow: VerificationFlow;
+    onReload: () => void | Promise<boolean>;
+    onVerificationFlowChange: (flow: VerificationFlow) => void;
+  };
+
+  let { presentation, verificationFlow, onReload, onVerificationFlowChange }: Props = $props();
+
+  let verificationValue = $state<"auto" | "pin">("auto");
+  let support = $derived(presentation.report?.support ?? null);
+
+  $effect(() => {
+    verificationValue = verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto";
+  });
+
+  function handleVerificationChange(value: string | string[]) {
+    if (Array.isArray(value)) return;
+    if (!value) {
+      verificationValue = verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto";
+      return;
+    }
+    verificationValue = value === "pin" ? "pin" : "auto";
+    onVerificationFlowChange(
+      value === "pin"
+        ? VerificationFlow.VerificationFlowPIN
+        : VerificationFlow.VerificationFlowDefault,
+    );
+  }
+
+  function formatLastLoaded(value: string | null) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }).format(date);
+  }
+</script>
+
+<Card.Root class="passkeys-overview">
+  <Card.Header>
+    <Card.Title><h1 id="passkeys-title">{m.passkeys()}</h1></Card.Title>
+    <Card.Description>
+      <span>{presentation.selectedDeviceName}</span>
+      {#if presentation.lastSuccessfulAt}
+        <span aria-hidden="true">·</span>
+        <span>{m.passkeys_last_loaded({ time: formatLastLoaded(presentation.lastSuccessfulAt) })}</span>
+      {/if}
+    </Card.Description>
+    <Card.Action>
+      <Button
+        variant="outline"
+        type="button"
+        onclick={onReload}
+        disabled={presentation.reloadDisabled}
+      >
+        {#if presentation.loading}
+          <Spinner data-icon="inline-start" aria-hidden="true" />
+        {:else}
+          <RefreshCw data-icon="inline-start" aria-hidden="true" />
+        {/if}
+        {presentation.loading ? m.reloading_credentials() : m.reload_credentials()}
+      </Button>
+    </Card.Action>
+  </Card.Header>
+
+  <Card.Content>
+    <div class="passkeys-overview-grid">
+      <div class="passkeys-overview-metrics" aria-label={m.credential_inventory()}>
+        {#each presentation.summaryItems.slice(0, 2) as item (item.label)}
+          <div class="passkeys-overview-metric">
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </div>
+        {/each}
+      </div>
+
+      <section class="passkeys-capacity" aria-labelledby="passkeys-capacity-title">
+        <div class="passkeys-capacity-heading">
+          <div>
+            <span id="passkeys-capacity-title">{m.remaining_resident_capacity()}</span>
+            {#if presentation.capacity}
+              <strong>
+                {m.passkeys_capacity_summary({
+                  stored: presentation.capacity.stored,
+                  remaining: presentation.capacity.remainingUpperBound,
+                })}
+              </strong>
+            {:else}
+              <strong>{m.capacity_not_reported()}</strong>
+            {/if}
+          </div>
+          {#if presentation.capacity}
+            <span>{Math.round(presentation.capacity.percentage)}%</span>
+          {/if}
+        </div>
+        {#if presentation.capacity}
+          <Progress
+            value={presentation.capacity.percentage}
+            aria-label={m.passkeys_capacity_summary({
+              stored: presentation.capacity.stored,
+              remaining: presentation.capacity.remainingUpperBound,
+            })}
+          />
+        {/if}
+      </section>
+    </div>
+
+    <div class="passkeys-overview-controls">
+      <div class="passkeys-capabilities" aria-label={m.support_mode()}>
+        {#if support}
+          <StatusBadge
+            value={support.credentialManagement}
+            label={`${m.credential_management_support()}: ${support.credentialManagement ? m.state_available() : m.state_not_available()}`}
+            tone={support.credentialManagement ? "ok" : "neutral"}
+          />
+          <StatusBadge
+            value={true}
+            label={support.previewOnly ? m.passkeys_protocol_preview() : m.passkeys_protocol_stable()}
+            tone={support.previewOnly ? "warn" : "neutral"}
+          />
+          <StatusBadge
+            value={support.readOnlyPermission}
+            label={`${m.read_only_permission()}: ${support.readOnlyPermission ? m.state_available() : m.state_not_available()}`}
+            tone="neutral"
+          />
+        {/if}
+      </div>
+
+      <div class="passkeys-verification">
+        <span>{m.user_verification()}</span>
+        <ToggleGroup.Root
+          type="single"
+          bind:value={verificationValue}
+          variant="outline"
+          size="sm"
+          aria-label={m.user_verification()}
+          disabled={presentation.loading}
+          onValueChange={handleVerificationChange}
+        >
+          <ToggleGroup.Item value="auto" aria-label={m.verification_auto()}>
+            {m.verification_auto()}
+          </ToggleGroup.Item>
+          <ToggleGroup.Item value="pin" aria-label={m.verification_pin()}>
+            {m.verification_pin()}
+          </ToggleGroup.Item>
+        </ToggleGroup.Root>
+      </div>
+    </div>
+  </Card.Content>
+</Card.Root>
+
+<style>
+@layer blocks {
+  :global(.passkeys-overview) {
+    min-width: 0;
+  }
+
+  :global(.passkeys-overview [data-slot="card-title"] h1) {
+    margin: 0;
+    font: inherit;
+  }
+
+  :global(.passkeys-overview [data-slot="card-description"]) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+
+  .passkeys-overview-grid,
+  .passkeys-overview-controls,
+  .passkeys-overview-metrics,
+  .passkeys-capabilities,
+  .passkeys-verification,
+  .passkeys-capacity-heading {
+    min-width: 0;
+  }
+
+  .passkeys-overview-grid {
+    display: grid;
+    grid-template-columns: minmax(16rem, 0.8fr) minmax(18rem, 1.2fr);
+    gap: var(--space-4);
+    align-items: stretch;
+  }
+
+  .passkeys-overview-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+
+  .passkeys-overview-metric,
+  .passkeys-capacity {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3);
+  }
+
+  .passkeys-overview-metric span,
+  .passkeys-capacity-heading span,
+  .passkeys-verification > span {
+    color: var(--muted-foreground);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .passkeys-overview-metric strong {
+    font-size: 1rem;
+  }
+
+  .passkeys-capacity {
+    align-content: center;
+  }
+
+  .passkeys-capacity-heading {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .passkeys-capacity-heading > div {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .passkeys-overview-controls {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-top: var(--space-3);
+  }
+
+  .passkeys-capabilities,
+  .passkeys-verification {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .passkeys-verification {
+    justify-content: end;
+  }
+
+  @media (max-width: 820px) {
+    .passkeys-overview-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .passkeys-overview-controls {
+      align-items: start;
+      flex-direction: column;
+    }
+
+    .passkeys-verification {
+      justify-content: start;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .passkeys-overview-metrics {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
+</style>

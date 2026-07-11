@@ -4,9 +4,9 @@ import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import type { CredentialsEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { setAppLocale } from "$lib/i18n";
-import { idleLoadState, readyLoadState } from "$lib/load-state";
+import { emptyPasskeysInventoryState, type PasskeysInventoryState } from "$lib/features/passkeys/state";
 
-import { buildPasskeysPresentation } from "./passkeys-presentation";
+import { buildPasskeyRows, buildPasskeysPresentation } from "./passkeys-presentation";
 
 function envelope(groups: NonNullable<CredentialsEnvelope["result"]>["report"]["groups"] = []): CredentialsEnvelope {
   const totalCredentials = groups.reduce((count, group) => count + (group.credentials?.length ?? 0), 0);
@@ -37,6 +37,16 @@ function envelope(groups: NonNullable<CredentialsEnvelope["result"]>["report"]["
   } as CredentialsEnvelope;
 }
 
+function inventoryState(credentials: CredentialsEnvelope): PasskeysInventoryState {
+  return {
+    ...emptyPasskeysInventoryState(),
+    phase: "ready",
+    lastSuccessfulEnvelope: credentials,
+    responseEnvelope: credentials,
+    lastSuccessfulAt: "2026-06-22T00:00:00.000Z",
+  };
+}
+
 describe("buildPasskeysPresentation", () => {
   beforeEach(() => {
     setAppLocale("en");
@@ -48,18 +58,20 @@ describe("buildPasskeysPresentation", () => {
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,
-      envelope: credentials,
-      inventoryState: readyLoadState(credentials),
-      loading: false,
+      sessionReady: true,
+      inventoryState: inventoryState(credentials),
     });
 
     expect(presentation.hasReport).toBe(true);
     expect(presentation.emptyInventory).toBe(true);
     expect(presentation.rows).toHaveLength(0);
-    expect(presentation.summaryItems.map((item) => item.value)).toContain("0 credentials");
+    expect(presentation.summaryItems.slice(0, 2)).toEqual([
+      { label: "Relying parties", value: "0" },
+      { label: "Credentials", value: "0" },
+    ]);
   });
 
-  it("builds grouped credential rows and support badges", () => {
+  it("builds flat credential rows and support badges", () => {
     const credentials = envelope([{
       rpID: "example.com",
       rpName: "Example",
@@ -80,20 +92,233 @@ describe("buildPasskeysPresentation", () => {
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,
-      envelope: credentials,
-      inventoryState: idleLoadState(),
-      loading: false,
-      selectedRowId: "0:0:cafe",
+      sessionReady: true,
+      inventoryState: inventoryState(credentials),
+      selectedCredentialID: "cafe",
     });
 
     expect(presentation.rows).toHaveLength(1);
-    expect(presentation.rows[0].rpName).toBe("Example (example.com)");
+    expect(presentation.rows[0].rpName).toBe("Example");
+    expect(presentation.rows[0].rpID).toBe("example.com");
     expect(presentation.rows[0].credentialTransports).toBe("usb, nfc");
+    expect(presentation.rows[0].credProtect).toBe("Level 2 · UV optional with credential list");
+    expect(presentation.rows[0].raw.relyingParty).toEqual({
+      rpID: "example.com",
+      rpName: "Example",
+      rpIDHashHex: "abcd",
+    });
+    expect(presentation.rows[0].raw.relyingParty).not.toHaveProperty("credentials");
     expect(presentation.selectedRow?.credentialIDHex).toBe("cafe");
     expect(presentation.supportItems).toEqual([
       { label: "Credential management", value: true },
       { label: "Preview credential management", value: true },
       { label: "Read-only permission", value: true },
     ]);
+  });
+
+  it("searches every RP and credential identity field and applies status filters", () => {
+    const credentials = envelope([{
+      rpID: "payments.example",
+      rpName: "Payments",
+      rpIDHashHex: "AABB",
+      credentials: [{
+        credentialIDHex: "CAFE",
+        userIDHex: "0102",
+        userName: "billing@example.com",
+        displayName: "Billing Admin",
+        largeBlobKeyState: "available",
+        credProtect: 3,
+        thirdPartyPayment: true,
+      }],
+    }]);
+
+    for (const query of [
+      "payments",
+      "payments.example",
+      "aabb",
+      "cafe",
+      "0102",
+      "billing@example.com",
+      "billing admin",
+    ]) {
+      const match = buildPasskeysPresentation({
+        selectedSelector: "token-1",
+        selectedDevice: null,
+        sessionBusy: false,
+        sessionReady: true,
+        inventoryState: inventoryState(credentials),
+        query,
+        statusFilter: "cred-protect-3",
+      });
+      expect(match.rows.map((row) => row.id), query).toEqual(["CAFE"]);
+    }
+
+    const missingBlob = buildPasskeysPresentation({
+      selectedSelector: "token-1",
+      selectedDevice: null,
+      sessionBusy: false,
+      sessionReady: true,
+      inventoryState: inventoryState(credentials),
+      statusFilter: "large-blob-missing",
+    });
+    expect(missingBlob.emptyFilteredResult).toBe(true);
+  });
+
+  it("calculates capacity as an explicitly estimated upper bound", () => {
+    const credentials = envelope([]);
+    credentials.result!.report.summary.existingResidentCredentialsCount = 3;
+    credentials.result!.report.summary.maxPossibleRemainingResidentCredentialsCount = 9;
+    const presentation = buildPasskeysPresentation({
+      selectedSelector: "token-1",
+      selectedDevice: null,
+      sessionBusy: false,
+      sessionReady: true,
+      inventoryState: inventoryState(credentials),
+    });
+    expect(presentation.capacity).toEqual({
+      stored: 3,
+      remainingUpperBound: 9,
+      estimatedTotal: 12,
+      percentage: 25,
+    });
+  });
+
+  it("implements every status filter against generated credential fields", () => {
+    const credentials = envelope([{
+      rpID: "example.test",
+      credentials: [
+        { credentialIDHex: "one", largeBlobKeyState: "available", credProtect: 1 },
+        { credentialIDHex: "two", largeBlobKeyState: "missing", credProtect: 2 },
+        { credentialIDHex: "three", credProtect: 3, thirdPartyPayment: true },
+        { credentialIDHex: "none" },
+      ],
+    }]);
+    const report = credentials.result!.report;
+    const ids = (filter: Parameters<typeof buildPasskeyRows>[2]) => buildPasskeyRows(report, "", filter)
+      .map((row) => row.id);
+
+    expect(ids("all")).toEqual(["one", "two", "three", "none"]);
+    expect(ids("large-blob-available")).toEqual(["one"]);
+    expect(ids("large-blob-missing")).toEqual(["two"]);
+    expect(ids("third-party-payment")).toEqual(["three"]);
+    expect(ids("cred-protect-1")).toEqual(["one"]);
+    expect(ids("cred-protect-2")).toEqual(["two"]);
+    expect(ids("cred-protect-3")).toEqual(["three"]);
+    expect(ids("cred-protect-not-reported")).toEqual(["none"]);
+  });
+
+  it("keeps the selected credential while filters temporarily hide its row", () => {
+    const credentials = envelope([{
+      rpID: "example.test",
+      credentials: [{ credentialIDHex: "one", displayName: "Selected User" }],
+    }]);
+    const filtered = buildPasskeysPresentation({
+      selectedSelector: "token-1",
+      selectedDevice: null,
+      sessionBusy: false,
+      sessionReady: true,
+      inventoryState: inventoryState(credentials),
+      query: "no match",
+      selectedCredentialID: "one",
+    });
+
+    expect(filtered.rows).toHaveLength(0);
+    expect(filtered.selectedCredentialID).toBe("one");
+    expect(filtered.selectedRow?.id).toBe("one");
+    expect(filtered.selectedRowFilteredOut).toBe(true);
+
+    const restored = buildPasskeysPresentation({
+      selectedSelector: "token-1",
+      selectedDevice: null,
+      sessionBusy: false,
+      sessionReady: true,
+      inventoryState: inventoryState(credentials),
+      selectedCredentialID: filtered.selectedCredentialID,
+    });
+
+    expect(restored.rows.map((row) => row.id)).toEqual(["one"]);
+    expect(restored.selectedRow?.id).toBe("one");
+    expect(restored.selectedRowFilteredOut).toBe(false);
+  });
+
+  it("gates preview-only updates without treating read-only listing permission as mutation blocking", () => {
+    const credentials = envelope([{
+      rpID: "example.test",
+      credentials: [{ credentialIDHex: "one" }],
+    }]);
+    const previewOnly = buildPasskeysPresentation({
+      selectedSelector: "token-1",
+      selectedDevice: null,
+      sessionBusy: false,
+      sessionReady: true,
+      inventoryState: inventoryState(credentials),
+    });
+
+    expect(previewOnly.updateDisabled).toBe(true);
+    expect(previewOnly.deleteDisabled).toBe(false);
+
+    credentials.result!.report.support.previewOnly = false;
+    credentials.result!.report.support.readOnlyPermission = true;
+    const readOnlyListing = buildPasskeysPresentation({
+      selectedSelector: "token-1",
+      selectedDevice: null,
+      sessionBusy: false,
+      sessionReady: true,
+      inventoryState: inventoryState(credentials),
+    });
+    expect(readOnlyListing.updateDisabled).toBe(false);
+    expect(readOnlyListing.deleteDisabled).toBe(false);
+  });
+
+  it("keeps reload available for session recovery while blocking mutations", () => {
+    const credentials = envelope([{
+      rpID: "example.test",
+      credentials: [{ credentialIDHex: "one" }],
+    }]);
+    credentials.result!.report.support.previewOnly = false;
+
+    const presentation = buildPasskeysPresentation({
+      selectedSelector: "token-1",
+      selectedDevice: null,
+      sessionBusy: false,
+      sessionReady: false,
+      inventoryState: inventoryState(credentials),
+      selectedCredentialID: "one",
+    });
+
+    expect(presentation.reloadDisabled).toBe(false);
+    expect(presentation.updateDisabled).toBe(true);
+    expect(presentation.deleteDisabled).toBe(true);
+  });
+
+  it("keeps last-known-good rows visible when a later unsupported refresh becomes stale", () => {
+    const credentials = envelope([{
+      rpID: "example.test",
+      credentials: [{ credentialIDHex: "one" }],
+    }]);
+    const state: PasskeysInventoryState = {
+      ...inventoryState(credentials),
+      phase: "unsupported",
+      responseEnvelope: {
+        operationId: "operation-2",
+        sessionId: "session-1",
+        kind: OperationKind.OperationListCredentials,
+        error: { category: "unsupported", message: "feature disappeared" },
+      } as CredentialsEnvelope,
+      stale: true,
+    };
+    const presentation = buildPasskeysPresentation({
+      selectedSelector: "token-1",
+      selectedDevice: null,
+      sessionBusy: false,
+      sessionReady: true,
+      inventoryState: state,
+    });
+
+    expect(presentation.stale).toBe(true);
+    expect(presentation.unsupported).toBe(false);
+    expect(presentation.rows.map((row) => row.id)).toEqual(["one"]);
+    expect(presentation.updateDisabled).toBe(true);
+    expect(presentation.deleteDisabled).toBe(true);
   });
 });

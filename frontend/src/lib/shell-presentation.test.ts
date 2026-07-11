@@ -1,0 +1,116 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+
+import { setAppLocale } from "./i18n.js";
+import { buildShellStatusPresentation } from "./shell-presentation.js";
+import type { SessionStatus } from "./session-model.js";
+import type { StatusBarState } from "./stores.js";
+
+const token: DeviceReport = {
+  deviceId: "token-1",
+  ordinalAlias: "1",
+  stableId: true,
+  transport: Mode.ModeHID,
+  path: "token-1",
+  vendorId: 1,
+  productId: 2,
+  product: "Test key",
+};
+
+function session(state: SessionStatus["state"]): SessionStatus {
+  return {
+    state,
+    selectedSelector: "token-1",
+    selectedDevice: token,
+    sessionId: "session-1",
+  };
+}
+
+function statusBar(patch: Partial<StatusBarState> = {}): StatusBarState {
+  return { activeOperation: null, lastOutcome: null, ...patch };
+}
+
+describe("shell status presentation", () => {
+  beforeEach(() => setAppLocale("en"));
+
+  it("prioritizes active operation progress and exposes cancel after an operation id arrives", () => {
+    const presentation = buildShellStatusPresentation({
+      selectedDevice: token,
+      sessionStatus: session("error"),
+      statusBar: statusBar({
+        activeOperation: {
+          operationId: "operation-1",
+          label: "Credential inventory",
+          event: { stage: "enumerating-credentials", message: "Reading credentials", completed: 2, total: 5 },
+        },
+        lastOutcome: { tone: "error", title: "Older failure" },
+      }),
+    });
+
+    expect(presentation).toMatchObject({
+      source: "operation",
+      title: "Credential inventory",
+      detail: "Enumerating credentials",
+      busy: true,
+      progress: { value: 2, max: 5, label: "2 of 5" },
+      cancel: { disabled: false, ariaLabel: "Cancel operation" },
+      retry: null,
+    });
+  });
+
+  it("keeps known zero progress determinate and shows its count", () => {
+    const presentation = buildShellStatusPresentation({
+      selectedDevice: token,
+      sessionStatus: session("running"),
+      statusBar: statusBar({
+        activeOperation: { event: { stage: "enumerating-rps", completed: 0, total: 0 } },
+      }),
+    });
+
+    expect(presentation.progress).toMatchObject({ value: 0, max: 1, label: "0 of 0" });
+  });
+
+  it("uses indeterminate operation state until both progress values are known", () => {
+    const presentation = buildShellStatusPresentation({
+      selectedDevice: token,
+      sessionStatus: session("running"),
+      statusBar: statusBar({
+        activeOperation: { event: { stage: "enumerating-rps" } },
+      }),
+    });
+
+    expect(presentation.source).toBe("operation");
+    expect(presentation.detail).toBe("Enumerating relying parties");
+    expect(presentation.progress).toBeNull();
+    expect(presentation.cancel).toBeNull();
+  });
+
+  it("prioritizes opening and error sessions over the last outcome", () => {
+    const outcome = statusBar({ lastOutcome: { tone: "success", title: "Old success" } });
+    const opening = buildShellStatusPresentation({ selectedDevice: token, sessionStatus: session("opening"), statusBar: outcome });
+    const errored = buildShellStatusPresentation({
+      selectedDevice: token,
+      sessionStatus: { ...session("error"), error: { message: "Session lost" } },
+      statusBar: outcome,
+    });
+
+    expect(opening).toMatchObject({ source: "session", title: "Opening", busy: true });
+    expect(errored).toMatchObject({ source: "session", title: "Error", detail: "Session lost", busy: false, tone: "error" });
+  });
+
+  it("offers retry only for an outcome backed by a live ready session", () => {
+    const retry = vi.fn();
+    const outcome = statusBar({ lastOutcome: { tone: "error", title: "Failed", retry } });
+    const ready = buildShellStatusPresentation({ selectedDevice: token, sessionStatus: session("ready"), statusBar: outcome });
+    const idle = buildShellStatusPresentation({
+      selectedDevice: null,
+      sessionStatus: { state: "idle", selectedSelector: "", selectedDevice: null },
+      statusBar: outcome,
+    });
+
+    expect(ready.retry?.label).toBe("Retry");
+    expect(idle.retry).toBeNull();
+  });
+});

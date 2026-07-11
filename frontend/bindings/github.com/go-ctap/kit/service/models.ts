@@ -470,6 +470,29 @@ export class CredentialDeleteRequest {
     }
 }
 
+export class CredentialListRequest {
+    "sessionId": SessionID;
+    "verificationFlow"?: model$0.VerificationFlow;
+    "refresh"?: boolean;
+
+    /** Creates a new CredentialListRequest instance. */
+    constructor($$source: Partial<CredentialListRequest> = {}) {
+        if (!("sessionId" in $$source)) {
+            this["sessionId"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CredentialListRequest instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CredentialListRequest {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new CredentialListRequest($$parsedSource as Partial<CredentialListRequest>);
+    }
+}
+
 export class CredentialUpdateEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
