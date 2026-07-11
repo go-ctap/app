@@ -32,6 +32,14 @@ func (s *CtapkitService) Discover(ctx context.Context, req kitservice.DiscoverRe
 	return s.core.Discover(ctx, req)
 }
 
+func (s *CtapkitService) StartDiscoveryMonitoring(ctx context.Context) error {
+	return s.core.StartDiscoveryMonitoring(ctx)
+}
+
+func (s *CtapkitService) RefreshDiscovery(ctx context.Context, req kitservice.DiscoverRequest) error {
+	return s.core.RefreshDiscovery(ctx, req)
+}
+
 func (s *CtapkitService) OpenSession(ctx context.Context, req kitservice.OpenSessionRequest) (kitservice.SessionSnapshot, error) {
 	return s.core.OpenSession(ctx, req)
 }
@@ -69,6 +77,8 @@ type wailsEmitter struct{}
 func (wailsEmitter) Emit(name string, payload any) {
 	app := application.Get()
 	switch name {
+	case kitservice.EventDiscoveryChanged:
+		app.Event.Emit(name, payload)
 	case kitservice.EventOperationEvent:
 		app.Event.Emit(name, payload)
 	case kitservice.EventInteractionRequested:

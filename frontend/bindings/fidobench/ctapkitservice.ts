@@ -139,6 +139,10 @@ export function ReadLargeBlob(req: service$0.LargeBlobReadRequest): $Cancellable
     });
 }
 
+export function RefreshDiscovery(req: service$0.DiscoverRequest): $CancellablePromise<void> {
+    return $Call.ByID(2373356356, req);
+}
+
 export function ResetFactory(req: service$0.ResetFactoryRequest): $CancellablePromise<service$0.ResetFactoryEnvelope> {
     return $Call.ByID(2083660208, req).then(($result: any) => {
         return $$createType18($result);
@@ -177,6 +181,10 @@ export function SetPIN(req: service$0.PINSetRequest): $CancellablePromise<servic
     return $Call.ByID(459436564, req).then(($result: any) => {
         return $$createType4($result);
     });
+}
+
+export function StartDiscoveryMonitoring(): $CancellablePromise<void> {
+    return $Call.ByID(2304839527);
 }
 
 export function UpdateCredentialUser(req: service$0.CredentialUpdateRequest): $CancellablePromise<service$0.CredentialUpdateEnvelope> {

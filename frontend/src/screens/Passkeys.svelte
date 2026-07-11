@@ -22,6 +22,14 @@
   import { m } from "../paraglide/messages.js";
 
   let selectedRowId = $state("");
+  let selectedRowSelector = $state("");
+
+  $effect(() => {
+    if (selectedRowSelector === $selectedSelector) return;
+    selectedRowSelector = $selectedSelector;
+    selectedRowId = "";
+  });
+
   let passkeys = $derived(buildPasskeysPresentation({
     selectedSelector: $selectedSelector,
     selectedDevice: $selectedDevice,

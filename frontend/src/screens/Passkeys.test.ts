@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
+import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
@@ -98,5 +99,31 @@ describe("Passkeys", () => {
 
     expect(screen.getByText("public-key")).toBeInTheDocument();
     expect(screen.getByText("01")).toBeInTheDocument();
+  });
+
+  it("clears the selected credential row when the authenticator selector changes", async () => {
+    const user = userEvent.setup();
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      selectedSelector: "token-1",
+      selectedDevice: null,
+      sessionId: "session-1",
+    });
+    seedPasskeysEnvelopeForTest(credentialsEnvelope());
+
+    render(Passkeys);
+    await user.click(screen.getByText("Example (example.com)"));
+    expect(screen.getByText("public-key")).toBeInTheDocument();
+
+    seedSelectionForTest("token-2", null, {
+      state: "ready",
+      selectedSelector: "token-2",
+      selectedDevice: null,
+      sessionId: "session-2",
+    });
+    await tick();
+
+    expect(screen.queryByText("public-key")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Select a row to open the inspector.")).toHaveLength(2);
   });
 });

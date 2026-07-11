@@ -4,6 +4,11 @@ export {
 } from "./interaction-controller.js";
 export { handleOperationProgress } from "./event-controller.js";
 export {
+  handleDiscoveryChanged,
+  refreshDiscovery,
+  startDiscoveryMonitoring,
+} from "./discovery-controller.js";
+export {
   loadOverview,
   loadOverviewMDS,
 } from "./overview-controller.js";
@@ -13,7 +18,6 @@ export {
 export {
   bootstrap,
   navigateToScreen,
-  refreshDiscovery,
   selectToken,
   shutdownWorkbench,
 } from "./session-controller.js";

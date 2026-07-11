@@ -55,10 +55,6 @@ function initialSelectorForDevices(devices: DeviceReport[], preferredSelector: s
   return devices.length === 1 ? selectorFromDevice(devices[0]) : "";
 }
 
-function retainedSelectorForDevices(devices: DeviceReport[], preferredSelector: string) {
-  return reportForSelector(devices, preferredSelector) ? preferredSelector : "";
-}
-
 function discoverySnapshot(
   devices: DeviceReport[],
   selectedSelector: string,
@@ -142,49 +138,16 @@ async function selectFromDevices(devices: DeviceReport[], selector: string): Pro
   }
 }
 
-async function discoverAndSelect(preferredSelector: string, autoSelectSingle = false): Promise<Discovery> {
+async function discoverAndSelect(preferredSelector: string): Promise<Discovery> {
   const discoveredDevices = await api.discover();
-  const selector = autoSelectSingle
-    ? initialSelectorForDevices(discoveredDevices, preferredSelector)
-    : retainedSelectorForDevices(discoveredDevices, preferredSelector);
+  const selector = initialSelectorForDevices(discoveredDevices, preferredSelector);
   return selectFromDevices(discoveredDevices, selector);
 }
 
 export async function bootstrap() {
   try {
-    const discovery = await discoverAndSelect(get(selectedSelector), true);
+    const discovery = await discoverAndSelect(get(selectedSelector));
     applyDiscovery(discovery);
-    await maybeLoadOverview();
-    await maybeLoadPasskeys();
-  } catch (error) {
-    appError.set(messageFromError(error));
-  }
-}
-
-export async function refreshDiscovery() {
-  try {
-    const previous = get(selectedSelector);
-    const discovery = await discoverAndSelect(previous);
-    applyDiscovery(discovery);
-    const logEntryId = appendLogEntry({
-      tone: discovery.error ? "error" : "info",
-      source: "discovery",
-      title: discovery.error ? m.discovery_issue() : m.discovery_refreshed(),
-      message: discovery.error ? discovery.error.message : m.authenticators_found({ count: discovery.devices.length }),
-      selector: discovery.selectedSelector || previous,
-      data: {
-        deviceCount: discovery.devices.length,
-        selectedSelector: discovery.selectedSelector || "",
-        session: { state: discovery.session.state },
-        error: discovery.error,
-      },
-    });
-    setStatusOutcome({
-      tone: discovery.error ? "error" : "info",
-      title: discovery.error ? m.discovery_issue() : m.discovery_refreshed(),
-      message: discovery.error ? discovery.error.message : m.authenticators_found({ count: discovery.devices.length }),
-      logEntryId,
-    });
     await maybeLoadOverview();
     await maybeLoadPasskeys();
   } catch (error) {

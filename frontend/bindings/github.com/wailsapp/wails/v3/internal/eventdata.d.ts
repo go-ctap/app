@@ -12,6 +12,7 @@ import type * as service$0 from "../../../../go-ctap/kit/service/models.js";
 declare module "@wailsio/runtime" {
     namespace Events {
         interface CustomEvents {
+            "ctapkit:discovery-changed": service$0.DiscoveryChangedEnvelope;
             "ctapkit:interaction-requested": service$0.InteractionPrompt;
             "ctapkit:operation-event": service$0.OperationEventEnvelope;
         }

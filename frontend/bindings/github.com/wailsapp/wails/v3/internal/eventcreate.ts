@@ -12,13 +12,15 @@ import * as service$0 from "../../../../go-ctap/kit/service/models.js";
 
 function configure() {
     Object.freeze(Object.assign($Create.Events, {
-        "ctapkit:interaction-requested": $$createType0,
-        "ctapkit:operation-event": $$createType1,
+        "ctapkit:discovery-changed": $$createType0,
+        "ctapkit:interaction-requested": $$createType1,
+        "ctapkit:operation-event": $$createType2,
     }));
 }
 
 // Private type creation functions
-const $$createType0 = service$0.InteractionPrompt.createFrom;
-const $$createType1 = service$0.OperationEventEnvelope.createFrom;
+const $$createType0 = service$0.DiscoveryChangedEnvelope.createFrom;
+const $$createType1 = service$0.InteractionPrompt.createFrom;
+const $$createType2 = service$0.OperationEventEnvelope.createFrom;
 
 configure();

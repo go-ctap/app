@@ -66,6 +66,14 @@ export const api = {
     return (await service.Discover(request)).devices;
   },
 
+  startDiscoveryMonitoring(): Promise<void> {
+    return service.StartDiscoveryMonitoring();
+  },
+
+  refreshDiscovery(request: DiscoverRequest = {}): Promise<void> {
+    return service.RefreshDiscovery(request);
+  },
+
   openSession(request: OpenSessionRequest): Promise<SessionSnapshot> {
     return service.OpenSession(request);
   },

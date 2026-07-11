@@ -15,11 +15,13 @@
 	import {
 		bootstrap,
 		answerPendingInteraction,
+		handleDiscoveryChanged,
 		handleInteractionRequested,
 		handleOperationProgress,
 		navigateToScreen,
 		refreshDiscovery,
 		selectToken,
+		startDiscoveryMonitoring,
 		shutdownWorkbench
 	} from "$lib/controller";
 	import { currentLocale } from "$lib/i18n";
@@ -74,7 +76,7 @@
 	}
 
 	function handleRefreshDiscovery() {
-		void refreshDiscovery();
+		return refreshDiscovery();
 	}
 
 	function handleInteractionAnswer(answer: kitservice.InteractionAnswer) {
@@ -82,6 +84,7 @@
 	}
 
 	onMount(() => {
+		let disposed = false;
 		const offProgress = Events.On("ctapkit:operation-event", (event: WailsDataEvent<kitservice.OperationEventEnvelope>) => {
 			handleOperationProgress(event.data);
 		});
@@ -90,16 +93,25 @@
 			handleInteractionRequested(event.data);
 		});
 
-		refreshing = true;
-
-		bootstrap().finally(() => {
-			refreshing = false;
-			initialized = true;
+		const offDiscovery = Events.On("ctapkit:discovery-changed", (event: WailsDataEvent<kitservice.DiscoveryChangedEnvelope>) => {
+			handleDiscoveryChanged(event.data);
 		});
 
+		refreshing = true;
+
+		bootstrap()
+			.then(() => disposed ? undefined : startDiscoveryMonitoring())
+			.finally(() => {
+				if (disposed) return;
+				refreshing = false;
+				initialized = true;
+			});
+
 		return () => {
+			disposed = true;
 			offProgress?.();
 			offInteraction?.();
+			offDiscovery?.();
 			void shutdownWorkbench();
 		};
 	});

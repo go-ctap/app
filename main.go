@@ -19,6 +19,7 @@ import (
 var assets embed.FS
 
 func init() {
+	application.RegisterEvent[kitservice.DiscoveryChangedEnvelope](kitservice.EventDiscoveryChanged)
 	application.RegisterEvent[kitservice.OperationEventEnvelope](kitservice.EventOperationEvent)
 	application.RegisterEvent[kitservice.InteractionPrompt](kitservice.EventInteractionRequested)
 }
