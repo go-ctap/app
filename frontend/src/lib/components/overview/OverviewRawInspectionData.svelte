@@ -119,6 +119,11 @@
 }
 
 @layer exceptions {
+  .raw-inspection-header:hover,
+  .raw-inspection-header:focus-within {
+    background: var(--muted);
+  }
+
   :global(.raw-inspection[data-state="open"]) .raw-inspection-header {
     background: var(--muted);
   }

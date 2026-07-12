@@ -21,13 +21,15 @@ import Overview from "./Overview.svelte";
 
 const controllerMocks = vi.hoisted(() => ({
   loadOverview: vi.fn(() => Promise.resolve()),
-  loadOverviewMDS: vi.fn(() => Promise.resolve()),
+  loadOverviewMDS: vi.fn(() => Promise.resolve(true)),
 }));
+const toastMocks = vi.hoisted(() => ({ success: vi.fn() }));
 
 vi.mock("$lib/controller", () => ({
   loadOverview: controllerMocks.loadOverview,
   loadOverviewMDS: controllerMocks.loadOverviewMDS,
 }));
+vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
 
 const device = new DeviceReport({
   deviceId: "token-1",
@@ -76,6 +78,7 @@ describe("Overview", () => {
     setAppLocale("en");
     controllerMocks.loadOverview.mockClear();
     controllerMocks.loadOverviewMDS.mockClear();
+    toastMocks.success.mockClear();
     resetAppStateForTest();
   });
 
@@ -92,6 +95,24 @@ describe("Overview", () => {
     render(Overview);
 
     expect(controllerMocks.loadOverview).not.toHaveBeenCalled();
+  });
+
+  it("forces an MDS refresh and confirms completion", async () => {
+    const user = userEvent.setup();
+    const aaguid = "00000000-0000-0000-0000-000000000001";
+    seedSelectionForTest("token-1", device, {
+      state: "ready",
+      sessionId: "session-1",
+    });
+    seedOverviewEnvelopeForTest(inspectEnvelope("inspect-1", aaguid));
+
+    render(Overview);
+    await user.click(screen.getByRole("button", { name: "Refresh MDS" }));
+
+    await waitFor(() => {
+      expect(controllerMocks.loadOverviewMDS).toHaveBeenCalledWith(aaguid, true);
+      expect(toastMocks.success).toHaveBeenCalledWith("MDS data refreshed");
+    });
   });
 
   it("renders degraded Overview warnings without owning global errors", () => {

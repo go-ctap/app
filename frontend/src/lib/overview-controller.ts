@@ -105,17 +105,19 @@ export async function loadOverviewMDS(aaguid: string, refresh = false) {
   const selector = get(selectedSelector).trim();
   if (!aaguid || !selector) {
     overviewMDS.set(idleLoadState());
-    return;
+    return false;
   }
 
   overviewMDS.set(loadingLoadState());
   try {
     const envelope = await api.lookupMDS({ aaguid, refresh });
     overviewMDS.set(readyLoadState(envelope.result));
+    return true;
   } catch (error) {
     const runtimeError = runtimeErrorFrom(error);
     overviewMDS.set(errorLoadState(runtimeError));
     reportDegradedOverviewLoad(m.metadata_service(), runtimeError);
+    return false;
   } finally {
     const current = get(overviewMDS);
     if (current.state === "loading") overviewMDS.set(idleLoadState());

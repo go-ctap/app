@@ -29,7 +29,8 @@ export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHe
   const mdsResult = context.mds ?? null;
   const entry = mdsResult?.entry ?? null;
   const statement = entry?.metadataStatement ?? null;
-  const latestStatus = entry?.statusReports?.[0] ?? null;
+  const statusReports = entry?.statusReports ?? [];
+  const latestStatus = statusReports.find((report) => !isFipsStatus(report.status)) ?? null;
   const rawAaguid = info?.aaguid || mdsResult?.aaguid;
   const aaguid = formatAaguid(rawAaguid);
   const deviceName = [device?.manufacturer, device?.product].filter(Boolean).join(" ") || textValue(device?.product, "");
@@ -48,7 +49,7 @@ export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHe
     mdsState,
     mdsStateLabel: mdsStateText(mdsState),
     mdsDescription: mdsDescriptionText(mdsState, context.mdsError),
-    mdsStatusFacts: statusReportFacts(latestStatus, entry, status, found, mdsState),
+    mdsStatusFacts: statusReportFacts(latestStatus, statement, entry, status, found, mdsState),
     mdsBlobFacts: metadataBlobFacts(mdsResult, hasLookup),
   };
 }
@@ -95,12 +96,18 @@ function optionalHeroFact(label: string, input: TextLike, found: boolean, option
   return text ? heroFact(label, text, options.tone || "default", false, options.href) : null;
 }
 
-function fipsHeroFacts(statusReport: StatusReport | null, status: string, found: boolean) {
-  if (!statusReport || !found || !isFipsStatus(status)) return [];
-  return [
-    optionalHeroFact(m.mds_fips_revision(), statusReport.fipsRevision, found),
-    optionalHeroFact(m.mds_fips_physical_security_level(), statusReport.fipsPhysicalSecurityLevel, found),
-  ].filter((fact): fact is OverviewHeroFact => Boolean(fact));
+function fipsCertificationFact(statement: MetadataStatement | null, found: boolean) {
+  const certifications = statement?.authenticatorGetInfo?.certifications ?? {};
+  const fipsCertifications = Object.entries(certifications)
+    .filter(([id]) => id.toUpperCase().startsWith("FIPS-"))
+    .map(([id, level]) => `${id}: L${level}`);
+
+  return heroFact(
+    m.mds_fips_validation(),
+    fipsCertifications.length ? fipsCertifications.join("\n") : m.not_reported(),
+    fipsCertifications.length ? "success" : "muted",
+    !found,
+  );
 }
 
 function preferredMDSName(statement: MetadataStatement | null) {
@@ -110,19 +117,20 @@ function preferredMDSName(statement: MetadataStatement | null) {
 
 function statusReportFacts(
   latestStatus: StatusReport | null,
+  statement: MetadataStatement | null,
   entry: PayloadEntry | null,
   status: string,
   found: boolean,
   mdsState: OverviewMDSState,
 ) {
   return [
-    heroFact(m.mds_status(), mdsText(status, found), mdsState === "found" ? statusTone(status) : "muted", !found),
+    heroFact(m.mds_fido_validation(), mdsText(status, found), mdsState === "found" ? statusTone(status) : "muted", !found),
+    fipsCertificationFact(statement, found),
     heroFact(m.mds_effective_date(), mdsText(latestStatus?.effectiveDate, found), found ? "default" : "muted", !found),
     heroFact(m.mds_last_status_change(), mdsText(entry?.timeOfLastStatusChange, found), found ? "default" : "muted", !found),
     optionalHeroFact(m.mds_certificate_number(), latestStatus?.certificateNumber, found),
     optionalHeroFact(m.mds_sunset_date(), latestStatus?.sunsetDate, found),
     optionalHeroFact(m.mds_status_url(), mdsUrlLabel(latestStatus?.url), found, { href: externalUrl(latestStatus?.url) }),
-    ...fipsHeroFacts(latestStatus, status, found),
   ].filter((fact): fact is OverviewHeroFact => Boolean(fact));
 }
 

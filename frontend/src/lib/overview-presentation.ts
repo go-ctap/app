@@ -2,7 +2,6 @@ import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/m
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { BioSensorEnvelope, InspectEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
-import { m } from "../paraglide/messages.js";
 import { bioSensorReport, inspectResult, operationError } from "./ctapkit-results.js";
 import type { LoadState } from "./features/overview/state.js";
 import { sessionStateLabel } from "./format.js";
@@ -62,7 +61,6 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
     conformance: buildOverviewConformancePresentation({ info }),
     mdsObservations: buildOverviewMDSObservations({ info, mds: mdsResult }),
     warningCount: overviewRows.filter((row) => row.status === "warning").length,
-    loadingRows: [m.transport(), m.session(), "AAGUID", m.versions()],
     sessionState: input.sessionStatus.state,
     sessionLabel: sessionStateLabel(input.sessionStatus.state),
   };

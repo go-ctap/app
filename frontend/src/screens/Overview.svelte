@@ -7,6 +7,7 @@
   import OverviewRawInspectionData from "$lib/components/overview/OverviewRawInspectionData.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
+  import { toast } from "svelte-sonner";
   import { copyToClipboard } from "$lib/clipboard";
   import { loadOverview, loadOverviewMDS } from "$lib/controller";
   import { buildOverviewPresentation } from "$lib/overview-presentation";
@@ -36,9 +37,10 @@
     return loadOverview();
   }
 
-  function refreshMDS() {
+  async function refreshMDS() {
     if (overview.hero.aaguidAvailable) {
-      return loadOverviewMDS(overview.hero.aaguid);
+      const refreshed = await loadOverviewMDS(overview.hero.aaguid, true);
+      if (refreshed) toast.success(m.mds_refresh_complete());
     }
   }
 
@@ -86,7 +88,7 @@
       <OverviewMDSObservations observations={overview.mdsObservations} />
       <OverviewRawInspectionData info={overview.info} onCopy={copyReport} />
     {:else if overview.loading}
-      <OverviewLoadingCard rows={overview.loadingRows} />
+      <OverviewLoadingCard />
     {/if}
   </section>
 {/if}

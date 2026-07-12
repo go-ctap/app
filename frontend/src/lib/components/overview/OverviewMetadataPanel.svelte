@@ -128,7 +128,7 @@
 
     .fact-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-columns: minmax(8rem, 0.75fr) minmax(0, 1.25fr);
       gap: var(--space-3);
       align-items: baseline;
     }
@@ -175,12 +175,11 @@
     }
 
     dd {
-      overflow: hidden;
       color: var(--foreground);
       font-weight: 700;
       text-align: right;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      overflow-wrap: break-word;
+      white-space: pre-line;
     }
 
     dd a {
@@ -192,8 +191,7 @@
     }
 
     dd a span {
-      overflow: hidden;
-      text-overflow: ellipsis;
+      overflow-wrap: anywhere;
     }
 
     dd[data-tone="muted"] {
