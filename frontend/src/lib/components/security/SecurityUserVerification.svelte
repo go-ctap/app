@@ -50,7 +50,6 @@
     <Card.Title>
       <h2 id="security-user-verification-title" class="security-card-title">{m.user_verification()}</h2>
     </Card.Title>
-    <Card.Description>{m.security_user_verification_description()}</Card.Description>
   </Card.Header>
   <Card.Content class="security-uv-content">
     <section class="built-in-uv" aria-labelledby="security-built-in-uv-title">

@@ -121,7 +121,6 @@
     <Card.Title>
       <h3 id="security-biometric-sensor-title" class="security-card-title">{m.security_biometric_sensor()}</h3>
     </Card.Title>
-    <Card.Description>{m.security_biometric_sensor_description()}</Card.Description>
     {#if sensor?.previewOnly || bio.previewOnly}
       <Card.Action><Badge variant="secondary">{m.preview_only()}</Badge></Card.Action>
     {/if}
@@ -172,7 +171,6 @@
     <Card.Title>
       <h2 id="security-biometric-enrollments-title" class="security-card-title">{m.security_biometric_enrollments()}</h2>
     </Card.Title>
-    <Card.Description>{m.security_biometric_enrollments_description()}</Card.Description>
     <Card.Action class="enrollment-actions">
       <Button type="button" disabled={enrollmentActionDisabled} onclick={() => void onEnroll()}>
         <Fingerprint data-icon="inline-start" aria-hidden="true" />

@@ -130,7 +130,6 @@
     <Dialog.Content class="large-blob-write-dialog" showCloseButton={!busy}>
       <Dialog.Header>
         <Dialog.Title>{m.large_blob_write()}</Dialog.Title>
-        <Dialog.Description>{m.write_payload_description()}</Dialog.Description>
       </Dialog.Header>
 
       <form class="large-blob-write-form" onsubmit={handleSubmit}>

@@ -70,7 +70,6 @@
     <Card.Title>
       <h2 id="security-pin-policy-title" class="security-card-title">{m.security_pin_policy()}</h2>
     </Card.Title>
-    <Card.Description>{m.security_pin_policy_description()}</Card.Description>
   </Card.Header>
   <Card.Content>
     {#if !supported}

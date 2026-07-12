@@ -90,7 +90,6 @@
 <Card.Root id="security-pin" aria-labelledby="security-pin-title">
   <Card.Header>
     <Card.Title><h2 id="security-pin-title" class="security-card-title">{m.pin()}</h2></Card.Title>
-    <Card.Description>{m.security_pin_description()}</Card.Description>
     <Card.Action>
       <Button bind:ref={triggerRef} type="button" disabled={actionDisabled} onclick={() => (open = true)}>
         <KeyRound data-icon="inline-start" aria-hidden="true" />
@@ -155,7 +154,6 @@
             aria-invalid={validationError === "new-required" || validationError === "mismatch"}
             oninput={(event) => (newPIN = event.currentTarget.value)}
           />
-          <Field.Description>{m.security_pin_policy_advisory()}</Field.Description>
           {#if validationError === "new-required"}
             <Field.Error>{m.security_pin_required()}</Field.Error>
           {:else if validationError === "mismatch"}
