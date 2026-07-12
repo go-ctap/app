@@ -106,7 +106,7 @@
       min-height: 38px;
       padding: var(--space-1) var(--space-3);
       border-top: 1px solid var(--window-border);
-      background: var(--card);
+      background: var(--statusbar-background, var(--card));
     }
 
     .shell-status-marker {

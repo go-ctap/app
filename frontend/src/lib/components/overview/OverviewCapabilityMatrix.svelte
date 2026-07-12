@@ -35,7 +35,6 @@
 <Card.Root>
   <Card.Header>
     <Card.Title>{m.capability_matrix()}</Card.Title>
-    <Card.Description>{m.capability_matrix_description()}</Card.Description>
     {#if warningCount}
       <Card.Action>
         <Badge variant="outline">{m.warnings_count({ count: warningCount })}</Badge>

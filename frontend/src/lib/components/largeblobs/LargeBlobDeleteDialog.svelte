@@ -93,7 +93,6 @@
     <Dialog.Content class="large-blob-delete-error-dialog">
       <Dialog.Header>
         <Dialog.Title>{m.delete_preview()}</Dialog.Title>
-        <Dialog.Description>{m.review_mutation_before_delete()}</Dialog.Description>
       </Dialog.Header>
 
       <Alert.Root variant={failureCanceled ? "default" : "destructive"} role={failureCanceled ? "status" : "alert"}>
@@ -127,7 +126,6 @@
       <AlertDialog.Header>
         <AlertDialog.Media><TriangleAlert aria-hidden="true" /></AlertDialog.Media>
         <AlertDialog.Title>{m.confirm_delete()}</AlertDialog.Title>
-        <AlertDialog.Description>{m.review_mutation_before_delete()}</AlertDialog.Description>
       </AlertDialog.Header>
 
       {#if failureMessage}

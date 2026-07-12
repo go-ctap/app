@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"log"
+	"runtime"
 
 	kitservice "github.com/go-ctap/kit/service"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -15,6 +16,36 @@ func init() {
 	application.RegisterEvent[kitservice.DiscoveryChangedEnvelope](kitservice.EventDiscoveryChanged)
 	application.RegisterEvent[kitservice.OperationEventEnvelope](kitservice.EventOperationEvent)
 	application.RegisterEvent[kitservice.InteractionPrompt](kitservice.EventInteractionRequested)
+}
+
+func mainWindowOptions(goos string) application.WebviewWindowOptions {
+	macSidebarTint := application.NewRGBA(30, 30, 32, 96)
+	options := application.WebviewWindowOptions{
+		Title:     "FIDO Authenticator Workbench",
+		Frameless: true,
+		Mac: application.MacWindow{
+			Backdrop:           application.MacBackdropLiquidGlass,
+			TitleBar:           application.MacTitleBarHidden,
+			CollectionBehavior: application.MacWindowCollectionBehaviorFullScreenPrimary,
+			LiquidGlass: application.MacLiquidGlass{
+				Style:     application.LiquidGlassStyleDark,
+				Material:  application.NSVisualEffectMaterialSidebar,
+				TintColor: &macSidebarTint,
+			},
+		},
+		Windows: application.WindowsWindow{
+			NonClientRegionSupport:     true,
+			WebView2CompositionHosting: true,
+		},
+		BackgroundColour: application.NewRGB(0, 0, 0),
+		URL:              "/",
+	}
+
+	if goos == "darwin" {
+		options.Frameless = false
+	}
+
+	return options
 }
 
 func main() {
@@ -33,24 +64,7 @@ func main() {
 		},
 	})
 
-	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:     "FIDO Authenticator Workbench",
-		Frameless: true,
-		Mac: application.MacWindow{
-			Backdrop: application.MacBackdropLiquidGlass,
-			LiquidGlass: application.MacLiquidGlass{
-				Style:        application.LiquidGlassStyleDark,
-				Material:     application.NSVisualEffectMaterialAuto,
-				CornerRadius: 8.0,
-			},
-		},
-		Windows: application.WindowsWindow{
-			NonClientRegionSupport:     true,
-			WebView2CompositionHosting: true,
-		},
-		BackgroundColour: application.NewRGB(0, 0, 0),
-		URL:              "/",
-	})
+	app.Window.NewWithOptions(mainWindowOptions(runtime.GOOS))
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)

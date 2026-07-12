@@ -37,10 +37,10 @@
     return m.security_mutation_preview();
   }
 
-  function description() {
+  function description(): string | undefined {
     if (mutation.kind === "reset") return m.security_factory_reset_description();
     if (mutation.kind === "bioRemove") return m.security_remove_enrollment_description();
-    return m.review_mutation_before_confirming();
+    return undefined;
   }
 
   function actionLabel() {
@@ -69,7 +69,9 @@
           {#if mutation.kind === "reset"}<RotateCcw aria-hidden="true" />{:else}<Trash2 aria-hidden="true" />{/if}
         </AlertDialog.Media>
         <AlertDialog.Title>{title()}</AlertDialog.Title>
-        <AlertDialog.Description>{description()}</AlertDialog.Description>
+        {#if description()}
+          <AlertDialog.Description>{description()}</AlertDialog.Description>
+        {/if}
       </AlertDialog.Header>
 
       <SecurityMutationDetails {mutation} {activeOperation} />
@@ -94,7 +96,9 @@
     <Dialog.Content class="security-mutation-dialog" showCloseButton={!busy}>
       <Dialog.Header>
         <Dialog.Title>{title()}</Dialog.Title>
-        <Dialog.Description>{description()}</Dialog.Description>
+        {#if description()}
+          <Dialog.Description>{description()}</Dialog.Description>
+        {/if}
       </Dialog.Header>
 
       <SecurityMutationDetails {mutation} {activeOperation} />

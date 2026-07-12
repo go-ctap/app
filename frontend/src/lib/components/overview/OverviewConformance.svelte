@@ -9,6 +9,7 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Collapsible from "$lib/components/ui/collapsible/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
+  import { openExternalLink } from "$lib/external-links";
   import type { OverviewConformancePresentation } from "$lib/overview-rules";
 
   import { m } from "../../../paraglide/messages.js";
@@ -134,7 +135,7 @@
                           <div class="assessment-references">
                             {#each assessment.references as reference (reference.id)}
                               <span class="assessment-reference">
-                                <a href={reference.url} target="_blank" rel="noreferrer">
+                                <a href={reference.url} target="_blank" rel="noreferrer" onclick={(event) => openExternalLink(event, reference.url)}>
                                   {m.conformance_reference({ specification: reference.specification, section: reference.section, clause: reference.clause })}
                                 </a>
                                 <Badge variant="outline">{reference.level}</Badge>

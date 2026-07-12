@@ -11,6 +11,7 @@
 	import ShellStatusBar from "$lib/components/shell/ShellStatusBar.svelte";
 	import { Toaster } from "$lib/components/ui/sonner/index.js";
 	import { AuthenticatorTitlebarControl, WindowControls, WindowTitlebar } from "$lib/components/window-controls";
+	import { toggleMaximizeWindow } from "$lib/components/window-controls/window";
 	import {
 		bootstrap,
 		answerPendingInteraction,
@@ -38,6 +39,7 @@
 		statusBar,
 		type ActiveScreen
 	} from "$lib/stores";
+	import { detectWindowPlatform, resolveWindowPlatform } from "$lib/window-platform";
 
 	import { m } from "./paraglide/messages.js";
 	import Overview from "./screens/Overview.svelte";
@@ -48,6 +50,9 @@
 
 	let refreshing = $state(false);
 	let initialized = $state(false);
+	let windowPlatform = $state(detectWindowPlatform());
+	let windowActive = $state(true);
+	let isMacOS = $derived(windowPlatform === "macos");
 	let noDevices = $derived(initialized && !refreshing && $devices.length === 0);
 	let titlebarPresentation = $derived(buildAuthenticatorTitlebarPresentation({
 		devices: $devices,
@@ -93,8 +98,44 @@
 		void retryLastStatusOutcome();
 	}
 
+	async function syncWindowPlatform() {
+		const detected = detectWindowPlatform();
+		if (detected !== null) {
+			windowPlatform = detected;
+			return;
+		}
+
+		windowPlatform = null;
+		try {
+			const resolved = await resolveWindowPlatform();
+			if (resolved !== null) {
+				windowPlatform = resolved;
+			}
+		} catch {
+			// WindowRuntimeReady retries detection without rendering the wrong platform chrome.
+		}
+	}
+
+	function handleTitlebarDoubleClick(event: MouseEvent) {
+		if (!isMacOS || !(event.target instanceof Element)) return;
+		if (!event.target.closest('[data-window-titlebar-region="true"]')) return;
+		if (event.target.closest('button, a, input, select, textarea, [role="button"], [contenteditable="true"]')) return;
+
+		event.preventDefault();
+		void toggleMaximizeWindow();
+	}
+
 	onMount(() => {
 		let disposed = false;
+		const handleWindowFocus = () => windowActive = true;
+		const handleWindowBlur = () => windowActive = false;
+		windowActive = document.hasFocus();
+		window.addEventListener("focus", handleWindowFocus);
+		window.addEventListener("blur", handleWindowBlur);
+		window.addEventListener("dblclick", handleTitlebarDoubleClick);
+		const offRuntimeReady = Events.On(Events.Types.Common.WindowRuntimeReady, () => {
+			void syncWindowPlatform();
+		});
 		const offProgress = Events.On("ctapkit:operation-event", (event) => {
 			handleOperationProgress(event.data);
 		});
@@ -108,6 +149,7 @@
 		});
 
 		refreshing = true;
+		void syncWindowPlatform();
 
 		bootstrap()
 			.then(() => disposed ? undefined : startDiscoveryMonitoring())
@@ -119,6 +161,10 @@
 
 		return () => {
 			disposed = true;
+			window.removeEventListener("focus", handleWindowFocus);
+			window.removeEventListener("blur", handleWindowBlur);
+			window.removeEventListener("dblclick", handleTitlebarDoubleClick);
+			offRuntimeReady();
 			offProgress();
 			offInteraction();
 			offDiscovery();
@@ -127,19 +173,19 @@
 	});
 </script>
 
-{#key $currentLocale}
-	<div class="app-shell">
+{#if windowPlatform}
+	{#key $currentLocale}
+	<div class="app-shell" data-platform={windowPlatform} data-window-active={windowActive ? "true" : "false"}>
 		<AppSidebar
 			presentation={sidebarPresentation}
+			nativeWindowTitlebar={isMacOS}
 			onNavigate={navigate}
 		/>
 
 		<section class="app-workspace">
 			<header class="app-header">
-				<WindowTitlebar
-					nativeWindowControlsOverlay={false}
-				>
-					<div class="titlebar-content">
+				<WindowTitlebar>
+					<div class="titlebar-content" data-native-window-controls={isMacOS ? "true" : undefined}>
 						<AuthenticatorTitlebarControl
 							presentation={titlebarPresentation}
 							onSelect={handleSelectToken}
@@ -147,7 +193,9 @@
 							onRefresh={handleRefreshDiscovery}
 						/>
 						<div class="titlebar-drag-space" aria-hidden="true"></div>
-						<WindowControls />
+						{#if !isMacOS}
+							<WindowControls />
+						{/if}
 					</div>
 				</WindowTitlebar>
 			</header>
@@ -185,7 +233,10 @@
 
 		<InteractionModal presentation={interactionModalPresentation} onAnswer={handleInteractionAnswer} />
 	</div>
-{/key}
+	{/key}
+{:else}
+	<div class="app-platform-pending" aria-hidden="true"></div>
+{/if}
 
 <Toaster
 	position="bottom-right"
@@ -199,23 +250,30 @@
 
 <style>
 	@layer blocks {
+		.app-platform-pending {
+			height: 100dvh;
+			background: var(--background);
+		}
+
 		.app-shell {
-			--sidebar-inline-size: clamp(5rem, 20vw, 17.5rem);
+			--sidebar-inline-size: 5rem;
+			--sidebar-background: var(--sidebar);
+			--topbar-background: var(--card);
+			--topbar-border: var(--window-border);
+			--statusbar-background: var(--card);
 			display: grid;
 			grid-template-columns: var(--sidebar-inline-size) minmax(0, 1fr);
 			min-width: 0;
 			height: 100dvh;
 			overflow: hidden;
-			border-radius: var(--window-radius);
+			border-radius: 0;
 			background: var(--window-surface);
 			color: var(--foreground);
-			--topbar-background: transparent;
-			--topbar-border: var(--window-border);
 		}
 		.app-workspace {
 			container: workspace-shell / inline-size;
 			display: grid;
-			grid-template-rows: 58px minmax(0, 1fr) auto;
+			grid-template-rows: var(--shell-titlebar-block-size) minmax(0, 1fr) auto;
 			min-width: 0;
 			min-height: 0;
 		}
@@ -229,7 +287,7 @@
 			display: grid;
 			grid-template-columns: minmax(0, 38rem) minmax(2rem, 1fr) auto;
 			align-items: stretch;
-			height: 58px;
+			height: var(--shell-titlebar-block-size);
 			min-width: 0;
 			padding: 0 0 0 var(--space-4);
 		}
@@ -247,6 +305,7 @@
 			overflow: auto;
 			scrollbar-gutter: stable;
 			padding: var(--space-4);
+			background: var(--workspace-surface);
 		}
 		@container workspace-shell (max-width: 48rem) {
 			.titlebar-content {
@@ -256,6 +315,39 @@
 
 			.titlebar-drag-space {
 				display: none;
+			}
+		}
+
+		@media (min-width: 72rem) {
+			.app-shell {
+				--sidebar-inline-size: 14rem;
+			}
+		}
+	}
+
+	@layer exceptions {
+		.app-shell[data-platform="macos"] {
+			--sidebar-background: transparent;
+			background: transparent;
+		}
+
+		.app-shell[data-platform="macos"][data-window-active="false"] {
+			--sidebar-background: color-mix(in srgb, var(--sidebar) 88%, transparent);
+		}
+
+		.app-shell[data-platform="windows"] {
+			border-radius: var(--window-radius);
+		}
+
+		.titlebar-content[data-native-window-controls="true"] {
+			grid-template-columns: minmax(0, 38rem) minmax(2rem, 1fr);
+			padding-right: var(--space-4);
+		}
+
+		@container workspace-shell (max-width: 48rem) {
+			.titlebar-content[data-native-window-controls="true"] {
+				grid-template-columns: minmax(0, 1fr);
+				padding-right: var(--space-3);
 			}
 		}
 	}

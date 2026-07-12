@@ -26,11 +26,26 @@ export const Clipboard = {
   Text: () => Promise.resolve(""),
 };
 
+export const Browser = {
+  OpenURL: (_url: string | URL) => Promise.resolve(),
+};
+
 export const Events = {
   On: () => () => {},
+  Types: {
+    Common: {
+      WindowMaximise: "common:WindowMaximise",
+      WindowRestore: "common:WindowRestore",
+      WindowRuntimeReady: "common:WindowRuntimeReady",
+      WindowUnMaximise: "common:WindowUnMaximise",
+    },
+  },
 };
 
 export const System = {
+  Environment: () => Promise.resolve({ OS: "linux" }),
+  IsLinux: () => false,
+  IsMac: () => false,
   IsWindows: () => false,
   invoke: () => undefined,
 };

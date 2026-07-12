@@ -81,9 +81,7 @@
 
     <Card.Content class="hero-content">
       <div class="hero-description flow">
-        <p class="eyebrow">{m.overview_hero_heading()}</p>
         <h2>{m.overview_hero_title()}</h2>
-        <p>{m.overview_hero_description()}</p>
       </div>
 
       <div class="signal-grid switcher">
@@ -165,8 +163,7 @@
       --cluster-space: var(--space-1);
     }
 
-    h2,
-    p {
+    h2 {
       margin: 0;
     }
 
@@ -196,18 +193,6 @@
     h2 {
       max-width: 50rem;
       font-size: 1.25rem;
-    }
-
-    p {
-      color: var(--muted-foreground);
-      line-height: 1.55;
-    }
-
-    .eyebrow {
-      color: var(--muted-foreground);
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
     }
 
     .hero-description {

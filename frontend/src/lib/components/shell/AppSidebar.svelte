@@ -10,10 +10,11 @@
 
   type Props = {
     presentation: SidebarPresentation;
+    nativeWindowTitlebar?: boolean;
     onNavigate: (screen: ActiveScreen) => void;
   };
 
-  let { presentation, onNavigate }: Props = $props();
+  let { presentation, nativeWindowTitlebar = false, onNavigate }: Props = $props();
 
   const navItems: { id: ActiveScreen; label: string; icon: Component }[] = [
     { id: "overview", label: m.overview(), icon: Gauge },
@@ -25,14 +26,21 @@
 
 </script>
 
-<aside class="app-sidebar" aria-label={m.main_navigation()}>
+<aside
+  class="app-sidebar"
+  data-native-titlebar={nativeWindowTitlebar ? "true" : undefined}
+  aria-label={m.main_navigation()}
+>
+  {#if nativeWindowTitlebar}
+    <div class="sidebar-titlebar-space" data-window-titlebar-region="true" aria-hidden="true"></div>
+  {/if}
+
   <div class="sidebar-brand" aria-label={m.app_title()}>
     <span class="sidebar-mark" aria-hidden="true">
-      <ShieldCheck size={20} strokeWidth={2.25} />
+      <ShieldCheck size={22} strokeWidth={2} />
     </span>
     <span class="sidebar-brand-copy">
       <span class="sidebar-title">{m.app_title()}</span>
-      <span class="sidebar-subtitle">{m.app_subtitle()}</span>
     </span>
   </div>
 
@@ -60,21 +68,28 @@
     .app-sidebar {
       container: sidebar / inline-size;
       display: grid;
-      grid-template-rows: 58px minmax(0, 1fr);
+      grid-template-rows: var(--shell-titlebar-block-size) minmax(0, 1fr);
       min-width: 0;
       height: 100dvh;
       border-right: 1px solid var(--window-border);
-      background: transparent;
+      background: var(--sidebar-background, var(--sidebar));
+    }
+
+    .sidebar-titlebar-space {
+      min-width: 0;
+      background: var(--sidebar-background, var(--sidebar));
+      --wails-non-client-region: caption;
+      --wails-draggable: drag;
     }
 
     .sidebar-brand {
       display: grid;
-      grid-template-columns: 36px minmax(0, 1fr);
-      gap: var(--space-3);
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: var(--space-2);
       align-items: center;
       min-width: 0;
       border-bottom: 1px solid var(--topbar-border, var(--border));
-      background: var(--topbar-background, var(--card));
+      background: var(--sidebar-background, var(--sidebar));
       padding: 0 var(--space-4);
       --wails-non-client-region: caption;
       --wails-draggable: drag;
@@ -83,37 +98,24 @@
     .sidebar-mark {
       display: grid;
       place-items: center;
-      width: 36px;
-      height: 36px;
-      border: 1px solid color-mix(in srgb, var(--foreground) 18%, var(--border));
-      border-radius: var(--radius);
-      background: var(--foreground);
-      color: var(--card);
+      width: 24px;
+      height: 24px;
+      color: color-mix(in srgb, var(--foreground) 96%, var(--muted-foreground));
     }
 
     .sidebar-brand-copy {
       display: grid;
       min-width: 0;
-      gap: 2px;
-      line-height: 1.15;
-    }
-
-    .sidebar-title,
-    .sidebar-subtitle {
-      overflow: hidden;
-      color: var(--foreground);
-      font-weight: 700;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      line-height: 1.1;
     }
 
     .sidebar-title {
-      font-size: 0.92rem;
-    }
-
-    .sidebar-subtitle {
-      color: var(--muted-foreground);
-      font-size: 0.72rem;
+      overflow: hidden;
+      color: color-mix(in srgb, var(--foreground) 88%, var(--muted-foreground));
+      font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.88rem;
     }
 
     .sidebar-nav {
@@ -126,6 +128,7 @@
       overscroll-behavior: contain;
       scrollbar-gutter: stable;
       padding: var(--space-4);
+      background: var(--sidebar-background, var(--sidebar));
     }
 
     .sidebar-nav :global(.sidebar-nav-button) {
@@ -154,6 +157,29 @@
         justify-content: center;
         padding-inline: 0;
       }
+    }
+}
+
+@layer exceptions {
+    .app-sidebar[data-native-titlebar="true"] {
+      grid-template-rows: 36px auto minmax(0, 1fr);
+    }
+
+    .app-sidebar[data-native-titlebar="true"] .sidebar-brand {
+      min-height: 2.5rem;
+      border-bottom: 0;
+      background: var(--sidebar-background, var(--sidebar));
+      padding-block: var(--space-1);
+      --wails-non-client-region: initial;
+      --wails-draggable: no-drag;
+    }
+
+    .app-sidebar[data-native-titlebar="true"] .sidebar-titlebar-space {
+      background: var(--sidebar-background, var(--sidebar));
+    }
+
+    .app-sidebar[data-native-titlebar="true"] .sidebar-nav {
+      padding-block-start: 0;
     }
 }
 </style>

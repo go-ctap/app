@@ -101,17 +101,6 @@
   </EmptyState>
 {:else}
   <section class="security-screen" aria-labelledby="security-title">
-    <header class="security-header">
-      <div>
-        <h1 id="security-title">{m.security()}</h1>
-        <p>{m.security_description()}</p>
-      </div>
-      <Button variant="outline" type="button" disabled={reloadDisabled || statusLoading} onclick={() => void reloadSecurity()}>
-        <RefreshCw data-icon="inline-start" aria-hidden="true" />
-        {m.reload_overview()}
-      </Button>
-    </header>
-
     {#if statusError}
       <Alert.Root variant="warning" role="alert" class="security-state-alert" data-state="stale">
         <TriangleAlert aria-hidden="true" />
@@ -127,7 +116,12 @@
     {/if}
 
     <div class="security-sections">
-      <SecurityOverview {report} />
+      <SecurityOverview
+        {report}
+        loading={statusLoading}
+        disabled={reloadDisabled || statusLoading}
+        onReload={reloadSecurity}
+      />
 
       {#key $selectedSelector}
         <SecurityPIN
@@ -197,33 +191,10 @@
     min-width: 0;
   }
 
-  .security-header {
-    display: flex;
-    align-items: start;
-    justify-content: space-between;
-    gap: var(--space-4);
-    min-width: 0;
-  }
-
-  .security-header > div,
   .security-loading-header {
     display: grid;
     gap: var(--space-2);
     min-width: 0;
-  }
-
-  .security-header h1,
-  .security-header p {
-    margin: 0;
-  }
-
-  .security-header h1 {
-    font-size: 1.3rem;
-  }
-
-  .security-header p {
-    color: var(--muted-foreground);
-    line-height: 1.55;
   }
 
   :global(.loading-title) { width: min(15rem, 70%); height: 1.5rem; }
@@ -233,12 +204,6 @@
 
   :global(.security-state-alert) {
     min-width: 0;
-  }
-
-  @container workspace (max-width: 38rem) {
-    .security-header {
-      display: grid;
-    }
   }
 }
 

@@ -51,11 +51,11 @@
       </Select.Trigger>
 
       <Select.Portal>
-        <Select.Content side="bottom" align="start" sideOffset={6}>
+        <Select.Content class="auth-titlebar-menu" side="bottom" align="start" sideOffset={6}>
           <Select.Group>
             {#each presentation.items as item (item.value)}
               <Select.Item value={item.value} label={item.label}>
-                <span>{item.name}</span>
+                <span class="auth-item-name">{item.name}</span>
                 <span class="auth-item-detail">{item.detail}</span>
               </Select.Item>
             {:else}
@@ -104,7 +104,7 @@
       display: flex;
       align-items: center;
       gap: var(--space-2);
-      width: 100%;
+      width: min(100%, 30rem);
       height: 100%;
       min-width: 0;
     }
@@ -128,12 +128,33 @@
       white-space: nowrap;
     }
 
+    .auth-item-name,
+    .auth-item-detail {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .auth-titlebar[data-busy="true"] {
       opacity: 0.76;
     }
 
     .auth-item-detail {
       color: var(--muted-foreground);
+    }
+}
+
+@layer exceptions {
+    :global(.auth-titlebar-menu) {
+      width: var(--bits-select-anchor-width);
+      max-width: min(26rem, calc(100vw - var(--space-4) * 2));
+    }
+
+    :global(.auth-titlebar-menu [data-slot="select-item"] > span:last-child) {
+      min-width: 0;
+      flex-shrink: 1;
+      overflow: hidden;
     }
 }
 </style>

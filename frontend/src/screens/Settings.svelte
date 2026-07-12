@@ -14,14 +14,12 @@
   <header class="settings-header">
     <div>
       <h1 id="settings-title">{m.settings()}</h1>
-      <p>{m.settings_description()}</p>
     </div>
   </header>
 
   <section class="settings-section" aria-labelledby="settings-language-title">
     <div class="settings-copy">
       <h2 id="settings-language-title">{m.language()}</h2>
-      <p>{m.settings_language_description()}</p>
     </div>
 
     <Field.Field>
@@ -56,21 +54,13 @@
     }
 
     .settings-header h1,
-    .settings-header p,
-    .settings-section h2,
-    .settings-section p {
+    .settings-section h2 {
       margin: 0;
     }
 
     .settings-header h1 {
       font-size: 1.3rem;
       letter-spacing: 0;
-    }
-
-    .settings-header p,
-    .settings-section p {
-      color: var(--muted-foreground);
-      line-height: 1.55;
     }
 
     .settings-section {

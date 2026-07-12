@@ -3,13 +3,11 @@
   import type { HTMLAttributes } from "svelte/elements";
 
   interface Props extends HTMLAttributes<HTMLDivElement> {
-    nativeWindowControlsOverlay?: boolean;
     children?: Snippet;
     class?: string;
   }
 
   let {
-    nativeWindowControlsOverlay = false,
     children,
     class: className = "",
     ...rest
@@ -19,7 +17,7 @@
 <div
   {...rest}
   class="window-titlebar"
-  data-native-overlay={nativeWindowControlsOverlay ? "true" : undefined}
+  data-window-titlebar-region="true"
 >
   <div class={className}>
     {@render children?.()}
@@ -37,11 +35,6 @@
       overflow: visible;
       user-select: none;
       --wails-draggable: drag;
-    }
-
-    .window-titlebar[data-native-overlay="true"] {
-      -webkit-user-select: none;
-      user-select: none;
     }
 }
 </style>

@@ -6,6 +6,7 @@
   import { copyToClipboard } from "$lib/clipboard";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
+  import { openExternalLink } from "$lib/external-links";
   import type { OverviewHeroFact, OverviewHeroPresentation } from "$lib/overview-rules";
 
   import { m } from "../../../paraglide/messages.js";
@@ -40,7 +41,7 @@
     <dt>{fact.label}</dt>
     <dd data-tone={factTone(fact)}>
       {#if fact.href && !fact.placeholder}
-        <a href={fact.href} target="_blank" rel="noreferrer" title={fact.href}>
+        <a href={fact.href} target="_blank" rel="noreferrer" title={fact.href} onclick={(event) => openExternalLink(event, fact.href!)}>
           <span>{fact.value}</span>
           <ExternalLink size={11} />
         </a>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Events } from "@wailsio/runtime";
   import { onMount } from "svelte";
 
   import { m } from "../../../paraglide/messages.js";
@@ -10,6 +11,22 @@
 
   onMount(() => {
     void syncMaximized();
+
+    const offMaximise = Events.On(Events.Types.Common.WindowMaximise, () => {
+      maximized = true;
+    });
+    const offUnMaximise = Events.On(Events.Types.Common.WindowUnMaximise, () => {
+      maximized = false;
+    });
+    const offRestore = Events.On(Events.Types.Common.WindowRestore, () => {
+      maximized = false;
+    });
+
+    return () => {
+      offMaximise();
+      offUnMaximise();
+      offRestore();
+    };
   });
 
   async function syncMaximized() {

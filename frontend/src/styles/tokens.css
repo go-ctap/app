@@ -6,8 +6,10 @@
     --space-4: 16px;
     --space-5: 20px;
     --space-6: 24px;
+    --shell-titlebar-block-size: 48px;
     --window-radius: 8px;
-    --window-surface: color-mix(in srgb, var(--background) 72%, transparent);
+    --window-surface: var(--background);
+    --workspace-surface: color-mix(in oklch, var(--background) 55%, var(--card));
     --window-border: color-mix(in srgb, var(--border) 72%, transparent);
   }
 }

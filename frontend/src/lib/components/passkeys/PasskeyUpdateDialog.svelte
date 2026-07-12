@@ -123,7 +123,6 @@
     <Dialog.Content class="passkey-update-dialog" showCloseButton={!busy}>
       <Dialog.Header>
         <Dialog.Title>{m.edit_credential_user()}</Dialog.Title>
-        <Dialog.Description>{m.review_mutation_before_confirming()}</Dialog.Description>
       </Dialog.Header>
 
       <form class="passkey-update-form" onsubmit={handleSubmit}>

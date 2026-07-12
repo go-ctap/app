@@ -40,4 +40,21 @@ describe("AppSidebar", () => {
     expect(onNavigate).toHaveBeenCalledWith("security");
     expect(onNavigate).toHaveBeenCalledWith("settings");
   });
+
+  it("reserves native titlebar space above the brand on macOS", () => {
+    const { container } = render(AppSidebar, {
+      props: {
+        presentation: {
+          activeScreen: "overview",
+        },
+        nativeWindowTitlebar: true,
+        onNavigate: vi.fn(),
+      },
+    });
+
+    const sidebar = container.querySelector(".app-sidebar");
+    expect(sidebar).toHaveAttribute("data-native-titlebar", "true");
+    expect(sidebar?.firstElementChild).toHaveClass("sidebar-titlebar-space");
+    expect(sidebar?.children[1]).toHaveClass("sidebar-brand");
+  });
 });
