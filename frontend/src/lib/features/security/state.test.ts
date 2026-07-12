@@ -1,0 +1,81 @@
+import { get } from "svelte/store";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { ErrorCategory, OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model";
+import type {
+  BioSensorEnvelope,
+  ConfigStatusEnvelope,
+  RuntimeErrorEnvelope,
+} from "../../../../bindings/github.com/go-ctap/kit/service";
+
+import {
+  beginSecurityStatusLoad,
+  completeSecurityStatusLoad,
+  failSecurityBioSensorLoadAtRuntime,
+  failSecurityStatusLoadWithResponse,
+  resetSecurityStateForTest,
+  securityResourceIsStale,
+  securitySensor,
+  securityStatus,
+} from "./state";
+
+describe("security state", () => {
+  beforeEach(() => resetSecurityStateForTest());
+
+  it("retains last-known-good status separately from a failed service response", () => {
+    const successful = {
+      operationId: "status-1",
+      sessionId: "session-1",
+      kind: OperationKind.OperationConfigStatus,
+      result: { report: {} },
+    } as ConfigStatusEnvelope;
+    const failed = {
+      operationId: "status-2",
+      sessionId: "session-1",
+      kind: OperationKind.OperationConfigStatus,
+      error: { category: ErrorCategory.ErrorUnsupported, message: "unsupported" },
+    } as ConfigStatusEnvelope;
+
+    beginSecurityStatusLoad();
+    expect(get(securityStatus).phase).toBe("loading");
+
+    completeSecurityStatusLoad(successful, "2026-07-12T12:00:00Z");
+    beginSecurityStatusLoad();
+    expect(get(securityStatus).phase).toBe("refreshing");
+
+    failSecurityStatusLoadWithResponse(failed);
+    expect(get(securityStatus)).toMatchObject({
+      phase: "unsupported",
+      lastSuccessfulEnvelope: successful,
+      responseEnvelope: failed,
+      runtimeError: null,
+    });
+    expect(securityResourceIsStale(get(securityStatus))).toBe(true);
+  });
+
+  it("keeps thrown runtime failures separate from generated envelopes", () => {
+    const error: RuntimeErrorEnvelope = { message: "bridge unavailable" };
+
+    failSecurityBioSensorLoadAtRuntime(error);
+
+    expect(get(securitySensor)).toEqual({
+      phase: "error",
+      lastSuccessfulEnvelope: null,
+      responseEnvelope: null,
+      runtimeError: error,
+      lastSuccessfulAt: null,
+    });
+  });
+
+  it("types biometric sensor state with the generated envelope contract", () => {
+    const envelope = {
+      operationId: "sensor-1",
+      sessionId: "session-1",
+      kind: OperationKind.OperationBioSensorInfo,
+    } as BioSensorEnvelope;
+
+    securitySensor.update((current) => ({ ...current, responseEnvelope: envelope }));
+
+    expect(get(securitySensor).responseEnvelope).toBe(envelope);
+  });
+});

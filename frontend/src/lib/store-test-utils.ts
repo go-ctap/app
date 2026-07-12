@@ -37,6 +37,7 @@ import {
   sessionStatus,
   resetSessionStateForTest,
 } from "./features/session/state.js";
+import { resetSecurityStateForTest } from "./features/security/state.js";
 import {
   activeScreen,
   resetWorkbenchStateForTest,
@@ -51,6 +52,7 @@ export function resetAppStateForTest() {
   resetOverviewStateForTest();
   resetPasskeysStateForTest();
   resetLargeBlobsStateForTest();
+  resetSecurityStateForTest();
 }
 
 export function seedActiveScreenForTest(screen: ActiveScreen) {

@@ -210,13 +210,19 @@ describe("runtime operation events", () => {
     handleOperationProgress({
       operationId: "operation-1",
       sessionId: "session-1",
-      event: { stage: "enumerating-credentials", completed: 1, total: 3 },
+      event: {
+        stage: "capturing-bio-sample",
+        completed: 1,
+        total: 3,
+        sampleStatus: "good",
+      },
     } as OperationEventEnvelope);
 
     expect(get(statusBar).activeOperation).toMatchObject({
       operationId: "operation-1",
       completed: 1,
       total: 3,
+      sampleStatus: "good",
     });
     expect(get(sessionStatus)).toMatchObject({ state: "running" });
   });

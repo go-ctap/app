@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Database, Gauge, KeyRound, Settings, ShieldCheck } from "@lucide/svelte";
+  import { Database, Gauge, KeyRound, Settings, Shield, ShieldCheck } from "@lucide/svelte";
   import {type Component} from "svelte";
 
   import { Button } from "$lib/components/ui/button/index.js";
@@ -19,6 +19,7 @@
     { id: "overview", label: m.overview(), icon: Gauge },
     { id: "passkeys", label: m.passkeys(), icon: KeyRound },
     { id: "large-blobs", label: m.nav_large_blobs(), icon: Database },
+    { id: "security", label: m.security(), icon: Shield },
     { id: "settings", label: m.settings(), icon: Settings },
   ];
 

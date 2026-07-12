@@ -1,0 +1,134 @@
+<script lang="ts">
+  import { Fingerprint, RotateCcw, Trash2 } from "@lucide/svelte";
+
+  import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Dialog from "$lib/components/ui/dialog/index.js";
+  import { Spinner } from "$lib/components/ui/spinner/index.js";
+  import type { SecurityMutationState } from "$lib/features/security/state";
+  import type { ActiveOperation } from "$lib/features/workbench/state";
+
+  import { m } from "../../../paraglide/messages.js";
+  import SecurityMutationDetails from "./SecurityMutationDetails.svelte";
+
+  type Props = {
+    mutation: SecurityMutationState;
+    activeOperation: ActiveOperation | null;
+    disabled: boolean;
+    onConfirm: () => void | Promise<boolean>;
+    onRetry: () => void | Promise<boolean>;
+    onClose: () => void;
+    onCancelOperation: () => void | Promise<void>;
+  };
+
+  let { mutation, activeOperation, disabled, onConfirm, onRetry, onClose, onCancelOperation }: Props = $props();
+
+  let open = $derived(mutation.kind !== "idle" && mutation.phase !== "editing");
+  let destructive = $derived(mutation.kind === "bioRemove" || mutation.kind === "reset");
+  let busy = $derived(mutation.phase === "previewing" || mutation.phase === "executing");
+
+  function title() {
+    if (mutation.kind === "alwaysUv") return m.security_always_uv();
+    if (mutation.kind === "pinPolicy") return m.security_pin_policy();
+    if (mutation.kind === "bioEnroll") return m.security_enroll_biometric();
+    if (mutation.kind === "bioRename") return m.security_rename_enrollment();
+    if (mutation.kind === "bioRemove") return m.security_remove_enrollment();
+    if (mutation.kind === "reset") return m.security_factory_reset();
+    return m.security_mutation_preview();
+  }
+
+  function description() {
+    if (mutation.kind === "reset") return m.security_factory_reset_description();
+    if (mutation.kind === "bioRemove") return m.security_remove_enrollment_description();
+    return m.review_mutation_before_confirming();
+  }
+
+  function actionLabel() {
+    if (mutation.phase === "error") return m.retry();
+    if (mutation.kind === "reset") return m.security_reset_confirm();
+    if (mutation.kind === "bioRemove") return m.security_remove_enrollment();
+    return m.continue_action();
+  }
+
+  function runPrimary(event?: Event) {
+    event?.preventDefault();
+    if (mutation.phase === "review") void onConfirm();
+    else if (mutation.phase === "error") void onRetry();
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (!next && !busy) onClose();
+  }
+</script>
+
+{#if destructive}
+  <AlertDialog.Root {open} onOpenChange={handleOpenChange}>
+    <AlertDialog.Content class="security-destructive-dialog">
+      <AlertDialog.Header>
+        <AlertDialog.Media>
+          {#if mutation.kind === "reset"}<RotateCcw aria-hidden="true" />{:else}<Trash2 aria-hidden="true" />{/if}
+        </AlertDialog.Media>
+        <AlertDialog.Title>{title()}</AlertDialog.Title>
+        <AlertDialog.Description>{description()}</AlertDialog.Description>
+      </AlertDialog.Header>
+
+      <SecurityMutationDetails {mutation} {activeOperation} />
+
+      <AlertDialog.Footer>
+        <AlertDialog.Cancel disabled={busy} onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
+        {#if mutation.phase === "review" || mutation.phase === "error"}
+          <AlertDialog.Action variant="destructive" disabled={disabled} onclick={runPrimary}>
+            {actionLabel()}
+          </AlertDialog.Action>
+        {:else}
+          <AlertDialog.Action variant="destructive" disabled>
+            <Spinner data-icon="inline-start" aria-hidden="true" />
+            {m.waiting_for_authenticator_response()}
+          </AlertDialog.Action>
+        {/if}
+      </AlertDialog.Footer>
+    </AlertDialog.Content>
+  </AlertDialog.Root>
+{:else}
+  <Dialog.Root {open} onOpenChange={handleOpenChange}>
+    <Dialog.Content class="security-mutation-dialog" showCloseButton={!busy}>
+      <Dialog.Header>
+        <Dialog.Title>{title()}</Dialog.Title>
+        <Dialog.Description>{description()}</Dialog.Description>
+      </Dialog.Header>
+
+      <SecurityMutationDetails {mutation} {activeOperation} />
+
+      <Dialog.Footer>
+        {#if mutation.kind === "bioEnroll" && mutation.phase === "executing"}
+          <Button variant="outline" type="button" onclick={() => void onCancelOperation()}>
+            <Fingerprint data-icon="inline-start" aria-hidden="true" />
+            {m.security_cancel_enrollment()}
+          </Button>
+        {:else if mutation.phase === "review" || mutation.phase === "error"}
+          <Button type="button" disabled={disabled} onclick={runPrimary}>
+            {actionLabel()}
+          </Button>
+          <Button variant="outline" type="button" onclick={onClose}>{m.cancel()}</Button>
+        {:else}
+          <Button type="button" disabled>
+            <Spinner data-icon="inline-start" aria-hidden="true" />
+            {m.waiting_for_authenticator_response()}
+          </Button>
+        {/if}
+      </Dialog.Footer>
+    </Dialog.Content>
+  </Dialog.Root>
+{/if}
+
+<style>
+@layer blocks {
+  :global(.security-mutation-dialog),
+  :global(.security-destructive-dialog) {
+    width: min(38rem, calc(100vw - 2rem));
+    max-width: none;
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+  }
+}
+</style>

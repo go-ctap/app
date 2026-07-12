@@ -10,6 +10,7 @@ export type ActiveOperation = {
   stage?: OperationStage;
   completed?: number | null;
   total?: number | null;
+  sampleStatus?: string;
   cancelPending?: boolean;
   cancelRequested?: boolean;
   cancelError?: RuntimeErrorEnvelope | null;
@@ -27,7 +28,7 @@ export type StatusBarState = {
   lastOutcome: StatusBarOutcome | null;
 };
 
-export type ActiveScreen = "overview" | "passkeys" | "large-blobs" | "settings";
+export type ActiveScreen = "overview" | "passkeys" | "large-blobs" | "security" | "settings";
 
 export const activeScreen = writable<ActiveScreen>("overview");
 export const statusBar = writable<StatusBarState>({ activeOperation: null, lastOutcome: null });

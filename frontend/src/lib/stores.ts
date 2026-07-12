@@ -5,6 +5,7 @@ import * as largeBlobs from "./features/largeblobs/state.js";
 import * as overview from "./features/overview/state.js";
 import * as passkeys from "./features/passkeys/state.js";
 import * as session from "./features/session/state.js";
+import * as security from "./features/security/state.js";
 import * as workbench from "./features/workbench/state.js";
 
 export {
@@ -27,6 +28,13 @@ export type {
   PasskeysMutationState,
   PasskeysStatusFilter,
 } from "./features/passkeys/state.js";
+export type {
+  SecurityMutationState,
+  SecurityMutationValidationError,
+  SecurityPINPolicyDraft,
+  SecurityResourcePhase,
+  SecurityResourceState,
+} from "./features/security/state.js";
 
 export const devices = readonly(session.devices);
 export const selectedSelector = readonly(session.selectedSelector);
@@ -59,3 +67,8 @@ export const largeBlobsVerificationFlow = readonly(largeBlobs.largeBlobsVerifica
 export const largeBlobsPayloadEncoding = readonly(largeBlobs.largeBlobsPayloadEncoding);
 
 export const pendingInteraction = readonly(interaction.pendingInteraction);
+
+export const securityStatus = readonly(security.securityStatus);
+export const securitySensor = readonly(security.securitySensor);
+export const securityEnrollments = readonly(security.securityEnrollments);
+export const securityMutation = readonly(security.securityMutation);

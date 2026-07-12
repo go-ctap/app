@@ -13,6 +13,7 @@ import {
   overviewMDS,
 } from "./features/overview/state.js";
 import { resetPasskeysDeviceState } from "./features/passkeys/state.js";
+import { resetSecurityDeviceState } from "./features/security/state.js";
 import {
   devices,
   selectedDevice,
@@ -98,6 +99,11 @@ export function clearWorkbenchScreenCaches() {
   overviewMDS.set(idleLoadState());
   resetPasskeysDeviceState();
   resetLargeBlobsDeviceState();
+  resetSecurityDeviceState();
+  statusBar.update((state) => ({
+    ...state,
+    lastOutcome: state.lastOutcome ? { ...state.lastOutcome, retry: undefined } : null,
+  }));
 }
 
 export function summarizeEnvelope(label: string, envelope: OperationEnvelope | null | undefined, retry?: () => void | Promise<void>) {

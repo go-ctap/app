@@ -123,7 +123,8 @@ export function buildShellStatusPresentation(input: {
       title: active.cancelRequested ? m.cancel_requested() : active.label || m.operation_running(),
       detail: cancellationPending
         ? m.cancel_requested_message()
-        : active.cancelError?.message || operationStageLabel(active.stage),
+        : active.cancelError?.message
+          || [operationStageLabel(active.stage), active.sampleStatus?.replaceAll("_", " ")].filter(Boolean).join(" · "),
       busy: true,
       progress: activeProgress(input.statusBar),
       cancel: active.operationId && !active.cancelRequested ? {

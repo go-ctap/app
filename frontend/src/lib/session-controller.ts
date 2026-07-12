@@ -17,6 +17,7 @@ import { activeScreen, type ActiveScreen } from "./features/workbench/state.js";
 import { maybeLoadLargeBlobs } from "./largeblobs-controller.js";
 import { maybeLoadOverview } from "./overview-controller.js";
 import { maybeLoadPasskeys } from "./passkeys-controller.js";
+import { maybeLoadSecurity } from "./security-controller.js";
 import { runtimeErrorFrom } from "./runtime-error.js";
 import {
   idleSessionStatus,
@@ -181,6 +182,7 @@ export async function bootstrap() {
     await maybeLoadOverview();
     await maybeLoadPasskeys();
     await maybeLoadLargeBlobs();
+    await maybeLoadSecurity();
   } catch (error) {
     const runtimeError = runtimeErrorFrom(error);
     sessionStatus.set(idleSessionStatus("error", runtimeError));
@@ -204,6 +206,7 @@ export async function selectToken(selector: string) {
     await maybeLoadOverview();
     await maybeLoadPasskeys();
     await maybeLoadLargeBlobs();
+    await maybeLoadSecurity();
   } catch (error) {
     const runtimeError = runtimeErrorFrom(error);
     sessionStatus.set(idleSessionStatus("error", runtimeError));
@@ -217,12 +220,78 @@ export async function navigateToScreen(screen: ActiveScreen) {
   await maybeLoadOverview();
   await maybeLoadPasskeys();
   await maybeLoadLargeBlobs();
+  await maybeLoadSecurity();
+}
+
+/**
+ * Factory reset invalidates the selected authenticator as an application
+ * session boundary. Close the old session, clear selection-owned state, then
+ * apply the normal startup rule: auto-open only when discovery finds exactly
+ * one authenticator.
+ */
+export async function rediscoverAfterFactoryReset(): Promise<RuntimeErrorEnvelope | null> {
+  let closeError: RuntimeErrorEnvelope | null = null;
+  try {
+    // Reset invalidates the old handle. Close service ownership without first
+    // reading session snapshots, and never reuse a pre-reset open snapshot.
+    await api.closeAllSessions();
+  } catch (error) {
+    closeError = runtimeErrorFrom(error);
+  }
+
+  clearWorkbenchScreenCaches();
+  pendingInteraction.set(null);
+  finishOperation();
+  applyDiscovery(discoverySnapshot([], "", null, idleSessionStatus()));
+
+  try {
+    const discoveredDevices = await api.discover();
+    let discovery = discoverySnapshot(discoveredDevices, "", null, idleSessionStatus());
+
+    if (discoveredDevices.length === 1) {
+      const selection = deviceSelection(discoveredDevices, selectorFromDevice(discoveredDevices[0]));
+      if (selection.selectedSelector && selection.selectedDevice) {
+        try {
+          const snapshot = await api.openSession({ selector: selection.selectedSelector });
+          discovery = discoverySnapshot(
+            discoveredDevices,
+            selection.selectedSelector,
+            snapshot.info.device,
+            statusFromSession(snapshot),
+          );
+        } catch (error) {
+          const runtimeError = runtimeErrorFrom(error);
+          discovery = discoverySnapshot(
+            discoveredDevices,
+            selection.selectedSelector,
+            selection.selectedDevice,
+            idleSessionStatus("error", runtimeError),
+            runtimeError,
+          );
+        }
+      }
+    }
+
+    applyDiscovery(discovery);
+    return discovery.error ?? closeError;
+  } catch (error) {
+    const runtimeError = runtimeErrorFrom(error);
+    applyDiscovery(discoverySnapshot(
+      [],
+      "",
+      null,
+      idleSessionStatus("error", runtimeError),
+      runtimeError,
+    ));
+    return runtimeError;
+  }
 }
 
 export async function shutdownWorkbench() {
   try {
     await closeOpenSessions();
   } finally {
+    clearWorkbenchScreenCaches();
     sessionStatus.set(idleSessionStatus());
     pendingInteraction.set(null);
     finishOperation();

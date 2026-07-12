@@ -1,5 +1,10 @@
 import { loadPasskeys as loadPasskeysOperation } from "./passkeys-controller.js";
 import { loadLargeBlobs as loadLargeBlobsOperation } from "./largeblobs-controller.js";
+import {
+  loadSecurityEnrollments as loadSecurityEnrollmentsOperation,
+  loadSecurityStatus as loadSecurityStatusOperation,
+  retrySecurityMutation as retrySecurityMutationOperation,
+} from "./security-controller.js";
 import { ensureSelectedSessionReady } from "./session-controller.js";
 
 export async function reloadPasskeys(): Promise<boolean> {
@@ -10,6 +15,21 @@ export async function reloadPasskeys(): Promise<boolean> {
 export async function reloadLargeBlobs(): Promise<boolean> {
   if (!await ensureSelectedSessionReady()) return false;
   return loadLargeBlobsOperation({ refresh: true });
+}
+
+export async function reloadSecurity(): Promise<boolean> {
+  if (!await ensureSelectedSessionReady()) return false;
+  return loadSecurityStatusOperation();
+}
+
+export async function reloadSecurityEnrollments(): Promise<boolean> {
+  if (!await ensureSelectedSessionReady()) return false;
+  return loadSecurityEnrollmentsOperation();
+}
+
+export async function retrySecurityMutation(): Promise<boolean> {
+  if (!await ensureSelectedSessionReady()) return false;
+  return retrySecurityMutationOperation();
 }
 
 export {
@@ -71,6 +91,26 @@ export {
   bootstrap,
   ensureSelectedSessionReady,
   navigateToScreen,
+  rediscoverAfterFactoryReset,
   selectToken,
   shutdownWorkbench,
 } from "./session-controller.js";
+export {
+  AlwaysUVTarget,
+  beginAlwaysUVChange,
+  beginBioEnrollment,
+  beginBioRemove,
+  beginBioRename,
+  beginFactoryReset,
+  beginPINPolicyChange,
+  changeAuthenticatorPIN,
+  closeSecurityMutation,
+  confirmSecurityMutation,
+  loadSecurityBioSensor,
+  loadSecurityEnrollments,
+  loadSecurityStatus,
+  maybeLoadSecurity,
+  setAuthenticatorPIN,
+  validatePINPolicyDraft,
+  type SecurityPINPolicyDraft,
+} from "./security-controller.js";

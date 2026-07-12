@@ -1,0 +1,245 @@
+<script lang="ts">
+  import { RefreshCw, Shield, TriangleAlert } from "@lucide/svelte";
+
+  import SecurityBiometrics from "$lib/components/security/SecurityBiometrics.svelte";
+  import SecurityFactoryReset from "$lib/components/security/SecurityFactoryReset.svelte";
+  import SecurityMutationDialog from "$lib/components/security/SecurityMutationDialog.svelte";
+  import SecurityOverview from "$lib/components/security/SecurityOverview.svelte";
+  import SecurityPIN from "$lib/components/security/SecurityPIN.svelte";
+  import SecurityPINPolicy from "$lib/components/security/SecurityPINPolicy.svelte";
+  import SecurityUserVerification from "$lib/components/security/SecurityUserVerification.svelte";
+  import EmptyState from "$lib/components/shared/EmptyState.svelte";
+  import * as Alert from "$lib/components/ui/alert/index.js";
+  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Card from "$lib/components/ui/card/index.js";
+  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
+  import {
+    beginAlwaysUVChange,
+    beginBioEnrollment,
+    beginBioRemove,
+    beginBioRename,
+    beginFactoryReset,
+    beginPINPolicyChange,
+    cancelActiveOperation,
+    changeAuthenticatorPIN,
+    closeSecurityMutation,
+    confirmSecurityMutation,
+    reloadSecurity,
+    reloadSecurityEnrollments,
+    retrySecurityMutation,
+    setAuthenticatorPIN,
+  } from "$lib/controller";
+  import { configStatusReport } from "$lib/ctapkit-results";
+  import {
+    securityEnrollments,
+    securityMutation,
+    securitySensor,
+    securityStatus,
+    selectedSelector,
+    sessionStatus,
+    statusBar,
+  } from "$lib/stores";
+
+  import { m } from "../paraglide/messages.js";
+
+  let report = $derived(configStatusReport($securityStatus.lastSuccessfulEnvelope));
+  let statusError = $derived(
+    $securityStatus.runtimeError?.message ?? $securityStatus.responseEnvelope?.error?.message ?? null,
+  );
+  let statusLoading = $derived(
+    $securityStatus.phase === "loading" || $securityStatus.phase === "refreshing",
+  );
+  let mutationBusy = $derived(
+    $securityMutation.phase === "previewing" || $securityMutation.phase === "executing",
+  );
+  let sessionReady = $derived($sessionStatus.state === "ready" && Boolean($sessionStatus.sessionId));
+  let sessionRecovering = $derived(
+    $sessionStatus.state === "opening" || $sessionStatus.state === "running",
+  );
+  let reloadDisabled = $derived(sessionRecovering || mutationBusy);
+  let controlsDisabled = $derived(!sessionReady || mutationBusy);
+  let mutationActionDisabled = $derived(
+    $securityMutation.phase === "error" ? reloadDisabled : !sessionReady,
+  );
+  let pinPolicyValidation = $derived(
+    $securityMutation.kind === "pinPolicy" && $securityMutation.phase === "editing"
+      ? $securityMutation.validationError
+      : null,
+  );
+
+</script>
+
+{#if !$selectedSelector}
+  <EmptyState title={m.select_authenticator()} message={m.select_authenticator_for_security()}>
+    {#snippet icon()}<Shield aria-hidden="true" />{/snippet}
+  </EmptyState>
+{:else if (statusLoading || $sessionStatus.state === "opening") && !report}
+  <section class="security-loading" aria-busy="true" aria-label={m.security_state_loading()}>
+    <div class="security-loading-header">
+      <Skeleton class="loading-title" />
+      <Skeleton class="loading-copy" />
+    </div>
+    {#each Array(5) as _, index (index)}
+      <Card.Root>
+        <Card.Header>
+          <Skeleton class="loading-heading" />
+          <Skeleton class="loading-copy" />
+        </Card.Header>
+        <Card.Content><Skeleton class="loading-card" /></Card.Content>
+      </Card.Root>
+    {/each}
+  </section>
+{:else if !report}
+  <EmptyState title={m.security_state_load_failed()} message={statusError ?? m.security_unsupported_message()}>
+    {#snippet icon()}<TriangleAlert aria-hidden="true" />{/snippet}
+    {#snippet actions()}
+      <Button type="button" disabled={statusLoading || sessionRecovering} onclick={() => void reloadSecurity()}>
+        <RefreshCw data-icon="inline-start" aria-hidden="true" />
+        {m.retry()}
+      </Button>
+    {/snippet}
+  </EmptyState>
+{:else}
+  <section class="security-screen" aria-labelledby="security-title">
+    <header class="security-header">
+      <div>
+        <h1 id="security-title">{m.security()}</h1>
+        <p>{m.security_description()}</p>
+      </div>
+      <Button variant="outline" type="button" disabled={reloadDisabled || statusLoading} onclick={() => void reloadSecurity()}>
+        <RefreshCw data-icon="inline-start" aria-hidden="true" />
+        {m.reload_overview()}
+      </Button>
+    </header>
+
+    {#if statusError}
+      <Alert.Root variant="warning" role="alert" class="security-state-alert" data-state="stale">
+        <TriangleAlert aria-hidden="true" />
+        <Alert.Title>{m.security_state_load_failed()}</Alert.Title>
+        <Alert.Description>{statusError}</Alert.Description>
+        <Alert.Action>
+          <Button variant="outline" size="sm" type="button" disabled={reloadDisabled} onclick={() => void reloadSecurity()}>
+            <RefreshCw data-icon="inline-start" aria-hidden="true" />
+            {m.retry()}
+          </Button>
+        </Alert.Action>
+      </Alert.Root>
+    {/if}
+
+    <div class="security-sections">
+      <SecurityOverview {report} />
+
+      {#key $selectedSelector}
+        <SecurityPIN
+          pin={report.pin}
+          disabled={controlsDisabled}
+          onSetPIN={setAuthenticatorPIN}
+          onChangePIN={changeAuthenticatorPIN}
+        />
+      {/key}
+
+      <SecurityUserVerification
+        pin={report.pin}
+        uv={report.uv}
+        authenticatorConfig={report.authenticatorConfig}
+        disabled={controlsDisabled}
+        onAlwaysUVChange={beginAlwaysUVChange}
+      />
+
+      <SecurityBiometrics
+        bio={report.bio}
+        sensorState={$securitySensor}
+        enrollmentState={$securityEnrollments}
+        disabled={controlsDisabled}
+        loadDisabled={reloadDisabled}
+        onRetryStatus={reloadSecurity}
+        onLoadEnrollments={reloadSecurityEnrollments}
+        onEnroll={beginBioEnrollment}
+        onRename={beginBioRename}
+        onRemove={beginBioRemove}
+      />
+
+      <SecurityPINPolicy
+        {report}
+        disabled={controlsDisabled}
+        validationError={pinPolicyValidation}
+        onChange={beginPINPolicyChange}
+        onEdit={() => void closeSecurityMutation()}
+      />
+
+      <SecurityFactoryReset
+        resetHints={report.resetHints}
+        disabled={controlsDisabled}
+        onReset={beginFactoryReset}
+      />
+    </div>
+  </section>
+
+  <SecurityMutationDialog
+    mutation={$securityMutation}
+    activeOperation={$statusBar.activeOperation}
+    disabled={mutationActionDisabled}
+    onConfirm={confirmSecurityMutation}
+    onRetry={retrySecurityMutation}
+    onClose={() => void closeSecurityMutation()}
+    onCancelOperation={async () => { await cancelActiveOperation(); }}
+  />
+{/if}
+
+<style>
+@layer blocks {
+  .security-screen,
+  .security-sections,
+  .security-loading {
+    display: grid;
+    align-content: start;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+
+  .security-header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+
+  .security-header > div,
+  .security-loading-header {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .security-header h1,
+  .security-header p {
+    margin: 0;
+  }
+
+  .security-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .security-header p {
+    color: var(--muted-foreground);
+    line-height: 1.55;
+  }
+
+  :global(.loading-title) { width: min(15rem, 70%); height: 1.5rem; }
+  :global(.loading-heading) { width: min(11rem, 60%); height: 1rem; }
+  :global(.loading-copy) { width: min(28rem, 85%); height: 0.8rem; }
+  :global(.loading-card) { width: 100%; height: 7rem; }
+
+  :global(.security-state-alert) {
+    min-width: 0;
+  }
+
+  @container workspace (max-width: 38rem) {
+    .security-header {
+      display: grid;
+    }
+  }
+}
+
+</style>

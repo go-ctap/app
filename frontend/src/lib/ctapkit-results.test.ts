@@ -2,23 +2,46 @@ import { describe, expect, it } from "vitest";
 
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import { OperationKind, type InspectResult } from "../../bindings/github.com/go-ctap/kit/model";
-import { BioModality, type BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
+import {
+  AuthenticatorConfigOperation,
+  BioModality,
+  BioMutationOperation,
+  PINMutationOperation,
+  StateValue,
+  type BioSensorReport,
+} from "../../bindings/github.com/go-ctap/kit/model/config";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { MutationOperation } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { PreviewMode } from "../../bindings/github.com/go-ctap/kit/model/safety";
 import type {
+  AuthenticatorConfigEnvelope,
+  BioEnrollEnvelope,
+  BioListEnvelope,
+  BioMutationEnvelope,
   BioSensorEnvelope,
+  ConfigStatusEnvelope,
   CredentialDeleteEnvelope,
   CredentialUpdateEnvelope,
   InspectEnvelope,
   LargeBlobListEnvelope,
   LargeBlobMutationEnvelope,
   LargeBlobReadEnvelope,
+  PINEnvelope,
+  ResetFactoryEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import {
+  authenticatorConfigPreview,
+  authenticatorConfigResult,
+  bioEnrollPreview,
+  bioEnrollResult,
+  bioListReport,
+  bioMutationPreview,
+  bioMutationResult,
   bioSensorReport,
+  configStatusReport,
   credentialDeletePreview,
   credentialDeleteResult,
   credentialUpdatePreview,
@@ -28,6 +51,10 @@ import {
   largeBlobMutationPreview,
   largeBlobMutationResult,
   largeBlobReadReport,
+  pinMutationPreview,
+  pinMutationResult,
+  resetFactoryPreview,
+  resetFactoryResult,
 } from "./ctapkit-results";
 
 const device: DeviceReport = {
@@ -66,6 +93,168 @@ describe("ctapkit result extractors", () => {
     const envelope = { kind: OperationKind.OperationBioSensorInfo, result: { report } } as BioSensorEnvelope;
 
     expect(bioSensorReport(envelope)).toBe(report);
+  });
+
+  it("extracts config status and biometric inventory only from successful matching envelopes", () => {
+    const status = {
+      kind: OperationKind.OperationConfigStatus,
+      result: {
+        report: {
+          device,
+          pin: { state: StateValue.StateConfigured },
+          bio: { state: StateValue.StateSupported },
+        },
+      },
+    } as unknown as ConfigStatusEnvelope;
+    const list = {
+      kind: OperationKind.OperationBioList,
+      result: {
+        report: {
+          device,
+          supported: true,
+          previewOnly: false,
+          enrollments: [{ templateIDHex: "cafe", friendlyName: "Right index" }],
+        },
+      },
+    } as unknown as BioListEnvelope;
+
+    expect(configStatusReport(status)).toBe(status.result!.report);
+    expect(bioListReport(list)).toBe(list.result!.report);
+    expect(bioListReport(status)).toBeNull();
+
+    status.error = { message: "status failed" };
+    list.error = { message: "list failed" };
+    expect(configStatusReport(status)).toBeNull();
+    expect(bioListReport(list)).toBeNull();
+  });
+
+  it("uses generated operation and mode fields to recognize meaningful security previews", () => {
+    const pin = {
+      kind: OperationKind.OperationChangePIN,
+      error: { message: "confirmation required" },
+      result: {
+        preview: { operation: PINMutationOperation.PINMutationChange },
+        result: null,
+      },
+    } as unknown as PINEnvelope;
+    const authenticatorConfig = {
+      kind: OperationKind.OperationSetAlwaysUV,
+      error: { message: "confirmation required" },
+      result: {
+        preview: { operation: AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV },
+        result: null,
+      },
+    } as unknown as AuthenticatorConfigEnvelope;
+    const enroll = {
+      kind: OperationKind.OperationBioEnroll,
+      error: { message: "confirmation required" },
+      result: {
+        preview: { mode: PreviewMode.PreviewModeDryRun },
+        result: null,
+      },
+    } as unknown as BioEnrollEnvelope;
+    const bioMutation = {
+      kind: OperationKind.OperationBioRename,
+      error: { message: "confirmation required" },
+      result: {
+        preview: { operation: BioMutationOperation.BioMutationRename },
+        result: null,
+      },
+    } as unknown as BioMutationEnvelope;
+    const reset = {
+      kind: OperationKind.OperationResetFactory,
+      error: { message: "confirmation required" },
+      result: {
+        preview: { mode: PreviewMode.PreviewModeDryRun },
+        result: null,
+      },
+    } as unknown as ResetFactoryEnvelope;
+
+    expect(pinMutationPreview(pin)).toBe(pin.result!.preview);
+    expect(authenticatorConfigPreview(authenticatorConfig)).toBe(authenticatorConfig.result!.preview);
+    expect(bioEnrollPreview(enroll)).toBe(enroll.result!.preview);
+    expect(bioMutationPreview(bioMutation)).toBe(bioMutation.result!.preview);
+    expect(resetFactoryPreview(reset)).toBe(reset.result!.preview);
+
+    pin.result!.preview.operation = PINMutationOperation.$zero;
+    authenticatorConfig.result!.preview.operation = AuthenticatorConfigOperation.$zero;
+    enroll.result!.preview.mode = PreviewMode.$zero;
+    bioMutation.result!.preview.operation = BioMutationOperation.$zero;
+    reset.result!.preview.mode = PreviewMode.$zero;
+
+    expect(pinMutationPreview(pin)).toBeNull();
+    expect(authenticatorConfigPreview(authenticatorConfig)).toBeNull();
+    expect(bioEnrollPreview(enroll)).toBeNull();
+    expect(bioMutationPreview(bioMutation)).toBeNull();
+    expect(resetFactoryPreview(reset)).toBeNull();
+  });
+
+  it("keeps partial biometric enrollment progress on error but rejects other errored results", () => {
+    const pin = {
+      kind: OperationKind.OperationSetPIN,
+      result: {
+        preview: { operation: PINMutationOperation.PINMutationSet },
+        result: { operation: PINMutationOperation.PINMutationSet, deviceId: "dev-1" },
+      },
+    } as unknown as PINEnvelope;
+    const authenticatorConfig = {
+      kind: OperationKind.OperationSetMinPINLength,
+      result: {
+        preview: { operation: AuthenticatorConfigOperation.AuthenticatorConfigMinPINLength },
+        result: {
+          operation: AuthenticatorConfigOperation.AuthenticatorConfigMinPINLength,
+          deviceId: "dev-1",
+        },
+      },
+    } as unknown as AuthenticatorConfigEnvelope;
+    const enroll = {
+      kind: OperationKind.OperationBioEnroll,
+      result: {
+        preview: { mode: PreviewMode.PreviewModeExecute },
+        result: {
+          deviceId: "dev-1",
+          templateIDHex: "",
+          samples: [{ status: "good" }],
+          remainingSamples: 2,
+        },
+      },
+    } as unknown as BioEnrollEnvelope;
+    const bioMutation = {
+      kind: OperationKind.OperationBioRemove,
+      result: {
+        preview: { operation: BioMutationOperation.BioMutationRemove },
+        result: {
+          operation: BioMutationOperation.BioMutationRemove,
+          deviceId: "dev-1",
+          templateIDHex: "cafe",
+        },
+      },
+    } as unknown as BioMutationEnvelope;
+    const reset = {
+      kind: OperationKind.OperationResetFactory,
+      result: {
+        preview: { mode: PreviewMode.PreviewModeExecute },
+        result: { deviceId: "dev-1", reset: true },
+      },
+    } as unknown as ResetFactoryEnvelope;
+
+    expect(pinMutationResult(pin)).toBe(pin.result!.result);
+    expect(authenticatorConfigResult(authenticatorConfig)).toBe(authenticatorConfig.result!.result);
+    expect(bioEnrollResult(enroll)).toBe(enroll.result!.result);
+    expect(bioMutationResult(bioMutation)).toBe(bioMutation.result!.result);
+    expect(resetFactoryResult(reset)).toBe(reset.result!.result);
+
+    pin.error = { message: "failed" };
+    authenticatorConfig.error = { message: "failed" };
+    enroll.error = { message: "capture timed out" };
+    bioMutation.error = { message: "failed" };
+    reset.error = { message: "reset may not have completed" };
+
+    expect(pinMutationResult(pin)).toBeNull();
+    expect(authenticatorConfigResult(authenticatorConfig)).toBeNull();
+    expect(bioEnrollResult(enroll)?.remainingSamples).toBe(2);
+    expect(bioMutationResult(bioMutation)).toBeNull();
+    expect(resetFactoryResult(reset)).toBeNull();
   });
 
   it("extracts typed large blob list and read reports only from successful matching envelopes", () => {

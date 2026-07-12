@@ -21,6 +21,7 @@ export function handleOperationProgress(data: OperationEventEnvelope) {
     stage: data.event.stage,
     completed: data.event.completed,
     total: data.event.total,
+    sampleStatus: data.event.sampleStatus,
   });
   sessionStatus.update((session) => (
     session.sessionId === data.sessionId && session.state !== "error"

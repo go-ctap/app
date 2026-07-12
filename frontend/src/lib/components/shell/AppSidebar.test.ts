@@ -26,15 +26,18 @@ describe("AppSidebar", () => {
       "Overview",
       "Passkeys",
       "Large blobs",
+      "Security",
       "Settings",
     ]);
 
     await user.click(screen.getByRole("button", { name: "Passkeys" }));
     await user.click(screen.getByRole("button", { name: "Large blobs" }));
+    await user.click(screen.getByRole("button", { name: "Security" }));
     await user.click(screen.getByRole("button", { name: "Settings" }));
 
     expect(onNavigate).toHaveBeenCalledWith("passkeys");
     expect(onNavigate).toHaveBeenCalledWith("large-blobs");
+    expect(onNavigate).toHaveBeenCalledWith("security");
     expect(onNavigate).toHaveBeenCalledWith("settings");
   });
 });

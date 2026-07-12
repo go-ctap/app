@@ -43,6 +43,7 @@
 	import Overview from "./screens/Overview.svelte";
 	import LargeBlobs from "./screens/LargeBlobs.svelte";
 	import Passkeys from "./screens/Passkeys.svelte";
+	import Security from "./screens/Security.svelte";
 	import Settings from "./screens/Settings.svelte";
 
 	let refreshing = $state(false);
@@ -158,6 +159,8 @@
 					<LargeBlobs />
 				{:else if $activeScreen === "passkeys"}
 					<Passkeys />
+				{:else if $activeScreen === "security"}
+					<Security />
 				{:else if noDevices}
 					<EmptyState
 						title={m.no_authenticators_connected()}
