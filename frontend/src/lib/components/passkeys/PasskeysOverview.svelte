@@ -118,17 +118,14 @@
       <div class="passkeys-capabilities" aria-label={m.support_mode()}>
         {#if support}
           <StatusBadge
-            value={support.credentialManagement}
             label={`${m.credential_management_support()}: ${support.credentialManagement ? m.state_available() : m.state_not_available()}`}
             tone={support.credentialManagement ? "ok" : "neutral"}
           />
           <StatusBadge
-            value={true}
             label={support.previewOnly ? m.passkeys_protocol_preview() : m.passkeys_protocol_stable()}
             tone={support.previewOnly ? "warn" : "neutral"}
           />
           <StatusBadge
-            value={support.readOnlyPermission}
             label={`${m.read_only_permission()}: ${support.readOnlyPermission ? m.state_available() : m.state_not_available()}`}
             tone="neutral"
           />

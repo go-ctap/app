@@ -10,15 +10,13 @@ import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/r
 import { m } from "../paraglide/messages.js";
 import {
   largeBlobListReport,
-  largeBlobMutationPreview,
-  largeBlobReadReport,
 } from "./ctapkit-results.js";
 import type {
   LargeBlobMutationState,
-  LargeBlobReadState,
   LargeBlobsInventoryState,
   LargeBlobsStatusFilter,
 } from "./features/largeblobs/state.js";
+import { largeBlobsInventoryIsStale } from "./features/largeblobs/state.js";
 import type { SessionStatus } from "./session-model.js";
 
 const RETRYABLE_MUTATION_CATEGORIES = new Set<ErrorCategoryValue>([
@@ -49,7 +47,6 @@ export type LargeBlobsPresentationInput = {
   sessionBusy: boolean;
   sessionReady: boolean;
   inventoryState: LargeBlobsInventoryState;
-  readState?: LargeBlobReadState;
   mutation?: LargeBlobMutationState;
   query?: string;
   statusFilter?: LargeBlobsStatusFilter;
@@ -140,26 +137,18 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
   const selectedCredentialID = input.selectedCredentialID ?? "";
   const selectedRow = allRows.find((row) => row.id === selectedCredentialID) ?? null;
   const loading = input.inventoryState.phase === "loading" || input.inventoryState.phase === "refreshing";
-  const actionsBlocked = input.inventoryState.stale || loading || input.sessionBusy || !input.sessionReady;
+  const stale = largeBlobsInventoryIsStale(input.inventoryState);
+  const actionsBlocked = stale || loading || input.sessionBusy || !input.sessionReady;
   const supported = Boolean(report?.support.largeBlobs);
   const selectedKeyAvailable = Boolean(selectedRow?.largeBlobKeyAvailable);
   const device = input.selectedDevice ?? report?.device ?? null;
-  const readState = input.readState ?? ({ phase: "idle" } as const);
   const mutation = input.mutation ?? ({ kind: "idle", phase: "idle" } as const);
-  const readReport = readState.phase === "ready" ? largeBlobReadReport(readState.responseEnvelope) : null;
-  const mutationPreview = "previewEnvelope" in mutation
-    ? largeBlobMutationPreview(mutation.previewEnvelope)
-    : null;
 
   return {
     selector: input.selectedSelector,
-    phase: input.inventoryState.phase,
     loading,
-    refreshing: input.inventoryState.phase === "refreshing",
-    stale: input.inventoryState.stale,
+    stale,
     lastSuccessfulAt: input.inventoryState.lastSuccessfulAt,
-    responseEnvelope: input.inventoryState.responseEnvelope,
-    runtimeError: input.inventoryState.runtimeError,
     failureMessage: input.inventoryState.runtimeError?.message
       ?? input.inventoryState.responseEnvelope?.error?.message
       ?? (input.inventoryState.phase === "error" && input.inventoryState.responseEnvelope
@@ -175,9 +164,7 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
     deleteDisabled: actionsBlocked || !supported || !selectedKeyAvailable,
     cleanupDisabled: actionsBlocked || !supported,
     hasReport: Boolean(report),
-    report,
     support: report?.support ?? null,
-    array: report?.array ?? null,
     maxSerializedLargeBlobArray: report?.support.maxSerializedLargeBlobArray ?? null,
     credentialCount: report?.credentials?.length ?? 0,
     blobCount: report?.array.blobCount ?? 0,
@@ -186,17 +173,10 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
     query,
     statusFilter,
     rows,
-    allRows,
-    filteredCredentialCount: rows.length,
     selectedCredentialID,
-    selectedRow,
-    selectedRowFilteredOut: Boolean(selectedRow && !rows.some((row) => row.id === selectedRow.id)),
     emptyInventory: Boolean(report && allRows.length === 0),
     emptyFilteredResult: Boolean(report && allRows.length > 0 && rows.length === 0),
-    readState,
-    readReport,
     mutation,
-    mutationPreview,
     selectedDeviceName: device?.product || device?.deviceId || m.authenticator(),
     supportItems: [
       { label: m.matrix_name_large_blobs_command(), value: report?.support.largeBlobs ?? false },

@@ -1,8 +1,14 @@
 import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { CredentialsEnvelope, InteractionPrompt, LargeBlobListEnvelope, RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type {
+  BioSensorEnvelope,
+  CredentialsEnvelope,
+  InspectEnvelope,
+  InteractionPrompt,
+  LargeBlobListEnvelope,
+  RuntimeErrorEnvelope,
+} from "../../bindings/github.com/go-ctap/kit/service";
 
-import type { OperationEnvelope } from "./api.js";
 import { resetInteractionStateForTest, pendingInteraction } from "./features/interaction/state.js";
 import {
   completeLargeBlobsInventoryLoad,
@@ -65,11 +71,11 @@ export function seedPendingInteractionForTest(prompt: InteractionPrompt | null) 
   pendingInteraction.set(prompt);
 }
 
-export function seedOverviewEnvelopeForTest(envelope: OperationEnvelope | null) {
+export function seedOverviewEnvelopeForTest(envelope: InspectEnvelope | null) {
   overviewInspection.set(envelope ? readyLoadState(envelope) : idleLoadState());
 }
 
-export function seedOverviewBioSensorEnvelopeForTest(envelope: OperationEnvelope | null) {
+export function seedOverviewBioSensorEnvelopeForTest(envelope: BioSensorEnvelope | null) {
   overviewBioSensor.set(envelope ? readyLoadState(envelope) : idleLoadState());
 }
 
@@ -92,7 +98,6 @@ export function seedPasskeysEnvelopeForTest(envelope: CredentialsEnvelope | null
       phase: "error",
       lastSuccessfulEnvelope: envelope,
       runtimeError: error,
-      stale: Boolean(envelope),
     });
     return;
   }
@@ -110,7 +115,6 @@ export function seedLargeBlobsEnvelopeForTest(envelope: LargeBlobListEnvelope | 
       phase: "error",
       lastSuccessfulEnvelope: envelope,
       runtimeError: error,
-      stale: Boolean(envelope),
     });
     return;
   }

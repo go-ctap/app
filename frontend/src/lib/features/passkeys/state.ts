@@ -22,9 +22,13 @@ export type PasskeysInventoryState = {
   lastSuccessfulEnvelope: CredentialsEnvelope | null;
   responseEnvelope: CredentialsEnvelope | null;
   runtimeError: RuntimeErrorEnvelope | null;
-  stale: boolean;
   lastSuccessfulAt: string | null;
 };
+
+export function passkeysInventoryIsStale(state: PasskeysInventoryState) {
+  return Boolean(state.lastSuccessfulEnvelope)
+    && (state.phase === "error" || state.phase === "unsupported");
+}
 
 export type PasskeysStatusFilter =
   | "all"
@@ -71,13 +75,11 @@ export type PasskeysMutationState =
       phase: "review";
       previewRequest: CredentialUpdateRequest;
       previewEnvelope: CredentialUpdateEnvelope;
-      responseEnvelope: CredentialUpdateEnvelope;
     })
   | (UpdateMutationBase & {
       phase: "executing";
       previewRequest: CredentialUpdateRequest;
       previewEnvelope: CredentialUpdateEnvelope;
-      responseEnvelope: null;
     })
   | (UpdateMutationBase & {
       phase: "error";
@@ -97,13 +99,11 @@ export type PasskeysMutationState =
       phase: "review";
       previewRequest: CredentialDeleteRequest;
       previewEnvelope: CredentialDeleteEnvelope;
-      responseEnvelope: CredentialDeleteEnvelope;
     })
   | (DeleteMutationBase & {
       phase: "executing";
       previewRequest: CredentialDeleteRequest;
       previewEnvelope: CredentialDeleteEnvelope;
-      responseEnvelope: null;
     })
   | (DeleteMutationBase & {
       phase: "error";
@@ -121,26 +121,7 @@ export function emptyPasskeysInventoryState(): PasskeysInventoryState {
     lastSuccessfulEnvelope: null,
     responseEnvelope: null,
     runtimeError: null,
-    stale: false,
     lastSuccessfulAt: null,
-  };
-}
-
-function inventoryState(
-  phase: PasskeysInventoryPhase,
-  lastSuccessfulEnvelope: CredentialsEnvelope | null,
-  responseEnvelope: CredentialsEnvelope | null,
-  runtimeError: RuntimeErrorEnvelope | null,
-  stale: boolean,
-  lastSuccessfulAt: string | null,
-): PasskeysInventoryState {
-  return {
-    phase,
-    lastSuccessfulEnvelope,
-    responseEnvelope,
-    runtimeError,
-    stale,
-    lastSuccessfulAt,
   };
 }
 
@@ -153,40 +134,40 @@ export const passkeysVerificationFlow = writable<VerificationFlow>(VerificationF
 export const passkeysMutation = writable<PasskeysMutationState>({ kind: "idle", phase: "idle" });
 
 export function beginPasskeysInventoryLoad() {
-  passkeysInventoryState.update((current) => inventoryState(
-    current.lastSuccessfulEnvelope ? "refreshing" : "loading",
-    current.lastSuccessfulEnvelope,
-    null,
-    null,
-    current.stale,
-    current.lastSuccessfulAt,
-  ));
+  passkeysInventoryState.update((current) => ({
+    ...current,
+    phase: current.lastSuccessfulEnvelope ? "refreshing" : "loading",
+    responseEnvelope: null,
+    runtimeError: null,
+  }));
 }
 
 export function completePasskeysInventoryLoad(envelope: CredentialsEnvelope, completedAt: string) {
-  passkeysInventoryState.set(inventoryState("ready", envelope, envelope, null, false, completedAt));
+  passkeysInventoryState.set({
+    phase: "ready",
+    lastSuccessfulEnvelope: envelope,
+    responseEnvelope: envelope,
+    runtimeError: null,
+    lastSuccessfulAt: completedAt,
+  });
 }
 
 export function failPasskeysInventoryLoadWithResponse(envelope: CredentialsEnvelope) {
-  passkeysInventoryState.update((current) => inventoryState(
-    envelope.error?.category === ErrorCategory.ErrorUnsupported ? "unsupported" : "error",
-    current.lastSuccessfulEnvelope,
-    envelope,
-    null,
-    Boolean(current.lastSuccessfulEnvelope),
-    current.lastSuccessfulAt,
-  ));
+  passkeysInventoryState.update((current) => ({
+    ...current,
+    phase: envelope.error?.category === ErrorCategory.ErrorUnsupported ? "unsupported" : "error",
+    responseEnvelope: envelope,
+    runtimeError: null,
+  }));
 }
 
 export function failPasskeysInventoryLoadAtRuntime(error: RuntimeErrorEnvelope) {
-  passkeysInventoryState.update((current) => inventoryState(
-    "error",
-    current.lastSuccessfulEnvelope,
-    null,
-    error,
-    Boolean(current.lastSuccessfulEnvelope),
-    current.lastSuccessfulAt,
-  ));
+  passkeysInventoryState.update((current) => ({
+    ...current,
+    phase: "error",
+    responseEnvelope: null,
+    runtimeError: error,
+  }));
 }
 
 /** Clears state owned by one selected authenticator but keeps the in-memory UV preference. */

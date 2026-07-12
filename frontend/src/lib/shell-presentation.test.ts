@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
@@ -22,8 +23,6 @@ const token: DeviceReport = {
 function session(state: SessionStatus["state"]): SessionStatus {
   return {
     state,
-    selectedSelector: "token-1",
-    selectedDevice: token,
     sessionId: "session-1",
   };
 }
@@ -43,7 +42,9 @@ describe("shell status presentation", () => {
         activeOperation: {
           operationId: "operation-1",
           label: "Credential inventory",
-          event: { stage: "enumerating-credentials", message: "Reading credentials", completed: 2, total: 5 },
+          stage: OperationStage.OperationStageEnumeratingCredentials,
+          completed: 2,
+          total: 5,
         },
         lastOutcome: { tone: "error", title: "Older failure" },
       }),
@@ -65,7 +66,7 @@ describe("shell status presentation", () => {
       selectedDevice: token,
       sessionStatus: session("running"),
       statusBar: statusBar({
-        activeOperation: { event: { stage: "enumerating-rps", completed: 0, total: 0 } },
+        activeOperation: { stage: OperationStage.OperationStageEnumeratingRPs, completed: 0, total: 0 },
       }),
     });
 
@@ -77,7 +78,7 @@ describe("shell status presentation", () => {
       selectedDevice: token,
       sessionStatus: session("running"),
       statusBar: statusBar({
-        activeOperation: { event: { stage: "enumerating-rps" } },
+        activeOperation: { stage: OperationStage.OperationStageEnumeratingRPs },
       }),
     });
 
@@ -106,7 +107,7 @@ describe("shell status presentation", () => {
     const ready = buildShellStatusPresentation({ selectedDevice: token, sessionStatus: session("ready"), statusBar: outcome });
     const idle = buildShellStatusPresentation({
       selectedDevice: null,
-      sessionStatus: { state: "idle", selectedSelector: "", selectedDevice: null },
+      sessionStatus: { state: "idle" },
       statusBar: outcome,
     });
 

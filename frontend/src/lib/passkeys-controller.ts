@@ -23,6 +23,7 @@ import {
   failPasskeysInventoryLoadAtRuntime,
   failPasskeysInventoryLoadWithResponse,
   passkeysInventoryState,
+  passkeysInventoryIsStale,
   passkeysMutation,
   passkeysQuery,
   passkeysSelectedCredentialID,
@@ -41,17 +42,12 @@ import { runtimeErrorFrom } from "./runtime-error.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
 import { beginOperation, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
 
-export type LoadPasskeysOptions = boolean | { refresh?: boolean };
-export type PasskeysMutationSucceeded = () => void;
+export type LoadPasskeysOptions = { refresh?: boolean };
 
 function retryAction(action: () => Promise<unknown>) {
   return async () => {
     await action();
   };
-}
-
-function refreshRequested(options: LoadPasskeysOptions) {
-  return typeof options === "boolean" ? options : Boolean(options.refresh);
 }
 
 function missingOperationOutput(kind: "preview" | "result") {
@@ -98,10 +94,10 @@ export async function loadPasskeys(options: LoadPasskeysOptions = {}) {
     return false;
   }
 
-  const refresh = refreshRequested(options);
+  const refresh = Boolean(options.refresh);
   beginPasskeysInventoryLoad();
   try {
-    beginOperation(m.credential_inventory(), "passkeys-inventory");
+    beginOperation(m.credential_inventory());
     const request: CredentialListRequest = {
       sessionId: selectedSessionId(),
       verificationFlow: get(passkeysVerificationFlow),
@@ -116,16 +112,16 @@ export async function loadPasskeys(options: LoadPasskeysOptions = {}) {
       reconcileSelectedCredential();
     }
     if (envelope.error || report) {
-      summarizeEnvelope(m.credential_inventory(), envelope, "passkeys-inventory", retryAction(() => loadPasskeys({ refresh })));
+      summarizeEnvelope(m.credential_inventory(), envelope, retryAction(() => loadPasskeys({ refresh })));
     } else {
-      summarizeOperationFailure(m.credential_inventory(), missingOperationOutput("result"), "passkeys-inventory");
+      summarizeOperationFailure(m.credential_inventory(), missingOperationOutput("result"));
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(report);
   } catch (error) {
     const runtimeError = runtimeErrorFrom(error);
     failPasskeysInventoryLoadAtRuntime(runtimeError);
-    summarizeOperationFailure(m.credential_inventory(), runtimeError, "passkeys-inventory", () => loadPasskeys({ refresh }));
+    summarizeOperationFailure(m.credential_inventory(), runtimeError, retryAction(() => loadPasskeys({ refresh })));
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -149,7 +145,7 @@ export function setPasskeysVerificationFlow(value: VerificationFlow) {
 
 function mutationsAvailable(kind: "update" | "delete") {
   const inventory = get(passkeysInventoryState);
-  if (inventory.stale || inventory.phase === "loading" || inventory.phase === "refreshing") return false;
+  if (passkeysInventoryIsStale(inventory) || inventory.phase === "loading" || inventory.phase === "refreshing") return false;
   const session = get(sessionStatus);
   if (session.state !== "ready" || !session.sessionId) return false;
   const report = credentialsReport(inventory.lastSuccessfulEnvelope);
@@ -283,6 +279,7 @@ function updateError(
 export async function previewCredentialUpdate(): Promise<boolean> {
   const current = get(passkeysMutation);
   if (current.kind !== "update" || (current.phase !== "editing" && current.phase !== "error")) return false;
+  if (!mutationsAvailable("update")) return false;
   const validationError = validateCredentialUpdate(current.original, current.form);
   if (validationError) {
     passkeysMutation.set({
@@ -308,14 +305,14 @@ export async function previewCredentialUpdate(): Promise<boolean> {
   } catch (error) {
     const runtimeError = runtimeErrorFrom(error);
     updateError(current, "previewing", null, null, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.credential_update_preview(), runtimeError, "passkeys-update-preview");
+    summarizeOperationFailure(m.credential_update_preview(), runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
 
   passkeysMutation.set({ ...current, phase: "previewing", previewRequest: request });
   try {
-    beginOperation(m.credential_update_preview(), "passkeys-update-preview");
+    beginOperation(m.credential_update_preview());
     const envelope = await api.updateCredentialUser(request);
     const preview = credentialUpdatePreview(envelope);
     if (envelope.error) {
@@ -323,25 +320,25 @@ export async function previewCredentialUpdate(): Promise<boolean> {
     } else if (!preview) {
       updateError(current, "previewing", request, null, envelope, null, "missing-preview");
     } else {
-      passkeysMutation.set({ ...current, phase: "review", previewRequest: request, previewEnvelope: envelope, responseEnvelope: envelope });
+      passkeysMutation.set({ ...current, phase: "review", previewRequest: request, previewEnvelope: envelope });
     }
     if (envelope.error || preview) {
-      summarizeEnvelope(m.credential_update_preview(), envelope, "passkeys-update-preview", retryAction(previewCredentialUpdate));
+      summarizeEnvelope(m.credential_update_preview(), envelope, retryAction(previewCredentialUpdate));
     } else {
-      summarizeOperationFailure(m.credential_update_preview(), missingOperationOutput("preview"), "passkeys-update-preview");
+      summarizeOperationFailure(m.credential_update_preview(), missingOperationOutput("preview"));
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(preview);
   } catch (error) {
     const runtimeError = runtimeErrorFrom(error);
     updateError(current, "previewing", request, null, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.credential_update_preview(), runtimeError, "passkeys-update-preview", retryAction(previewCredentialUpdate));
+    summarizeOperationFailure(m.credential_update_preview(), runtimeError, retryAction(previewCredentialUpdate));
     applyInvalidSessionError(runtimeError);
     return false;
   }
 }
 
-export async function confirmCredentialUpdate(onSucceeded?: PasskeysMutationSucceeded): Promise<boolean> {
+export async function confirmCredentialUpdate(): Promise<boolean> {
   const current = get(passkeysMutation);
   if (current.kind !== "update" || current.phase !== "review") return false;
   const request: CredentialUpdateRequest = {
@@ -350,9 +347,9 @@ export async function confirmCredentialUpdate(onSucceeded?: PasskeysMutationSucc
     confirmed: true,
     confirmationMessage: m.confirm_update(),
   };
-  passkeysMutation.set({ ...current, phase: "executing", responseEnvelope: null });
+  passkeysMutation.set({ ...current, phase: "executing" });
   try {
-    beginOperation(m.credential_update(), "passkeys-update");
+    beginOperation(m.credential_update());
     const envelope = await api.updateCredentialUser(request);
     const result = credentialUpdateResult(envelope);
     if (envelope.error) {
@@ -364,19 +361,18 @@ export async function confirmCredentialUpdate(onSucceeded?: PasskeysMutationSucc
       passkeysMutation.set({ kind: "idle", phase: "idle" });
     }
     if (envelope.error || result) {
-      summarizeEnvelope(m.credential_update(), envelope, "passkeys-update", retryAction(retryPasskeysMutation));
+      summarizeEnvelope(m.credential_update(), envelope, retryAction(retryPasskeysMutation));
     } else {
-      summarizeOperationFailure(m.credential_update(), missingOperationOutput("result"), "passkeys-update");
+      summarizeOperationFailure(m.credential_update(), missingOperationOutput("result"));
     }
     applyInvalidSessionError(envelope.error);
     if (envelope.error || !result) return false;
-    onSucceeded?.();
     await loadPasskeys({ refresh: true });
     return true;
   } catch (error) {
     const runtimeError = runtimeErrorFrom(error);
     updateError(current, "executing", current.previewRequest, current.previewEnvelope, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.credential_update(), runtimeError, "passkeys-update", retryAction(retryPasskeysMutation));
+    summarizeOperationFailure(m.credential_update(), runtimeError, retryAction(retryPasskeysMutation));
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -417,7 +413,7 @@ async function previewCredentialDelete(credentialIDHex: string): Promise<boolean
   } catch (error) {
     const runtimeError = runtimeErrorFrom(error);
     deleteError(credentialIDHex, "previewing", null, null, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.credential_delete_preview(), runtimeError, "passkeys-delete-preview");
+    summarizeOperationFailure(m.credential_delete_preview(), runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -425,7 +421,7 @@ async function previewCredentialDelete(credentialIDHex: string): Promise<boolean
   passkeysSelectedCredentialID.set(credentialIDHex);
   passkeysMutation.set({ kind: "delete", phase: "previewing", credentialIDHex, previewRequest: request });
   try {
-    beginOperation(m.credential_delete_preview(), "passkeys-delete-preview");
+    beginOperation(m.credential_delete_preview());
     const envelope = await api.deleteCredential(request);
     const preview = credentialDeletePreview(envelope);
     if (envelope.error) {
@@ -433,19 +429,19 @@ async function previewCredentialDelete(credentialIDHex: string): Promise<boolean
     } else if (!preview) {
       deleteError(credentialIDHex, "previewing", request, null, envelope, null, "missing-preview");
     } else {
-      passkeysMutation.set({ kind: "delete", phase: "review", credentialIDHex, previewRequest: request, previewEnvelope: envelope, responseEnvelope: envelope });
+      passkeysMutation.set({ kind: "delete", phase: "review", credentialIDHex, previewRequest: request, previewEnvelope: envelope });
     }
     if (envelope.error || preview) {
-      summarizeEnvelope(m.credential_delete_preview(), envelope, "passkeys-delete-preview", retryAction(() => previewCredentialDelete(credentialIDHex)));
+      summarizeEnvelope(m.credential_delete_preview(), envelope, retryAction(() => previewCredentialDelete(credentialIDHex)));
     } else {
-      summarizeOperationFailure(m.credential_delete_preview(), missingOperationOutput("preview"), "passkeys-delete-preview");
+      summarizeOperationFailure(m.credential_delete_preview(), missingOperationOutput("preview"));
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(preview);
   } catch (error) {
     const runtimeError = runtimeErrorFrom(error);
     deleteError(credentialIDHex, "previewing", request, null, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.credential_delete_preview(), runtimeError, "passkeys-delete-preview", retryAction(() => previewCredentialDelete(credentialIDHex)));
+    summarizeOperationFailure(m.credential_delete_preview(), runtimeError, retryAction(() => previewCredentialDelete(credentialIDHex)));
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -455,7 +451,7 @@ export function beginCredentialDelete(credentialIDHex = get(passkeysSelectedCred
   return previewCredentialDelete(credentialIDHex);
 }
 
-export async function confirmCredentialDelete(onSucceeded?: PasskeysMutationSucceeded): Promise<boolean> {
+export async function confirmCredentialDelete(): Promise<boolean> {
   const current = get(passkeysMutation);
   if (current.kind !== "delete" || current.phase !== "review") return false;
   const request: CredentialDeleteRequest = {
@@ -464,9 +460,9 @@ export async function confirmCredentialDelete(onSucceeded?: PasskeysMutationSucc
     confirmed: true,
     confirmationMessage: m.confirm_delete(),
   };
-  passkeysMutation.set({ ...current, phase: "executing", responseEnvelope: null });
+  passkeysMutation.set({ ...current, phase: "executing" });
   try {
-    beginOperation(m.credential_delete(), "passkeys-delete");
+    beginOperation(m.credential_delete());
     const envelope = await api.deleteCredential(request);
     const result = credentialDeleteResult(envelope);
     if (envelope.error) {
@@ -478,56 +474,83 @@ export async function confirmCredentialDelete(onSucceeded?: PasskeysMutationSucc
       passkeysMutation.set({ kind: "idle", phase: "idle" });
     }
     if (envelope.error || result) {
-      summarizeEnvelope(m.credential_delete(), envelope, "passkeys-delete", retryAction(retryPasskeysMutation));
+      summarizeEnvelope(m.credential_delete(), envelope, retryAction(retryPasskeysMutation));
     } else {
-      summarizeOperationFailure(m.credential_delete(), missingOperationOutput("result"), "passkeys-delete");
+      summarizeOperationFailure(m.credential_delete(), missingOperationOutput("result"));
     }
     applyInvalidSessionError(envelope.error);
     if (envelope.error || !result) return false;
-    onSucceeded?.();
     await loadPasskeys({ refresh: true });
     return true;
   } catch (error) {
     const runtimeError = runtimeErrorFrom(error);
     deleteError(current.credentialIDHex, "executing", current.previewRequest, current.previewEnvelope, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.credential_delete(), runtimeError, "passkeys-delete", retryAction(retryPasskeysMutation));
+    summarizeOperationFailure(m.credential_delete(), runtimeError, retryAction(retryPasskeysMutation));
     applyInvalidSessionError(runtimeError);
     return false;
   }
 }
 
-export async function retryPasskeysMutation(onSucceeded?: PasskeysMutationSucceeded): Promise<boolean> {
+export async function retryPasskeysMutation(): Promise<boolean> {
   const current = get(passkeysMutation);
-  if (!canRetryPasskeysMutation(current, get(sessionStatus))) return false;
-  if (current.kind === "update" && current.phase === "error") {
-    if (current.failedPhase === "previewing") return previewCredentialUpdate();
-    if (!current.previewRequest || !current.previewEnvelope) return false;
+  if (!canRetryPasskeysMutation(current, get(sessionStatus)) || current.phase !== "error") return false;
+
+  if (current.failedPhase === "previewing") {
+    return current.kind === "update"
+      ? previewCredentialUpdate()
+      : previewCredentialDelete(current.credentialIDHex);
+  }
+  if (!current.previewRequest || !current.previewEnvelope) return false;
+
+  if (current.kind === "update") {
     passkeysMutation.set({
       kind: "update",
-      phase: "review",
+      phase: "executing",
       credentialIDHex: current.credentialIDHex,
       original: current.original,
       form: current.form,
       previewRequest: current.previewRequest,
       previewEnvelope: current.previewEnvelope,
-      responseEnvelope: current.previewEnvelope,
     });
-    return confirmCredentialUpdate(onSucceeded);
-  }
-  if (current.kind === "delete" && current.phase === "error") {
-    if (current.failedPhase === "previewing") return previewCredentialDelete(current.credentialIDHex);
-    if (!current.previewRequest || !current.previewEnvelope) return false;
+  } else {
     passkeysMutation.set({
       kind: "delete",
-      phase: "review",
+      phase: "executing",
       credentialIDHex: current.credentialIDHex,
       previewRequest: current.previewRequest,
       previewEnvelope: current.previewEnvelope,
-      responseEnvelope: current.previewEnvelope,
     });
-    return confirmCredentialDelete(onSucceeded);
   }
-  return false;
+  const refreshed = await loadPasskeys({ refresh: true });
+  if (!refreshed) {
+    passkeysMutation.set(current);
+    return false;
+  }
+
+  const report = credentialsReport(get(passkeysInventoryState).lastSuccessfulEnvelope);
+  if (!findPasskeyCredential(report, current.credentialIDHex)) {
+    passkeysMutation.set(current);
+    return false;
+  }
+
+  if (current.kind === "update") {
+    passkeysSelectedCredentialID.set(current.credentialIDHex);
+    passkeysMutation.set({
+      kind: "update",
+      phase: "editing",
+      credentialIDHex: current.credentialIDHex,
+      original: current.original,
+      form: current.form,
+      validationError: null,
+    });
+    const previewed = await previewCredentialUpdate();
+    if (!previewed && get(passkeysMutation).phase === "editing") passkeysMutation.set(current);
+    return previewed;
+  }
+
+  const previewed = await previewCredentialDelete(current.credentialIDHex);
+  if (!previewed && get(passkeysMutation).phase === "executing") passkeysMutation.set(current);
+  return previewed;
 }
 
 export function closePasskeysMutation() {

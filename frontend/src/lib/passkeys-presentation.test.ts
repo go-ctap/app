@@ -67,7 +67,7 @@ describe("buildPasskeysPresentation", () => {
     expect(presentation.rows).toHaveLength(0);
   });
 
-  it("builds flat credential rows and support badges", () => {
+  it("builds flat credential rows", () => {
     const credentials = envelope([{
       rpID: "example.com",
       rpName: "Example",
@@ -104,12 +104,7 @@ describe("buildPasskeysPresentation", () => {
       rpIDHashHex: "abcd",
     });
     expect(presentation.rows[0].raw.relyingParty).not.toHaveProperty("credentials");
-    expect(presentation.selectedRow?.credentialIDHex).toBe("cafe");
-    expect(presentation.supportItems).toEqual([
-      { label: "Credential management", value: true },
-      { label: "Preview credential management", value: true },
-      { label: "Read-only permission", value: true },
-    ]);
+    expect(presentation.selectedCredentialID).toBe("cafe");
   });
 
   it("searches every RP and credential identity field and applies status filters", () => {
@@ -220,8 +215,6 @@ describe("buildPasskeysPresentation", () => {
 
     expect(filtered.rows).toHaveLength(0);
     expect(filtered.selectedCredentialID).toBe("one");
-    expect(filtered.selectedRow?.id).toBe("one");
-    expect(filtered.selectedRowFilteredOut).toBe(true);
 
     const restored = buildPasskeysPresentation({
       selectedSelector: "token-1",
@@ -233,8 +226,6 @@ describe("buildPasskeysPresentation", () => {
     });
 
     expect(restored.rows.map((row) => row.id)).toEqual(["one"]);
-    expect(restored.selectedRow?.id).toBe("one");
-    expect(restored.selectedRowFilteredOut).toBe(false);
   });
 
   it("gates preview-only updates without treating read-only listing permission as mutation blocking", () => {
@@ -301,7 +292,6 @@ describe("buildPasskeysPresentation", () => {
         kind: OperationKind.OperationListCredentials,
         error: { category: "unsupported", message: "feature disappeared" },
       } as CredentialsEnvelope,
-      stale: true,
     };
     const presentation = buildPasskeysPresentation({
       selectedSelector: "token-1",

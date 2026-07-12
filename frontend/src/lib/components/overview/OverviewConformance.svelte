@@ -36,7 +36,7 @@
 <Collapsible.Root bind:open class="conformance">
   <Card.Root data-status={presentation.status}>
     <Card.Header>
-      <Card.Title role="heading" aria-level="2">{m.conformance_warnings()}</Card.Title>
+      <Card.Title role="heading" aria-level={2}>{m.conformance_warnings()}</Card.Title>
       <Card.Description>
         {m.conformance_warnings_description()}
         {#if presentation.target}

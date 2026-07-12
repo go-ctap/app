@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorCategory, OperationKind, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { CredentialsEnvelope, InteractionPrompt, LargeBlobListEnvelope, MDSLookupEnvelope, OperationEventEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
+import type { BioSensorEnvelope, CredentialsEnvelope, InteractionPrompt, LargeBlobListEnvelope, MDSLookupEnvelope, OperationEventEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
@@ -31,8 +31,8 @@ import {
   largeBlobsSelectedCredentialID,
   largeBlobsStatusFilter,
   largeBlobsVerificationFlow,
-  overviewBioSensorEnvelope,
-  overviewEnvelope,
+  overviewBioSensor,
+  overviewInspection,
   overviewMDS,
   passkeysInventoryState,
   passkeysMutation,
@@ -44,7 +44,6 @@ import {
   selectedSelector,
   sessionStatus,
   statusBar,
-  workbenchLog,
 } from "./stores";
 
 const serviceMocks = vi.hoisted(() => ({
@@ -107,6 +106,21 @@ function inspectEnvelope(item: DeviceReport) {
       },
     },
   };
+}
+
+function bioSensorEnvelope(item: DeviceReport): BioSensorEnvelope {
+  return {
+    operationId: `bio-${item.deviceId}`,
+    sessionId: `session-${item.deviceId}`,
+    kind: OperationKind.OperationBioSensorInfo,
+    result: {
+      report: {
+        device: item,
+        supported: false,
+        previewOnly: false,
+      },
+    },
+  } as BioSensorEnvelope;
 }
 
 function credentialsEnvelope(item: DeviceReport, sessionId = `session-${item.deviceId}`, credentialIDHex = "cafe"): CredentialsEnvelope {
@@ -221,7 +235,7 @@ describe("controller lifecycle", () => {
     const token = device("token-1");
     const { navigateToScreen } = await import("./controller");
     seedDevicesForTest([token]);
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     seedActiveScreenForTest("settings");
     serviceMocks.Inspect.mockResolvedValue(inspectEnvelope(token));
 
@@ -236,7 +250,7 @@ describe("controller lifecycle", () => {
     const token = device("token-1");
     const { navigateToScreen } = await import("./controller");
     seedDevicesForTest([token]);
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     seedActiveScreenForTest("settings");
     serviceMocks.ListCredentials.mockResolvedValue(credentialsEnvelope(token));
 
@@ -256,7 +270,7 @@ describe("controller lifecycle", () => {
     const token = device("token-1");
     const { navigateToScreen } = await import("./controller");
     seedDevicesForTest([token]);
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     seedActiveScreenForTest("settings");
     serviceMocks.ListLargeBlobs.mockResolvedValue(largeBlobListEnvelope(token));
 
@@ -275,7 +289,7 @@ describe("controller lifecycle", () => {
   it("passes forced refresh and PIN verification through large blobs Reload", async () => {
     const token = device("token-1");
     const { reloadLargeBlobs, setLargeBlobsVerificationFlow } = await import("./controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     serviceMocks.ListLargeBlobs.mockResolvedValue(largeBlobListEnvelope(token));
     setLargeBlobsVerificationFlow(VerificationFlow.VerificationFlowPIN);
 
@@ -291,7 +305,7 @@ describe("controller lifecycle", () => {
   it("returns success and passes forced refresh plus PIN verification through Reload", async () => {
     const token = device("token-1");
     const { reloadPasskeys, setPasskeysVerificationFlow } = await import("./controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     serviceMocks.ListCredentials.mockResolvedValue(credentialsEnvelope(token));
     setPasskeysVerificationFlow(VerificationFlow.VerificationFlowPIN);
 
@@ -312,8 +326,6 @@ describe("controller lifecycle", () => {
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
-      selectedSelector: "token-1",
-      selectedDevice: token,
       error: { category: ErrorCategory.ErrorInvalidSession, message: "session expired" },
     });
     seedPasskeysEnvelopeForTest(previous);
@@ -342,7 +354,6 @@ describe("controller lifecycle", () => {
     expect(get(passkeysInventoryState)).toMatchObject({
       phase: "refreshing",
       lastSuccessfulEnvelope: previous,
-      stale: true,
     });
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(previous);
 
@@ -354,7 +365,6 @@ describe("controller lifecycle", () => {
       lastSuccessfulEnvelope: refreshed,
       responseEnvelope: refreshed,
       runtimeError: null,
-      stale: false,
     });
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(refreshed);
   });
@@ -366,8 +376,6 @@ describe("controller lifecycle", () => {
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
-      selectedSelector: "token-1",
-      selectedDevice: token,
       error: { category: ErrorCategory.ErrorInvalidSession, message: "session expired" },
     });
     seedPasskeysEnvelopeForTest(previous);
@@ -389,7 +397,6 @@ describe("controller lifecycle", () => {
       phase: "error",
       lastSuccessfulEnvelope: previous,
       responseEnvelope: null,
-      stale: true,
     });
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(previous);
     expect(serviceMocks.OpenSession).toHaveBeenCalledWith({ selector: "token-1" });
@@ -409,8 +416,6 @@ describe("controller lifecycle", () => {
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
-      selectedSelector: "token-1",
-      selectedDevice: token,
       error: { category: ErrorCategory.ErrorInvalidSession, message: "session expired" },
     });
     seedPasskeysEnvelopeForTest(previous);
@@ -434,7 +439,6 @@ describe("controller lifecycle", () => {
       lastSuccessfulEnvelope: previous,
       responseEnvelope: refreshError,
       runtimeError: null,
-      stale: true,
     });
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(previous);
     expect(get(sessionStatus)).toMatchObject({ state: "ready", sessionId: "session-reopened" });
@@ -443,7 +447,7 @@ describe("controller lifecycle", () => {
   it("reconciles credential selection after a successful refresh", async () => {
     const token = device("token-1");
     const { loadPasskeys, selectPasskeyCredential } = await import("./controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token, "session-token-1", "cafe"));
     selectPasskeyCredential("cafe");
     serviceMocks.ListCredentials.mockResolvedValue(credentialsEnvelope(token, "session-token-1", "bead"));
@@ -456,7 +460,7 @@ describe("controller lifecycle", () => {
   it("passes PIN verification into credential delete dry-runs", async () => {
     const token = device("token-1");
     const { beginCredentialDelete, setPasskeysVerificationFlow } = await import("./controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     setPasskeysVerificationFlow(VerificationFlow.VerificationFlowPIN);
     serviceMocks.DeleteCredential.mockResolvedValue({
@@ -487,7 +491,7 @@ describe("controller lifecycle", () => {
       previewCredentialUpdate,
       updateCredentialDraft,
     } = await import("./controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     const preview = {
       credentialIDHex: "cafe",
@@ -549,7 +553,7 @@ describe("controller lifecycle", () => {
     expect(get(passkeysMutation)).toEqual({ kind: "idle", phase: "idle" });
   });
 
-  it("reports mutation success before its forced refresh completes", async () => {
+  it("keeps mutation confirmation pending until its forced refresh completes", async () => {
     const token = device("token-1");
     const {
       beginCredentialUpdate,
@@ -557,7 +561,7 @@ describe("controller lifecycle", () => {
       previewCredentialUpdate,
       updateCredentialDraft,
     } = await import("./controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     const preview = {
       credentialIDHex: "cafe",
@@ -593,21 +597,16 @@ describe("controller lifecycle", () => {
     const refresh = new Promise<CredentialsEnvelope>((resolve) => {
       resolveRefresh = resolve;
     });
-    const order: string[] = [];
     serviceMocks.ListCredentials.mockImplementationOnce(() => {
-      order.push("refresh");
       return refresh;
     });
-    const onSucceeded = vi.fn(() => order.push("success"));
 
     expect(beginCredentialUpdate("cafe")).toBe(true);
     expect(updateCredentialDraft({ name: "updated@example.com" })).toBe(true);
     expect(await previewCredentialUpdate()).toBe(true);
 
-    const confirmation = confirmCredentialUpdate(onSucceeded);
-    await vi.waitFor(() => expect(onSucceeded).toHaveBeenCalledTimes(1));
-
-    expect(order).toEqual(["success", "refresh"]);
+    const confirmation = confirmCredentialUpdate();
+    await vi.waitFor(() => expect(serviceMocks.ListCredentials).toHaveBeenCalledTimes(1));
     let completed = false;
     void confirmation.then(() => {
       completed = true;
@@ -624,7 +623,7 @@ describe("controller lifecycle", () => {
     const token = device("token-1");
     const { beginCredentialDelete, confirmCredentialDelete } = await import("./controller");
     const inventory = credentialsEnvelope(token);
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     seedPasskeysEnvelopeForTest(inventory);
     const preview = {
       credentialIDHex: "cafe",
@@ -689,7 +688,6 @@ describe("controller lifecycle", () => {
       lastSuccessfulEnvelope: inventory,
       responseEnvelope: null,
       runtimeError: { message: "refresh bridge offline" },
-      stale: true,
     });
   });
 
@@ -702,7 +700,7 @@ describe("controller lifecycle", () => {
       retryLastStatusOutcome,
       updateCredentialDraft,
     } = await import("./controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     const preview = {
       credentialIDHex: "cafe",
@@ -759,8 +757,11 @@ describe("controller lifecycle", () => {
 
     expect(await retryLastStatusOutcome()).toBe(true);
     expect(serviceMocks.UpdateCredentialUser).toHaveBeenCalledTimes(3);
-    expect(serviceMocks.UpdateCredentialUser.mock.calls[2][0]).toEqual(serviceMocks.UpdateCredentialUser.mock.calls[1][0]);
-    expect(get(passkeysMutation)).toEqual({ kind: "idle", phase: "idle" });
+    expect(serviceMocks.UpdateCredentialUser.mock.calls[2][0]).toMatchObject({
+      dryRun: true,
+    });
+    expect(serviceMocks.UpdateCredentialUser.mock.calls[2][0].confirmed).not.toBe(true);
+    expect(get(passkeysMutation)).toMatchObject({ kind: "update", phase: "review" });
   });
 
   it("clears an invalid mutation session and refuses to retry its reviewed request", async () => {
@@ -772,7 +773,7 @@ describe("controller lifecycle", () => {
       retryPasskeysMutation,
       updateCredentialDraft,
     } = await import("./controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     const preview = {
       credentialIDHex: "cafe",
@@ -821,7 +822,7 @@ describe("controller lifecycle", () => {
   it("stores a null response and a separate runtime error when mutation preview throws", async () => {
     const token = device("token-1");
     const { beginCredentialUpdate, previewCredentialUpdate, updateCredentialDraft } = await import("./controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     serviceMocks.UpdateCredentialUser.mockRejectedValue(new Error("mutation bridge offline"));
 
@@ -847,7 +848,7 @@ describe("controller lifecycle", () => {
       previewCredentialUpdate,
       updateCredentialDraft,
     } = await import("./controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     const preview = {
       credentialIDHex: "cafe",
@@ -896,7 +897,7 @@ describe("controller lifecycle", () => {
     const { loadPasskeys } = await import("./controller");
     seedDevicesForTest([token]);
     seedActiveScreenForTest("passkeys");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     serviceMocks.ListCredentials.mockRejectedValue(new Error("bridge offline"));
 
     await loadPasskeys();
@@ -909,12 +910,6 @@ describe("controller lifecycle", () => {
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBeNull();
     expect(get(statusBar).activeOperation).toBeNull();
     expect(get(statusBar).lastOutcome?.message).toBe("bridge offline");
-    expect(get(workbenchLog)[0]).toMatchObject({
-      tone: "error",
-      source: "operation",
-      message: "bridge offline",
-    });
-    expect(get(workbenchLog)[0]).not.toHaveProperty("operationId");
   });
 
   it("keeps an exact result-less credential-list envelope and reports the contract failure separately", async () => {
@@ -925,7 +920,7 @@ describe("controller lifecycle", () => {
       sessionId: "session-token-1",
       kind: OperationKind.OperationListCredentials,
     } as CredentialsEnvelope;
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     serviceMocks.ListCredentials.mockResolvedValue(envelope);
 
     await loadPasskeys();
@@ -935,7 +930,6 @@ describe("controller lifecycle", () => {
       lastSuccessfulEnvelope: null,
       responseEnvelope: envelope,
       runtimeError: null,
-      stale: false,
     });
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "error",
@@ -948,7 +942,7 @@ describe("controller lifecycle", () => {
     const { loadPasskeys } = await import("./controller");
     seedDevicesForTest([token]);
     seedActiveScreenForTest("passkeys");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     seedPendingInteractionForTest({
       interactionId: "interaction-1",
       operationId: "operation-1",
@@ -966,7 +960,6 @@ describe("controller lifecycle", () => {
 
     expect(get(sessionStatus)).toMatchObject({
       state: "error",
-      selectedSelector: "token-1",
       error: { category: ErrorCategory.ErrorInvalidSession, message: "session expired" },
     });
     expect(get(sessionStatus).sessionId).toBeUndefined();
@@ -990,9 +983,9 @@ describe("controller lifecycle", () => {
       setPasskeysVerificationFlow,
     } = await import("./controller");
     seedDevicesForTest([token]);
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     seedOverviewEnvelopeForTest(inspectEnvelope(token));
-    seedOverviewBioSensorEnvelopeForTest(inspectEnvelope(token));
+    seedOverviewBioSensorEnvelopeForTest(bioSensorEnvelope(token));
     seedOverviewMDSForTest(null);
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     seedLargeBlobsEnvelopeForTest(largeBlobListEnvelope(token));
@@ -1017,8 +1010,8 @@ describe("controller lifecycle", () => {
     await selectToken("");
 
     expect(get(selectedSelector)).toBe("");
-    expect(get(overviewEnvelope)).toBeNull();
-    expect(get(overviewBioSensorEnvelope)).toBeNull();
+    expect(get(overviewInspection).data).toBeNull();
+    expect(get(overviewBioSensor).data).toBeNull();
     expect(get(overviewMDS).data).toBeNull();
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBeNull();
     expect(get(passkeysQuery)).toBe("");
@@ -1051,8 +1044,6 @@ describe("controller lifecycle", () => {
     seedActiveScreenForTest("settings");
     seedSelectionForTest("token-1", first, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: first,
       sessionId: "session-token-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(first));
@@ -1080,26 +1071,20 @@ describe("controller lifecycle", () => {
     const { loadOverview } = await import("./controller");
     seedDevicesForTest([token]);
     seedActiveScreenForTest("overview");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
     serviceMocks.Inspect.mockRejectedValue(new Error("inspect bridge offline"));
 
     await loadOverview();
 
-    expect(get(overviewEnvelope)).toBeNull();
+    expect(get(overviewInspection).data).toBeNull();
     expect(get(statusBar).activeOperation).toBeNull();
     expect(get(statusBar).lastOutcome?.message).toBe("inspect bridge offline");
-    expect(get(workbenchLog)[0]).toMatchObject({
-      tone: "error",
-      source: "operation",
-      message: "inspect bridge offline",
-    });
-    expect(get(workbenchLog)[0]).not.toHaveProperty("operationId");
   });
 
   it("records operation events from the runtime", async () => {
     const token = device("token-1");
     const { handleOperationProgress } = await import("./controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
 
     handleOperationProgress({
       operationId: "operation-current",
@@ -1107,14 +1092,13 @@ describe("controller lifecycle", () => {
       event: { stage: "enumerating-rps", message: "current" },
     } as OperationEventEnvelope);
 
-    expect(get(workbenchLog)).toHaveLength(1);
     expect(get(statusBar).activeOperation?.operationId).toBe("operation-current");
   });
 
   it("exposes interaction prompts from the runtime", async () => {
     const token = device("token-1");
     const { handleInteractionRequested } = await import("./controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
 
     handleInteractionRequested({
       interactionId: "interaction-current",
@@ -1124,7 +1108,6 @@ describe("controller lifecycle", () => {
     } as InteractionPrompt);
 
     expect(get(pendingInteraction)?.interactionId).toBe("interaction-current");
-    expect(get(workbenchLog)).toHaveLength(1);
     expect(serviceMocks.ResolveInteraction).not.toHaveBeenCalled();
   });
 });

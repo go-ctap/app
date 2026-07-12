@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { sanitizeDisplayData } from "./redaction";
-import { sanitizeLogData } from "./workbench-state";
 
 describe("sanitizeDisplayData", () => {
   it("redacts interaction and PIN mutation secrets without hiding CTAP capability fields", () => {
@@ -34,9 +33,5 @@ describe("sanitizeDisplayData", () => {
         },
       },
     });
-  });
-
-  it("keeps the log sanitizer on the shared redaction contract", () => {
-    expect(sanitizeLogData({ oldPIN: "111111" })).toEqual({ oldPIN: "[redacted]" });
   });
 });

@@ -6,16 +6,14 @@
   import OverviewMDSObservations from "$lib/components/overview/OverviewMDSObservations.svelte";
   import OverviewRawInspectionData from "$lib/components/overview/OverviewRawInspectionData.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
+  import * as Alert from "$lib/components/ui/alert/index.js";
   import { copyToClipboard } from "$lib/clipboard";
   import { loadOverview, loadOverviewMDS } from "$lib/controller";
   import { buildOverviewPresentation } from "$lib/overview-presentation";
   import {
-    overviewBioSensorEnvelope,
     overviewBioSensor,
-    overviewEnvelope,
-    overviewLoading,
+    overviewInspection,
     overviewMDS,
-    overviewMDSLoading,
     selectedDevice,
     selectedSelector,
     sessionBusy,
@@ -29,12 +27,9 @@
     selectedDevice: $selectedDevice,
     sessionStatus: $sessionStatus,
     sessionBusy: $sessionBusy,
-    overviewEnvelope: $overviewEnvelope,
-    overviewBioSensorEnvelope: $overviewBioSensorEnvelope,
+    overviewState: $overviewInspection,
     overviewBioSensorState: $overviewBioSensor,
     overviewMDSState: $overviewMDS,
-    overviewLoading: $overviewLoading,
-    overviewMDSLoading: $overviewMDSLoading,
   }));
 
   function reloadOverview() {
@@ -47,8 +42,8 @@
     }
   }
 
-  function copyReport() {
-    return copyToClipboard(overview.rawInspectionJson, m.json_copied());
+  async function copyReport() {
+    await copyToClipboard(overview.rawInspectionJson, m.json_copied());
   }
 </script>
 
@@ -59,11 +54,15 @@
 {:else}
   <section class="overview-screen flow">
     {#if overview.failureMessage}
-      <div class="overview-alert" role="alert">{overview.failureMessage}</div>
+      <Alert.Root variant="destructive">
+        <Alert.Description>{overview.failureMessage}</Alert.Description>
+      </Alert.Root>
     {/if}
 
     {#each overview.degradedMessages as message (message)}
-      <div class="overview-alert" data-tone="warning" role="status">{message}</div>
+      <Alert.Root variant="warning" role="status">
+        <Alert.Description>{message}</Alert.Description>
+      </Alert.Root>
     {/each}
 
     {#if overview.hasReport}
@@ -97,20 +96,6 @@
     .overview-screen {
       min-width: 0;
       --flow-space: var(--space-4);
-    }
-
-    .overview-alert {
-      border: 1px solid color-mix(in srgb, var(--destructive) 34%, var(--border));
-      border-radius: var(--radius);
-      background: color-mix(in srgb, var(--destructive) 10%, var(--background));
-      color: var(--destructive);
-      padding: var(--space-3) var(--space-4);
-    }
-
-    .overview-alert[data-tone="warning"] {
-      border-color: color-mix(in srgb, var(--primary) 34%, var(--border));
-      background: color-mix(in srgb, var(--primary) 8%, var(--background));
-      color: var(--foreground);
     }
 }
 </style>

@@ -3,31 +3,6 @@
     animation: spin 0.9s linear infinite;
   }
 
-  .u-truncate {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .u-wrap-anywhere {
-    overflow-wrap: anywhere;
-  }
-
-  .u-mono {
-    font-family: var(--font-mono);
-  }
-
-  .u-visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
   @keyframes spin {
     to {
       transform: rotate(360deg);

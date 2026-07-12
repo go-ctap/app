@@ -3,12 +3,10 @@ import { get } from "svelte/store";
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
 import { pendingInteraction } from "./features/interaction/state.js";
-import { sessionStatus } from "./features/session/state.js";
-import { activeScreen, statusBar, type ActiveOperation } from "./features/workbench/state.js";
+import { selectedDevice, sessionStatus } from "./features/session/state.js";
+import { statusBar, type ActiveOperation } from "./features/workbench/state.js";
 import { runtimeErrorFrom } from "./runtime-error.js";
 import {
-  appendLogEntry,
-  currentSelector,
   finishOperation,
   setStatusOperation,
   setStatusOutcome,
@@ -28,25 +26,6 @@ function patchCurrentOperation(operationId: string, patch: Partial<ActiveOperati
   return true;
 }
 
-function cancellationLog(
-  operationId: string,
-  tone: "info" | "error",
-  title: string,
-  message: string,
-  data: unknown,
-) {
-  return appendLogEntry({
-    tone,
-    source: "operation-cancel",
-    title,
-    message,
-    operationId,
-    screen: get(activeScreen),
-    selector: currentSelector(),
-    data,
-  });
-}
-
 export async function cancelActiveOperation(): Promise<CancelOperationResult> {
   const operation = get(statusBar).activeOperation;
   const operationId = operation?.operationId?.trim() || "";
@@ -63,29 +42,14 @@ export async function cancelActiveOperation(): Promise<CancelOperationResult> {
         cancelError: null,
       });
       pendingInteraction.update((prompt) => prompt?.operationId === operationId ? null : prompt);
-      cancellationLog(
-        operationId,
-        "info",
-        m.cancel_requested(),
-        m.cancel_requested_message(),
-        { operationId, accepted: true },
-      );
       return "accepted";
     }
 
     if (currentOperation(operationId)) finishOperation();
-    const logEntryId = cancellationLog(
-      operationId,
-      "info",
-      m.operation_already_finished(),
-      m.operation_already_finished_message(),
-      { operationId, accepted: false },
-    );
     setStatusOutcome({
       tone: "info",
       title: m.operation_already_finished(),
       message: m.operation_already_finished_message(),
-      logEntryId,
     });
     return "already-finished";
   } catch (error) {
@@ -94,19 +58,11 @@ export async function cancelActiveOperation(): Promise<CancelOperationResult> {
       cancelPending: false,
       cancelError: runtimeError,
     });
-    const logEntryId = cancellationLog(
-      operationId,
-      "error",
-      m.operation_cancel_failed(),
-      runtimeError.message,
-      { operationId, error: runtimeError },
-    );
     if (stillActive) {
       setStatusOutcome({
         tone: "error",
         title: m.operation_cancel_failed(),
         message: runtimeError.message,
-        logEntryId,
       });
     }
     return "failed";
@@ -116,7 +72,7 @@ export async function cancelActiveOperation(): Promise<CancelOperationResult> {
 export async function retryLastStatusOutcome() {
   const session = get(sessionStatus);
   const retry = get(statusBar).lastOutcome?.retry;
-  if (session.state !== "ready" || !session.sessionId || !session.selectedDevice || !retry) return false;
+  if (session.state !== "ready" || !session.sessionId || !get(selectedDevice) || !retry) return false;
   await retry();
   return true;
 }

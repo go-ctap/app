@@ -9,8 +9,10 @@ import {
 } from "../../bindings/github.com/go-ctap/kit/model";
 import {
   BlobState,
+  DecodeMode,
   LargeBlobKeyState,
   MutationOperation,
+  type DecodeStatus,
   type MutationPreview,
 } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import type {
@@ -21,6 +23,7 @@ import type {
 
 import {
   emptyLargeBlobsInventoryState,
+  largeBlobsDecodeMode as mutableLargeBlobsDecodeMode,
   largeBlobsInventoryState as mutableLargeBlobsInventoryState,
   largeBlobsMutation as mutableLargeBlobsMutation,
   largeBlobsReadState as mutableLargeBlobsReadState,
@@ -101,7 +104,11 @@ function listEnvelope(): LargeBlobListEnvelope {
   } as LargeBlobListEnvelope;
 }
 
-function readEnvelope(options: { missingKey?: boolean; rawHex?: string } = {}): LargeBlobReadEnvelope {
+function readEnvelope(options: {
+  missingKey?: boolean;
+  rawHex?: string;
+  decode?: DecodeStatus;
+} = {}): LargeBlobReadEnvelope {
   const missingKey = options.missingKey ?? false;
   const rawHex = options.rawHex ?? "";
   return {
@@ -132,6 +139,12 @@ function readEnvelope(options: { missingKey?: boolean; rawHex?: string } = {}): 
         blobPresent: !missingKey,
         rawHex,
         rawByteCount: rawHex.length / 2,
+        decode: options.decode ?? {
+          requested: true,
+          mode: DecodeMode.DecodeModeJSON,
+          success: false,
+          failure: missingKey ? "no blob present" : "payload is not valid JSON",
+        },
       },
     },
   } as LargeBlobReadEnvelope;
@@ -195,8 +208,6 @@ describe("LargeBlobs", () => {
     resetAppStateForTest();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
   });
@@ -260,7 +271,8 @@ describe("LargeBlobs", () => {
     expect(within(table).getAllByRole("row")).toHaveLength(5);
     const read = within(details).getByRole("button", { name: "Read blob" });
     expect(read).toBeInTheDocument();
-    expect(within(details).queryByRole("button", { name: "Interpretation" })).not.toBeInTheDocument();
+    const interpretation = within(details).getByRole("group", { name: "Interpretation" });
+    expect(within(interpretation).getByRole("radio", { name: "JSON" })).toHaveAttribute("aria-checked", "true");
     await user.click(read);
     expect(controllerMocks.readLargeBlob).toHaveBeenCalledOnce();
     expect(controllerMocks.readLargeBlob).toHaveBeenCalledWith("cafe");
@@ -353,7 +365,15 @@ describe("LargeBlobs", () => {
   });
 
   it("renders valid UTF-8 JSON as structured data", () => {
-    const envelope = readEnvelope({ rawHex: "7b22666f726d6174223a226a736f6e227d" });
+    const envelope = readEnvelope({
+      rawHex: "7b22666f726d6174223a226a736f6e227d",
+      decode: {
+        requested: true,
+        mode: DecodeMode.DecodeModeJSON,
+        success: true,
+        decodedValue: { format: "json" },
+      },
+    });
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     mutableLargeBlobsSelectedCredentialID.set("cafe");
     mutableLargeBlobsReadState.set({
@@ -374,8 +394,17 @@ describe("LargeBlobs", () => {
     expect(within(details).queryByRole("region", { name: "Raw hex" })).not.toBeInTheDocument();
   });
 
-  it("falls back to text when valid UTF-8 is not JSON", () => {
-    const envelope = readEnvelope({ rawHex: "746578742076696577" });
+  it("renders the backend UTF-8 interpretation selected for the read", () => {
+    const envelope = readEnvelope({
+      rawHex: "746578742076696577",
+      decode: {
+        requested: true,
+        mode: DecodeMode.DecodeModeUTF8,
+        success: true,
+        decodedText: "text view",
+      },
+    });
+    mutableLargeBlobsDecodeMode.set(DecodeMode.DecodeModeUTF8);
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     mutableLargeBlobsSelectedCredentialID.set("cafe");
     mutableLargeBlobsReadState.set({
@@ -396,8 +425,16 @@ describe("LargeBlobs", () => {
     expect(within(details).queryByRole("region", { name: "Raw hex" })).not.toBeInTheDocument();
   });
 
-  it("shows raw hex only when the payload is not valid UTF-8", () => {
-    const envelope = readEnvelope({ rawHex: "fffe" });
+  it("shows raw hex when the requested backend interpretation fails", () => {
+    const envelope = readEnvelope({
+      rawHex: "fffe",
+      decode: {
+        requested: true,
+        mode: DecodeMode.DecodeModeUTF8,
+        success: false,
+        failure: "payload is not valid UTF-8",
+      },
+    });
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     mutableLargeBlobsSelectedCredentialID.set("cafe");
     mutableLargeBlobsReadState.set({
@@ -411,6 +448,8 @@ describe("LargeBlobs", () => {
 
     const details = document.getElementById("large-blob-row-details-cafe") as HTMLElement;
     expect(within(details).getByRole("region", { name: "Raw hex" })).toHaveTextContent("fffe");
+    expect(within(details).getByText("Payload interpretation failed")).toBeInTheDocument();
+    expect(within(details).getByText("payload is not valid UTF-8")).toBeInTheDocument();
     expect(within(details).queryByText("Decoded as JSON")).not.toBeInTheDocument();
     expect(within(details).queryByRole("region", { name: "UTF-8 text" })).not.toBeInTheDocument();
   });
@@ -424,7 +463,6 @@ describe("LargeBlobs", () => {
       phase: "noop",
       previewRequest: { sessionId: "session-1", dryRun: true },
       previewEnvelope: envelope,
-      responseEnvelope: envelope,
     });
 
     render(LargeBlobs);
@@ -449,7 +487,6 @@ describe("LargeBlobs", () => {
       credentialIDHex: "cafe",
       previewRequest: { sessionId: "session-1", credentialIdHex: "cafe", dryRun: true },
       previewEnvelope: envelope,
-      responseEnvelope: envelope,
     });
 
     render(LargeBlobs);
@@ -479,7 +516,6 @@ describe("LargeBlobs", () => {
         dryRun: true,
       },
       previewEnvelope: envelope,
-      responseEnvelope: envelope,
     });
 
     render(LargeBlobs);
@@ -504,7 +540,6 @@ describe("LargeBlobs", () => {
       phase: "review",
       previewRequest: { sessionId: "session-1", dryRun: true },
       previewEnvelope: envelope,
-      responseEnvelope: envelope,
     });
 
     render(LargeBlobs);
@@ -538,7 +573,7 @@ describe("LargeBlobs", () => {
         payload: "aGVsbG8=",
         dryRun: true,
       },
-      previewEnvelope: envelope,
+      previewEnvelope: null,
       responseEnvelope: envelope,
       runtimeError: null,
       failureReason: "response-error",

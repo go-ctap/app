@@ -11,19 +11,15 @@ import {
   devices,
   selectedDevice,
   selectedSelector,
-  sessions,
   sessionStatus,
 } from "./features/session/state.js";
-import { appError } from "./features/workbench/state.js";
 import { runtimeErrorFrom } from "./runtime-error.js";
 import {
   idleSessionStatus,
-  labelForDevice,
   reportForSelector,
   selectorFromDevice,
 } from "./session-model.js";
 import {
-  appendLogEntry,
   clearWorkbenchScreenCaches,
   finishOperation,
   setStatusOutcome,
@@ -36,13 +32,11 @@ function invalidateSelectedSession() {
   finishOperation();
   selectedSelector.set("");
   selectedDevice.set(null);
-  sessions.set([]);
-  sessionStatus.set(idleSessionStatus("", null));
+  sessionStatus.set(idleSessionStatus());
 }
 
 function applyTopology(envelope: DiscoveryChangedEnvelope) {
   const previousSelector = get(selectedSelector);
-  const previousSession = get(sessionStatus);
   const snapshot = envelope.snapshot;
   const nextDevices = snapshot ? snapshot.devices : get(devices);
   const nextSelectedDevice = snapshot && previousSelector
@@ -59,7 +53,6 @@ function applyTopology(envelope: DiscoveryChangedEnvelope) {
     invalidateSelectedSession();
     return {
       deviceCount: nextDevices.length,
-      previousSelector,
       selectedDisconnected,
     };
   }
@@ -68,18 +61,10 @@ function applyTopology(envelope: DiscoveryChangedEnvelope) {
     const canonicalSelector = selectorFromDevice(nextSelectedDevice);
     selectedSelector.set(canonicalSelector);
     selectedDevice.set(nextSelectedDevice);
-    sessionStatus.set({
-      ...previousSession,
-      selectedSelector: canonicalSelector,
-      selectedDevice: nextSelectedDevice,
-      deviceId: nextSelectedDevice.deviceId,
-      deviceLabel: labelForDevice(nextSelectedDevice),
-    });
   }
 
   return {
     deviceCount: nextDevices.length,
-    previousSelector,
     selectedDisconnected,
   };
 }
@@ -110,53 +95,22 @@ function discoveryPresentation(
   };
 }
 
-function recordDiscoveryOutcome(
-  envelope: DiscoveryChangedEnvelope,
-  presentation: { tone: DiscoveryTone; title: string; message: string },
-  selector: string,
-  deviceCount: number,
-) {
-  const logEntryId = appendLogEntry({
-    tone: presentation.tone,
-    source: "discovery",
-    title: presentation.title,
-    message: presentation.message,
-    selector,
-    data: {
-      trigger: envelope.trigger,
-      deviceCount,
-      snapshotApplied: Boolean(envelope.snapshot),
-      error: envelope.error,
-    },
-  });
-  setStatusOutcome({
-    ...presentation,
-    logEntryId,
-  });
+function recordDiscoveryOutcome(presentation: { tone: DiscoveryTone; title: string; message: string }) {
+  setStatusOutcome(presentation);
 }
 
 function recordDiscoveryRuntimeFailure(error: RuntimeErrorEnvelope) {
-  appError.set(error.message);
-  const logEntryId = appendLogEntry({
-    tone: "error",
-    source: "discovery",
-    title: m.discovery_issue(),
-    message: error.message,
-    selector: get(selectedSelector),
-    data: { error },
-  });
   setStatusOutcome({
     tone: "error",
     title: m.discovery_issue(),
     message: error.message,
-    logEntryId,
   });
 }
 
 export function handleDiscoveryChanged(envelope: DiscoveryChangedEnvelope) {
   const result = applyTopology(envelope);
   const presentation = discoveryPresentation(envelope, result.selectedDisconnected, result.deviceCount);
-  recordDiscoveryOutcome(envelope, presentation, result.previousSelector, result.deviceCount);
+  recordDiscoveryOutcome(presentation);
 }
 
 export async function startDiscoveryMonitoring() {

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { ChevronDown, FilterX } from "@lucide/svelte";
 
+  import type { DecodeMode } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
+
   import LargeBlobInspector from "$lib/components/largeblobs/LargeBlobInspector.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
@@ -28,9 +30,11 @@
     presentation: LargeBlobsPresentation;
     readState: LargeBlobReadState;
     mutation: LargeBlobMutationState;
+    decodeMode: DecodeMode;
     onQueryChange: (query: string) => void;
     onFilterChange: (filter: LargeBlobsStatusFilter) => void;
     onSelect: (credentialIDHex: string) => void;
+    onDecodeModeChange: (mode: DecodeMode) => void;
     onRead: (credentialIDHex: string) => void | Promise<boolean>;
     onWrite: (credentialIDHex: string) => void;
     onDelete: (credentialIDHex: string) => void | Promise<boolean>;
@@ -40,9 +44,11 @@
     presentation,
     readState,
     mutation,
+    decodeMode,
     onQueryChange,
     onFilterChange,
     onSelect,
+    onDecodeModeChange,
     onRead,
     onWrite,
     onDelete,
@@ -263,9 +269,11 @@
                     {row}
                     {readState}
                     {mutation}
+                    {decodeMode}
                     readDisabled={presentation.readDisabled}
                     writeDisabled={presentation.writeDisabled}
                     deleteDisabled={presentation.deleteDisabled}
+                    {onDecodeModeChange}
                     {onRead}
                     {onWrite}
                     {onDelete}

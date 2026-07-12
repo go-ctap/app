@@ -1,4 +1,7 @@
 <script lang="ts">
+  import * as Field from "$lib/components/ui/field/index.js";
+  import { Input } from "$lib/components/ui/input/index.js";
+
   type Props = {
     id?: string;
     label: string;
@@ -18,9 +21,9 @@
   }: Props = $props();
 </script>
 
-<label class="sensitive-field" data-disabled={disabled ? "true" : undefined} for={id}>
-  <span>{label}</span>
-  <input
+<Field.Field data-disabled={disabled ? "true" : undefined}>
+  <Field.Label for={id}>{label}</Field.Label>
+  <Input
     bind:value
     {id}
     {name}
@@ -28,41 +31,7 @@
     autocomplete="off"
     autocapitalize="off"
     spellcheck="false"
-    aria-disabled={disabled}
     {disabled}
-    data-dialog-initial-focus={autofocus ? true : undefined}
+    {autofocus}
   />
-</label>
-
-<style>
-@layer blocks {
-  .sensitive-field {
-    display: grid;
-    gap: var(--space-2);
-    color: var(--foreground);
-    font-size: 0.875rem;
-    font-weight: 700;
-  }
-
-  .sensitive-field[data-disabled="true"] {
-    opacity: 0.72;
-  }
-
-  input {
-    width: 100%;
-    min-height: 2.25rem;
-    border: 1px solid var(--input);
-    border-radius: var(--radius);
-    background: var(--background);
-    color: var(--foreground);
-    padding: 0 var(--space-3);
-    font: inherit;
-    font-weight: 500;
-  }
-
-  input:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
-  }
-}
-</style>
+</Field.Field>

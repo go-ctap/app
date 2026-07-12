@@ -1,7 +1,6 @@
 <script lang="ts">
   import { copyToClipboard } from "$lib/clipboard";
   import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
   import { sanitizedJson } from "$lib/redaction";
 
   import { m } from "../../../paraglide/messages.js";
@@ -9,10 +8,10 @@
   type Props = {
     value: unknown;
     title?: string;
-    variant?: "card" | "bare" | "code";
+    variant?: "bare" | "code";
   };
 
-  let { value, title = m.raw_json(), variant = "card" }: Props = $props();
+  let { value, title = m.raw_json(), variant = "bare" }: Props = $props();
   let source = $derived(sanitizedJson(value) ?? "null");
 
   async function copy() {
@@ -20,33 +19,16 @@
   }
 </script>
 
-{#if variant === "card"}
-  <Card.Root>
-    <Card.Header>
-      <Card.Title>{title}</Card.Title>
-      <Card.Action>
-        <Button variant="outline" type="button" onclick={copy}>{m.copy()}</Button>
-      </Card.Action>
-    </Card.Header>
-    <Card.Content>
-      <!-- svelte-ignore a11y_no_noninteractive_tabindex (scrollable code region) -->
-      <div class="json-frame" role="region" aria-label={title} tabindex="0">
-        <pre>{source}</pre>
-      </div>
-    </Card.Content>
-  </Card.Root>
-{:else}
-  {#if variant === "bare"}
-    <div class="json-toolbar">
-      <h3>{title}</h3>
-      <Button variant="outline" type="button" onclick={copy}>{m.copy()}</Button>
-    </div>
-  {/if}
-  <!-- svelte-ignore a11y_no_noninteractive_tabindex (scrollable code region) -->
-  <div class="json-frame" role="region" aria-label={title} tabindex="0">
-    <pre>{source}</pre>
+{#if variant === "bare"}
+  <div class="json-toolbar">
+    <h3>{title}</h3>
+    <Button variant="outline" type="button" onclick={copy}>{m.copy()}</Button>
   </div>
 {/if}
+<!-- svelte-ignore a11y_no_noninteractive_tabindex (scrollable code region) -->
+<div class="json-frame" role="region" aria-label={title} tabindex="0">
+  <pre>{source}</pre>
+</div>
 
 <style>
 @layer blocks {

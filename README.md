@@ -1,59 +1,40 @@
-# Welcome to Your New Wails3 Project!
+# fidoapp
 
-Congratulations on generating your Wails3 application! This README will guide you through the next steps to get your project up and running.
+`fidoapp` is a Wails 3 desktop workbench for inspecting and managing local FIDO2/CTAP authenticators. The application uses `github.com/go-ctap/kit` as its authenticator runtime and keeps product UI and Wails wiring in this repository.
 
-## Getting Started
+## Development
 
-1. Navigate to your project directory in the terminal.
+The project requires Go, Wails 3, Node.js, pnpm, and a platform-supported FIDO transport.
 
-2. To run your application in development mode, use the following command:
+```sh
+pnpm --dir frontend install
+task dev
+```
 
-   ```
-   wails3 dev
-   ```
+`task dev` starts the real Wails window. A browser-only preview is not a reliable smoke test for the Wails 3 runtime.
 
-   This will start your application and enable hot-reloading for both frontend and backend changes.
+## Verification
 
-3. To build your application for production, use:
+```sh
+go test ./... -count=1
+pnpm --dir frontend check
+pnpm --dir frontend test
+pnpm --dir frontend build
+```
 
-   ```
-   wails3 build
-   ```
+For changes to session, locking, interaction, or cancellation behavior, also run:
 
-   This will create a production-ready executable in the `build` directory.
+```sh
+go test -race ./... -count=1
+```
 
-## Exploring Wails3 Features
+## Project map
 
-Now that you have your project set up, it's time to explore the features that Wails3 offers:
-
-1. **Check out the examples**: The best way to learn is by example. Visit the `examples` directory in the `v3/examples` directory to see various sample applications.
-
-2. **Run an example**: To run any of the examples, navigate to the example's directory and use:
-
-   ```
-   go run .
-   ```
-
-   Note: Some examples may be under development during the alpha phase.
-
-3. **Explore the documentation**: Visit the [Wails3 documentation](https://v3.wails.io/) for in-depth guides and API references.
-
-4. **Join the community**: Have questions or want to share your progress? Join the [Wails Discord](https://discord.gg/JDdSxwjhGf) or visit the [Wails discussions on GitHub](https://github.com/wailsapp/wails/discussions).
-
-## Project Structure
-
-Take a moment to familiarize yourself with your project structure:
-
-- `frontend/`: Contains your frontend code (HTML, CSS, JavaScript/TypeScript)
-- `main.go`: The entry point of your Go backend
-- `app.go`: Define your application structure and methods here
-- `wails.json`: Configuration file for your Wails project
-
-## Next Steps
-
-1. Modify the frontend in the `frontend/` directory to create your desired UI.
-2. Add backend functionality in `main.go`.
-3. Use `wails3 dev` to see your changes in real-time.
-4. When ready, build your application with `wails3 build`.
-
-Happy coding with Wails3! If you encounter any issues or have questions, don't hesitate to consult the documentation or reach out to the Wails community.
+- `main.go` — desktop entrypoint and Wails window setup.
+- `ctapkit_service.go` — application lifecycle wiring around `ctapkit/service`.
+- `ctapkit_operations.go` — the Wails-facing `ctapkit` operation facade.
+- `frontend/src/App.svelte` — desktop shell.
+- `frontend/src/screens/` — product screens.
+- `frontend/src/lib/` — controllers, stores, typed result extraction, and presentation builders.
+- `frontend/bindings/` — generated Wails bindings; do not edit by hand.
+- `build/` — Wails-owned build and packaging assets.

@@ -1,6 +1,7 @@
 import { writable } from "svelte/store";
 
 import { ErrorCategory, VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
+import { DecodeMode } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import type {
   LargeBlobGarbageCollectRequest,
   LargeBlobListEnvelope,
@@ -33,9 +34,13 @@ export type LargeBlobsInventoryState = {
   lastSuccessfulEnvelope: LargeBlobListEnvelope | null;
   responseEnvelope: LargeBlobListEnvelope | null;
   runtimeError: RuntimeErrorEnvelope | null;
-  stale: boolean;
   lastSuccessfulAt: string | null;
 };
+
+export function largeBlobsInventoryIsStale(state: LargeBlobsInventoryState) {
+  return Boolean(state.lastSuccessfulEnvelope)
+    && (state.phase === "error" || state.phase === "unsupported");
+}
 
 export type LargeBlobsStatusFilter = "all" | "present" | "missing" | "key-unavailable";
 
@@ -130,13 +135,11 @@ export type LargeBlobMutationState =
       phase: "review";
       previewRequest: LargeBlobMutationRequest;
       previewEnvelope: LargeBlobMutationEnvelope;
-      responseEnvelope: LargeBlobMutationEnvelope;
     })
   | (WriteMutationBase & {
       phase: "executing";
       previewRequest: LargeBlobMutationRequest;
       previewEnvelope: LargeBlobMutationEnvelope;
-      responseEnvelope: null;
     })
   | WriteMutationError
   | (DeleteMutationBase & {
@@ -147,13 +150,11 @@ export type LargeBlobMutationState =
       phase: "review" | "noop";
       previewRequest: LargeBlobMutationRequest;
       previewEnvelope: LargeBlobMutationEnvelope;
-      responseEnvelope: LargeBlobMutationEnvelope;
     })
   | (DeleteMutationBase & {
       phase: "executing";
       previewRequest: LargeBlobMutationRequest;
       previewEnvelope: LargeBlobMutationEnvelope;
-      responseEnvelope: null;
     })
   | DeleteMutationError
   | (CleanupMutationBase & {
@@ -164,13 +165,11 @@ export type LargeBlobMutationState =
       phase: "review" | "noop";
       previewRequest: LargeBlobGarbageCollectRequest;
       previewEnvelope: LargeBlobMutationEnvelope;
-      responseEnvelope: LargeBlobMutationEnvelope;
     })
   | (CleanupMutationBase & {
       phase: "executing";
       previewRequest: LargeBlobGarbageCollectRequest;
       previewEnvelope: LargeBlobMutationEnvelope;
-      responseEnvelope: null;
     })
   | CleanupMutationError;
 
@@ -180,26 +179,7 @@ export function emptyLargeBlobsInventoryState(): LargeBlobsInventoryState {
     lastSuccessfulEnvelope: null,
     responseEnvelope: null,
     runtimeError: null,
-    stale: false,
     lastSuccessfulAt: null,
-  };
-}
-
-function inventoryState(
-  phase: LargeBlobsInventoryPhase,
-  lastSuccessfulEnvelope: LargeBlobListEnvelope | null,
-  responseEnvelope: LargeBlobListEnvelope | null,
-  runtimeError: RuntimeErrorEnvelope | null,
-  stale: boolean,
-  lastSuccessfulAt: string | null,
-): LargeBlobsInventoryState {
-  return {
-    phase,
-    lastSuccessfulEnvelope,
-    responseEnvelope,
-    runtimeError,
-    stale,
-    lastSuccessfulAt,
   };
 }
 
@@ -211,42 +191,43 @@ export const largeBlobsStatusFilter = writable<LargeBlobsStatusFilter>("all");
 export const largeBlobsSelectedCredentialID = writable("");
 export const largeBlobsVerificationFlow = writable<VerificationFlow>(VerificationFlow.VerificationFlowDefault);
 export const largeBlobsPayloadEncoding = writable<LargeBlobPayloadEncoding>("utf8");
+export const largeBlobsDecodeMode = writable<DecodeMode>(DecodeMode.DecodeModeJSON);
 
 export function beginLargeBlobsInventoryLoad() {
-  largeBlobsInventoryState.update((current) => inventoryState(
-    current.lastSuccessfulEnvelope ? "refreshing" : "loading",
-    current.lastSuccessfulEnvelope,
-    null,
-    null,
-    current.stale,
-    current.lastSuccessfulAt,
-  ));
+  largeBlobsInventoryState.update((current) => ({
+    ...current,
+    phase: current.lastSuccessfulEnvelope ? "refreshing" : "loading",
+    responseEnvelope: null,
+    runtimeError: null,
+  }));
 }
 
 export function completeLargeBlobsInventoryLoad(envelope: LargeBlobListEnvelope, completedAt: string) {
-  largeBlobsInventoryState.set(inventoryState("ready", envelope, envelope, null, false, completedAt));
+  largeBlobsInventoryState.set({
+    phase: "ready",
+    lastSuccessfulEnvelope: envelope,
+    responseEnvelope: envelope,
+    runtimeError: null,
+    lastSuccessfulAt: completedAt,
+  });
 }
 
 export function failLargeBlobsInventoryLoadWithResponse(envelope: LargeBlobListEnvelope) {
-  largeBlobsInventoryState.update((current) => inventoryState(
-    envelope.error?.category === ErrorCategory.ErrorUnsupported ? "unsupported" : "error",
-    current.lastSuccessfulEnvelope,
-    envelope,
-    null,
-    Boolean(current.lastSuccessfulEnvelope),
-    current.lastSuccessfulAt,
-  ));
+  largeBlobsInventoryState.update((current) => ({
+    ...current,
+    phase: envelope.error?.category === ErrorCategory.ErrorUnsupported ? "unsupported" : "error",
+    responseEnvelope: envelope,
+    runtimeError: null,
+  }));
 }
 
 export function failLargeBlobsInventoryLoadAtRuntime(error: RuntimeErrorEnvelope) {
-  largeBlobsInventoryState.update((current) => inventoryState(
-    "error",
-    current.lastSuccessfulEnvelope,
-    null,
-    error,
-    Boolean(current.lastSuccessfulEnvelope),
-    current.lastSuccessfulAt,
-  ));
+  largeBlobsInventoryState.update((current) => ({
+    ...current,
+    phase: "error",
+    responseEnvelope: null,
+    runtimeError: error,
+  }));
 }
 
 export function resetLargeBlobReadState() {
@@ -267,4 +248,5 @@ export function resetLargeBlobsStateForTest() {
   resetLargeBlobsDeviceState();
   largeBlobsVerificationFlow.set(VerificationFlow.VerificationFlowDefault);
   largeBlobsPayloadEncoding.set("utf8");
+  largeBlobsDecodeMode.set(DecodeMode.DecodeModeJSON);
 }

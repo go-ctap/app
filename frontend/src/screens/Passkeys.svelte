@@ -60,18 +60,15 @@
   }
 
   async function handleConfirmUpdate() {
-    return confirmCredentialUpdate(() => toast.success(m.credential_updated()));
+    const succeeded = await confirmCredentialUpdate();
+    if (succeeded) toast.success(m.credential_updated());
+    return succeeded;
   }
 
   async function handleConfirmDelete() {
-    return confirmCredentialDelete(() => toast.success(m.credential_deleted()));
-  }
-
-  async function handleRetryMutation() {
-    const kind = $passkeysMutation.kind;
-    return retryPasskeysMutation(() => {
-      toast.success(kind === "delete" ? m.credential_deleted() : m.credential_updated());
-    });
+    const succeeded = await confirmCredentialDelete();
+    if (succeeded) toast.success(m.credential_deleted());
+    return succeeded;
   }
 </script>
 
@@ -160,14 +157,14 @@
     onEdit={editCredentialUpdate}
     onPreview={previewCredentialUpdate}
     onConfirm={handleConfirmUpdate}
-    onRetry={handleRetryMutation}
+    onRetry={retryPasskeysMutation}
     retryAllowed={mutationRetryAllowed}
     onClose={closePasskeysMutation}
   />
   <PasskeyDeleteDialog
     mutation={$passkeysMutation}
     onConfirm={handleConfirmDelete}
-    onRetry={handleRetryMutation}
+    onRetry={retryPasskeysMutation}
     retryAllowed={mutationRetryAllowed}
     onClose={closePasskeysMutation}
   />

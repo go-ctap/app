@@ -36,15 +36,10 @@ export const sessionBusy = readonly(session.sessionBusy);
 
 export const activeScreen = readonly(workbench.activeScreen);
 export const statusBar = readonly(workbench.statusBar);
-export const workbenchLog = readonly(workbench.workbenchLog);
-export const appError = readonly(workbench.appError);
 
+export const overviewInspection = readonly(overview.overviewInspection);
 export const overviewBioSensor = readonly(overview.overviewBioSensor);
 export const overviewMDS = readonly(overview.overviewMDS);
-export const overviewEnvelope = overview.overviewInspectionEnvelope;
-export const overviewBioSensorEnvelope = overview.overviewBioSensorEnvelope;
-export const overviewLoading = overview.overviewLoading;
-export const overviewMDSLoading = overview.overviewMDSLoading;
 
 export const passkeysInventoryState = readonly(passkeys.passkeysInventoryState);
 export const passkeysQuery = readonly(passkeys.passkeysQuery);
@@ -54,6 +49,7 @@ export const passkeysVerificationFlow = readonly(passkeys.passkeysVerificationFl
 export const passkeysMutation = readonly(passkeys.passkeysMutation);
 
 export const largeBlobsInventoryState = readonly(largeBlobs.largeBlobsInventoryState);
+export const largeBlobsDecodeMode = readonly(largeBlobs.largeBlobsDecodeMode);
 export const largeBlobsReadState = readonly(largeBlobs.largeBlobsReadState);
 export const largeBlobsMutation = readonly(largeBlobs.largeBlobsMutation);
 export const largeBlobsQuery = readonly(largeBlobs.largeBlobsQuery);

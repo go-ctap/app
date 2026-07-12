@@ -43,21 +43,6 @@ export function byteArray(input: unknown): Uint8Array | undefined {
   return undefined;
 }
 
-export function defaultListItemKey(input: unknown) {
-  if (typeof input === "string" || typeof input === "number" || typeof input === "boolean") return String(input);
-  return stringify(input);
-}
-
-export function hasDuplicateListItems(items: readonly unknown[], key = defaultListItemKey) {
-  const seen = new Set<string>();
-  for (const item of items) {
-    const itemKey = key(item);
-    if (seen.has(itemKey)) return true;
-    seen.add(itemKey);
-  }
-  return false;
-}
-
 export function stringify(input: unknown) {
   try {
     return JSON.stringify(input);

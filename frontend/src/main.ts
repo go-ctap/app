@@ -1,4 +1,3 @@
-// @ts-ignore
 import "./app.css";
 
 import { Events, System } from "@wailsio/runtime";

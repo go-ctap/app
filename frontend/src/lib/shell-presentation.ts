@@ -93,9 +93,8 @@ export function buildSidebarPresentation(input: { activeScreen: ActiveScreen }):
 }
 
 function activeProgress(statusBar: StatusBarState): ShellStatusProgress | null {
-  const event = statusBar.activeOperation?.event;
-  const completed = event?.completed;
-  const total = event?.total;
+  const completed = statusBar.activeOperation?.completed;
+  const total = statusBar.activeOperation?.total;
   if (completed === null || completed === undefined || total === null || total === undefined || total < 0) return null;
   return {
     value: total === 0 ? 0 : Math.min(Math.max(completed, 0), total),
@@ -106,7 +105,7 @@ function activeProgress(statusBar: StatusBarState): ShellStatusProgress | null {
 }
 
 function liveReadySession(session: SessionStatus) {
-  return session.state === "ready" && Boolean(session.sessionId && session.selectedDevice);
+  return session.state === "ready" && Boolean(session.sessionId);
 }
 
 export function buildShellStatusPresentation(input: {
@@ -124,7 +123,7 @@ export function buildShellStatusPresentation(input: {
       title: active.cancelRequested ? m.cancel_requested() : active.label || m.operation_running(),
       detail: cancellationPending
         ? m.cancel_requested_message()
-        : active.cancelError?.message || operationStageLabel(active.event?.stage),
+        : active.cancelError?.message || operationStageLabel(active.stage),
       busy: true,
       progress: activeProgress(input.statusBar),
       cancel: active.operationId && !active.cancelRequested ? {
@@ -160,7 +159,7 @@ export function buildShellStatusPresentation(input: {
       busy: false,
       progress: null,
       cancel: null,
-      retry: outcome.retry && liveReadySession(input.sessionStatus) ? {
+      retry: outcome.retry && input.selectedDevice && liveReadySession(input.sessionStatus) ? {
         label: m.retry(),
         ariaLabel: m.retry(),
         disabled: false,

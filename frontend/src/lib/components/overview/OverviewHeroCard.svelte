@@ -7,6 +7,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import type { OverviewHeroPresentation, OverviewHeroSignalGroup, OverviewMDSState } from "$lib/overview-rules";
+  import type { SessionState } from "$lib/session-model";
 
   import { m } from "../../../paraglide/messages.js";
   import OverviewMetadataPanel from "./OverviewMetadataPanel.svelte";
@@ -25,7 +26,7 @@
   }: {
     hero: OverviewHeroPresentation;
     signalGroups?: OverviewHeroSignalGroup[];
-    sessionState?: string;
+    sessionState?: SessionState;
     sessionLabel?: string;
     loading?: boolean;
     mdsLoading?: boolean;
@@ -38,6 +39,13 @@
     if (state === "error") return "bad";
     if (state === "found") return "ok";
     return "neutral";
+  }
+
+  function sessionTone(state: SessionState) {
+    if (state === "ready") return "ok" as const;
+    if (state === "opening" || state === "running") return "warn" as const;
+    if (state === "error") return "bad" as const;
+    return "neutral" as const;
   }
 </script>
 
@@ -56,8 +64,8 @@
           <Card.Title class="hero-title"><h1>{hero.title}</h1></Card.Title>
           <div class="hero-meta">
             <div class="badges cluster">
-              <StatusBadge value={sessionState} label={sessionLabel} />
-              <StatusBadge value={hero.mdsState} label={hero.mdsStateLabel} tone={mdsTone(hero.mdsState)} />
+              <StatusBadge label={sessionLabel} tone={sessionTone(sessionState)} />
+              <StatusBadge label={hero.mdsStateLabel} tone={mdsTone(hero.mdsState)} />
             </div>
             <Card.Description class="hero-subtitle">{hero.subtitle}</Card.Description>
           </div>

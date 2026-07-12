@@ -75,6 +75,7 @@
       || mutation.responseEnvelope?.error?.category === ErrorCategory.ErrorCanceled
     ),
   );
+  let failedPhase = $derived(mutation.phase === "error" ? mutation.failedPhase : null);
   let fieldsLocked = $derived(
     mutation.kind === "update" &&
     mutation.phase !== "editing" &&
@@ -180,7 +181,7 @@
           <Alert.Root variant={failureCanceled ? "default" : "destructive"} role={failureCanceled ? "status" : "alert"}>
             <Alert.Title>
               {failureCanceled
-                ? m.operation_canceled_with_label({ label: mutation.failedPhase === "previewing" ? m.credential_update_preview() : m.credential_update() })
+                ? m.operation_canceled_with_label({ label: failedPhase === "previewing" ? m.credential_update_preview() : m.credential_update() })
                 : m.operation_failed()}
             </Alert.Title>
             <Alert.Description>{failureMessage}</Alert.Description>

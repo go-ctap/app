@@ -136,7 +136,7 @@ function metadataBlobFacts(result: LookupResult | null, hasLookup: boolean) {
   ];
 }
 
-function mdsSourceText(input: TextLike, hasLookup: boolean) {
+function mdsSourceText(input: string | null | undefined, hasLookup: boolean) {
   if (!hasLookup) return m.mds_placeholder();
   return mdsUrlLabel(input) || m.not_reported();
 }

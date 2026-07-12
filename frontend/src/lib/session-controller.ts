@@ -11,14 +11,9 @@ import {
   devices as deviceStore,
   selectedDevice as selectedDeviceStore,
   selectedSelector,
-  sessions,
   sessionStatus,
 } from "./features/session/state.js";
-import {
-  activeScreen,
-  appError,
-  type ActiveScreen,
-} from "./features/workbench/state.js";
+import { activeScreen, type ActiveScreen } from "./features/workbench/state.js";
 import { maybeLoadLargeBlobs } from "./largeblobs-controller.js";
 import { maybeLoadOverview } from "./overview-controller.js";
 import { maybeLoadPasskeys } from "./passkeys-controller.js";
@@ -34,16 +29,11 @@ import {
   type SessionStatus,
 } from "./session-model.js";
 import {
-  appendLogEntry,
   applyDiscovery,
   clearWorkbenchScreenCaches,
   finishOperation,
   setStatusOutcome,
 } from "./workbench-state.js";
-
-function messageFromError(error: unknown) {
-  return error instanceof Error ? error.message : String(error || m.unexpected_error());
-}
 
 function deviceSelection(devices: DeviceReport[], requestedSelector: string) {
   const device = reportForSelector(devices, requestedSelector);
@@ -90,7 +80,7 @@ async function openSessionForDevice(devices: DeviceReport[], selector: string): 
   const { selectedSelector: canonicalSelector, selectedDevice } = deviceSelection(devices, selector);
   if (!canonicalSelector || !selectedDevice) {
     await closeOpenSessions();
-    return discoverySnapshot(devices, "", null, idleSessionStatus("", null));
+    return discoverySnapshot(devices, "", null, idleSessionStatus());
   }
 
   const snapshots = await api.sessions();
@@ -107,17 +97,12 @@ async function openSessionForDevice(devices: DeviceReport[], selector: string): 
 
 async function closeSelection(devices: DeviceReport[] = get(deviceStore)): Promise<Discovery> {
   await closeOpenSessions();
-  return discoverySnapshot(devices, "", null, idleSessionStatus("", null));
+  return discoverySnapshot(devices, "", null, idleSessionStatus());
 }
 
 function selectionMessage(discovery: Discovery, fallback: string) {
   const device = discovery.selectedDevice;
   return device ? device.product || device.deviceId : fallback || m.selection_updated();
-}
-
-function selectedDeviceSummary(discovery: Discovery) {
-  const device = discovery.selectedDevice;
-  return device ? device.product || device.deviceId : undefined;
 }
 
 async function selectFromDevices(devices: DeviceReport[], selector: string): Promise<Discovery> {
@@ -135,21 +120,14 @@ async function selectFromDevices(devices: DeviceReport[], selector: string): Pro
       devices,
       canonicalSelector,
       selectedDevice,
-      idleSessionStatus(canonicalSelector, selectedDevice, "error", runtimeError),
+      idleSessionStatus("error", runtimeError),
       runtimeError,
     );
   }
 }
 
 function recoverySelection(devices: DeviceReport[], selector: string) {
-  const listed = reportForSelector(devices, selector);
-  if (listed) return { devices, device: listed };
-
-  const selected = get(selectedDeviceStore);
-  const remembered = selected ? reportForSelector([selected], selector) : null;
-  return remembered
-    ? { devices: [...devices, remembered], device: remembered }
-    : { devices, device: null };
+  return { devices, device: reportForSelector(devices, selector) };
 }
 
 /**
@@ -175,14 +153,14 @@ export async function ensureSelectedSessionReady(): Promise<boolean> {
       recovery.devices,
       selector,
       get(selectedDeviceStore),
-      idleSessionStatus(selector, get(selectedDeviceStore), "error", error),
+      idleSessionStatus("error", error),
       error,
     ));
     return false;
   }
 
   pendingInteraction.set(null);
-  sessionStatus.set(idleSessionStatus(selector, recovery.device, "opening"));
+  sessionStatus.set(idleSessionStatus("opening"));
   const discovery = await selectFromDevices(recovery.devices, selector);
   applyDiscovery(discovery);
 
@@ -204,7 +182,9 @@ export async function bootstrap() {
     await maybeLoadPasskeys();
     await maybeLoadLargeBlobs();
   } catch (error) {
-    appError.set(messageFromError(error));
+    const runtimeError = runtimeErrorFrom(error);
+    sessionStatus.set(idleSessionStatus("error", runtimeError));
+    setStatusOutcome({ tone: "error", title: m.discovery_issue(), message: runtimeError.message });
   }
 }
 
@@ -212,35 +192,22 @@ export async function selectToken(selector: string) {
   clearWorkbenchScreenCaches();
   try {
     if (selector.trim()) {
-      const device = reportForSelector(get(deviceStore), selector);
-      sessionStatus.set(idleSessionStatus(selector.trim(), device, "opening"));
+      sessionStatus.set(idleSessionStatus("opening"));
     }
     const discovery = await selectFromDevices(get(deviceStore), selector);
     applyDiscovery(discovery);
-    const logEntryId = appendLogEntry({
-      tone: discovery.error ? "error" : "info",
-      source: "selection",
-      title: discovery.error ? m.token_selection_issue() : m.token_selected(),
-      message: selectionMessage(discovery, selector),
-      selector: discovery.selectedSelector || selector,
-      data: {
-        selectedSelector: discovery.selectedSelector || selector,
-        selectedDevice: selectedDeviceSummary(discovery),
-        session: { state: discovery.session.state },
-        error: discovery.error,
-      },
-    });
     setStatusOutcome({
       tone: discovery.error ? "error" : "info",
       title: discovery.error ? m.token_selection_issue() : m.token_selected(),
       message: selectionMessage(discovery, selector),
-      logEntryId,
     });
     await maybeLoadOverview();
     await maybeLoadPasskeys();
     await maybeLoadLargeBlobs();
   } catch (error) {
-    appError.set(messageFromError(error));
+    const runtimeError = runtimeErrorFrom(error);
+    sessionStatus.set(idleSessionStatus("error", runtimeError));
+    setStatusOutcome({ tone: "error", title: m.token_selection_issue(), message: runtimeError.message });
   }
 }
 
@@ -256,8 +223,7 @@ export async function shutdownWorkbench() {
   try {
     await closeOpenSessions();
   } finally {
-    sessions.set([]);
-    sessionStatus.set(idleSessionStatus("", null));
+    sessionStatus.set(idleSessionStatus());
     pendingInteraction.set(null);
     finishOperation();
   }

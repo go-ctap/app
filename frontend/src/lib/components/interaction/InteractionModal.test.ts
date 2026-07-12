@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -27,10 +27,10 @@ function pinPrompt() {
 }
 
 describe("InteractionModal", () => {
-  let onAnswer = vi.fn(async () => true);
+  let onAnswer = vi.fn(async () => {});
 
   beforeEach(() => {
-    onAnswer = vi.fn(async () => true);
+    onAnswer = vi.fn(async () => {});
     resetAppStateForTest();
   });
 
@@ -88,15 +88,18 @@ describe("InteractionModal", () => {
   it("submits a PIN prompt only once while resolution is pending", async () => {
     const user = userEvent.setup();
     let resolveAnswer!: () => void;
-    onAnswer.mockReturnValueOnce(new Promise<boolean>((resolve) => {
-      resolveAnswer = () => resolve(true);
+    onAnswer.mockReturnValueOnce(new Promise<void>((resolve) => {
+      resolveAnswer = resolve;
     }));
     render(InteractionModal, {
       props: { presentation: buildInteractionModalPresentation(pinPrompt()), onAnswer },
     });
 
     const input = await screen.findByLabelText("PIN");
-    await user.type(input, "123456{Enter}{Enter}");
+    await user.type(input, "123456");
+    const form = input.closest("form")!;
+    await fireEvent.submit(form);
+    await fireEvent.submit(form);
 
     expect(onAnswer).toHaveBeenCalledTimes(1);
     resolveAnswer();

@@ -1,5 +1,4 @@
 import { m, value } from "./overview-i18n.js";
-import { formatListItem } from "./overview-raw-format.js";
 import { unsignedIntegerValue } from "./overview-utils.js";
 
 export const EXTENSION_ROWS = [
@@ -14,11 +13,11 @@ export const EXTENSION_ROWS = [
   { id: "thirdPartyPayment", name: m.matrix_name_third_party_payment, description: m.matrix_desc_third_party_payment },
 ] as const;
 
-export function formatCertificationValue(id: string, input: unknown) {
+export function formatCertificationValue(id: string, input: number | undefined) {
   const level = unsignedIntegerValue(input);
   if (id === "FIDO" && level !== undefined && level >= 1 && level <= 6) {
     const baseLevel = Math.ceil(level / 2);
     return `FIDO L${baseLevel}${level % 2 === 0 ? "+" : ""}`;
   }
-  return value.level(String(formatListItem(input)));
+  return value.level(input === undefined ? value.stateUnknown() : String(input));
 }

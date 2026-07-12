@@ -38,7 +38,7 @@
 - Keep state in stores/controllers under `frontend/src/lib/`; screens should not call raw generated bindings directly.
 
 ## Local Map
-- Backend entrypoint: `main.go`; Wails service: `auth_service.go`.
+- Backend entrypoint: `main.go`; Wails service lifecycle: `ctapkit_service.go`; operation facade: `ctapkit_operations.go`.
 - Frontend shell: `frontend/src/App.svelte`.
 - Screens: `frontend/src/screens/`; reusable product/workbench components: `frontend/src/lib/components/` grouped by domain, with shadcn primitives under `frontend/src/lib/components/ui/`; app stores/controllers, typed extractors, and presentation builders: `frontend/src/lib/`. Do not use `frontend/src/lib/` for DTO mirrors.
 - OpenSpec files under `openspec/` are history and requirements, not architectural handcuffs.
@@ -47,4 +47,5 @@
 - Backend: `go test ./... -count=1`.
 - Session, locking, interaction, or cancellation changes: also consider `go test -race ./... -count=1`.
 - Frontend: `cd frontend; pnpm run build`.
+- Frontend type checking: `cd frontend; pnpm run check`.
 - UI smoke tests must use the real Wails window. Wails 3 dev runtime is not reliable through browser automation; ask the user to run `wails3 dev` or `task dev`.

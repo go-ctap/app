@@ -37,7 +37,10 @@
   );
   let busy = $derived(mutation.kind === "delete" && mutation.phase === "executing");
   let preview = $derived.by(() => {
-    if (mutation.kind !== "delete" || !("previewEnvelope" in mutation) || !mutation.previewEnvelope) return null;
+    if (mutation.kind !== "delete" || !("previewEnvelope" in mutation)) return null;
+    if (mutation.phase === "error") {
+      return largeBlobMutationPreview(mutation.previewEnvelope ?? mutation.responseEnvelope);
+    }
     return largeBlobMutationPreview(mutation.previewEnvelope);
   });
   let failureMessage = $derived.by(() => {

@@ -1,6 +1,4 @@
 <script lang="ts">
-	import './app.css';
-
 	import { ShieldCheck } from "@lucide/svelte";
 	import { Events } from "@wailsio/runtime";
 	import { onMount } from "svelte";
@@ -11,7 +9,6 @@
 	import EmptyState from "$lib/components/shared/EmptyState.svelte";
 	import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
 	import ShellStatusBar from "$lib/components/shell/ShellStatusBar.svelte";
-	import { Alert } from "$lib/components/ui/alert/index.js";
 	import { Toaster } from "$lib/components/ui/sonner/index.js";
 	import { AuthenticatorTitlebarControl, WindowControls, WindowTitlebar } from "$lib/components/window-controls";
 	import {
@@ -32,7 +29,6 @@
 	import { buildAuthenticatorTitlebarPresentation, buildInteractionModalPresentation, buildShellStatusPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
 	import {
 		activeScreen,
-		appError,
 		devices,
 		pendingInteraction,
 		selectedDevice,
@@ -48,8 +44,6 @@
 	import LargeBlobs from "./screens/LargeBlobs.svelte";
 	import Passkeys from "./screens/Passkeys.svelte";
 	import Settings from "./screens/Settings.svelte";
-
-	type WailsDataEvent<T> = { data: T };
 
 	let refreshing = $state(false);
 	let initialized = $state(false);
@@ -100,15 +94,15 @@
 
 	onMount(() => {
 		let disposed = false;
-		const offProgress = Events.On("ctapkit:operation-event", (event: WailsDataEvent<kitservice.OperationEventEnvelope>) => {
+		const offProgress = Events.On("ctapkit:operation-event", (event) => {
 			handleOperationProgress(event.data);
 		});
 
-		const offInteraction = Events.On("ctapkit:interaction-requested", (event: WailsDataEvent<kitservice.InteractionPrompt>) => {
+		const offInteraction = Events.On("ctapkit:interaction-requested", (event) => {
 			handleInteractionRequested(event.data);
 		});
 
-		const offDiscovery = Events.On("ctapkit:discovery-changed", (event: WailsDataEvent<kitservice.DiscoveryChangedEnvelope>) => {
+		const offDiscovery = Events.On("ctapkit:discovery-changed", (event) => {
 			handleDiscoveryChanged(event.data);
 		});
 
@@ -124,9 +118,9 @@
 
 		return () => {
 			disposed = true;
-			offProgress?.();
-			offInteraction?.();
-			offDiscovery?.();
+			offProgress();
+			offInteraction();
+			offDiscovery();
 			void shutdownWorkbench();
 		};
 	});
@@ -156,12 +150,6 @@
 					</div>
 				</WindowTitlebar>
 			</header>
-
-			{#if $appError}
-				<div class="app-alert">
-					<Alert variant="destructive" role="alert">{$appError}</Alert>
-				</div>
-			{/if}
 
 			<main class="main-view">
 				{#if $activeScreen === "settings"}
@@ -253,14 +241,6 @@
 			scrollbar-gutter: stable;
 			padding: var(--space-4);
 		}
-		.app-alert {
-			position: fixed;
-			top: 70px;
-			right: var(--space-4);
-			left: calc(var(--sidebar-inline-size) + var(--space-4));
-			z-index: 20;
-		}
-
 		@container workspace-shell (max-width: 48rem) {
 			.titlebar-content {
 				grid-template-columns: minmax(0, 1fr) auto;

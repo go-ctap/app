@@ -91,7 +91,7 @@ describe("large blob presentation", () => {
       selectedCredentialID: "zero",
     });
 
-    expect(presentation.selectedRow).toMatchObject({ blobPresent: true, blobByteCount: 0 });
+    expect(presentation.rows.find((row) => row.id === "zero")).toMatchObject({ blobPresent: true, blobByteCount: 0 });
     expect(presentation.maxSerializedLargeBlobArray).toBe(0);
     expect(presentation.blobCount).toBe(2);
     expect(presentation.readDisabled).toBe(false);
@@ -135,7 +135,6 @@ describe("large blob presentation", () => {
         kind: OperationKind.OperationListLargeBlobs,
         error: { category: "transport-failure", message: "offline" },
       } as LargeBlobListEnvelope,
-      stale: true,
     };
     const presentation = buildLargeBlobsPresentation({
       selectedSelector: "token-1",

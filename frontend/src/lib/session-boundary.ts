@@ -19,7 +19,7 @@ export function applyInvalidSessionError(error: RuntimeErrorEnvelope | null | un
   if (error?.category !== "invalid-session") return;
   pendingInteraction.set(null);
   sessionStatus.update((state) => {
-    const { sessionId: _sessionId, activeOperation: _activeOperation, openedAt: _openedAt, updatedAt: _updatedAt, ...rest } = state;
+    const { sessionId: _sessionId, ...rest } = state;
     return {
       ...rest,
       state: "error",

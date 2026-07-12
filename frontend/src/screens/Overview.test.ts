@@ -86,8 +86,6 @@ describe("Overview", () => {
   it("does not own overview autoload lifecycle", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
 
@@ -99,8 +97,6 @@ describe("Overview", () => {
   it("renders degraded Overview warnings without owning global errors", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedOverviewMDSForTest(null, new RuntimeErrorEnvelope({ message: "MDS offline" }));
@@ -114,8 +110,6 @@ describe("Overview", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", device, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: device,
       sessionId: "session-1",
     });
     seedOverviewEnvelopeForTest(inspectEnvelope("inspect-1", "00000000-0000-0000-0000-000000000001"));
@@ -144,8 +138,6 @@ describe("Overview", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", device, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: device,
       sessionId: "session-1",
     });
     seedOverviewEnvelopeForTest(inspectEnvelope("inspect-1", "00000000-0000-0000-0000-000000000001", true));

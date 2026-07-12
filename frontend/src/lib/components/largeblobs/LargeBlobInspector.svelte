@@ -2,7 +2,11 @@
   import { Copy, FilePenLine, ScanText, Trash2 } from "@lucide/svelte";
 
   import { ErrorCategory } from "../../../../bindings/github.com/go-ctap/kit/model";
-  import { BlobState, LargeBlobKeyState } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
+  import {
+    BlobState,
+    DecodeMode,
+    LargeBlobKeyState,
+  } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
 
   import { copyToClipboard } from "$lib/clipboard";
   import JsonView from "$lib/components/shared/JsonView.svelte";
@@ -10,6 +14,7 @@
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import { Spinner } from "$lib/components/ui/spinner/index.js";
+  import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import { largeBlobReadReport } from "$lib/ctapkit-results";
   import type { LargeBlobMutationState, LargeBlobReadState } from "$lib/features/largeblobs/state";
@@ -21,10 +26,12 @@
     row: LargeBlobCredentialRow;
     readState: LargeBlobReadState;
     mutation: LargeBlobMutationState;
+    decodeMode: DecodeMode;
     readDisabled: boolean;
     writeDisabled: boolean;
     deleteDisabled: boolean;
     onRead: (credentialIDHex: string) => void | Promise<boolean>;
+    onDecodeModeChange: (mode: DecodeMode) => void;
     onWrite: (credentialIDHex: string) => void;
     onDelete: (credentialIDHex: string) => void | Promise<boolean>;
   };
@@ -33,10 +40,12 @@
     row,
     readState,
     mutation,
+    decodeMode,
     readDisabled,
     writeDisabled,
     deleteDisabled,
     onRead,
+    onDecodeModeChange,
     onWrite,
     onDelete,
   }: Props = $props();
@@ -71,33 +80,32 @@
   let readBlobPresent = $derived(
     Boolean(report?.blobPresent || report?.array.blobState === BlobState.BlobStatePresent),
   );
-  let decodedPayload = $derived(
-    report && readBlobPresent ? decodeLargeBlob(report.rawHex ?? "") : null,
-  );
+  const decodeModes = [
+    DecodeMode.DecodeModeNone,
+    DecodeMode.DecodeModeUTF8,
+    DecodeMode.DecodeModeJSON,
+    DecodeMode.DecodeModeCBOR,
+  ] as const;
 
-  type DecodedPayload =
-    | { kind: "json"; value: unknown }
-    | { kind: "text"; value: string }
-    | { kind: "raw" };
-
-  function decodeLargeBlob(rawHex: string): DecodedPayload {
-    const bytes = new Uint8Array(rawHex.length / 2);
-    for (let offset = 0; offset < rawHex.length; offset += 2) {
-      bytes[offset / 2] = Number.parseInt(rawHex.slice(offset, offset + 2), 16);
+  function decodeModeLabel(mode: DecodeMode) {
+    switch (mode) {
+      case DecodeMode.DecodeModeNone:
+        return m.raw_hex();
+      case DecodeMode.DecodeModeUTF8:
+        return m.payload_encoding_utf8();
+      case DecodeMode.DecodeModeJSON:
+        return m.decode_json();
+      case DecodeMode.DecodeModeCBOR:
+        return "CBOR";
+      default:
+        return mode;
     }
+  }
 
-    let text: string;
-    try {
-      text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    } catch {
-      return { kind: "raw" };
-    }
-
-    try {
-      return { kind: "json", value: JSON.parse(text) };
-    } catch {
-      return { kind: "text", value: text };
-    }
+  function handleDecodeModeChange(value: string | string[]) {
+    if (Array.isArray(value)) return;
+    const mode = decodeModes.find((candidate) => candidate === value);
+    if (mode) onDecodeModeChange(mode);
   }
 
   function readBlobStateLabel() {
@@ -185,20 +193,35 @@
       <section class="large-blob-detail-section" aria-labelledby={`large-blob-read-${row.id}`}>
         <div class="large-blob-read-heading">
           <h4 id={`large-blob-read-${row.id}`}>{m.read_result()}</h4>
-          <Button
-            variant="outline"
-            size="sm"
-            type="button"
-            disabled={readDisabled || readingSelected}
-            onclick={() => onRead(row.id)}
-          >
-            {#if readingSelected}
-              <Spinner data-icon="inline-start" aria-hidden="true" />
-            {:else}
-              <ScanText data-icon="inline-start" aria-hidden="true" />
-            {/if}
-            {report ? m.read_again() : m.read_blob()}
-          </Button>
+          <div class="large-blob-read-actions">
+            <ToggleGroup.Root
+              type="single"
+              value={decodeMode}
+              variant="outline"
+              size="sm"
+              aria-label={m.large_blob_decode_mode()}
+              disabled={readingSelected}
+              onValueChange={handleDecodeModeChange}
+            >
+              {#each decodeModes as mode (mode)}
+                <ToggleGroup.Item value={mode}>{decodeModeLabel(mode)}</ToggleGroup.Item>
+              {/each}
+            </ToggleGroup.Root>
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
+              disabled={readDisabled || readingSelected}
+              onclick={() => onRead(row.id)}
+            >
+              {#if readingSelected}
+                <Spinner data-icon="inline-start" aria-hidden="true" />
+              {:else}
+                <ScanText data-icon="inline-start" aria-hidden="true" />
+              {/if}
+              {report ? m.read_again() : m.read_blob()}
+            </Button>
+          </div>
         </div>
 
         {#if failureMessage}
@@ -224,30 +247,38 @@
             <Badge variant="outline">{m.bytes_count({ count: report.rawByteCount })}</Badge>
           </div>
 
-          {#if readBlobPresent && decodedPayload}
-            {#if decodedPayload.kind === "json"}
+          {#if readBlobPresent}
+            {#if report.rawByteCount === 0}
+              <Alert.Root role="status">
+                <Alert.Description>{m.decoded_payload_empty()}</Alert.Description>
+              </Alert.Root>
+            {:else if report.decode.success && report.decode.mode === DecodeMode.DecodeModeUTF8}
+              <!-- svelte-ignore a11y_no_noninteractive_tabindex (scrollable code region) -->
+              <div
+                class="large-blob-decoded-text"
+                role="region"
+                aria-label={m.payload_encoding_utf8()}
+                tabindex="0"
+              >
+                <pre>{report.decode.decodedText}</pre>
+              </div>
+            {:else if report.decode.success && (
+              report.decode.mode === DecodeMode.DecodeModeJSON
+              || report.decode.mode === DecodeMode.DecodeModeCBOR
+            )}
               <JsonView
-                value={decodedPayload.value}
-                title={m.decoded_as({ mode: m.decode_json() })}
+                value={report.decode.decodedValue}
+                title={m.decoded_as({ mode: decodeModeLabel(report.decode.mode) })}
                 variant="bare"
               />
-            {:else if decodedPayload.kind === "text"}
-              {#if decodedPayload.value}
-                <!-- svelte-ignore a11y_no_noninteractive_tabindex (scrollable code region) -->
-                <div
-                  class="large-blob-decoded-text"
-                  role="region"
-                  aria-label={m.payload_encoding_utf8()}
-                  tabindex="0"
-                >
-                  <pre>{decodedPayload.value}</pre>
-                </div>
-              {:else}
-                <Alert.Root role="status">
-                  <Alert.Description>{m.decoded_payload_empty()}</Alert.Description>
+            {:else}
+              {#if report.decode.requested && report.decode.failure}
+                <Alert.Root variant="warning" role="status">
+                  <Alert.Title>{m.large_blob_decode_failed()}</Alert.Title>
+                  <Alert.Description>{report.decode.failure}</Alert.Description>
                 </Alert.Root>
               {/if}
-            {:else if report.rawHex}
+              {#if report.rawHex}
               <div class="large-blob-raw-heading">
                 <h5>{m.raw_hex()}</h5>
                 <Button
@@ -264,6 +295,7 @@
               <div class="large-blob-raw-hex" role="region" aria-label={m.raw_hex()} tabindex="0">
                 <pre>{report.rawHex}</pre>
               </div>
+              {/if}
             {/if}
           {/if}
         {:else}
@@ -317,6 +349,7 @@
   }
 
   .large-blob-inspector-actions,
+  .large-blob-read-actions,
   .large-blob-read-badges {
     display: flex;
     flex-wrap: wrap;

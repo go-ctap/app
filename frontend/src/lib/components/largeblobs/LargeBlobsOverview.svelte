@@ -129,7 +129,6 @@
         {#if presentation.support}
           {#each presentation.supportItems as item (item.label)}
             <StatusBadge
-              value={item.value}
               label={`${item.label}: ${item.value ? m.state_available() : m.state_not_available()}`}
               tone={item.value ? "ok" : "neutral"}
             />

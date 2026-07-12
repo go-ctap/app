@@ -24,6 +24,7 @@
     reloadLargeBlobs,
     retryLargeBlobMutation,
     selectLargeBlobCredential,
+    setLargeBlobsDecodeMode,
     setLargeBlobsPayloadEncoding,
     setLargeBlobsQuery,
     setLargeBlobsStatusFilter,
@@ -36,6 +37,7 @@
   } from "$lib/largeblobs-presentation";
   import {
     largeBlobsInventoryState,
+    largeBlobsDecodeMode,
     largeBlobsMutation,
     largeBlobsQuery,
     largeBlobsReadState,
@@ -56,7 +58,6 @@
     sessionBusy: $sessionBusy,
     sessionReady: $sessionStatus.state === "ready" && Boolean($sessionStatus.sessionId),
     inventoryState: $largeBlobsInventoryState,
-    readState: $largeBlobsReadState,
     mutation: $largeBlobsMutation,
     query: $largeBlobsQuery,
     statusFilter: $largeBlobsStatusFilter,
@@ -73,15 +74,21 @@
   }
 
   async function handleConfirmWrite() {
-    return confirmLargeBlobWrite(() => toast.success(m.large_blob_written()));
+    const succeeded = await confirmLargeBlobWrite();
+    if (succeeded) toast.success(m.large_blob_written());
+    return succeeded;
   }
 
   async function handleConfirmDelete() {
-    return confirmLargeBlobDelete(() => toast.success(m.large_blob_deleted()));
+    const succeeded = await confirmLargeBlobDelete();
+    if (succeeded) toast.success(m.large_blob_deleted());
+    return succeeded;
   }
 
   async function handleConfirmCleanup() {
-    return confirmLargeBlobCleanup(() => toast.success(m.large_blob_cleanup_complete()));
+    const succeeded = await confirmLargeBlobCleanup();
+    if (succeeded) toast.success(m.large_blob_cleanup_complete());
+    return succeeded;
   }
 </script>
 
@@ -157,9 +164,11 @@
         presentation={largeBlobs}
         readState={$largeBlobsReadState}
         mutation={$largeBlobsMutation}
+        decodeMode={$largeBlobsDecodeMode}
         onQueryChange={setLargeBlobsQuery}
         onFilterChange={setLargeBlobsStatusFilter}
         onSelect={selectLargeBlobCredential}
+        onDecodeModeChange={setLargeBlobsDecodeMode}
         onRead={readLargeBlob}
         onWrite={beginLargeBlobWrite}
         onDelete={beginLargeBlobDelete}

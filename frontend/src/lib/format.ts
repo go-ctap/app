@@ -20,13 +20,6 @@ export function deviceDetail(device: DeviceReport | null | undefined) {
   return device.serial || device.deviceId || "";
 }
 
-export function stateLabel(value: unknown) {
-  if (value === true) return m.state_available();
-  if (value === false) return m.state_not_available();
-  if (value === null || value === undefined || value === "") return m.state_unknown();
-  return String(value).replaceAll("_", " ");
-}
-
 export function sessionStateLabel(value: unknown) {
   const raw = String(value || "");
   if (["idle", "opening", "ready", "running", "error"].includes(raw)) {
@@ -44,14 +37,6 @@ export function operationStageLabel(value: unknown) {
     "capturing-bio-sample": m.stage_capturing_bio_sample(),
   };
   return labels[raw] || raw.replaceAll("-", " ") || m.operation_running();
-}
-
-export function pretty(value: unknown) {
-  return JSON.stringify(value ?? null, null, 2);
-}
-
-export function asList(value: unknown) {
-  return Array.isArray(value) ? value : [];
 }
 
 function sessionStateText(raw: string) {

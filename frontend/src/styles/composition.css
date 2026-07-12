@@ -22,25 +22,4 @@
     flex-basis: calc((var(--switcher-threshold, 48rem) - 100%) * 999);
   }
 
-  .sidebar-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  @media (min-width: 1020px) {
-    .sidebar-layout {
-      grid-template-columns: minmax(0, 1fr) var(--sidebar-width, 24rem);
-    }
-  }
-
-  .reel {
-    display: flex;
-    gap: var(--reel-space, var(--space-3));
-    overflow-x: auto;
-  }
-
-  .center {
-    display: grid;
-    place-items: center;
-  }
 }

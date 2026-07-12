@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ErrorCategory, OperationKind, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
 import {
+  DecodeMode,
   MutationOperation,
 } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import type {
@@ -27,11 +28,14 @@ import {
   previewLargeBlobWrite,
   readLargeBlob,
   retryLargeBlobMutation,
+  setLargeBlobsDecodeMode,
   updateLargeBlobWriteDraft,
 } from "./largeblobs-controller";
 import {
   completeLargeBlobsInventoryLoad,
+  largeBlobsDecodeMode,
   largeBlobsInventoryState,
+  largeBlobsInventoryIsStale,
   largeBlobsMutation,
   largeBlobsPayloadEncoding,
   largeBlobsReadState,
@@ -40,7 +44,7 @@ import {
   resetLargeBlobsStateForTest,
 } from "./features/largeblobs/state";
 import { resetSessionStateForTest, selectedSelector, sessionStatus } from "./features/session/state";
-import { resetWorkbenchStateForTest, workbenchLog } from "./features/workbench/state";
+import { resetWorkbenchStateForTest } from "./features/workbench/state";
 
 function listEnvelope(keyState = "available"): LargeBlobListEnvelope {
   return {
@@ -134,8 +138,6 @@ beforeEach(() => {
   sessionStatus.set({
     state: "ready",
     sessionId: "session-1",
-    selectedSelector: "token-1",
-    selectedDevice: null,
   });
   completeLargeBlobsInventoryLoad(listEnvelope(), "2026-07-11T00:00:00.000Z");
 });
@@ -145,15 +147,17 @@ afterEach(() => {
 });
 
 describe("large blob controller", () => {
-  it("builds a byte-read request without coupling it to presentation mode", () => {
+  it("builds an exact typed read request with the selected decode mode", () => {
     expect(buildLargeBlobReadRequest(
       "session-1",
       VerificationFlow.VerificationFlowPIN,
       "cafe",
+      DecodeMode.DecodeModeCBOR,
     )).toEqual({
       sessionId: "session-1",
       verificationFlow: VerificationFlow.VerificationFlowPIN,
       credentialIdHex: "cafe",
+      decodeMode: DecodeMode.DecodeModeCBOR,
     });
   });
 
@@ -179,7 +183,7 @@ describe("large blob controller", () => {
     )).toMatchObject({ payload: "", dryRun: true });
   });
 
-  it("retains a capacity preview on error, blocks confirm, and never logs payload bytes", async () => {
+  it("retains a capacity response on error without aliasing it as a successful preview", async () => {
     const capacity = previewEnvelope(
       OperationKind.OperationWriteLargeBlob,
       MutationOperation.MutationCreate,
@@ -198,11 +202,10 @@ describe("large blob controller", () => {
     const mutation = get(largeBlobsMutation);
     expect(mutation).toMatchObject({ kind: "write", phase: "error", failedPhase: "previewing" });
     if (mutation.kind !== "write" || mutation.phase !== "error") return;
-    expect(mutation.previewEnvelope).toBe(capacity);
-    expect(mutation.previewEnvelope?.result?.preview.serializedLargeBlobArrayLimit).toBe(0);
+    expect(mutation.previewEnvelope).toBeNull();
+    expect(mutation.responseEnvelope).toBe(capacity);
+    expect(mutation.responseEnvelope?.result?.preview.serializedLargeBlobArrayLimit).toBe(0);
     expect(await confirmLargeBlobWrite()).toBe(false);
-    expect(JSON.stringify(get(workbenchLog))).not.toContain("sensitive payload");
-    expect(JSON.stringify(get(workbenchLog))).not.toContain("c2Vuc2l0aXZlIHBheWxvYWQ=");
   });
 
   it("retries an execution failure through refresh and a new preview without re-executing", async () => {
@@ -354,7 +357,8 @@ describe("large blob controller", () => {
     expect(await confirmLargeBlobWrite()).toBe(true);
     expect(get(largeBlobsMutation)).toEqual({ kind: "idle", phase: "idle" });
     expect(get(largeBlobsReadState)).toEqual({ phase: "idle" });
-    expect(get(largeBlobsInventoryState)).toMatchObject({ phase: "error", stale: true });
+    expect(get(largeBlobsInventoryState)).toMatchObject({ phase: "error" });
+    expect(largeBlobsInventoryIsStale(get(largeBlobsInventoryState))).toBe(true);
     expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).not.toBeNull();
   });
 
@@ -393,12 +397,25 @@ describe("large blob controller", () => {
           array: { read: false, blobCount: 0, blobPresent: false, blobState: "unknown_key_missing" },
           blobPresent: false,
           rawByteCount: 0,
+          decode: {
+            requested: true,
+            mode: DecodeMode.DecodeModeCBOR,
+            success: false,
+            failure: "no blob present",
+          },
         },
       },
     } as unknown as LargeBlobReadEnvelope;
-    vi.spyOn(api, "readLargeBlob").mockResolvedValue(read);
+    const readOperation = vi.spyOn(api, "readLargeBlob").mockResolvedValue(read);
 
+    setLargeBlobsDecodeMode(DecodeMode.DecodeModeCBOR);
     expect(await readLargeBlob("cafe")).toBe(true);
+    expect(readOperation).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      verificationFlow: VerificationFlow.VerificationFlowDefault,
+      credentialIdHex: "cafe",
+      decodeMode: DecodeMode.DecodeModeCBOR,
+    });
     expect(get(largeBlobsReadState)).toMatchObject({ phase: "ready", responseEnvelope: read });
   });
 
@@ -426,7 +443,8 @@ describe("large blob controller", () => {
 
     const { loadLargeBlobs } = await import("./largeblobs-controller");
     expect(await loadLargeBlobs({ refresh: true })).toBe(false);
-    expect(get(largeBlobsInventoryState)).toMatchObject({ phase: "error", stale: true });
+    expect(get(largeBlobsInventoryState)).toMatchObject({ phase: "error" });
+    expect(largeBlobsInventoryIsStale(get(largeBlobsInventoryState))).toBe(true);
     expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).not.toBeNull();
     expect(get(largeBlobsReadState)).toEqual({ phase: "idle" });
     expect(await readLargeBlob("cafe")).toBe(false);
@@ -449,6 +467,7 @@ describe("large blob controller", () => {
   it("resets device-owned state while preserving verification and encoding preferences", () => {
     largeBlobsVerificationFlow.set(VerificationFlow.VerificationFlowPIN);
     largeBlobsPayloadEncoding.set("hex");
+    largeBlobsDecodeMode.set(DecodeMode.DecodeModeCBOR);
     beginLargeBlobWrite("cafe");
 
     resetLargeBlobsDeviceState();
@@ -457,5 +476,6 @@ describe("large blob controller", () => {
     expect(get(largeBlobsMutation)).toEqual({ kind: "idle", phase: "idle" });
     expect(get(largeBlobsVerificationFlow)).toBe(VerificationFlow.VerificationFlowPIN);
     expect(get(largeBlobsPayloadEncoding)).toBe("hex");
+    expect(get(largeBlobsDecodeMode)).toBe(DecodeMode.DecodeModeCBOR);
   });
 });

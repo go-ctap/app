@@ -7,22 +7,16 @@ import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance"
 import { MutationOperation } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type {
-  BioEnrollEnvelope,
   BioSensorEnvelope,
   CredentialDeleteEnvelope,
   CredentialUpdateEnvelope,
-  CredentialsEnvelope,
   InspectEnvelope,
   LargeBlobListEnvelope,
   LargeBlobMutationEnvelope,
   LargeBlobReadEnvelope,
-  MakeCredentialEnvelope,
-  PINEnvelope,
-  ResetFactoryEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
-import type { OperationEnvelope } from "./api";
 import {
   bioSensorReport,
   credentialDeletePreview,
@@ -34,7 +28,6 @@ import {
   largeBlobMutationPreview,
   largeBlobMutationResult,
   largeBlobReadReport,
-  operationEnvelopeLogData,
 } from "./ctapkit-results";
 
 const device: DeviceReport = {
@@ -62,15 +55,6 @@ describe("ctapkit result extractors", () => {
     expect(inspectResult(envelope)).toBe(result);
   });
 
-  it("does not extract inspect output from another operation kind", () => {
-    const envelope = {
-      kind: OperationKind.OperationBioSensorInfo,
-      result: { result: { device, info: { versions: [], aaguid: "", conformance: new Report() } } },
-    } as unknown as BioSensorEnvelope;
-
-    expect(inspectResult(envelope)).toBeNull();
-  });
-
   it("extracts the nested bio sensor report from an operation envelope", () => {
     const report: BioSensorReport = {
       device,
@@ -82,89 +66,6 @@ describe("ctapkit result extractors", () => {
     const envelope = { kind: OperationKind.OperationBioSensorInfo, result: { report } } as BioSensorEnvelope;
 
     expect(bioSensorReport(envelope)).toBe(report);
-  });
-
-  it("summarizes operation log data without generic result sniffing", () => {
-    const envelope: OperationEnvelope = {
-      operationId: "op-1",
-      sessionId: "session-1",
-      kind: OperationKind.OperationListCredentials,
-      result: {
-        report: {
-          summary: { totalCredentials: 2 },
-          groups: [{ rpID: "example.test" }],
-        },
-      },
-    } as CredentialsEnvelope;
-
-    expect(operationEnvelopeLogData(envelope)).toEqual({
-      operationId: "op-1",
-      sessionId: "session-1",
-      kind: OperationKind.OperationListCredentials,
-      error: null,
-      result: {
-        kind: OperationKind.OperationListCredentials,
-        counts: {
-          groups: 1,
-          credentials: 2,
-        },
-      },
-    });
-  });
-
-  it("summarizes typed preview envelopes through the canonical operation envelope", () => {
-    const envelope: OperationEnvelope = {
-      operationId: "op-2",
-      sessionId: "session-1",
-      kind: OperationKind.OperationSetPIN,
-      result: {
-        preview: {
-          warnings: [{ message: "short pin" }],
-        },
-        result: null,
-      },
-    } as PINEnvelope;
-
-    expect(operationEnvelopeLogData(envelope)).toEqual({
-      operationId: "op-2",
-      sessionId: "session-1",
-      kind: OperationKind.OperationSetPIN,
-      error: null,
-      result: {
-        kind: OperationKind.OperationSetPIN,
-        completed: false,
-        hasPreview: true,
-        counts: {
-          warnings: 1,
-        },
-      },
-    });
-  });
-
-  it("summarizes large blob mutations through their typed envelope", () => {
-    const envelope: OperationEnvelope = {
-      operationId: "op-3",
-      sessionId: "session-1",
-      kind: OperationKind.OperationWriteLargeBlob,
-      result: {
-        preview: {
-          operation: MutationOperation.MutationReplace,
-          warnings: [{ message: "overwrite" }],
-        },
-        result: {
-          blobCountAfter: 1,
-        },
-      },
-    } as LargeBlobMutationEnvelope;
-
-    expect(operationEnvelopeLogData(envelope).result).toEqual({
-      kind: OperationKind.OperationWriteLargeBlob,
-      completed: true,
-      hasPreview: true,
-      counts: {
-        warnings: 1,
-      },
-    });
   });
 
   it("extracts typed large blob list and read reports only from successful matching envelopes", () => {
@@ -204,32 +105,6 @@ describe("ctapkit result extractors", () => {
     expect(largeBlobReadReport(read)).toBeNull();
   });
 
-  it("summarizes large blob reads without logging raw payload bytes", () => {
-    const envelope = {
-      operationId: "read-secret",
-      sessionId: "session-1",
-      kind: OperationKind.OperationReadLargeBlob,
-      result: {
-        report: {
-          device,
-          support: { largeBlobs: true, largeBlobKeyExtension: true },
-          target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
-          largeBlobKeyState: "available",
-          array: { read: true, blobCount: 1, blobPresent: true, blobState: "present" },
-          blobPresent: true,
-          rawHex: "7365637265742d726177",
-          rawByteCount: 10,
-        },
-      },
-    } as LargeBlobReadEnvelope;
-
-    const serialized = JSON.stringify(operationEnvelopeLogData(envelope));
-    expect(operationEnvelopeLogData(envelope).result).toEqual({
-      kind: OperationKind.OperationReadLargeBlob,
-    });
-    expect(serialized).not.toContain("7365637265742d726177");
-  });
-
   it("preserves a meaningful mutation preview on error but rejects the generated zero preview", () => {
     const capacity = {
       operationId: "op-capacity",
@@ -251,16 +126,8 @@ describe("ctapkit result extractors", () => {
     expect(largeBlobMutationPreview(capacity)?.serializedLargeBlobArraySizeAfter).toBe(2049);
     expect(largeBlobMutationPreview(capacity)?.serializedLargeBlobArrayLimit).toBe(0);
     expect(largeBlobMutationResult(capacity)).toBeNull();
-    expect(operationEnvelopeLogData(capacity).result).toEqual({
-      kind: OperationKind.OperationWriteLargeBlob,
-      completed: false,
-      hasPreview: true,
-      counts: { warnings: 0 },
-    });
-
     capacity.result!.preview.operation = MutationOperation.$zero;
     expect(largeBlobMutationPreview(capacity)).toBeNull();
-    expect(operationEnvelopeLogData(capacity).result).toBeNull();
   });
 
   it("extracts a completed large blob result only when the envelope itself succeeded", () => {
@@ -275,80 +142,6 @@ describe("ctapkit result extractors", () => {
     expect(largeBlobMutationResult(envelope)?.credentialIDHex).toBe("cafe");
     envelope.error = { message: "write may not have completed" };
     expect(largeBlobMutationResult(envelope)).toBeNull();
-  });
-
-  it("summarizes bio enroll samples and preview warnings through the typed envelope", () => {
-    const envelope: OperationEnvelope = {
-      operationId: "op-4",
-      sessionId: "session-1",
-      kind: OperationKind.OperationBioEnroll,
-      result: {
-        preview: {
-          warnings: [{ message: "touch required" }, { message: "preview only" }],
-        },
-        result: {
-          samples: [{ sampleStatus: "ok" }, { sampleStatus: "retry" }],
-        },
-      },
-    } as unknown as BioEnrollEnvelope;
-
-    expect(operationEnvelopeLogData(envelope).result).toEqual({
-      kind: OperationKind.OperationBioEnroll,
-      completed: true,
-      hasPreview: true,
-      counts: {
-        samples: 2,
-        warnings: 2,
-      },
-    });
-  });
-
-  it("summarizes reset preview through the typed envelope", () => {
-    const envelope: OperationEnvelope = {
-      operationId: "op-5",
-      sessionId: "session-1",
-      kind: OperationKind.OperationResetFactory,
-      result: {
-        preview: {
-          warnings: [{ message: "destructive" }],
-        },
-        result: null,
-      },
-    } as ResetFactoryEnvelope;
-
-    expect(operationEnvelopeLogData(envelope).result).toEqual({
-      kind: OperationKind.OperationResetFactory,
-      completed: false,
-      hasPreview: true,
-      counts: {
-        warnings: 1,
-      },
-    });
-  });
-
-  it("summarizes make credential preview through the typed envelope", () => {
-    const envelope: OperationEnvelope = {
-      operationId: "op-6",
-      sessionId: "session-1",
-      kind: OperationKind.OperationMakeCredential,
-      result: {
-        preview: {
-          warnings: [{ message: "resident key" }],
-        },
-        result: {
-          response: {},
-        },
-      },
-    } as unknown as MakeCredentialEnvelope;
-
-    expect(operationEnvelopeLogData(envelope).result).toEqual({
-      kind: OperationKind.OperationMakeCredential,
-      completed: true,
-      hasPreview: true,
-      counts: {
-        warnings: 1,
-      },
-    });
   });
 
   it("extracts credential mutation previews and completed results without generic traversal", () => {

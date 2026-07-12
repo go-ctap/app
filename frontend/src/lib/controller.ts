@@ -44,6 +44,7 @@ export {
   readLargeBlob,
   retryLargeBlobMutation,
   selectLargeBlobCredential,
+  setLargeBlobsDecodeMode,
   setLargeBlobsPayloadEncoding,
   setLargeBlobsQuery,
   setLargeBlobsStatusFilter,

@@ -5,14 +5,7 @@ export type SessionState = "idle" | "opening" | "ready" | "running" | "error";
 
 export type SessionStatus = {
   sessionId?: SessionID;
-  selectedSelector: string;
-  selectedDevice: DeviceReport | null;
-  deviceId?: string;
-  deviceLabel?: string;
   state: SessionState;
-  activeOperation?: string;
-  openedAt?: string;
-  updatedAt?: string;
   error?: RuntimeErrorEnvelope | null;
 };
 
@@ -39,21 +32,8 @@ export function labelForDevice(device: DeviceReport) {
   return [name, device.serial].filter(Boolean).join(" · ");
 }
 
-export function idleSessionStatus(
-  selectedSelector: string,
-  selectedDevice: DeviceReport | null,
-  state: SessionState = "idle",
-  error?: RuntimeErrorEnvelope | null,
-): SessionStatus {
-  const status: SessionStatus = {
-    selectedSelector,
-    selectedDevice,
-    state,
-  };
-  if (selectedDevice) {
-    status.deviceId = selectedDevice.deviceId;
-    status.deviceLabel = labelForDevice(selectedDevice);
-  }
+export function idleSessionStatus(state: SessionState = "idle", error?: RuntimeErrorEnvelope | null): SessionStatus {
+  const status: SessionStatus = { state };
   if (error) status.error = error;
   return status;
 }
@@ -72,18 +52,10 @@ export function statusFromSession(
   stateOverride?: SessionState,
   error?: RuntimeErrorEnvelope | null,
 ): SessionStatus {
-  const device = snapshot.info.device;
   const status: SessionStatus = {
     sessionId: snapshot.id,
-    selectedSelector: selectorFromDevice(device),
-    selectedDevice: device,
-    deviceId: device.deviceId,
-    deviceLabel: labelForDevice(device),
     state: stateOverride || (snapshot.running ? "running" : "ready"),
-    openedAt: String(snapshot.openedAt),
-    updatedAt: String(snapshot.updatedAt),
   };
-  if (snapshot.running) status.activeOperation = "";
   if (error) status.error = error;
   return status;
 }

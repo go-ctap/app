@@ -5,6 +5,7 @@ import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/r
 import { m } from "../paraglide/messages.js";
 import { credentialsReport } from "./ctapkit-results.js";
 import type { PasskeysInventoryState, PasskeysMutationState, PasskeysStatusFilter } from "./features/passkeys/state.js";
+import { passkeysInventoryIsStale } from "./features/passkeys/state.js";
 import type { SessionStatus } from "./session-model.js";
 
 const RETRYABLE_MUTATION_CATEGORIES = new Set<ErrorCategoryValue>([
@@ -198,20 +199,16 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
   const allRows = buildPasskeyRows(report);
   const rows = buildPasskeyRows(report, query, statusFilter);
   const selectedCredentialID = input.selectedCredentialID ?? "";
-  const selectedRow = allRows.find((row) => row.id === selectedCredentialID) ?? null;
   const support = report?.support;
   const loading = input.inventoryState.phase === "loading" || input.inventoryState.phase === "refreshing";
-  const mutationsBlocked = input.inventoryState.stale || loading || input.sessionBusy || !input.sessionReady;
+  const stale = passkeysInventoryIsStale(input.inventoryState);
+  const mutationsBlocked = stale || loading || input.sessionBusy || !input.sessionReady;
 
   return {
     selector: input.selectedSelector,
-    phase: input.inventoryState.phase,
     loading,
-    refreshing: input.inventoryState.phase === "refreshing",
-    stale: input.inventoryState.stale,
+    stale,
     lastSuccessfulAt: input.inventoryState.lastSuccessfulAt,
-    responseEnvelope: input.inventoryState.responseEnvelope,
-    runtimeError: input.inventoryState.runtimeError,
     failureMessage: input.inventoryState.runtimeError?.message
       ?? input.inventoryState.responseEnvelope?.error?.message
       ?? (input.inventoryState.phase === "error" && input.inventoryState.responseEnvelope ? m.operation_missing_result() : null),
@@ -221,7 +218,6 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
       ? !report.support.credentialManagement
       : input.inventoryState.phase === "unsupported",
     reloadDisabled: loading || input.sessionBusy,
-    mutationsBlocked,
     updateDisabled: mutationsBlocked || !support?.credentialManagement || Boolean(support?.previewOnly),
     deleteDisabled: mutationsBlocked || !support?.credentialManagement,
     hasReport: Boolean(report),
@@ -229,19 +225,10 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
     query,
     statusFilter,
     rows,
-    allRows,
-    filteredCredentialCount: rows.length,
     selectedCredentialID,
-    selectedRow,
-    selectedRowFilteredOut: Boolean(selectedRow && !rows.some((row) => row.id === selectedRow.id)),
     emptyInventory: Boolean(report && allRows.length === 0),
     emptyFilteredResult: Boolean(report && allRows.length > 0 && rows.length === 0),
     capacity: passkeysCapacity(report),
     selectedDeviceName: input.selectedDevice?.product || input.selectedDevice?.deviceId || m.authenticator(),
-    supportItems: [
-      { label: m.credential_management_support(), value: support?.credentialManagement ?? false },
-      { label: m.credential_management_preview(), value: support?.previewOnly ?? false },
-      { label: m.read_only_permission(), value: support?.readOnlyPermission ?? false },
-    ],
   };
 }

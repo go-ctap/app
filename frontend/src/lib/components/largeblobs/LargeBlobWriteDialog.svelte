@@ -62,8 +62,8 @@
     if (mutation.phase === "review" || mutation.phase === "executing") {
       return largeBlobMutationPreview(mutation.previewEnvelope);
     }
-    if (mutation.phase === "error" && mutation.previewEnvelope) {
-      return largeBlobMutationPreview(mutation.previewEnvelope);
+    if (mutation.phase === "error") {
+      return largeBlobMutationPreview(mutation.previewEnvelope ?? mutation.responseEnvelope);
     }
     return null;
   });
@@ -92,6 +92,7 @@
       || mutation.responseEnvelope?.error?.category === ErrorCategory.ErrorCanceled
     ),
   );
+  let failedPhase = $derived(mutation.phase === "error" ? mutation.failedPhase : null);
 
   function validationMessage(error: LargeBlobPayloadValidationError | null) {
     if (error === "invalid-hex-character") return m.payload_hex_invalid();
@@ -185,7 +186,7 @@
           >
             <Alert.Title>
               {failureCanceled
-                ? m.operation_canceled_with_label({ label: mutation.failedPhase === "previewing" ? m.write_preview() : m.large_blob_write() })
+                ? m.operation_canceled_with_label({ label: failedPhase === "previewing" ? m.write_preview() : m.large_blob_write() })
                 : m.operation_failed()}
             </Alert.Title>
             <Alert.Description>{failureMessage}</Alert.Description>

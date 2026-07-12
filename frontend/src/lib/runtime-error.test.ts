@@ -23,11 +23,15 @@ describe("runtimeErrorFrom", () => {
       .toBe("fetch MDS blob: network timeout");
   });
 
-  it("keeps plain bridge error messages and categories", () => {
-    expect(runtimeErrorFrom({
-      category: ErrorCategory.ErrorInvalidSession,
-      error: { message: "session closed" },
-    })).toMatchObject({
+  it("extracts the typed service error from the Wails Error cause", () => {
+    const error = new Error("CtapkitService.Session failed", {
+      cause: {
+        category: ErrorCategory.ErrorInvalidSession,
+        message: "session closed",
+      },
+    });
+
+    expect(runtimeErrorFrom(error)).toMatchObject({
       category: "invalid-session",
       message: "session closed",
     });

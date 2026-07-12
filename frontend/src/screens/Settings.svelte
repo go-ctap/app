@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as Field from "$lib/components/ui/field/index.js";
   import * as Select from "$lib/components/ui/select/index.js";
   import { availableLocales, currentLocale, localeLabel, setAppLocale } from "$lib/i18n";
 
@@ -23,10 +24,10 @@
       <p>{m.settings_language_description()}</p>
     </div>
 
-    <div class="settings-field">
-      <span>{m.language()}</span>
+    <Field.Field>
+      <Field.Label for="settings-language">{m.language()}</Field.Label>
       <Select.Root type="single" value={$currentLocale} onValueChange={handleLocaleChange}>
-        <Select.Trigger class="settings-language-trigger" aria-label={m.language()}>
+        <Select.Trigger id="settings-language" class="settings-language-trigger">
           {localeLabel($currentLocale)}
         </Select.Trigger>
         <Select.Content side="bottom" align="end">
@@ -37,7 +38,7 @@
           </Select.Group>
         </Select.Content>
       </Select.Root>
-    </div>
+    </Field.Field>
   </section>
 </section>
 
@@ -89,15 +90,6 @@
 
     .settings-section h2 {
       font-size: 0.96rem;
-    }
-
-    .settings-field {
-      display: grid;
-      gap: var(--space-2);
-      min-width: 0;
-      color: var(--muted-foreground);
-      font-size: 0.78rem;
-      font-weight: 700;
     }
 
     :global(.settings-language-trigger) {

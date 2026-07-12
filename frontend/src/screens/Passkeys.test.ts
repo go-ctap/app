@@ -141,8 +141,6 @@ describe("Passkeys", () => {
   it("does not own passkeys autoload lifecycle", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
 
@@ -156,8 +154,6 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
@@ -190,8 +186,6 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
@@ -215,8 +209,6 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
@@ -233,8 +225,6 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
@@ -257,8 +247,6 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
@@ -275,8 +263,6 @@ describe("Passkeys", () => {
   it("does not render a duplicate resident-credentials card heading", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
@@ -290,8 +276,6 @@ describe("Passkeys", () => {
   it("presents inventory as one fact and capacity as remaining space", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
@@ -311,8 +295,6 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(mixedRelyingPartyEnvelope());
@@ -353,8 +335,6 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
@@ -370,8 +350,6 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
@@ -390,8 +368,6 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
@@ -418,8 +394,6 @@ describe("Passkeys", () => {
   it("renders a cold loading skeleton with the final credential-table structure", () => {
     seedSelectionForTest("token-1", null, {
       state: "running",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     mutablePasskeysInventoryState.set({
@@ -446,8 +420,6 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
@@ -466,8 +438,6 @@ describe("Passkeys", () => {
     unsupported.result!.report.support.credentialManagement = false;
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(unsupported);
@@ -486,8 +456,6 @@ describe("Passkeys", () => {
     empty.result!.report.summary.totalCredentials = 0;
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(empty);
@@ -503,8 +471,6 @@ describe("Passkeys", () => {
     const envelope = credentialsEnvelope();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(envelope);
@@ -535,7 +501,6 @@ describe("Passkeys", () => {
       form: { userIDHex: "01", name: "updated@example.com", displayName: "Example User" },
       previewRequest: { sessionId: "session-1", credentialIdHex: "cafe", name: "updated@example.com", nameProvided: true, dryRun: true },
       previewEnvelope,
-      responseEnvelope: previewEnvelope,
     });
 
     render(Passkeys);
@@ -551,8 +516,6 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
@@ -583,7 +546,6 @@ describe("Passkeys", () => {
       credentialIDHex: "cafe",
       previewRequest: { sessionId: "session-1", credentialIdHex: "cafe", dryRun: true },
       previewEnvelope,
-      responseEnvelope: previewEnvelope,
     });
 
     render(Passkeys);
@@ -597,8 +559,6 @@ describe("Passkeys", () => {
   it("shows a regular error dialog instead of delete confirmation when dry-run fails without a preview", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      selectedSelector: "token-1",
-      selectedDevice: null,
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());

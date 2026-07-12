@@ -24,19 +24,16 @@ import {
   seedSelectionForTest,
 } from "./store-test-utils.js";
 import {
-  appError,
   devices,
   largeBlobsInventoryState,
-  overviewEnvelope,
+  overviewInspection,
   passkeysInventoryState,
   pendingInteraction,
   selectedDevice,
   selectedSelector,
   sessionStatus,
   statusBar,
-  workbenchLog,
 } from "./stores.js";
-import { appError as mutableAppError } from "./features/workbench/state.js";
 
 const serviceMocks = vi.hoisted(() => ({
   RefreshDiscovery: vi.fn(),
@@ -74,8 +71,6 @@ function seedSelected(token: DeviceReport, state: "ready" | "running" = "ready")
   seedDevicesForTest([token]);
   seedSelectionForTest(token.deviceId, token, {
     state,
-    selectedSelector: token.deviceId,
-    selectedDevice: token,
     sessionId: `session-${token.deviceId}`,
   });
 }
@@ -97,10 +92,8 @@ describe("discovery controller", () => {
     expect(get(selectedSelector)).toBe("");
     expect(get(selectedDevice)).toBeNull();
     expect(get(sessionStatus).sessionId).toBeUndefined();
-    expect(get(workbenchLog)).toHaveLength(1);
-    expect(get(workbenchLog)[0]).toMatchObject({
+    expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "info",
-      source: "discovery",
       title: "Authenticator list updated",
     });
   });
@@ -131,9 +124,8 @@ describe("discovery controller", () => {
     expect(get(sessionStatus)).toMatchObject({
       state: "ready",
       sessionId: "session-token-1",
-      selectedDevice: refreshed,
     });
-    expect(get(overviewEnvelope)).toBe(inspection);
+    expect(get(overviewInspection).data).toBe(inspection);
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(inventory);
     expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).toBe(largeBlobs);
     expect(get(pendingInteraction)).toBe(prompt);
@@ -147,8 +139,6 @@ describe("discovery controller", () => {
     seedDevicesForTest([selected, unselected]);
     seedSelectionForTest(selected.deviceId, selected, {
       state: "ready",
-      selectedSelector: selected.deviceId,
-      selectedDevice: selected,
       sessionId: "session-token-1",
     });
     seedOverviewEnvelopeForTest(inspection);
@@ -158,7 +148,7 @@ describe("discovery controller", () => {
     expect(get(devices)).toEqual([selected]);
     expect(get(selectedSelector)).toBe("token-1");
     expect(get(sessionStatus).sessionId).toBe("session-token-1");
-    expect(get(overviewEnvelope)).toBe(inspection);
+    expect(get(overviewInspection).data).toBe(inspection);
   });
 
   it("clears an idle selected session when its authenticator disappears", async () => {
@@ -205,11 +195,11 @@ describe("discovery controller", () => {
     expect(get(sessionStatus)).toMatchObject({ state: "idle" });
     expect(get(sessionStatus).sessionId).toBeUndefined();
     expect(get(pendingInteraction)).toBeNull();
-    expect(get(overviewEnvelope)).toBeNull();
+    expect(get(overviewInspection).data).toBeNull();
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBeNull();
     expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).toBeNull();
     expect(get(statusBar).activeOperation).toBeNull();
-    expect(get(workbenchLog)[0]).toMatchObject({
+    expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "warning",
       title: "Selected authenticator disconnected",
     });
@@ -219,16 +209,13 @@ describe("discovery controller", () => {
     const token = device("token-1");
     const { handleDiscoveryChanged } = await import("./discovery-controller.js");
     seedSelected(token);
-    mutableAppError.set("existing session error");
 
     handleDiscoveryChanged(event(null, { message: "rescan failed" }));
 
     expect(get(devices)).toEqual([token]);
     expect(get(selectedSelector)).toBe("token-1");
     expect(get(sessionStatus).sessionId).toBe("session-token-1");
-    expect(get(appError)).toBe("existing session error");
-    expect(get(workbenchLog)).toHaveLength(1);
-    expect(get(workbenchLog)[0]).toMatchObject({
+    expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "error",
       message: "rescan failed",
     });
@@ -244,9 +231,8 @@ describe("discovery controller", () => {
     handleDiscoveryChanged(event({ devices: [token] }, null, "monitor"));
 
     expect(get(sessionStatus).sessionId).toBe("session-token-1");
-    expect(get(overviewEnvelope)).toBe(inspection);
-    expect(get(workbenchLog)).toHaveLength(1);
-    expect(get(workbenchLog)[0]).toMatchObject({ tone: "info" });
+    expect(get(overviewInspection).data).toBe(inspection);
+    expect(get(statusBar).lastOutcome).toMatchObject({ tone: "info" });
   });
 
   it("requests manual reconciliation and waits for its event", async () => {
@@ -259,7 +245,7 @@ describe("discovery controller", () => {
 
     expect(serviceMocks.RefreshDiscovery).toHaveBeenCalledWith({});
     expect(get(devices)).toEqual([original]);
-    expect(get(workbenchLog)).toEqual([]);
+    expect(get(statusBar).lastOutcome).toBeNull();
   });
 
   it("starts monitoring through the service", async () => {

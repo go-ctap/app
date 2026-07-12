@@ -19,11 +19,17 @@
   import { Badge } from "$lib/components/ui/badge/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
-  import { overviewStatusLabel, type OverviewGroup } from "$lib/overview-rules";
+  import { overviewStatusLabel, type OverviewGroup, type OverviewRowStatus } from "$lib/overview-rules";
 
   import { m } from "../../../paraglide/messages.js";
 
   let { groups = [], warningCount = 0 }: { groups?: OverviewGroup[]; warningCount?: number } = $props();
+
+  function statusTone(status: OverviewRowStatus) {
+    if (["supported", "configured", "enabled"].includes(status)) return "ok" as const;
+    if (status === "warning") return "warn" as const;
+    return "neutral" as const;
+  }
 </script>
 
 <Card.Root>
@@ -70,10 +76,9 @@
                 <Table.Cell class="text-cell">{row.description}</Table.Cell>
                 <Table.Cell class="status-column">
                   <StatusBadge
-                    value={row.status}
                     label={overviewStatusLabel(row.status)}
                     help={row.source || row.name}
-                    tone={row.status === "unsupported" ? "neutral" : "auto"}
+                    tone={statusTone(row.status)}
                   />
                 </Table.Cell>
                 <Table.Cell class="text-cell"><strong>{row.value || m.not_reported()}</strong></Table.Cell>

@@ -10,7 +10,7 @@ import { pendingInteraction } from "./features/interaction/state.js";
 import { statusBar as mutableStatusBar } from "./features/workbench/state.js";
 import { setAppLocale } from "./i18n.js";
 import { resetAppStateForTest, seedPendingInteractionForTest, seedSelectionForTest } from "./store-test-utils.js";
-import { pendingInteraction as readonlyPendingInteraction, sessionStatus, statusBar, workbenchLog } from "./stores.js";
+import { pendingInteraction as readonlyPendingInteraction, sessionStatus, statusBar } from "./stores.js";
 import { setStatusOperation, setStatusOutcome, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
 
 const serviceMocks = vi.hoisted(() => ({
@@ -34,8 +34,6 @@ const token: DeviceReport = {
 function seedSession(state: "ready" | "running" = "running") {
   seedSelectionForTest("token-1", token, {
     state,
-    selectedSelector: "token-1",
-    selectedDevice: token,
     sessionId: "session-1",
   });
 }
@@ -85,7 +83,6 @@ describe("operation controller", () => {
 
     expect(get(statusBar).activeOperation).toBeNull();
     expect(get(sessionStatus).state).toBe("ready");
-    expect(get(sessionStatus).activeOperation).toBeUndefined();
     expect(get(statusBar).lastOutcome).toMatchObject({ tone: "info", title: "Operation already finished" });
   });
 
@@ -103,7 +100,7 @@ describe("operation controller", () => {
       cancelError: { message: "bridge offline" },
     });
     expect(get(readonlyPendingInteraction)?.interactionId).toBe("interaction-1");
-    expect(get(workbenchLog)[0]).toMatchObject({ source: "operation-cancel", tone: "error" });
+    expect(get(statusBar).lastOutcome).toMatchObject({ tone: "error", title: "Could not cancel operation" });
   });
 
   it("retries only through a live ready session", async () => {
@@ -127,7 +124,6 @@ describe("operation controller", () => {
     summarizeOperationFailure(
       "Credential inventory",
       { category: ErrorCategory.ErrorCanceled, message: "context canceled" },
-      "passkeys-inventory",
       retry,
     );
 
@@ -149,14 +145,13 @@ describe("operation controller", () => {
       sessionId: "session-1",
       kind: OperationKind.OperationListCredentials,
       error: { category: ErrorCategory.ErrorCanceled, message: "operation canceled" },
-    } as CredentialsEnvelope, "passkeys-inventory", retry);
+    } as CredentialsEnvelope, retry);
 
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "info",
       title: "Credential inventory canceled",
     });
     expect(get(statusBar).lastOutcome?.retry).toBeUndefined();
-    expect(get(sessionStatus).activeOperation).toBeUndefined();
   });
 
   it("does not offer retry for an uncategorized runtime failure", () => {
@@ -164,7 +159,7 @@ describe("operation controller", () => {
     seedSession();
     seedOperation();
 
-    summarizeOperationFailure("Credential inventory", { message: "TypeError: invalid payload" }, "passkeys-inventory", retry);
+    summarizeOperationFailure("Credential inventory", { message: "TypeError: invalid payload" }, retry);
 
     expect(get(statusBar).lastOutcome?.retry).toBeUndefined();
   });
@@ -187,9 +182,10 @@ describe("runtime operation events", () => {
 
     expect(get(statusBar).activeOperation).toMatchObject({
       operationId: "operation-1",
-      event: { completed: 1, total: 3 },
+      completed: 1,
+      total: 3,
     });
-    expect(get(sessionStatus)).toMatchObject({ state: "running", activeOperation: "operation-1" });
+    expect(get(sessionStatus)).toMatchObject({ state: "running" });
   });
 
   it("captures an operation id from an interaction before any progress event", async () => {
@@ -203,7 +199,7 @@ describe("runtime operation events", () => {
 
     expect(get(mutableStatusBar).activeOperation).toMatchObject({
       operationId: "operation-2",
-      event: { stage: "interaction-required", message: "Touch the key" },
+      stage: "interaction-required",
     });
     expect(get(pendingInteraction)?.interactionId).toBe("interaction-2");
   });

@@ -1,8 +1,8 @@
 import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import type { BioSensorEnvelope, InspectEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { m } from "../paraglide/messages.js";
-import type { OperationEnvelope } from "./api.js";
 import { bioSensorReport, inspectResult, operationError } from "./ctapkit-results.js";
 import type { LoadState } from "./features/overview/state.js";
 import { sessionStateLabel } from "./format.js";
@@ -22,28 +22,25 @@ export type OverviewPresentationInput = {
   selectedDevice: DeviceReport | null;
   sessionStatus: SessionStatus;
   sessionBusy: boolean;
-  overviewEnvelope: OperationEnvelope | null;
-  overviewBioSensorEnvelope: OperationEnvelope | null;
-  overviewBioSensorState?: LoadState<OperationEnvelope>;
-  overviewMDSState?: LoadState<LookupResult | null>;
-  overviewLoading: boolean;
-  overviewMDSLoading: boolean;
+  overviewState: LoadState<InspectEnvelope>;
+  overviewBioSensorState: LoadState<BioSensorEnvelope>;
+  overviewMDSState: LoadState<LookupResult | null>;
 };
 
 export type OverviewPresentation = ReturnType<typeof buildOverviewPresentation>;
 
 export function buildOverviewPresentation(input: OverviewPresentationInput) {
   const selector = input.selectedSelector;
-  const envelope = input.overviewEnvelope;
-  const loading = input.overviewLoading;
-  const mdsLoading = input.overviewMDSLoading;
+  const envelope = input.overviewState.data;
+  const loading = input.overviewState.state === "loading";
+  const mdsLoading = input.overviewMDSState.state === "loading";
   const failureMessage = operationError(envelope);
-  const mdsFailureMessage = input.overviewMDSState?.error?.message || null;
+  const mdsFailureMessage = input.overviewMDSState.error?.message || null;
   const report = inspectResult(envelope);
   const info = report?.info;
   const device = report?.device || input.selectedDevice;
-  const mdsResult = input.overviewMDSState?.data ?? null;
-  const bioSensor = bioSensorReport(input.overviewBioSensorEnvelope);
+  const mdsResult = input.overviewMDSState.data ?? null;
+  const bioSensor = bioSensorReport(input.overviewBioSensorState.data);
   const overviewRows = buildOverviewRows({ info, device, bioSensor });
 
   return {
@@ -52,8 +49,8 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
     mdsLoading,
     failureMessage,
     degradedMessages: [
-      input.overviewBioSensorState?.error?.message,
-      input.overviewMDSState?.error?.message,
+      input.overviewBioSensorState.error?.message,
+      input.overviewMDSState.error?.message,
     ].filter((message): message is string => Boolean(message)),
     reloadDisabled: loading || input.sessionBusy,
     hasReport: Boolean(report),
