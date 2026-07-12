@@ -55,12 +55,6 @@
   <EmptyState title={m.overview_not_loaded()} message={m.overview_not_loaded_message()} />
 {:else}
   <section class="overview-screen flow">
-    {#if overview.failureMessage}
-      <Alert.Root variant="destructive">
-        <Alert.Description>{overview.failureMessage}</Alert.Description>
-      </Alert.Root>
-    {/if}
-
     {#each overview.degradedMessages as message (message)}
       <Alert.Root variant="warning" role="status">
         <Alert.Description>{message}</Alert.Description>

@@ -1,4 +1,5 @@
 import { get } from "svelte/store";
+import { toast } from "svelte-sonner";
 
 import { ErrorCategory, type ErrorCategory as ErrorCategoryValue } from "../../bindings/github.com/go-ctap/kit/model";
 import { m } from "../paraglide/messages.js";
@@ -71,6 +72,26 @@ export function setStatusOutcome(outcome: StatusBarOutcome | null) {
   statusBar.update((state) => ({ ...state, lastOutcome: outcome }));
 }
 
+function notifyOperationFailure(outcome: StatusBarOutcome) {
+  const options = {
+    description: outcome.message,
+    duration: outcome.tone === "error" ? 10_000 : 7_000,
+    important: true,
+    action: outcome.retry
+      ? {
+          label: m.retry(),
+          onClick: () => { void outcome.retry?.(); },
+        }
+      : undefined,
+  };
+
+  if (outcome.tone === "error") {
+    toast.error(outcome.title, options);
+  } else {
+    toast.info(outcome.title, options);
+  }
+}
+
 export function clearWorkbenchScreenCaches() {
   overviewInspection.set(idleLoadState());
   overviewBioSensor.set(idleLoadState());
@@ -86,12 +107,14 @@ export function summarizeEnvelope(label: string, envelope: OperationEnvelope | n
   if (error) {
     const canceled = error.category === ErrorCategory.ErrorCanceled;
     const title = canceled ? m.operation_canceled_with_label({ label }) : m.operation_failed_with_label({ label });
-    setStatusOutcome({
+    const outcome: StatusBarOutcome = {
       tone: canceled ? "info" : "error",
       title,
       message: error.message,
       retry: !canceled && error.category && RETRYABLE_ERROR_CATEGORIES.has(error.category) ? retry : undefined,
-    });
+    };
+    setStatusOutcome(outcome);
+    notifyOperationFailure(outcome);
     return;
   }
   setStatusOutcome({
@@ -109,10 +132,12 @@ export function summarizeOperationFailure(
   finishOperation();
   const canceled = error.category === ErrorCategory.ErrorCanceled;
   const title = canceled ? m.operation_canceled_with_label({ label }) : m.operation_failed_with_label({ label });
-  setStatusOutcome({
+  const outcome: StatusBarOutcome = {
     tone: canceled ? "info" : "error",
     title,
     message: error.message,
     retry: !canceled && error.category && RETRYABLE_ERROR_CATEGORIES.has(error.category) ? retry : undefined,
-  });
+  };
+  setStatusOutcome(outcome);
+  notifyOperationFailure(outcome);
 }

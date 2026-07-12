@@ -119,23 +119,6 @@
           </Button>
         </Alert.Action>
       </Alert.Root>
-    {:else if largeBlobs.canceled && largeBlobs.failureMessage}
-      <Alert.Root role="status" class="large-blobs-state-alert" data-state="canceled">
-        <Alert.Title>{m.operation_canceled_with_label({ label: m.large_blob_list() })}</Alert.Title>
-        <Alert.Description>{largeBlobs.failureMessage}</Alert.Description>
-      </Alert.Root>
-    {:else if largeBlobs.failureMessage && !largeBlobs.unsupported}
-      <Alert.Root variant="destructive" role="alert" class="large-blobs-state-alert" data-state="error">
-        <TriangleAlert aria-hidden="true" />
-        <Alert.Title>{m.operation_failed()}</Alert.Title>
-        <Alert.Description>{largeBlobs.failureMessage}</Alert.Description>
-        <Alert.Action>
-          <Button variant="outline" size="sm" type="button" disabled={largeBlobs.reloadDisabled} onclick={handleReload}>
-            <RefreshCw data-icon="inline-start" aria-hidden="true" />
-            {m.retry()}
-          </Button>
-        </Alert.Action>
-      </Alert.Root>
     {/if}
 
     {#if largeBlobs.unsupported}

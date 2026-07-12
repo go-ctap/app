@@ -95,23 +95,6 @@
           </Button>
         </Alert.Action>
       </Alert.Root>
-    {:else if passkeys.canceled && passkeys.failureMessage}
-      <Alert.Root role="status" class="passkeys-state-alert" data-state="canceled">
-        <Alert.Title>{m.operation_canceled_with_label({ label: m.credential_inventory() })}</Alert.Title>
-        <Alert.Description>{passkeys.failureMessage}</Alert.Description>
-      </Alert.Root>
-    {:else if passkeys.failureMessage && !passkeys.unsupported}
-      <Alert.Root variant="destructive" role="alert" class="passkeys-state-alert" data-state="error">
-        <TriangleAlert aria-hidden="true" />
-        <Alert.Title>{m.operation_failed()}</Alert.Title>
-        <Alert.Description>{passkeys.failureMessage}</Alert.Description>
-        <Alert.Action>
-          <Button variant="outline" size="sm" type="button" disabled={passkeys.reloadDisabled} onclick={handleReload}>
-            <RefreshCw data-icon="inline-start" aria-hidden="true" />
-            {m.retry()}
-          </Button>
-        </Alert.Action>
-      </Alert.Root>
     {/if}
 
     {#if passkeys.unsupported}

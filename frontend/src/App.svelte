@@ -186,6 +186,10 @@
 
 <Toaster
 	position="bottom-right"
+	richColors
+	expand
+	closeButton
+	duration={8_000}
 	offset={{ bottom: "3.5rem", right: "2rem" }}
 	mobileOffset={{ bottom: "3.25rem", right: "1rem" }}
 />

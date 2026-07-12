@@ -17,8 +17,13 @@ const serviceMocks = vi.hoisted(() => ({
   CancelOperation: vi.fn(),
   ResolveInteraction: vi.fn(),
 }));
+const toastMocks = vi.hoisted(() => ({
+  error: vi.fn(),
+  info: vi.fn(),
+}));
 
 vi.mock("../../bindings/fidobench/ctapkitservice", () => serviceMocks);
+vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
 
 const token: DeviceReport = {
   deviceId: "token-1",
@@ -133,6 +138,10 @@ describe("operation controller", () => {
       title: "Credential inventory canceled",
     });
     expect(get(statusBar).lastOutcome?.retry).toBeUndefined();
+    expect(toastMocks.info).toHaveBeenCalledWith(
+      "Credential inventory canceled",
+      expect.objectContaining({ description: "context canceled", important: true }),
+    );
   });
 
   it("presents a canceled generated envelope as informational", () => {
@@ -162,6 +171,30 @@ describe("operation controller", () => {
     summarizeOperationFailure("Credential inventory", { message: "TypeError: invalid payload" }, retry);
 
     expect(get(statusBar).lastOutcome?.retry).toBeUndefined();
+    expect(toastMocks.error).toHaveBeenCalledWith(
+      "Credential inventory failed",
+      expect.objectContaining({ description: "TypeError: invalid payload", important: true }),
+    );
+  });
+
+  it("offers retry from a toast for retryable operation failures", () => {
+    const retry = vi.fn();
+    seedSession();
+    seedOperation();
+
+    summarizeOperationFailure(
+      "Credential inventory",
+      { category: ErrorCategory.ErrorTimeout, message: "authenticator timed out" },
+      retry,
+    );
+
+    const options = toastMocks.error.mock.calls.at(-1)?.[1];
+    expect(options).toMatchObject({
+      description: "authenticator timed out",
+      action: { label: "Retry" },
+    });
+    options.action.onClick();
+    expect(retry).toHaveBeenCalledOnce();
   });
 });
 
