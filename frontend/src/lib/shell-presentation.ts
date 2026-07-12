@@ -6,23 +6,19 @@ import { deviceDetail, deviceName, labelDevice, operationStageLabel, sessionStat
 import { selectorFromDevice, type SessionStatus } from "./session-model.js";
 import type { ActiveScreen, StatusBarState } from "./stores.js";
 
-export type AuthenticatorTitlebarItem = {
+export type SidebarTokenItem = {
   value: string;
   label: string;
   name: string;
   detail: string;
 };
 
-export type AuthenticatorTitlebarPresentation = {
-  items: AuthenticatorTitlebarItem[];
-  selectedValue: string;
-  selectedLabel: string;
-  busy: boolean;
-  clearDisabled: boolean;
-};
-
 export type SidebarPresentation = {
   activeScreen: ActiveScreen;
+  activeScreenLabel: string;
+  tokens: SidebarTokenItem[];
+  selectedValue: string;
+  busy: boolean;
 };
 
 export type ShellStatusTone = "neutral" | "info" | "success" | "warning" | "error";
@@ -63,14 +59,16 @@ export type InteractionModalPresentation = {
   kind: string;
 };
 
-export function buildAuthenticatorTitlebarPresentation(input: {
+export function buildSidebarPresentation(input: {
+  activeScreen: ActiveScreen;
   devices: DeviceReport[];
-  selectedDevice: DeviceReport | null;
   selectedSelector: string;
   busy: boolean;
-}): AuthenticatorTitlebarPresentation {
+}): SidebarPresentation {
   return {
-    items: input.devices.map((device) => {
+    activeScreen: input.activeScreen,
+    activeScreenLabel: screenLabel(input.activeScreen),
+    tokens: input.devices.map((device) => {
       const value = selectorFromDevice(device);
       const transport = String(device.transport);
       const detail = [transport, deviceDetail(device) || value].filter(Boolean).join(" - ");
@@ -82,14 +80,19 @@ export function buildAuthenticatorTitlebarPresentation(input: {
       };
     }),
     selectedValue: input.selectedSelector,
-    selectedLabel: input.selectedDevice ? deviceName(input.selectedDevice) : m.no_token_selected(),
     busy: input.busy,
-    clearDisabled: !input.selectedSelector || input.busy,
   };
 }
 
-export function buildSidebarPresentation(input: { activeScreen: ActiveScreen }): SidebarPresentation {
-  return { activeScreen: input.activeScreen };
+function screenLabel(screen: ActiveScreen) {
+  const labels: Record<ActiveScreen, string> = {
+    overview: m.overview(),
+    passkeys: m.passkeys(),
+    "large-blobs": m.nav_large_blobs(),
+    security: m.security(),
+    settings: m.settings(),
+  };
+  return labels[screen];
 }
 
 function activeProgress(statusBar: StatusBarState): ShellStatusProgress | null {

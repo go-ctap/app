@@ -68,7 +68,7 @@
 
 <Card.Root class="large-blobs-overview">
   <Card.Header>
-    <Card.Title><h1 id="large-blobs-title">{m.nav_large_blobs()}</h1></Card.Title>
+    <Card.Title><h2 id="large-blobs-title">{m.large_blob_summary()}</h2></Card.Title>
     <Card.Description>
       <span>{presentation.selectedDeviceName}</span>
       {#if presentation.lastSuccessfulAt}
@@ -182,7 +182,7 @@
     min-width: 0;
   }
 
-  :global(.large-blobs-overview [data-slot="card-title"] h1) {
+  :global(.large-blobs-overview [data-slot="card-title"] h2) {
     margin: 0;
     font: inherit;
   }

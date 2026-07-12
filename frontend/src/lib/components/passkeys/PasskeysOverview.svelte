@@ -58,7 +58,7 @@
 
 <Card.Root class="passkeys-overview">
   <Card.Header>
-    <Card.Title><h1 id="passkeys-title">{m.passkeys()}</h1></Card.Title>
+    <Card.Title><h2 id="passkeys-title">{m.passkey_storage()}</h2></Card.Title>
     <Card.Description>
       <span>{presentation.selectedDeviceName}</span>
       {#if presentation.lastSuccessfulAt}
@@ -161,7 +161,7 @@
     min-width: 0;
   }
 
-  :global(.passkeys-overview [data-slot="card-title"] h1) {
+  :global(.passkeys-overview [data-slot="card-title"] h2) {
     margin: 0;
     font: inherit;
   }

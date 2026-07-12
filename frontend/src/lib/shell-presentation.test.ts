@@ -5,7 +5,7 @@ import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/r
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "./i18n.js";
-import { buildShellStatusPresentation } from "./shell-presentation.js";
+import { buildShellStatusPresentation, buildSidebarPresentation } from "./shell-presentation.js";
 import type { SessionStatus } from "./session-model.js";
 import type { StatusBarState } from "./stores.js";
 
@@ -113,5 +113,28 @@ describe("shell status presentation", () => {
 
     expect(ready.retry?.label).toBe("Retry");
     expect(idle.retry).toBeNull();
+  });
+});
+
+describe("sidebar presentation", () => {
+  beforeEach(() => setAppLocale("en"));
+
+  it("builds the active screen title and discovered token rows", () => {
+    const presentation = buildSidebarPresentation({
+      activeScreen: "security",
+      devices: [token],
+      selectedSelector: "token-1",
+      busy: false,
+    });
+
+    expect(presentation.activeScreenLabel).toBe("Security");
+    expect(presentation.tokens).toEqual([
+      {
+        value: "token-1",
+        label: "1. Test key",
+        name: "Test key",
+        detail: "hid - token-1",
+      },
+    ]);
   });
 });

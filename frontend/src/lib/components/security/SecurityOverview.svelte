@@ -26,7 +26,7 @@
 
 <Card.Root id="security-overview" aria-labelledby="security-title">
   <Card.Header>
-    <Card.Title><h1 id="security-title" class="security-card-title">{m.security()}</h1></Card.Title>
+    <Card.Title><h2 id="security-title" class="security-card-title">{m.security_overview()}</h2></Card.Title>
     <Card.Action>
       <Button variant="outline" type="button" {disabled} onclick={onReload}>
         {#if loading}

@@ -61,7 +61,7 @@
           {/if}
         </div>
         <div class="hero-copy">
-          <Card.Title class="hero-title"><h1>{hero.title}</h1></Card.Title>
+          <Card.Title class="hero-title"><h2>{hero.title}</h2></Card.Title>
           <div class="hero-meta">
             <div class="badges cluster">
               <StatusBadge label={sessionLabel} tone={sessionTone(sessionState)} />
@@ -81,7 +81,7 @@
 
     <Card.Content class="hero-content">
       <div class="hero-description flow">
-        <h2>{m.overview_hero_title()}</h2>
+        <h3>{m.overview_hero_title()}</h3>
       </div>
 
       <div class="signal-grid switcher">
@@ -163,7 +163,7 @@
       --cluster-space: var(--space-1);
     }
 
-    h2 {
+    h3 {
       margin: 0;
     }
 

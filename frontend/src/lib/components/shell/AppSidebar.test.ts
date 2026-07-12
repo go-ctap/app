@@ -17,8 +17,13 @@ describe("AppSidebar", () => {
       props: {
         presentation: {
           activeScreen: "overview",
+          activeScreenLabel: "Overview",
+          tokens: [],
+          selectedValue: "",
+          busy: false,
         },
         onNavigate,
+        onSelectToken: vi.fn(),
       },
     });
 
@@ -46,9 +51,14 @@ describe("AppSidebar", () => {
       props: {
         presentation: {
           activeScreen: "overview",
+          activeScreenLabel: "Overview",
+          tokens: [],
+          selectedValue: "",
+          busy: false,
         },
         nativeWindowTitlebar: true,
         onNavigate: vi.fn(),
+        onSelectToken: vi.fn(),
       },
     });
 
@@ -56,5 +66,32 @@ describe("AppSidebar", () => {
     expect(sidebar).toHaveAttribute("data-native-titlebar", "true");
     expect(sidebar?.firstElementChild).toHaveClass("sidebar-titlebar-space");
     expect(sidebar?.children[1]).toHaveClass("sidebar-brand");
+  });
+
+  it("selects a discovered token from the persistent token section", async () => {
+    const user = userEvent.setup();
+    const onSelectToken = vi.fn();
+
+    render(AppSidebar, {
+      props: {
+        presentation: {
+          activeScreen: "overview",
+          activeScreenLabel: "Overview",
+          selectedValue: "token-1",
+          busy: false,
+          tokens: [
+            { value: "token-1", label: "YubiKey 5 · ABC", name: "YubiKey 5", detail: "HID - ABC" },
+            { value: "token-2", label: "SoloKey · DEF", name: "SoloKey", detail: "HID - DEF" },
+          ],
+        },
+        onNavigate: vi.fn(),
+        onSelectToken,
+      },
+    });
+
+    expect(screen.getByRole("heading", { name: "Tokens" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "YubiKey 5 · ABC" })).toHaveAttribute("aria-pressed", "true");
+    await user.click(screen.getByRole("button", { name: "SoloKey · DEF" }));
+    expect(onSelectToken).toHaveBeenCalledWith("token-2");
   });
 });

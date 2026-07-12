@@ -10,13 +10,7 @@
   }
 </script>
 
-<section class="settings-screen flow" aria-labelledby="settings-title">
-  <header class="settings-header">
-    <div>
-      <h1 id="settings-title">{m.settings()}</h1>
-    </div>
-  </header>
-
+<section class="settings-screen flow" aria-label={m.settings()}>
   <section class="settings-section" aria-labelledby="settings-language-title">
     <div class="settings-copy">
       <h2 id="settings-language-title">{m.language()}</h2>
@@ -48,19 +42,12 @@
       --flow-space: var(--space-4);
     }
 
-    .settings-header,
     .settings-section {
       min-width: 0;
     }
 
-    .settings-header h1,
     .settings-section h2 {
       margin: 0;
-    }
-
-    .settings-header h1 {
-      font-size: 1.3rem;
-      letter-spacing: 0;
     }
 
     .settings-section {
@@ -68,8 +55,6 @@
       grid-template-columns: minmax(0, 1fr) minmax(13rem, 18rem);
       gap: var(--space-5);
       align-items: start;
-      border-top: 1px solid var(--border);
-      padding-top: var(--space-4);
     }
 
     .settings-copy {

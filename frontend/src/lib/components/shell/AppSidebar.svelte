@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { Database, Gauge, KeyRound, Settings, Shield, ShieldCheck } from "@lucide/svelte";
+  import { Database, Gauge, KeyRound, Settings, Shield, ShieldCheck, Usb } from "@lucide/svelte";
   import {type Component} from "svelte";
 
   import { Button } from "$lib/components/ui/button/index.js";
+  import { Spinner } from "$lib/components/ui/spinner/index.js";
   import type { SidebarPresentation } from "$lib/shell-presentation";
   import type { ActiveScreen } from "$lib/stores";
 
@@ -12,9 +13,10 @@
     presentation: SidebarPresentation;
     nativeWindowTitlebar?: boolean;
     onNavigate: (screen: ActiveScreen) => void;
+    onSelectToken: (selector: string) => void;
   };
 
-  let { presentation, nativeWindowTitlebar = false, onNavigate }: Props = $props();
+  let { presentation, nativeWindowTitlebar = false, onNavigate, onSelectToken }: Props = $props();
 
   const navItems: { id: ActiveScreen; label: string; icon: Component }[] = [
     { id: "overview", label: m.overview(), icon: Gauge },
@@ -61,6 +63,36 @@
     {/each}
   </nav>
 
+  <section class="sidebar-tokens" aria-labelledby="sidebar-tokens-title">
+    <h2 id="sidebar-tokens-title" class="sidebar-section-title">{m.tokens()}</h2>
+    <div class="sidebar-token-list">
+      {#each presentation.tokens as token (token.value)}
+        <Button
+          type="button"
+          variant={presentation.selectedValue === token.value ? "secondary" : "ghost"}
+          class="sidebar-token-button"
+          data-selected={presentation.selectedValue === token.value ? "true" : undefined}
+          aria-pressed={presentation.selectedValue === token.value}
+          aria-label={token.label}
+          disabled={presentation.busy}
+          onclick={() => onSelectToken(token.value)}
+        >
+          {#if presentation.busy && presentation.selectedValue === token.value}
+            <Spinner data-icon="inline-start" />
+          {:else}
+            <Usb data-icon="inline-start" aria-hidden="true" />
+          {/if}
+          <span class="sidebar-token-copy">
+            <span class="sidebar-token-name">{token.name}</span>
+            <span class="sidebar-token-detail">{token.detail}</span>
+          </span>
+        </Button>
+      {:else}
+        <p class="sidebar-token-empty">{m.no_authenticators_connected()}</p>
+      {/each}
+    </div>
+  </section>
+
 </aside>
 
 <style>
@@ -68,7 +100,7 @@
     .app-sidebar {
       container: sidebar / inline-size;
       display: grid;
-      grid-template-rows: var(--shell-titlebar-block-size) minmax(0, 1fr);
+      grid-template-rows: var(--shell-titlebar-block-size) minmax(0, 1fr) auto;
       min-width: 0;
       height: 100dvh;
       border-right: 1px solid var(--window-border);
@@ -84,13 +116,13 @@
 
     .sidebar-brand {
       display: grid;
-      grid-template-columns: 24px minmax(0, 1fr);
-      gap: var(--space-2);
+      grid-template-columns: 16px minmax(0, 1fr);
+      gap: var(--space-3);
       align-items: center;
       min-width: 0;
       border-bottom: 1px solid var(--topbar-border, var(--border));
       background: var(--sidebar-background, var(--sidebar));
-      padding: 0 var(--space-4);
+      padding: 0 var(--space-4) 0 var(--space-5);
       --wails-non-client-region: caption;
       --wails-draggable: drag;
     }
@@ -98,7 +130,7 @@
     .sidebar-mark {
       display: grid;
       place-items: center;
-      width: 24px;
+      width: 16px;
       height: 24px;
       color: color-mix(in srgb, var(--foreground) 96%, var(--muted-foreground));
     }
@@ -137,39 +169,80 @@
       text-align: left;
     }
 
-    @container sidebar (max-width: 11rem) {
-      .sidebar-brand {
-        grid-template-columns: 1fr;
-        justify-items: center;
-        padding: 0 var(--space-3);
-      }
-
-      .sidebar-nav {
-        padding: var(--space-3);
-      }
-
-      .sidebar-brand-copy,
-      .sidebar-nav-label {
-        display: none;
-      }
-
-      .sidebar-nav :global(.sidebar-nav-button) {
-        justify-content: center;
-        padding-inline: 0;
-      }
+    .sidebar-tokens {
+      display: grid;
+      gap: var(--space-2);
+      min-width: 0;
+      border-top: 1px solid var(--window-border);
+      padding: var(--space-3) var(--space-4) var(--space-4);
     }
+
+    .sidebar-section-title {
+      color: var(--muted-foreground);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .sidebar-token-list {
+      display: grid;
+      gap: var(--space-1);
+      min-width: 0;
+      max-height: 13rem;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .sidebar-token-list :global(.sidebar-token-button) {
+      justify-content: flex-start;
+      width: 100%;
+      height: auto;
+      min-width: 0;
+      padding-block: var(--space-2);
+      text-align: left;
+    }
+
+    .sidebar-token-copy {
+      display: grid;
+      flex: 1 1 auto;
+      min-width: 0;
+      line-height: 1.15;
+    }
+
+    .sidebar-token-name,
+    .sidebar-token-detail {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .sidebar-token-name {
+      font-weight: 500;
+    }
+
+    .sidebar-token-detail,
+    .sidebar-token-empty {
+      color: var(--muted-foreground);
+      font-size: 0.72rem;
+    }
+
+    .sidebar-token-empty {
+      margin: 0;
+      line-height: 1.35;
+    }
+
 }
 
 @layer exceptions {
     .app-sidebar[data-native-titlebar="true"] {
-      grid-template-rows: 36px auto minmax(0, 1fr);
+      grid-template-rows: 36px auto minmax(0, 1fr) auto;
     }
 
     .app-sidebar[data-native-titlebar="true"] .sidebar-brand {
-      min-height: 2.5rem;
+      min-height: var(--shell-titlebar-block-size);
       border-bottom: 0;
       background: var(--sidebar-background, var(--sidebar));
-      padding-block: var(--space-1);
       --wails-non-client-region: initial;
       --wails-draggable: no-drag;
     }
@@ -179,7 +252,7 @@
     }
 
     .app-sidebar[data-native-titlebar="true"] .sidebar-nav {
-      padding-block-start: 0;
+      padding-block-start: var(--space-2);
     }
 }
 </style>

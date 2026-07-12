@@ -10,7 +10,7 @@
 	import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
 	import ShellStatusBar from "$lib/components/shell/ShellStatusBar.svelte";
 	import { Toaster } from "$lib/components/ui/sonner/index.js";
-	import { AuthenticatorTitlebarControl, WindowControls, WindowTitlebar } from "$lib/components/window-controls";
+	import { WindowControls, WindowTitlebar } from "$lib/components/window-controls";
 	import { toggleMaximizeWindow } from "$lib/components/window-controls/window";
 	import {
 		bootstrap,
@@ -20,14 +20,13 @@
 		handleInteractionRequested,
 		handleOperationProgress,
 		navigateToScreen,
-		refreshDiscovery,
 		retryLastStatusOutcome,
 		selectToken,
 		startDiscoveryMonitoring,
 		shutdownWorkbench
 	} from "$lib/controller";
 	import { currentLocale } from "$lib/i18n";
-	import { buildAuthenticatorTitlebarPresentation, buildInteractionModalPresentation, buildShellStatusPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
+	import { buildInteractionModalPresentation, buildShellStatusPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
 	import {
 		activeScreen,
 		devices,
@@ -54,14 +53,11 @@
 	let windowActive = $state(true);
 	let isMacOS = $derived(windowPlatform === "macos");
 	let noDevices = $derived(initialized && !refreshing && $devices.length === 0);
-	let titlebarPresentation = $derived(buildAuthenticatorTitlebarPresentation({
-		devices: $devices,
-		selectedDevice: $selectedDevice,
-		selectedSelector: $selectedSelector,
-		busy: refreshing || $sessionBusy,
-	}));
 	let sidebarPresentation = $derived(buildSidebarPresentation({
 		activeScreen: $activeScreen,
+		devices: $devices,
+		selectedSelector: $selectedSelector,
+		busy: refreshing || $sessionBusy,
 	}));
 	let shellStatusPresentation = $derived(buildShellStatusPresentation({
 		sessionStatus: $sessionStatus,
@@ -76,14 +72,6 @@
 
 	function handleSelectToken(selector: string) {
 		void selectToken(selector);
-	}
-
-	function handleClearSelection() {
-		void selectToken("");
-	}
-
-	function handleRefreshDiscovery() {
-		return refreshDiscovery();
 	}
 
 	function handleInteractionAnswer(answer: kitservice.InteractionAnswer) {
@@ -180,18 +168,14 @@
 			presentation={sidebarPresentation}
 			nativeWindowTitlebar={isMacOS}
 			onNavigate={navigate}
+			onSelectToken={handleSelectToken}
 		/>
 
 		<section class="app-workspace">
 			<header class="app-header">
 				<WindowTitlebar>
 					<div class="titlebar-content" data-native-window-controls={isMacOS ? "true" : undefined}>
-						<AuthenticatorTitlebarControl
-							presentation={titlebarPresentation}
-							onSelect={handleSelectToken}
-							onClear={handleClearSelection}
-							onRefresh={handleRefreshDiscovery}
-						/>
+						<h1 class="titlebar-screen-title">{sidebarPresentation.activeScreenLabel}</h1>
 						<div class="titlebar-drag-space" aria-hidden="true"></div>
 						{#if !isMacOS}
 							<WindowControls />
@@ -256,7 +240,7 @@
 		}
 
 		.app-shell {
-			--sidebar-inline-size: 5rem;
+			--sidebar-inline-size: 14rem;
 			--sidebar-background: var(--sidebar);
 			--topbar-background: var(--card);
 			--topbar-border: var(--window-border);
@@ -297,6 +281,19 @@
 			--wails-non-client-region: caption;
 			--wails-draggable: drag;
 		}
+		.titlebar-screen-title {
+			display: flex;
+			align-items: center;
+			min-width: 0;
+			overflow: hidden;
+			font-size: 0.88rem;
+			font-weight: 600;
+			margin: 0;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			--wails-non-client-region: caption;
+			--wails-draggable: drag;
+		}
 		.main-view {
 			container: workspace / inline-size;
 			display: grid;
@@ -318,11 +315,6 @@
 			}
 		}
 
-		@media (min-width: 72rem) {
-			.app-shell {
-				--sidebar-inline-size: 14rem;
-			}
-		}
 	}
 
 	@layer exceptions {

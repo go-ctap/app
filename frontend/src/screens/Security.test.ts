@@ -103,7 +103,6 @@ describe("Security screen", () => {
   it("renders the required heading hierarchy without a redundant in-page navigation", () => {
     render(Security);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Security" })).toBeInTheDocument();
     for (const name of [
       "Security overview",
       "PIN",
