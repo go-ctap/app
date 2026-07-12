@@ -22,6 +22,13 @@ import type {
   UpdateUserPreview,
   UpdateUserResult,
 } from "../../bindings/github.com/go-ctap/kit/model/credentials";
+import {
+  MutationOperation,
+  type ListReport as LargeBlobListReport,
+  type MutationPreview as LargeBlobMutationPreview,
+  type MutationResult as LargeBlobMutationResult,
+  type ReadReport as LargeBlobReadReport,
+} from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import type {
   AuthenticatorConfigEnvelope,
   BioEnrollEnvelope,
@@ -34,6 +41,7 @@ import type {
   InspectEnvelope,
   LargeBlobListEnvelope,
   LargeBlobMutationEnvelope,
+  LargeBlobReadEnvelope,
   MakeCredentialEnvelope,
   PINEnvelope,
   ResetFactoryEnvelope,
@@ -102,6 +110,37 @@ export function credentialUpdateResult(envelope: OperationEnvelope | null | unde
   return output ? output.result : null;
 }
 
+export function largeBlobListReport(envelope: OperationEnvelope | null | undefined): LargeBlobListReport | null {
+  if (!isLargeBlobListEnvelope(envelope) || envelope.error || !envelope.result) return null;
+  return envelope.result.report;
+}
+
+export function largeBlobReadReport(envelope: OperationEnvelope | null | undefined): LargeBlobReadReport | null {
+  if (!isLargeBlobReadEnvelope(envelope) || envelope.error || !envelope.result) return null;
+  return envelope.result.report;
+}
+
+export function largeBlobMutationOutput(envelope: OperationEnvelope | null | undefined): LargeBlobMutationOutput | null {
+  if (!isLargeBlobMutationEnvelope(envelope) || !envelope.result) return null;
+  return envelope.result;
+}
+
+/**
+ * Mutation outputs always carry a generated preview object. Its operation is
+ * the typed discriminator between a meaningful preview and the Go zero value.
+ * A meaningful preview is intentionally available even when the envelope also
+ * carries an error (for example, a capacity failure).
+ */
+export function largeBlobMutationPreview(envelope: OperationEnvelope | null | undefined): LargeBlobMutationPreview | null {
+  const preview = largeBlobMutationOutput(envelope)?.preview;
+  return preview && preview.operation !== MutationOperation.$zero ? preview : null;
+}
+
+export function largeBlobMutationResult(envelope: OperationEnvelope | null | undefined): LargeBlobMutationResult | null {
+  if (envelope?.error) return null;
+  return largeBlobMutationOutput(envelope)?.result ?? null;
+}
+
 export function operationError(envelope: OperationEnvelope | null | undefined) {
   if (!envelope || !envelope.error) return null;
   return envelope.error.message;
@@ -118,7 +157,15 @@ export function operationEnvelopeLogData(envelope: OperationEnvelope) {
 }
 
 export function operationResultSummary(envelope: OperationEnvelope): OperationResultSummary | undefined {
-  if (envelope.error || !envelope.result) return undefined;
+  if (!envelope.result) return undefined;
+
+  if (isLargeBlobMutationEnvelope(envelope)) {
+    const preview = largeBlobMutationPreview(envelope);
+    if (envelope.error && !preview) return undefined;
+    return largeBlobMutationSummary(envelope.kind, envelope.result, Boolean(preview), !envelope.error);
+  }
+
+  if (envelope.error) return undefined;
 
   if (isCredentialsEnvelope(envelope)) return credentialListSummary(envelope.result);
   if (isBioListEnvelope(envelope)) return bioListSummary(envelope.result);
@@ -126,7 +173,6 @@ export function operationResultSummary(envelope: OperationEnvelope): OperationRe
   if (isLargeBlobListEnvelope(envelope)) return largeBlobListSummary(envelope.result);
   if (isCredentialDeleteEnvelope(envelope)) return credentialDeleteSummary(envelope.result);
   if (isCredentialUpdateEnvelope(envelope)) return credentialUpdateSummary(envelope.result);
-  if (isLargeBlobMutationEnvelope(envelope)) return largeBlobMutationSummary(envelope.kind, envelope.result);
   if (isPINEnvelope(envelope)) return pinSummary(envelope.kind, envelope.result);
   if (isAuthenticatorConfigEnvelope(envelope)) return authenticatorConfigSummary(envelope.kind, envelope.result);
   if (isBioMutationEnvelope(envelope)) return bioMutationSummary(envelope.kind, envelope.result);
@@ -164,8 +210,12 @@ function isBioEnrollEnvelope(envelope: OperationEnvelope): envelope is BioEnroll
   return envelope.kind === OperationKind.OperationBioEnroll;
 }
 
-function isLargeBlobListEnvelope(envelope: OperationEnvelope): envelope is LargeBlobListEnvelope {
-  return envelope.kind === OperationKind.OperationListLargeBlobs;
+function isLargeBlobListEnvelope(envelope: OperationEnvelope | null | undefined): envelope is LargeBlobListEnvelope {
+  return Boolean(envelope && envelope.kind === OperationKind.OperationListLargeBlobs);
+}
+
+function isLargeBlobReadEnvelope(envelope: OperationEnvelope | null | undefined): envelope is LargeBlobReadEnvelope {
+  return Boolean(envelope && envelope.kind === OperationKind.OperationReadLargeBlob);
 }
 
 function isCredentialDeleteEnvelope(envelope: OperationEnvelope): envelope is CredentialDeleteEnvelope {
@@ -176,12 +226,12 @@ function isCredentialUpdateEnvelope(envelope: OperationEnvelope): envelope is Cr
   return envelope.kind === OperationKind.OperationUpdateCredentialUser;
 }
 
-function isLargeBlobMutationEnvelope(envelope: OperationEnvelope): envelope is LargeBlobMutationEnvelope {
-  return [
+function isLargeBlobMutationEnvelope(envelope: OperationEnvelope | null | undefined): envelope is LargeBlobMutationEnvelope {
+  return Boolean(envelope && [
     OperationKind.OperationWriteLargeBlob,
     OperationKind.OperationDeleteLargeBlob,
     OperationKind.OperationGarbageCollectLargeBlobs,
-  ].includes(envelope.kind);
+  ].includes(envelope.kind));
 }
 
 function isPINEnvelope(envelope: OperationEnvelope): envelope is PINEnvelope {
@@ -262,8 +312,20 @@ function credentialUpdateSummary(output: CredentialUpdateOutput): OperationResul
   return completedPreviewSummary(OperationKind.OperationUpdateCredentialUser, Boolean(output.result), output.preview.warnings?.length);
 }
 
-function largeBlobMutationSummary(kind: OperationKind, output: LargeBlobMutationOutput): OperationResultSummary {
-  return completedPreviewSummary(kind, Boolean(output.result), output.preview.warnings?.length);
+function largeBlobMutationSummary(
+  kind: OperationKind,
+  output: LargeBlobMutationOutput,
+  hasPreview: boolean,
+  resultAllowed: boolean,
+): OperationResultSummary {
+  return {
+    kind,
+    completed: resultAllowed && Boolean(output.result),
+    hasPreview,
+    counts: hasPreview && output.preview.warnings !== undefined
+      ? { warnings: output.preview.warnings.length }
+      : undefined,
+  };
 }
 
 function pinSummary(kind: OperationKind, output: PINOutput): OperationResultSummary {

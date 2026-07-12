@@ -44,7 +44,7 @@ export type StatusBarState = {
   lastOutcome: StatusBarOutcome | null;
 };
 
-export type ActiveScreen = "overview" | "passkeys" | "settings";
+export type ActiveScreen = "overview" | "passkeys" | "large-blobs" | "settings";
 
 export const activeScreen = writable<ActiveScreen>("overview");
 export const operationStatus = writable<ActiveOperation | null>(null);

@@ -1,9 +1,15 @@
 import { loadPasskeys as loadPasskeysOperation } from "./passkeys-controller.js";
+import { loadLargeBlobs as loadLargeBlobsOperation } from "./largeblobs-controller.js";
 import { ensureSelectedSessionReady } from "./session-controller.js";
 
 export async function reloadPasskeys(): Promise<boolean> {
   if (!await ensureSelectedSessionReady()) return false;
   return loadPasskeysOperation({ refresh: true });
+}
+
+export async function reloadLargeBlobs(): Promise<boolean> {
+  if (!await ensureSelectedSessionReady()) return false;
+  return loadLargeBlobsOperation({ refresh: true });
 }
 
 export {
@@ -24,6 +30,26 @@ export {
   loadOverview,
   loadOverviewMDS,
 } from "./overview-controller.js";
+export {
+  beginLargeBlobCleanup,
+  beginLargeBlobDelete,
+  beginLargeBlobWrite,
+  closeLargeBlobMutation,
+  confirmLargeBlobCleanup,
+  confirmLargeBlobDelete,
+  confirmLargeBlobWrite,
+  editLargeBlobWrite,
+  loadLargeBlobs,
+  previewLargeBlobWrite,
+  readLargeBlob,
+  retryLargeBlobMutation,
+  selectLargeBlobCredential,
+  setLargeBlobsPayloadEncoding,
+  setLargeBlobsQuery,
+  setLargeBlobsStatusFilter,
+  setLargeBlobsVerificationFlow,
+  updateLargeBlobWriteDraft,
+} from "./largeblobs-controller.js";
 export {
   beginCredentialDelete,
   beginCredentialUpdate,

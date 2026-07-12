@@ -45,6 +45,7 @@
 
 	import { m } from "./paraglide/messages.js";
 	import Overview from "./screens/Overview.svelte";
+	import LargeBlobs from "./screens/LargeBlobs.svelte";
 	import Passkeys from "./screens/Passkeys.svelte";
 	import Settings from "./screens/Settings.svelte";
 
@@ -165,6 +166,8 @@
 			<main class="main-view">
 				{#if $activeScreen === "settings"}
 					<Settings />
+				{:else if $activeScreen === "large-blobs"}
+					<LargeBlobs />
 				{:else if $activeScreen === "passkeys"}
 					<Passkeys />
 				{:else if noDevices}
@@ -202,10 +205,11 @@
 <style>
 	@layer blocks {
 		.app-shell {
+			--sidebar-inline-size: clamp(5rem, 20vw, 17.5rem);
 			display: grid;
-			grid-template-columns: 17.5rem minmax(0, 1fr);
+			grid-template-columns: var(--sidebar-inline-size) minmax(0, 1fr);
 			min-width: 0;
-			height: 100vh;
+			height: 100dvh;
 			overflow: hidden;
 			border-radius: var(--window-radius);
 			background: var(--window-surface);
@@ -214,6 +218,7 @@
 			--topbar-border: var(--window-border);
 		}
 		.app-workspace {
+			container: workspace-shell / inline-size;
 			display: grid;
 			grid-template-rows: 58px minmax(0, 1fr) auto;
 			min-width: 0;
@@ -227,7 +232,7 @@
 		}
 		.titlebar-content {
 			display: grid;
-			grid-template-columns: minmax(18rem, 38rem) minmax(2rem, 1fr) auto;
+			grid-template-columns: minmax(0, 38rem) minmax(2rem, 1fr) auto;
 			align-items: stretch;
 			height: 58px;
 			min-width: 0;
@@ -240,29 +245,30 @@
 			--wails-draggable: drag;
 		}
 		.main-view {
+			container: workspace / inline-size;
 			display: grid;
 			min-width: 0;
 			min-height: 0;
 			overflow: auto;
+			scrollbar-gutter: stable;
 			padding: var(--space-4);
 		}
 		.app-alert {
 			position: fixed;
 			top: 70px;
 			right: var(--space-4);
-			left: calc(17.5rem + var(--space-4));
+			left: calc(var(--sidebar-inline-size) + var(--space-4));
 			z-index: 20;
 		}
-		@media (max-width: 900px) {
-			.app-shell {
-				grid-template-columns: 5rem minmax(0, 1fr);
-			}
-			.app-alert {
-				left: calc(5rem + var(--space-4));
-			}
+
+		@container workspace-shell (max-width: 48rem) {
 			.titlebar-content {
-				grid-template-columns: minmax(0, 1fr) minmax(1rem, 1fr) auto;
+				grid-template-columns: minmax(0, 1fr) auto;
 				padding-left: var(--space-3);
+			}
+
+			.titlebar-drag-space {
+				display: none;
 			}
 		}
 	}

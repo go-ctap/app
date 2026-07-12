@@ -159,7 +159,7 @@
       color: var(--foreground);
     }
 
-    @media (max-width: 520px) {
+    @container workspace (max-width: 32.5rem) {
       .signal-row {
         grid-template-columns: 1fr;
       }

@@ -30,6 +30,7 @@ export {
     InteractionPrompt,
     LargeBlobGarbageCollectRequest,
     LargeBlobListEnvelope,
+    LargeBlobListRequest,
     LargeBlobMutationEnvelope,
     LargeBlobMutationRequest,
     LargeBlobReadEnvelope,

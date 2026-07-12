@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Gauge, KeyRound, Settings, ShieldCheck } from "@lucide/svelte";
+  import { Database, Gauge, KeyRound, Settings, ShieldCheck } from "@lucide/svelte";
   import {type Component} from "svelte";
 
   import { Button } from "$lib/components/ui/button/index.js";
@@ -18,6 +18,7 @@
   const navItems: { id: ActiveScreen; label: string; icon: Component }[] = [
     { id: "overview", label: m.overview(), icon: Gauge },
     { id: "passkeys", label: m.passkeys(), icon: KeyRound },
+    { id: "large-blobs", label: m.nav_large_blobs(), icon: Database },
     { id: "settings", label: m.settings(), icon: Settings },
   ];
 
@@ -56,10 +57,11 @@
 <style>
 @layer blocks {
     .app-sidebar {
+      container: sidebar / inline-size;
       display: grid;
       grid-template-rows: 58px minmax(0, 1fr);
       min-width: 0;
-      height: 100vh;
+      height: 100dvh;
       border-right: 1px solid var(--window-border);
       background: transparent;
     }
@@ -118,6 +120,10 @@
       align-content: start;
       gap: var(--space-1);
       min-width: 0;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
       padding: var(--space-4);
     }
 
@@ -127,7 +133,7 @@
       text-align: left;
     }
 
-    @media (max-width: 900px) {
+    @container sidebar (max-width: 11rem) {
       .sidebar-brand {
         grid-template-columns: 1fr;
         justify-items: center;

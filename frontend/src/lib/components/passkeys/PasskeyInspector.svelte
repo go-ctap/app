@@ -273,7 +273,10 @@
 <style>
 @layer blocks {
   .passkey-inspector {
+    contain: inline-size;
     display: grid;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
   }
 
@@ -400,7 +403,10 @@
 
   :global(.passkey-raw) {
     display: grid;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
+    overflow: hidden;
   }
 
   .passkey-raw-header {
@@ -434,11 +440,14 @@
   }
 
   :global(.passkey-raw-content) {
+    display: grid;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
     padding: 0 var(--space-3) var(--space-3);
   }
 
-  @media (max-width: 900px) {
+  @container workspace (max-width: 56.25rem) {
     .passkey-inspector-content {
       grid-template-columns: minmax(0, 1fr);
     }

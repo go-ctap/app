@@ -24,6 +24,7 @@ import {
   type InspectEnvelope,
   type LargeBlobGarbageCollectRequest,
   type LargeBlobListEnvelope,
+  type LargeBlobListRequest,
   type LargeBlobMutationEnvelope,
   type LargeBlobMutationRequest,
   type LargeBlobReadEnvelope,
@@ -120,7 +121,7 @@ export const api = {
     return service.ReadLargeBlob(request);
   },
 
-  listLargeBlobs(request: OperationRequest): Promise<LargeBlobListEnvelope> {
+  listLargeBlobs(request: LargeBlobListRequest): Promise<LargeBlobListEnvelope> {
     return service.ListLargeBlobs(request);
   },
 

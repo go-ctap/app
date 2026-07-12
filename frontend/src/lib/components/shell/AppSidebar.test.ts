@@ -22,10 +22,19 @@ describe("AppSidebar", () => {
       },
     });
 
+    expect(screen.getAllByRole("button").map((button) => button.getAttribute("aria-label"))).toEqual([
+      "Overview",
+      "Passkeys",
+      "Large blobs",
+      "Settings",
+    ]);
+
     await user.click(screen.getByRole("button", { name: "Passkeys" }));
+    await user.click(screen.getByRole("button", { name: "Large blobs" }));
     await user.click(screen.getByRole("button", { name: "Settings" }));
 
     expect(onNavigate).toHaveBeenCalledWith("passkeys");
+    expect(onNavigate).toHaveBeenCalledWith("large-blobs");
     expect(onNavigate).toHaveBeenCalledWith("settings");
   });
 });

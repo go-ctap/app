@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ErrorCategory, OperationKind, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { CredentialsEnvelope, InteractionPrompt, MDSLookupEnvelope, OperationEventEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
+import type { CredentialsEnvelope, InteractionPrompt, LargeBlobListEnvelope, MDSLookupEnvelope, OperationEventEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
@@ -14,6 +14,7 @@ import {
   resetAppStateForTest,
   seedActiveScreenForTest,
   seedDevicesForTest,
+  seedLargeBlobsEnvelopeForTest,
   seedOverviewBioSensorEnvelopeForTest,
   seedOverviewEnvelopeForTest,
   seedOverviewMDSForTest,
@@ -23,6 +24,13 @@ import {
 } from "./store-test-utils";
 import {
   activeScreen,
+  largeBlobsInventoryState,
+  largeBlobsMutation,
+  largeBlobsPayloadEncoding,
+  largeBlobsQuery,
+  largeBlobsSelectedCredentialID,
+  largeBlobsStatusFilter,
+  largeBlobsVerificationFlow,
   overviewBioSensorEnvelope,
   overviewEnvelope,
   overviewMDS,
@@ -46,6 +54,7 @@ const serviceMocks = vi.hoisted(() => ({
   Discover: vi.fn(),
   Inspect: vi.fn(),
   ListCredentials: vi.fn(),
+  ListLargeBlobs: vi.fn(),
   LookupMDS: vi.fn(),
   OpenSession: vi.fn(),
   ResolveInteraction: vi.fn(),
@@ -136,6 +145,38 @@ function credentialsEnvelope(item: DeviceReport, sessionId = `session-${item.dev
   } as CredentialsEnvelope;
 }
 
+function largeBlobListEnvelope(item: DeviceReport, sessionId = `session-${item.deviceId}`): LargeBlobListEnvelope {
+  return {
+    operationId: `large-blobs-${item.deviceId}`,
+    sessionId,
+    kind: OperationKind.OperationListLargeBlobs,
+    result: {
+      report: {
+        device: item,
+        support: {
+          largeBlobs: true,
+          largeBlobKeyExtension: true,
+        },
+        array: {
+          read: true,
+          blobCount: 0,
+          matchedBlobCount: 0,
+          unmatchedBlobCount: 0,
+        },
+        credentials: [{
+          credentialIDHex: "cafe",
+          rp: { id: "example.com", name: "Example" },
+          user: { userIDHex: "01", name: "user@example.com", displayName: "Example User" },
+          largeBlobKeyState: "available",
+          blobPresent: false,
+          blobState: "missing",
+          blobByteCount: 0,
+        }],
+      },
+    },
+  } as LargeBlobListEnvelope;
+}
+
 describe("controller lifecycle", () => {
   beforeEach(() => {
     setAppLocale("en");
@@ -144,6 +185,7 @@ describe("controller lifecycle", () => {
     serviceMocks.BioSensorInfo.mockResolvedValue(null);
     serviceMocks.CloseAllSessions.mockResolvedValue([]);
     serviceMocks.ListCredentials.mockResolvedValue(null);
+    serviceMocks.ListLargeBlobs.mockResolvedValue(null);
     serviceMocks.LookupMDS.mockResolvedValue({ result: {} } as MDSLookupEnvelope);
     serviceMocks.ResolveInteraction.mockResolvedValue(true);
     serviceMocks.Sessions.mockResolvedValue([]);
@@ -207,6 +249,42 @@ describe("controller lifecycle", () => {
       sessionId: "session-token-1",
       verificationFlow: "",
       refresh: false,
+    });
+  });
+
+  it("loads large blobs once when navigating to the screen with an existing selected session", async () => {
+    const token = device("token-1");
+    const { navigateToScreen } = await import("./controller");
+    seedDevicesForTest([token]);
+    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    seedActiveScreenForTest("settings");
+    serviceMocks.ListLargeBlobs.mockResolvedValue(largeBlobListEnvelope(token));
+
+    await navigateToScreen("large-blobs");
+    await navigateToScreen("large-blobs");
+
+    expect(get(activeScreen)).toBe("large-blobs");
+    expect(serviceMocks.ListLargeBlobs).toHaveBeenCalledTimes(1);
+    expect(serviceMocks.ListLargeBlobs).toHaveBeenCalledWith({
+      sessionId: "session-token-1",
+      verificationFlow: "",
+      refresh: false,
+    });
+  });
+
+  it("passes forced refresh and PIN verification through large blobs Reload", async () => {
+    const token = device("token-1");
+    const { reloadLargeBlobs, setLargeBlobsVerificationFlow } = await import("./controller");
+    seedSelectionForTest("token-1", token, { state: "ready", selectedSelector: "token-1", selectedDevice: token, sessionId: "session-token-1" });
+    serviceMocks.ListLargeBlobs.mockResolvedValue(largeBlobListEnvelope(token));
+    setLargeBlobsVerificationFlow(VerificationFlow.VerificationFlowPIN);
+
+    await expect(reloadLargeBlobs()).resolves.toBe(true);
+
+    expect(serviceMocks.ListLargeBlobs).toHaveBeenCalledWith({
+      sessionId: "session-token-1",
+      verificationFlow: VerificationFlow.VerificationFlowPIN,
+      refresh: true,
     });
   });
 
@@ -898,9 +976,15 @@ describe("controller lifecycle", () => {
   it("clearing selection clears per-device state and pending interaction", async () => {
     const token = device("token-1");
     const {
+      beginLargeBlobWrite,
       beginCredentialUpdate,
+      selectLargeBlobCredential,
       selectPasskeyCredential,
       selectToken,
+      setLargeBlobsPayloadEncoding,
+      setLargeBlobsQuery,
+      setLargeBlobsStatusFilter,
+      setLargeBlobsVerificationFlow,
       setPasskeysQuery,
       setPasskeysStatusFilter,
       setPasskeysVerificationFlow,
@@ -911,11 +995,18 @@ describe("controller lifecycle", () => {
     seedOverviewBioSensorEnvelopeForTest(inspectEnvelope(token));
     seedOverviewMDSForTest(null);
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
+    seedLargeBlobsEnvelopeForTest(largeBlobListEnvelope(token));
     selectPasskeyCredential("cafe");
     setPasskeysQuery("example");
     setPasskeysStatusFilter("large-blob-missing");
     setPasskeysVerificationFlow(VerificationFlow.VerificationFlowPIN);
     expect(beginCredentialUpdate("cafe")).toBe(true);
+    selectLargeBlobCredential("cafe");
+    setLargeBlobsQuery("example");
+    setLargeBlobsStatusFilter("present");
+    setLargeBlobsVerificationFlow(VerificationFlow.VerificationFlowPIN);
+    setLargeBlobsPayloadEncoding("hex");
+    expect(beginLargeBlobWrite("cafe")).toBe(true);
     seedPendingInteractionForTest({
       interactionId: "interaction-1",
       operationId: "operation-1",
@@ -935,6 +1026,13 @@ describe("controller lifecycle", () => {
     expect(get(passkeysSelectedCredentialID)).toBe("");
     expect(get(passkeysMutation)).toEqual({ kind: "idle", phase: "idle" });
     expect(get(passkeysVerificationFlow)).toBe(VerificationFlow.VerificationFlowPIN);
+    expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).toBeNull();
+    expect(get(largeBlobsQuery)).toBe("");
+    expect(get(largeBlobsStatusFilter)).toBe("all");
+    expect(get(largeBlobsSelectedCredentialID)).toBe("");
+    expect(get(largeBlobsMutation)).toEqual({ kind: "idle", phase: "idle" });
+    expect(get(largeBlobsVerificationFlow)).toBe(VerificationFlow.VerificationFlowPIN);
+    expect(get(largeBlobsPayloadEncoding)).toBe("hex");
     expect(get(pendingInteraction)).toBeNull();
     expect(serviceMocks.ResolveInteraction).not.toHaveBeenCalled();
   });

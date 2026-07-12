@@ -241,7 +241,7 @@
     justify-content: end;
   }
 
-  @media (max-width: 820px) {
+  @container workspace (max-width: 51.25rem) {
     .passkeys-overview-grid {
       grid-template-columns: minmax(0, 1fr);
     }

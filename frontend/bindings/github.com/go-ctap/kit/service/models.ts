@@ -940,6 +940,29 @@ export class LargeBlobListEnvelope {
     }
 }
 
+export class LargeBlobListRequest {
+    "sessionId": SessionID;
+    "verificationFlow"?: model$0.VerificationFlow;
+    "refresh"?: boolean;
+
+    /** Creates a new LargeBlobListRequest instance. */
+    constructor($$source: Partial<LargeBlobListRequest> = {}) {
+        if (!("sessionId" in $$source)) {
+            this["sessionId"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LargeBlobListRequest instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LargeBlobListRequest {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new LargeBlobListRequest($$parsedSource as Partial<LargeBlobListRequest>);
+    }
+}
+
 export class LargeBlobMutationEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;

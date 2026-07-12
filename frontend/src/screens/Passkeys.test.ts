@@ -152,7 +152,7 @@ describe("Passkeys", () => {
     expect(screen.getByText("Passkeys not loaded")).toBeInTheDocument();
   });
 
-  it("opens credential details in the next semantic table row", async () => {
+  it("opens credential details immediately after the selected table row", async () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
@@ -173,6 +173,8 @@ describe("Passkeys", () => {
 
     const details = record?.nextElementSibling as HTMLElement;
     expect(details).toHaveAttribute("id", "passkey-row-details-cafe");
+    expect(details.closest("table")).toBe(screen.getByRole("table", { name: "Resident credentials" }));
+    expect(within(screen.getByRole("table", { name: "Resident credentials" })).getAllByRole("row")).toHaveLength(3);
     expect(within(details).getByText("public-key")).toBeInTheDocument();
     expect(within(details).getAllByText("01").length).toBeGreaterThan(0);
     const copyJson = within(details).getByRole("button", { name: "Copy JSON" });
@@ -199,7 +201,8 @@ describe("Passkeys", () => {
     const record = credential.closest("tr") as HTMLElement;
 
     await user.click(credential);
-    expect(within(record.nextElementSibling as HTMLElement).getByText("public-key")).toBeInTheDocument();
+    const details = record.nextElementSibling as HTMLElement;
+    expect(within(details).getByText("public-key")).toBeInTheDocument();
     await user.click(credential);
     await tick();
 

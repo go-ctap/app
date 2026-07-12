@@ -105,7 +105,7 @@
       min-height: 38px;
     }
 
-    @media (max-width: 720px) {
+    @container workspace (max-width: 45rem) {
       .settings-section {
         grid-template-columns: minmax(0, 1fr);
       }

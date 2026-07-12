@@ -172,7 +172,7 @@
       align-items: center;
     }
 
-    @media (max-width: 760px) {
+    @container workspace-shell (max-width: 47.5rem) {
       .shell-status-detail,
       .shell-status-progress-label {
         display: none;
@@ -180,6 +180,16 @@
 
       .shell-status-progress-wrap {
         grid-template-columns: minmax(4rem, 7rem);
+      }
+    }
+
+    @container workspace-shell (max-width: 30rem) {
+      .shell-status-bar {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+      }
+
+      .shell-status-progress-wrap {
+        display: none;
       }
     }
   }

@@ -96,7 +96,7 @@
                         </div>
                       </div>
                     </Table.Cell>
-                    <Table.Cell><code>{assessment.source}</code></Table.Cell>
+                    <Table.Cell class="source-cell"><code>{assessment.source}</code></Table.Cell>
                     <Table.Cell class="text-cell">
                       <div class="assessment-details">
                         <p>{assessment.description}</p>
@@ -201,6 +201,10 @@
   }
 
   :global(.text-cell) {
+    white-space: normal;
+  }
+
+  :global(.source-cell) {
     white-space: normal;
   }
 

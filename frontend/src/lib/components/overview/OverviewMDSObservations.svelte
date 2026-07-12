@@ -48,7 +48,7 @@
                 <Table.Cell><strong>{observation.finding}</strong></Table.Cell>
                 <Table.Cell><strong>{observation.token || m.not_reported()}</strong></Table.Cell>
                 <Table.Cell><strong>{observation.mds || m.not_reported()}</strong></Table.Cell>
-                <Table.Cell><code>{observation.source}</code></Table.Cell>
+                <Table.Cell class="source-cell"><code>{observation.source}</code></Table.Cell>
                 <Table.Cell class="text-cell">{observation.description}</Table.Cell>
               </Table.Row>
             {/each}
@@ -107,6 +107,10 @@
   }
 
   :global(.text-cell) {
+    white-space: normal;
+  }
+
+  :global(.source-cell) {
     white-space: normal;
   }
 

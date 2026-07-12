@@ -19,6 +19,7 @@ import {
   appError,
   type ActiveScreen,
 } from "./features/workbench/state.js";
+import { maybeLoadLargeBlobs } from "./largeblobs-controller.js";
 import { maybeLoadOverview } from "./overview-controller.js";
 import { maybeLoadPasskeys } from "./passkeys-controller.js";
 import { runtimeErrorFrom } from "./runtime-error.js";
@@ -201,6 +202,7 @@ export async function bootstrap() {
     applyDiscovery(discovery);
     await maybeLoadOverview();
     await maybeLoadPasskeys();
+    await maybeLoadLargeBlobs();
   } catch (error) {
     appError.set(messageFromError(error));
   }
@@ -236,6 +238,7 @@ export async function selectToken(selector: string) {
     });
     await maybeLoadOverview();
     await maybeLoadPasskeys();
+    await maybeLoadLargeBlobs();
   } catch (error) {
     appError.set(messageFromError(error));
   }
@@ -246,6 +249,7 @@ export async function navigateToScreen(screen: ActiveScreen) {
   activeScreen.set(screen);
   await maybeLoadOverview();
   await maybeLoadPasskeys();
+  await maybeLoadLargeBlobs();
 }
 
 export async function shutdownWorkbench() {

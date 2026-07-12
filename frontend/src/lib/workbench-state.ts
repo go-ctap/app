@@ -5,6 +5,7 @@ import { m } from "../paraglide/messages.js";
 import type { OperationEnvelope } from "./api.js";
 import { operationEnvelopeLogData } from "./ctapkit-results.js";
 import { pendingInteraction } from "./features/interaction/state.js";
+import { resetLargeBlobsDeviceState } from "./features/largeblobs/state.js";
 import {
   idleLoadState,
   overviewBioSensor,
@@ -157,6 +158,7 @@ export function clearWorkbenchScreenCaches() {
   overviewBioSensor.set(idleLoadState());
   overviewMDS.set(idleLoadState());
   resetPasskeysDeviceState();
+  resetLargeBlobsDeviceState();
   selectionVersion.update((value) => value + 1);
 }
 

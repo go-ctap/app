@@ -109,7 +109,7 @@ export function ListCredentials(req: service$0.CredentialListRequest): $Cancella
     });
 }
 
-export function ListLargeBlobs(req: service$0.OperationRequest): $CancellablePromise<service$0.LargeBlobListEnvelope> {
+export function ListLargeBlobs(req: service$0.LargeBlobListRequest): $CancellablePromise<service$0.LargeBlobListEnvelope> {
     return $Call.ByID(3401300686, req).then(($result: any) => {
         return $$createType14($result);
     });

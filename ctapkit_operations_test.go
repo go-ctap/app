@@ -34,3 +34,30 @@ func TestListCredentialsPreservesToolkitErrorEnvelopeAcrossWailsBoundary(t *test
 		t.Fatalf("error = %#v, want invalid-session", envelope.Error)
 	}
 }
+
+func TestListLargeBlobsPreservesToolkitErrorEnvelopeAcrossWailsBoundary(t *testing.T) {
+	service := NewCtapkitService()
+	defer func() {
+		if err := service.ServiceShutdown(); err != nil {
+			t.Fatalf("ServiceShutdown: %v", err)
+		}
+	}()
+
+	envelope, err := service.ListLargeBlobs(context.Background(), kitservice.LargeBlobListRequest{
+		OperationRequest: kitservice.OperationRequest{SessionID: "missing-session"},
+		Refresh:          true,
+	})
+	if err != nil {
+		t.Fatalf("ListLargeBlobs: %v", err)
+	}
+
+	if envelope.SessionID != "missing-session" {
+		t.Fatalf("session ID = %q, want missing-session", envelope.SessionID)
+	}
+	if envelope.Kind != model.OperationListLargeBlobs {
+		t.Fatalf("kind = %q, want %q", envelope.Kind, model.OperationListLargeBlobs)
+	}
+	if envelope.Error == nil || envelope.Error.Category != model.ErrorInvalidSession {
+		t.Fatalf("error = %#v, want invalid-session", envelope.Error)
+	}
+}

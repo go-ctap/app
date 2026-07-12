@@ -453,11 +453,13 @@
   }
 
   :global(.passkeys-table-details-cell) {
+    min-width: 0;
+    overflow: hidden;
     padding: 0;
     white-space: normal;
   }
 
-  @media (max-width: 760px) {
+  @container workspace (max-width: 47.5rem) {
     .passkeys-inventory-toolbar {
       grid-template-columns: minmax(0, 1fr) auto;
     }
@@ -471,7 +473,7 @@
     }
   }
 
-  @media (max-width: 720px) {
+  @container workspace (max-width: 45rem) {
     :global(.passkeys-table) {
       min-width: 28rem;
     }
@@ -489,7 +491,7 @@
     }
   }
 
-  @media (max-width: 520px) {
+  @container workspace (max-width: 32.5rem) {
     .passkeys-inventory-toolbar {
       grid-template-columns: minmax(0, 1fr);
     }

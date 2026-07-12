@@ -4,6 +4,7 @@ import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import { OperationKind, type InspectResult } from "../../bindings/github.com/go-ctap/kit/model";
 import { BioModality, type BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
+import { MutationOperation } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type {
   BioEnrollEnvelope,
@@ -12,7 +13,9 @@ import type {
   CredentialUpdateEnvelope,
   CredentialsEnvelope,
   InspectEnvelope,
+  LargeBlobListEnvelope,
   LargeBlobMutationEnvelope,
+  LargeBlobReadEnvelope,
   MakeCredentialEnvelope,
   PINEnvelope,
   ResetFactoryEnvelope,
@@ -27,6 +30,10 @@ import {
   credentialUpdatePreview,
   credentialUpdateResult,
   inspectResult,
+  largeBlobListReport,
+  largeBlobMutationPreview,
+  largeBlobMutationResult,
+  largeBlobReadReport,
   operationEnvelopeLogData,
 } from "./ctapkit-results";
 
@@ -141,6 +148,7 @@ describe("ctapkit result extractors", () => {
       kind: OperationKind.OperationWriteLargeBlob,
       result: {
         preview: {
+          operation: MutationOperation.MutationReplace,
           warnings: [{ message: "overwrite" }],
         },
         result: {
@@ -157,6 +165,116 @@ describe("ctapkit result extractors", () => {
         warnings: 1,
       },
     });
+  });
+
+  it("extracts typed large blob list and read reports only from successful matching envelopes", () => {
+    const list = {
+      kind: OperationKind.OperationListLargeBlobs,
+      result: {
+        report: {
+          device,
+          support: { largeBlobs: true, largeBlobKeyExtension: true },
+          array: { read: true, blobCount: 1, matchedBlobCount: 1, unmatchedBlobCount: 0 },
+          credentials: [],
+        },
+      },
+    } as unknown as LargeBlobListEnvelope;
+    const read = {
+      kind: OperationKind.OperationReadLargeBlob,
+      result: {
+        report: {
+          device,
+          support: { largeBlobs: true, largeBlobKeyExtension: true },
+          target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
+          largeBlobKeyState: "available",
+          array: { read: true, blobCount: 1, blobPresent: true, blobState: "present" },
+          blobPresent: true,
+          rawByteCount: 0,
+        },
+      },
+    } as LargeBlobReadEnvelope;
+
+    expect(largeBlobListReport(list)).toBe(list.result!.report);
+    expect(largeBlobReadReport(read)).toBe(read.result!.report);
+    expect(largeBlobReadReport(list)).toBeNull();
+
+    list.error = { message: "failed" };
+    read.error = { message: "failed" };
+    expect(largeBlobListReport(list)).toBeNull();
+    expect(largeBlobReadReport(read)).toBeNull();
+  });
+
+  it("summarizes large blob reads without logging raw payload bytes", () => {
+    const envelope = {
+      operationId: "read-secret",
+      sessionId: "session-1",
+      kind: OperationKind.OperationReadLargeBlob,
+      result: {
+        report: {
+          device,
+          support: { largeBlobs: true, largeBlobKeyExtension: true },
+          target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
+          largeBlobKeyState: "available",
+          array: { read: true, blobCount: 1, blobPresent: true, blobState: "present" },
+          blobPresent: true,
+          rawHex: "7365637265742d726177",
+          rawByteCount: 10,
+        },
+      },
+    } as LargeBlobReadEnvelope;
+
+    const serialized = JSON.stringify(operationEnvelopeLogData(envelope));
+    expect(operationEnvelopeLogData(envelope).result).toEqual({
+      kind: OperationKind.OperationReadLargeBlob,
+    });
+    expect(serialized).not.toContain("7365637265742d726177");
+  });
+
+  it("preserves a meaningful mutation preview on error but rejects the generated zero preview", () => {
+    const capacity = {
+      operationId: "op-capacity",
+      sessionId: "session-1",
+      kind: OperationKind.OperationWriteLargeBlob,
+      error: { category: "invalid-state", message: "array is too large" },
+      result: {
+        preview: {
+          operation: MutationOperation.MutationCreate,
+          serializedLargeBlobArraySizeBefore: 0,
+          serializedLargeBlobArraySizeAfter: 2049,
+          serializedLargeBlobArrayLimit: 0,
+          warnings: [],
+        },
+        result: null,
+      },
+    } as unknown as LargeBlobMutationEnvelope;
+
+    expect(largeBlobMutationPreview(capacity)?.serializedLargeBlobArraySizeAfter).toBe(2049);
+    expect(largeBlobMutationPreview(capacity)?.serializedLargeBlobArrayLimit).toBe(0);
+    expect(largeBlobMutationResult(capacity)).toBeNull();
+    expect(operationEnvelopeLogData(capacity).result).toEqual({
+      kind: OperationKind.OperationWriteLargeBlob,
+      completed: false,
+      hasPreview: true,
+      counts: { warnings: 0 },
+    });
+
+    capacity.result!.preview.operation = MutationOperation.$zero;
+    expect(largeBlobMutationPreview(capacity)).toBeNull();
+    expect(operationEnvelopeLogData(capacity).result).toBeNull();
+  });
+
+  it("extracts a completed large blob result only when the envelope itself succeeded", () => {
+    const envelope = {
+      kind: OperationKind.OperationDeleteLargeBlob,
+      result: {
+        preview: { operation: MutationOperation.MutationDelete },
+        result: { operation: MutationOperation.MutationDelete, credentialIDHex: "cafe", noBlob: false },
+      },
+    } as LargeBlobMutationEnvelope;
+
+    expect(largeBlobMutationResult(envelope)?.credentialIDHex).toBe("cafe");
+    envelope.error = { message: "write may not have completed" };
+    expect(largeBlobMutationResult(envelope)).toBeNull();
   });
 
   it("summarizes bio enroll samples and preview warnings through the typed envelope", () => {

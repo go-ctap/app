@@ -7,6 +7,7 @@ import type {
   DiscoveryChangedEnvelope,
   InspectEnvelope,
   InteractionPrompt,
+  LargeBlobListEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
@@ -16,6 +17,7 @@ import { setAppLocale } from "$lib/i18n";
 import {
   resetAppStateForTest,
   seedDevicesForTest,
+  seedLargeBlobsEnvelopeForTest,
   seedOverviewEnvelopeForTest,
   seedPasskeysEnvelopeForTest,
   seedPendingInteractionForTest,
@@ -24,6 +26,7 @@ import {
 import {
   appError,
   devices,
+  largeBlobsInventoryState,
   overviewEnvelope,
   passkeysInventoryState,
   pendingInteraction,
@@ -107,6 +110,7 @@ describe("discovery controller", () => {
     const refreshed = device("token-1", "Refreshed");
     const inspection = { operationId: "inspect-1" } as InspectEnvelope;
     const inventory = { operationId: "credentials-1" } as CredentialsEnvelope;
+    const largeBlobs = { operationId: "large-blobs-1" } as LargeBlobListEnvelope;
     const prompt = {
       interactionId: "interaction-1",
       operationId: "operation-1",
@@ -117,6 +121,7 @@ describe("discovery controller", () => {
     seedSelected(original);
     seedOverviewEnvelopeForTest(inspection);
     seedPasskeysEnvelopeForTest(inventory);
+    seedLargeBlobsEnvelopeForTest(largeBlobs);
     seedPendingInteractionForTest(prompt);
 
     handleDiscoveryChanged(event({ devices: [refreshed] }));
@@ -130,6 +135,7 @@ describe("discovery controller", () => {
     });
     expect(get(overviewEnvelope)).toBe(inspection);
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(inventory);
+    expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).toBe(largeBlobs);
     expect(get(pendingInteraction)).toBe(prompt);
   });
 
@@ -173,10 +179,12 @@ describe("discovery controller", () => {
     const token = device("token-1");
     const inspection = { operationId: "inspect-1" } as InspectEnvelope;
     const inventory = { operationId: "credentials-1" } as CredentialsEnvelope;
+    const largeBlobs = { operationId: "large-blobs-1" } as LargeBlobListEnvelope;
     const { handleDiscoveryChanged, handleOperationProgress } = await import("./controller.js");
     seedSelected(token, "running");
     seedOverviewEnvelopeForTest(inspection);
     seedPasskeysEnvelopeForTest(inventory);
+    seedLargeBlobsEnvelopeForTest(largeBlobs);
     seedPendingInteractionForTest({
       interactionId: "interaction-1",
       operationId: "operation-1",
@@ -199,6 +207,7 @@ describe("discovery controller", () => {
     expect(get(pendingInteraction)).toBeNull();
     expect(get(overviewEnvelope)).toBeNull();
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBeNull();
+    expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).toBeNull();
     expect(get(statusBar).activeOperation).toBeNull();
     expect(get(workbenchLog)[0]).toMatchObject({
       tone: "warning",

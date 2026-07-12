@@ -217,13 +217,13 @@
       min-width: 0;
     }
 
-    @media (min-width: 1020px) {
+    @container workspace (min-width: 64rem) {
       .overview-summary-grid {
         grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr);
       }
     }
 
-    @media (max-width: 720px) {
+    @container workspace (max-width: 45rem) {
       :global(.hero-header) {
         display: grid;
       }

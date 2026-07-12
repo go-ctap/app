@@ -26,7 +26,7 @@ func (s *CtapkitService) ReadLargeBlob(ctx context.Context, req kitservice.Large
 	return s.core.ReadLargeBlob(ctx, req)
 }
 
-func (s *CtapkitService) ListLargeBlobs(ctx context.Context, req kitservice.OperationRequest) (kitservice.LargeBlobListEnvelope, error) {
+func (s *CtapkitService) ListLargeBlobs(ctx context.Context, req kitservice.LargeBlobListRequest) (kitservice.LargeBlobListEnvelope, error) {
 	return s.core.ListLargeBlobs(ctx, req)
 }
 

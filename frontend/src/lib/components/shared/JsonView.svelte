@@ -29,7 +29,8 @@
       </Card.Action>
     </Card.Header>
     <Card.Content>
-      <div class="json-frame">
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex (scrollable code region) -->
+      <div class="json-frame" role="region" aria-label={title} tabindex="0">
         <pre>{source}</pre>
       </div>
     </Card.Content>
@@ -41,7 +42,8 @@
       <Button variant="outline" type="button" onclick={copy}>{m.copy()}</Button>
     </div>
   {/if}
-  <div class="json-frame">
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex (scrollable code region) -->
+  <div class="json-frame" role="region" aria-label={title} tabindex="0">
     <pre>{source}</pre>
   </div>
 {/if}
@@ -61,15 +63,21 @@
   }
 
   .json-frame {
-    max-height: 26rem;
-    min-width: 0;
-    overflow: auto;
+    inline-size: 100%;
+    max-inline-size: 100%;
+    max-block-size: var(--json-view-max-block-size, min(26rem, 44dvh));
+    min-inline-size: 0;
+    overflow-x: auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
     border: 1px solid var(--border);
     background: var(--muted);
   }
 
   .json-frame pre {
-    min-width: max-content;
+    inline-size: max-content;
+    min-inline-size: 100%;
     margin: 0;
     padding: var(--space-3);
     color: var(--foreground);

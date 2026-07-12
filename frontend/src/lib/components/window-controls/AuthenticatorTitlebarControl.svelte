@@ -47,7 +47,7 @@
   <div class="auth-titlebar" data-busy={disabled ? "true" : undefined}>
     <Select.Root type="single" value={presentation.selectedValue} onValueChange={handleSelect} disabled={disabled} items={presentation.items}>
       <Select.Trigger aria-label={m.select_authenticator()}>
-        {presentation.selectedLabel}
+        <span class="auth-titlebar-label">{presentation.selectedLabel}</span>
       </Select.Trigger>
 
       <Select.Portal>
@@ -112,6 +112,20 @@
     .auth-titlebar :global(button),
     .auth-titlebar :global([role="button"]) {
       --wails-draggable: no-drag;
+    }
+
+    .auth-titlebar :global([data-slot="select-trigger"]) {
+      flex: 1 1 auto;
+      width: auto;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    .auth-titlebar-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .auth-titlebar[data-busy="true"] {

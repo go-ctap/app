@@ -1,9 +1,15 @@
 import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { CredentialsEnvelope, InteractionPrompt, RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type { CredentialsEnvelope, InteractionPrompt, LargeBlobListEnvelope, RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
 import type { OperationEnvelope } from "./api.js";
 import { resetInteractionStateForTest, pendingInteraction } from "./features/interaction/state.js";
+import {
+  completeLargeBlobsInventoryLoad,
+  emptyLargeBlobsInventoryState,
+  largeBlobsInventoryState,
+  resetLargeBlobsStateForTest,
+} from "./features/largeblobs/state.js";
 import {
   idleLoadState,
   overviewBioSensor,
@@ -38,6 +44,7 @@ export function resetAppStateForTest() {
   resetInteractionStateForTest();
   resetOverviewStateForTest();
   resetPasskeysStateForTest();
+  resetLargeBlobsStateForTest();
 }
 
 export function seedActiveScreenForTest(screen: ActiveScreen) {
@@ -94,4 +101,22 @@ export function seedPasskeysEnvelopeForTest(envelope: CredentialsEnvelope | null
     return;
   }
   completePasskeysInventoryLoad(envelope, "2026-06-22T00:00:00.000Z");
+}
+
+export function seedLargeBlobsEnvelopeForTest(envelope: LargeBlobListEnvelope | null, error?: RuntimeErrorEnvelope | null) {
+  if (error) {
+    largeBlobsInventoryState.set({
+      ...emptyLargeBlobsInventoryState(),
+      phase: "error",
+      lastSuccessfulEnvelope: envelope,
+      runtimeError: error,
+      stale: Boolean(envelope),
+    });
+    return;
+  }
+  if (!envelope) {
+    largeBlobsInventoryState.set(emptyLargeBlobsInventoryState());
+    return;
+  }
+  completeLargeBlobsInventoryLoad(envelope, "2026-06-22T00:00:00.000Z");
 }

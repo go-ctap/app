@@ -1,6 +1,7 @@
 import { readonly } from "svelte/store";
 
 import * as interaction from "./features/interaction/state.js";
+import * as largeBlobs from "./features/largeblobs/state.js";
 import * as overview from "./features/overview/state.js";
 import * as passkeys from "./features/passkeys/state.js";
 import * as session from "./features/session/state.js";
@@ -10,6 +11,14 @@ export {
   type ActiveScreen,
   type StatusBarState,
 } from "./features/workbench/state.js";
+export type {
+  LargeBlobMutationState,
+  LargeBlobReadState,
+  LargeBlobsInventoryPhase,
+  LargeBlobsInventoryState,
+  LargeBlobsStatusFilter,
+} from "./features/largeblobs/state.js";
+export type { LargeBlobPayloadEncoding } from "./largeblobs-payload.js";
 export type {
   CredentialUpdateForm,
   CredentialUpdateValidationError,
@@ -43,5 +52,14 @@ export const passkeysStatusFilter = readonly(passkeys.passkeysStatusFilter);
 export const passkeysSelectedCredentialID = readonly(passkeys.passkeysSelectedCredentialID);
 export const passkeysVerificationFlow = readonly(passkeys.passkeysVerificationFlow);
 export const passkeysMutation = readonly(passkeys.passkeysMutation);
+
+export const largeBlobsInventoryState = readonly(largeBlobs.largeBlobsInventoryState);
+export const largeBlobsReadState = readonly(largeBlobs.largeBlobsReadState);
+export const largeBlobsMutation = readonly(largeBlobs.largeBlobsMutation);
+export const largeBlobsQuery = readonly(largeBlobs.largeBlobsQuery);
+export const largeBlobsStatusFilter = readonly(largeBlobs.largeBlobsStatusFilter);
+export const largeBlobsSelectedCredentialID = readonly(largeBlobs.largeBlobsSelectedCredentialID);
+export const largeBlobsVerificationFlow = readonly(largeBlobs.largeBlobsVerificationFlow);
+export const largeBlobsPayloadEncoding = readonly(largeBlobs.largeBlobsPayloadEncoding);
 
 export const pendingInteraction = readonly(interaction.pendingInteraction);
