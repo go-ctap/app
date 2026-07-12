@@ -269,11 +269,6 @@ describe("LargeBlobs", () => {
     expect(details).toHaveAttribute("id", "large-blob-row-details-cafe");
     expect(details.closest("table")).toBe(table);
     expect(within(table).getAllByRole("row")).toHaveLength(5);
-    const read = within(details).getByRole("button", { name: "Read blob" });
-    expect(read).toBeInTheDocument();
-    const interpretation = within(details).getByRole("group", { name: "Interpretation" });
-    expect(within(interpretation).getByRole("radio", { name: "JSON" })).toHaveAttribute("aria-checked", "true");
-    await user.click(read);
     expect(controllerMocks.readLargeBlob).toHaveBeenCalledOnce();
     expect(controllerMocks.readLargeBlob).toHaveBeenCalledWith("cafe");
   });
@@ -290,13 +285,12 @@ describe("LargeBlobs", () => {
 
     expect(screen.getByText("Large blob inventory may be stale")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Zero User, zero@example.com/ }));
-    expect(screen.getByRole("button", { name: "Read blob" })).toBeDisabled();
+    expect(controllerMocks.readLargeBlob).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Write" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
   });
 
-  it("renders a present zero-byte blob as an empty payload and reads again only on demand", async () => {
-    const user = userEvent.setup();
+  it("renders a present zero-byte blob as an empty payload without a manual read action", () => {
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     mutableLargeBlobsSelectedCredentialID.set("cafe");
     mutableLargeBlobsReadState.set({
@@ -312,14 +306,11 @@ describe("LargeBlobs", () => {
     render(LargeBlobs);
 
     const details = document.getElementById("large-blob-row-details-cafe") as HTMLElement;
-    const readAgain = within(details).getByRole("button", { name: "Read again" });
     expect(within(details).getByText("Decoded payload is empty.")).toBeInTheDocument();
     expect(within(details).queryByRole("region", { name: "Raw hex" })).not.toBeInTheDocument();
     expect(within(details).getByText("Present")).toBeInTheDocument();
     expect(controllerMocks.readLargeBlob).not.toHaveBeenCalled();
-    await user.click(readAgain);
-    expect(controllerMocks.readLargeBlob).toHaveBeenCalledOnce();
-    expect(controllerMocks.readLargeBlob).toHaveBeenCalledWith("cafe");
+    expect(within(details).queryByRole("button", { name: /Read/ })).not.toBeInTheDocument();
   });
 
   it("keeps read available for a missing key and shows its typed state", () => {
@@ -338,7 +329,7 @@ describe("LargeBlobs", () => {
     render(LargeBlobs);
 
     const details = document.getElementById("large-blob-row-details-beef") as HTMLElement;
-    expect(within(details).getByRole("button", { name: "Read again" })).toBeEnabled();
+    expect(within(details).queryByRole("button", { name: /Read/ })).not.toBeInTheDocument();
     expect(within(details).getAllByText("Large-blob key unavailable").length).toBeGreaterThan(0);
     expect(within(details).getAllByText("Key unavailable").length).toBeGreaterThan(0);
   });
@@ -362,6 +353,7 @@ describe("LargeBlobs", () => {
     expect(within(details).getAllByText("Missing").length).toBeGreaterThan(0);
     expect(within(details).queryByText("Decoded payload is empty.")).not.toBeInTheDocument();
     expect(within(details).queryByRole("region", { name: "Raw hex" })).not.toBeInTheDocument();
+    expect(within(details).queryByRole("region", { name: "UTF-8 text" })).not.toBeInTheDocument();
   });
 
   it("renders valid UTF-8 JSON as structured data", () => {
@@ -394,7 +386,7 @@ describe("LargeBlobs", () => {
     expect(within(details).queryByRole("region", { name: "Raw hex" })).not.toBeInTheDocument();
   });
 
-  it("renders the backend UTF-8 interpretation selected for the read", () => {
+  it("renders the selected UTF-8 interpretation", () => {
     const envelope = readEnvelope({
       rawHex: "746578742076696577",
       decode: {
@@ -425,7 +417,7 @@ describe("LargeBlobs", () => {
     expect(within(details).queryByRole("region", { name: "Raw hex" })).not.toBeInTheDocument();
   });
 
-  it("shows raw hex when the requested backend interpretation fails", () => {
+  it("shows only raw hex when automatic interpretation fails", () => {
     const envelope = readEnvelope({
       rawHex: "fffe",
       decode: {
@@ -448,8 +440,6 @@ describe("LargeBlobs", () => {
 
     const details = document.getElementById("large-blob-row-details-cafe") as HTMLElement;
     expect(within(details).getByRole("region", { name: "Raw hex" })).toHaveTextContent("fffe");
-    expect(within(details).getByText("Payload interpretation failed")).toBeInTheDocument();
-    expect(within(details).getByText("payload is not valid UTF-8")).toBeInTheDocument();
     expect(within(details).queryByText("Decoded as JSON")).not.toBeInTheDocument();
     expect(within(details).queryByRole("region", { name: "UTF-8 text" })).not.toBeInTheDocument();
   });

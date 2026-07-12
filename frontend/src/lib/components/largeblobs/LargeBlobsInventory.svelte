@@ -34,7 +34,7 @@
     onQueryChange: (query: string) => void;
     onFilterChange: (filter: LargeBlobsStatusFilter) => void;
     onSelect: (credentialIDHex: string) => void;
-    onDecodeModeChange: (mode: DecodeMode) => void;
+    onDecodeModeChange: (mode: DecodeMode) => void | Promise<boolean>;
     onRead: (credentialIDHex: string) => void | Promise<boolean>;
     onWrite: (credentialIDHex: string) => void;
     onDelete: (credentialIDHex: string) => void | Promise<boolean>;
@@ -102,7 +102,11 @@
   }
 
   function toggleCredential(row: LargeBlobCredentialRow) {
-    onSelect(presentation.selectedCredentialID === row.id ? "" : row.id);
+    const closing = presentation.selectedCredentialID === row.id;
+    onSelect(closing ? "" : row.id);
+    if (!closing && row.blobPresent && row.largeBlobKeyAvailable && !presentation.readDisabled) {
+      void onRead(row.id);
+    }
   }
 </script>
 
@@ -270,11 +274,9 @@
                     {readState}
                     {mutation}
                     {decodeMode}
-                    readDisabled={presentation.readDisabled}
                     writeDisabled={presentation.writeDisabled}
                     deleteDisabled={presentation.deleteDisabled}
                     {onDecodeModeChange}
-                    {onRead}
                     {onWrite}
                     {onDelete}
                   />

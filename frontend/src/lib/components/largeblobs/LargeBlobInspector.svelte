@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Copy, FilePenLine, ScanText, Trash2 } from "@lucide/svelte";
+  import { Copy, FilePenLine, Trash2 } from "@lucide/svelte";
 
   import { ErrorCategory } from "../../../../bindings/github.com/go-ctap/kit/model";
   import {
@@ -27,11 +27,9 @@
     readState: LargeBlobReadState;
     mutation: LargeBlobMutationState;
     decodeMode: DecodeMode;
-    readDisabled: boolean;
     writeDisabled: boolean;
     deleteDisabled: boolean;
-    onRead: (credentialIDHex: string) => void | Promise<boolean>;
-    onDecodeModeChange: (mode: DecodeMode) => void;
+    onDecodeModeChange: (mode: DecodeMode) => void | Promise<boolean>;
     onWrite: (credentialIDHex: string) => void;
     onDelete: (credentialIDHex: string) => void | Promise<boolean>;
   };
@@ -41,10 +39,8 @@
     readState,
     mutation,
     decodeMode,
-    readDisabled,
     writeDisabled,
     deleteDisabled,
-    onRead,
     onDecodeModeChange,
     onWrite,
     onDelete,
@@ -105,7 +101,7 @@
   function handleDecodeModeChange(value: string | string[]) {
     if (Array.isArray(value)) return;
     const mode = decodeModes.find((candidate) => candidate === value);
-    if (mode) onDecodeModeChange(mode);
+    if (mode) void onDecodeModeChange(mode);
   }
 
   function readBlobStateLabel() {
@@ -207,20 +203,7 @@
                 <ToggleGroup.Item value={mode}>{decodeModeLabel(mode)}</ToggleGroup.Item>
               {/each}
             </ToggleGroup.Root>
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              disabled={readDisabled || readingSelected}
-              onclick={() => onRead(row.id)}
-            >
-              {#if readingSelected}
-                <Spinner data-icon="inline-start" aria-hidden="true" />
-              {:else}
-                <ScanText data-icon="inline-start" aria-hidden="true" />
-              {/if}
-              {report ? m.read_again() : m.read_blob()}
-            </Button>
+            {#if readingSelected}<Spinner aria-label={m.large_blob_read()} />{/if}
           </div>
         </div>
 

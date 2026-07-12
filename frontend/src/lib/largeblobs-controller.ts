@@ -159,10 +159,12 @@ export function setLargeBlobsVerificationFlow(value: VerificationFlow) {
   largeBlobsVerificationFlow.set(value);
 }
 
-export function setLargeBlobsDecodeMode(value: DecodeMode) {
-  if (get(largeBlobsDecodeMode) === value) return;
+export async function setLargeBlobsDecodeMode(value: DecodeMode): Promise<boolean> {
+  if (get(largeBlobsDecodeMode) === value) return false;
   largeBlobsDecodeMode.set(value);
   resetLargeBlobReadState();
+  const credentialIDHex = get(largeBlobsSelectedCredentialID);
+  return credentialIDHex ? readLargeBlob(credentialIDHex) : false;
 }
 
 export function setLargeBlobsPayloadEncoding(value: LargeBlobPayloadEncoding) {
