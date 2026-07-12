@@ -164,7 +164,9 @@
               disabled={fieldsLocked}
               aria-invalid={Boolean(validationError)}
               autocomplete="off"
-              spellcheck={mutation.draft.encoding === "utf8"}
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck={false}
               placeholder={m.large_blob_payload_placeholder()}
               oninput={(event) => onDraftChange({ payload: event.currentTarget.value })}
             />
