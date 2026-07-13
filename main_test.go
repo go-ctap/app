@@ -12,8 +12,8 @@ func TestMainWindowOptionsUseNativeMacChrome(t *testing.T) {
 	if options.Frameless {
 		t.Fatal("macOS main window must keep its native frame")
 	}
-	if options.Mac.TitleBar != application.MacTitleBarHidden {
-		t.Fatalf("macOS title bar = %#v, want MacTitleBarHidden", options.Mac.TitleBar)
+	if options.Mac.TitleBar != application.MacTitleBarHiddenInset {
+		t.Fatalf("macOS title bar = %#v, want MacTitleBarHiddenInset", options.Mac.TitleBar)
 	}
 	if options.Mac.CollectionBehavior != application.MacWindowCollectionBehaviorFullScreenPrimary {
 		t.Fatalf("macOS collection behavior = %v, want FullScreenPrimary", options.Mac.CollectionBehavior)
@@ -29,6 +29,17 @@ func TestMainWindowOptionsUseNativeMacChrome(t *testing.T) {
 	}
 	if options.Mac.LiquidGlass.TintColor == nil || *options.Mac.LiquidGlass.TintColor != application.NewRGBA(30, 30, 32, 96) {
 		t.Fatalf("macOS liquid glass tint = %#v, want neutral dark sidebar tint", options.Mac.LiquidGlass.TintColor)
+	}
+}
+
+func TestMainWindowOptionsSetMinimumSize(t *testing.T) {
+	options := mainWindowOptions("darwin")
+
+	if options.MinWidth != mainWindowMinWidth {
+		t.Fatalf("minimum window width = %d, want %d", options.MinWidth, mainWindowMinWidth)
+	}
+	if options.MinHeight != mainWindowMinHeight {
+		t.Fatalf("minimum window height = %d, want %d", options.MinHeight, mainWindowMinHeight)
 	}
 }
 

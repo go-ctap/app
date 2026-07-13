@@ -327,10 +327,6 @@
 			--sidebar-background: color-mix(in srgb, var(--sidebar) 88%, transparent);
 		}
 
-		.app-shell[data-platform="windows"] {
-			border-radius: var(--window-radius);
-		}
-
 		.titlebar-content[data-native-window-controls="true"] {
 			grid-template-columns: minmax(0, 38rem) minmax(2rem, 1fr);
 			padding-right: var(--space-4);

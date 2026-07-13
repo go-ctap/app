@@ -12,6 +12,11 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+const (
+	mainWindowMinWidth  = 800
+	mainWindowMinHeight = 600
+)
+
 func init() {
 	application.RegisterEvent[kitservice.DiscoveryChangedEnvelope](kitservice.EventDiscoveryChanged)
 	application.RegisterEvent[kitservice.OperationEventEnvelope](kitservice.EventOperationEvent)
@@ -23,9 +28,11 @@ func mainWindowOptions(goos string) application.WebviewWindowOptions {
 	options := application.WebviewWindowOptions{
 		Title:     "FIDO Authenticator Workbench",
 		Frameless: true,
+		MinWidth:  mainWindowMinWidth,
+		MinHeight: mainWindowMinHeight,
 		Mac: application.MacWindow{
 			Backdrop:           application.MacBackdropLiquidGlass,
-			TitleBar:           application.MacTitleBarHidden,
+			TitleBar:           application.MacTitleBarHiddenInset,
 			CollectionBehavior: application.MacWindowCollectionBehaviorFullScreenPrimary,
 			LiquidGlass: application.MacLiquidGlass{
 				Style:     application.LiquidGlassStyleDark,
