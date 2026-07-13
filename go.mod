@@ -3,7 +3,7 @@ module fidobench
 go 1.26.3
 
 require (
-	github.com/go-ctap/kit v0.0.0-20260624013202-ce158051df9c
+	github.com/go-ctap/kit v0.1.0
 	github.com/wailsapp/wails/v3 v3.0.0-alpha2.117
 )
 
@@ -13,8 +13,10 @@ require (
 	github.com/coder/websocket v1.8.15 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.2 // indirect
-	github.com/go-ctap/ctap v0.13.0 // indirect
-	github.com/go-ctap/hid v0.6.0 // indirect
+	github.com/go-ctap/ctap v0.19.0 // indirect
+	github.com/go-ctap/hid v0.9.1 // indirect
+	github.com/go-ctap/pcsc v0.3.0 // indirect
+	github.com/go-ctap/token2 v0.2.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
 	github.com/gofrs/flock v0.13.0 // indirect
@@ -26,7 +28,6 @@ require (
 	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/samber/lo v1.53.0 // indirect
 	github.com/samber/mo v1.17.0 // indirect
-	github.com/sstallion/go-hid v0.15.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/crypto v0.54.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
