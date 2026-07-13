@@ -11,7 +11,7 @@ import {
   BioMutationOperation,
   StateValue,
 } from "../../bindings/github.com/go-ctap/kit/model/config";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { PreviewMode } from "../../bindings/github.com/go-ctap/kit/model/safety";
 import type {
   AuthenticatorConfigEnvelope,
@@ -75,6 +75,7 @@ function device(id: string): DeviceReport {
     path: id,
     vendorId: 1,
     productId: 2,
+    vendor: Vendor.VendorUnknown,
     product: id,
   };
 }

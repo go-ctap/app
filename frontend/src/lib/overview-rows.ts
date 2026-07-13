@@ -1,6 +1,12 @@
 import { Option, Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import type { InspectInfo } from "../../bindings/github.com/go-ctap/kit/model";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import {
+  Capability,
+  Interface,
+  Vendor,
+  type DeviceReport,
+  type InterfaceReport,
+} from "../../bindings/github.com/go-ctap/kit/model/report";
 
 import type { InspectAlgorithms, InspectBooleanField, InspectCertifications, InspectNumberField, InspectOptions } from "./overview-dto-types.js";
 import { m, value } from "./overview-i18n.js";
@@ -72,9 +78,12 @@ export function buildOverviewRows(context: OverviewContext = {}): OverviewRow[] 
   return [
     row("Identity", m.matrix_name_aaguid, m.matrix_desc_aaguid_model, "informational", info.aaguid, "aaguid"),
     row("Identity", m.matrix_name_device_id, m.matrix_desc_device_id, valueStatus(device?.deviceId), textValue(device?.deviceId, value.notReported()), "device.deviceId"),
+    ...vendorIdentityRows(device),
     transportRow(info, device, transports),
     optionRow("Identity", m.matrix_name_platform_attachment, m.matrix_desc_platform_attachment, optionValue(options, optionKey.plat), "enabled", "disabled", "options.plat", value.defaultFalse()),
     row("Identity", m.matrix_name_encrypted_device_identifier, m.matrix_desc_encrypted_device_identifier, valueStatus(info.encIdentifier), compactSecretValue(info.encIdentifier), "encIdentifier"),
+
+    ...vendorInterfaceRows(device),
 
     versionsRow(versions),
     versionRow("U2F", m.matrix_desc_u2f, versions, Version.U2F_V2),
@@ -137,6 +146,89 @@ export function buildOverviewRows(context: OverviewContext = {}): OverviewRow[] 
     certificationsRow(certificationsKnown, certifications),
     uintRow("Attestation", m.matrix_name_firmware_version, m.matrix_desc_firmware_version, info, "firmwareVersion"),
   ].filter((item): item is OverviewRow => Boolean(item));
+}
+
+function vendorIdentityRows(device: DeviceReport | null) {
+  const metadata = device?.metadata;
+  const model = metadata?.model || device?.product;
+  const serial = metadata?.serial || device?.serial;
+
+  return [
+    row("Identity", m.matrix_name_device_vendor, m.matrix_desc_device_vendor, valueStatus(device?.vendor), textValue(device?.vendor, value.notReported()), "device.vendor"),
+    row("Identity", m.matrix_name_device_model, m.matrix_desc_device_model, valueStatus(model), textValue(model, value.notReported()), metadata?.model ? "device.metadata.model" : "device.product"),
+    row("Identity", m.matrix_name_device_serial, m.matrix_desc_device_serial, valueStatus(serial), textValue(serial, value.notReported()), metadata?.serial ? "device.metadata.serial" : "device.serial"),
+    row("Identity", m.matrix_name_device_firmware, m.matrix_desc_device_firmware, valueStatus(metadata?.firmware), textValue(metadata?.firmware, value.notReported()), "device.metadata.firmware"),
+  ];
+}
+
+function vendorInterfaceRows(device: DeviceReport | null) {
+  return (device?.metadata?.interfaces ?? []).flatMap((interfaceReport) => {
+    const rows = [interfacePresenceRow(interfaceReport)];
+    if (device?.vendor !== Vendor.VendorToken2 || interfaceReport.supported.length > 0) {
+      rows.push(interfaceApplicationsRow(interfaceReport, "supported"));
+    }
+    if (device?.vendor === Vendor.VendorYubico) {
+      rows.push(interfaceApplicationsRow(interfaceReport, "enabled"));
+    }
+    return rows;
+  });
+}
+
+function interfacePresenceRow(interfaceReport: InterfaceReport) {
+  const interfaceName = interfaceLabel(interfaceReport.interface);
+  return row(
+    "Interfaces",
+    m.matrix_name_vendor_interface({ interface: interfaceName }),
+    m.matrix_desc_vendor_interface,
+    "informational",
+    value.available(),
+    `device.metadata.interfaces.${interfaceReport.interface}.interface`,
+  );
+}
+
+function interfaceApplicationsRow(
+  interfaceReport: InterfaceReport,
+  field: "supported" | "enabled",
+) {
+  const interfaceName = interfaceLabel(interfaceReport.interface);
+  const applications = interfaceReport[field].map(capabilityLabel);
+  const enabled = field === "enabled";
+
+  return row(
+    "Interfaces",
+    enabled
+      ? m.matrix_name_enabled_applications({ interface: interfaceName })
+      : m.matrix_name_supported_applications({ interface: interfaceName }),
+    enabled
+      ? m.matrix_desc_enabled_applications({ interface: interfaceName })
+      : m.matrix_desc_supported_applications({ interface: interfaceName }),
+    "informational",
+    inlineList(applications, value.emptyList()),
+    `device.metadata.interfaces.${interfaceReport.interface}.${field}`,
+  );
+}
+
+function interfaceLabel(input: Interface) {
+  const labels: Record<Interface, string> = {
+    [Interface.$zero]: input,
+    [Interface.InterfaceUSB]: "USB",
+    [Interface.InterfaceNFC]: "NFC",
+  };
+  return labels[input] || input;
+}
+
+function capabilityLabel(input: Capability) {
+  const labels: Record<Capability, string> = {
+    [Capability.$zero]: input,
+    [Capability.CapabilityOTP]: "OTP",
+    [Capability.CapabilityU2F]: "U2F",
+    [Capability.CapabilityCCID]: "CCID",
+    [Capability.CapabilityOpenPGP]: "OpenPGP",
+    [Capability.CapabilityPIV]: "PIV",
+    [Capability.CapabilityOATH]: "OATH",
+    [Capability.CapabilityCTAP2]: "CTAP2",
+  };
+  return labels[input] || input;
 }
 
 function transportRow(info: InspectInfo, device: DeviceReport | null, transports: string[]) {

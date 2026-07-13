@@ -6,6 +6,7 @@ import { m } from "../paraglide/messages.js";
 import { credentialsReport } from "./ctapkit-results.js";
 import type { PasskeysInventoryState, PasskeysMutationState, PasskeysStatusFilter } from "./features/passkeys/state.js";
 import { passkeysInventoryIsStale } from "./features/passkeys/state.js";
+import { deviceName } from "./format.js";
 import type { SessionStatus } from "./session-model.js";
 
 const RETRYABLE_MUTATION_CATEGORIES = new Set<ErrorCategoryValue>([
@@ -229,6 +230,6 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
     emptyInventory: Boolean(report && allRows.length === 0),
     emptyFilteredResult: Boolean(report && allRows.length > 0 && rows.length === 0),
     capacity: passkeysCapacity(report),
-    selectedDeviceName: input.selectedDevice?.product || input.selectedDevice?.deviceId || m.authenticator(),
+    selectedDeviceName: input.selectedDevice ? deviceName(input.selectedDevice) : m.authenticator(),
   };
 }

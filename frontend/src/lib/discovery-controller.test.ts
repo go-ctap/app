@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type {
   CredentialsEnvelope,
   DiscoveryChangedEnvelope,
@@ -9,6 +9,7 @@ import type {
   InteractionPrompt,
   LargeBlobListEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
+import { DiscoveryTrigger } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
 
@@ -51,6 +52,7 @@ function device(id: string, product = id): DeviceReport {
     path: id,
     vendorId: 1,
     productId: 2,
+    vendor: Vendor.VendorUnknown,
     product,
   };
 }
@@ -129,6 +131,37 @@ describe("discovery controller", () => {
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(inventory);
     expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).toBe(largeBlobs);
     expect(get(pendingInteraction)).toBe(prompt);
+  });
+
+  it("applies enriched metadata without replacing the current status outcome", async () => {
+    const original = device("token-1", "Security Key");
+    const enriched: DeviceReport = {
+      ...original,
+      vendor: Vendor.VendorYubico,
+      metadata: {
+        model: "YubiKey 5C NFC",
+        serial: "12345678",
+        firmware: "5.7.1",
+      },
+    };
+    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+    seedSelected(original);
+
+    handleDiscoveryChanged(event({ devices: [original] }, null, "monitor"));
+    const outcome = get(statusBar).lastOutcome;
+    handleDiscoveryChanged(event(
+      { devices: [enriched] },
+      null,
+      DiscoveryTrigger.DiscoveryTriggerEnriched,
+    ));
+
+    expect(get(devices)).toEqual([enriched]);
+    expect(get(selectedDevice)).toEqual(enriched);
+    expect(get(sessionStatus)).toMatchObject({
+      state: "ready",
+      sessionId: "session-token-1",
+    });
+    expect(get(statusBar).lastOutcome).toBe(outcome);
   });
 
   it("removes an unselected authenticator without disturbing the selected session", async () => {

@@ -1,6 +1,8 @@
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { RuntimeErrorEnvelope, SessionID, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
 
+import { deviceName } from "./format.js";
+
 export type SessionState = "idle" | "opening" | "ready" | "running" | "error";
 
 export type SessionStatus = {
@@ -28,8 +30,8 @@ export function reportForSelector(devices: DeviceReport[], selector: string) {
 }
 
 export function labelForDevice(device: DeviceReport) {
-  const name = [device.manufacturer, device.product].filter(Boolean).join(" ") || device.product || device.deviceId;
-  return [name, device.serial].filter(Boolean).join(" · ");
+  const name = deviceName(device);
+  return [name, device.metadata?.serial || device.serial].filter(Boolean).join(" · ");
 }
 
 export function idleSessionStatus(state: SessionState = "idle", error?: RuntimeErrorEnvelope | null): SessionStatus {

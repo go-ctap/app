@@ -2,7 +2,7 @@ import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ErrorCategory, OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { CredentialsEnvelope, InteractionPrompt, OperationEventEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
@@ -33,6 +33,7 @@ const token: DeviceReport = {
   path: "token-1",
   vendorId: 1,
   productId: 2,
+  vendor: Vendor.VendorUnknown,
   product: "Test key",
 };
 

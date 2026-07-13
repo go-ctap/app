@@ -1,5 +1,7 @@
 import type { LookupResult, MetadataStatement, PayloadEntry, StatusReport } from "../../bindings/github.com/go-ctap/kit/model/mds";
+import { Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
 
+import { deviceName as formattedDeviceName } from "./format.js";
 import { m, mdsDescriptionText, mdsStateText } from "./overview-i18n.js";
 import type {
   OverviewContext,
@@ -33,7 +35,7 @@ export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHe
   const latestStatus = statusReports.find((report) => !isFipsStatus(report.status)) ?? null;
   const rawAaguid = info?.aaguid || mdsResult?.aaguid;
   const aaguid = formatAaguid(rawAaguid);
-  const deviceName = [device?.manufacturer, device?.product].filter(Boolean).join(" ") || textValue(device?.product, "");
+  const deviceName = device ? formattedDeviceName(device) : "";
   const mdsName = preferredMDSName(statement);
   const found = mdsResult?.found === true;
   const hasLookup = Boolean(mdsResult);
@@ -43,6 +45,7 @@ export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHe
   return {
     title: deviceName || mdsName || m.selected_authenticator(),
     subtitle: textValue(statement?.description, "") || m.current_authenticator_overview(),
+    versionBadge: vendorVersionBadge(device?.vendor, device?.metadata?.firmware),
     aaguid,
     aaguidAvailable: hasAaguid(rawAaguid, aaguid),
     iconSrc: safeMDSImage(statement?.icon) || safeMDSImage(statement?.iconDark) || "",
@@ -52,6 +55,14 @@ export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHe
     mdsStatusFacts: statusReportFacts(latestStatus, statement, entry, status, found, mdsState),
     mdsBlobFacts: metadataBlobFacts(mdsResult, hasLookup),
   };
+}
+
+function vendorVersionBadge(vendor: Vendor | undefined, firmware: string | undefined) {
+  const version = textValue(firmware, "");
+  if (!version) return "";
+  if (vendor === Vendor.VendorToken2) return m.token_revision_badge({ version });
+  if (vendor === Vendor.VendorYubico) return m.token_firmware_badge({ version });
+  return "";
 }
 
 export function buildOverviewMDSObservations(context: OverviewContext = {}): OverviewMDSObservation[] {

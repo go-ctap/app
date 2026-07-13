@@ -19,7 +19,7 @@ describe("OverviewRawInspectionData", () => {
     const user = userEvent.setup();
     const onCopy = vi.fn();
 
-    render(OverviewRawInspectionData, { props: { info: null, onCopy } });
+    render(OverviewRawInspectionData, { props: { result: null, onCopy } });
 
     const disclosure = screen.getByRole("button", { name: "Raw inspection data" });
     const copy = screen.getByRole("button", { name: "Copy JSON" });

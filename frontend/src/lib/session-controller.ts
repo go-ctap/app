@@ -14,6 +14,7 @@ import {
   sessionStatus,
 } from "./features/session/state.js";
 import { activeScreen, type ActiveScreen } from "./features/workbench/state.js";
+import { deviceName } from "./format.js";
 import { maybeLoadLargeBlobs } from "./largeblobs-controller.js";
 import { maybeLoadOverview } from "./overview-controller.js";
 import { maybeLoadPasskeys } from "./passkeys-controller.js";
@@ -103,7 +104,7 @@ async function closeSelection(devices: DeviceReport[] = get(deviceStore)): Promi
 
 function selectionMessage(discovery: Discovery, fallback: string) {
   const device = discovery.selectedDevice;
-  return device ? device.product || device.deviceId : fallback || m.selection_updated();
+  return device ? deviceName(device) : fallback || m.selection_updated();
 }
 
 async function selectFromDevices(devices: DeviceReport[], selector: string): Promise<Discovery> {

@@ -65,8 +65,6 @@
       <OverviewHeroCard
         hero={overview.hero}
         signalGroups={overview.signalGroups}
-        sessionState={overview.sessionState}
-        sessionLabel={overview.sessionLabel}
         loading={overview.loading}
         mdsLoading={overview.mdsLoading}
         reloadDisabled={overview.reloadDisabled}
@@ -80,7 +78,7 @@
       {/if}
       <OverviewCapabilityMatrix groups={overview.overviewGroups} warningCount={overview.warningCount} />
       <OverviewMDSObservations observations={overview.mdsObservations} />
-      <OverviewRawInspectionData info={overview.info} onCopy={copyReport} />
+      <OverviewRawInspectionData result={overview.report} onCopy={copyReport} />
     {:else if overview.loading}
       <OverviewLoadingCard />
     {/if}

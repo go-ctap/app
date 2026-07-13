@@ -4,6 +4,7 @@ import type {
   DiscoveryChangedEnvelope,
   RuntimeErrorEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
+import { DiscoveryTrigger } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
@@ -109,6 +110,12 @@ function recordDiscoveryRuntimeFailure(error: RuntimeErrorEnvelope) {
 
 export function handleDiscoveryChanged(envelope: DiscoveryChangedEnvelope) {
   const result = applyTopology(envelope);
+  if (
+    envelope.trigger === DiscoveryTrigger.DiscoveryTriggerEnriched
+    && !envelope.error
+    && !result.selectedDisconnected
+  ) return;
+
   const presentation = discoveryPresentation(envelope, result.selectedDisconnected, result.deviceCount);
   recordDiscoveryOutcome(presentation);
 }

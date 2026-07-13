@@ -4,7 +4,6 @@ import type { BioSensorEnvelope, InspectEnvelope } from "../../bindings/github.c
 
 import { bioSensorReport, inspectResult, operationError } from "./ctapkit-results.js";
 import type { LoadState } from "./features/overview/state.js";
-import { sessionStateLabel } from "./format.js";
 import {
   buildOverviewConformancePresentation,
   buildOverviewHero,
@@ -53,15 +52,14 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
     ].filter((message): message is string => Boolean(message)),
     reloadDisabled: loading || input.sessionBusy,
     hasReport: Boolean(report),
+    report,
     info,
-    rawInspectionJson: sanitizedJson(info ?? null),
+    rawInspectionJson: sanitizedJson(report ?? null),
     hero: buildOverviewHero({ info, device, mds: mdsResult, mdsLoading, mdsError: mdsFailureMessage }),
     signalGroups: buildOverviewHeroSignalGroups({ info }),
     overviewGroups: groupOverviewRows(overviewRows),
     conformance: buildOverviewConformancePresentation({ info }),
     mdsObservations: buildOverviewMDSObservations({ info, mds: mdsResult }),
     warningCount: overviewRows.filter((row) => row.status === "warning").length,
-    sessionState: input.sessionStatus.state,
-    sessionLabel: sessionStateLabel(input.sessionStatus.state),
   };
 }

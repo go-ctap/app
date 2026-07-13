@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ChevronDown, Copy } from "@lucide/svelte";
-  import type { InspectInfo } from "../../../../bindings/github.com/go-ctap/kit/model";
+  import type { InspectResult } from "../../../../bindings/github.com/go-ctap/kit/model";
 
   import JsonView from "$lib/components/shared/JsonView.svelte";
   import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
@@ -9,7 +9,7 @@
 
   import { m } from "../../../paraglide/messages.js";
 
-  let { info = null, onCopy = () => {} }: { info?: InspectInfo | null; onCopy?: () => void | Promise<void> } = $props();
+  let { result = null, onCopy = () => {} }: { result?: InspectResult | null; onCopy?: () => void | Promise<void> } = $props();
 </script>
 
 <Tooltip.Provider delayDuration={350}>
@@ -48,7 +48,7 @@
     </div>
 
     <Collapsible.Content class="raw-inspection-content">
-      <JsonView value={info} variant="code" />
+      <JsonView value={result} variant="code" />
     </Collapsible.Content>
   </Collapsible.Root>
 </Tooltip.Provider>

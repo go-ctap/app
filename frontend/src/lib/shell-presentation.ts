@@ -70,8 +70,7 @@ export function buildSidebarPresentation(input: {
     activeScreenLabel: screenLabel(input.activeScreen),
     tokens: input.devices.map((device) => {
       const value = selectorFromDevice(device);
-      const transport = String(device.transport);
-      const detail = [transport, deviceDetail(device) || value].filter(Boolean).join(" - ");
+      const detail = `S/N ${deviceDetail(device) || value}`;
       return {
         value,
         label: labelDevice(device),

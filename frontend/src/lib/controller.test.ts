@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ErrorCategory, OperationKind, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { BioSensorEnvelope, CredentialsEnvelope, InteractionPrompt, LargeBlobListEnvelope, MDSLookupEnvelope, OperationEventEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
@@ -72,6 +72,7 @@ function device(id: string): DeviceReport {
     path: id,
     vendorId: 1,
     productId: 2,
+    vendor: Vendor.VendorUnknown,
     product: id,
   };
 }

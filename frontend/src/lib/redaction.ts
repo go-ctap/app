@@ -13,6 +13,8 @@ const SECRET_FIELD_NAMES = new Set([
   "confirmationMessage",
   "resetConfirmation",
   "resetPhrase",
+  "encIdentifier",
+  "encCredStoreState",
 ]);
 
 const NORMALIZED_SECRET_FIELD_NAMES = new Set([...SECRET_FIELD_NAMES].map(normalizeFieldName));

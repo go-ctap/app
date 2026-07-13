@@ -1,8 +1,9 @@
 <script module lang="ts">
-  import { Award, Boxes, Cpu, Database, FingerprintPattern, IdCard, Info, ListChecks, Puzzle, ShieldCheck, SlidersHorizontal } from "@lucide/svelte";
+  import { Award, Boxes, Cable, Cpu, Database, FingerprintPattern, IdCard, Info, ListChecks, Puzzle, ShieldCheck, SlidersHorizontal } from "@lucide/svelte";
 
   const GROUP_ICONS: Record<string, typeof ShieldCheck> = {
     Identity: IdCard,
+    Interfaces: Cable,
     Protocol: Cpu,
     Verification: FingerprintPattern,
     Storage: Database,

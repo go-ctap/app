@@ -80,8 +80,8 @@ describe("AppSidebar", () => {
           selectedValue: "token-1",
           busy: false,
           tokens: [
-            { value: "token-1", label: "YubiKey 5 · ABC", name: "YubiKey 5", detail: "HID - ABC" },
-            { value: "token-2", label: "SoloKey · DEF", name: "SoloKey", detail: "HID - DEF" },
+            { value: "token-1", label: "YubiKey 5 · ABC", name: "YubiKey 5", detail: "S/N ABC" },
+            { value: "token-2", label: "SoloKey · DEF", name: "SoloKey", detail: "S/N DEF" },
           ],
         },
         onNavigate: vi.fn(),

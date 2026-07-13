@@ -223,6 +223,7 @@ function localizeEvidenceGap(reason: EvidenceGapID) {
 export function overviewGroupLabel(name: string) {
   const labels: Record<string, string> = {
     Identity: m.group_identity(),
+    Interfaces: m.group_interfaces(),
     Protocol: m.group_protocol(),
     Verification: m.group_verification(),
     Storage: m.group_storage(),

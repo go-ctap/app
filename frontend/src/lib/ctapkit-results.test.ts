@@ -12,7 +12,7 @@ import {
 } from "../../bindings/github.com/go-ctap/kit/model/config";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { MutationOperation } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { PreviewMode } from "../../bindings/github.com/go-ctap/kit/model/safety";
 import type {
   AuthenticatorConfigEnvelope,
@@ -64,6 +64,7 @@ const device: DeviceReport = {
   path: "path",
   vendorId: 1,
   productId: 2,
+  vendor: Vendor.VendorUnknown,
 };
 
 describe("ctapkit result extractors", () => {

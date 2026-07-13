@@ -4,9 +4,18 @@ import { ExtensionIdentifier } from "../../bindings/github.com/go-ctap/ctap/exte
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import type { InspectInfo } from "../../bindings/github.com/go-ctap/kit/model";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
+import {
+  Capability,
+  DeviceMetadata,
+  DeviceReport,
+  Interface,
+  InterfaceReport,
+  Vendor,
+} from "../../bindings/github.com/go-ctap/kit/model/report";
 
 import { setAppLocale } from "./i18n";
 import { buildOverviewRows } from "./overview-rows";
+import { groupOverviewRows } from "./overview-shared";
 import type { OverviewRow } from "./overview-types";
 
 function info(input: Partial<InspectInfo> = {}): InspectInfo {
@@ -113,5 +122,73 @@ describe("buildOverviewRows", () => {
 
     expect(rowBySource(rows, "extensions.credBlob").status).toBe("supported");
     expect(rowBySource(rows, "certifications").value).toContain("FIDO L1+");
+  });
+
+  it("presents normalized vendor identity and interface applications", () => {
+    setAppLocale("en");
+    const device = new DeviceReport({
+      deviceId: "token-1",
+      product: "Yubico Security Key",
+      vendor: Vendor.VendorYubico,
+      metadata: new DeviceMetadata({
+        model: "YubiKey 5C NFC",
+        serial: "12345678",
+        firmware: "5.7.1",
+        interfaces: [new InterfaceReport({
+          interface: Interface.InterfaceUSB,
+          supported: [Capability.CapabilityU2F, Capability.CapabilityCTAP2],
+          enabled: [Capability.CapabilityCTAP2],
+        })],
+      }),
+    });
+
+    const rows = buildOverviewRows({ info: info(), device });
+
+    expect(rowBySource(rows, "device.vendor").value).toBe("yubico");
+    expect(rowBySource(rows, "device.metadata.model").value).toBe("YubiKey 5C NFC");
+    expect(rowBySource(rows, "device.metadata.serial").value).toBe("12345678");
+    expect(rowBySource(rows, "device.metadata.firmware").value).toBe("5.7.1");
+    expect(rowBySource(rows, "device.metadata.interfaces.usb.supported").value).toBe("U2F, CTAP2");
+    expect(rowBySource(rows, "device.metadata.interfaces.usb.enabled").value).toBe("CTAP2");
+    expect(groupOverviewRows(rows)).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        name: "Vendor interfaces",
+        rows: expect.arrayContaining([
+          expect.objectContaining({ source: "device.metadata.interfaces.usb.supported" }),
+        ]),
+      }),
+    ]));
+  });
+
+  it("does not present unknown Token2 enabled state as an empty enabled list", () => {
+    setAppLocale("en");
+    const device = new DeviceReport({
+      deviceId: "token-2",
+      vendor: Vendor.VendorToken2,
+      metadata: new DeviceMetadata({
+        model: "Token2 T2F2",
+        serial: "T2-123456",
+        firmware: "R3.2",
+        interfaces: [new InterfaceReport({
+          interface: Interface.InterfaceUSB,
+          supported: [
+            Capability.CapabilityOTP,
+            Capability.CapabilityCCID,
+            Capability.CapabilityCTAP2,
+          ],
+        }), new InterfaceReport({
+          interface: Interface.InterfaceNFC,
+        })],
+      }),
+    });
+
+    const rows = buildOverviewRows({ info: info(), device });
+
+    expect(rowBySource(rows, "device.metadata.interfaces.usb.supported").value).toBe("OTP, CCID, CTAP2");
+    expect(rowBySource(rows, "device.metadata.firmware").value).toBe("R3.2");
+    expect(rows.find((row) => row.source === "device.metadata.interfaces.usb.enabled")).toBeUndefined();
+    expect(rowBySource(rows, "device.metadata.interfaces.nfc.interface").value).toBe("Available");
+    expect(rows.find((row) => row.source === "device.metadata.interfaces.nfc.supported")).toBeUndefined();
+    expect(rows.find((row) => row.source === "device.metadata.interfaces.nfc.enabled")).toBeUndefined();
   });
 });

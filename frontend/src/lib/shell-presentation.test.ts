@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "./i18n.js";
@@ -17,6 +17,7 @@ const token: DeviceReport = {
   path: "token-1",
   vendorId: 1,
   productId: 2,
+  vendor: Vendor.VendorUnknown,
   product: "Test key",
 };
 
@@ -133,8 +134,60 @@ describe("sidebar presentation", () => {
         value: "token-1",
         label: "1. Test key",
         name: "Test key",
-        detail: "hid - token-1",
+        detail: "S/N token-1",
       },
     ]);
+  });
+
+  it("prefers enriched model and serial in discovered token rows", () => {
+    const enriched: DeviceReport = {
+      ...token,
+      vendor: Vendor.VendorYubico,
+      metadata: {
+        model: "YubiKey 5C NFC",
+        serial: "12345678",
+        firmware: "5.7.1",
+      },
+    };
+
+    const presentation = buildSidebarPresentation({
+      activeScreen: "overview",
+      devices: [enriched],
+      selectedSelector: "token-1",
+      busy: false,
+    });
+
+    expect(presentation.tokens[0]).toEqual({
+      value: "token-1",
+      label: "1. YubiKey 5C NFC · 12345678",
+      name: "YubiKey 5C NFC",
+      detail: "S/N 12345678",
+    });
+  });
+
+  it("omits the Token2 revision from the device name", () => {
+    const token2: DeviceReport = {
+      ...token,
+      vendor: Vendor.VendorToken2,
+      metadata: {
+        model: "Token2 Bio3 Dual A+C PIN+ R3.2",
+        serial: "72103654095303",
+        firmware: "R3.2",
+      },
+    };
+
+    const presentation = buildSidebarPresentation({
+      activeScreen: "overview",
+      devices: [token2],
+      selectedSelector: "token-1",
+      busy: false,
+    });
+
+    expect(presentation.tokens[0]).toEqual({
+      value: "token-1",
+      label: "1. Token2 Bio3 Dual A+C PIN+ · 72103654095303",
+      name: "Token2 Bio3 Dual A+C PIN+",
+      detail: "S/N 72103654095303",
+    });
   });
 });

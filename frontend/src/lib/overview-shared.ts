@@ -1,7 +1,7 @@
 import { m, overviewGroupLabel, overviewStatusLabel as localizedStatusLabel } from "./overview-i18n.js";
 import type { MessageText, OverviewGroup, OverviewRow, OverviewRowStatus } from "./overview-types.js";
 
-export const GROUP_ORDER = ["Identity", "Protocol", "Verification", "Storage", "Management", "Policy", "Extensions", "Limits", "Attestation"] as const;
+export const GROUP_ORDER = ["Identity", "Interfaces", "Protocol", "Verification", "Storage", "Management", "Policy", "Extensions", "Limits", "Attestation"] as const;
 
 export function resolveText(text: MessageText) {
   return typeof text === "function" ? text() : text;

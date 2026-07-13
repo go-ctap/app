@@ -689,6 +689,7 @@ export enum DiscoveryTrigger {
     DiscoveryTriggerMonitor = "monitor",
     DiscoveryTriggerHotplug = "hotplug",
     DiscoveryTriggerManual = "manual",
+    DiscoveryTriggerEnriched = "enriched",
 };
 
 export class GetAssertionEnvelope {

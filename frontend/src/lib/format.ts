@@ -1,23 +1,37 @@
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 
 import { m } from "../paraglide/messages.js";
 
 export function labelDevice(device: DeviceReport | null | undefined) {
   if (!device) return m.no_token_selected();
-  const name = [device.manufacturer, device.product].filter(Boolean).join(" ");
-  const serial = device.serial ? ` · ${device.serial}` : "";
+  const name = deviceName(device);
+  const serialValue = device.metadata?.serial || device.serial;
+  const serial = serialValue ? ` · ${serialValue}` : "";
   const alias = device.ordinalAlias ? `${device.ordinalAlias}. ` : "";
   return `${alias}${name || device.deviceId || m.authenticator()}${serial}`;
 }
 
 export function deviceName(device: DeviceReport | null | undefined) {
   if (!device) return m.no_token_selected();
-  return [device.manufacturer, device.product].filter(Boolean).join(" ") || device.product || device.deviceId || m.authenticator();
+  return displayModel(device)
+    || [device.manufacturer, device.product].filter(Boolean).join(" ")
+    || device.product
+    || device.deviceId
+    || m.authenticator();
+}
+
+function displayModel(device: DeviceReport) {
+  const model = device.metadata?.model?.trim() || "";
+  const revision = device.metadata?.firmware?.trim() || "";
+  if (device.vendor !== Vendor.VendorToken2 || !model || !revision) return model;
+
+  const suffix = ` ${revision}`;
+  return model.endsWith(suffix) ? model.slice(0, -suffix.length).trimEnd() : model;
 }
 
 export function deviceDetail(device: DeviceReport | null | undefined) {
   if (!device) return "";
-  return device.serial || device.deviceId || "";
+  return device.metadata?.serial || device.serial || device.deviceId || "";
 }
 
 export function sessionStateLabel(value: unknown) {

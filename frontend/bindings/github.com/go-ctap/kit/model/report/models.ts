@@ -9,6 +9,52 @@ import { Create as $Create } from "@wailsio/runtime";
 // @ts-ignore: Unused imports
 import * as transport$0 from "../../transport/models.js";
 
+/**
+ * Capability identifies a normalized application exposed by an authenticator.
+ */
+export enum Capability {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    CapabilityOTP = "otp",
+    CapabilityU2F = "u2f",
+    CapabilityCCID = "ccid",
+    CapabilityOpenPGP = "openpgp",
+    CapabilityPIV = "piv",
+    CapabilityOATH = "oath",
+    CapabilityCTAP2 = "ctap2",
+};
+
+/**
+ * DeviceMetadata contains normalized details obtained from vendor protocols.
+ */
+export class DeviceMetadata {
+    "model"?: string;
+    "serial"?: string;
+    "firmware"?: string;
+    "interfaces"?: InterfaceReport[];
+
+    /** Creates a new DeviceMetadata instance. */
+    constructor($$source: Partial<DeviceMetadata> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new DeviceMetadata instance from a string or object.
+     */
+    static createFrom($$source: any = {}): DeviceMetadata {
+        const $$createField3_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("interfaces" in $$parsedSource) {
+            $$parsedSource["interfaces"] = $$createField3_0($$parsedSource["interfaces"]);
+        }
+        return new DeviceMetadata($$parsedSource as Partial<DeviceMetadata>);
+    }
+}
+
 export class DeviceReport {
     "deviceId": string;
     "ordinalAlias"?: string;
@@ -20,6 +66,8 @@ export class DeviceReport {
     "serial"?: string;
     "vendorId": number;
     "productId": number;
+    "vendor": Vendor;
+    "metadata"?: DeviceMetadata | null;
 
     /** Creates a new DeviceReport instance. */
     constructor($$source: Partial<DeviceReport> = {}) {
@@ -41,6 +89,9 @@ export class DeviceReport {
         if (!("productId" in $$source)) {
             this["productId"] = 0;
         }
+        if (!("vendor" in $$source)) {
+            this["vendor"] = Vendor.$zero;
+        }
 
         Object.assign(this, $$source);
     }
@@ -49,7 +100,86 @@ export class DeviceReport {
      * Creates a new DeviceReport instance from a string or object.
      */
     static createFrom($$source: any = {}): DeviceReport {
+        const $$createField11_0 = $$createType3;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("metadata" in $$parsedSource) {
+            $$parsedSource["metadata"] = $$createField11_0($$parsedSource["metadata"]);
+        }
         return new DeviceReport($$parsedSource as Partial<DeviceReport>);
     }
 }
+
+/**
+ * Interface identifies a physical interface reported by vendor metadata.
+ */
+export enum Interface {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    InterfaceUSB = "usb",
+    InterfaceNFC = "nfc",
+};
+
+/**
+ * InterfaceReport describes supported and enabled applications on one interface.
+ */
+export class InterfaceReport {
+    "interface": Interface;
+    "supported": Capability[];
+    "enabled": Capability[];
+
+    /** Creates a new InterfaceReport instance. */
+    constructor($$source: Partial<InterfaceReport> = {}) {
+        if (!("interface" in $$source)) {
+            this["interface"] = Interface.$zero;
+        }
+        if (!("supported" in $$source)) {
+            this["supported"] = [];
+        }
+        if (!("enabled" in $$source)) {
+            this["enabled"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new InterfaceReport instance from a string or object.
+     */
+    static createFrom($$source: any = {}): InterfaceReport {
+        const $$createField1_0 = $$createType4;
+        const $$createField2_0 = $$createType4;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("supported" in $$parsedSource) {
+            $$parsedSource["supported"] = $$createField1_0($$parsedSource["supported"]);
+        }
+        if ("enabled" in $$parsedSource) {
+            $$parsedSource["enabled"] = $$createField2_0($$parsedSource["enabled"]);
+        }
+        return new InterfaceReport($$parsedSource as Partial<InterfaceReport>);
+    }
+}
+
+/**
+ * Vendor identifies the authenticator manufacturer selected for optional
+ * vendor-specific runtime behavior.
+ */
+export enum Vendor {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    VendorUnknown = "unknown",
+    VendorYubico = "yubico",
+    VendorToken2 = "token2",
+};
+
+// Private type creation functions
+const $$createType0 = InterfaceReport.createFrom;
+const $$createType1 = $Create.Array($$createType0);
+const $$createType2 = DeviceMetadata.createFrom;
+const $$createType3 = $Create.Nullable($$createType2);
+const $$createType4 = $Create.Array($Create.Any);

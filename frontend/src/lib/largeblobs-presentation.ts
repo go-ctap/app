@@ -17,6 +17,7 @@ import type {
   LargeBlobsStatusFilter,
 } from "./features/largeblobs/state.js";
 import { largeBlobsInventoryIsStale } from "./features/largeblobs/state.js";
+import { deviceName } from "./format.js";
 import type { SessionStatus } from "./session-model.js";
 
 const RETRYABLE_MUTATION_CATEGORIES = new Set<ErrorCategoryValue>([
@@ -177,7 +178,7 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
     emptyInventory: Boolean(report && allRows.length === 0),
     emptyFilteredResult: Boolean(report && allRows.length > 0 && rows.length === 0),
     mutation,
-    selectedDeviceName: device?.product || device?.deviceId || m.authenticator(),
+    selectedDeviceName: device ? deviceName(device) : m.authenticator(),
     supportItems: [
       { label: m.matrix_name_large_blobs_command(), value: report?.support.largeBlobs ?? false },
       { label: m.matrix_name_large_blob_key_extension(), value: report?.support.largeBlobKeyExtension ?? false },
