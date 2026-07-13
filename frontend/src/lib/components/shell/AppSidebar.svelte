@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Database, Gauge, KeyRound, Settings, Shield, ShieldCheck, Usb } from "@lucide/svelte";
+  import { Database, FlaskConical, Gauge, KeyRound, Settings, Shield, ShieldCheck, Usb } from "@lucide/svelte";
   import {type Component} from "svelte";
 
   import { Button } from "$lib/components/ui/button/index.js";
@@ -21,6 +21,7 @@
   const navItems: { id: ActiveScreen; label: string; icon: Component }[] = [
     { id: "overview", label: m.overview(), icon: Gauge },
     { id: "passkeys", label: m.passkeys(), icon: KeyRound },
+    { id: "lab", label: m.webauthn_lab(), icon: FlaskConical },
     { id: "large-blobs", label: m.nav_large_blobs(), icon: Database },
     { id: "security", label: m.security(), icon: Shield },
     { id: "settings", label: m.settings(), icon: Settings },

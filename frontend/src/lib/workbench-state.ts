@@ -5,6 +5,7 @@ import { ErrorCategory, type ErrorCategory as ErrorCategoryValue } from "../../b
 import { m } from "../paraglide/messages.js";
 import type { OperationEnvelope } from "./api.js";
 import { pendingInteraction } from "./features/interaction/state.js";
+import { resetLabDeviceState } from "./features/lab/state.js";
 import { resetLargeBlobsDeviceState } from "./features/largeblobs/state.js";
 import {
   idleLoadState,
@@ -97,6 +98,7 @@ export function clearWorkbenchScreenCaches() {
   overviewInspection.set(idleLoadState());
   overviewBioSensor.set(idleLoadState());
   overviewMDS.set(idleLoadState());
+  resetLabDeviceState();
   resetPasskeysDeviceState();
   resetLargeBlobsDeviceState();
   resetSecurityDeviceState();

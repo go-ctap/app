@@ -6,6 +6,8 @@ import {
   type CredentialDeleteOutput,
   type CredentialUpdateOutput,
   type LargeBlobMutationOutput,
+  type GetAssertionOutput,
+  type MakeCredentialOutput,
   type PINOutput,
   type ResetFactoryOutput,
 } from "../../bindings/github.com/go-ctap/kit/model";
@@ -56,9 +58,16 @@ import type {
   LargeBlobListEnvelope,
   LargeBlobMutationEnvelope,
   LargeBlobReadEnvelope,
+  GetAssertionEnvelope,
+  MakeCredentialEnvelope,
   PINEnvelope,
   ResetFactoryEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
+import type {
+  GetAssertionResult,
+  MakeCredentialPreview,
+  MakeCredentialResult,
+} from "../../bindings/github.com/go-ctap/kit/model/webauthn";
 
 import type { OperationEnvelope } from "./api.js";
 
@@ -227,6 +236,27 @@ export function largeBlobMutationResult(envelope: OperationEnvelope | null | und
   return largeBlobMutationOutput(envelope)?.result ?? null;
 }
 
+/** Typed traversal for the WebAuthn Lab MakeCredential preview contract. */
+export function makeCredentialPreview(envelope: OperationEnvelope | null | undefined): MakeCredentialPreview | null {
+  const output = makeCredentialOutput(envelope);
+  if (!output || envelope?.error) return null;
+  return output.preview || null;
+}
+
+/** Typed traversal for a completed WebAuthn Lab MakeCredential operation. */
+export function makeCredentialResult(envelope: OperationEnvelope | null | undefined): MakeCredentialResult | null {
+  const output = makeCredentialOutput(envelope);
+  if (!output || envelope?.error) return null;
+  return output.result;
+}
+
+/** Typed traversal for a completed WebAuthn Lab GetAssertion operation. */
+export function getAssertionResult(envelope: OperationEnvelope | null | undefined): GetAssertionResult | null {
+  const output = getAssertionOutput(envelope);
+  if (!output || envelope?.error) return null;
+  return output.result || null;
+}
+
 export function operationError(envelope: OperationEnvelope | null | undefined) {
   if (!envelope || !envelope.error) return null;
   return envelope.error.message;
@@ -295,4 +325,22 @@ function isLargeBlobMutationEnvelope(envelope: OperationEnvelope | null | undefi
     OperationKind.OperationDeleteLargeBlob,
     OperationKind.OperationGarbageCollectLargeBlobs,
   ].includes(envelope.kind));
+}
+
+function makeCredentialOutput(envelope: OperationEnvelope | null | undefined): MakeCredentialOutput | null {
+  if (!isMakeCredentialEnvelope(envelope) || !envelope.result) return null;
+  return envelope.result;
+}
+
+function getAssertionOutput(envelope: OperationEnvelope | null | undefined): GetAssertionOutput | null {
+  if (!isGetAssertionEnvelope(envelope) || !envelope.result) return null;
+  return envelope.result;
+}
+
+function isMakeCredentialEnvelope(envelope: OperationEnvelope | null | undefined): envelope is MakeCredentialEnvelope {
+  return Boolean(envelope && envelope.kind === OperationKind.OperationMakeCredential);
+}
+
+function isGetAssertionEnvelope(envelope: OperationEnvelope | null | undefined): envelope is GetAssertionEnvelope {
+  return Boolean(envelope && envelope.kind === OperationKind.OperationGetAssertion);
 }

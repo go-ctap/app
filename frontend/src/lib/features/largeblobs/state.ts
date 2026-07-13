@@ -244,6 +244,14 @@ export function resetLargeBlobsDeviceState() {
   largeBlobsSelectedCredentialID.set("");
 }
 
+/** Invalidates authenticator-backed inventory while retaining every UI preference. */
+export function invalidateLargeBlobsInventory() {
+  largeBlobsInventoryState.set(emptyLargeBlobsInventoryState());
+  resetLargeBlobReadState();
+  largeBlobsMutation.set({ kind: "idle", phase: "idle" });
+  largeBlobsSelectedCredentialID.set("");
+}
+
 export function resetLargeBlobsStateForTest() {
   resetLargeBlobsDeviceState();
   largeBlobsVerificationFlow.set(VerificationFlow.VerificationFlowDefault);

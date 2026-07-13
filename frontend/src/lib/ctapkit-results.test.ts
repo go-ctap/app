@@ -24,9 +24,11 @@ import type {
   CredentialDeleteEnvelope,
   CredentialUpdateEnvelope,
   InspectEnvelope,
+  GetAssertionEnvelope,
   LargeBlobListEnvelope,
   LargeBlobMutationEnvelope,
   LargeBlobReadEnvelope,
+  MakeCredentialEnvelope,
   PINEnvelope,
   ResetFactoryEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
@@ -46,11 +48,14 @@ import {
   credentialDeleteResult,
   credentialUpdatePreview,
   credentialUpdateResult,
+  getAssertionResult,
   inspectResult,
   largeBlobListReport,
   largeBlobMutationPreview,
   largeBlobMutationResult,
   largeBlobReadReport,
+  makeCredentialPreview,
+  makeCredentialResult,
   pinMutationPreview,
   pinMutationResult,
   resetFactoryPreview,
@@ -365,5 +370,79 @@ describe("ctapkit result extractors", () => {
     expect(credentialUpdateResult(update)?.current.userIDHex).toBe("02");
     expect(credentialDeletePreview(deletion)?.credentialIDHex).toBe("cafe");
     expect(credentialDeleteResult(deletion)?.deviceId).toBe("dev-1");
+  });
+
+  it("extracts MakeCredential preview and result only from a successful matching typed envelope", () => {
+    const preview = {
+      device,
+      rp: { id: "example.com", name: "Example" },
+      user: { id: "AQ==", name: "alice", displayName: "Alice" },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+      warnings: [],
+    };
+    const result = {
+      deviceId: "dev-1",
+      rpID: "example.com",
+      fmt: "packed",
+      credentialIDHex: "cafe",
+      publicKeyCOSEHex: "a501",
+      authenticatorDataHex: "0102",
+      attestationObjectCBORHex: "a363",
+      signCount: 0,
+      userPresent: true,
+      userVerified: false,
+      enterpriseAttestation: false,
+    };
+    const envelope = {
+      kind: OperationKind.OperationMakeCredential,
+      result: { preview, result },
+    } as unknown as MakeCredentialEnvelope;
+
+    expect(makeCredentialPreview(envelope)).toBe(preview);
+    expect(makeCredentialResult(envelope)).toBe(result);
+    expect(makeCredentialPreview({
+      ...envelope,
+      kind: OperationKind.OperationGetAssertion,
+    } as unknown as MakeCredentialEnvelope)).toBeNull();
+    expect(makeCredentialResult({
+      kind: OperationKind.OperationMakeCredential,
+    } as MakeCredentialEnvelope)).toBeNull();
+
+    envelope.error = { message: "authenticator rejected the request" };
+    expect(makeCredentialPreview(envelope)).toBeNull();
+    expect(makeCredentialResult(envelope)).toBeNull();
+
+    delete envelope.error;
+    envelope.result!.result = null;
+    expect(makeCredentialPreview(envelope)).toBe(preview);
+    expect(makeCredentialResult(envelope)).toBeNull();
+  });
+
+  it("extracts GetAssertion result only when kind, envelope, and nested result all match", () => {
+    const result = {
+      deviceId: "dev-1",
+      rpID: "example.com",
+      assertions: [],
+    };
+    const envelope = {
+      kind: OperationKind.OperationGetAssertion,
+      result: { result },
+    } as unknown as GetAssertionEnvelope;
+
+    expect(getAssertionResult(envelope)).toBe(result);
+    expect(getAssertionResult({
+      ...envelope,
+      kind: OperationKind.OperationMakeCredential,
+    } as unknown as GetAssertionEnvelope)).toBeNull();
+    expect(getAssertionResult({
+      kind: OperationKind.OperationGetAssertion,
+    } as GetAssertionEnvelope)).toBeNull();
+    expect(getAssertionResult({
+      kind: OperationKind.OperationGetAssertion,
+      result: { result: null },
+    } as unknown as GetAssertionEnvelope)).toBeNull();
+
+    envelope.error = { message: "assertion failed" };
+    expect(getAssertionResult(envelope)).toBeNull();
   });
 });

@@ -1,6 +1,7 @@
 import { readonly } from "svelte/store";
 
 import * as interaction from "./features/interaction/state.js";
+import * as lab from "./features/lab/state.js";
 import * as largeBlobs from "./features/largeblobs/state.js";
 import * as overview from "./features/overview/state.js";
 import * as passkeys from "./features/passkeys/state.js";
@@ -12,6 +13,18 @@ export {
   type ActiveScreen,
   type StatusBarState,
 } from "./features/workbench/state.js";
+export type {
+  GetAssertionDraft,
+  LabClientDataDraft,
+  LabClientDataMode,
+  LabDescriptorDraft,
+  LabGetStep,
+  LabMakeStep,
+  LabPresetID,
+  LabState,
+  LabTriState,
+  MakeCredentialDraft,
+} from "./features/lab/state.js";
 export type {
   LargeBlobMutationState,
   LargeBlobReadState,
@@ -67,6 +80,8 @@ export const largeBlobsVerificationFlow = readonly(largeBlobs.largeBlobsVerifica
 export const largeBlobsPayloadEncoding = readonly(largeBlobs.largeBlobsPayloadEncoding);
 
 export const pendingInteraction = readonly(interaction.pendingInteraction);
+
+export const labState = readonly(lab.labState);
 
 export const securityStatus = readonly(security.securityStatus);
 export const securitySensor = readonly(security.securitySensor);

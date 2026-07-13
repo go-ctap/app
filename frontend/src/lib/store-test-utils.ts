@@ -10,6 +10,7 @@ import type {
 } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { resetInteractionStateForTest, pendingInteraction } from "./features/interaction/state.js";
+import { resetLabStateForTest } from "./features/lab/state.js";
 import {
   completeLargeBlobsInventoryLoad,
   emptyLargeBlobsInventoryState,
@@ -49,6 +50,7 @@ export function resetAppStateForTest() {
   resetSessionStateForTest();
   resetWorkbenchStateForTest();
   resetInteractionStateForTest();
+  resetLabStateForTest();
   resetOverviewStateForTest();
   resetPasskeysStateForTest();
   resetLargeBlobsStateForTest();

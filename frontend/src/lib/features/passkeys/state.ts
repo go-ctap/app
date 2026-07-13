@@ -179,6 +179,13 @@ export function resetPasskeysDeviceState() {
   passkeysMutation.set({ kind: "idle", phase: "idle" });
 }
 
+/** Invalidates authenticator-backed inventory while retaining every UI preference. */
+export function invalidatePasskeysInventory() {
+  passkeysInventoryState.set(emptyPasskeysInventoryState());
+  passkeysSelectedCredentialID.set("");
+  passkeysMutation.set({ kind: "idle", phase: "idle" });
+}
+
 export function resetPasskeysStateForTest() {
   resetPasskeysDeviceState();
   passkeysVerificationFlow.set(VerificationFlow.VerificationFlowDefault);

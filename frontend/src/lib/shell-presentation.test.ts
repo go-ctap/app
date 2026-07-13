@@ -139,6 +139,17 @@ describe("sidebar presentation", () => {
     ]);
   });
 
+  it("labels the WebAuthn Lab screen", () => {
+    const presentation = buildSidebarPresentation({
+      activeScreen: "lab",
+      devices: [],
+      selectedSelector: "",
+      busy: false,
+    });
+
+    expect(presentation.activeScreenLabel).toBe("WebAuthn Lab");
+  });
+
   it("prefers enriched model and serial in discovered token rows", () => {
     const enriched: DeviceReport = {
       ...token,

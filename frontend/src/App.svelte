@@ -41,6 +41,7 @@
 	import { detectWindowPlatform, resolveWindowPlatform } from "$lib/window-platform";
 
 	import { m } from "./paraglide/messages.js";
+	import Lab from "./screens/Lab.svelte";
 	import Overview from "./screens/Overview.svelte";
 	import LargeBlobs from "./screens/LargeBlobs.svelte";
 	import Passkeys from "./screens/Passkeys.svelte";
@@ -191,6 +192,8 @@
 					<LargeBlobs />
 				{:else if $activeScreen === "passkeys"}
 					<Passkeys />
+				{:else if $activeScreen === "lab"}
+					<Lab />
 				{:else if $activeScreen === "security"}
 					<Security />
 				{:else if noDevices}

@@ -87,6 +87,7 @@ function screenLabel(screen: ActiveScreen) {
   const labels: Record<ActiveScreen, string> = {
     overview: m.overview(),
     passkeys: m.passkeys(),
+    lab: m.webauthn_lab(),
     "large-blobs": m.nav_large_blobs(),
     security: m.security(),
     settings: m.settings(),

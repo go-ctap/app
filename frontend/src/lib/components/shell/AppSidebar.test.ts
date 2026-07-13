@@ -30,17 +30,20 @@ describe("AppSidebar", () => {
     expect(screen.getAllByRole("button").map((button) => button.getAttribute("aria-label"))).toEqual([
       "Overview",
       "Passkeys",
+      "WebAuthn Lab",
       "Large blobs",
       "Security",
       "Settings",
     ]);
 
     await user.click(screen.getByRole("button", { name: "Passkeys" }));
+    await user.click(screen.getByRole("button", { name: "WebAuthn Lab" }));
     await user.click(screen.getByRole("button", { name: "Large blobs" }));
     await user.click(screen.getByRole("button", { name: "Security" }));
     await user.click(screen.getByRole("button", { name: "Settings" }));
 
     expect(onNavigate).toHaveBeenCalledWith("passkeys");
+    expect(onNavigate).toHaveBeenCalledWith("lab");
     expect(onNavigate).toHaveBeenCalledWith("large-blobs");
     expect(onNavigate).toHaveBeenCalledWith("security");
     expect(onNavigate).toHaveBeenCalledWith("settings");

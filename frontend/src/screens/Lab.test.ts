@@ -1,0 +1,220 @@
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/svelte";
+import userEvent from "@testing-library/user-event";
+import { get } from "svelte/store";
+import { tick } from "svelte";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/credential";
+import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { MakeCredentialPreview } from "../../bindings/github.com/go-ctap/kit/model/webauthn";
+import {
+  MakeCredentialEnvelope,
+  MakeCredentialRequest,
+} from "../../bindings/github.com/go-ctap/kit/service";
+
+import { labState as mutableLabState } from "$lib/features/lab/state";
+import { setAppLocale } from "$lib/i18n";
+import { resetAppStateForTest, seedSelectionForTest } from "$lib/store-test-utils";
+
+import Lab from "./Lab.svelte";
+
+const controllerMocks = vi.hoisted(() => ({
+  previewMakeCredential: vi.fn(() => Promise.resolve(true)),
+  runGetAssertion: vi.fn(() => Promise.resolve(true)),
+}));
+
+vi.mock("$lib/controller", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("$lib/controller")>()),
+  previewLabMakeCredential: controllerMocks.previewMakeCredential,
+  runLabGetAssertion: controllerMocks.runGetAssertion,
+}));
+
+const token = new DeviceReport({
+  deviceId: "token-1",
+  ordinalAlias: "1",
+  stableId: true,
+  product: "Test authenticator",
+});
+
+function selectToken() {
+  seedSelectionForTest(token.deviceId, token, { state: "ready", sessionId: "session-1" });
+}
+
+function stepCard(name: string) {
+  return screen.getByRole("heading", { level: 2, name }).closest('[data-slot="card"]') as HTMLElement;
+}
+
+describe("WebAuthn Lab screen", () => {
+  beforeEach(() => {
+    setAppLocale("en");
+    resetAppStateForTest();
+    controllerMocks.previewMakeCredential.mockClear();
+    controllerMocks.runGetAssertion.mockClear();
+  });
+
+  afterEach(async () => {
+    cleanup();
+    await tick();
+    document.body.style.pointerEvents = "";
+  });
+
+  it("shows a dedicated no-device state", () => {
+    render(Lab);
+
+    expect(screen.getByText("Select an authenticator")).toBeInTheDocument();
+    expect(screen.getByText(/run MakeCredential and GetAssertion/)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "WebAuthn Lab" })).not.toBeInTheDocument();
+  });
+
+  it("renders the default preset and both ordered steps", () => {
+    selectToken();
+    render(Lab);
+
+    expect(screen.getByRole("heading", { level: 2, name: "WebAuthn Lab" })).toBeInTheDocument();
+    expect(screen.getByText(/Test authenticator/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Preset" })).toHaveTextContent("Discoverable passkey");
+    expect(screen.getByRole("heading", { level: 2, name: "1. MakeCredential" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "2. GetAssertion" })).toBeInTheDocument();
+
+    const make = stepCard("1. MakeCredential");
+    const assertion = stepCard("2. GetAssertion");
+    expect(within(make).getByLabelText("RP name")).toHaveValue("Example");
+    expect((within(make).getByLabelText("User ID hex") as HTMLInputElement).value).toMatch(/^[0-9a-f]{32}$/);
+    expect(within(assertion).getByLabelText("RP ID")).toHaveValue("example.com");
+    expect(within(assertion).getByText(/Leave empty to let the authenticator choose/)).toBeInTheDocument();
+  });
+
+  it("runs the primary action on single-line Enter but preserves textarea Enter", async () => {
+    const user = userEvent.setup();
+    selectToken();
+    render(Lab);
+
+    const make = stepCard("1. MakeCredential");
+    const rpName = within(make).getByLabelText("RP name");
+    rpName.focus();
+    await user.keyboard("{Enter}");
+    expect(controllerMocks.previewMakeCredential).toHaveBeenCalledOnce();
+
+    controllerMocks.previewMakeCredential.mockClear();
+    mutableLabState.update((state) => ({
+      ...state,
+      makeDraft: {
+        ...state.makeDraft,
+        clientData: { ...state.makeDraft.clientData, mode: "raw" },
+      },
+    }));
+    await tick();
+    await user.click(within(make).getByRole("button", { name: "Advanced request" }));
+    const raw = within(make).getByLabelText("Raw client data JSON");
+    expect(await fireEvent.keyDown(raw, { key: "Enter" })).toBe(true);
+    expect(controllerMocks.previewMakeCredential).not.toHaveBeenCalled();
+
+    expect(await fireEvent.keyDown(raw, { key: "Enter", ctrlKey: true })).toBe(false);
+    expect(controllerMocks.previewMakeCredential).toHaveBeenCalledOnce();
+  });
+
+  it("locks both steps while the shared authenticator session is running", () => {
+    seedSelectionForTest(token.deviceId, token, { state: "running", sessionId: "session-1" });
+    render(Lab);
+
+    const make = stepCard("1. MakeCredential");
+    const assertion = stepCard("2. GetAssertion");
+    expect(within(make).getByLabelText("RP ID")).toBeDisabled();
+    expect(within(assertion).getByLabelText("RP ID")).toBeDisabled();
+    expect(within(make).getByRole("button", { name: "Preview" })).toBeDisabled();
+    expect(within(assertion).getByRole("button", { name: "Run GetAssertion" })).toBeDisabled();
+  });
+
+  it("keeps the reviewed request visible and locks its draft", () => {
+    selectToken();
+    const current = get(mutableLabState);
+    const previewRequest = new MakeCredentialRequest({
+      sessionId: "session-1",
+      rp: { id: "example.com", name: "Example" },
+      user: { id: "AA==", name: "alice@example.com", displayName: "Alice" },
+      clientDataJSON: "e30=",
+      pubKeyCredParams: [{ type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 }],
+      dryRun: true,
+    });
+    const previewEnvelope = new MakeCredentialEnvelope({
+      operationId: "make-preview-1",
+      sessionId: "session-1",
+      kind: OperationKind.OperationMakeCredential,
+      result: {
+        preview: new MakeCredentialPreview({
+          device: token,
+          rp: { id: "example.com", name: "Example" },
+          user: { id: "AA==", name: "alice@example.com", displayName: "Alice" },
+          pubKeyCredParams: [{ type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 }],
+        }),
+        result: null,
+      },
+    });
+    mutableLabState.set({
+      ...current,
+      makeDraft: {
+        ...current.makeDraft,
+        clientData: {
+          ...current.makeDraft.clientData,
+          mode: "raw",
+          rawJSON: "{not-json\n",
+        },
+      },
+      makeStep: {
+        phase: "review",
+        previewRequest,
+        previewEnvelope,
+        validation: {
+          valid: true,
+          errors: [],
+          warnings: [{
+            field: "make.clientData.rawJSON",
+            code: "invalid-json",
+            severity: "warning",
+          }],
+        },
+      },
+    });
+
+    render(Lab);
+
+    const make = stepCard("1. MakeCredential");
+    expect(within(make).getByLabelText("RP ID")).toBeDisabled();
+    expect(within(make).getByRole("heading", { name: "Reviewed snapshot" })).toBeInTheDocument();
+    expect(within(make).getByRole("button", { name: "Typed preview" })).toBeInTheDocument();
+    expect(within(make).getByRole("button", { name: "Confirm" })).toBeInTheDocument();
+    expect(within(make).getAllByText(/not valid JSON/).length).toBeGreaterThan(0);
+  });
+
+  it("renders and cancels a pending preset reset AlertDialog", async () => {
+    const user = userEvent.setup();
+    selectToken();
+    mutableLabState.update((state) => ({ ...state, isCustom: true, pendingPresetID: "minimal" }));
+    render(Lab);
+
+    const dialog = screen.getByRole("alertdialog", { name: "Discard the current Lab run?" });
+    expect(within(dialog).getByText(/edited fields, a reviewed request, or operation results/)).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(get(mutableLabState).pendingPresetID).toBeNull();
+  });
+
+  it("renders and cancels a context-aware handoff replacement AlertDialog", async () => {
+    const user = userEvent.setup();
+    selectToken();
+    mutableLabState.update((state) => ({
+      ...state,
+      pendingHandoff: {
+        reason: "rp-mismatch",
+        rpID: "other.example",
+        credentialIDHex: "cafe",
+      },
+    }));
+    render(Lab);
+
+    const dialog = screen.getByRole("alertdialog", { name: "Replace the GetAssertion scenario?" });
+    expect(within(dialog).getByText(/replaces its RP and allow list/)).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(get(mutableLabState).pendingHandoff).toBeNull();
+  });
+});

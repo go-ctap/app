@@ -72,6 +72,29 @@ export {
   updateLargeBlobWriteDraft,
 } from "./largeblobs-controller.js";
 export {
+  cancelLabHandoff,
+  cancelLabPreset,
+  confirmLabHandoff,
+  confirmLabMakeCredential,
+  confirmLabPreset,
+  editLabGetAssertion,
+  editLabMakeCredential,
+  handoffLabCredential,
+  newLabGetAssertionRun,
+  newLabMakeCredentialRun,
+  previewLabMakeCredential,
+  regenerateLabGetChallenge,
+  regenerateLabMakeChallenge,
+  regenerateLabUserID,
+  requestLabPreset,
+  retryLabGetAssertion,
+  retryLabMakeCredential,
+  runLabGetAssertion,
+  updateLabGetAssertionDraft,
+  updateLabMakeCredentialDraft,
+} from "./lab-controller.js";
+export { base64ToHex } from "./lab-input.js";
+export {
   beginCredentialDelete,
   beginCredentialUpdate,
   closePasskeysMutation,
