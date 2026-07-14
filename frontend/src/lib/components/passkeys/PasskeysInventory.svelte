@@ -10,7 +10,7 @@
   import * as Select from "$lib/components/ui/select/index.js";
   import { Skeleton } from "$lib/components/ui/skeleton/index.js";
   import * as Table from "$lib/components/ui/table/index.js";
-  import type { PasskeysMutationState, PasskeysStatusFilter } from "$lib/features/passkeys/state";
+  import type { PasskeysStatusFilter } from "$lib/features/passkeys/state";
   import type { PasskeyCredentialRow, PasskeysPresentation } from "$lib/passkeys-presentation";
 
   import { m } from "../../../paraglide/messages.js";
@@ -19,7 +19,6 @@
 
   type Props = {
     presentation: PasskeysPresentation;
-    mutation: PasskeysMutationState;
     updateDisabled: boolean;
     deleteDisabled: boolean;
     previewOnly: boolean;
@@ -32,7 +31,6 @@
 
   let {
     presentation,
-    mutation,
     updateDisabled,
     deleteDisabled,
     previewOnly,
@@ -268,7 +266,6 @@
                 <Table.Cell class="passkeys-table-details-cell" colspan={4}>
                   <PasskeyInspector
                     {row}
-                    {mutation}
                     {updateDisabled}
                     {deleteDisabled}
                     {previewOnly}

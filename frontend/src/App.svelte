@@ -32,7 +32,6 @@
 		pendingInteraction,
 		selectedDevice,
 		selectedSelector,
-		sessionBusy,
 		sessionStatus,
 		statusBar,
 		type ActiveScreen
@@ -57,7 +56,7 @@
 		activeScreen: $activeScreen,
 		devices: $devices,
 		selectedSelector: $selectedSelector,
-		busy: refreshing || $sessionBusy,
+		busy: refreshing || $sessionStatus.state === "opening",
 	}));
 	let shellStatusPresentation = $derived(buildShellStatusPresentation({
 		sessionStatus: $sessionStatus,

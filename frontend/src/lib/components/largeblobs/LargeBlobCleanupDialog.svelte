@@ -6,7 +6,6 @@
   import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { Spinner } from "$lib/components/ui/spinner/index.js";
   import { largeBlobMutationPreview } from "$lib/ctapkit-results";
   import type { LargeBlobMutationState } from "$lib/features/largeblobs/state";
   import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
@@ -25,15 +24,12 @@
   let confirmationOpen = $derived(
     mutation.kind === "cleanup" && (
       mutation.phase === "review"
-      || mutation.phase === "executing"
       || (mutation.phase === "error" && mutation.failedPhase === "executing")
     ),
   );
-  let noopOpen = $derived(mutation.kind === "cleanup" && mutation.phase === "noop");
   let previewErrorOpen = $derived(
     mutation.kind === "cleanup" && mutation.phase === "error" && mutation.failedPhase === "previewing",
   );
-  let busy = $derived(mutation.kind === "cleanup" && mutation.phase === "executing");
   let preview = $derived.by(() => {
     if (mutation.kind !== "cleanup" || !("previewEnvelope" in mutation)) return null;
     if (mutation.phase === "error") {
@@ -56,28 +52,14 @@
     ),
   );
   function handleOpenChange(next: boolean) {
-    if (!next && !busy) onClose();
+    if (!next) onClose();
   }
 
   function handleAction(event: MouseEvent) {
     event.preventDefault();
-    if (busy || mutation.kind !== "cleanup") return;
     void onConfirm();
   }
 </script>
-
-<Dialog.Root open={noopOpen} onOpenChange={handleOpenChange}>
-  {#if mutation.kind === "cleanup" && mutation.phase === "noop" && preview}
-    <Dialog.Content class="large-blob-cleanup-info-dialog">
-      <Dialog.Header>
-        <Dialog.Title>{m.large_blob_cleanup()}</Dialog.Title>
-        <Dialog.Description>{m.large_blob_cleanup_noop()}</Dialog.Description>
-      </Dialog.Header>
-      <LargeBlobMutationPreview {preview} />
-      <Dialog.Footer><Button type="button" onclick={onClose}>{m.close()}</Button></Dialog.Footer>
-    </Dialog.Content>
-  {/if}
-</Dialog.Root>
 
 <Dialog.Root open={previewErrorOpen} onOpenChange={handleOpenChange}>
   {#if mutation.kind === "cleanup" && mutation.phase === "error" && mutation.failedPhase === "previewing"}
@@ -109,7 +91,6 @@
 <AlertDialog.Root open={confirmationOpen} onOpenChange={handleOpenChange}>
   {#if mutation.kind === "cleanup" && (
     mutation.phase === "review"
-    || mutation.phase === "executing"
     || (mutation.phase === "error" && mutation.failedPhase === "executing")
   )}
     <AlertDialog.Content class="large-blob-cleanup-dialog">
@@ -133,9 +114,8 @@
       {#if preview}<LargeBlobMutationPreview {preview} />{/if}
 
       <AlertDialog.Footer>
-        <AlertDialog.Cancel disabled={busy} onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
-        <AlertDialog.Action variant="destructive" disabled={busy} onclick={handleAction}>
-          {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
+        <AlertDialog.Cancel onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
+        <AlertDialog.Action variant="destructive" onclick={handleAction}>
           {m.confirm_cleanup()}
         </AlertDialog.Action>
       </AlertDialog.Footer>
@@ -146,8 +126,7 @@
 <style>
 @layer blocks {
   :global(.large-blob-cleanup-dialog),
-  :global(.large-blob-cleanup-error-dialog),
-  :global(.large-blob-cleanup-info-dialog) {
+  :global(.large-blob-cleanup-error-dialog) {
     width: min(42rem, calc(100vw - 2rem));
     max-width: none;
     max-height: calc(100vh - 2rem);

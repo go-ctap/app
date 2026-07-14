@@ -18,8 +18,8 @@
   type Props = {
     pin: PINStatus;
     disabled: boolean;
-    onSetPIN: (input: { newPIN: string }) => void | Promise<boolean>;
-    onChangePIN: (input: { currentPIN: string; newPIN: string }) => void | Promise<boolean>;
+    onSetPIN: (input: { newPIN: string }) => boolean | Promise<boolean>;
+    onChangePIN: (input: { currentPIN: string; newPIN: string }) => boolean | Promise<boolean>;
   };
 
   let { pin, disabled, onSetPIN, onChangePIN }: Props = $props();
@@ -50,7 +50,7 @@
     }
   }
 
-  function handleSubmit(event: SubmitEvent) {
+  async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
 
     if (configured && !currentPIN) {
@@ -70,18 +70,27 @@
       return;
     }
 
-    let operation: void | Promise<boolean>;
-    try {
-      operation = configured
-        ? onChangePIN({ currentPIN, newPIN })
-        : onSetPIN({ newPIN });
-    } finally {
-      // The operation owns the values only for the duration of this call. The
-      // UI clears every local reference before yielding back to the event loop.
-      clearSecrets();
-      void handleOpenChange(false);
+    let operation: boolean | Promise<boolean>;
+    if (configured) {
+      const input = { currentPIN, newPIN };
+      try {
+        operation = onChangePIN(input);
+      } finally {
+        input.currentPIN = "";
+        input.newPIN = "";
+        clearSecrets();
+      }
+    } else {
+      const input = { newPIN };
+      try {
+        operation = onSetPIN(input);
+      } finally {
+        input.newPIN = "";
+        clearSecrets();
+      }
     }
-    void operation;
+
+    if (await operation) await handleOpenChange(false);
   }
 
   onDestroy(clearSecrets);

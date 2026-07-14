@@ -7,7 +7,6 @@
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import * as Field from "$lib/components/ui/field/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
-  import { Spinner } from "$lib/components/ui/spinner/index.js";
   import { credentialUpdatePreview } from "$lib/ctapkit-results";
   import type {
     CredentialUpdateForm,
@@ -36,14 +35,16 @@
     onClose,
   }: Props = $props();
 
-  let open = $derived(mutation.kind === "update");
-  let busy = $derived(
-    mutation.kind === "update" &&
-    (mutation.phase === "previewing" || mutation.phase === "executing"),
+  let open = $derived(
+    mutation.kind === "update" && (
+      mutation.phase === "editing"
+      || mutation.phase === "review"
+      || mutation.phase === "error"
+    ),
   );
   let preview = $derived.by(() => {
     if (mutation.kind !== "update") return null;
-    if (mutation.phase === "review" || mutation.phase === "executing") {
+    if (mutation.phase === "review") {
       return credentialUpdatePreview(mutation.previewEnvelope);
     }
     if (mutation.phase === "error" && mutation.previewEnvelope) {
@@ -74,12 +75,8 @@
   let showForm = $derived(
     mutation.kind === "update" && (
       mutation.phase === "editing"
-      || mutation.phase === "previewing"
       || (mutation.phase === "error" && mutation.failedPhase === "previewing")
     ),
-  );
-  let fieldsLocked = $derived(
-    mutation.kind === "update" && mutation.phase === "previewing",
   );
 
   function validationMessage(error: CredentialUpdateValidationError | null) {
@@ -100,12 +97,12 @@
   }
 
   function handleOpenChange(next: boolean) {
-    if (!next && !busy) onClose();
+    if (!next) onClose();
   }
 
   function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
-    if (mutation.kind !== "update" || busy) return;
+    if (mutation.kind !== "update") return;
     if (mutation.phase === "review") {
       void onConfirm();
       return;
@@ -120,8 +117,8 @@
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
-  {#if mutation.kind === "update"}
-    <Dialog.Content class="passkey-update-dialog" showCloseButton={!busy}>
+  {#if open && mutation.kind === "update"}
+    <Dialog.Content class="passkey-update-dialog">
       <Dialog.Header>
         <Dialog.Title>{m.edit_credential_user()}</Dialog.Title>
       </Dialog.Header>
@@ -131,13 +128,11 @@
           <Field.FieldGroup>
             <Field.Field
               data-invalid={validationError === "user-id-required" || validationError === "user-id-invalid-hex"}
-              data-disabled={fieldsLocked ? "true" : undefined}
             >
               <Field.FieldLabel for="passkey-update-user-id">{m.user_id_hex()}</Field.FieldLabel>
               <Input
                 id="passkey-update-user-id"
                 value={mutation.form.userIDHex}
-                disabled={fieldsLocked}
                 aria-invalid={validationError === "user-id-required" || validationError === "user-id-invalid-hex"}
                 autocomplete="off"
                 spellcheck="false"
@@ -148,23 +143,21 @@
               {/if}
             </Field.Field>
 
-            <Field.Field data-disabled={fieldsLocked ? "true" : undefined}>
+            <Field.Field>
               <Field.FieldLabel for="passkey-update-name">{m.user_name()}</Field.FieldLabel>
               <Input
                 id="passkey-update-name"
                 value={mutation.form.name}
-                disabled={fieldsLocked}
                 autocomplete="off"
                 oninput={(event) => onDraftChange({ name: event.currentTarget.value })}
               />
             </Field.Field>
 
-            <Field.Field data-disabled={fieldsLocked ? "true" : undefined}>
+            <Field.Field>
               <Field.FieldLabel for="passkey-update-display-name">{m.display_name()}</Field.FieldLabel>
               <Input
                 id="passkey-update-display-name"
                 value={mutation.form.displayName}
-                disabled={fieldsLocked}
                 autocomplete="off"
                 oninput={(event) => onDraftChange({ displayName: event.currentTarget.value })}
               />
@@ -237,15 +230,13 @@
         {/if}
 
         <Dialog.Footer>
-          <Button type="submit" disabled={busy}>
-            {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
+          <Button type="submit">
             {mutation.phase === "review"
-              || mutation.phase === "executing"
               || (mutation.phase === "error" && mutation.failedPhase === "executing")
               ? m.confirm_update()
               : m.preview_change()}
           </Button>
-          <Button variant="outline" type="button" disabled={busy} onclick={onClose}>{m.cancel()}</Button>
+          <Button variant="outline" type="button" onclick={onClose}>{m.cancel()}</Button>
         </Dialog.Footer>
       </form>
     </Dialog.Content>

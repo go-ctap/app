@@ -29,7 +29,6 @@ import {
   failLargeBlobsInventoryLoadWithResponse,
   largeBlobsDecodeMode,
   largeBlobsInventoryState,
-  largeBlobsInventoryIsStale,
   largeBlobsMutation,
   largeBlobsPayloadEncoding,
   largeBlobsQuery,
@@ -52,6 +51,8 @@ import { internalFailure, runtimeFailureFrom } from "./failure.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
 import {
   beginOperation,
+  finishOperation,
+  setStatusOutcome,
   summarizeEnvelope,
   summarizeOperationContractFailure,
   summarizeOperationFailure,
@@ -151,20 +152,20 @@ export function setLargeBlobsVerificationFlow(value: VerificationFlow) {
   largeBlobsVerificationFlow.set(value);
 }
 
-export async function setLargeBlobsDecodeMode(value: DecodeMode): Promise<boolean> {
-  if (get(largeBlobsDecodeMode) === value) return false;
+export function setLargeBlobsDecodeMode(value: DecodeMode) {
+  if (get(largeBlobsDecodeMode) === value) return;
   largeBlobsDecodeMode.set(value);
   resetLargeBlobReadState();
-  const credentialIDHex = get(largeBlobsSelectedCredentialID);
-  return credentialIDHex ? readLargeBlob(credentialIDHex) : false;
 }
 
 export function setLargeBlobsPayloadEncoding(value: LargeBlobPayloadEncoding) {
   largeBlobsPayloadEncoding.set(value);
   const current = get(largeBlobsMutation);
-  if (current.kind !== "write" || current.phase !== "editing") return;
+  if (current.kind !== "write") return;
   largeBlobsMutation.set({
-    ...current,
+    kind: "write",
+    phase: "editing",
+    credentialIDHex: current.credentialIDHex,
     draft: { ...current.draft, encoding: value },
     validationError: null,
   });
@@ -172,7 +173,7 @@ export function setLargeBlobsPayloadEncoding(value: LargeBlobPayloadEncoding) {
 
 function reportForActions() {
   const inventory = get(largeBlobsInventoryState);
-  if (largeBlobsInventoryIsStale(inventory) || inventory.phase === "loading" || inventory.phase === "refreshing") return null;
+  if (inventory.phase === "loading" || inventory.phase === "refreshing") return null;
   const session = get(sessionStatus);
   if (session.state !== "ready" || !session.sessionId) return null;
   const report = largeBlobListReport(inventory.lastSuccessfulEnvelope);
@@ -294,7 +295,7 @@ export function beginLargeBlobWrite(credentialIDHex = get(largeBlobsSelectedCred
 
 export function updateLargeBlobWriteDraft(patch: Partial<LargeBlobWriteDraft>) {
   const current = get(largeBlobsMutation);
-  if (current.kind !== "write" || current.phase === "previewing" || current.phase === "executing") return false;
+  if (current.kind !== "write") return false;
   const draft = { ...current.draft, ...patch };
   largeBlobsPayloadEncoding.set(draft.encoding);
   largeBlobsMutation.set({
@@ -440,22 +441,30 @@ export async function beginLargeBlobDelete(credentialIDHex = get(largeBlobsSelec
     const preview = largeBlobMutationPreview(envelope);
     if (envelope.error) {
       deleteError(credentialIDHex, "previewing", request, null, envelope, null, "response-error");
+      summarizeEnvelope(m.large_blob_delete(), envelope);
     } else if (!preview) {
       deleteError(credentialIDHex, "previewing", request, null, envelope, null, "missing-preview");
+      summarizeOperationContractFailure(m.large_blob_delete(), internalFailure());
     } else {
       const noop = preview.operation === MutationOperation.MutationNoBlob || preview.noBlob || preview.noop === true;
-      largeBlobsMutation.set({
-        kind: "delete",
-        phase: noop ? "noop" : "review",
-        credentialIDHex,
-        previewRequest: request,
-        previewEnvelope: envelope,
-      });
-    }
-    if (envelope.error || preview) {
-      summarizeEnvelope(m.large_blob_delete(), envelope);
-    } else {
-      summarizeOperationContractFailure(m.large_blob_delete(), internalFailure());
+      if (noop) {
+        largeBlobsMutation.set({ kind: "idle", phase: "idle" });
+        finishOperation();
+        setStatusOutcome({
+          tone: "info",
+          title: m.large_blob_delete(),
+          message: m.large_blob_delete_noop(),
+        });
+      } else {
+        largeBlobsMutation.set({
+          kind: "delete",
+          phase: "review",
+          credentialIDHex,
+          previewRequest: request,
+          previewEnvelope: envelope,
+        });
+        summarizeEnvelope(m.large_blob_delete(), envelope);
+      }
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(preview);
@@ -499,20 +508,26 @@ export async function beginLargeBlobCleanup(): Promise<boolean> {
     const preview = largeBlobMutationPreview(envelope);
     if (envelope.error) {
       cleanupError("previewing", request, null, envelope, null, "response-error");
+      summarizeEnvelope(m.large_blob_cleanup_preview(), envelope);
     } else if (!preview) {
       cleanupError("previewing", request, null, envelope, null, "missing-preview");
+      summarizeOperationContractFailure(m.large_blob_cleanup_preview(), internalFailure());
+    } else if (preview.noop === true) {
+      largeBlobsMutation.set({ kind: "idle", phase: "idle" });
+      finishOperation();
+      setStatusOutcome({
+        tone: "info",
+        title: m.large_blob_cleanup(),
+        message: m.large_blob_cleanup_noop(),
+      });
     } else {
       largeBlobsMutation.set({
         kind: "cleanup",
-        phase: preview.noop === true ? "noop" : "review",
+        phase: "review",
         previewRequest: request,
         previewEnvelope: envelope,
       });
-    }
-    if (envelope.error || preview) {
       summarizeEnvelope(m.large_blob_cleanup_preview(), envelope);
-    } else {
-      summarizeOperationContractFailure(m.large_blob_cleanup_preview(), internalFailure());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(preview);
@@ -670,8 +685,5 @@ export async function confirmLargeBlobCleanup(): Promise<boolean> {
 }
 
 export function closeLargeBlobMutation() {
-  const current = get(largeBlobsMutation);
-  if (current.phase === "previewing" || current.phase === "executing") return false;
   largeBlobsMutation.set({ kind: "idle", phase: "idle" });
-  return true;
 }

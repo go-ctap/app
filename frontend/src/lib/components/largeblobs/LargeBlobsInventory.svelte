@@ -104,9 +104,6 @@
   function toggleCredential(row: LargeBlobCredentialRow) {
     const closing = presentation.selectedCredentialID === row.id;
     onSelect(closing ? "" : row.id);
-    if (!closing && row.blobPresent && row.largeBlobKeyAvailable && !presentation.readDisabled) {
-      void onRead(row.id);
-    }
   }
 </script>
 
@@ -272,11 +269,12 @@
                   <LargeBlobInspector
                     {row}
                     {readState}
-                    {mutation}
                     {decodeMode}
+                    readDisabled={presentation.readDisabled}
                     writeDisabled={presentation.writeDisabled}
                     deleteDisabled={presentation.deleteDisabled}
                     {onDecodeModeChange}
+                    {onRead}
                     {onWrite}
                     {onDelete}
                   />

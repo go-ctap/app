@@ -904,10 +904,7 @@ export async function restartSecurityPreview(): Promise<boolean> {
 }
 
 export function closeSecurityMutation() {
-  const current = get(securityMutation);
-  if (current.phase === "previewing" || current.phase === "executing") return false;
   securityMutation.set({ kind: "idle", phase: "idle" });
-  return true;
 }
 
 export type { SecurityPINPolicyDraft } from "./features/security/state.js";

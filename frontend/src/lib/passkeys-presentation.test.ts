@@ -296,20 +296,17 @@ describe("buildPasskeysPresentation", () => {
     expect(presentation.deleteDisabled).toBe(true);
   });
 
-  it("keeps last-known-good rows visible when a later unsupported refresh becomes stale", () => {
+  it("keeps last-known-good rows and actions available after a failed refresh", () => {
     const credentials = envelope([{
       rpID: "example.test",
       credentials: [{ credentialIDHex: "one" }],
     }]);
+    credentials.result!.report.support.previewOnly = false;
     const state: PasskeysInventoryState = {
       ...inventoryState(credentials),
-      phase: "unsupported",
-      responseEnvelope: {
-        operationId: "operation-2",
-        sessionId: "session-1",
-        kind: OperationKind.OperationListCredentials,
-        error: failureForCode(Code.CodeCredentialManagementUnsupported),
-      } as CredentialsEnvelope,
+      phase: "error",
+      responseEnvelope: null,
+      runtimeError: failureForCode(Code.CodeTransportFailure),
     };
     const presentation = buildPasskeysPresentation({
       ...defaultView,
@@ -323,7 +320,8 @@ describe("buildPasskeysPresentation", () => {
     expect(presentation.stale).toBe(true);
     expect(presentation.unsupported).toBe(false);
     expect(presentation.rows.map((row) => row.id)).toEqual(["one"]);
-    expect(presentation.updateDisabled).toBe(true);
-    expect(presentation.deleteDisabled).toBe(true);
+    expect(presentation.updateDisabled).toBe(false);
+    expect(presentation.deleteDisabled).toBe(false);
+    expect(presentation.reloadDisabled).toBe(false);
   });
 });

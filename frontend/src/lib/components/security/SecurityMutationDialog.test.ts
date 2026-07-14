@@ -8,6 +8,8 @@ import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure"
 import {
   AlwaysUVRequest,
   AuthenticatorConfigEnvelope,
+  BioEnrollEnvelope,
+  BioEnrollRequest,
   ResetFactoryEnvelope,
   ResetFactoryRequest,
 } from "../../../../bindings/github.com/go-ctap/kit/service";
@@ -129,7 +131,7 @@ describe("SecurityMutationDialog", () => {
     expect(callbacks.onPreview).not.toHaveBeenCalled();
   });
 
-  it("keeps one spinner on the named action while a preview is running", () => {
+  it("leaves preview progress to the global status bar", () => {
     renderDialog({
       kind: "alwaysUv",
       target: AlwaysUVTarget.AlwaysUVTargetEnable,
@@ -137,10 +139,45 @@ describe("SecurityMutationDialog", () => {
       previewRequest: request,
     });
 
-    const action = screen.getByRole("button", { name: "Update Always UV" });
-    expect(action).toBeDisabled();
-    expect(screen.queryByText("Waiting for authenticator response.")).not.toBeInTheDocument();
-    expect(action.querySelectorAll("svg")).toHaveLength(1);
-    expect(document.querySelectorAll("svg[role=\"status\"]")).toHaveLength(1);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("leaves ordinary execution progress to the global status bar", () => {
+    renderDialog({
+      kind: "alwaysUv",
+      target: AlwaysUVTarget.AlwaysUVTargetEnable,
+      phase: "executing",
+      previewRequest: request,
+      previewEnvelope,
+    });
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("keeps biometric enrollment open so it can be canceled", async () => {
+    const user = userEvent.setup();
+    const callbacks = renderDialog({
+      kind: "bioEnroll",
+      timeoutMilliseconds: 60_000,
+      phase: "executing",
+      previewRequest: new BioEnrollRequest({
+        sessionId: "session-1",
+        timeoutMilliseconds: 60_000,
+        dryRun: true,
+      }),
+      previewEnvelope: new BioEnrollEnvelope({
+        operationId: "bio-preview-1",
+        sessionId: "session-1",
+        kind: OperationKind.OperationBioEnroll,
+      }),
+    });
+
+    await user.keyboard("{Escape}");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(callbacks.onClose).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Cancel enrollment" }));
+
+    expect(callbacks.onCancelOperation).toHaveBeenCalledOnce();
   });
 });

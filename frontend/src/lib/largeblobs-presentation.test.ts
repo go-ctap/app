@@ -91,7 +91,6 @@ function state(value: LargeBlobListEnvelope): LargeBlobsInventoryState {
 }
 
 const defaultView = {
-  mutation: { kind: "idle", phase: "idle" } as const,
   query: "",
   statusFilter: "all" as const,
   selectedCredentialID: "",
@@ -147,7 +146,7 @@ describe("large blob presentation", () => {
     expect(presentation.deleteDisabled).toBe(true);
   });
 
-  it("keeps last-known-good rows visible but blocks every action when stale", () => {
+  it("keeps last-known-good rows and their actions available when stale", () => {
     const successful = envelope();
     const stale: LargeBlobsInventoryState = {
       ...state(successful),
@@ -171,9 +170,9 @@ describe("large blob presentation", () => {
 
     expect(presentation.rows).toHaveLength(3);
     expect(presentation.stale).toBe(true);
-    expect(presentation.readDisabled).toBe(true);
-    expect(presentation.writeDisabled).toBe(true);
-    expect(presentation.deleteDisabled).toBe(true);
-    expect(presentation.cleanupDisabled).toBe(true);
+    expect(presentation.readDisabled).toBe(false);
+    expect(presentation.writeDisabled).toBe(false);
+    expect(presentation.deleteDisabled).toBe(false);
+    expect(presentation.cleanupDisabled).toBe(false);
   });
 });

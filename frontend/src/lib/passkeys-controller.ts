@@ -23,7 +23,6 @@ import {
   failPasskeysInventoryLoadAtRuntime,
   failPasskeysInventoryLoadWithResponse,
   passkeysInventoryState,
-  passkeysInventoryIsStale,
   passkeysMutation,
   passkeysQuery,
   passkeysSelectedCredentialID,
@@ -137,7 +136,7 @@ export function setPasskeysVerificationFlow(value: VerificationFlow) {
 
 function mutationsAvailable(kind: "update" | "delete") {
   const inventory = get(passkeysInventoryState);
-  if (passkeysInventoryIsStale(inventory) || inventory.phase === "loading" || inventory.phase === "refreshing") return false;
+  if (inventory.phase === "loading" || inventory.phase === "refreshing") return false;
   const session = get(sessionStatus);
   if (session.state !== "ready" || !session.sessionId) return false;
   const report = credentialsReport(inventory.lastSuccessfulEnvelope);
@@ -174,7 +173,7 @@ export function beginCredentialUpdate(credentialIDHex = get(passkeysSelectedCred
 
 export function updateCredentialDraft(patch: Partial<CredentialUpdateForm>) {
   const current = get(passkeysMutation);
-  if (current.kind !== "update" || current.phase === "previewing" || current.phase === "executing") return false;
+  if (current.kind !== "update") return false;
   passkeysMutation.set({
     kind: "update",
     phase: "editing",
@@ -486,8 +485,5 @@ export async function confirmCredentialDelete(): Promise<boolean> {
 }
 
 export function closePasskeysMutation() {
-  const current = get(passkeysMutation);
-  if (current.phase === "previewing" || current.phase === "executing") return false;
   passkeysMutation.set({ kind: "idle", phase: "idle" });
-  return true;
 }

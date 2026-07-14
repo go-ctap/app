@@ -411,7 +411,7 @@ describe("Passkeys", () => {
     expect(get(mutablePasskeysVerificationFlow)).toBe(VerificationFlow.VerificationFlowPIN);
   });
 
-  it("keeps stale rows visible and disables their mutations until refresh succeeds", async () => {
+  it("keeps stale rows actionable while showing the failed refresh warning", async () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
@@ -424,9 +424,13 @@ describe("Passkeys", () => {
 
     expect(screen.getByText("Inventory may be stale")).toBeInTheDocument();
     expect(screen.getByText(/Communication with the authenticator failed\./)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reload credentials" })).toBeEnabled();
     await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
-    expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Edit" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeEnabled();
+
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    expect(screen.getByRole("dialog", { name: "Edit credential user" })).toBeInTheDocument();
   });
 
   it("renders unsupported credential management as a non-retry state", () => {
@@ -462,7 +466,7 @@ describe("Passkeys", () => {
     expect(screen.queryByText("No matching passkeys")).not.toBeInTheDocument();
   });
 
-  it("keeps the update action through execution and any execution error", async () => {
+  it("closes the update dialog during work and restores it for review or error", async () => {
     const envelope = credentialsEnvelope();
     seedSelectionForTest("token-1", null, {
       state: "ready",
@@ -503,11 +507,21 @@ describe("Passkeys", () => {
       previewRequest,
       previewEnvelope,
     } as const;
-    mutablePasskeysMutation.set({ ...mutation, phase: "review" });
+    mutablePasskeysMutation.set({
+      kind: "update",
+      phase: "previewing",
+      credentialIDHex: mutation.credentialIDHex,
+      original: mutation.original,
+      form: mutation.form,
+      previewRequest,
+    });
 
     render(Passkeys);
 
-    const dialog = screen.getByRole("dialog", { name: "Edit credential user" });
+    expect(screen.queryByRole("dialog", { name: "Edit credential user" })).not.toBeInTheDocument();
+
+    mutablePasskeysMutation.set({ ...mutation, phase: "review" });
+    const dialog = await screen.findByRole("dialog", { name: "Edit credential user" });
     expect(dialog).toBeInTheDocument();
     expect(screen.getByText("This changes the user information stored with the resident credential.")).toBeInTheDocument();
     expect(screen.getByText("Current value")).toBeInTheDocument();
@@ -516,9 +530,9 @@ describe("Passkeys", () => {
     expect(within(dialog).getByRole("button", { name: "Confirm update" })).toBeEnabled();
 
     mutablePasskeysMutation.set({ ...mutation, phase: "executing" });
-    await tick();
-    expect(within(dialog).getByRole("button", { name: "Confirm update" })).toBeDisabled();
-    expect(within(dialog).queryByRole("button", { name: "Preview change" })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Edit credential user" })).not.toBeInTheDocument();
+    });
 
     mutablePasskeysMutation.set({
       ...mutation,
@@ -534,10 +548,10 @@ describe("Passkeys", () => {
       failureReason: "response-error",
       validationError: null,
     });
-    await tick();
-    expect(within(dialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: "Confirm update" })).toBeEnabled();
-    expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+    const errorDialog = await screen.findByRole("dialog", { name: "Edit credential user" });
+    expect(within(errorDialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
+    expect(within(errorDialog).getByRole("button", { name: "Confirm update" })).toBeEnabled();
+    expect(within(errorDialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
   });
 
   it("renders the typed delete preview in an accessible alert dialog", async () => {
@@ -584,7 +598,7 @@ describe("Passkeys", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
   });
 
-  it("keeps the delete confirmation action after any execution error", () => {
+  it("closes delete confirmation during execution and restores it after any error", async () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
       sessionId: "session-1",
@@ -613,21 +627,33 @@ describe("Passkeys", () => {
       kind: OperationKind.OperationDeleteCredential,
       error: failureForCode(Code.CodeTransportFailure),
     } as CredentialDeleteEnvelope;
-    mutablePasskeysMutation.set({
+    const mutation = {
       kind: "delete",
-      phase: "error",
       credentialIDHex: "cafe",
-      failedPhase: "executing",
       previewRequest: { sessionId: "session-1", credentialIdHex: "cafe", dryRun: true },
       previewEnvelope,
+    } as const;
+    mutablePasskeysMutation.set({ ...mutation, phase: "review" });
+
+    render(Passkeys);
+
+    expect(screen.getByRole("alertdialog", { name: "Confirm delete" })).toBeInTheDocument();
+
+    mutablePasskeysMutation.set({ ...mutation, phase: "executing" });
+    await waitFor(() => {
+      expect(screen.queryByRole("alertdialog", { name: "Confirm delete" })).not.toBeInTheDocument();
+    });
+
+    mutablePasskeysMutation.set({
+      ...mutation,
+      phase: "error",
+      failedPhase: "executing",
       responseEnvelope: errorEnvelope,
       runtimeError: null,
       failureReason: "response-error",
     });
 
-    render(Passkeys);
-
-    const dialog = screen.getByRole("alertdialog", { name: "Confirm delete" });
+    const dialog = await screen.findByRole("alertdialog", { name: "Confirm delete" });
     expect(within(dialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Confirm delete" })).toBeEnabled();
     expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();

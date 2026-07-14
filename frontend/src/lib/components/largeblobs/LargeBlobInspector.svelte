@@ -16,7 +16,7 @@
   import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import { largeBlobReadReport } from "$lib/ctapkit-results";
-  import type { LargeBlobMutationState, LargeBlobReadState } from "$lib/features/largeblobs/state";
+  import type { LargeBlobReadState } from "$lib/features/largeblobs/state";
   import type { LargeBlobCredentialRow } from "$lib/largeblobs-presentation";
   import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
 
@@ -25,11 +25,12 @@
   type Props = {
     row: LargeBlobCredentialRow;
     readState: LargeBlobReadState;
-    mutation: LargeBlobMutationState;
     decodeMode: DecodeMode;
+    readDisabled: boolean;
     writeDisabled: boolean;
     deleteDisabled: boolean;
     onDecodeModeChange: (mode: DecodeMode) => void | Promise<boolean>;
+    onRead: (credentialIDHex: string) => void | Promise<boolean>;
     onWrite: (credentialIDHex: string) => void;
     onDelete: (credentialIDHex: string) => void | Promise<boolean>;
   };
@@ -37,22 +38,18 @@
   let {
     row,
     readState,
-    mutation,
     decodeMode,
+    readDisabled,
     writeDisabled,
     deleteDisabled,
     onDecodeModeChange,
+    onRead,
     onWrite,
     onDelete,
   }: Props = $props();
 
   let readSelected = $derived(readState.phase !== "idle" && readState.credentialIDHex === row.id);
   let readingSelected = $derived(readSelected && readState.phase === "loading");
-  let deletingSelected = $derived(
-    mutation.kind === "delete"
-      && mutation.credentialIDHex === row.id
-      && mutation.phase === "previewing",
-  );
   let report = $derived.by(() => {
     if (!readSelected || readState.phase !== "ready") return null;
     return largeBlobReadReport(readState.responseEnvelope);
@@ -137,14 +134,10 @@
           variant="destructive"
           size="sm"
           type="button"
-          disabled={deleteDisabled || deletingSelected}
+          disabled={deleteDisabled}
           onclick={() => onDelete(row.id)}
         >
-          {#if deletingSelected}
-            <Spinner data-icon="inline-start" aria-hidden="true" />
-          {:else}
-            <Trash2 data-icon="inline-start" aria-hidden="true" />
-          {/if}
+          <Trash2 data-icon="inline-start" aria-hidden="true" />
           {m.delete()}
         </Button>
       </div>
@@ -201,7 +194,16 @@
                 <ToggleGroup.Item value={mode}>{decodeModeLabel(mode)}</ToggleGroup.Item>
               {/each}
             </ToggleGroup.Root>
-            {#if readingSelected}<Spinner aria-label={m.large_blob_read()} />{/if}
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
+              disabled={readDisabled || readingSelected}
+              onclick={() => onRead(row.id)}
+            >
+              {#if readingSelected}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
+              {m.large_blob_read()}
+            </Button>
           </div>
         </div>
 

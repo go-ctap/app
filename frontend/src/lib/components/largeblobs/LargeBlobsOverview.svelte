@@ -30,11 +30,6 @@
     onVerificationFlowChange,
   }: Props = $props();
 
-  let cleanupBusy = $derived(
-    presentation.mutation.kind === "cleanup"
-      && (presentation.mutation.phase === "previewing" || presentation.mutation.phase === "executing"),
-  );
-
   function getVerificationValue() {
     return verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto";
   }
@@ -154,14 +149,10 @@
           variant="outline"
           size="sm"
           type="button"
-          disabled={presentation.cleanupDisabled || cleanupBusy}
+          disabled={presentation.cleanupDisabled}
           onclick={onCleanup}
         >
-          {#if cleanupBusy}
-            <Spinner data-icon="inline-start" aria-hidden="true" />
-          {:else}
-            <Sparkles data-icon="inline-start" aria-hidden="true" />
-          {/if}
+          <Sparkles data-icon="inline-start" aria-hidden="true" />
           {m.preview_cleanup()}
         </Button>
       </div>

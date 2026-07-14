@@ -115,7 +115,6 @@
     {:else}
       <PasskeysInventory
         presentation={passkeys}
-        mutation={$passkeysMutation}
         updateDisabled={passkeys.updateDisabled}
         deleteDisabled={passkeys.deleteDisabled}
         previewOnly={Boolean(passkeys.report?.support.previewOnly)}

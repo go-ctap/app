@@ -1,5 +1,4 @@
 import { get } from "svelte/store";
-import { toast } from "svelte-sonner";
 
 import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { m } from "../paraglide/messages.js";
@@ -69,20 +68,6 @@ export function setStatusOutcome(outcome: StatusBarOutcome | null) {
   statusBar.update((state) => ({ ...state, lastOutcome: outcome }));
 }
 
-function notifyOperationFailure(outcome: StatusBarOutcome) {
-  const options = {
-    description: outcome.message,
-    duration: outcome.tone === "error" ? 10_000 : 7_000,
-    important: true,
-  };
-
-  if (outcome.tone === "error") {
-    toast.error(outcome.title, options);
-  } else {
-    toast.info(outcome.title, options);
-  }
-}
-
 export function clearWorkbenchScreenCaches() {
   overviewInspection.set(idleLoadState());
   overviewBioSensor.set(idleLoadState());
@@ -105,7 +90,6 @@ export function summarizeEnvelope(label: string, envelope: OperationEnvelope) {
       message: failureMessage(error),
     };
     setStatusOutcome(outcome);
-    notifyOperationFailure(outcome);
     return;
   }
   setStatusOutcome({
@@ -143,5 +127,4 @@ function summarizeOperationFailureWithMessage(
     message,
   };
   setStatusOutcome(outcome);
-  notifyOperationFailure(outcome);
 }

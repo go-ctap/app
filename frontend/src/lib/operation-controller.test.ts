@@ -19,13 +19,8 @@ const serviceMocks = vi.hoisted(() => ({
   CancelOperation: vi.fn(),
   ResolveInteraction: vi.fn(),
 }));
-const toastMocks = vi.hoisted(() => ({
-  error: vi.fn(),
-  info: vi.fn(),
-}));
 
 vi.mock("../../bindings/fidobench/ctapkitservice", () => serviceMocks);
-vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
 
 const token: DeviceReport = {
   deviceId: "token-1",
@@ -122,10 +117,6 @@ describe("operation controller", () => {
       tone: "info",
       title: "Credential inventory canceled",
     });
-    expect(toastMocks.info).toHaveBeenCalledWith(
-      "Credential inventory canceled",
-      expect.objectContaining({ description: "The operation was canceled.", important: true }),
-    );
   });
 
   it("presents a canceled generated envelope as informational", () => {
@@ -145,27 +136,29 @@ describe("operation controller", () => {
     });
   });
 
-  it("presents an uncategorized runtime failure without an action", () => {
+  it("presents an uncategorized runtime failure in the status bar", () => {
     seedSession();
     seedOperation();
 
     summarizeOperationFailure("Credential inventory", failureForCode(Code.CodeInternalError));
 
-    expect(toastMocks.error).toHaveBeenCalledWith(
-      "Credential inventory failed",
-      expect.objectContaining({ description: "The operation failed because of an internal error.", important: true }),
-    );
+    expect(get(statusBar).lastOutcome).toMatchObject({
+      tone: "error",
+      title: "Credential inventory failed",
+      message: "The operation failed because of an internal error.",
+    });
   });
 
-  it("reports a timed-out operation without adding an action", () => {
+  it("reports a timed-out operation in the status bar", () => {
     seedSession();
     seedOperation();
 
     summarizeOperationFailure("Credential inventory", failureForCode(Code.CodeOperationTimeout));
 
-    const options = toastMocks.error.mock.calls.at(-1)?.[1];
-    expect(options).toMatchObject({ description: "The operation timed out." });
-    expect(options).not.toHaveProperty("action");
+    expect(get(statusBar).lastOutcome).toMatchObject({
+      tone: "error",
+      message: "The operation timed out.",
+    });
   });
 });
 

@@ -27,6 +27,7 @@ import {
   previewLargeBlobWrite,
   readLargeBlob,
   setLargeBlobsDecodeMode,
+  setLargeBlobsPayloadEncoding,
   updateLargeBlobWriteDraft,
 } from "./largeblobs-controller";
 import {
@@ -37,12 +38,13 @@ import {
   largeBlobsMutation,
   largeBlobsPayloadEncoding,
   largeBlobsReadState,
+  largeBlobsSelectedCredentialID,
   largeBlobsVerificationFlow,
   resetLargeBlobsDeviceState,
   resetLargeBlobsStateForTest,
 } from "./features/largeblobs/state";
 import { resetSessionStateForTest, selectedSelector, sessionStatus } from "./features/session/state";
-import { resetWorkbenchStateForTest } from "./features/workbench/state";
+import { resetWorkbenchStateForTest, statusBar } from "./features/workbench/state";
 
 function listEnvelope(keyState = "available"): LargeBlobListEnvelope {
   return {
@@ -159,7 +161,18 @@ describe("large blob controller", () => {
     });
   });
 
-  it("retains a capacity response on error without aliasing it as a successful preview", async () => {
+  it("changes decode mode without reading until the explicit Read action", () => {
+    largeBlobsSelectedCredentialID.set("cafe");
+    const read = vi.spyOn(api, "readLargeBlob");
+
+    setLargeBlobsDecodeMode(DecodeMode.DecodeModeCBOR);
+
+    expect(get(largeBlobsDecodeMode)).toBe(DecodeMode.DecodeModeCBOR);
+    expect(get(largeBlobsReadState)).toEqual({ phase: "idle" });
+    expect(read).not.toHaveBeenCalled();
+  });
+
+  it("retains a capacity response on error and lets the user edit the draft", async () => {
     const capacity = previewEnvelope(
       OperationKind.OperationWriteLargeBlob,
       MutationOperation.MutationCreate,
@@ -182,6 +195,15 @@ describe("large blob controller", () => {
     expect(mutation.responseEnvelope).toBe(capacity);
     expect(mutation.responseEnvelope?.result?.preview.serializedLargeBlobArrayLimit).toBe(0);
     expect(await confirmLargeBlobWrite()).toBe(false);
+
+    setLargeBlobsPayloadEncoding("hex");
+    expect(get(largeBlobsMutation)).toMatchObject({
+      kind: "write",
+      phase: "editing",
+      credentialIDHex: "cafe",
+      draft: { payload: "sensitive payload", encoding: "hex" },
+      validationError: null,
+    });
   });
 
   it("reconfirms after any execution failure without rebuilding the delete preview", async () => {
@@ -316,11 +338,21 @@ describe("large blob controller", () => {
     ));
 
     expect(await beginLargeBlobDelete("cafe")).toBe(true);
-    expect(get(largeBlobsMutation)).toMatchObject({ kind: "delete", phase: "noop" });
+    expect(get(largeBlobsMutation)).toEqual({ kind: "idle", phase: "idle" });
+    expect(get(statusBar).lastOutcome).toEqual({
+      tone: "info",
+      title: "Delete large blob",
+      message: "This credential has no large blob to delete.",
+    });
     expect(await confirmLargeBlobDelete()).toBe(false);
 
     expect(await beginLargeBlobCleanup()).toBe(true);
-    expect(get(largeBlobsMutation)).toMatchObject({ kind: "cleanup", phase: "noop" });
+    expect(get(largeBlobsMutation)).toEqual({ kind: "idle", phase: "idle" });
+    expect(get(statusBar).lastOutcome).toEqual({
+      tone: "info",
+      title: "Large blob cleanup",
+      message: "No unmatched large-blob entries need cleanup.",
+    });
   });
 
   it("keeps a missing large-blob key as a normal typed read result", async () => {
@@ -360,7 +392,7 @@ describe("large blob controller", () => {
     expect(get(largeBlobsReadState)).toMatchObject({ phase: "ready", responseEnvelope: read });
   });
 
-  it("keeps last-known-good inventory stale and blocks reads after a forced refresh failure", async () => {
+  it("keeps last-known-good inventory action-capable after a forced refresh failure", async () => {
     const failed = {
       operationId: "list-failed",
       sessionId: "session-1",
@@ -388,7 +420,7 @@ describe("large blob controller", () => {
     expect(largeBlobsInventoryIsStale(get(largeBlobsInventoryState))).toBe(true);
     expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).not.toBeNull();
     expect(get(largeBlobsReadState)).toEqual({ phase: "idle" });
-    expect(await readLargeBlob("cafe")).toBe(false);
+    expect(beginLargeBlobWrite("cafe")).toBe(true);
   });
 
   it("accepts a typed no-op execution result as successful", async () => {

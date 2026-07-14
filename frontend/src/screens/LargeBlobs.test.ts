@@ -273,7 +273,7 @@ describe("LargeBlobs", () => {
     expect(screen.queryByText("Large blob management unavailable")).not.toBeInTheDocument();
   });
 
-  it("opens the inspector immediately after the selected semantic table row", async () => {
+  it("opens metadata without reading until the explicit Read action", async () => {
     const user = userEvent.setup();
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     render(LargeBlobs);
@@ -296,11 +296,14 @@ describe("LargeBlobs", () => {
     expect(details).toHaveAttribute("id", "large-blob-row-details-cafe");
     expect(details.closest("table")).toBe(table);
     expect(within(table).getAllByRole("row")).toHaveLength(5);
+    expect(controllerMocks.readLargeBlob).not.toHaveBeenCalled();
+
+    await user.click(within(details).getByRole("button", { name: "Read large blob" }));
     expect(controllerMocks.readLargeBlob).toHaveBeenCalledOnce();
     expect(controllerMocks.readLargeBlob).toHaveBeenCalledWith("cafe");
   });
 
-  it("keeps stale rows inspectable while blocking read and mutation actions", async () => {
+  it("keeps stale rows and their actions available while showing the warning", async () => {
     const user = userEvent.setup();
     const envelope = listEnvelope();
     seedLargeBlobsEnvelopeForTest(envelope, failureForCode(Code.CodeTransportFailure));
@@ -311,11 +314,12 @@ describe("LargeBlobs", () => {
     expect(screen.getByText(/Communication with the authenticator failed\./)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Zero User, zero@example.com/ }));
     expect(controllerMocks.readLargeBlob).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Write" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Read large blob" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Write" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeEnabled();
   });
 
-  it("renders a present zero-byte blob as an empty payload without a manual read action", () => {
+  it("renders a present zero-byte result and keeps Read available", () => {
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     mutableLargeBlobsSelectedCredentialID.set("cafe");
     mutableLargeBlobsReadState.set({
@@ -335,7 +339,7 @@ describe("LargeBlobs", () => {
     expect(within(details).queryByRole("region", { name: "Raw hex" })).not.toBeInTheDocument();
     expect(within(details).getByText("Present")).toBeInTheDocument();
     expect(controllerMocks.readLargeBlob).not.toHaveBeenCalled();
-    expect(within(details).queryByRole("button", { name: /Read/ })).not.toBeInTheDocument();
+    expect(within(details).getByRole("button", { name: "Read large blob" })).toBeEnabled();
   });
 
   it("keeps read available for a missing key and shows its typed state", () => {
@@ -354,10 +358,40 @@ describe("LargeBlobs", () => {
     render(LargeBlobs);
 
     const details = document.getElementById("large-blob-row-details-beef") as HTMLElement;
-    expect(within(details).queryByRole("button", { name: /Read/ })).not.toBeInTheDocument();
+    expect(within(details).getByRole("button", { name: "Read large blob" })).toBeEnabled();
     expect(within(details).getAllByText("Large-blob key unavailable").length).toBeGreaterThan(0);
     expect(within(details).getAllByText("Key unavailable").length).toBeGreaterThan(0);
   });
+
+  it.each([Code.CodeOperationCanceled, Code.CodeTransportFailure])(
+    "keeps the explicit Read action after %s",
+    async (code) => {
+      const user = userEvent.setup();
+      seedLargeBlobsEnvelopeForTest(listEnvelope());
+      mutableLargeBlobsSelectedCredentialID.set("cafe");
+      mutableLargeBlobsReadState.set({
+        phase: "error",
+        credentialIDHex: "cafe",
+        request: { sessionId: "session-1", credentialIdHex: "cafe" },
+        responseEnvelope: {
+          operationId: "large-blob-read-error",
+          sessionId: "session-1",
+          kind: OperationKind.OperationReadLargeBlob,
+          error: failureForCode(code),
+        } as LargeBlobReadEnvelope,
+        runtimeError: null,
+        failureReason: "response-error",
+      });
+
+      render(LargeBlobs);
+
+      const details = document.getElementById("large-blob-row-details-cafe") as HTMLElement;
+      const read = within(details).getByRole("button", { name: "Read large blob" });
+      expect(read).toBeEnabled();
+      await user.click(read);
+      expect(controllerMocks.readLargeBlob).toHaveBeenCalledWith("cafe");
+    },
+  );
 
   it("distinguishes a missing blob from a present zero-byte blob", () => {
     seedLargeBlobsEnvelopeForTest(listEnvelope());
@@ -469,28 +503,7 @@ describe("LargeBlobs", () => {
     expect(within(details).queryByRole("region", { name: "UTF-8 text" })).not.toBeInTheDocument();
   });
 
-  it("shows cleanup no-op as information with zero preview counts and no confirmation", () => {
-    seedLargeBlobsEnvelopeForTest(listEnvelope());
-    const preview = mutationPreview(MutationOperation.MutationGC, { noop: true });
-    const envelope = mutationEnvelope(preview);
-    mutableLargeBlobsMutation.set({
-      kind: "cleanup",
-      phase: "noop",
-      previewRequest: { sessionId: "session-1", dryRun: true },
-      previewEnvelope: envelope,
-    });
-
-    render(LargeBlobs);
-
-    const dialog = screen.getByRole("dialog", { name: "Large blob cleanup" });
-    expect(within(dialog).getAllByText("No unmatched large-blob entries need cleanup.")).toHaveLength(1);
-    expect(within(dialog).getByText("0 matched")).toBeInTheDocument();
-    expect(within(dialog).getByText("0 unmatched")).toBeInTheDocument();
-    expect(within(dialog).queryByText("Credential ID")).not.toBeInTheDocument();
-    expect(within(dialog).queryByRole("button", { name: "Confirm cleanup" })).not.toBeInTheDocument();
-  });
-
-  it("renders a destructive delete preview in an accessible alert dialog", () => {
+  it("shows delete review as an alert dialog and hides it during execution", async () => {
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     const preview = mutationPreview(MutationOperation.MutationDelete, {
       serializedLargeBlobArraySizeAfter: 4,
@@ -511,9 +524,19 @@ describe("LargeBlobs", () => {
     expect(within(dialog).getByText("10 bytes before")).toBeInTheDocument();
     expect(within(dialog).getByText("4 bytes after")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Confirm delete" })).toBeInTheDocument();
+
+    mutableLargeBlobsMutation.set({
+      kind: "delete",
+      phase: "executing",
+      credentialIDHex: "cafe",
+      previewRequest: { sessionId: "session-1", credentialIdHex: "cafe", dryRun: true },
+      previewEnvelope: envelope,
+    });
+    await tick();
+    expect(screen.queryByRole("alertdialog", { name: "Confirm delete" })).not.toBeInTheDocument();
   });
 
-  it("keeps the write action through execution and any execution error", async () => {
+  it("hides write during requests and restores its action after an execution error", async () => {
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     const preview = mutationPreview(MutationOperation.MutationCreate, {
       serializedLargeBlobArraySizeAfter: 24,
@@ -533,9 +556,20 @@ describe("LargeBlobs", () => {
       previewRequest,
       previewEnvelope: envelope,
     } as const;
-    mutableLargeBlobsMutation.set({ ...mutation, phase: "review" });
+    mutableLargeBlobsMutation.set({
+      kind: "write",
+      phase: "previewing",
+      credentialIDHex: "cafe",
+      draft: mutation.draft,
+      previewRequest,
+    });
 
     render(LargeBlobs);
+
+    expect(screen.queryByRole("dialog", { name: "Write large blob" })).not.toBeInTheDocument();
+
+    mutableLargeBlobsMutation.set({ ...mutation, phase: "review" });
+    await tick();
 
     const dialog = screen.getByRole("dialog", { name: "Write large blob" });
     expect(within(dialog).getByRole("button", { name: "Confirm write" })).toBeInTheDocument();
@@ -544,8 +578,7 @@ describe("LargeBlobs", () => {
 
     mutableLargeBlobsMutation.set({ ...mutation, phase: "executing" });
     await tick();
-    expect(within(dialog).getByRole("button", { name: "Confirm write" })).toBeDisabled();
-    expect(within(dialog).queryByRole("button", { name: "Preview write" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Write large blob" })).not.toBeInTheDocument();
 
     mutableLargeBlobsMutation.set({
       ...mutation,
@@ -562,12 +595,13 @@ describe("LargeBlobs", () => {
       validationError: null,
     });
     await tick();
-    expect(within(dialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: "Confirm write" })).toBeEnabled();
-    expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+    const reopenedDialog = screen.getByRole("dialog", { name: "Write large blob" });
+    expect(within(reopenedDialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
+    expect(within(reopenedDialog).getByRole("button", { name: "Confirm write" })).toBeEnabled();
+    expect(within(reopenedDialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
   });
 
-  it("keeps the cleanup action after any execution error", async () => {
+  it("hides cleanup during execution and restores its action after an error", async () => {
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     const preview = mutationPreview(MutationOperation.MutationGC, {
       serializedLargeBlobArraySizeAfter: 4,
@@ -592,6 +626,10 @@ describe("LargeBlobs", () => {
     expect(within(dialog).queryByText("Credential ID")).not.toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Confirm cleanup" })).toBeInTheDocument();
 
+    mutableLargeBlobsMutation.set({ ...mutation, phase: "executing" });
+    await tick();
+    expect(screen.queryByRole("alertdialog", { name: "Confirm cleanup" })).not.toBeInTheDocument();
+
     mutableLargeBlobsMutation.set({
       ...mutation,
       phase: "error",
@@ -606,9 +644,10 @@ describe("LargeBlobs", () => {
       failureReason: "response-error",
     });
     await tick();
-    expect(within(dialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: "Confirm cleanup" })).toBeEnabled();
-    expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+    const reopenedDialog = screen.getByRole("alertdialog", { name: "Confirm cleanup" });
+    expect(within(reopenedDialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
+    expect(within(reopenedDialog).getByRole("button", { name: "Confirm cleanup" })).toBeEnabled();
+    expect(within(reopenedDialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
   });
 
   it("keeps the delete confirmation action after any execution error", () => {

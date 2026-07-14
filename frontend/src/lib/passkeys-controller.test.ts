@@ -16,7 +16,7 @@ import { api } from "./api";
 import { failureForCode } from "./test-failure";
 import {
   completePasskeysInventoryLoad,
-  passkeysMutation,
+  failPasskeysInventoryLoadAtRuntime,
   resetPasskeysStateForTest,
 } from "./features/passkeys/state";
 import { resetSessionStateForTest, selectedSelector, sessionStatus } from "./features/session/state";
@@ -25,6 +25,7 @@ import {
   beginCredentialDelete,
   beginCredentialUpdate,
   buildCredentialUpdatePreviewRequest,
+  closePasskeysMutation,
   confirmCredentialDelete,
   confirmCredentialUpdate,
   normalizeCredentialUpdateForm,
@@ -134,6 +135,17 @@ afterEach(() => {
 });
 
 describe("passkeys mutation requests", () => {
+  it("allows update and delete from last-known-good rows after refresh fails", async () => {
+    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeTransportFailure));
+
+    expect(beginCredentialUpdate("cafe")).toBe(true);
+    closePasskeysMutation();
+
+    const remove = vi.spyOn(api, "deleteCredential").mockResolvedValue(deletePreviewEnvelope());
+    expect(await beginCredentialDelete("cafe")).toBe(true);
+    expect(remove).toHaveBeenCalledOnce();
+  });
+
   it("marks only normalized fields that actually changed", () => {
     const request = buildCredentialUpdatePreviewRequest(
       "session-1",

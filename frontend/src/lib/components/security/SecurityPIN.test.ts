@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -33,12 +33,17 @@ describe("SecurityPIN", () => {
     cleanup();
   });
 
-  it("clears local PIN fields before the operation settles", async () => {
+  it("keeps a blank dialog open after failure and closes after a successful retry", async () => {
     const user = userEvent.setup();
     let finishOperation!: (result: boolean) => void;
-    const onSetPIN = vi.fn(() => new Promise<boolean>((resolve) => {
-      finishOperation = resolve;
-    }));
+    const submittedPINs: string[] = [];
+    const onSetPIN = vi.fn(({ newPIN }: { newPIN: string }) => {
+      submittedPINs.push(newPIN);
+      if (submittedPINs.length > 1) return true;
+      return new Promise<boolean>((resolve) => {
+        finishOperation = resolve;
+      });
+    });
 
     render(SecurityPIN, {
       props: {
@@ -54,14 +59,26 @@ describe("SecurityPIN", () => {
     await user.type(screen.getByLabelText("Confirm new PIN"), "123456");
     await fireEvent.click(screen.getAllByRole("button", { name: "Set PIN" })[1]);
 
-    expect(onSetPIN).toHaveBeenCalledWith({ newPIN: "123456" });
-    expect(screen.queryByLabelText("New PIN")).not.toBeInTheDocument();
-
-    await fireEvent.click(screen.getByRole("button", { name: "Set PIN" }));
+    expect(onSetPIN).toHaveBeenCalledOnce();
+    expect(submittedPINs).toEqual(["123456"]);
     expect(screen.getByLabelText("New PIN")).toHaveValue("");
     expect(screen.getByLabelText("Confirm new PIN")).toHaveValue("");
 
-    finishOperation(true);
+    await act(async () => {
+      finishOperation(false);
+      await Promise.resolve();
+    });
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByLabelText("New PIN")).toHaveValue("");
+    expect(screen.getByLabelText("Confirm new PIN")).toHaveValue("");
+
+    await user.type(screen.getByLabelText("New PIN"), "654321");
+    await user.type(screen.getByLabelText("Confirm new PIN"), "654321");
+    await fireEvent.click(screen.getAllByRole("button", { name: "Set PIN" })[1]);
+
+    expect(submittedPINs).toEqual(["123456", "654321"]);
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(document.body.style.overflow).not.toBe("hidden"));
   });
 
   it("clears PIN fields when the dialog closes", async () => {

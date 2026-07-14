@@ -1113,6 +1113,28 @@ describe("controller lifecycle", () => {
     expect(serviceMocks.OpenSession).toHaveBeenCalledWith({ selector: "token-2" });
   });
 
+  it("keeps the current operation and screen state when its selected token is clicked again", async () => {
+    const token = device("token-1");
+    const { selectToken } = await import("./controller");
+    seedDevicesForTest([token]);
+    seedSelectionForTest("token-1", token, {
+      state: "running",
+      sessionId: "session-token-1",
+    });
+    seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
+
+    await selectToken("token-1");
+
+    expect(get(sessionStatus)).toMatchObject({
+      state: "running",
+      sessionId: "session-token-1",
+    });
+    expect(get(passkeysInventoryState).lastSuccessfulEnvelope).not.toBeNull();
+    expect(serviceMocks.Sessions).not.toHaveBeenCalled();
+    expect(serviceMocks.CloseAllSessions).not.toHaveBeenCalled();
+    expect(serviceMocks.OpenSession).not.toHaveBeenCalled();
+  });
+
   it("reports the concrete session-open failure when device selection cannot open", async () => {
     const token = device("token-1");
     const { selectToken } = await import("./controller");

@@ -7,9 +7,7 @@
   import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
   import * as Collapsible from "$lib/components/ui/collapsible/index.js";
   import { Separator } from "$lib/components/ui/separator/index.js";
-  import { Spinner } from "$lib/components/ui/spinner/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
-  import type { PasskeysMutationState } from "$lib/features/passkeys/state";
   import type { PasskeyCredentialRow } from "$lib/passkeys-presentation";
   import { sanitizedJson } from "$lib/redaction";
 
@@ -17,7 +15,6 @@
 
   type Props = {
     row: PasskeyCredentialRow;
-    mutation: PasskeysMutationState;
     updateDisabled: boolean;
     deleteDisabled: boolean;
     previewOnly: boolean;
@@ -27,7 +24,6 @@
 
   let {
     row,
-    mutation,
     updateDisabled,
     deleteDisabled,
     previewOnly,
@@ -35,13 +31,6 @@
     onDelete,
   }: Props = $props();
 
-  let deletingSelected = $derived(
-    Boolean(
-      mutation.kind === "delete" &&
-      mutation.credentialIDHex === row.id &&
-      mutation.phase === "previewing",
-    ),
-  );
   let rawJson = $derived(sanitizedJson(row.raw) ?? "null");
 
   function compactCredProtectLabel(level: number | null) {
@@ -89,14 +78,10 @@
           variant="destructive"
           size="sm"
           type="button"
-          disabled={deleteDisabled || deletingSelected}
+          disabled={deleteDisabled}
           onclick={() => onDelete(row.id)}
         >
-          {#if deletingSelected}
-            <Spinner data-icon="inline-start" aria-hidden="true" />
-          {:else}
-            <Trash2 data-icon="inline-start" aria-hidden="true" />
-          {/if}
+          <Trash2 data-icon="inline-start" aria-hidden="true" />
           {m.delete()}
         </Button>
       </div>

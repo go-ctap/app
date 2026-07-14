@@ -6,7 +6,6 @@
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { Spinner } from "$lib/components/ui/spinner/index.js";
   import { credentialDeleteOutput } from "$lib/ctapkit-results";
   import type { PasskeysMutationState } from "$lib/features/passkeys/state";
   import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
@@ -25,19 +24,15 @@
   let confirmationOpen = $derived(
     mutation.kind === "delete" && (
       mutation.phase === "review"
-      || mutation.phase === "executing"
       || (mutation.phase === "error" && mutation.failedPhase === "executing")
     ),
   );
   let previewErrorOpen = $derived(
     mutation.kind === "delete" && mutation.phase === "error" && mutation.failedPhase === "previewing",
   );
-  let busy = $derived(
-    mutation.kind === "delete" && mutation.phase === "executing",
-  );
   let output = $derived.by(() => {
     if (mutation.kind !== "delete") return null;
-    if (mutation.phase === "review" || mutation.phase === "executing") {
+    if (mutation.phase === "review") {
       return credentialDeleteOutput(mutation.previewEnvelope);
     }
     if (mutation.phase === "error" && mutation.previewEnvelope) {
@@ -68,12 +63,11 @@
   }
 
   function handleOpenChange(next: boolean) {
-    if (!next && !busy) onClose();
+    if (!next) onClose();
   }
 
   function handleAction(event: MouseEvent) {
     event.preventDefault();
-    if (busy || mutation.kind !== "delete") return;
     void onConfirm();
   }
 </script>
@@ -105,7 +99,6 @@
 <AlertDialog.Root open={confirmationOpen} onOpenChange={handleOpenChange}>
   {#if mutation.kind === "delete" && (
     mutation.phase === "review"
-    || mutation.phase === "executing"
     || (mutation.phase === "error" && mutation.failedPhase === "executing")
   )}
     <AlertDialog.Content class="passkey-delete-dialog">
@@ -159,13 +152,11 @@
       {/if}
 
       <AlertDialog.Footer>
-        <AlertDialog.Cancel disabled={busy} onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
+        <AlertDialog.Cancel onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
         <AlertDialog.Action
           variant="destructive"
-          disabled={busy}
           onclick={handleAction}
         >
-          {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
           {m.confirm_delete()}
         </AlertDialog.Action>
       </AlertDialog.Footer>

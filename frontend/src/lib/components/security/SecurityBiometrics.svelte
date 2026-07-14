@@ -68,8 +68,6 @@
   let enrollmentsLoading = $derived(
     enrollmentState.phase === "loading" || enrollmentState.phase === "refreshing",
   );
-  let enrollmentActionDisabled = $derived(disabled || !bio.supported);
-
   let renameOpen = $state(false);
   let renameTarget = $state<BioEnrollmentRecord | null>(null);
   let friendlyName = $state("");
@@ -172,23 +170,25 @@
     <Card.Title>
       <h2 id="security-biometric-enrollments-title" class="security-card-title">{m.security_biometric_enrollments()}</h2>
     </Card.Title>
-    <Card.Action class="enrollment-actions">
-      <Button type="button" disabled={enrollmentActionDisabled} onclick={() => void onEnroll()}>
-        <Fingerprint data-icon="inline-start" aria-hidden="true" />
-        {m.security_enroll_biometric()}
-      </Button>
-      {#if bio.configured !== false}
-        <Button
-          variant="outline"
-          type="button"
-          disabled={loadDisabled || enrollmentsLoading}
-          onclick={() => void onLoadEnrollments()}
-        >
-          <RefreshCw data-icon="inline-start" aria-hidden="true" />
-          {m.security_load_enrollments()}
+    {#if bio.supported && enrollmentState.phase !== "unsupported"}
+      <Card.Action class="enrollment-actions">
+        <Button type="button" {disabled} onclick={() => void onEnroll()}>
+          <Fingerprint data-icon="inline-start" aria-hidden="true" />
+          {m.security_enroll_biometric()}
         </Button>
-      {/if}
-    </Card.Action>
+        {#if bio.configured !== false}
+          <Button
+            variant="outline"
+            type="button"
+            disabled={loadDisabled || enrollmentsLoading}
+            onclick={() => void onLoadEnrollments()}
+          >
+            <RefreshCw data-icon="inline-start" aria-hidden="true" />
+            {m.security_load_enrollments()}
+          </Button>
+        {/if}
+      </Card.Action>
+    {/if}
   </Card.Header>
   <Card.Content class="enrollment-content">
     {#if !bio.supported || enrollmentState.phase === "unsupported"}
@@ -202,11 +202,6 @@
         variant="compact"
       >
         {#snippet icon()}<Fingerprint aria-hidden="true" />{/snippet}
-        {#snippet actions()}
-          <Button type="button" disabled={enrollmentActionDisabled} onclick={() => void onEnroll()}>
-            {m.security_enroll_biometric()}
-          </Button>
-        {/snippet}
       </EmptyState>
     {:else}
       {#if enrollmentsLoading && !enrollments}
@@ -290,11 +285,6 @@
           variant="compact"
         >
           {#snippet icon()}<Fingerprint aria-hidden="true" />{/snippet}
-          {#snippet actions()}
-            <Button type="button" disabled={loadDisabled} onclick={() => void onLoadEnrollments()}>
-              {m.security_load_enrollments()}
-            </Button>
-          {/snippet}
         </EmptyState>
       {/if}
     {/if}

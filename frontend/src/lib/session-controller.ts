@@ -188,9 +188,18 @@ export async function bootstrap() {
 }
 
 export async function selectToken(selector: string) {
+  const requestedSelector = selector.trim();
+  const currentSession = get(sessionStatus);
+  if (
+    requestedSelector
+    && requestedSelector === get(selectedSelector).trim()
+    && (currentSession.state === "ready" || currentSession.state === "running")
+    && currentSession.sessionId
+  ) return;
+
   clearWorkbenchScreenCaches();
   try {
-    if (selector.trim()) {
+    if (requestedSelector) {
       sessionStatus.set(idleSessionStatus("opening"));
     }
     const discovery = await selectFromDevices(get(deviceStore), selector);

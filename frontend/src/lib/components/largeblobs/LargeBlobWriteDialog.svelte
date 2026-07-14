@@ -6,7 +6,6 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import * as Field from "$lib/components/ui/field/index.js";
-  import { Spinner } from "$lib/components/ui/spinner/index.js";
   import { Textarea } from "$lib/components/ui/textarea/index.js";
   import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
   import { largeBlobMutationPreview } from "$lib/ctapkit-results";
@@ -43,10 +42,9 @@
     onClose,
   }: Props = $props();
 
-  let open = $derived(mutation.kind === "write");
-  let busy = $derived(
+  let open = $derived(
     mutation.kind === "write"
-      && (mutation.phase === "previewing" || mutation.phase === "executing"),
+      && (mutation.phase === "editing" || mutation.phase === "review" || mutation.phase === "error"),
   );
   let fieldsLocked = $derived(
     mutation.kind === "write"
@@ -55,7 +53,7 @@
   );
   let preview = $derived.by(() => {
     if (mutation.kind !== "write") return null;
-    if (mutation.phase === "review" || mutation.phase === "executing") {
+    if (mutation.phase === "review") {
       return largeBlobMutationPreview(mutation.previewEnvelope);
     }
     if (mutation.phase === "error") {
@@ -103,12 +101,11 @@
   }
 
   function handleOpenChange(next: boolean) {
-    if (!next && !busy) onClose();
+    if (!next) onClose();
   }
 
   function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
-    if (mutation.kind !== "write" || busy) return;
     if (mutation.phase === "review") {
       void onConfirm();
       return;
@@ -123,8 +120,8 @@
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
-  {#if mutation.kind === "write"}
-    <Dialog.Content class="large-blob-write-dialog" showCloseButton={!busy}>
+  {#if open && mutation.kind === "write"}
+    <Dialog.Content class="large-blob-write-dialog">
       <Dialog.Header>
         <Dialog.Title>{m.large_blob_write()}</Dialog.Title>
       </Dialog.Header>
@@ -204,15 +201,13 @@
         {/if}
 
         <Dialog.Footer>
-          <Button type="submit" disabled={busy}>
-            {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
+          <Button type="submit">
             {mutation.phase === "review"
-              || mutation.phase === "executing"
               || (mutation.phase === "error" && mutation.failedPhase === "executing")
               ? m.confirm_write()
               : m.preview_write()}
           </Button>
-          <Button variant="outline" type="button" disabled={busy} onclick={onClose}>{m.cancel()}</Button>
+          <Button variant="outline" type="button" onclick={onClose}>{m.cancel()}</Button>
         </Dialog.Footer>
       </form>
     </Dialog.Content>

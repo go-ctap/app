@@ -4,7 +4,6 @@
   import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { Spinner } from "$lib/components/ui/spinner/index.js";
   import type { SecurityMutationState } from "$lib/features/security/state";
   import type { ActiveOperation } from "$lib/features/workbench/state";
 
@@ -23,9 +22,13 @@
 
   let { mutation, activeOperation, disabled, onConfirm, onPreview, onClose, onCancelOperation }: Props = $props();
 
-  let open = $derived(mutation.kind !== "idle" && mutation.phase !== "editing");
+  let enrollmentRunning = $derived(
+    mutation.kind === "bioEnroll" && mutation.phase === "executing",
+  );
+  let open = $derived(
+    mutation.phase === "review" || mutation.phase === "error" || enrollmentRunning,
+  );
   let destructive = $derived(mutation.kind === "bioRemove" || mutation.kind === "reset");
-  let busy = $derived(mutation.phase === "previewing" || mutation.phase === "executing");
   let previewFailed = $derived(
     mutation.phase === "error" && mutation.failedPhase === "previewing",
   );
@@ -70,10 +73,6 @@
     return previewFailed ? previewLabel() : confirmationLabel();
   }
 
-  function busyLabel() {
-    return mutation.phase === "previewing" ? previewLabel() : confirmationLabel();
-  }
-
   function runPrimary(event?: Event) {
     event?.preventDefault();
     if (mutation.phase === "review" || executionFailed) void onConfirm();
@@ -81,7 +80,11 @@
   }
 
   function handleOpenChange(next: boolean) {
-    if (!next && !busy) onClose();
+    if (!next) onClose();
+  }
+
+  function preventEnrollmentDismiss(event: Event) {
+    if (enrollmentRunning) event.preventDefault();
   }
 </script>
 
@@ -101,23 +104,21 @@
       <SecurityMutationDetails {mutation} {activeOperation} />
 
       <AlertDialog.Footer>
-        <AlertDialog.Cancel disabled={busy} onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
-        {#if busy}
-          <AlertDialog.Action variant="destructive" disabled>
-            <Spinner data-icon="inline-start" aria-hidden="true" />
-            {busyLabel()}
-          </AlertDialog.Action>
-        {:else}
-          <AlertDialog.Action variant="destructive" disabled={disabled} onclick={runPrimary}>
-            {primaryLabel()}
-          </AlertDialog.Action>
-        {/if}
+        <AlertDialog.Cancel onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
+        <AlertDialog.Action variant="destructive" disabled={disabled} onclick={runPrimary}>
+          {primaryLabel()}
+        </AlertDialog.Action>
       </AlertDialog.Footer>
     </AlertDialog.Content>
   </AlertDialog.Root>
 {:else}
   <Dialog.Root {open} onOpenChange={handleOpenChange}>
-    <Dialog.Content class="security-mutation-dialog" showCloseButton={!busy}>
+    <Dialog.Content
+      class="security-mutation-dialog"
+      showCloseButton={!enrollmentRunning}
+      onEscapeKeydown={preventEnrollmentDismiss}
+      onInteractOutside={preventEnrollmentDismiss}
+    >
       <Dialog.Header>
         <Dialog.Title>{title()}</Dialog.Title>
         {#if description()}
@@ -128,15 +129,10 @@
       <SecurityMutationDetails {mutation} {activeOperation} />
 
       <Dialog.Footer>
-        {#if mutation.kind === "bioEnroll" && mutation.phase === "executing"}
+        {#if enrollmentRunning}
           <Button variant="outline" type="button" onclick={() => void onCancelOperation()}>
             <Fingerprint data-icon="inline-start" aria-hidden="true" />
             {m.security_cancel_enrollment()}
-          </Button>
-        {:else if busy}
-          <Button type="button" disabled>
-            <Spinner data-icon="inline-start" aria-hidden="true" />
-            {busyLabel()}
           </Button>
         {:else}
           <Button type="button" disabled={disabled} onclick={runPrimary}>

@@ -24,11 +24,7 @@ export type {
 
 export type LargeBlobsInventoryPhase = "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";
 
-/**
- * The latest successful list is retained separately from the latest response.
- * A failed forced refresh can therefore keep its last-known-good rows visible
- * while marking every action as stale.
- */
+/** The latest successful list stays visible when a later refresh fails. */
 export type LargeBlobsInventoryState = {
   phase: LargeBlobsInventoryPhase;
   lastSuccessfulEnvelope: LargeBlobListEnvelope | null;
@@ -147,7 +143,7 @@ export type LargeBlobMutationState =
       previewRequest: LargeBlobMutationRequest;
     })
   | (DeleteMutationBase & {
-      phase: "review" | "noop";
+      phase: "review";
       previewRequest: LargeBlobMutationRequest;
       previewEnvelope: LargeBlobMutationEnvelope;
     })
@@ -162,7 +158,7 @@ export type LargeBlobMutationState =
       previewRequest: LargeBlobGarbageCollectRequest;
     })
   | (CleanupMutationBase & {
-      phase: "review" | "noop";
+      phase: "review";
       previewRequest: LargeBlobGarbageCollectRequest;
       previewEnvelope: LargeBlobMutationEnvelope;
     })

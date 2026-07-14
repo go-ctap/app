@@ -11,7 +11,6 @@ import {
   largeBlobListReport,
 } from "./ctapkit-results.js";
 import type {
-  LargeBlobMutationState,
   LargeBlobsInventoryState,
   LargeBlobsStatusFilter,
 } from "./features/largeblobs/state.js";
@@ -41,7 +40,6 @@ export type LargeBlobsPresentationInput = {
   sessionBusy: boolean;
   sessionReady: boolean;
   inventoryState: LargeBlobsInventoryState;
-  mutation: LargeBlobMutationState;
   query: string;
   statusFilter: LargeBlobsStatusFilter;
   selectedCredentialID: string;
@@ -126,7 +124,7 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
   const selectedRow = allRows.find((row) => row.id === selectedCredentialID) ?? null;
   const loading = input.inventoryState.phase === "loading" || input.inventoryState.phase === "refreshing";
   const stale = largeBlobsInventoryIsStale(input.inventoryState);
-  const actionsBlocked = stale || loading || input.sessionBusy || !input.sessionReady;
+  const actionsBlocked = loading || input.sessionBusy || !input.sessionReady;
   const supported = Boolean(report?.support.largeBlobs);
   const selectedKeyAvailable = Boolean(selectedRow?.largeBlobKeyAvailable);
   const device = input.selectedDevice ?? report?.device ?? null;
@@ -161,7 +159,6 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
     selectedCredentialID,
     emptyInventory: Boolean(report && allRows.length === 0),
     emptyFilteredResult: Boolean(report && allRows.length > 0 && rows.length === 0),
-    mutation: input.mutation,
     selectedDeviceName: device ? deviceName(device) : m.authenticator(),
     supportItems: [
       { label: m.matrix_name_large_blobs_command(), value: report?.support.largeBlobs ?? false },

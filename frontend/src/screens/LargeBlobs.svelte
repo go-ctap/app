@@ -54,7 +54,6 @@
     sessionBusy: $sessionBusy,
     sessionReady: $sessionStatus.state === "ready" && Boolean($sessionStatus.sessionId),
     inventoryState: $largeBlobsInventoryState,
-    mutation: $largeBlobsMutation,
     query: $largeBlobsQuery,
     statusFilter: $largeBlobsStatusFilter,
     selectedCredentialID: $largeBlobsSelectedCredentialID,

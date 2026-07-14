@@ -190,7 +190,7 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
   const support = report?.support;
   const loading = input.inventoryState.phase === "loading" || input.inventoryState.phase === "refreshing";
   const stale = passkeysInventoryIsStale(input.inventoryState);
-  const mutationsBlocked = stale || loading || input.sessionBusy || !input.sessionReady;
+  const mutationsBlocked = loading || input.sessionBusy || !input.sessionReady;
 
   return {
     selector: input.selectedSelector,
