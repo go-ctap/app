@@ -74,13 +74,6 @@
     return `passkey-row-details-${credentialID}`;
   }
 
-  function credProtectLabel(row: PasskeyCredentialRow) {
-    if (row.credProtectLevel === 1) return m.cred_protect_level_1();
-    if (row.credProtectLevel === 2) return m.cred_protect_level_2();
-    if (row.credProtectLevel === 3) return m.cred_protect_level_3();
-    return m.cred_protect_not_reported();
-  }
-
   function compactCredProtectLabel(row: PasskeyCredentialRow) {
     return row.credProtectLevel ? `UV ${row.credProtectLevel}` : "UV —";
   }
@@ -125,15 +118,13 @@
         items={filters}
       >
         <Select.Trigger aria-label={m.status()}>{currentFilterLabel}</Select.Trigger>
-        <Select.Portal>
-          <Select.Content side="bottom" align="end" sideOffset={6}>
-            <Select.Group>
-              {#each filters as filter (filter.value)}
-                <Select.Item value={filter.value} label={filter.label}>{filter.label}</Select.Item>
-              {/each}
-            </Select.Group>
-          </Select.Content>
-        </Select.Portal>
+        <Select.Content side="bottom" align="end" sideOffset={6}>
+          <Select.Group>
+            {#each filters as filter (filter.value)}
+              <Select.Item value={filter.value} label={filter.label}>{filter.label}</Select.Item>
+            {/each}
+          </Select.Group>
+        </Select.Content>
       </Select.Root>
 
       <Button
@@ -261,8 +252,8 @@
               <Table.Cell class="passkeys-table-protection">
                 <Badge
                   variant="outline"
-                  aria-label={credProtectLabel(row)}
-                  title={credProtectLabel(row)}
+                  aria-label={row.credProtect}
+                  title={row.credProtect}
                 >
                   {compactCredProtectLabel(row)}
                 </Badge>

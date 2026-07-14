@@ -17,8 +17,7 @@ import type {
 } from "./features/largeblobs/state.js";
 import { largeBlobsInventoryIsStale } from "./features/largeblobs/state.js";
 import { deviceName } from "./format.js";
-import { failureMessage, isCanceledFailure, isRetryableFailure } from "./failure.js";
-import type { SessionStatus } from "./session-model.js";
+import { failureMessage } from "./failure.js";
 
 export type LargeBlobCredentialRow = {
   id: string;
@@ -42,19 +41,13 @@ export type LargeBlobsPresentationInput = {
   sessionBusy: boolean;
   sessionReady: boolean;
   inventoryState: LargeBlobsInventoryState;
-  mutation?: LargeBlobMutationState;
-  query?: string;
-  statusFilter?: LargeBlobsStatusFilter;
-  selectedCredentialID?: string;
+  mutation: LargeBlobMutationState;
+  query: string;
+  statusFilter: LargeBlobsStatusFilter;
+  selectedCredentialID: string;
 };
 
 export type LargeBlobsPresentation = ReturnType<typeof buildLargeBlobsPresentation>;
-
-export function canRetryLargeBlobMutation(mutation: LargeBlobMutationState, session: SessionStatus) {
-  if (mutation.phase !== "error" || session.state !== "ready" || !session.sessionId) return false;
-  const error = mutation.runtimeError ?? mutation.responseEnvelope?.error;
-  return isRetryableFailure(error);
-}
 
 function displayValue(value: string | null | undefined) {
   const text = value?.trim() ?? "";
@@ -124,12 +117,12 @@ export function findLargeBlobCredential(report: ListReport | null, credentialIDH
 }
 
 export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) {
-  const query = input.query ?? "";
-  const statusFilter = input.statusFilter ?? "all";
+  const query = input.query;
+  const statusFilter = input.statusFilter;
   const report = largeBlobListReport(input.inventoryState.lastSuccessfulEnvelope);
   const allRows = buildLargeBlobRows(report);
   const rows = buildLargeBlobRows(report, query, statusFilter);
-  const selectedCredentialID = input.selectedCredentialID ?? "";
+  const selectedCredentialID = input.selectedCredentialID;
   const selectedRow = allRows.find((row) => row.id === selectedCredentialID) ?? null;
   const loading = input.inventoryState.phase === "loading" || input.inventoryState.phase === "refreshing";
   const stale = largeBlobsInventoryIsStale(input.inventoryState);
@@ -137,7 +130,6 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
   const supported = Boolean(report?.support.largeBlobs);
   const selectedKeyAvailable = Boolean(selectedRow?.largeBlobKeyAvailable);
   const device = input.selectedDevice ?? report?.device ?? null;
-  const mutation = input.mutation ?? ({ kind: "idle", phase: "idle" } as const);
 
   return {
     selector: input.selectedSelector,
@@ -149,8 +141,6 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
       ?? (input.inventoryState.phase === "error" && input.inventoryState.responseEnvelope
         ? m.operation_missing_result()
         : null),
-    canceled: isCanceledFailure(input.inventoryState.runtimeError)
-      || isCanceledFailure(input.inventoryState.responseEnvelope?.error),
     unsupported: report ? !report.support.largeBlobs : input.inventoryState.phase === "unsupported",
     reloadDisabled: loading || input.sessionBusy,
     actionsBlocked,
@@ -171,7 +161,7 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
     selectedCredentialID,
     emptyInventory: Boolean(report && allRows.length === 0),
     emptyFilteredResult: Boolean(report && allRows.length > 0 && rows.length === 0),
-    mutation,
+    mutation: input.mutation,
     selectedDeviceName: device ? deviceName(device) : m.authenticator(),
     supportItems: [
       { label: m.matrix_name_large_blobs_command(), value: report?.support.largeBlobs ?? false },

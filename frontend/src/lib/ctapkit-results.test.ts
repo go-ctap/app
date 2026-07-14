@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 
+import { AttestationStatementFormatIdentifier } from "../../bindings/github.com/go-ctap/ctap/attestation";
+import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/credential";
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
-import { OperationKind, type InspectResult } from "../../bindings/github.com/go-ctap/kit/model";
+import {
+  GetAssertionOutput,
+  MakeCredentialOutput,
+  OperationKind,
+  type InspectResult,
+} from "../../bindings/github.com/go-ctap/kit/model";
 import {
   AuthenticatorConfigOperation,
   BioModality,
@@ -15,27 +22,32 @@ import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { MutationOperation } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { PreviewMode } from "../../bindings/github.com/go-ctap/kit/model/safety";
-import type {
-  AuthenticatorConfigEnvelope,
-  BioEnrollEnvelope,
-  BioListEnvelope,
-  BioMutationEnvelope,
-  BioSensorEnvelope,
-  ConfigStatusEnvelope,
-  CredentialDeleteEnvelope,
-  CredentialUpdateEnvelope,
-  InspectEnvelope,
+import {
   GetAssertionEnvelope,
-  LargeBlobListEnvelope,
-  LargeBlobMutationEnvelope,
-  LargeBlobReadEnvelope,
   MakeCredentialEnvelope,
-  PINEnvelope,
-  ResetFactoryEnvelope,
+  type AuthenticatorConfigEnvelope,
+  type BioEnrollEnvelope,
+  type BioListEnvelope,
+  type BioMutationEnvelope,
+  type BioSensorEnvelope,
+  type ConfigStatusEnvelope,
+  type CredentialDeleteEnvelope,
+  type CredentialUpdateEnvelope,
+  type InspectEnvelope,
+  type LargeBlobListEnvelope,
+  type LargeBlobMutationEnvelope,
+  type LargeBlobReadEnvelope,
+  type PINEnvelope,
+  type ResetFactoryEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
+import {
+  GetAssertionResult,
+  MakeCredentialPreview,
+  MakeCredentialResult,
+} from "../../bindings/github.com/go-ctap/kit/model/webauthn";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
-import { failureForCode } from "./failure";
+import { failureForCode } from "./test-failure";
 
 import {
   authenticatorConfigPreview,
@@ -104,7 +116,7 @@ describe("ctapkit result extractors", () => {
     expect(bioSensorReport(envelope)).toBe(report);
   });
 
-  it("extracts config status and biometric inventory only from successful matching envelopes", () => {
+  it("extracts config status and biometric inventory only from successful envelopes", () => {
     const status = {
       kind: OperationKind.OperationConfigStatus,
       result: {
@@ -129,7 +141,6 @@ describe("ctapkit result extractors", () => {
 
     expect(configStatusReport(status)).toBe(status.result!.report);
     expect(bioListReport(list)).toBe(list.result!.report);
-    expect(bioListReport(status)).toBeNull();
 
     status.error = failureForCode(Code.CodeInternalError);
     list.error = failureForCode(Code.CodeInternalError);
@@ -266,7 +277,7 @@ describe("ctapkit result extractors", () => {
     expect(resetFactoryResult(reset)).toBeNull();
   });
 
-  it("extracts typed large blob list and read reports only from successful matching envelopes", () => {
+  it("extracts typed large blob list and read reports only from successful envelopes", () => {
     const list = {
       kind: OperationKind.OperationListLargeBlobs,
       result: {
@@ -295,7 +306,6 @@ describe("ctapkit result extractors", () => {
 
     expect(largeBlobListReport(list)).toBe(list.result!.report);
     expect(largeBlobReadReport(read)).toBe(read.result!.report);
-    expect(largeBlobReadReport(list)).toBeNull();
 
     list.error = failureForCode(Code.CodeInternalError);
     read.error = failureForCode(Code.CodeInternalError);
@@ -375,18 +385,18 @@ describe("ctapkit result extractors", () => {
     expect(credentialDeleteResult(deletion)?.deviceId).toBe("dev-1");
   });
 
-  it("extracts MakeCredential preview and result only from a successful matching typed envelope", () => {
-    const preview = {
+  it("extracts MakeCredential preview and completed result from its typed envelope", () => {
+    const preview = new MakeCredentialPreview({
       device,
       rp: { id: "example.com", name: "Example" },
       user: { id: "AQ==", name: "alice", displayName: "Alice" },
-      pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+      pubKeyCredParams: [{ type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 }],
       warnings: [],
-    };
-    const result = {
+    });
+    const result = new MakeCredentialResult({
       deviceId: "dev-1",
       rpID: "example.com",
-      fmt: "packed",
+      fmt: AttestationStatementFormatIdentifier.AttestationStatementFormatIdentifierPacked,
       credentialIDHex: "cafe",
       publicKeyCOSEHex: "a501",
       authenticatorDataHex: "0102",
@@ -395,21 +405,16 @@ describe("ctapkit result extractors", () => {
       userPresent: true,
       userVerified: false,
       enterpriseAttestation: false,
-    };
-    const envelope = {
+    });
+    const envelope = new MakeCredentialEnvelope({
+      operationId: "make-1",
+      sessionId: "session-1",
       kind: OperationKind.OperationMakeCredential,
-      result: { preview, result },
-    } as unknown as MakeCredentialEnvelope;
+      result: new MakeCredentialOutput({ preview, result }),
+    });
 
     expect(makeCredentialPreview(envelope)).toBe(preview);
     expect(makeCredentialResult(envelope)).toBe(result);
-    expect(makeCredentialPreview({
-      ...envelope,
-      kind: OperationKind.OperationGetAssertion,
-    } as unknown as MakeCredentialEnvelope)).toBeNull();
-    expect(makeCredentialResult({
-      kind: OperationKind.OperationMakeCredential,
-    } as MakeCredentialEnvelope)).toBeNull();
 
     envelope.error = failureForCode(Code.CodeCredentialCreationDenied);
     expect(makeCredentialPreview(envelope)).toBeNull();
@@ -421,31 +426,23 @@ describe("ctapkit result extractors", () => {
     expect(makeCredentialResult(envelope)).toBeNull();
   });
 
-  it("extracts GetAssertion result only when kind, envelope, and nested result all match", () => {
-    const result = {
+  it("extracts GetAssertion result from its successful typed envelope", () => {
+    const result = new GetAssertionResult({
       deviceId: "dev-1",
       rpID: "example.com",
       assertions: [],
-    };
-    const envelope = {
+    });
+    const envelope = new GetAssertionEnvelope({
+      operationId: "get-1",
+      sessionId: "session-1",
       kind: OperationKind.OperationGetAssertion,
-      result: { result },
-    } as unknown as GetAssertionEnvelope;
+      result: new GetAssertionOutput({ result }),
+    });
 
     expect(getAssertionResult(envelope)).toBe(result);
-    expect(getAssertionResult({
-      ...envelope,
-      kind: OperationKind.OperationMakeCredential,
-    } as unknown as GetAssertionEnvelope)).toBeNull();
-    expect(getAssertionResult({
-      kind: OperationKind.OperationGetAssertion,
-    } as GetAssertionEnvelope)).toBeNull();
-    expect(getAssertionResult({
-      kind: OperationKind.OperationGetAssertion,
-      result: { result: null },
-    } as unknown as GetAssertionEnvelope)).toBeNull();
 
     envelope.error = failureForCode(Code.CodeAssertionDenied);
     expect(getAssertionResult(envelope)).toBeNull();
+    expect(getAssertionResult(null)).toBeNull();
   });
 });

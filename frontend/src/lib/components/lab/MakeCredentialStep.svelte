@@ -18,7 +18,8 @@
     LabState,
     MakeCredentialDraft,
   } from "$lib/features/lab/state";
-  import { failureMessage as localizeFailure } from "$lib/failure";
+  import { failureMessage as localizeFailure, isIncorrectPINFailure } from "$lib/failure";
+  import { validateMakeCredentialDraft } from "$lib/lab-input";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -40,7 +41,6 @@
     onRegenerateChallenge: () => void;
     onPreview: () => void | Promise<boolean>;
     onConfirm: () => void | Promise<boolean>;
-    onRetry: () => void | Promise<boolean>;
     onEdit: () => void;
     onNewRun: () => void;
     onHandoff: () => void;
@@ -54,7 +54,6 @@
     onRegenerateChallenge,
     onPreview,
     onConfirm,
-    onRetry,
     onEdit,
     onNewRun,
     onHandoff,
@@ -83,14 +82,18 @@
     if (step.phase !== "editing") return step.previewRequest;
     return null;
   });
-  let validationErrors = $derived(step.validation.errors);
-  let validationWarnings = $derived(step.validation.warnings);
+  let validation = $derived(validateMakeCredentialDraft(draft));
+  let validationErrors = $derived(validation.errors);
+  let validationWarnings = $derived(validation.warnings);
   let failureMessage = $derived.by(() => {
     if (step.phase !== "error") return null;
-    if (step.failureReason === "missing-preview") return m.lab_missing_preview();
-    if (step.failureReason === "missing-result") return m.lab_missing_result();
     return localizeFailure(step.runtimeError) ?? operationError(step.responseEnvelope) ?? m.lab_request_failed();
   });
+  let incorrectPIN = $derived(
+    step.phase === "error" && Boolean(step.previewEnvelope) &&
+    isIncorrectPINFailure(step.responseEnvelope?.error),
+  );
+  let previewFailed = $derived(step.phase === "error" && step.request === null);
 
   function phaseLabel() {
     if (phase === "previewing") return m.lab_phase_previewing();
@@ -355,8 +358,8 @@
         <MakeCredentialReview {preview} {reviewedRequest} />
       {/if}
 
-      {#if result}
-        <MakeCredentialResult {result} {responseEnvelope} {runtimeError} />
+      {#if result && responseEnvelope}
+        <MakeCredentialResult {responseEnvelope} />
       {/if}
     </form>
   </Card.Content>
@@ -404,14 +407,17 @@
         <Pencil data-icon="inline-start" aria-hidden="true" />
         {m.lab_edit()}
       </Button>
-      <Button variant="outline" type="button" {disabled} onclick={onNewRun}>
-        <RotateCcw data-icon="inline-start" aria-hidden="true" />
-        {m.lab_new_run()}
-      </Button>
-      <Button type="button" {disabled} onclick={onRetry}>
-        <RefreshCw data-icon="inline-start" aria-hidden="true" />
-        {m.lab_retry_preview()}
-      </Button>
+      {#if incorrectPIN}
+        <Button type="button" {disabled} onclick={onConfirm}>
+          <Send data-icon="inline-start" aria-hidden="true" />
+          {m.lab_confirm()}
+        </Button>
+      {:else if previewFailed}
+        <Button type="button" {disabled} onclick={onPreview}>
+          <WandSparkles data-icon="inline-start" aria-hidden="true" />
+          {m.lab_preview()}
+        </Button>
+      {/if}
     {/if}
   </Card.Footer>
 </Card.Root>

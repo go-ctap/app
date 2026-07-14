@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { toast } from "svelte-sonner";
 
-import { Code, type Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import {
   AlwaysUVTarget,
   type StatusReport,
@@ -65,7 +65,7 @@ import {
 } from "./features/security/state.js";
 import { selectedSelector, sessionStatus } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
-import { failureForCode, failureMessage, runtimeFailureFrom } from "./failure.js";
+import { failureMessage, internalFailure, isIncorrectPINFailure, runtimeFailureFrom } from "./failure.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
 import { rediscoverAfterFactoryReset } from "./session-controller.js";
 import {
@@ -84,29 +84,12 @@ type PINChangeInput = { currentPIN: string; newPIN: string };
 type PreviewFailureReason = "response-error" | "runtime-error" | "missing-preview";
 type ExecuteFailureReason = "response-error" | "runtime-error" | "missing-result";
 
-function retryAction(action: () => Promise<unknown>) {
-  return async () => {
-    await action();
-  };
-}
-
-function missingOperationOutput() {
-  return failureForCode(Code.CodeInternalError);
-}
-
 function currentStatusReport(): StatusReport | null {
   return configStatusReport(get(securityStatus).lastSuccessfulEnvelope);
 }
 
-function sessionIdForMutation(label: string): string | null {
-  try {
-    return selectedSessionId();
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    summarizeOperationFailure(label, runtimeError);
-    applyInvalidSessionError(runtimeError);
-    return null;
-  }
+function sessionIdForMutation(): string | null {
+  return get(sessionStatus).sessionId ?? null;
 }
 
 function canAutoLoadSecurity() {
@@ -135,16 +118,15 @@ export async function loadSecurityStatus(): Promise<boolean> {
     if (envelope.error) {
       failSecurityStatusLoadWithResponse(envelope);
     } else if (!report) {
-      const missing = missingOperationOutput();
+      const missing = internalFailure();
       failSecurityStatusLoadWithContractError(envelope, missing);
-      summarizeOperationContractFailure(m.security_status_operation(), missing, retryAction(loadSecurityStatus));
-      applyInvalidSessionError(missing);
+      summarizeOperationContractFailure(m.security_status_operation(), missing);
       return false;
     } else {
-      completeSecurityStatusLoad(envelope, new Date().toISOString());
+      completeSecurityStatusLoad(envelope);
     }
 
-    summarizeEnvelope(m.security_status_operation(), envelope, retryAction(loadSecurityStatus));
+    summarizeEnvelope(m.security_status_operation(), envelope);
     applyInvalidSessionError(envelope.error);
     if (envelope.error || !report) return false;
 
@@ -157,7 +139,7 @@ export async function loadSecurityStatus(): Promise<boolean> {
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     failSecurityStatusLoadAtRuntime(runtimeError);
-    summarizeOperationFailure(m.security_status_operation(), runtimeError, retryAction(loadSecurityStatus));
+    summarizeOperationFailure(m.security_status_operation(), runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -178,22 +160,21 @@ export async function loadSecurityBioSensor(sessionId = ""): Promise<boolean> {
     if (envelope.error) {
       failSecurityBioSensorLoadWithResponse(envelope);
     } else if (!sensor) {
-      const missing = missingOperationOutput();
+      const missing = internalFailure();
       failSecurityBioSensorLoadWithContractError(envelope, missing);
-      summarizeOperationContractFailure(m.security_bio_sensor_operation(), missing, retryAction(loadSecurityBioSensor));
-      applyInvalidSessionError(missing);
+      summarizeOperationContractFailure(m.security_bio_sensor_operation(), missing);
       return false;
     } else {
-      completeSecurityBioSensorLoad(envelope, new Date().toISOString());
+      completeSecurityBioSensorLoad(envelope);
     }
 
-    summarizeEnvelope(m.security_bio_sensor_operation(), envelope, retryAction(loadSecurityBioSensor));
+    summarizeEnvelope(m.security_bio_sensor_operation(), envelope);
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(sensor);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     failSecurityBioSensorLoadAtRuntime(runtimeError);
-    summarizeOperationFailure(m.security_bio_sensor_operation(), runtimeError, retryAction(loadSecurityBioSensor));
+    summarizeOperationFailure(m.security_bio_sensor_operation(), runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -215,22 +196,21 @@ export async function loadSecurityEnrollments(): Promise<boolean> {
     if (envelope.error) {
       failSecurityBioListLoadWithResponse(envelope);
     } else if (!list) {
-      const missing = missingOperationOutput();
+      const missing = internalFailure();
       failSecurityBioListLoadWithContractError(envelope, missing);
-      summarizeOperationContractFailure(m.security_bio_list_operation(), missing, retryAction(loadSecurityEnrollments));
-      applyInvalidSessionError(missing);
+      summarizeOperationContractFailure(m.security_bio_list_operation(), missing);
       return false;
     } else {
-      completeSecurityBioListLoad(envelope, new Date().toISOString());
+      completeSecurityBioListLoad(envelope);
     }
 
-    summarizeEnvelope(m.security_bio_list_operation(), envelope, retryAction(loadSecurityEnrollments));
+    summarizeEnvelope(m.security_bio_list_operation(), envelope);
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(list);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     failSecurityBioListLoadAtRuntime(runtimeError);
-    summarizeOperationFailure(m.security_bio_list_operation(), runtimeError, retryAction(loadSecurityEnrollments));
+    summarizeOperationFailure(m.security_bio_list_operation(), runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -247,7 +227,7 @@ async function runPINOperation(
     if (envelope.error || result) {
       summarizeEnvelope(label, envelope);
     } else {
-      summarizeOperationContractFailure(label, missingOperationOutput());
+      summarizeOperationContractFailure(label, internalFailure());
     }
     applyInvalidSessionError(envelope.error);
     if (envelope.error || !result) return false;
@@ -267,20 +247,20 @@ export async function setAuthenticatorPIN(input: PINSetInput): Promise<boolean> 
   if (!input.newPIN) return false;
   const label = m.security_pin_set_operation();
   try {
-    const request: PINSetRequest = {
-      sessionId: selectedSessionId(),
-      newPIN: input.newPIN,
-      confirmed: false,
-      confirmationMessage: label,
-    };
-    const operation = api.setPIN(request);
-    input.newPIN = "";
-    return await runPINOperation(label, () => operation);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    summarizeOperationFailure(label, runtimeError);
-    applyInvalidSessionError(runtimeError);
-    return false;
+    return await runPINOperation(label, () => {
+      const request: PINSetRequest = {
+        sessionId: selectedSessionId(),
+        newPIN: input.newPIN,
+        confirmed: false,
+        confirmationMessage: label,
+      };
+      try {
+        return api.setPIN(request);
+      } finally {
+        request.newPIN = "";
+        input.newPIN = "";
+      }
+    });
   } finally {
     input.newPIN = "";
   }
@@ -290,22 +270,23 @@ export async function changeAuthenticatorPIN(input: PINChangeInput): Promise<boo
   if (!input.currentPIN || !input.newPIN) return false;
   const label = m.security_pin_change_operation();
   try {
-    const request: PINChangeRequest = {
-      sessionId: selectedSessionId(),
-      currentPIN: input.currentPIN,
-      newPIN: input.newPIN,
-      confirmed: false,
-      confirmationMessage: label,
-    };
-    const operation = api.changePIN(request);
-    input.currentPIN = "";
-    input.newPIN = "";
-    return await runPINOperation(label, () => operation);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    summarizeOperationFailure(label, runtimeError);
-    applyInvalidSessionError(runtimeError);
-    return false;
+    return await runPINOperation(label, () => {
+      const request: PINChangeRequest = {
+        sessionId: selectedSessionId(),
+        currentPIN: input.currentPIN,
+        newPIN: input.newPIN,
+        confirmed: false,
+        confirmationMessage: label,
+      };
+      try {
+        return api.changePIN(request);
+      } finally {
+        request.currentPIN = "";
+        request.newPIN = "";
+        input.currentPIN = "";
+        input.newPIN = "";
+      }
+    });
   } finally {
     input.currentPIN = "";
     input.newPIN = "";
@@ -366,12 +347,11 @@ function summarizePreviewEnvelope(
   label: string,
   envelope: OperationEnvelope,
   hasPreview: boolean,
-  retry: () => Promise<unknown>,
 ) {
   if (envelope.error || hasPreview) {
-    summarizeEnvelope(label, envelope, retryAction(retry));
+    summarizeEnvelope(label, envelope);
   } else {
-    summarizeOperationContractFailure(label, missingOperationOutput(), retryAction(retry));
+    summarizeOperationContractFailure(label, internalFailure());
   }
   applyInvalidSessionError(envelope.error);
 }
@@ -380,12 +360,11 @@ function summarizeExecuteEnvelope(
   label: string,
   envelope: OperationEnvelope,
   hasResult: boolean,
-  retry: () => Promise<unknown>,
 ) {
   if (envelope.error || hasResult) {
-    summarizeEnvelope(label, envelope, retryAction(retry));
+    summarizeEnvelope(label, envelope);
   } else {
-    summarizeOperationContractFailure(label, missingOperationOutput(), retryAction(retry));
+    summarizeOperationContractFailure(label, internalFailure());
   }
   applyInvalidSessionError(envelope.error);
 }
@@ -396,12 +375,6 @@ function friendlyNameTooLong(value: string) {
   return maximum !== null
     && maximum !== undefined
     && new TextEncoder().encode(value).byteLength > maximum;
-}
-
-function responseFailureReason(error: { error?: unknown }, missing: "preview" | "result"):
-  | PreviewFailureReason
-  | ExecuteFailureReason {
-  return error.error ? "response-error" : missing === "preview" ? "missing-preview" : "missing-result";
 }
 
 export async function beginAlwaysUVChange(target: AlwaysUVTarget): Promise<boolean> {
@@ -419,7 +392,7 @@ export async function beginAlwaysUVChange(target: AlwaysUVTarget): Promise<boole
   }
 
   const label = m.security_always_uv_preview_operation();
-  const sessionId = sessionIdForMutation(label);
+  const sessionId = sessionIdForMutation();
   if (!sessionId) return false;
   const request: AlwaysUVRequest = { sessionId, target, dryRun: true };
   securityMutation.set({ kind: "alwaysUv", phase: "previewing", target, previewRequest: request });
@@ -437,7 +410,7 @@ export async function beginAlwaysUVChange(target: AlwaysUVTarget): Promise<boole
         previewEnvelope: null,
         responseEnvelope: envelope,
         runtimeError: null,
-        failureReason: responseFailureReason(envelope, "preview") as PreviewFailureReason,
+        failureReason: envelope.error ? "response-error" : "missing-preview",
         validationError: null,
       });
     } else {
@@ -447,7 +420,6 @@ export async function beginAlwaysUVChange(target: AlwaysUVTarget): Promise<boole
       label,
       envelope,
       Boolean(preview),
-      () => beginAlwaysUVChange(target),
     );
     return !envelope.error && Boolean(preview);
   } catch (error) {
@@ -464,11 +436,7 @@ export async function beginAlwaysUVChange(target: AlwaysUVTarget): Promise<boole
       failureReason: "runtime-error",
       validationError: null,
     });
-    summarizeOperationFailure(
-      label,
-      runtimeError,
-      retryAction(() => beginAlwaysUVChange(target)),
-    );
+    summarizeOperationFailure(label, runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -483,7 +451,7 @@ export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promi
 
   const normalized = normalizedPINPolicyDraft(draft);
   const label = m.security_pin_policy_preview_operation();
-  const sessionId = sessionIdForMutation(label);
+  const sessionId = sessionIdForMutation();
   if (!sessionId) return false;
   const request: MinPINLengthRequest = {
     sessionId,
@@ -508,7 +476,7 @@ export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promi
         previewEnvelope: null,
         responseEnvelope: envelope,
         runtimeError: null,
-        failureReason: responseFailureReason(envelope, "preview") as PreviewFailureReason,
+        failureReason: envelope.error ? "response-error" : "missing-preview",
         validationError: null,
       });
     } else {
@@ -518,7 +486,6 @@ export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promi
       label,
       envelope,
       Boolean(preview),
-      () => beginPINPolicyChange(draft),
     );
     return !envelope.error && Boolean(preview);
   } catch (error) {
@@ -535,11 +502,7 @@ export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promi
       failureReason: "runtime-error",
       validationError: null,
     });
-    summarizeOperationFailure(
-      label,
-      runtimeError,
-      retryAction(() => beginPINPolicyChange(draft)),
-    );
+    summarizeOperationFailure(label, runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -548,7 +511,7 @@ export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promi
 export async function beginBioEnrollment(): Promise<boolean> {
   if (!currentStatusReport()?.bio.supported) return false;
   const label = m.security_bio_enroll_preview_operation();
-  const sessionId = sessionIdForMutation(label);
+  const sessionId = sessionIdForMutation();
   if (!sessionId) return false;
   const request: BioEnrollRequest = {
     sessionId,
@@ -575,7 +538,7 @@ export async function beginBioEnrollment(): Promise<boolean> {
         previewEnvelope: null,
         responseEnvelope: envelope,
         runtimeError: null,
-        failureReason: responseFailureReason(envelope, "preview") as PreviewFailureReason,
+        failureReason: envelope.error ? "response-error" : "missing-preview",
         validationError: null,
       });
     } else {
@@ -591,7 +554,6 @@ export async function beginBioEnrollment(): Promise<boolean> {
       label,
       envelope,
       Boolean(preview),
-      beginBioEnrollment,
     );
     return !envelope.error && Boolean(preview);
   } catch (error) {
@@ -608,11 +570,7 @@ export async function beginBioEnrollment(): Promise<boolean> {
       failureReason: "runtime-error",
       validationError: null,
     });
-    summarizeOperationFailure(
-      label,
-      runtimeError,
-      retryAction(beginBioEnrollment),
-    );
+    summarizeOperationFailure(label, runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -630,7 +588,7 @@ export async function beginBioRename(templateIDHex: string, friendlyName: string
     return false;
   }
   const label = m.security_bio_rename_preview_operation();
-  const sessionId = sessionIdForMutation(label);
+  const sessionId = sessionIdForMutation();
   if (!sessionId) return false;
   const request: BioRenameRequest = {
     sessionId,
@@ -654,7 +612,7 @@ export async function beginBioRename(templateIDHex: string, friendlyName: string
         previewEnvelope: null,
         responseEnvelope: envelope,
         runtimeError: null,
-        failureReason: responseFailureReason(envelope, "preview") as PreviewFailureReason,
+        failureReason: envelope.error ? "response-error" : "missing-preview",
         validationError: null,
       });
     } else {
@@ -664,7 +622,6 @@ export async function beginBioRename(templateIDHex: string, friendlyName: string
       label,
       envelope,
       Boolean(preview),
-      () => beginBioRename(templateIDHex, friendlyName),
     );
     return !envelope.error && Boolean(preview);
   } catch (error) {
@@ -682,11 +639,7 @@ export async function beginBioRename(templateIDHex: string, friendlyName: string
       failureReason: "runtime-error",
       validationError: null,
     });
-    summarizeOperationFailure(
-      label,
-      runtimeError,
-      retryAction(() => beginBioRename(templateIDHex, friendlyName)),
-    );
+    summarizeOperationFailure(label, runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -694,7 +647,7 @@ export async function beginBioRename(templateIDHex: string, friendlyName: string
 
 export async function beginBioRemove(templateIDHex: string): Promise<boolean> {
   const label = m.security_bio_remove_preview_operation();
-  const sessionId = sessionIdForMutation(label);
+  const sessionId = sessionIdForMutation();
   if (!sessionId) return false;
   const request: BioRemoveRequest = { sessionId, templateIdHex: templateIDHex, dryRun: true };
   securityMutation.set({ kind: "bioRemove", phase: "previewing", templateIDHex, previewRequest: request });
@@ -712,7 +665,7 @@ export async function beginBioRemove(templateIDHex: string): Promise<boolean> {
         previewEnvelope: null,
         responseEnvelope: envelope,
         runtimeError: null,
-        failureReason: responseFailureReason(envelope, "preview") as PreviewFailureReason,
+        failureReason: envelope.error ? "response-error" : "missing-preview",
         validationError: null,
       });
     } else {
@@ -722,7 +675,6 @@ export async function beginBioRemove(templateIDHex: string): Promise<boolean> {
       label,
       envelope,
       Boolean(preview),
-      () => beginBioRemove(templateIDHex),
     );
     return !envelope.error && Boolean(preview);
   } catch (error) {
@@ -739,11 +691,7 @@ export async function beginBioRemove(templateIDHex: string): Promise<boolean> {
       failureReason: "runtime-error",
       validationError: null,
     });
-    summarizeOperationFailure(
-      label,
-      runtimeError,
-      retryAction(() => beginBioRemove(templateIDHex)),
-    );
+    summarizeOperationFailure(label, runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -751,7 +699,7 @@ export async function beginBioRemove(templateIDHex: string): Promise<boolean> {
 
 export async function beginFactoryReset(): Promise<boolean> {
   const label = m.security_reset_preview_operation();
-  const sessionId = sessionIdForMutation(label);
+  const sessionId = sessionIdForMutation();
   if (!sessionId) return false;
   const request: ResetFactoryRequest = { sessionId, dryRun: true };
   securityMutation.set({ kind: "reset", phase: "previewing", previewRequest: request });
@@ -768,7 +716,7 @@ export async function beginFactoryReset(): Promise<boolean> {
         previewEnvelope: null,
         responseEnvelope: envelope,
         runtimeError: null,
-        failureReason: responseFailureReason(envelope, "preview") as PreviewFailureReason,
+        failureReason: envelope.error ? "response-error" : "missing-preview",
         validationError: null,
       });
     } else {
@@ -778,7 +726,6 @@ export async function beginFactoryReset(): Promise<boolean> {
       label,
       envelope,
       Boolean(preview),
-      beginFactoryReset,
     );
     return !envelope.error && Boolean(preview);
   } catch (error) {
@@ -794,20 +741,15 @@ export async function beginFactoryReset(): Promise<boolean> {
       failureReason: "runtime-error",
       validationError: null,
     });
-    summarizeOperationFailure(
-      label,
-      runtimeError,
-      retryAction(beginFactoryReset),
-    );
+    summarizeOperationFailure(label, runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
 }
 
-type ReviewMutation = Extract<SecurityMutationState, { phase: "review" }>;
 type NonIdleSecurityMutation = Exclude<SecurityMutationState, { kind: "idle" }>;
 
-function restartSecurityMutation(current: NonIdleSecurityMutation): Promise<boolean> {
+function beginSecurityPreview(current: NonIdleSecurityMutation): Promise<boolean> {
   switch (current.kind) {
     case "alwaysUv": return beginAlwaysUVChange(current.target);
     case "pinPolicy": return beginPINPolicyChange(current.draft);
@@ -825,7 +767,7 @@ function executeRequest<T extends { dryRun?: boolean; confirmed?: boolean; confi
   return { ...request, dryRun: false, confirmed: true, confirmationMessage };
 }
 
-async function finishSuccessfulSecurityMutation(kind: ReviewMutation["kind"]) {
+async function finishSuccessfulSecurityMutation(kind: NonIdleSecurityMutation["kind"]) {
   securityMutation.set({ kind: "idle", phase: "idle" });
   switch (kind) {
     case "alwaysUv":
@@ -834,15 +776,7 @@ async function finishSuccessfulSecurityMutation(kind: ReviewMutation["kind"]) {
       await loadSecurityStatus();
       return;
     case "bioEnroll":
-      toast.success(m.security_configuration_updated());
-      await loadSecurityStatus();
-      await loadSecurityEnrollments();
-      return;
     case "bioRename":
-      toast.success(m.security_configuration_updated());
-      await loadSecurityStatus();
-      await loadSecurityEnrollments();
-      return;
     case "bioRemove":
       toast.success(m.security_configuration_updated());
       await loadSecurityStatus();
@@ -864,7 +798,7 @@ async function finishSuccessfulSecurityMutation(kind: ReviewMutation["kind"]) {
   }
 }
 
-function operationLabel(kind: ReviewMutation["kind"], preview = false) {
+function operationLabel(kind: NonIdleSecurityMutation["kind"], preview = false) {
   switch (kind) {
     case "alwaysUv": return preview ? m.security_always_uv_preview_operation() : m.security_always_uv_operation();
     case "pinPolicy": return preview ? m.security_pin_policy_preview_operation() : m.security_pin_policy_operation();
@@ -875,23 +809,12 @@ function operationLabel(kind: ReviewMutation["kind"], preview = false) {
   }
 }
 
-function operationResultFor(kind: ReviewMutation["kind"], envelope: OperationEnvelope) {
-  switch (kind) {
-    case "alwaysUv":
-    case "pinPolicy": return authenticatorConfigResult(envelope);
-    case "bioEnroll": return envelope.error ? null : bioEnrollResult(envelope);
-    case "bioRename":
-    case "bioRemove": return bioMutationResult(envelope);
-    case "reset": return resetFactoryResult(envelope);
-  }
-}
-
-function executingMutation(current: ReviewMutation): SecurityMutationState {
+function executingMutation(current: NonIdleSecurityMutation): SecurityMutationState {
   return { ...current, phase: "executing" } as SecurityMutationState;
 }
 
 function failedExecutingMutation(
-  current: ReviewMutation,
+  current: NonIdleSecurityMutation,
   responseEnvelope: AuthenticatorConfigEnvelope | BioEnrollEnvelope | BioMutationEnvelope | ResetFactoryEnvelope | null,
   runtimeError: Failure | null,
   failureReason: ExecuteFailureReason,
@@ -909,61 +832,76 @@ function failedExecutingMutation(
 
 export async function confirmSecurityMutation(): Promise<boolean> {
   const current = get(securityMutation);
-  if (current.phase !== "review") return false;
+  if (current.kind === "idle" || (current.phase !== "review" && current.phase !== "error")) return false;
+  if (!current.previewRequest || !current.previewEnvelope) return false;
+  if (current.phase === "error"
+    && (current.failedPhase !== "executing" || !isIncorrectPINFailure(current.responseEnvelope?.error))) return false;
   const label = operationLabel(current.kind);
   securityMutation.set(executingMutation(current));
 
   try {
     beginOperation(label);
     let envelope: AuthenticatorConfigEnvelope | BioEnrollEnvelope | BioMutationEnvelope | ResetFactoryEnvelope;
+    let hasResult: boolean;
     switch (current.kind) {
-      case "alwaysUv":
+      case "alwaysUv": {
         envelope = await api.setAlwaysUV(executeRequest(current.previewRequest, label));
+        hasResult = Boolean(authenticatorConfigResult(envelope));
         break;
-      case "pinPolicy":
+      }
+      case "pinPolicy": {
         envelope = await api.setMinPINLength(executeRequest(current.previewRequest, label));
+        hasResult = Boolean(authenticatorConfigResult(envelope));
         break;
-      case "bioEnroll":
+      }
+      case "bioEnroll": {
         envelope = await api.bioEnroll(executeRequest(current.previewRequest, label));
+        hasResult = !envelope.error && Boolean(bioEnrollResult(envelope));
         break;
-      case "bioRename":
+      }
+      case "bioRename": {
         envelope = await api.bioRename(executeRequest(current.previewRequest, label));
+        hasResult = Boolean(bioMutationResult(envelope));
         break;
-      case "bioRemove":
+      }
+      case "bioRemove": {
         envelope = await api.bioRemove(executeRequest(current.previewRequest, label));
+        hasResult = Boolean(bioMutationResult(envelope));
         break;
-      case "reset":
+      }
+      case "reset": {
         envelope = await api.resetFactory(executeRequest(current.previewRequest, label));
+        hasResult = Boolean(resetFactoryResult(envelope));
         break;
+      }
     }
 
-    const result = operationResultFor(current.kind, envelope);
-    if (envelope.error || !result) {
+    if (envelope.error || !hasResult) {
       securityMutation.set(failedExecutingMutation(
         current,
         envelope,
         null,
-        responseFailureReason(envelope, "result") as ExecuteFailureReason,
+        envelope.error ? "response-error" : "missing-result",
       ));
     }
-    summarizeExecuteEnvelope(label, envelope, Boolean(result), () => restartSecurityMutation(current));
-    if (envelope.error || !result) return false;
+    summarizeExecuteEnvelope(label, envelope, hasResult);
+    if (envelope.error || !hasResult) return false;
 
     await finishSuccessfulSecurityMutation(current.kind);
     return true;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     securityMutation.set(failedExecutingMutation(current, null, runtimeError, "runtime-error"));
-    summarizeOperationFailure(label, runtimeError, retryAction(() => restartSecurityMutation(current)));
+    summarizeOperationFailure(label, runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
 }
 
-export async function retrySecurityMutation(): Promise<boolean> {
+export async function restartSecurityPreview(): Promise<boolean> {
   const current = get(securityMutation);
-  if (current.phase !== "error") return false;
-  return restartSecurityMutation(current);
+  if (current.phase !== "error" || current.failedPhase !== "previewing") return false;
+  return beginSecurityPreview(current);
 }
 
 export function closeSecurityMutation() {

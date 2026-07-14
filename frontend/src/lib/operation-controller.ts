@@ -3,7 +3,6 @@ import { get } from "svelte/store";
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
 import { pendingInteraction } from "./features/interaction/state.js";
-import { selectedDevice, sessionStatus } from "./features/session/state.js";
 import { statusBar, type ActiveOperation } from "./features/workbench/state.js";
 import { failureMessage, runtimeFailureFrom } from "./failure.js";
 import {
@@ -67,12 +66,4 @@ export async function cancelActiveOperation(): Promise<CancelOperationResult> {
     }
     return "failed";
   }
-}
-
-export async function retryLastStatusOutcome() {
-  const session = get(sessionStatus);
-  const retry = get(statusBar).lastOutcome?.retry;
-  if (session.state !== "ready" || !session.sessionId || !get(selectedDevice) || !retry) return false;
-  await retry();
-  return true;
 }

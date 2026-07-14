@@ -41,7 +41,6 @@ import {
   type PINSetRequest,
   type ResetFactoryEnvelope,
   type ResetFactoryRequest,
-  type SessionID,
   type SessionSnapshot,
 } from "../../bindings/github.com/go-ctap/kit/service";
 
@@ -83,10 +82,6 @@ export const api = {
 
   sessions(): Promise<SessionSnapshot[]> {
     return service.Sessions();
-  },
-
-  closeSession(id: SessionID): Promise<SessionSnapshot> {
-    return service.CloseSession(id);
   },
 
   closeAllSessions(): Promise<SessionSnapshot[]> {

@@ -34,7 +34,7 @@
     enrollmentState: SecurityBioListState;
     disabled: boolean;
     loadDisabled: boolean;
-    onRetryStatus: () => void | Promise<boolean>;
+    onReloadStatus: () => void | Promise<boolean>;
     onLoadEnrollments: () => void | Promise<boolean>;
     onEnroll: () => void | Promise<boolean>;
     onRename: (templateIDHex: string, friendlyName: string) => void | Promise<boolean>;
@@ -47,7 +47,7 @@
     enrollmentState,
     disabled,
     loadDisabled,
-    onRetryStatus,
+    onReloadStatus,
     onLoadEnrollments,
     onEnroll,
     onRename,
@@ -144,9 +144,9 @@
           <Alert.Title>{m.security_sensor_load_failed()}</Alert.Title>
           <Alert.Description>{sensorError}</Alert.Description>
           <Alert.Action>
-            <Button variant="outline" size="sm" type="button" disabled={loadDisabled} onclick={() => void onRetryStatus()}>
+            <Button variant="outline" size="sm" type="button" disabled={loadDisabled} onclick={() => void onReloadStatus()}>
               <RefreshCw data-icon="inline-start" aria-hidden="true" />
-              {m.retry()}
+              {m.reload_overview()}
             </Button>
           </Alert.Action>
         </Alert.Root>
@@ -222,12 +222,6 @@
           <TriangleAlert aria-hidden="true" />
           <Alert.Title>{m.security_enrollment_load_failed()}</Alert.Title>
           <Alert.Description>{enrollmentError}</Alert.Description>
-          <Alert.Action>
-            <Button variant="outline" size="sm" type="button" disabled={loadDisabled} onclick={() => void onLoadEnrollments()}>
-              <RefreshCw data-icon="inline-start" aria-hidden="true" />
-              {m.retry()}
-            </Button>
-          </Alert.Action>
         </Alert.Root>
       {/if}
 

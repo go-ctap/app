@@ -20,7 +20,6 @@ export type StatusBarOutcome = {
   tone: "success" | "error" | "info" | "warning";
   title: string;
   message?: string;
-  retry?: () => void | Promise<void>;
 };
 
 export type StatusBarState = {

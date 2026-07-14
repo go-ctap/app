@@ -1,3 +1,4 @@
+import type { InteractionKind } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
 
@@ -45,19 +46,16 @@ export type ShellStatusPresentation = {
   busy: boolean;
   progress: ShellStatusProgress | null;
   cancel: ShellStatusAction | null;
-  retry: ShellStatusAction | null;
 };
 
 export type InteractionModalPresentation = {
-  open: boolean;
   interactionId: string;
   title: string;
-  eyebrow: string;
   destructive: boolean;
   message: string;
   permission: string;
   preview: unknown;
-  kind: string;
+  kind: InteractionKind;
 };
 
 export function buildSidebarPresentation(input: {
@@ -108,10 +106,6 @@ function activeProgress(statusBar: StatusBarState): ShellStatusProgress | null {
   };
 }
 
-function liveReadySession(session: SessionStatus) {
-  return session.state === "ready" && Boolean(session.sessionId);
-}
-
 export function buildShellStatusPresentation(input: {
   sessionStatus: SessionStatus;
   selectedDevice: DeviceReport | null;
@@ -136,7 +130,6 @@ export function buildShellStatusPresentation(input: {
         ariaLabel: m.cancel_operation(),
         disabled: Boolean(active.cancelPending),
       } : null,
-      retry: null,
     };
   }
 
@@ -151,7 +144,6 @@ export function buildShellStatusPresentation(input: {
       busy: !error,
       progress: null,
       cancel: null,
-      retry: null,
     };
   }
 
@@ -164,11 +156,6 @@ export function buildShellStatusPresentation(input: {
       busy: false,
       progress: null,
       cancel: null,
-      retry: outcome.retry && input.selectedDevice && liveReadySession(input.sessionStatus) ? {
-        label: m.retry(),
-        ariaLabel: m.retry(),
-        disabled: false,
-      } : null,
     };
   }
 
@@ -180,23 +167,19 @@ export function buildShellStatusPresentation(input: {
     busy: false,
     progress: null,
     cancel: null,
-    retry: null,
   };
 }
 
 export function buildInteractionModalPresentation(prompt: InteractionPrompt): InteractionModalPresentation {
   const request = prompt.request;
-  const kind = request.kind;
   const destructive = request.destructive === true;
   return {
-    open: true,
     interactionId: prompt.interactionId,
     title: destructive ? m.confirm_destructive_operation() : m.authenticator_needs_you(),
-    eyebrow: String(kind),
     destructive,
     message: request.message ?? m.continue_on_authenticator(),
     permission: request.permission ?? "",
     preview: request.preview ?? null,
-    kind: String(kind),
+    kind: request.kind,
   };
 }

@@ -4,15 +4,27 @@ import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
 import { ResolveInteraction } from "../../bindings/fidobench/ctapkitservice";
 import type { InteractionAnswer, InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
 
+import { m } from "../paraglide/messages.js";
+import { runtimeFailureFrom } from "./failure.js";
 import { pendingInteraction } from "./features/interaction/state.js";
 import { sessionStatus } from "./features/session/state.js";
 import { statusBar } from "./features/workbench/state.js";
-import { setStatusOperation } from "./workbench-state.js";
+import { applyInvalidSessionError } from "./session-boundary.js";
+import { setStatusOperation, summarizeOperationFailure } from "./workbench-state.js";
 
 export async function answerPendingInteraction(answer: InteractionAnswer) {
+  const label = get(statusBar).activeOperation?.label ?? m.operation_running();
   try {
-    return await ResolveInteraction(answer);
+    const resolution = ResolveInteraction(answer);
+    if (answer.pin) answer.pin = "";
+    return await resolution;
+  } catch (error) {
+    const failure = runtimeFailureFrom(error);
+    summarizeOperationFailure(label, failure);
+    applyInvalidSessionError(failure);
+    return false;
   } finally {
+    if (answer.pin) answer.pin = "";
     pendingInteraction.set(null);
   }
 }

@@ -1,7 +1,7 @@
 import { writable } from "svelte/store";
 
 import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
-import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+import { Code, type Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   CredentialDeleteEnvelope,
   CredentialDeleteRequest,
@@ -9,7 +9,6 @@ import type {
   CredentialUpdateRequest,
   CredentialsEnvelope,
 } from "../../../../bindings/github.com/go-ctap/kit/service";
-import { isUnsupportedFailure } from "../../failure.js";
 
 export type PasskeysInventoryPhase = "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";
 
@@ -156,7 +155,7 @@ export function completePasskeysInventoryLoad(envelope: CredentialsEnvelope, com
 export function failPasskeysInventoryLoadWithResponse(envelope: CredentialsEnvelope) {
   passkeysInventoryState.update((current) => ({
     ...current,
-    phase: isUnsupportedFailure(envelope.error) ? "unsupported" : "error",
+    phase: envelope.error?.code === Code.CodeCredentialManagementUnsupported ? "unsupported" : "error",
     responseEnvelope: envelope,
     runtimeError: null,
   }));

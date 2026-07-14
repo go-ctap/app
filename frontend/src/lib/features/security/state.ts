@@ -31,7 +31,6 @@ export type SecurityResourceState<TEnvelope> = {
   lastSuccessfulEnvelope: TEnvelope | null;
   responseEnvelope: TEnvelope | null;
   runtimeError: Failure | null;
-  lastSuccessfulAt: string | null;
 };
 
 export type SecurityStatusState = SecurityResourceState<ConfigStatusEnvelope>;
@@ -44,13 +43,7 @@ export function emptySecurityResourceState<TEnvelope>(): SecurityResourceState<T
     lastSuccessfulEnvelope: null,
     responseEnvelope: null,
     runtimeError: null,
-    lastSuccessfulAt: null,
   };
-}
-
-export function securityResourceIsStale<TEnvelope>(state: SecurityResourceState<TEnvelope>) {
-  return Boolean(state.lastSuccessfulEnvelope)
-    && (state.phase === "error" || state.phase === "unsupported");
 }
 
 export type SecurityPINPolicyDraft = {
@@ -173,14 +166,12 @@ export function beginSecurityResourceLoad<TEnvelope>(store: Writable<SecurityRes
 export function completeSecurityResourceLoad<TEnvelope>(
   store: Writable<SecurityResourceState<TEnvelope>>,
   envelope: TEnvelope,
-  completedAt: string,
 ) {
   store.set({
     phase: "ready",
     lastSuccessfulEnvelope: envelope,
     responseEnvelope: envelope,
     runtimeError: null,
-    lastSuccessfulAt: completedAt,
   });
 }
 
@@ -225,8 +216,8 @@ export function beginSecurityStatusLoad() {
   beginSecurityResourceLoad(securityStatusState);
 }
 
-export function completeSecurityStatusLoad(envelope: ConfigStatusEnvelope, completedAt: string) {
-  completeSecurityResourceLoad(securityStatusState, envelope, completedAt);
+export function completeSecurityStatusLoad(envelope: ConfigStatusEnvelope) {
+  completeSecurityResourceLoad(securityStatusState, envelope);
 }
 
 export function failSecurityStatusLoadWithResponse(envelope: ConfigStatusEnvelope) {
@@ -248,8 +239,8 @@ export function beginSecurityBioSensorLoad() {
   beginSecurityResourceLoad(securityBioSensorState);
 }
 
-export function completeSecurityBioSensorLoad(envelope: BioSensorEnvelope, completedAt: string) {
-  completeSecurityResourceLoad(securityBioSensorState, envelope, completedAt);
+export function completeSecurityBioSensorLoad(envelope: BioSensorEnvelope) {
+  completeSecurityResourceLoad(securityBioSensorState, envelope);
 }
 
 export function failSecurityBioSensorLoadWithResponse(envelope: BioSensorEnvelope) {
@@ -271,8 +262,8 @@ export function beginSecurityBioListLoad() {
   beginSecurityResourceLoad(securityBioListState);
 }
 
-export function completeSecurityBioListLoad(envelope: BioListEnvelope, completedAt: string) {
-  completeSecurityResourceLoad(securityBioListState, envelope, completedAt);
+export function completeSecurityBioListLoad(envelope: BioListEnvelope) {
+  completeSecurityResourceLoad(securityBioListState, envelope);
 }
 
 export function failSecurityBioListLoadWithResponse(envelope: BioListEnvelope) {

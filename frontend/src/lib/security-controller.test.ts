@@ -18,14 +18,16 @@ import type {
   BioMutationEnvelope,
   BioSensorEnvelope,
   ConfigStatusEnvelope,
+  PINChangeRequest,
   PINEnvelope,
+  PINSetRequest,
   ResetFactoryEnvelope,
   SessionSnapshot,
 } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { api } from "./api";
-import { failureForCode } from "./failure";
+import { failureForCode } from "./test-failure";
 import {
   completeSecurityBioSensorLoad,
   completeSecurityStatusLoad,
@@ -52,10 +54,10 @@ import {
   loadSecurityEnrollments,
   loadSecurityStatus,
   maybeLoadSecurity,
-  retrySecurityMutation,
+  restartSecurityPreview,
   setAuthenticatorPIN,
 } from "./security-controller";
-import { reloadSecurity, retrySecurityMutation as retrySecurityMutationWithRecovery } from "./controller";
+import { reloadSecurity, restartSecurityPreview as restartSecurityPreviewWithRecovery } from "./controller";
 import {
   resetAppStateForTest,
   seedActiveScreenForTest,
@@ -323,7 +325,7 @@ function resetEnvelope(phase: "preview" | "result"): ResetFactoryEnvelope {
 }
 
 function seedReadyStatus(envelope = statusEnvelope()) {
-  completeSecurityStatusLoad(envelope, "2026-07-12T00:00:00.000Z");
+  completeSecurityStatusLoad(envelope);
 }
 
 beforeEach(() => {
@@ -419,6 +421,7 @@ describe("security controller loading", () => {
       .mockResolvedValueOnce(invalidEnvelope)
       .mockResolvedValueOnce(statusEnvelope({ sessionId: "session-2" }));
     vi.spyOn(api, "sessions").mockResolvedValue([]);
+    vi.spyOn(api, "closeAllSessions").mockResolvedValue([]);
     const openSession = vi.spyOn(api, "openSession").mockResolvedValue(snapshot(TOKEN, "session-2"));
 
     expect(await loadSecurityStatus()).toBe(false);
@@ -438,31 +441,39 @@ describe("security controller loading", () => {
 });
 
 describe("security controller mutations", () => {
-  it("sends exact confirmed:false PIN requests without retaining secrets or a retry", async () => {
-    const setPIN = vi.spyOn(api, "setPIN").mockResolvedValue(pinErrorEnvelope(OperationKind.OperationSetPIN));
-    const changePIN = vi.spyOn(api, "changePIN").mockResolvedValue(pinErrorEnvelope(OperationKind.OperationChangePIN));
+  it("sends exact confirmed:false PIN requests without retaining secrets", async () => {
+    let sentSetPINRequest: PINSetRequest | null = null;
+    let sentChangePINRequest: PINChangeRequest | null = null;
+    const setPIN = vi.spyOn(api, "setPIN").mockImplementation((request) => {
+      sentSetPINRequest = { ...request };
+      return Promise.resolve(pinErrorEnvelope(OperationKind.OperationSetPIN));
+    });
+    const changePIN = vi.spyOn(api, "changePIN").mockImplementation((request) => {
+      sentChangePINRequest = { ...request };
+      return Promise.resolve(pinErrorEnvelope(OperationKind.OperationChangePIN));
+    });
 
     expect(await setAuthenticatorPIN({ newPIN: "set-secret-123" })).toBe(false);
-    expect(setPIN).toHaveBeenCalledWith({
+    expect(sentSetPINRequest).toEqual({
       sessionId: "session-1",
       newPIN: "set-secret-123",
       confirmed: false,
       confirmationMessage: "Set authenticator PIN",
     });
-    expect(get(statusBar).lastOutcome?.retry).toBeUndefined();
+    expect(setPIN.mock.calls[0][0].newPIN).toBe("");
 
     expect(await changeAuthenticatorPIN({
       currentPIN: "old-secret-456",
       newPIN: "new-secret-789",
     })).toBe(false);
-    expect(changePIN).toHaveBeenCalledWith({
+    expect(sentChangePINRequest).toEqual({
       sessionId: "session-1",
       currentPIN: "old-secret-456",
       newPIN: "new-secret-789",
       confirmed: false,
       confirmationMessage: "Change authenticator PIN",
     });
-    expect(get(statusBar).lastOutcome?.retry).toBeUndefined();
+    expect(changePIN.mock.calls[0][0]).toMatchObject({ currentPIN: "", newPIN: "" });
     expect(get(securityMutation)).toEqual({ kind: "idle", phase: "idle" });
 
     const persistedState = JSON.stringify({
@@ -551,13 +562,9 @@ describe("security controller mutations", () => {
     });
   });
 
-  it("retries an execution failure with a new preview instead of auto-confirming", async () => {
+  it("restarts a failed preview through the original preview action", async () => {
     seedReadyStatus(statusEnvelope({ alwaysUVConfigured: false }));
-    const firstPreview = authenticatorConfigEnvelope(
-      AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
-      "preview",
-    );
-    const executionFailure = authenticatorConfigEnvelope(
+    const previewFailure = authenticatorConfigEnvelope(
       AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
       "preview",
       true,
@@ -567,28 +574,68 @@ describe("security controller mutations", () => {
       "preview",
     );
     const setAlwaysUV = vi.spyOn(api, "setAlwaysUV")
-      .mockResolvedValueOnce(firstPreview)
-      .mockResolvedValueOnce(executionFailure)
+      .mockResolvedValueOnce(previewFailure)
       .mockResolvedValueOnce(secondPreview);
 
-    expect(await beginAlwaysUVChange(AlwaysUVTarget.AlwaysUVTargetEnable)).toBe(true);
-    expect(await confirmSecurityMutation()).toBe(false);
+    expect(await beginAlwaysUVChange(AlwaysUVTarget.AlwaysUVTargetEnable)).toBe(false);
     expect(get(securityMutation)).toMatchObject({
       kind: "alwaysUv",
       phase: "error",
-      failedPhase: "executing",
-      responseEnvelope: executionFailure,
+      failedPhase: "previewing",
+      responseEnvelope: previewFailure,
     });
 
-    expect(await retrySecurityMutation()).toBe(true);
-    expect(setAlwaysUV).toHaveBeenCalledTimes(3);
-    expect(setAlwaysUV.mock.calls[1][0]).toMatchObject({
-      dryRun: false,
-      confirmed: true,
-    });
-    expect(setAlwaysUV.mock.calls[2][0]).toEqual(setAlwaysUV.mock.calls[0][0]);
-    expect(setAlwaysUV.mock.calls[2][0].confirmed).not.toBe(true);
+    expect(await restartSecurityPreview()).toBe(true);
+    expect(setAlwaysUV).toHaveBeenCalledTimes(2);
+    expect(setAlwaysUV.mock.calls[1][0]).toEqual(setAlwaysUV.mock.calls[0][0]);
+    expect(setAlwaysUV.mock.calls[1][0].confirmed).not.toBe(true);
     expect(get(securityMutation)).toMatchObject({ kind: "alwaysUv", phase: "review" });
+  });
+
+  it("does not restart an execution after its outcome becomes unknown", async () => {
+    seedReadyStatus(statusEnvelope({ alwaysUVConfigured: false }));
+    vi.spyOn(api, "setAlwaysUV")
+      .mockResolvedValueOnce(authenticatorConfigEnvelope(
+        AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
+        "preview",
+      ))
+      .mockResolvedValueOnce(authenticatorConfigEnvelope(
+        AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
+        "preview",
+        true,
+      ));
+
+    expect(await beginAlwaysUVChange(AlwaysUVTarget.AlwaysUVTargetEnable)).toBe(true);
+    expect(await confirmSecurityMutation()).toBe(false);
+    expect(await restartSecurityPreview()).toBe(false);
+  });
+
+  it("reconfirms an incorrect PIN directly without rebuilding the preview", async () => {
+    seedReadyStatus(statusEnvelope({ alwaysUVConfigured: false }));
+    const executionFailure = authenticatorConfigEnvelope(
+      AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
+      "preview",
+    );
+    executionFailure.error = failureForCode(Code.CodePINInvalid);
+    const setAlwaysUV = vi.spyOn(api, "setAlwaysUV")
+      .mockResolvedValueOnce(authenticatorConfigEnvelope(
+        AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
+        "preview",
+      ))
+      .mockResolvedValueOnce(executionFailure)
+      .mockResolvedValueOnce(authenticatorConfigEnvelope(
+        AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
+        "result",
+      ));
+    vi.spyOn(api, "configStatus").mockResolvedValue(statusEnvelope({ alwaysUVConfigured: true }));
+
+    expect(await beginAlwaysUVChange(AlwaysUVTarget.AlwaysUVTargetEnable)).toBe(true);
+    expect(await confirmSecurityMutation()).toBe(false);
+
+    expect(await confirmSecurityMutation()).toBe(true);
+    expect(setAlwaysUV).toHaveBeenCalledTimes(3);
+    expect(setAlwaysUV.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(setAlwaysUV.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
   });
 
   it("retains a real partial biometric enrollment result on execution error", async () => {
@@ -626,7 +673,7 @@ describe("security controller mutations", () => {
     seedReadyStatus(statusEnvelope({ bioSupported: true, bioConfigured: true }));
     const sensorEnvelope = bioSensorEnvelope();
     sensorEnvelope.result!.report.maxTemplateFriendlyName = 4;
-    completeSecurityBioSensorLoad(sensorEnvelope, "2026-07-12T00:00:00.000Z");
+    completeSecurityBioSensorLoad(sensorEnvelope);
     const bioRename = vi.spyOn(api, "bioRename").mockResolvedValue(bioRenamePreviewEnvelope(""));
 
     expect(await beginBioRename("cafe", "ééé")).toBe(false);
@@ -646,33 +693,29 @@ describe("security controller mutations", () => {
     });
   });
 
-  it("reopens an invalid session before retrying a mutation as a fresh preview", async () => {
+  it("reopens an invalid session before repeating a failed preview", async () => {
     seedReadyStatus(statusEnvelope({ alwaysUVConfigured: false }));
-    const invalidExecution = authenticatorConfigEnvelope(
+    const invalidPreview = authenticatorConfigEnvelope(
       AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
       "preview",
       true,
     );
-    invalidExecution.error = failureForCode(Code.CodeSessionInvalid);
+    invalidPreview.error = failureForCode(Code.CodeSessionInvalid);
     const setAlwaysUV = vi.spyOn(api, "setAlwaysUV")
-      .mockResolvedValueOnce(authenticatorConfigEnvelope(
-        AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
-        "preview",
-      ))
-      .mockResolvedValueOnce(invalidExecution)
+      .mockResolvedValueOnce(invalidPreview)
       .mockResolvedValueOnce(authenticatorConfigEnvelope(
         AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
         "preview",
       ));
     vi.spyOn(api, "sessions").mockResolvedValue([]);
+    vi.spyOn(api, "closeAllSessions").mockResolvedValue([]);
     vi.spyOn(api, "openSession").mockResolvedValue(snapshot(TOKEN, "session-2"));
 
-    expect(await beginAlwaysUVChange(AlwaysUVTarget.AlwaysUVTargetEnable)).toBe(true);
-    expect(await confirmSecurityMutation()).toBe(false);
+    expect(await beginAlwaysUVChange(AlwaysUVTarget.AlwaysUVTargetEnable)).toBe(false);
     expect(get(sessionStatus).sessionId).toBeUndefined();
 
-    expect(await retrySecurityMutationWithRecovery()).toBe(true);
-    expect(setAlwaysUV.mock.calls[2][0]).toEqual({
+    expect(await restartSecurityPreviewWithRecovery()).toBe(true);
+    expect(setAlwaysUV.mock.calls[1][0]).toEqual({
       sessionId: "session-2",
       target: AlwaysUVTarget.AlwaysUVTargetEnable,
       dryRun: true,

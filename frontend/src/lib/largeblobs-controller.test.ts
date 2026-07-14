@@ -14,22 +14,18 @@ import type {
 } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { api } from "./api";
-import { failureForCode } from "./failure";
+import { failureForCode } from "./test-failure";
 import { setAppLocale } from "./i18n";
 import {
   beginLargeBlobCleanup,
   beginLargeBlobDelete,
   beginLargeBlobWrite,
   buildLargeBlobReadRequest,
-  buildLargeBlobWritePreviewRequest,
-  closeLargeBlobMutation,
   confirmLargeBlobCleanup,
   confirmLargeBlobDelete,
   confirmLargeBlobWrite,
-  editLargeBlobWrite,
   previewLargeBlobWrite,
   readLargeBlob,
-  retryLargeBlobMutation,
   setLargeBlobsDecodeMode,
   updateLargeBlobWriteDraft,
 } from "./largeblobs-controller";
@@ -163,28 +159,6 @@ describe("large blob controller", () => {
     });
   });
 
-  it("builds exact base64 write requests and keeps an empty payload explicit", () => {
-    expect(buildLargeBlobWritePreviewRequest(
-      "session-1",
-      VerificationFlow.VerificationFlowPIN,
-      "cafe",
-      { payload: "Привет", encoding: "utf8" },
-    )).toEqual({
-      sessionId: "session-1",
-      verificationFlow: VerificationFlow.VerificationFlowPIN,
-      credentialIdHex: "cafe",
-      payload: "0J/RgNC40LLQtdGC",
-      dryRun: true,
-    });
-
-    expect(buildLargeBlobWritePreviewRequest(
-      "session-1",
-      VerificationFlow.VerificationFlowDefault,
-      "cafe",
-      { payload: "", encoding: "hex" },
-    )).toMatchObject({ payload: "", dryRun: true });
-  });
-
   it("retains a capacity response on error without aliasing it as a successful preview", async () => {
     const capacity = previewEnvelope(
       OperationKind.OperationWriteLargeBlob,
@@ -210,115 +184,24 @@ describe("large blob controller", () => {
     expect(await confirmLargeBlobWrite()).toBe(false);
   });
 
-  it("retries an execution failure through refresh and a new preview without re-executing", async () => {
-    const firstPreview = previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace);
-    const executionFailure = previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace);
-    executionFailure.error = failureForCode(Code.CodeTransportFailure);
-    const secondPreview = previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace);
-    const write = vi.spyOn(api, "writeLargeBlob")
-      .mockResolvedValueOnce(firstPreview)
+  it("reconfirms an incorrect PIN directly without rebuilding the delete preview", async () => {
+    const preview = previewEnvelope(OperationKind.OperationDeleteLargeBlob, MutationOperation.MutationDelete);
+    const executionFailure = previewEnvelope(OperationKind.OperationDeleteLargeBlob, MutationOperation.MutationDelete);
+    executionFailure.error = failureForCode(Code.CodePINInvalid);
+    const remove = vi.spyOn(api, "deleteLargeBlob")
+      .mockResolvedValueOnce(preview)
       .mockResolvedValueOnce(executionFailure)
-      .mockResolvedValueOnce(secondPreview);
+      .mockResolvedValueOnce(resultEnvelope(OperationKind.OperationDeleteLargeBlob, MutationOperation.MutationDelete));
     const list = vi.spyOn(api, "listLargeBlobs").mockResolvedValue(listEnvelope());
 
-    beginLargeBlobWrite("cafe");
-    updateLargeBlobWriteDraft({ payload: "aabb", encoding: "hex" });
-    expect(await previewLargeBlobWrite()).toBe(true);
-    expect(await confirmLargeBlobWrite()).toBe(false);
-    expect(get(largeBlobsMutation)).toMatchObject({ phase: "error", failedPhase: "executing" });
+    expect(await beginLargeBlobDelete("cafe")).toBe(true);
+    expect(await confirmLargeBlobDelete()).toBe(false);
 
-    expect(await retryLargeBlobMutation()).toBe(true);
-    expect(list).toHaveBeenCalledWith(expect.objectContaining({ refresh: true }));
-    expect(write).toHaveBeenCalledTimes(3);
-    expect(write.mock.calls[1][0]).toMatchObject({
-      payload: "qrs=",
-      dryRun: false,
-      confirmed: true,
-    });
-    expect(write.mock.calls[2][0]).toMatchObject({
-      payload: "qrs=",
-      dryRun: true,
-    });
-    expect(write.mock.calls[2][0].confirmed).not.toBe(true);
-    expect(get(largeBlobsMutation)).toMatchObject({ kind: "write", phase: "review" });
-  });
-
-  it("keeps execution retry non-dismissible during forced refresh and restores the error if refresh fails", async () => {
-    const executionFailure = previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace);
-    executionFailure.error = failureForCode(Code.CodeTransportFailure);
-    vi.spyOn(api, "writeLargeBlob")
-      .mockResolvedValueOnce(previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace))
-      .mockResolvedValueOnce(executionFailure);
-
-    let resolveRefresh!: (value: LargeBlobListEnvelope) => void;
-    const refreshResponse = new Promise<LargeBlobListEnvelope>((resolve) => {
-      resolveRefresh = resolve;
-    });
-    vi.spyOn(api, "listLargeBlobs").mockReturnValue(refreshResponse);
-
-    beginLargeBlobWrite("cafe");
-    updateLargeBlobWriteDraft({ payload: "retry me", encoding: "utf8" });
-    await previewLargeBlobWrite();
-    await confirmLargeBlobWrite();
-    const originalError = get(largeBlobsMutation);
-    expect(originalError).toMatchObject({ kind: "write", phase: "error", failedPhase: "executing" });
-
-    const retry = retryLargeBlobMutation();
-    expect(get(largeBlobsMutation)).toMatchObject({ kind: "write", phase: "executing" });
-    expect(closeLargeBlobMutation()).toBe(false);
-    expect(editLargeBlobWrite()).toBe(false);
-
-    resolveRefresh({
-      operationId: "refresh-failed",
-      sessionId: "session-1",
-      kind: OperationKind.OperationListLargeBlobs,
-      error: failureForCode(Code.CodeTransportFailure),
-    } as LargeBlobListEnvelope);
-    expect(await retry).toBe(false);
-    expect(get(largeBlobsMutation)).toEqual(originalError);
-  });
-
-  it("restores the execution error when refreshed credentials lose their large-blob key", async () => {
-    const executionFailure = previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace);
-    executionFailure.error = failureForCode(Code.CodeTransportFailure);
-    const write = vi.spyOn(api, "writeLargeBlob")
-      .mockResolvedValueOnce(previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace))
-      .mockResolvedValueOnce(executionFailure);
-    vi.spyOn(api, "listLargeBlobs").mockResolvedValue(listEnvelope("missing"));
-
-    beginLargeBlobWrite("cafe");
-    await previewLargeBlobWrite();
-    await confirmLargeBlobWrite();
-    const originalError = get(largeBlobsMutation);
-
-    expect(await retryLargeBlobMutation()).toBe(false);
-    expect(write).toHaveBeenCalledTimes(2);
-    expect(get(largeBlobsMutation)).toEqual(originalError);
-  });
-
-  it("restores the cleanup execution error when refreshed support disappears", async () => {
-    const executionFailure = previewEnvelope(
-      OperationKind.OperationGarbageCollectLargeBlobs,
-      MutationOperation.MutationGC,
-    );
-    executionFailure.error = failureForCode(Code.CodeTransportFailure);
-    const cleanup = vi.spyOn(api, "garbageCollectLargeBlobs")
-      .mockResolvedValueOnce(previewEnvelope(
-        OperationKind.OperationGarbageCollectLargeBlobs,
-        MutationOperation.MutationGC,
-      ))
-      .mockResolvedValueOnce(executionFailure);
-    const unsupported = listEnvelope();
-    unsupported.result!.report.support.largeBlobs = false;
-    vi.spyOn(api, "listLargeBlobs").mockResolvedValue(unsupported);
-
-    await beginLargeBlobCleanup();
-    await confirmLargeBlobCleanup();
-    const originalError = get(largeBlobsMutation);
-
-    expect(await retryLargeBlobMutation()).toBe(false);
-    expect(cleanup).toHaveBeenCalledTimes(2);
-    expect(get(largeBlobsMutation)).toEqual(originalError);
+    expect(await confirmLargeBlobDelete()).toBe(true);
+    expect(remove).toHaveBeenCalledTimes(3);
+    expect(remove.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(remove.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(list).toHaveBeenCalledTimes(1);
   });
 
   it("executes the exact previewed write request with only confirmation fields changed", async () => {

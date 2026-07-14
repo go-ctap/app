@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { InteractionKind } from "../../../../bindings/github.com/go-ctap/kit/model";
   import { InteractionAnswer } from "../../../../bindings/github.com/go-ctap/kit/service";
 
   import JsonView from "$lib/components/shared/JsonView.svelte";
@@ -20,13 +21,20 @@
   let pin = $state("");
   let submitting = $state(false);
 
+  // Session close and device loss can dismiss a prompt without submitting it.
+  $effect(() => {
+    void presentation?.interactionId;
+    pin = "";
+  });
+
   async function answer(confirmed: boolean, canceled = false) {
     if (!presentation || submitting) return;
+    if (confirmed && presentation.kind === InteractionKind.InteractionKindPIN && !pin) return;
     submitting = true;
     try {
       await onAnswer(new InteractionAnswer({
         interactionId: presentation.interactionId,
-        ...(confirmed && presentation.kind === "pin" ? { pin } : {}),
+        ...(confirmed && presentation.kind === InteractionKind.InteractionKindPIN ? { pin } : {}),
         confirmed,
         canceled,
       }));
@@ -47,9 +55,6 @@
     <Dialog.Content class="interaction-dialog" showCloseButton={false}>
       <form class="interaction-dialog-form" onsubmit={submit}>
         <Dialog.Header>
-          {#if presentation.eyebrow}
-            <p class="eyebrow">{presentation.eyebrow}</p>
-          {/if}
           <Dialog.Title>{presentation.title}</Dialog.Title>
           <Dialog.Description>{presentation.message}</Dialog.Description>
         </Dialog.Header>
@@ -62,14 +67,18 @@
           <JsonView value={presentation.preview} title={m.preview_json()} variant="bare" />
         {/if}
 
-        {#if presentation.kind === "pin"}
+        {#if presentation.kind === InteractionKind.InteractionKindPIN}
           <SensitivePinField bind:value={pin} label={m.pin()} disabled={submitting} autofocus />
         {/if}
 
         <Dialog.Footer>
           <Button variant="outline" type="button" disabled={submitting} onclick={() => answer(false, true)}>{m.cancel()}</Button>
-          <Button variant={presentation.destructive ? "destructive" : "default"} type="submit" disabled={submitting}>
-            {presentation.kind === "pin" ? m.send_pin() : m.continue_action()}
+          <Button
+            variant={presentation.destructive ? "destructive" : "default"}
+            type="submit"
+            disabled={submitting || (presentation.kind === InteractionKind.InteractionKindPIN && !pin)}
+          >
+            {presentation.kind === InteractionKind.InteractionKindPIN ? m.send_pin() : m.continue_action()}
           </Button>
         </Dialog.Footer>
       </form>
@@ -91,19 +100,9 @@
       min-width: 0;
     }
 
-    .eyebrow,
     .muted {
       margin: 0;
       color: var(--muted-foreground);
-    }
-
-    .eyebrow {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .muted {
       font-size: 0.875rem;
     }
 }

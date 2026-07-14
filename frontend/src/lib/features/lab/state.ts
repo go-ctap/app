@@ -12,11 +12,9 @@ import type {
 
 import {
   buildClientDataJSON,
-  emptyLabValidation,
   randomBase64URL,
   randomHex,
   type LabRandomSource,
-  type LabValidationResult,
 } from "../../lab-input.js";
 
 export type LabPresetID = "minimal" | "discoverable" | "non-discoverable" | "uv-required";
@@ -60,38 +58,22 @@ export type GetAssertionDraft = {
   verificationFlow: VerificationFlow;
 };
 
-export type LabMakeFailureReason =
-  | "response-error"
-  | "runtime-error"
-  | "missing-preview"
-  | "missing-result"
-  | "invalid-session";
-
-export type LabGetFailureReason =
-  | "response-error"
-  | "runtime-error"
-  | "missing-result"
-  | "invalid-session";
-
 export type LabMakeStep =
-  | { phase: "editing"; validation: LabValidationResult }
+  | { phase: "editing" }
   | {
       phase: "previewing";
       previewRequest: MakeCredentialRequest;
-      validation: LabValidationResult;
     }
   | {
       phase: "review";
       previewRequest: MakeCredentialRequest;
       previewEnvelope: MakeCredentialEnvelope;
-      validation: LabValidationResult;
     }
   | {
       phase: "executing";
       previewRequest: MakeCredentialRequest;
       previewEnvelope: MakeCredentialEnvelope;
       request: MakeCredentialRequest;
-      validation: LabValidationResult;
     }
   | {
       phase: "success";
@@ -99,53 +81,38 @@ export type LabMakeStep =
       previewEnvelope: MakeCredentialEnvelope;
       request: MakeCredentialRequest;
       responseEnvelope: MakeCredentialEnvelope;
-      validation: LabValidationResult;
     }
   | {
       phase: "error";
-      failedPhase: "previewing" | "executing";
-      previewRequest: MakeCredentialRequest | null;
+      previewRequest: MakeCredentialRequest;
       previewEnvelope: MakeCredentialEnvelope | null;
       request: MakeCredentialRequest | null;
       responseEnvelope: MakeCredentialEnvelope | null;
       runtimeError: Failure | null;
-      failureReason: LabMakeFailureReason;
-      validation: LabValidationResult;
     };
 
 export type LabGetStep =
-  | { phase: "editing"; validation: LabValidationResult }
+  | { phase: "editing" }
   | {
       phase: "executing";
       request: GetAssertionRequest;
-      validation: LabValidationResult;
     }
   | {
       phase: "success";
       request: GetAssertionRequest;
       responseEnvelope: GetAssertionEnvelope;
-      validation: LabValidationResult;
     }
   | {
       phase: "error";
-      request: GetAssertionRequest | null;
+      request: GetAssertionRequest;
       responseEnvelope: GetAssertionEnvelope | null;
       runtimeError: Failure | null;
-      failureReason: LabGetFailureReason;
-      validation: LabValidationResult;
     };
 
-export type LabPendingHandoff =
-  | {
-      reason: "rp-mismatch";
-      rpID: string;
-      credentialIDHex: string;
-    }
-  | {
-      reason: "result-reset";
-      rpID: string;
-      credentialIDHex: string;
-    };
+export type LabPendingHandoff = {
+  rpID: string;
+  credentialIDHex: string;
+};
 
 export type LabState = {
   presetID: LabPresetID;
@@ -222,8 +189,8 @@ export function createPresetState(
       ...options.get,
       verificationFlow: VerificationFlow.VerificationFlowDefault,
     },
-    makeStep: { phase: "editing", validation: emptyLabValidation() },
-    getStep: { phase: "editing", validation: emptyLabValidation() },
+    makeStep: { phase: "editing" },
+    getStep: { phase: "editing" },
     pendingHandoff: null,
   };
 }

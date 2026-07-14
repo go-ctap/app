@@ -45,11 +45,9 @@
                     </Button>
                   {/snippet}
                 </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Content side="top" sideOffset={6}>
-                    {signal.tooltip}
-                  </Tooltip.Content>
-                </Tooltip.Portal>
+                <Tooltip.Content side="top" sideOffset={6}>
+                  {signal.tooltip}
+                </Tooltip.Content>
               </Tooltip.Root>
             </div>
             <code>

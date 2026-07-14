@@ -21,9 +21,6 @@
   let { preview }: Props = $props();
 
   let isCleanup = $derived(preview.operation === MutationOperation.MutationGC);
-  let isNoop = $derived(
-    preview.operation === MutationOperation.MutationNoBlob || preview.noBlob || preview.noop === true,
-  );
   let hasTarget = $derived(!isCleanup && Boolean(preview.target.credentialIDHex));
   let hasLimit = $derived(
     preview.serializedLargeBlobArrayLimit !== null
@@ -47,17 +44,7 @@
 <section class="large-blob-preview" aria-labelledby="large-blob-preview-title">
   <header class="large-blob-preview-heading">
     <h3 id="large-blob-preview-title">{m.mutation_preview()}</h3>
-    <Badge variant="outline">{preview.operation}</Badge>
   </header>
-
-  {#if isNoop}
-    <Alert.Root role="status">
-      <Alert.Title>{isCleanup ? m.large_blob_cleanup() : m.large_blob_delete()}</Alert.Title>
-      <Alert.Description>
-        {isCleanup ? m.large_blob_cleanup_noop() : m.large_blob_delete_noop()}
-      </Alert.Description>
-    </Alert.Root>
-  {/if}
 
   <div class="large-blob-preview-metrics" aria-label={m.large_blob_summary()}>
     <Badge variant="outline">
@@ -151,13 +138,6 @@
     display: grid;
     min-width: 0;
     gap: var(--space-3);
-  }
-
-  .large-blob-preview-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-2);
   }
 
   .large-blob-preview-heading h3 {

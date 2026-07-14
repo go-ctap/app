@@ -14,12 +14,10 @@ import {
   groupOverviewRows,
 } from "./overview-rules.js";
 import { sanitizedJson } from "./redaction.js";
-import type { SessionStatus } from "./session-model.js";
 
 export type OverviewPresentationInput = {
   selectedSelector: string;
   selectedDevice: DeviceReport | null;
-  sessionStatus: SessionStatus;
   sessionBusy: boolean;
   overviewState: LoadState<InspectEnvelope>;
   overviewBioSensorState: LoadState<BioSensorEnvelope>;
@@ -33,7 +31,7 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
   const envelope = input.overviewState.data;
   const loading = input.overviewState.state === "loading";
   const mdsLoading = input.overviewMDSState.state === "loading";
-  const failureMessage = operationError(envelope);
+  const failureMessage = localizeFailure(input.overviewState.error) ?? operationError(envelope);
   const mdsFailureMessage = localizeFailure(input.overviewMDSState.error);
   const report = inspectResult(envelope);
   const info = report?.info;

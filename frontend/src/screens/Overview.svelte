@@ -7,9 +7,10 @@
   import OverviewRawInspectionData from "$lib/components/overview/OverviewRawInspectionData.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
+  import { Button } from "$lib/components/ui/button/index.js";
   import { toast } from "svelte-sonner";
   import { copyToClipboard } from "$lib/clipboard";
-  import { loadOverview, loadOverviewMDS } from "$lib/controller";
+  import { loadOverviewMDS, reloadOverview } from "$lib/controller";
   import { buildOverviewPresentation } from "$lib/overview-presentation";
   import {
     overviewBioSensor,
@@ -18,7 +19,6 @@
     selectedDevice,
     selectedSelector,
     sessionBusy,
-    sessionStatus,
   } from "$lib/stores";
 
   import { m } from "../paraglide/messages.js";
@@ -26,16 +26,11 @@
   let overview = $derived(buildOverviewPresentation({
     selectedSelector: $selectedSelector,
     selectedDevice: $selectedDevice,
-    sessionStatus: $sessionStatus,
     sessionBusy: $sessionBusy,
     overviewState: $overviewInspection,
     overviewBioSensorState: $overviewBioSensor,
     overviewMDSState: $overviewMDS,
   }));
-
-  function reloadOverview() {
-    return loadOverview();
-  }
 
   async function refreshMDS() {
     if (overview.hero.aaguidAvailable) {
@@ -60,6 +55,19 @@
         <Alert.Description>{message}</Alert.Description>
       </Alert.Root>
     {/each}
+
+    {#if overview.failureMessage}
+      <Alert.Root variant="destructive" role="alert">
+        <Alert.Description>{overview.failureMessage}</Alert.Description>
+        {#if !overview.hasReport}
+          <Alert.Action>
+            <Button variant="outline" size="sm" type="button" disabled={overview.reloadDisabled} onclick={reloadOverview}>
+              {m.reload_overview()}
+            </Button>
+          </Alert.Action>
+        {/if}
+      </Alert.Root>
+    {/if}
 
     {#if overview.hasReport}
       <OverviewHeroCard

@@ -7,6 +7,7 @@
   import { Spinner } from "$lib/components/ui/spinner/index.js";
   import type { SecurityMutationState } from "$lib/features/security/state";
   import type { ActiveOperation } from "$lib/features/workbench/state";
+  import { isIncorrectPINFailure } from "$lib/failure";
 
   import { m } from "../../../paraglide/messages.js";
   import SecurityMutationDetails from "./SecurityMutationDetails.svelte";
@@ -16,16 +17,24 @@
     activeOperation: ActiveOperation | null;
     disabled: boolean;
     onConfirm: () => void | Promise<boolean>;
-    onRetry: () => void | Promise<boolean>;
+    onPreview: () => void | Promise<boolean>;
     onClose: () => void;
     onCancelOperation: () => void | Promise<void>;
   };
 
-  let { mutation, activeOperation, disabled, onConfirm, onRetry, onClose, onCancelOperation }: Props = $props();
+  let { mutation, activeOperation, disabled, onConfirm, onPreview, onClose, onCancelOperation }: Props = $props();
 
   let open = $derived(mutation.kind !== "idle" && mutation.phase !== "editing");
   let destructive = $derived(mutation.kind === "bioRemove" || mutation.kind === "reset");
   let busy = $derived(mutation.phase === "previewing" || mutation.phase === "executing");
+  let incorrectPIN = $derived(
+    mutation.phase === "error" && mutation.failedPhase === "executing" &&
+    isIncorrectPINFailure(mutation.responseEnvelope?.error),
+  );
+  let previewFailed = $derived(
+    mutation.phase === "error" && mutation.failedPhase === "previewing",
+  );
+  let primaryAvailable = $derived(mutation.phase === "review" || previewFailed || incorrectPIN);
 
   function title() {
     if (mutation.kind === "alwaysUv") return m.security_always_uv();
@@ -43,17 +52,35 @@
     return undefined;
   }
 
-  function actionLabel() {
-    if (mutation.phase === "error") return m.retry();
+  function confirmationLabel() {
     if (mutation.kind === "reset") return m.security_reset_confirm();
-    if (mutation.kind === "bioRemove") return m.security_remove_enrollment();
+    if (mutation.kind === "bioRemove") return m.security_bio_remove_operation();
+    if (mutation.kind === "bioEnroll") return m.security_bio_enroll_operation();
+    if (mutation.kind === "bioRename") return m.security_bio_rename_operation();
+    if (mutation.kind === "alwaysUv") return m.security_always_uv_operation();
+    if (mutation.kind === "pinPolicy") return m.security_pin_policy_operation();
     return m.continue_action();
+  }
+
+  function previewLabel() {
+    if (mutation.kind === "pinPolicy" || mutation.kind === "bioRename") {
+      return m.preview_change();
+    }
+    return confirmationLabel();
+  }
+
+  function primaryLabel() {
+    return previewFailed ? previewLabel() : confirmationLabel();
+  }
+
+  function busyLabel() {
+    return mutation.phase === "previewing" ? previewLabel() : confirmationLabel();
   }
 
   function runPrimary(event?: Event) {
     event?.preventDefault();
-    if (mutation.phase === "review") void onConfirm();
-    else if (mutation.phase === "error") void onRetry();
+    if (mutation.phase === "review" || incorrectPIN) void onConfirm();
+    else if (previewFailed) void onPreview();
   }
 
   function handleOpenChange(next: boolean) {
@@ -77,15 +104,17 @@
       <SecurityMutationDetails {mutation} {activeOperation} />
 
       <AlertDialog.Footer>
-        <AlertDialog.Cancel disabled={busy} onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
-        {#if mutation.phase === "review" || mutation.phase === "error"}
-          <AlertDialog.Action variant="destructive" disabled={disabled} onclick={runPrimary}>
-            {actionLabel()}
-          </AlertDialog.Action>
-        {:else}
+        <AlertDialog.Cancel disabled={busy} onclick={onClose}>
+          {mutation.phase === "error" && !primaryAvailable ? m.close() : m.cancel()}
+        </AlertDialog.Cancel>
+        {#if busy}
           <AlertDialog.Action variant="destructive" disabled>
             <Spinner data-icon="inline-start" aria-hidden="true" />
-            {m.waiting_for_authenticator_response()}
+            {busyLabel()}
+          </AlertDialog.Action>
+        {:else if primaryAvailable}
+          <AlertDialog.Action variant="destructive" disabled={disabled} onclick={runPrimary}>
+            {primaryLabel()}
           </AlertDialog.Action>
         {/if}
       </AlertDialog.Footer>
@@ -93,7 +122,7 @@
   </AlertDialog.Root>
 {:else}
   <Dialog.Root {open} onOpenChange={handleOpenChange}>
-    <Dialog.Content class="security-mutation-dialog" showCloseButton={!busy}>
+    <Dialog.Content class="security-mutation-dialog" showCloseButton={!busy && primaryAvailable}>
       <Dialog.Header>
         <Dialog.Title>{title()}</Dialog.Title>
         {#if description()}
@@ -109,16 +138,18 @@
             <Fingerprint data-icon="inline-start" aria-hidden="true" />
             {m.security_cancel_enrollment()}
           </Button>
-        {:else if mutation.phase === "review" || mutation.phase === "error"}
+        {:else if busy}
+          <Button type="button" disabled>
+            <Spinner data-icon="inline-start" aria-hidden="true" />
+            {busyLabel()}
+          </Button>
+        {:else if primaryAvailable}
           <Button type="button" disabled={disabled} onclick={runPrimary}>
-            {actionLabel()}
+            {primaryLabel()}
           </Button>
           <Button variant="outline" type="button" onclick={onClose}>{m.cancel()}</Button>
         {:else}
-          <Button type="button" disabled>
-            <Spinner data-icon="inline-start" aria-hidden="true" />
-            {m.waiting_for_authenticator_response()}
-          </Button>
+          <Button type="button" onclick={onClose}>{m.close()}</Button>
         {/if}
       </Dialog.Footer>
     </Dialog.Content>

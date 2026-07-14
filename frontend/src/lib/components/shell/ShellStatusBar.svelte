@@ -2,7 +2,6 @@
   import CircleCheckIcon from "@lucide/svelte/icons/circle-check";
   import CircleIcon from "@lucide/svelte/icons/circle";
   import InfoIcon from "@lucide/svelte/icons/info";
-  import RotateCcwIcon from "@lucide/svelte/icons/rotate-ccw";
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import XIcon from "@lucide/svelte/icons/x";
 
@@ -16,10 +15,9 @@
   type Props = {
     presentation: ShellStatusPresentation;
     onCancel: () => void | Promise<void>;
-    onRetry: () => void | Promise<void>;
   };
 
-  let { presentation, onCancel, onRetry }: Props = $props();
+  let { presentation, onCancel }: Props = $props();
 </script>
 
 <footer
@@ -63,34 +61,19 @@
     </span>
   {/if}
 
-  {#if presentation.cancel || presentation.retry}
+  {#if presentation.cancel}
     <span class="shell-status-actions">
-      {#if presentation.cancel}
-        <Button
-          type="button"
-          variant="ghost"
-          size="xs"
-          disabled={presentation.cancel.disabled}
-          aria-label={presentation.cancel.ariaLabel}
-          onclick={() => void onCancel()}
-        >
-          <XIcon data-icon="inline-start" />
-          {presentation.cancel.label}
-        </Button>
-      {/if}
-      {#if presentation.retry}
-        <Button
-          type="button"
-          variant="outline"
-          size="xs"
-          disabled={presentation.retry.disabled}
-          aria-label={presentation.retry.ariaLabel}
-          onclick={() => void onRetry()}
-        >
-          <RotateCcwIcon data-icon="inline-start" />
-          {presentation.retry.label}
-        </Button>
-      {/if}
+      <Button
+        type="button"
+        variant="ghost"
+        size="xs"
+        disabled={presentation.cancel.disabled}
+        aria-label={presentation.cancel.ariaLabel}
+        onclick={() => void onCancel()}
+      >
+        <XIcon data-icon="inline-start" />
+        {presentation.cancel.label}
+      </Button>
     </span>
   {/if}
 </footer>

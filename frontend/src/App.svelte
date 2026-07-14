@@ -20,7 +20,6 @@
 		handleInteractionRequested,
 		handleOperationProgress,
 		navigateToScreen,
-		retryLastStatusOutcome,
 		selectToken,
 		startDiscoveryMonitoring,
 		shutdownWorkbench
@@ -75,16 +74,12 @@
 		void selectToken(selector);
 	}
 
-	function handleInteractionAnswer(answer: kitservice.InteractionAnswer) {
-		void answerPendingInteraction(answer);
+	async function handleInteractionAnswer(answer: kitservice.InteractionAnswer) {
+		await answerPendingInteraction(answer);
 	}
 
 	function handleCancelOperation() {
 		void cancelActiveOperation();
-	}
-
-	function handleRetryStatusOutcome() {
-		void retryLastStatusOutcome();
 	}
 
 	async function syncWindowPlatform() {
@@ -214,7 +209,6 @@
 			<ShellStatusBar
 				presentation={shellStatusPresentation}
 				onCancel={handleCancelOperation}
-				onRetry={handleRetryStatusOutcome}
 			/>
 		</section>
 

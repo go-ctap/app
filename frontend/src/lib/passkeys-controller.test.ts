@@ -12,7 +12,7 @@ import type {
 } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { api } from "./api";
-import { failureForCode } from "./failure";
+import { failureForCode } from "./test-failure";
 import {
   completePasskeysInventoryLoad,
   passkeysMutation,
@@ -26,7 +26,6 @@ import {
   confirmCredentialUpdate,
   normalizeCredentialUpdateForm,
   previewCredentialUpdate,
-  retryPasskeysMutation,
   updateCredentialDraft,
   validateCredentialUpdate,
 } from "./passkeys-controller";
@@ -75,6 +74,19 @@ function updatePreviewEnvelope(): CredentialUpdateEnvelope {
       result: null,
     },
   } as CredentialUpdateEnvelope;
+}
+
+function updateResultEnvelope(): CredentialUpdateEnvelope {
+  const envelope = updatePreviewEnvelope();
+  envelope.operationId = "update-1";
+  envelope.result!.result = {
+    deviceId: "token-1",
+    credentialIDHex: "cafe",
+    rpID: "example.test",
+    previous: { userIDHex: "01", name: "user", displayName: "Old name" },
+    current: { userIDHex: "01", name: "user", displayName: "New name" },
+  };
+  return envelope;
 }
 
 beforeEach(() => {
@@ -155,27 +167,24 @@ describe("passkeys mutation requests", () => {
     )).toBe("no-changes");
   });
 
-  it("retries an execution failure through refresh and a new preview without auto-confirming", async () => {
+  it("reconfirms an incorrect PIN directly without rebuilding the preview", async () => {
     const executionFailure = updatePreviewEnvelope();
-    executionFailure.error = failureForCode(Code.CodeTransportFailure);
+    executionFailure.error = failureForCode(Code.CodePINInvalid);
     const update = vi.spyOn(api, "updateCredentialUser")
       .mockResolvedValueOnce(updatePreviewEnvelope())
       .mockResolvedValueOnce(executionFailure)
-      .mockResolvedValueOnce(updatePreviewEnvelope());
+      .mockResolvedValueOnce(updateResultEnvelope());
     const list = vi.spyOn(api, "listCredentials").mockResolvedValue(inventoryEnvelope());
 
     expect(beginCredentialUpdate("cafe")).toBe(true);
     updateCredentialDraft({ displayName: "New name" });
     expect(await previewCredentialUpdate()).toBe(true);
     expect(await confirmCredentialUpdate()).toBe(false);
-    expect(get(passkeysMutation)).toMatchObject({ phase: "error", failedPhase: "executing" });
 
-    expect(await retryPasskeysMutation()).toBe(true);
-    expect(list).toHaveBeenCalledWith(expect.objectContaining({ refresh: true }));
+    expect(await confirmCredentialUpdate()).toBe(true);
     expect(update).toHaveBeenCalledTimes(3);
     expect(update.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
-    expect(update.mock.calls[2][0]).toMatchObject({ dryRun: true });
-    expect(update.mock.calls[2][0].confirmed).not.toBe(true);
-    expect(get(passkeysMutation)).toMatchObject({ kind: "update", phase: "review" });
+    expect(update.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(list).toHaveBeenCalledTimes(1);
   });
 });

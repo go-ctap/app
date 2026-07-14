@@ -8,7 +8,7 @@ import { PreviewMode, Severity } from "../../../../bindings/github.com/go-ctap/k
 import type { ResetFactoryEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
 
 import type { SecurityMutationState } from "$lib/features/security/state";
-import { failureForCode } from "$lib/failure";
+import { failureForCode } from "$lib/test-failure";
 import { setAppLocale } from "$lib/i18n";
 
 import SecurityMutationDetails from "./SecurityMutationDetails.svelte";

@@ -3,7 +3,6 @@
 
   import LargeBlobMutationPreview from "$lib/components/largeblobs/LargeBlobMutationPreview.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import * as Field from "$lib/components/ui/field/index.js";
@@ -20,31 +19,27 @@
     type LargeBlobPayloadEncoding,
     type LargeBlobPayloadValidationError,
   } from "$lib/largeblobs-payload";
-  import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
+  import { failureMessage as localizeFailure, isCanceledFailure, isIncorrectPINFailure } from "$lib/failure";
 
   import { m } from "../../../paraglide/messages.js";
 
   type Props = {
     mutation: LargeBlobMutationState;
-    retryAllowed: boolean;
     onDraftChange: (patch: Partial<LargeBlobWriteDraft>) => void;
     onEncodingChange: (encoding: LargeBlobPayloadEncoding) => void;
     onEdit: () => void;
     onPreview: () => void | Promise<boolean>;
     onConfirm: () => void | Promise<boolean>;
-    onRetry: () => void | Promise<boolean>;
     onClose: () => void;
   };
 
   let {
     mutation,
-    retryAllowed,
     onDraftChange,
     onEncodingChange,
     onEdit,
     onPreview,
     onConfirm,
-    onRetry,
     onClose,
   }: Props = $props();
 
@@ -54,7 +49,9 @@
       && (mutation.phase === "previewing" || mutation.phase === "executing"),
   );
   let fieldsLocked = $derived(
-    mutation.kind === "write" && mutation.phase !== "editing",
+    mutation.kind === "write"
+      && mutation.phase !== "editing"
+      && !(mutation.phase === "error" && mutation.failedPhase === "previewing"),
   );
   let preview = $derived.by(() => {
     if (mutation.kind !== "write") return null;
@@ -92,6 +89,10 @@
     ),
   );
   let failedPhase = $derived(mutation.phase === "error" ? mutation.failedPhase : null);
+  let incorrectPIN = $derived(
+    mutation.kind === "write" && mutation.phase === "error" && mutation.failedPhase === "executing" &&
+    isIncorrectPINFailure(mutation.responseEnvelope?.error),
+  );
 
   function validationMessage(error: LargeBlobPayloadValidationError | null) {
     if (error === "invalid-hex-character") return m.payload_hex_invalid();
@@ -117,7 +118,8 @@
       return;
     }
     if (mutation.phase === "error") {
-      void onRetry();
+      if (mutation.failedPhase === "previewing") void onPreview();
+      else if (incorrectPIN) void onConfirm();
       return;
     }
     void onPreview();
@@ -194,32 +196,30 @@
         {/if}
 
         {#if preview}
-          <div class="large-blob-write-preview-heading">
-            <Badge variant="outline">{m.preview_ready()}</Badge>
-            {#if mutation.phase === "review" || mutation.phase === "error"}
+          {#if mutation.phase === "review"}
+            <div class="large-blob-write-preview-actions">
               <Button variant="ghost" size="sm" type="button" onclick={onEdit}>
                 <Pencil data-icon="inline-start" aria-hidden="true" />
                 {m.edit()}
               </Button>
-            {/if}
-          </div>
+            </div>
+          {/if}
           <LargeBlobMutationPreview {preview} />
         {/if}
 
         <Dialog.Footer>
-          <Button
-            type="submit"
-            disabled={busy || (mutation.phase === "error" && !retryAllowed)}
-          >
-            {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
-            {mutation.phase === "review"
-              ? m.confirm_write()
-              : mutation.phase === "error"
-                ? m.retry()
+          {#if mutation.phase !== "error" || mutation.failedPhase === "previewing" || incorrectPIN}
+            <Button type="submit" disabled={busy}>
+              {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
+              {mutation.phase === "review" || mutation.phase === "executing" || incorrectPIN
+                ? m.confirm_write()
                 : m.preview_write()}
-          </Button>
+            </Button>
+          {/if}
           <Button variant="outline" type="button" disabled={busy} onclick={onClose}>
-            {m.cancel()}
+            {mutation.phase === "error" && mutation.failedPhase === "executing" && !incorrectPIN
+              ? m.close()
+              : m.cancel()}
           </Button>
         </Dialog.Footer>
       </form>
@@ -242,11 +242,9 @@
     gap: var(--space-4);
   }
 
-  .large-blob-write-preview-heading {
+  .large-blob-write-preview-actions {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-2);
+    justify-content: flex-end;
   }
 }
 </style>

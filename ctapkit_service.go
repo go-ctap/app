@@ -48,14 +48,6 @@ func (s *CtapkitService) Sessions(ctx context.Context) ([]kitservice.SessionSnap
 	return s.core.Sessions(ctx)
 }
 
-func (s *CtapkitService) Session(ctx context.Context, id kitservice.SessionID) (kitservice.SessionSnapshot, error) {
-	return s.core.Session(ctx, id)
-}
-
-func (s *CtapkitService) CloseSession(ctx context.Context, id kitservice.SessionID) (kitservice.SessionSnapshot, error) {
-	return s.core.CloseSession(ctx, id)
-}
-
 func (s *CtapkitService) CloseAllSessions(ctx context.Context) ([]kitservice.SessionSnapshot, error) {
 	return s.core.CloseAllSessions(ctx)
 }

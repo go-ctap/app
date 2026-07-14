@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { sanitizeDisplayData } from "./redaction";
+import { sanitizedJson } from "./redaction";
 
-describe("sanitizeDisplayData", () => {
+describe("sanitizedJson", () => {
   it("redacts interaction and PIN mutation secrets without hiding CTAP capability fields", () => {
-    expect(sanitizeDisplayData({
+    const json = sanitizedJson({
       pin: "123456",
       currentPIN: "111111",
       newPIN: "222222",
@@ -20,7 +20,8 @@ describe("sanitizeDisplayData", () => {
           pinUvAuthToken: true,
         },
       },
-    })).toEqual({
+    });
+    expect(JSON.parse(json)).toEqual({
       pin: "[redacted]",
       currentPIN: "[redacted]",
       newPIN: "[redacted]",

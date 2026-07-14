@@ -1,6 +1,6 @@
 import { get } from "svelte/store";
 
-import { Code, type Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { Category, Code, Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 
 import { m } from "../paraglide/messages.js";
@@ -18,7 +18,7 @@ import { maybeLoadLargeBlobs } from "./largeblobs-controller.js";
 import { maybeLoadOverview } from "./overview-controller.js";
 import { maybeLoadPasskeys } from "./passkeys-controller.js";
 import { maybeLoadSecurity } from "./security-controller.js";
-import { failureForCode, failureMessage, runtimeFailureFrom } from "./failure.js";
+import { failureMessage, runtimeFailureFrom } from "./failure.js";
 import {
   idleSessionStatus,
   reportForSelector,
@@ -68,10 +68,7 @@ function discoverySnapshot(
 
 async function closeOpenSessions() {
   try {
-    const snapshots = await api.sessions();
-    if (snapshots.some(sessionIsOpen)) {
-      await api.closeAllSessions();
-    }
+    await api.closeAllSessions();
   } finally {
     finishOperation();
   }
@@ -133,7 +130,7 @@ function recoverySelection(devices: DeviceReport[], selector: string) {
 
 /**
  * Restores the selected authenticator session without crossing the per-device
- * screen-state boundary. Callers can then retry their own forced operation
+ * screen-state boundary. Callers can then rerun their own forced operation
  * while last-known-good presentation data remains intact.
  */
 export async function ensureSelectedSessionReady(): Promise<boolean> {
@@ -146,7 +143,10 @@ export async function ensureSelectedSessionReady(): Promise<boolean> {
 
   const recovery = recoverySelection(get(deviceStore), selector);
   if (!recovery.device) {
-    const error = failureForCode(Code.CodeDeviceUnavailable);
+    const error = new Failure({
+      code: Code.CodeDeviceUnavailable,
+      category: Category.CategoryInvalidState,
+    });
     applyDiscovery(discoverySnapshot(
       recovery.devices,
       selector,
@@ -198,7 +198,9 @@ export async function selectToken(selector: string) {
     setStatusOutcome({
       tone: discovery.error ? "error" : "info",
       title: discovery.error ? m.token_selection_issue() : m.token_selected(),
-      message: selectionMessage(discovery, selector),
+      message: discovery.error
+        ? failureMessage(discovery.error)
+        : selectionMessage(discovery, selector),
     });
     await maybeLoadOverview();
     await maybeLoadPasskeys();

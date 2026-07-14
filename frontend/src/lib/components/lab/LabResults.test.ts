@@ -11,20 +11,46 @@ import {
 } from "../../../../bindings/github.com/go-ctap/ctap/credential";
 import { AttestationStatementFormatIdentifier } from "../../../../bindings/github.com/go-ctap/ctap/attestation";
 import {
+  GetAssertionOutput,
+  MakeCredentialOutput,
+  OperationKind,
+} from "../../../../bindings/github.com/go-ctap/kit/model";
+import {
   Assertion,
   GetAssertionResult as GetAssertionResultDTO,
   MakeCredentialResult as MakeCredentialResultDTO,
 } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
+import {
+  GetAssertionEnvelope,
+  MakeCredentialEnvelope,
+} from "../../../../bindings/github.com/go-ctap/kit/service";
 
 import GetAssertionResult from "$lib/components/lab/GetAssertionResult.svelte";
 import MakeCredentialResult from "$lib/components/lab/MakeCredentialResult.svelte";
 import { setAppLocale } from "$lib/i18n";
-import { base64ToHex } from "$lib/lab-input";
 
 const toastMocks = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
 
 const clipboardSetText = vi.spyOn(Clipboard, "SetText");
+
+function getAssertionEnvelope(result: GetAssertionResultDTO) {
+  return new GetAssertionEnvelope({
+    operationId: "get-assertion-1",
+    sessionId: "session-1",
+    kind: OperationKind.OperationGetAssertion,
+    result: new GetAssertionOutput({ result }),
+  });
+}
+
+function makeCredentialEnvelope(result: MakeCredentialResultDTO) {
+  return new MakeCredentialEnvelope({
+    operationId: "make-credential-1",
+    sessionId: "session-1",
+    kind: OperationKind.OperationMakeCredential,
+    result: new MakeCredentialOutput({ result }),
+  });
+}
 
 describe("WebAuthn Lab results", () => {
   beforeEach(() => {
@@ -42,16 +68,12 @@ describe("WebAuthn Lab results", () => {
   });
 
   it("distinguishes a successful GetAssertion response with 0 assertions", () => {
-    render(GetAssertionResult, {
-      result: new GetAssertionResultDTO({
-        deviceId: "token-1",
-        rpID: "example.com",
-        assertions: [],
-      }),
-      responseEnvelope: null,
-      runtimeError: null,
-      bytesToHex: base64ToHex,
+    const result = new GetAssertionResultDTO({
+      deviceId: "token-1",
+      rpID: "example.com",
+      assertions: [],
     });
+    render(GetAssertionResult, { responseEnvelope: getAssertionEnvelope(result) });
 
     expect(screen.getByText("0 assertions")).toBeInTheDocument();
     expect(screen.getByText("The authenticator returned 0 assertions.")).toBeInTheDocument();
@@ -94,12 +116,8 @@ describe("WebAuthn Lab results", () => {
       }),
     ];
 
-    render(GetAssertionResult, {
-      result: new GetAssertionResultDTO({ deviceId: "token-1", rpID: "example.com", assertions }),
-      responseEnvelope: null,
-      runtimeError: null,
-      bytesToHex: base64ToHex,
-    });
+    const result = new GetAssertionResultDTO({ deviceId: "token-1", rpID: "example.com", assertions });
+    render(GetAssertionResult, { responseEnvelope: getAssertionEnvelope(result) });
 
     expect(screen.getByText("2 assertions")).toBeInTheDocument();
     const first = screen.getByRole("heading", { level: 4, name: "Assertion 0" }).closest("section") as HTMLElement;
@@ -128,7 +146,7 @@ describe("WebAuthn Lab results", () => {
       enterpriseAttestation: false,
     });
 
-    render(MakeCredentialResult, { result, responseEnvelope: null, runtimeError: null });
+    render(MakeCredentialResult, { responseEnvelope: makeCredentialEnvelope(result) });
 
     expect(screen.getByText("24 bytes")).toBeInTheDocument();
     expect(screen.queryByText(credentialIDHex)).not.toBeInTheDocument();

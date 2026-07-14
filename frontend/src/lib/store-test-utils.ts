@@ -18,6 +18,7 @@ import {
   resetLargeBlobsStateForTest,
 } from "./features/largeblobs/state.js";
 import {
+  errorLoadState,
   idleLoadState,
   overviewBioSensor,
   overviewInspection,
@@ -76,7 +77,15 @@ export function seedPendingInteractionForTest(prompt: InteractionPrompt | null) 
 }
 
 export function seedOverviewEnvelopeForTest(envelope: InspectEnvelope | null) {
-  overviewInspection.set(envelope ? readyLoadState(envelope) : idleLoadState());
+  if (!envelope) {
+    overviewInspection.set(idleLoadState());
+    return;
+  }
+  overviewInspection.set(
+    envelope.error
+      ? errorLoadState(envelope.error, envelope)
+      : readyLoadState(envelope),
+  );
 }
 
 export function seedOverviewBioSensorEnvelopeForTest(envelope: BioSensorEnvelope | null) {

@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/svelte";
+import { cleanup, render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
@@ -95,48 +95,16 @@ describe("Security screen", () => {
     setAppLocale("en");
     resetAppStateForTest();
     seedSelectionForTest(token.deviceId, token, { state: "ready", sessionId: "session-1" });
-    completeSecurityStatusLoad(statusEnvelope(), "2026-07-12T00:00:00.000Z");
+    completeSecurityStatusLoad(statusEnvelope());
   });
 
   afterEach(() => cleanup());
 
-  it("renders the required heading hierarchy without a redundant in-page navigation", () => {
+  it("shows the current verification configuration and supported controls", () => {
     render(Security);
 
-    for (const name of [
-      "Security overview",
-      "PIN",
-      "User verification",
-      "Biometric enrollments",
-      "PIN policy",
-      "Factory reset",
-    ]) {
-      expect(screen.getByRole("heading", { level: 2, name })).toBeInTheDocument();
-    }
-    expect(screen.getByRole("heading", { level: 3, name: "Always UV" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 3, name: "Biometric sensor" })).toBeInTheDocument();
     expect(screen.getByText(/Client PIN or built-in UV/)).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "Always UV" })).toBeEnabled();
-
-    const overview = document.getElementById("security-overview");
-    expect(overview).not.toBeNull();
-    expect(overview!.querySelectorAll(".security-summary")).toHaveLength(3);
-    expect(within(overview!).getByRole("heading", { level: 3, name: "User verification" })).toBeInTheDocument();
-    expect(within(overview!).queryByRole("heading", { level: 3, name: "Biometrics" })).not.toBeInTheDocument();
-
-    const expectedAnchors = [
-      "security-overview",
-      "security-pin",
-      "security-user-verification",
-      "security-always-uv",
-      "security-biometric-sensor",
-      "security-biometric-enrollments",
-      "security-pin-policy",
-      "security-factory-reset",
-    ];
-    expect(screen.queryByRole("navigation", { name: "Security sections" })).not.toBeInTheDocument();
-    for (const id of expectedAnchors) {
-      expect(document.getElementById(id)).not.toBeNull();
-    }
+    expect(screen.getByRole("heading", { name: "Factory reset" })).toBeInTheDocument();
   });
 });

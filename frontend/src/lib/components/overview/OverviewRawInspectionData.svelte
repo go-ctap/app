@@ -41,9 +41,7 @@
             </Button>
           {/snippet}
         </Tooltip.Trigger>
-        <Tooltip.Portal>
-          <Tooltip.Content side="top">{m.copy_json()}</Tooltip.Content>
-        </Tooltip.Portal>
+        <Tooltip.Content side="top">{m.copy_json()}</Tooltip.Content>
       </Tooltip.Root>
     </div>
 

@@ -1,16 +1,34 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { OperationKind, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import {
+  LargeBlobMutationOutput,
+  OperationKind,
+  VerificationFlow,
+} from "../../bindings/github.com/go-ctap/kit/model";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import {
+  MutationOperation,
+  MutationPreview,
+} from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { BioSensorEnvelope, CredentialsEnvelope, InteractionPrompt, LargeBlobListEnvelope, MDSLookupEnvelope, OperationEventEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
+import {
+  InteractionAnswer,
+  LargeBlobMutationEnvelope,
+  type BioSensorEnvelope,
+  type CredentialsEnvelope,
+  type InteractionPrompt,
+  type LargeBlobListEnvelope,
+  type MDSLookupEnvelope,
+  type OperationEventEnvelope,
+  type SessionSnapshot,
+} from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
 import { failPasskeysInventoryLoadAtRuntime } from "$lib/features/passkeys/state";
-import { failureForCode } from "$lib/failure";
+import { failureForCode } from "$lib/test-failure";
 
 import {
   resetAppStateForTest,
@@ -52,6 +70,7 @@ const serviceMocks = vi.hoisted(() => ({
   BioSensorInfo: vi.fn(),
   CloseAllSessions: vi.fn(),
   DeleteCredential: vi.fn(),
+  DeleteLargeBlob: vi.fn(),
   Discover: vi.fn(),
   Inspect: vi.fn(),
   ListCredentials: vi.fn(),
@@ -477,6 +496,68 @@ describe("controller lifecycle", () => {
     expect(get(passkeysMutation)).toMatchObject({ kind: "delete", phase: "review" });
   });
 
+  it("reopens an invalid selected session before repeating a credential delete preview", async () => {
+    const token = device("token-1");
+    const { beginCredentialDelete } = await import("./controller");
+    seedDevicesForTest([token]);
+    seedSelectionForTest("token-1", token, {
+      state: "error",
+      error: failureForCode(Code.CodeSessionInvalid),
+    });
+    seedPasskeysEnvelopeForTest(credentialsEnvelope(token, "session-expired"));
+    serviceMocks.OpenSession.mockResolvedValue(snapshot(token, "session-reopened"));
+    serviceMocks.DeleteCredential.mockResolvedValue({
+      operationId: "delete-preview-1",
+      sessionId: "session-reopened",
+      kind: OperationKind.OperationDeleteCredential,
+      result: {
+        preview: { credentialIDHex: "cafe", rpID: "example.com" },
+        result: null,
+      },
+    });
+
+    expect(await beginCredentialDelete("cafe")).toBe(true);
+    expect(serviceMocks.OpenSession).toHaveBeenCalledWith({ selector: "token-1" });
+    expect(serviceMocks.DeleteCredential).toHaveBeenCalledWith({
+      sessionId: "session-reopened",
+      verificationFlow: "",
+      credentialIdHex: "cafe",
+      dryRun: true,
+    });
+  });
+
+  it("reopens an invalid selected session before repeating a large-blob delete preview", async () => {
+    const token = device("token-1");
+    const { beginLargeBlobDelete } = await import("./controller");
+    seedDevicesForTest([token]);
+    seedSelectionForTest("token-1", token, {
+      state: "error",
+      error: failureForCode(Code.CodeSessionInvalid),
+    });
+    seedLargeBlobsEnvelopeForTest(largeBlobListEnvelope(token, "session-expired"));
+    serviceMocks.OpenSession.mockResolvedValue(snapshot(token, "session-reopened"));
+    serviceMocks.DeleteLargeBlob.mockResolvedValue(new LargeBlobMutationEnvelope({
+      operationId: "large-blob-delete-preview-1",
+      sessionId: "session-reopened",
+      kind: OperationKind.OperationDeleteLargeBlob,
+      result: new LargeBlobMutationOutput({
+        preview: new MutationPreview({
+          operation: MutationOperation.MutationDelete,
+        }),
+        result: null,
+      }),
+    }));
+
+    expect(await beginLargeBlobDelete("cafe")).toBe(true);
+    expect(serviceMocks.OpenSession).toHaveBeenCalledWith({ selector: "token-1" });
+    expect(serviceMocks.DeleteLargeBlob).toHaveBeenCalledWith({
+      sessionId: "session-reopened",
+      verificationFlow: "",
+      credentialIdHex: "cafe",
+      dryRun: true,
+    });
+  });
+
   it("executes the exact reviewed update request and forces a refresh", async () => {
     const token = device("token-1");
     const {
@@ -691,7 +772,6 @@ describe("controller lifecycle", () => {
       beginCredentialUpdate,
       confirmCredentialUpdate,
       previewCredentialUpdate,
-      retryLastStatusOutcome,
       updateCredentialDraft,
     } = await import("./controller");
     seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
@@ -716,23 +796,7 @@ describe("controller lifecycle", () => {
         kind: OperationKind.OperationUpdateCredentialUser,
         result: { preview, result: null },
       })
-      .mockResolvedValueOnce(errorEnvelope)
-      .mockResolvedValueOnce({
-        operationId: "update-2",
-        sessionId: "session-token-1",
-        kind: OperationKind.OperationUpdateCredentialUser,
-        result: {
-          preview,
-          result: {
-            deviceId: "token-1",
-            credentialIDHex: "cafe",
-            rpID: "example.com",
-            previous: preview.current,
-            current: preview.proposed,
-          },
-        },
-      });
-    serviceMocks.ListCredentials.mockResolvedValue(credentialsEnvelope(token));
+      .mockResolvedValueOnce(errorEnvelope);
 
     expect(beginCredentialUpdate("cafe")).toBe(true);
     expect(updateCredentialDraft({ name: "updated@example.com" })).toBe(true);
@@ -747,24 +811,15 @@ describe("controller lifecycle", () => {
       responseEnvelope: errorEnvelope,
       runtimeError: null,
     });
-    expect(get(statusBar).lastOutcome?.retry).toBeTypeOf("function");
-
-    expect(await retryLastStatusOutcome()).toBe(true);
-    expect(serviceMocks.UpdateCredentialUser).toHaveBeenCalledTimes(3);
-    expect(serviceMocks.UpdateCredentialUser.mock.calls[2][0]).toMatchObject({
-      dryRun: true,
-    });
-    expect(serviceMocks.UpdateCredentialUser.mock.calls[2][0].confirmed).not.toBe(true);
-    expect(get(passkeysMutation)).toMatchObject({ kind: "update", phase: "review" });
+    expect(serviceMocks.UpdateCredentialUser).toHaveBeenCalledTimes(2);
   });
 
-  it("clears an invalid mutation session and refuses to retry its reviewed request", async () => {
+  it("clears an invalid mutation session without reissuing its reviewed request", async () => {
     const token = device("token-1");
     const {
       beginCredentialUpdate,
       confirmCredentialUpdate,
       previewCredentialUpdate,
-      retryPasskeysMutation,
       updateCredentialDraft,
     } = await import("./controller");
     seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
@@ -808,7 +863,6 @@ describe("controller lifecycle", () => {
       responseEnvelope: invalidSessionEnvelope,
     });
 
-    expect(await retryPasskeysMutation()).toBe(false);
     expect(serviceMocks.UpdateCredentialUser).toHaveBeenCalledTimes(2);
     expect(serviceMocks.ListCredentials).not.toHaveBeenCalled();
   });
@@ -883,7 +937,6 @@ describe("controller lifecycle", () => {
       tone: "error",
       message: "The operation returned an unexpected result type.",
     });
-    expect(get(statusBar).lastOutcome?.retry).toBeUndefined();
   });
 
   it("keeps passkeys transport failures as load errors without synthetic credentials envelopes", async () => {
@@ -1060,6 +1113,22 @@ describe("controller lifecycle", () => {
     expect(serviceMocks.OpenSession).toHaveBeenCalledWith({ selector: "token-2" });
   });
 
+  it("reports the concrete session-open failure when device selection cannot open", async () => {
+    const token = device("token-1");
+    const { selectToken } = await import("./controller");
+    seedDevicesForTest([token]);
+    serviceMocks.Sessions.mockRejectedValue(new Error("session open failed", {
+      cause: failureForCode(Code.CodeDeviceBusy),
+    }));
+
+    await selectToken("token-1");
+
+    expect(get(statusBar).lastOutcome).toMatchObject({
+      tone: "error",
+      message: "The selected authenticator is already in use.",
+    });
+  });
+
   it("keeps overview transport failures as load errors without synthetic inspect envelopes", async () => {
     const token = device("token-1");
     const { loadOverview } = await import("./controller");
@@ -1073,6 +1142,75 @@ describe("controller lifecycle", () => {
     expect(get(overviewInspection).data).toBeNull();
     expect(get(statusBar).activeOperation).toBeNull();
     expect(get(statusBar).lastOutcome?.message).toBe("The operation failed because of an internal error.");
+  });
+
+  it("reopens an invalid selected session before reloading overview", async () => {
+    const token = device("token-1");
+    const { reloadOverview } = await import("./controller");
+    seedDevicesForTest([token]);
+    seedActiveScreenForTest("overview");
+    seedSelectionForTest("token-1", token, {
+      state: "error",
+      error: failureForCode(Code.CodeSessionInvalid),
+    });
+    serviceMocks.Sessions.mockResolvedValue([]);
+    serviceMocks.OpenSession.mockResolvedValue(snapshot(token, "session-reopened"));
+    serviceMocks.Inspect.mockResolvedValue(inspectEnvelope(token));
+
+    await reloadOverview();
+
+    expect(serviceMocks.OpenSession).toHaveBeenCalledWith({ selector: "token-1" });
+    expect(serviceMocks.Inspect).toHaveBeenCalledWith({ sessionId: "session-reopened" });
+    expect(get(sessionStatus)).toMatchObject({ state: "ready", sessionId: "session-reopened" });
+  });
+
+  it("keeps a failed Inspect response as its typed envelope and exact kit error", async () => {
+    const token = device("token-1");
+    const { loadOverview } = await import("./controller");
+    const envelope = {
+      operationId: "inspect-error",
+      sessionId: "session-token-1",
+      kind: OperationKind.OperationInspect,
+      error: failureForCode(Code.CodeDeviceBusy),
+    };
+    seedDevicesForTest([token]);
+    seedActiveScreenForTest("overview");
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
+    serviceMocks.Inspect.mockResolvedValue(envelope);
+
+    await loadOverview();
+
+    expect(get(overviewInspection)).toMatchObject({
+      state: "error",
+      data: envelope,
+      error: failureForCode(Code.CodeDeviceBusy),
+    });
+    expect(get(statusBar).lastOutcome?.message).toBe("The selected authenticator is already in use.");
+  });
+
+  it("keeps a biometric sub-load failure visible instead of overwriting it with inspect success", async () => {
+    const token = device("token-1");
+    const { loadOverview } = await import("./controller");
+    const envelope = inspectEnvelope(token);
+    envelope.result.result.info.options = { bioEnroll: true };
+    seedDevicesForTest([token]);
+    seedActiveScreenForTest("overview");
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
+    serviceMocks.Inspect.mockResolvedValue(envelope);
+    serviceMocks.BioSensorInfo.mockRejectedValue(new Error("BioSensorInfo failed", {
+      cause: {
+        code: Code.CodeTransportFailure,
+        category: "transport-failure",
+      },
+    }));
+
+    await loadOverview();
+
+    expect(get(overviewBioSensor).state).toBe("error");
+    expect(get(statusBar).lastOutcome).toMatchObject({
+      tone: "warning",
+      message: "Communication with the authenticator failed.",
+    });
   });
 
   it("records operation events from the runtime", async () => {
@@ -1103,5 +1241,54 @@ describe("controller lifecycle", () => {
 
     expect(get(pendingInteraction)?.interactionId).toBe("interaction-current");
     expect(serviceMocks.ResolveInteraction).not.toHaveBeenCalled();
+  });
+
+  it("keeps the interaction pending until Wails resolves it and clears the typed PIN DTO", async () => {
+    const { answerPendingInteraction } = await import("./controller");
+    seedPendingInteractionForTest({ interactionId: "interaction-current" } as InteractionPrompt);
+    let receivedPIN = "";
+    let resolveInteraction!: (value: boolean) => void;
+    serviceMocks.ResolveInteraction.mockImplementationOnce((received: InteractionAnswer) => {
+      receivedPIN = received.pin ?? "";
+      return new Promise<boolean>((resolve) => { resolveInteraction = resolve; });
+    });
+    const answer = new InteractionAnswer({
+      interactionId: "interaction-current",
+      pin: "123456",
+      confirmed: true,
+    });
+
+    const pending = answerPendingInteraction(answer);
+
+    expect(receivedPIN).toBe("123456");
+    expect(answer.pin).toBe("");
+    expect(get(pendingInteraction)).not.toBeNull();
+    resolveInteraction(true);
+    await expect(pending).resolves.toBe(true);
+    expect(get(pendingInteraction)).toBeNull();
+  });
+
+  it("preserves a typed interaction failure code in the UI outcome", async () => {
+    const { answerPendingInteraction } = await import("./controller");
+    seedPendingInteractionForTest({ interactionId: "interaction-current" } as InteractionPrompt);
+    serviceMocks.ResolveInteraction.mockRejectedValueOnce(new Error("ResolveInteraction failed", {
+      cause: {
+        code: Code.CodePINInvalid,
+        category: "invalid-state",
+        operation: "interaction.resolve",
+      },
+    }));
+
+    await expect(answerPendingInteraction(new InteractionAnswer({
+      interactionId: "interaction-current",
+      pin: "123456",
+      confirmed: true,
+    }))).resolves.toBe(false);
+
+    expect(get(statusBar).lastOutcome).toMatchObject({
+      tone: "error",
+      message: "The PIN is incorrect.",
+    });
+    expect(get(pendingInteraction)).toBeNull();
   });
 });

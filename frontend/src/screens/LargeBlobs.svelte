@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Database, RefreshCw, TriangleAlert } from "@lucide/svelte";
+  import { Database, TriangleAlert } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
 
   import LargeBlobCleanupDialog from "$lib/components/largeblobs/LargeBlobCleanupDialog.svelte";
@@ -22,7 +22,6 @@
     previewLargeBlobWrite,
     readLargeBlob,
     reloadLargeBlobs,
-    retryLargeBlobMutation,
     selectLargeBlobCredential,
     setLargeBlobsDecodeMode,
     setLargeBlobsPayloadEncoding,
@@ -31,10 +30,7 @@
     setLargeBlobsVerificationFlow,
     updateLargeBlobWriteDraft,
   } from "$lib/controller";
-  import {
-    buildLargeBlobsPresentation,
-    canRetryLargeBlobMutation,
-  } from "$lib/largeblobs-presentation";
+  import { buildLargeBlobsPresentation } from "$lib/largeblobs-presentation";
   import {
     largeBlobsInventoryState,
     largeBlobsDecodeMode,
@@ -63,10 +59,6 @@
     statusFilter: $largeBlobsStatusFilter,
     selectedCredentialID: $largeBlobsSelectedCredentialID,
   }));
-  let mutationRetryAllowed = $derived(
-    canRetryLargeBlobMutation($largeBlobsMutation, $sessionStatus),
-  );
-
   async function handleReload() {
     const refreshed = await reloadLargeBlobs();
     if (refreshed) toast.success(m.large_blobs_reloaded());
@@ -111,13 +103,10 @@
       <Alert.Root variant="warning" role="alert" class="large-blobs-state-alert" data-state="stale">
         <TriangleAlert aria-hidden="true" />
         <Alert.Title>{m.large_blobs_stale_title()}</Alert.Title>
-        <Alert.Description>{m.large_blobs_stale_message()}</Alert.Description>
-        <Alert.Action>
-          <Button variant="outline" size="sm" type="button" disabled={largeBlobs.reloadDisabled} onclick={handleReload}>
-            <RefreshCw data-icon="inline-start" aria-hidden="true" />
-            {m.retry()}
-          </Button>
-        </Alert.Action>
+        <Alert.Description>
+          {m.large_blobs_stale_message()}
+          {#if largeBlobs.failureMessage} {largeBlobs.failureMessage}{/if}
+        </Alert.Description>
       </Alert.Root>
     {/if}
 
@@ -132,7 +121,7 @@
     {:else if !largeBlobs.hasReport && !largeBlobs.loading}
       <EmptyState
         title={m.large_blobs_not_loaded()}
-        message={m.large_blobs_not_loaded_message()}
+        message={largeBlobs.failureMessage ?? m.large_blobs_not_loaded_message()}
         variant="compact"
       >
         {#snippet icon()}<Database aria-hidden="true" />{/snippet}
@@ -161,27 +150,23 @@
 
   <LargeBlobWriteDialog
     mutation={$largeBlobsMutation}
-    retryAllowed={mutationRetryAllowed}
     onDraftChange={updateLargeBlobWriteDraft}
     onEncodingChange={setLargeBlobsPayloadEncoding}
     onEdit={editLargeBlobWrite}
     onPreview={previewLargeBlobWrite}
     onConfirm={handleConfirmWrite}
-    onRetry={retryLargeBlobMutation}
     onClose={closeLargeBlobMutation}
   />
   <LargeBlobDeleteDialog
     mutation={$largeBlobsMutation}
-    retryAllowed={mutationRetryAllowed}
+    onPreview={beginLargeBlobDelete}
     onConfirm={handleConfirmDelete}
-    onRetry={retryLargeBlobMutation}
     onClose={closeLargeBlobMutation}
   />
   <LargeBlobCleanupDialog
     mutation={$largeBlobsMutation}
-    retryAllowed={mutationRetryAllowed}
+    onPreview={beginLargeBlobCleanup}
     onConfirm={handleConfirmCleanup}
-    onRetry={retryLargeBlobMutation}
     onClose={closeLargeBlobMutation}
   />
 {/if}

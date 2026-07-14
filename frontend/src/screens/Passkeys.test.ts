@@ -14,20 +14,18 @@ import type {
 } from "../../bindings/github.com/go-ctap/kit/service";
 
 import {
-  emptyPasskeysInventoryState,
   failPasskeysInventoryLoadAtRuntime,
-  passkeysInventoryState as mutablePasskeysInventoryState,
+  failPasskeysInventoryLoadWithResponse,
   passkeysMutation as mutablePasskeysMutation,
   passkeysVerificationFlow as mutablePasskeysVerificationFlow,
 } from "$lib/features/passkeys/state";
 import { setAppLocale } from "$lib/i18n";
-import { failureForCode } from "$lib/failure";
+import { failureForCode } from "$lib/test-failure";
 import { resetAppStateForTest, seedPasskeysEnvelopeForTest, seedSelectionForTest } from "$lib/store-test-utils";
 
 import Passkeys from "./Passkeys.svelte";
 
 const controllerMocks = vi.hoisted(() => ({
-  loadPasskeys: vi.fn(() => Promise.resolve()),
   reloadPasskeys: vi.fn(() => Promise.resolve(true)),
 }));
 const toastMocks = vi.hoisted(() => ({ success: vi.fn() }));
@@ -35,7 +33,6 @@ const clipboardSetText = vi.spyOn(Clipboard, "SetText");
 
 vi.mock("$lib/controller", async (importOriginal) => ({
   ...(await importOriginal<typeof import("$lib/controller")>()),
-  loadPasskeys: controllerMocks.loadPasskeys,
   reloadPasskeys: controllerMocks.reloadPasskeys,
 }));
 vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
@@ -126,7 +123,6 @@ function mixedRelyingPartyEnvelope(): CredentialsEnvelope {
 describe("Passkeys", () => {
   beforeEach(() => {
     setAppLocale("en");
-    controllerMocks.loadPasskeys.mockClear();
     controllerMocks.reloadPasskeys.mockClear();
     clipboardSetText.mockReset();
     clipboardSetText.mockResolvedValue();
@@ -140,7 +136,7 @@ describe("Passkeys", () => {
     document.body.style.pointerEvents = "";
   });
 
-  it("does not own passkeys autoload lifecycle", () => {
+  it("shows the not-loaded state before inventory is available", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
       sessionId: "session-1",
@@ -148,8 +144,43 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(controllerMocks.loadPasskeys).not.toHaveBeenCalled();
     expect(screen.getByText("Passkeys not loaded")).toBeInTheDocument();
+  });
+
+  it("shows the concrete kit error from a typed inventory envelope", () => {
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      sessionId: "session-1",
+    });
+    failPasskeysInventoryLoadWithResponse({
+      operationId: "operation-error",
+      sessionId: "session-1",
+      kind: OperationKind.OperationListCredentials,
+      error: failureForCode(Code.CodeDeviceBusy),
+    } as CredentialsEnvelope);
+
+    render(Passkeys);
+
+    expect(screen.getByText("The selected authenticator is already in use.")).toBeInTheDocument();
+    expect(screen.queryByText("Load credential inventory to inspect resident passkeys.")).not.toBeInTheDocument();
+  });
+
+  it("does not turn an unsupported verification flow into unsupported credential management", () => {
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      sessionId: "session-1",
+    });
+    failPasskeysInventoryLoadWithResponse({
+      operationId: "verification-flow-error",
+      sessionId: "session-1",
+      kind: OperationKind.OperationListCredentials,
+      error: failureForCode(Code.CodeVerificationFlowUnsupported),
+    } as CredentialsEnvelope);
+
+    render(Passkeys);
+
+    expect(screen.getByText("The requested verification flow is not supported.")).toBeInTheDocument();
+    expect(screen.queryByText("Credential management unavailable")).not.toBeInTheDocument();
   });
 
   it("opens credential details immediately after the selected table row", async () => {
@@ -260,19 +291,6 @@ describe("Passkeys", () => {
 
     await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
     expect(screen.getByText("Level 2 · UV optional with credential list")).toBeInTheDocument();
-  });
-
-  it("does not render a duplicate resident-credentials card heading", () => {
-    seedSelectionForTest("token-1", null, {
-      state: "ready",
-      sessionId: "session-1",
-    });
-    seedPasskeysEnvelopeForTest(credentialsEnvelope());
-
-    render(Passkeys);
-
-    expect(screen.queryByRole("heading", { name: "Resident credentials" })).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Resident credentials")).toBeInTheDocument();
   });
 
   it("presents inventory as one fact and capacity as remaining space", () => {
@@ -393,31 +411,6 @@ describe("Passkeys", () => {
     expect(get(mutablePasskeysVerificationFlow)).toBe(VerificationFlow.VerificationFlowPIN);
   });
 
-  it("renders a cold loading skeleton with the final credential-table structure", () => {
-    seedSelectionForTest("token-1", null, {
-      state: "running",
-      sessionId: "session-1",
-    });
-    mutablePasskeysInventoryState.set({
-      ...emptyPasskeysInventoryState(),
-      phase: "loading",
-    });
-
-    render(Passkeys);
-
-    const table = screen.getByRole("table", { name: "Waiting for authenticator response." });
-    expect(within(table).getByRole("columnheader", { name: "RP name" })).toBeInTheDocument();
-    expect(within(table).getByRole("columnheader", { name: "User name" })).toBeInTheDocument();
-    expect(within(table).getByRole("columnheader", { name: "Credential ID" })).toBeInTheDocument();
-    expect(within(table).getByRole("columnheader", { name: "UV" })).toBeInTheDocument();
-    const rows = within(table).getAllByRole("row");
-    expect(rows).toHaveLength(4);
-    for (const row of rows.slice(1)) {
-      expect(within(row).getAllByRole("cell")).toHaveLength(4);
-    }
-    expect(screen.queryByText("No passkeys found")).not.toBeInTheDocument();
-  });
-
   it("keeps stale rows visible and disables their mutations until refresh succeeds", async () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
@@ -430,6 +423,7 @@ describe("Passkeys", () => {
     render(Passkeys);
 
     expect(screen.getByText("Inventory may be stale")).toBeInTheDocument();
+    expect(screen.getByText(/Communication with the authenticator failed\./)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
     expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
@@ -468,8 +462,7 @@ describe("Passkeys", () => {
     expect(screen.queryByText("No matching passkeys")).not.toBeInTheDocument();
   });
 
-  it("renders typed localized update preview warnings in an accessible dialog", async () => {
-    const user = userEvent.setup();
+  it("renders the typed update preview and keeps its confirmation label while executing", async () => {
     const envelope = credentialsEnvelope();
     seedSelectionForTest("token-1", null, {
       state: "ready",
@@ -495,23 +488,37 @@ describe("Passkeys", () => {
         result: null,
       },
     } as CredentialUpdateEnvelope;
-    mutablePasskeysMutation.set({
+    const previewRequest = {
+      sessionId: "session-1",
+      credentialIdHex: "cafe",
+      name: "updated@example.com",
+      nameProvided: true,
+      dryRun: true,
+    };
+    const mutation = {
       kind: "update",
-      phase: "review",
       credentialIDHex: "cafe",
       original: { userIDHex: "01", name: "user@example.com", displayName: "Example User" },
       form: { userIDHex: "01", name: "updated@example.com", displayName: "Example User" },
-      previewRequest: { sessionId: "session-1", credentialIdHex: "cafe", name: "updated@example.com", nameProvided: true, dryRun: true },
+      previewRequest,
       previewEnvelope,
-    });
+    } as const;
+    mutablePasskeysMutation.set({ ...mutation, phase: "review" });
 
     render(Passkeys);
 
-    expect(screen.getByRole("dialog", { name: "Edit credential user" })).toBeInTheDocument();
+    const dialog = screen.getByRole("dialog", { name: "Edit credential user" });
+    expect(dialog).toBeInTheDocument();
     expect(screen.getByText("This changes the user information stored with the resident credential.")).toBeInTheDocument();
     expect(screen.getByText("Current value")).toBeInTheDocument();
     expect(screen.getByText("Proposed value")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(within(dialog).queryByRole("textbox")).not.toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Confirm update" })).toBeEnabled();
+
+    mutablePasskeysMutation.set({ ...mutation, phase: "executing" });
+    await tick();
+    expect(within(dialog).getByRole("button", { name: "Confirm update" })).toBeDisabled();
+    expect(within(dialog).queryByRole("button", { name: "Preview change" })).not.toBeInTheDocument();
   });
 
   it("renders the typed delete preview in an accessible alert dialog", async () => {
@@ -558,6 +565,55 @@ describe("Passkeys", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
   });
 
+  it("keeps the delete confirmation action after an incorrect PIN", () => {
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      sessionId: "session-1",
+    });
+    seedPasskeysEnvelopeForTest(credentialsEnvelope());
+    const previewEnvelope = {
+      operationId: "delete-preview-1",
+      sessionId: "session-1",
+      kind: OperationKind.OperationDeleteCredential,
+      result: {
+        preview: {
+          credentialIDHex: "cafe",
+          rpID: "example.com",
+          rpName: "Example",
+          userIDHex: "01",
+          userName: "user@example.com",
+          displayName: "Example User",
+          warnings: [],
+        },
+        result: null,
+      },
+    } as CredentialDeleteEnvelope;
+    const errorEnvelope = {
+      operationId: "delete-1",
+      sessionId: "session-1",
+      kind: OperationKind.OperationDeleteCredential,
+      error: failureForCode(Code.CodePINInvalid),
+    } as CredentialDeleteEnvelope;
+    mutablePasskeysMutation.set({
+      kind: "delete",
+      phase: "error",
+      credentialIDHex: "cafe",
+      failedPhase: "executing",
+      previewRequest: { sessionId: "session-1", credentialIdHex: "cafe", dryRun: true },
+      previewEnvelope,
+      responseEnvelope: errorEnvelope,
+      runtimeError: null,
+      failureReason: "response-error",
+    });
+
+    render(Passkeys);
+
+    const dialog = screen.getByRole("alertdialog", { name: "Confirm delete" });
+    expect(within(dialog).getByText("The PIN is incorrect.")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Confirm delete" })).toBeEnabled();
+    expect(within(dialog).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+  });
+
   it("shows a regular error dialog instead of delete confirmation when dry-run fails without a preview", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
@@ -585,7 +641,9 @@ describe("Passkeys", () => {
     render(Passkeys);
 
     expect(screen.queryByRole("alertdialog", { name: "Confirm delete" })).not.toBeInTheDocument();
-    expect(screen.getByRole("dialog", { name: "Credential delete preview" })).toBeInTheDocument();
-    expect(screen.getByText("Communication with the authenticator failed.")).toBeInTheDocument();
+    const dialog = screen.getByRole("dialog", { name: "Credential delete preview" });
+    expect(within(dialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Delete" })).toBeEnabled();
+    expect(within(dialog).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
   });
 });

@@ -6,7 +6,6 @@
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Progress } from "$lib/components/ui/progress/index.js";
-  import { Spinner } from "$lib/components/ui/spinner/index.js";
   import {
     authenticatorConfigPreview,
     bioEnrollPreview,
@@ -29,14 +28,34 @@
     activeOperation: ActiveOperation | null;
   } = $props();
 
-  let previewEnvelope = $derived("previewEnvelope" in mutation ? mutation.previewEnvelope : null);
-  let responseEnvelope = $derived("responseEnvelope" in mutation ? mutation.responseEnvelope : null);
-  let typedPreviewEnvelope = $derived(previewEnvelope ?? responseEnvelope);
-  let configPreview = $derived(authenticatorConfigPreview(typedPreviewEnvelope));
-  let enrollmentPreview = $derived(bioEnrollPreview(typedPreviewEnvelope));
-  let biometricPreview = $derived(bioMutationPreview(typedPreviewEnvelope));
-  let resetPreview = $derived(resetFactoryPreview(typedPreviewEnvelope));
-  let partialEnrollment = $derived(mutation.kind === "bioEnroll" ? bioEnrollResult(responseEnvelope) : null);
+  let configPreview = $derived.by(() => {
+    if (mutation.kind !== "alwaysUv" && mutation.kind !== "pinPolicy") return null;
+    const previewEnvelope = "previewEnvelope" in mutation ? mutation.previewEnvelope : null;
+    const responseEnvelope = "responseEnvelope" in mutation ? mutation.responseEnvelope : null;
+    return authenticatorConfigPreview(previewEnvelope ?? responseEnvelope);
+  });
+  let enrollmentPreview = $derived.by(() => {
+    if (mutation.kind !== "bioEnroll") return null;
+    const previewEnvelope = "previewEnvelope" in mutation ? mutation.previewEnvelope : null;
+    const responseEnvelope = "responseEnvelope" in mutation ? mutation.responseEnvelope : null;
+    return bioEnrollPreview(previewEnvelope ?? responseEnvelope);
+  });
+  let biometricPreview = $derived.by(() => {
+    if (mutation.kind !== "bioRename" && mutation.kind !== "bioRemove") return null;
+    const previewEnvelope = "previewEnvelope" in mutation ? mutation.previewEnvelope : null;
+    const responseEnvelope = "responseEnvelope" in mutation ? mutation.responseEnvelope : null;
+    return bioMutationPreview(previewEnvelope ?? responseEnvelope);
+  });
+  let resetPreview = $derived.by(() => {
+    if (mutation.kind !== "reset") return null;
+    const previewEnvelope = "previewEnvelope" in mutation ? mutation.previewEnvelope : null;
+    const responseEnvelope = "responseEnvelope" in mutation ? mutation.responseEnvelope : null;
+    return resetFactoryPreview(previewEnvelope ?? responseEnvelope);
+  });
+  let partialEnrollment = $derived.by(() => {
+    if (mutation.kind !== "bioEnroll" || !("responseEnvelope" in mutation)) return null;
+    return bioEnrollResult(mutation.responseEnvelope);
+  });
   let warnings = $derived.by((): Warning[] => (
     configPreview?.warnings
     ?? enrollmentPreview?.warnings
@@ -59,13 +78,6 @@
 </script>
 
 <div class="mutation-details">
-  {#if mutation.phase === "previewing"}
-    <div class="mutation-busy" role="status">
-      <Spinner aria-hidden="true" />
-      <span>{m.waiting_for_authenticator_response()}</span>
-    </div>
-  {/if}
-
   {#if failureMessage}
     <Alert.Root variant={failureCanceled ? "default" : "destructive"} role={failureCanceled ? "status" : "alert"}>
       <TriangleAlert aria-hidden="true" />
@@ -155,14 +167,6 @@
     display: grid;
     gap: var(--space-3);
     min-width: 0;
-  }
-
-  .mutation-busy {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    min-height: 3rem;
-    color: var(--muted-foreground);
   }
 
   .preview-facts,

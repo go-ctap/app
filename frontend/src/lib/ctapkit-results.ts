@@ -1,13 +1,10 @@
 import {
-  OperationKind,
   type AuthenticatorConfigOutput,
   type BioEnrollOutput,
   type BioMutationOutput,
   type CredentialDeleteOutput,
   type CredentialUpdateOutput,
   type LargeBlobMutationOutput,
-  type GetAssertionOutput,
-  type MakeCredentialOutput,
   type PINOutput,
   type ResetFactoryOutput,
 } from "../../bindings/github.com/go-ctap/kit/model";
@@ -82,52 +79,52 @@ export function bioSensorReport(envelope: BioSensorEnvelope | null | undefined):
   return envelope.result.report;
 }
 
-export function configStatusReport(envelope: OperationEnvelope | null | undefined): StatusReport | null {
-  if (!isConfigStatusEnvelope(envelope) || envelope.error || !envelope.result) return null;
+export function configStatusReport(envelope: ConfigStatusEnvelope | null | undefined): StatusReport | null {
+  if (!envelope || envelope.error || !envelope.result) return null;
   return envelope.result.report;
 }
 
-export function bioListReport(envelope: OperationEnvelope | null | undefined): BioListReport | null {
-  if (!isBioListEnvelope(envelope) || envelope.error || !envelope.result) return null;
+export function bioListReport(envelope: BioListEnvelope | null | undefined): BioListReport | null {
+  if (!envelope || envelope.error || !envelope.result) return null;
   return envelope.result.report;
 }
 
-export function pinMutationOutput(envelope: OperationEnvelope | null | undefined): PINOutput | null {
-  if (!isPINEnvelope(envelope) || !envelope.result) return null;
+export function pinMutationOutput(envelope: PINEnvelope | null | undefined): PINOutput | null {
+  if (!envelope || !envelope.result) return null;
   return envelope.result;
 }
 
-export function pinMutationPreview(envelope: OperationEnvelope | null | undefined): PINMutationPreview | null {
+export function pinMutationPreview(envelope: PINEnvelope | null | undefined): PINMutationPreview | null {
   const preview = pinMutationOutput(envelope)?.preview;
   return preview && preview.operation !== PINMutationOperation.$zero ? preview : null;
 }
 
-export function pinMutationResult(envelope: OperationEnvelope | null | undefined): PINMutationResult | null {
+export function pinMutationResult(envelope: PINEnvelope | null | undefined): PINMutationResult | null {
   if (envelope?.error) return null;
   return pinMutationOutput(envelope)?.result ?? null;
 }
 
-export function authenticatorConfigOutput(envelope: OperationEnvelope | null | undefined): AuthenticatorConfigOutput | null {
-  if (!isAuthenticatorConfigEnvelope(envelope) || !envelope.result) return null;
+export function authenticatorConfigOutput(envelope: AuthenticatorConfigEnvelope | null | undefined): AuthenticatorConfigOutput | null {
+  if (!envelope || !envelope.result) return null;
   return envelope.result;
 }
 
-export function authenticatorConfigPreview(envelope: OperationEnvelope | null | undefined): AuthenticatorConfigPreview | null {
+export function authenticatorConfigPreview(envelope: AuthenticatorConfigEnvelope | null | undefined): AuthenticatorConfigPreview | null {
   const preview = authenticatorConfigOutput(envelope)?.preview;
   return preview && preview.operation !== AuthenticatorConfigOperation.$zero ? preview : null;
 }
 
-export function authenticatorConfigResult(envelope: OperationEnvelope | null | undefined): AuthenticatorConfigResult | null {
+export function authenticatorConfigResult(envelope: AuthenticatorConfigEnvelope | null | undefined): AuthenticatorConfigResult | null {
   if (envelope?.error) return null;
   return authenticatorConfigOutput(envelope)?.result ?? null;
 }
 
-export function bioEnrollOutput(envelope: OperationEnvelope | null | undefined): BioEnrollOutput | null {
-  if (!isBioEnrollEnvelope(envelope) || !envelope.result) return null;
+export function bioEnrollOutput(envelope: BioEnrollEnvelope | null | undefined): BioEnrollOutput | null {
+  if (!envelope || !envelope.result) return null;
   return envelope.result;
 }
 
-export function bioEnrollPreview(envelope: OperationEnvelope | null | undefined): BioEnrollPreview | null {
+export function bioEnrollPreview(envelope: BioEnrollEnvelope | null | undefined): BioEnrollPreview | null {
   const preview = bioEnrollOutput(envelope)?.preview;
   return preview && preview.mode !== PreviewMode.$zero ? preview : null;
 }
@@ -137,87 +134,87 @@ export function bioEnrollPreview(envelope: OperationEnvelope | null | undefined)
  * result is therefore useful partial progress even when the envelope has an
  * error, unlike the result of an atomic mutation.
  */
-export function bioEnrollResult(envelope: OperationEnvelope | null | undefined): BioEnrollResult | null {
+export function bioEnrollResult(envelope: BioEnrollEnvelope | null | undefined): BioEnrollResult | null {
   return bioEnrollOutput(envelope)?.result ?? null;
 }
 
-export function bioMutationOutput(envelope: OperationEnvelope | null | undefined): BioMutationOutput | null {
-  if (!isBioMutationEnvelope(envelope) || !envelope.result) return null;
+export function bioMutationOutput(envelope: BioMutationEnvelope | null | undefined): BioMutationOutput | null {
+  if (!envelope || !envelope.result) return null;
   return envelope.result;
 }
 
-export function bioMutationPreview(envelope: OperationEnvelope | null | undefined): BioMutationPreview | null {
+export function bioMutationPreview(envelope: BioMutationEnvelope | null | undefined): BioMutationPreview | null {
   const preview = bioMutationOutput(envelope)?.preview;
   return preview && preview.operation !== BioMutationOperation.$zero ? preview : null;
 }
 
-export function bioMutationResult(envelope: OperationEnvelope | null | undefined): BioMutationResult | null {
+export function bioMutationResult(envelope: BioMutationEnvelope | null | undefined): BioMutationResult | null {
   if (envelope?.error) return null;
   return bioMutationOutput(envelope)?.result ?? null;
 }
 
-export function resetFactoryOutput(envelope: OperationEnvelope | null | undefined): ResetFactoryOutput | null {
-  if (!isResetFactoryEnvelope(envelope) || !envelope.result) return null;
+export function resetFactoryOutput(envelope: ResetFactoryEnvelope | null | undefined): ResetFactoryOutput | null {
+  if (!envelope || !envelope.result) return null;
   return envelope.result;
 }
 
-export function resetFactoryPreview(envelope: OperationEnvelope | null | undefined): ResetPreview | null {
+export function resetFactoryPreview(envelope: ResetFactoryEnvelope | null | undefined): ResetPreview | null {
   const preview = resetFactoryOutput(envelope)?.preview;
   return preview && preview.mode !== PreviewMode.$zero ? preview : null;
 }
 
-export function resetFactoryResult(envelope: OperationEnvelope | null | undefined): ResetResult | null {
+export function resetFactoryResult(envelope: ResetFactoryEnvelope | null | undefined): ResetResult | null {
   if (envelope?.error) return null;
   return resetFactoryOutput(envelope)?.result ?? null;
 }
 
-export function credentialsReport(envelope: OperationEnvelope | null | undefined): InventoryReport | null {
-  if (!isCredentialsEnvelope(envelope) || envelope.error || !envelope.result) return null;
+export function credentialsReport(envelope: CredentialsEnvelope | null | undefined): InventoryReport | null {
+  if (!envelope || envelope.error || !envelope.result) return null;
   return envelope.result.report;
 }
 
-export function credentialDeleteOutput(envelope: OperationEnvelope | null | undefined): CredentialDeleteOutput | null {
-  if (!isCredentialDeleteEnvelopeValue(envelope) || envelope.error || !envelope.result) return null;
+export function credentialDeleteOutput(envelope: CredentialDeleteEnvelope | null | undefined): CredentialDeleteOutput | null {
+  if (!envelope || envelope.error || !envelope.result) return null;
   return envelope.result;
 }
 
-export function credentialDeletePreview(envelope: OperationEnvelope | null | undefined): DeletePreview | null {
+export function credentialDeletePreview(envelope: CredentialDeleteEnvelope | null | undefined): DeletePreview | null {
   const output = credentialDeleteOutput(envelope);
   return output ? output.preview : null;
 }
 
-export function credentialDeleteResult(envelope: OperationEnvelope | null | undefined): DeleteResult | null {
+export function credentialDeleteResult(envelope: CredentialDeleteEnvelope | null | undefined): DeleteResult | null {
   const output = credentialDeleteOutput(envelope);
   return output ? output.result : null;
 }
 
-export function credentialUpdateOutput(envelope: OperationEnvelope | null | undefined): CredentialUpdateOutput | null {
-  if (!isCredentialUpdateEnvelopeValue(envelope) || envelope.error || !envelope.result) return null;
+export function credentialUpdateOutput(envelope: CredentialUpdateEnvelope | null | undefined): CredentialUpdateOutput | null {
+  if (!envelope || envelope.error || !envelope.result) return null;
   return envelope.result;
 }
 
-export function credentialUpdatePreview(envelope: OperationEnvelope | null | undefined): UpdateUserPreview | null {
+export function credentialUpdatePreview(envelope: CredentialUpdateEnvelope | null | undefined): UpdateUserPreview | null {
   const output = credentialUpdateOutput(envelope);
   return output ? output.preview : null;
 }
 
-export function credentialUpdateResult(envelope: OperationEnvelope | null | undefined): UpdateUserResult | null {
+export function credentialUpdateResult(envelope: CredentialUpdateEnvelope | null | undefined): UpdateUserResult | null {
   const output = credentialUpdateOutput(envelope);
   return output ? output.result : null;
 }
 
-export function largeBlobListReport(envelope: OperationEnvelope | null | undefined): LargeBlobListReport | null {
-  if (!isLargeBlobListEnvelope(envelope) || envelope.error || !envelope.result) return null;
+export function largeBlobListReport(envelope: LargeBlobListEnvelope | null | undefined): LargeBlobListReport | null {
+  if (!envelope || envelope.error || !envelope.result) return null;
   return envelope.result.report;
 }
 
-export function largeBlobReadReport(envelope: OperationEnvelope | null | undefined): LargeBlobReadReport | null {
-  if (!isLargeBlobReadEnvelope(envelope) || envelope.error || !envelope.result) return null;
+export function largeBlobReadReport(envelope: LargeBlobReadEnvelope | null | undefined): LargeBlobReadReport | null {
+  if (!envelope || envelope.error || !envelope.result) return null;
   return envelope.result.report;
 }
 
-export function largeBlobMutationOutput(envelope: OperationEnvelope | null | undefined): LargeBlobMutationOutput | null {
-  if (!isLargeBlobMutationEnvelope(envelope) || !envelope.result) return null;
+export function largeBlobMutationOutput(envelope: LargeBlobMutationEnvelope | null | undefined): LargeBlobMutationOutput | null {
+  if (!envelope || !envelope.result) return null;
   return envelope.result;
 }
 
@@ -227,121 +224,35 @@ export function largeBlobMutationOutput(envelope: OperationEnvelope | null | und
  * A meaningful preview is intentionally available even when the envelope also
  * carries an error (for example, a capacity failure).
  */
-export function largeBlobMutationPreview(envelope: OperationEnvelope | null | undefined): LargeBlobMutationPreview | null {
+export function largeBlobMutationPreview(envelope: LargeBlobMutationEnvelope | null | undefined): LargeBlobMutationPreview | null {
   const preview = largeBlobMutationOutput(envelope)?.preview;
   return preview && preview.operation !== MutationOperation.$zero ? preview : null;
 }
 
-export function largeBlobMutationResult(envelope: OperationEnvelope | null | undefined): LargeBlobMutationResult | null {
+export function largeBlobMutationResult(envelope: LargeBlobMutationEnvelope | null | undefined): LargeBlobMutationResult | null {
   if (envelope?.error) return null;
   return largeBlobMutationOutput(envelope)?.result ?? null;
 }
 
 /** Typed traversal for the WebAuthn Lab MakeCredential preview contract. */
-export function makeCredentialPreview(envelope: OperationEnvelope | null | undefined): MakeCredentialPreview | null {
-  const output = makeCredentialOutput(envelope);
-  if (!output || envelope?.error) return null;
-  return output.preview || null;
+export function makeCredentialPreview(envelope: MakeCredentialEnvelope | null | undefined): MakeCredentialPreview | null {
+  if (!envelope || envelope.error || !envelope.result) return null;
+  return envelope.result.preview;
 }
 
 /** Typed traversal for a completed WebAuthn Lab MakeCredential operation. */
-export function makeCredentialResult(envelope: OperationEnvelope | null | undefined): MakeCredentialResult | null {
-  const output = makeCredentialOutput(envelope);
-  if (!output || envelope?.error) return null;
-  return output.result;
+export function makeCredentialResult(envelope: MakeCredentialEnvelope | null | undefined): MakeCredentialResult | null {
+  if (!envelope || envelope.error || !envelope.result) return null;
+  return envelope.result.result;
 }
 
 /** Typed traversal for a completed WebAuthn Lab GetAssertion operation. */
-export function getAssertionResult(envelope: OperationEnvelope | null | undefined): GetAssertionResult | null {
-  const output = getAssertionOutput(envelope);
-  if (!output || envelope?.error) return null;
-  return output.result || null;
+export function getAssertionResult(envelope: GetAssertionEnvelope | null | undefined): GetAssertionResult | null {
+  if (!envelope || envelope.error || !envelope.result) return null;
+  return envelope.result.result;
 }
 
 export function operationError(envelope: OperationEnvelope | null | undefined) {
   if (!envelope || !envelope.error) return null;
   return failureMessage(envelope.error);
-}
-
-function isCredentialsEnvelope(envelope: OperationEnvelope | null | undefined): envelope is CredentialsEnvelope {
-  return Boolean(envelope && envelope.kind === OperationKind.OperationListCredentials);
-}
-
-function isConfigStatusEnvelope(envelope: OperationEnvelope | null | undefined): envelope is ConfigStatusEnvelope {
-  return Boolean(envelope && envelope.kind === OperationKind.OperationConfigStatus);
-}
-
-function isBioListEnvelope(envelope: OperationEnvelope | null | undefined): envelope is BioListEnvelope {
-  return Boolean(envelope && envelope.kind === OperationKind.OperationBioList);
-}
-
-function isPINEnvelope(envelope: OperationEnvelope | null | undefined): envelope is PINEnvelope {
-  return Boolean(envelope && [
-    OperationKind.OperationSetPIN,
-    OperationKind.OperationChangePIN,
-  ].includes(envelope.kind));
-}
-
-function isAuthenticatorConfigEnvelope(envelope: OperationEnvelope | null | undefined): envelope is AuthenticatorConfigEnvelope {
-  return Boolean(envelope && [
-    OperationKind.OperationSetAlwaysUV,
-    OperationKind.OperationSetMinPINLength,
-  ].includes(envelope.kind));
-}
-
-function isBioEnrollEnvelope(envelope: OperationEnvelope | null | undefined): envelope is BioEnrollEnvelope {
-  return Boolean(envelope && envelope.kind === OperationKind.OperationBioEnroll);
-}
-
-function isBioMutationEnvelope(envelope: OperationEnvelope | null | undefined): envelope is BioMutationEnvelope {
-  return Boolean(envelope && [
-    OperationKind.OperationBioRename,
-    OperationKind.OperationBioRemove,
-  ].includes(envelope.kind));
-}
-
-function isResetFactoryEnvelope(envelope: OperationEnvelope | null | undefined): envelope is ResetFactoryEnvelope {
-  return Boolean(envelope && envelope.kind === OperationKind.OperationResetFactory);
-}
-
-function isCredentialDeleteEnvelopeValue(envelope: OperationEnvelope | null | undefined): envelope is CredentialDeleteEnvelope {
-  return Boolean(envelope && envelope.kind === OperationKind.OperationDeleteCredential);
-}
-
-function isCredentialUpdateEnvelopeValue(envelope: OperationEnvelope | null | undefined): envelope is CredentialUpdateEnvelope {
-  return Boolean(envelope && envelope.kind === OperationKind.OperationUpdateCredentialUser);
-}
-
-function isLargeBlobListEnvelope(envelope: OperationEnvelope | null | undefined): envelope is LargeBlobListEnvelope {
-  return Boolean(envelope && envelope.kind === OperationKind.OperationListLargeBlobs);
-}
-
-function isLargeBlobReadEnvelope(envelope: OperationEnvelope | null | undefined): envelope is LargeBlobReadEnvelope {
-  return Boolean(envelope && envelope.kind === OperationKind.OperationReadLargeBlob);
-}
-
-function isLargeBlobMutationEnvelope(envelope: OperationEnvelope | null | undefined): envelope is LargeBlobMutationEnvelope {
-  return Boolean(envelope && [
-    OperationKind.OperationWriteLargeBlob,
-    OperationKind.OperationDeleteLargeBlob,
-    OperationKind.OperationGarbageCollectLargeBlobs,
-  ].includes(envelope.kind));
-}
-
-function makeCredentialOutput(envelope: OperationEnvelope | null | undefined): MakeCredentialOutput | null {
-  if (!isMakeCredentialEnvelope(envelope) || !envelope.result) return null;
-  return envelope.result;
-}
-
-function getAssertionOutput(envelope: OperationEnvelope | null | undefined): GetAssertionOutput | null {
-  if (!isGetAssertionEnvelope(envelope) || !envelope.result) return null;
-  return envelope.result;
-}
-
-function isMakeCredentialEnvelope(envelope: OperationEnvelope | null | undefined): envelope is MakeCredentialEnvelope {
-  return Boolean(envelope && envelope.kind === OperationKind.OperationMakeCredential);
-}
-
-function isGetAssertionEnvelope(envelope: OperationEnvelope | null | undefined): envelope is GetAssertionEnvelope {
-  return Boolean(envelope && envelope.kind === OperationKind.OperationGetAssertion);
 }

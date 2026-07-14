@@ -2,10 +2,13 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { BlobState, LargeBlobKeyState } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
+import { Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { LargeBlobListEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "./i18n";
-import { failureForCode } from "./failure";
+import { failureForCode } from "./test-failure";
 import {
   emptyLargeBlobsInventoryState,
   type LargeBlobsInventoryState,
@@ -22,7 +25,16 @@ function envelope(): LargeBlobListEnvelope {
     kind: OperationKind.OperationListLargeBlobs,
     result: {
       report: {
-        device: { deviceId: "token-1", stableId: true, product: "Test key" },
+        device: {
+          deviceId: "token-1",
+          stableId: true,
+          transport: Mode.ModeHID,
+          path: "token-1",
+          vendorId: 1,
+          productId: 2,
+          vendor: Vendor.VendorUnknown,
+          product: "Test key",
+        },
         support: {
           largeBlobs: true,
           largeBlobKeyExtension: true,
@@ -39,33 +51,33 @@ function envelope(): LargeBlobListEnvelope {
             credentialIDHex: "zero",
             rp: { id: "example.test", name: "Example", idHashHex: "aa" },
             user: { userIDHex: "01", name: "zero@example.test", displayName: "Zero Blob" },
-            largeBlobKeyState: "available",
+            largeBlobKeyState: LargeBlobKeyState.LargeBlobKeyAvailable,
             blobPresent: true,
-            blobState: "present",
+            blobState: BlobState.BlobStatePresent,
             blobByteCount: 0,
           },
           {
             credentialIDHex: "missing",
             rp: { id: "missing.test" },
             user: { name: "missing" },
-            largeBlobKeyState: "available",
+            largeBlobKeyState: LargeBlobKeyState.LargeBlobKeyAvailable,
             blobPresent: false,
-            blobState: "missing",
+            blobState: BlobState.BlobStateMissing,
             blobByteCount: 0,
           },
           {
             credentialIDHex: "no-key",
             rp: { id: "unknown.test" },
             user: {},
-            largeBlobKeyState: "missing",
+            largeBlobKeyState: LargeBlobKeyState.LargeBlobKeyMissing,
             blobPresent: false,
-            blobState: "unknown_key_missing",
+            blobState: BlobState.BlobStateUnknownKeyMissing,
             blobByteCount: 0,
           },
         ],
       },
     },
-  } as unknown as LargeBlobListEnvelope;
+  };
 }
 
 function state(value: LargeBlobListEnvelope): LargeBlobsInventoryState {
@@ -78,6 +90,13 @@ function state(value: LargeBlobListEnvelope): LargeBlobsInventoryState {
   };
 }
 
+const defaultView = {
+  mutation: { kind: "idle", phase: "idle" } as const,
+  query: "",
+  statusFilter: "all" as const,
+  selectedCredentialID: "",
+};
+
 beforeEach(() => {
   setAppLocale("en");
 });
@@ -85,6 +104,7 @@ beforeEach(() => {
 describe("large blob presentation", () => {
   it("treats an explicit zero-byte blob as present and preserves a zero capacity", () => {
     const presentation = buildLargeBlobsPresentation({
+      ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,
@@ -113,6 +133,7 @@ describe("large blob presentation", () => {
 
   it("allows typed reads for missing keys while blocking unsupported mutations", () => {
     const presentation = buildLargeBlobsPresentation({
+      ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,
@@ -139,6 +160,7 @@ describe("large blob presentation", () => {
       } as LargeBlobListEnvelope,
     };
     const presentation = buildLargeBlobsPresentation({
+      ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,

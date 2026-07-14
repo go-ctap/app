@@ -1,7 +1,7 @@
 import { writable } from "svelte/store";
 
 import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
-import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+import { Code, type Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import { DecodeMode } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import type {
   LargeBlobGarbageCollectRequest,
@@ -11,7 +11,6 @@ import type {
   LargeBlobReadEnvelope,
   LargeBlobReadRequest,
 } from "../../../../bindings/github.com/go-ctap/kit/service";
-import { isUnsupportedFailure } from "../../failure.js";
 
 import type {
   LargeBlobPayloadEncoding,
@@ -216,7 +215,7 @@ export function completeLargeBlobsInventoryLoad(envelope: LargeBlobListEnvelope,
 export function failLargeBlobsInventoryLoadWithResponse(envelope: LargeBlobListEnvelope) {
   largeBlobsInventoryState.update((current) => ({
     ...current,
-    phase: isUnsupportedFailure(envelope.error) ? "unsupported" : "error",
+    phase: envelope.error?.code === Code.CodeLargeBlobUnsupported ? "unsupported" : "error",
     responseEnvelope: envelope,
     runtimeError: null,
   }));

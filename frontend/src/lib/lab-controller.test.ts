@@ -24,7 +24,7 @@ import type {
 } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { api } from "./api";
-import { failureForCode } from "./failure";
+import { failureForCode } from "./test-failure";
 import { labState, resetLabStateForTest } from "./features/lab/state";
 import {
   completeLargeBlobsInventoryLoad,
@@ -59,8 +59,7 @@ import {
   handoffLabCredential,
   previewLabMakeCredential,
   requestLabPreset,
-  retryLabGetAssertion,
-  retryLabMakeCredential,
+  rerunLabGetAssertion,
   runLabGetAssertion,
   updateLabGetAssertionDraft,
   updateLabMakeCredentialDraft,
@@ -158,7 +157,6 @@ function seedSuccessfulMake(rpID = "example.com", credentialIDHex = "cafe") {
       previewEnvelope,
       request,
       responseEnvelope: makeResultEnvelope(rpID, credentialIDHex),
-      validation: { valid: true, errors: [], warnings: [] },
     },
   });
 }
@@ -214,14 +212,8 @@ describe("WebAuthn Lab request lifecycle", () => {
 
     expect(makeCredential).not.toHaveBeenCalled();
     expect(getAssertion).not.toHaveBeenCalled();
-    expect(get(labState).makeStep).toMatchObject({
-      phase: "editing",
-      validation: { valid: false },
-    });
-    expect(get(labState).getStep).toMatchObject({
-      phase: "editing",
-      validation: { valid: false },
-    });
+    expect(get(labState).makeStep.phase).toBe("editing");
+    expect(get(labState).getStep.phase).toBe("editing");
   });
 
   it("executes the exact reviewed MakeCredential snapshot with only confirmation fields changed", async () => {
@@ -296,33 +288,45 @@ describe("WebAuthn Lab request lifecycle", () => {
     expect(get(labState).makeStep.phase).toBe("success");
   });
 
-  it("retries an execution error with a fresh preview and requires Confirm again", async () => {
+  it("does not re-preview after an execution failure with an unknown outcome", async () => {
     const executionFailure = makePreviewEnvelope();
     executionFailure.error = failureForCode(Code.CodeTransportFailure);
     const makeCredential = vi.spyOn(api, "makeCredential")
       .mockResolvedValueOnce(makePreviewEnvelope())
-      .mockResolvedValueOnce(executionFailure)
-      .mockResolvedValueOnce(makePreviewEnvelope());
+      .mockResolvedValueOnce(executionFailure);
 
     expect(await previewLabMakeCredential()).toBe(true);
     expect(await confirmLabMakeCredential()).toBe(false);
     expect(get(labState).makeStep).toMatchObject({
       phase: "error",
-      failedPhase: "executing",
       responseEnvelope: executionFailure,
       runtimeError: null,
     });
 
-    expect(await retryLabMakeCredential()).toBe(true);
-    expect(makeCredential).toHaveBeenCalledTimes(3);
+    expect(await previewLabMakeCredential()).toBe(false);
+    expect(makeCredential).toHaveBeenCalledTimes(2);
     expect(makeCredential.mock.calls[1][0]).toMatchObject({
       dryRun: false,
       confirmed: true,
     });
-    expect(makeCredential.mock.calls[2][0]).toMatchObject({ dryRun: true });
-    expect(makeCredential.mock.calls[2][0].confirmed).toBeUndefined();
-    expect(makeCredential.mock.calls[2][0]).not.toBe(makeCredential.mock.calls[0][0]);
-    expect(get(labState).makeStep.phase).toBe("review");
+    expect(get(labState).makeStep.phase).toBe("error");
+  });
+
+  it("reconfirms MakeCredential directly after an incorrect PIN", async () => {
+    const incorrectPIN = makePreviewEnvelope();
+    incorrectPIN.error = failureForCode(Code.CodePINInvalid);
+    const makeCredential = vi.spyOn(api, "makeCredential")
+      .mockResolvedValueOnce(makePreviewEnvelope())
+      .mockResolvedValueOnce(incorrectPIN)
+      .mockResolvedValueOnce(makeResultEnvelope());
+
+    expect(await previewLabMakeCredential()).toBe(true);
+    expect(await confirmLabMakeCredential()).toBe(false);
+    expect(await confirmLabMakeCredential()).toBe(true);
+
+    expect(makeCredential).toHaveBeenCalledTimes(3);
+    expect(makeCredential.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(makeCredential.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
   });
 
   it("retries GetAssertion with the exact frozen request, including raw client-data bytes", async () => {
@@ -350,15 +354,13 @@ describe("WebAuthn Lab request lifecycle", () => {
     expect(get(labState).getStep).toMatchObject({
       phase: "error",
       request: frozenRequest,
-      validation: {
-        valid: true,
-        warnings: [{ field: "get.clientData.rawJSON", code: "invalid-json", severity: "warning" }],
-      },
     });
 
-    expect(await retryLabGetAssertion()).toBe(true);
+    expect(await rerunLabGetAssertion()).toBe(true);
     expect(getAssertion).toHaveBeenCalledTimes(2);
-    expect(getAssertion.mock.calls[1][0]).toBe(frozenRequest);
+    expect(getAssertion.mock.calls[1][0]).toEqual(frozenRequest);
+    expect(getAssertion.mock.calls[1][0]).not.toBe(frozenRequest);
+    expect(getAssertion.mock.calls[1][0].clientDataJSON).toBe(frozenRequest.clientDataJSON);
     expect(get(labState).getStep.phase).toBe("success");
   });
 
@@ -375,7 +377,6 @@ describe("WebAuthn Lab request lifecycle", () => {
       responseEnvelope: responseFailure,
       previewEnvelope: null,
       runtimeError: null,
-      failureReason: "response-error",
     });
 
     resetLabStateForTest((target) => target.fill(0x22));
@@ -385,33 +386,11 @@ describe("WebAuthn Lab request lifecycle", () => {
       phase: "error",
       responseEnvelope: null,
       previewEnvelope: null,
-      failureReason: "runtime-error",
       runtimeError: failureForCode(Code.CodeInternalError),
     });
   });
 
-  it("retains the raw JSON warning in the reviewed MakeCredential snapshot", async () => {
-    const initial = get(labState);
-    expect(updateLabMakeCredentialDraft({
-      clientData: {
-        ...initial.makeDraft.clientData,
-        mode: "raw",
-        rawJSON: "{not-json\n",
-      },
-    })).toBe(true);
-    vi.spyOn(api, "makeCredential").mockResolvedValue(makePreviewEnvelope());
-
-    expect(await previewLabMakeCredential()).toBe(true);
-    expect(get(labState).makeStep).toMatchObject({
-      phase: "review",
-      validation: {
-        valid: true,
-        warnings: [{ field: "make.clientData.rawJSON", code: "invalid-json", severity: "warning" }],
-      },
-    });
-  });
-
-  it("reopens an invalid session before retrying MakeCredential as a fresh preview", async () => {
+  it("reopens an invalid session before starting a fresh MakeCredential preview", async () => {
     const token = new DeviceReport({ deviceId: "token-1", product: "Test authenticator" });
     devices.set([token]);
     selectedSelector.set("token-1");
@@ -422,6 +401,7 @@ describe("WebAuthn Lab request lifecycle", () => {
       .mockResolvedValueOnce(invalidSession)
       .mockResolvedValueOnce(makePreviewEnvelope());
     vi.spyOn(api, "sessions").mockResolvedValue([]);
+    vi.spyOn(api, "closeAllSessions").mockResolvedValue([]);
     vi.spyOn(api, "openSession").mockResolvedValue({
       id: "session-2",
       info: { device: token, closed: false },
@@ -431,33 +411,65 @@ describe("WebAuthn Lab request lifecycle", () => {
     } as SessionSnapshot);
 
     expect(await previewLabMakeCredential()).toBe(false);
-    expect(get(labState).makeStep).toMatchObject({ phase: "error", failureReason: "invalid-session" });
+    expect(get(labState).makeStep.phase).toBe("error");
     expect(get(sessionStatus)).toMatchObject({ state: "error" });
 
-    expect(await retryLabMakeCredential()).toBe(true);
+    expect(await previewLabMakeCredential()).toBe(true);
     expect(makeCredential).toHaveBeenCalledTimes(2);
     expect(makeCredential.mock.calls[1][0].sessionId).toBe("session-2");
     expect(get(labState).makeStep.phase).toBe("review");
   });
 
-  it("applies an invalid-session response to the shared session boundary", async () => {
-    const envelope = getResultEnvelope();
-    envelope.error = failureForCode(Code.CodeSessionInvalid);
-    vi.spyOn(api, "getAssertion").mockResolvedValue(envelope);
+  it("reopens an invalid session and reruns GetAssertion with the same client-data bytes", async () => {
+    const initial = get(labState);
+    expect(updateLabGetAssertionDraft({
+      clientData: {
+        ...initial.getDraft.clientData,
+        mode: "raw",
+        rawJSON: "{not-json\n",
+      },
+    })).toBe(true);
+    const token = new DeviceReport({ deviceId: "token-1", product: "Test authenticator" });
+    devices.set([token]);
+    selectedSelector.set("token-1");
+    selectedDevice.set(token);
+    const invalidSession = getResultEnvelope();
+    invalidSession.error = failureForCode(Code.CodeSessionInvalid);
+    const success = getResultEnvelope();
+    success.sessionId = "session-2";
+    const getAssertion = vi.spyOn(api, "getAssertion")
+      .mockResolvedValueOnce(invalidSession)
+      .mockResolvedValueOnce(success);
+    vi.spyOn(api, "sessions").mockResolvedValue([]);
+    vi.spyOn(api, "closeAllSessions").mockResolvedValue([]);
+    vi.spyOn(api, "openSession").mockResolvedValue({
+      id: "session-2",
+      info: { device: token, closed: false },
+      running: false,
+      openedAt: "2026-07-13T00:00:00Z",
+      updatedAt: "2026-07-13T00:00:00Z",
+    } as SessionSnapshot);
 
     expect(await runLabGetAssertion()).toBe(false);
+    const firstRequest = getAssertion.mock.calls[0][0];
     expect(get(labState).getStep).toMatchObject({
       phase: "error",
-      responseEnvelope: envelope,
+      responseEnvelope: invalidSession,
       runtimeError: null,
-      failureReason: "invalid-session",
     });
     expect(get(sessionStatus)).toEqual({
       state: "error",
       error: failureForCode(Code.CodeSessionInvalid),
     });
-    expect(await retryLabGetAssertion()).toBe(false);
-    expect(api.getAssertion).toHaveBeenCalledTimes(1);
+
+    expect(await rerunLabGetAssertion()).toBe(true);
+    expect(getAssertion).toHaveBeenCalledTimes(2);
+    expect(getAssertion.mock.calls[1][0]).toEqual({
+      ...firstRequest,
+      sessionId: "session-2",
+    });
+    expect(getAssertion.mock.calls[1][0].clientDataJSON).toBe(firstRequest.clientDataJSON);
+    expect(get(labState).getStep.phase).toBe("success");
   });
 
   it("invalidates Passkeys and Large Blobs after success without losing UI preferences", async () => {
@@ -559,7 +571,6 @@ describe("WebAuthn Lab credential handoff", () => {
 
     expect(handoffLabCredential()).toBe(false);
     expect(get(labState).pendingHandoff).toEqual({
-      reason: "rp-mismatch",
       rpID: "created.example",
       credentialIDHex: "cafe",
     });
@@ -593,13 +604,11 @@ describe("WebAuthn Lab credential handoff", () => {
         phase: "success",
         request,
         responseEnvelope: getResultEnvelope("example.com"),
-        validation: { valid: true, errors: [], warnings: [] },
       },
     });
 
     expect(handoffLabCredential()).toBe(false);
     expect(get(labState).pendingHandoff).toEqual({
-      reason: "result-reset",
       rpID: "example.com",
       credentialIDHex: "cafe",
     });

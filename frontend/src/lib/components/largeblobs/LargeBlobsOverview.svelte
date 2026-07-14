@@ -30,23 +30,17 @@
     onVerificationFlowChange,
   }: Props = $props();
 
-  let verificationValue = $state<"auto" | "pin">("auto");
   let cleanupBusy = $derived(
     presentation.mutation.kind === "cleanup"
       && (presentation.mutation.phase === "previewing" || presentation.mutation.phase === "executing"),
   );
 
-  $effect(() => {
-    verificationValue = verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto";
-  });
+  function getVerificationValue() {
+    return verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto";
+  }
 
   function handleVerificationChange(value: string | string[]) {
-    if (Array.isArray(value)) return;
-    if (!value) {
-      verificationValue = verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto";
-      return;
-    }
-    verificationValue = value === "pin" ? "pin" : "auto";
+    if (Array.isArray(value) || !value) return;
     onVerificationFlowChange(
       value === "pin"
         ? VerificationFlow.VerificationFlowPIN
@@ -141,12 +135,11 @@
           <Field.FieldTitle id="large-blobs-verification-label">{m.user_verification()}</Field.FieldTitle>
           <ToggleGroup.Root
             type="single"
-            bind:value={verificationValue}
+            bind:value={getVerificationValue, handleVerificationChange}
             variant="outline"
             size="sm"
             aria-labelledby="large-blobs-verification-label"
             disabled={presentation.loading}
-            onValueChange={handleVerificationChange}
           >
             <ToggleGroup.Item value="auto" aria-label={m.verification_auto()}>
               {m.verification_auto()}

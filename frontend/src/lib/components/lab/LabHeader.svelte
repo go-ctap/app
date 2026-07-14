@@ -16,11 +16,21 @@
     device: DeviceReport;
     presetID: LabPresetID;
     isCustom: boolean;
+    dirty: boolean;
+    pendingPresetID: LabPresetID | null;
     disabled?: boolean;
     onPresetChange: (presetID: LabPresetID) => void;
   };
 
-  let { device, presetID, isCustom, disabled = false, onPresetChange }: Props = $props();
+  let {
+    device,
+    presetID,
+    isCustom,
+    dirty,
+    pendingPresetID,
+    disabled = false,
+    onPresetChange,
+  }: Props = $props();
 
   const presets: LabPresetID[] = [
     "minimal",
@@ -28,6 +38,7 @@
     "non-discoverable",
     "uv-required",
   ];
+  let selectValue = $derived(pendingPresetID ?? (dirty ? "" : presetID));
 
   function presetLabel(value: LabPresetID) {
     if (value === "minimal") return m.lab_preset_minimal();
@@ -62,7 +73,7 @@
       </Field.Field>
       <Field.Field data-disabled={disabled}>
         <Field.Label for="lab-preset">{m.lab_preset()}</Field.Label>
-        <Select.Root type="single" value={presetID} onValueChange={handlePresetChange}>
+        <Select.Root type="single" value={selectValue} onValueChange={handlePresetChange}>
           <Select.Trigger id="lab-preset" class="lab-preset-trigger" {disabled}>
             {presetLabel(presetID)}
           </Select.Trigger>

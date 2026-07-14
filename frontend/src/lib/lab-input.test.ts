@@ -132,7 +132,7 @@ describe("WebAuthn Lab client data and validation", () => {
     const validation = validateGetAssertionDraft(state.getDraft);
     expect(validation.valid).toBe(true);
     expect(validation.warnings).toEqual([
-      { field: "get.clientData.rawJSON", code: "invalid-json", severity: "warning" },
+      { field: "get.clientData.rawJSON", code: "invalid-json" },
     ]);
 
     const request = buildGetAssertionRequest("session-1", state.getDraft);
@@ -184,16 +184,13 @@ describe("WebAuthn Lab request builders", () => {
     expect(JSON.parse(JSON.stringify(request.allowList?.[1]))).not.toHaveProperty("transports");
   });
 
-  it("rejects zero, fractional, unsafe, and malformed algorithm IDs", () => {
+  it("reports zero, fractional, unsafe, and malformed algorithm IDs", () => {
     const state = createPresetState("minimal", sequentialRandom());
     state.makeDraft.algorithms = ["0", "1.5", "9007199254740992", "ES256"];
     const validation = validateMakeCredentialDraft(state.makeDraft);
 
     expect(validation.valid).toBe(false);
     expect(validation.errors.filter(({ code }) => code === "invalid-algorithm")).toHaveLength(4);
-    expect(() => buildMakeCredentialRequest("session-1", state.makeDraft)).toThrow(
-      "invalid WebAuthn Lab draft",
-    );
   });
 
   it("validates all user and descriptor IDs as nonempty even-length hex", () => {

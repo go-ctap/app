@@ -11,7 +11,8 @@ import { InspectEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
-import { failureForCode } from "$lib/failure";
+import { errorLoadState, overviewInspection } from "$lib/features/overview/state";
+import { failureForCode } from "$lib/test-failure";
 import {
   resetAppStateForTest,
   seedOverviewEnvelopeForTest,
@@ -22,13 +23,13 @@ import {
 import Overview from "./Overview.svelte";
 
 const controllerMocks = vi.hoisted(() => ({
-  loadOverview: vi.fn(() => Promise.resolve()),
+  reloadOverview: vi.fn(() => Promise.resolve()),
   loadOverviewMDS: vi.fn(() => Promise.resolve(true)),
 }));
 const toastMocks = vi.hoisted(() => ({ success: vi.fn() }));
 
 vi.mock("$lib/controller", () => ({
-  loadOverview: controllerMocks.loadOverview,
+  reloadOverview: controllerMocks.reloadOverview,
   loadOverviewMDS: controllerMocks.loadOverviewMDS,
 }));
 vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
@@ -78,7 +79,7 @@ function inspectEnvelope(operationId: string, aaguid: string, withFinding = fals
 describe("Overview", () => {
   beforeEach(() => {
     setAppLocale("en");
-    controllerMocks.loadOverview.mockClear();
+    controllerMocks.reloadOverview.mockClear();
     controllerMocks.loadOverviewMDS.mockClear();
     toastMocks.success.mockClear();
     resetAppStateForTest();
@@ -88,15 +89,34 @@ describe("Overview", () => {
     cleanup();
   });
 
-  it("does not own overview autoload lifecycle", () => {
+  it("shows the concrete kit error from a typed Inspect envelope", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
       sessionId: "session-1",
     });
+    seedOverviewEnvelopeForTest(new InspectEnvelope({
+      operationId: "inspect-error",
+      sessionId: "session-1",
+      kind: OperationKind.OperationInspect,
+      error: failureForCode(Code.CodeDeviceBusy),
+    }));
 
     render(Overview);
 
-    expect(controllerMocks.loadOverview).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("The selected authenticator is already in use.");
+  });
+
+  it("shows a thrown Wails failure instead of a generic empty state", () => {
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      sessionId: "session-1",
+    });
+    overviewInspection.set(errorLoadState(failureForCode(Code.CodeTransportFailure)));
+
+    render(Overview);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Communication with the authenticator failed.");
+    expect(screen.queryByText("Authenticator overview is not loaded yet.")).not.toBeInTheDocument();
   });
 
   it("forces an MDS refresh and confirms completion", async () => {

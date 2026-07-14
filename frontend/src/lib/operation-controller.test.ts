@@ -8,12 +8,12 @@ import type { CredentialsEnvelope, InteractionPrompt, OperationEventEnvelope } f
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { pendingInteraction } from "./features/interaction/state.js";
-import { failureForCode } from "./failure.js";
+import { failureForCode } from "./test-failure.js";
 import { statusBar as mutableStatusBar } from "./features/workbench/state.js";
 import { setAppLocale } from "./i18n.js";
 import { resetAppStateForTest, seedPendingInteractionForTest, seedSelectionForTest } from "./store-test-utils.js";
 import { pendingInteraction as readonlyPendingInteraction, sessionStatus, statusBar } from "./stores.js";
-import { setStatusOperation, setStatusOutcome, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
+import { setStatusOperation, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
 
 const serviceMocks = vi.hoisted(() => ({
   CancelOperation: vi.fn(),
@@ -111,36 +111,17 @@ describe("operation controller", () => {
     expect(get(statusBar).lastOutcome).toMatchObject({ tone: "error", title: "Could not cancel operation" });
   });
 
-  it("retries only through a live ready session", async () => {
-    const retry = vi.fn();
-    const { retryLastStatusOutcome } = await import("./operation-controller.js");
-    setStatusOutcome({ tone: "error", title: "Failed", retry });
-
-    await expect(retryLastStatusOutcome()).resolves.toBe(false);
-    expect(retry).not.toHaveBeenCalled();
-
-    seedSession("ready");
-    await expect(retryLastStatusOutcome()).resolves.toBe(true);
-    expect(retry).toHaveBeenCalledTimes(1);
-  });
-
-  it("presents canceled operation errors as informational and never retryable", () => {
-    const retry = vi.fn();
+  it("presents canceled operation errors as informational", () => {
     seedSession();
     seedOperation();
 
-    summarizeOperationFailure(
-      "Credential inventory",
-      failureForCode(Code.CodeOperationCanceled),
-      retry,
-    );
+    summarizeOperationFailure("Credential inventory", failureForCode(Code.CodeOperationCanceled));
 
     expect(get(statusBar).activeOperation).toBeNull();
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "info",
       title: "Credential inventory canceled",
     });
-    expect(get(statusBar).lastOutcome?.retry).toBeUndefined();
     expect(toastMocks.info).toHaveBeenCalledWith(
       "Credential inventory canceled",
       expect.objectContaining({ description: "The operation was canceled.", important: true }),
@@ -148,7 +129,6 @@ describe("operation controller", () => {
   });
 
   it("presents a canceled generated envelope as informational", () => {
-    const retry = vi.fn();
     seedSession();
     seedOperation();
 
@@ -157,47 +137,35 @@ describe("operation controller", () => {
       sessionId: "session-1",
       kind: OperationKind.OperationListCredentials,
       error: failureForCode(Code.CodeOperationCanceled),
-    } as CredentialsEnvelope, retry);
+    } as CredentialsEnvelope);
 
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "info",
       title: "Credential inventory canceled",
     });
-    expect(get(statusBar).lastOutcome?.retry).toBeUndefined();
   });
 
-  it("does not offer retry for an uncategorized runtime failure", () => {
-    const retry = vi.fn();
+  it("presents an uncategorized runtime failure without an action", () => {
     seedSession();
     seedOperation();
 
-    summarizeOperationFailure("Credential inventory", failureForCode(Code.CodeInternalError), retry);
+    summarizeOperationFailure("Credential inventory", failureForCode(Code.CodeInternalError));
 
-    expect(get(statusBar).lastOutcome?.retry).toBeUndefined();
     expect(toastMocks.error).toHaveBeenCalledWith(
       "Credential inventory failed",
       expect.objectContaining({ description: "The operation failed because of an internal error.", important: true }),
     );
   });
 
-  it("offers retry from a toast for retryable operation failures", () => {
-    const retry = vi.fn();
+  it("reports a timed-out operation without adding an action", () => {
     seedSession();
     seedOperation();
 
-    summarizeOperationFailure(
-      "Credential inventory",
-      failureForCode(Code.CodeOperationTimeout),
-      retry,
-    );
+    summarizeOperationFailure("Credential inventory", failureForCode(Code.CodeOperationTimeout));
 
     const options = toastMocks.error.mock.calls.at(-1)?.[1];
-    expect(options).toMatchObject({
-      description: "The operation timed out.",
-      action: { label: "Retry" },
-    });
-    options.action.onClick();
-    expect(retry).toHaveBeenCalledOnce();
+    expect(options).toMatchObject({ description: "The operation timed out." });
+    expect(options).not.toHaveProperty("action");
   });
 });
 

@@ -21,6 +21,7 @@ import type {
 
 import {
   emptyLargeBlobsInventoryState,
+  failLargeBlobsInventoryLoadWithResponse,
   largeBlobsDecodeMode as mutableLargeBlobsDecodeMode,
   largeBlobsInventoryState as mutableLargeBlobsInventoryState,
   largeBlobsMutation as mutableLargeBlobsMutation,
@@ -28,7 +29,7 @@ import {
   largeBlobsSelectedCredentialID as mutableLargeBlobsSelectedCredentialID,
 } from "$lib/features/largeblobs/state";
 import { setAppLocale } from "$lib/i18n";
-import { failureForCode } from "$lib/failure";
+import { failureForCode } from "$lib/test-failure";
 import {
   resetAppStateForTest,
   seedLargeBlobsEnvelopeForTest,
@@ -217,9 +218,8 @@ describe("LargeBlobs", () => {
     document.body.style.pointerEvents = "";
   });
 
-  it("does not own autoload and distinguishes not-loaded, loading, unsupported, and empty states", () => {
+  it("distinguishes not-loaded, loading, unsupported, and empty states", () => {
     const { unmount } = render(LargeBlobs);
-    expect(controllerMocks.reloadLargeBlobs).not.toHaveBeenCalled();
     expect(screen.getByText("Large blobs not loaded")).toBeInTheDocument();
     unmount();
 
@@ -243,6 +243,34 @@ describe("LargeBlobs", () => {
     seedLargeBlobsEnvelopeForTest(empty);
     render(LargeBlobs);
     expect(screen.getByText("No resident credentials found")).toBeInTheDocument();
+  });
+
+  it("shows the concrete kit error from a typed inventory envelope", () => {
+    failLargeBlobsInventoryLoadWithResponse({
+      operationId: "large-blob-list-error",
+      sessionId: "session-1",
+      kind: OperationKind.OperationListLargeBlobs,
+      error: failureForCode(Code.CodeDeviceBusy),
+    } as LargeBlobListEnvelope);
+
+    render(LargeBlobs);
+
+    expect(screen.getByText("The selected authenticator is already in use.")).toBeInTheDocument();
+    expect(screen.queryByText("Load the large-blob inventory to inspect stored payloads.")).not.toBeInTheDocument();
+  });
+
+  it("does not turn an unsupported verification flow into unsupported large blobs", () => {
+    failLargeBlobsInventoryLoadWithResponse({
+      operationId: "verification-flow-error",
+      sessionId: "session-1",
+      kind: OperationKind.OperationListLargeBlobs,
+      error: failureForCode(Code.CodeVerificationFlowUnsupported),
+    } as LargeBlobListEnvelope);
+
+    render(LargeBlobs);
+
+    expect(screen.getByText("The requested verification flow is not supported.")).toBeInTheDocument();
+    expect(screen.queryByText("Large blob management unavailable")).not.toBeInTheDocument();
   });
 
   it("opens the inspector immediately after the selected semantic table row", async () => {
@@ -280,6 +308,7 @@ describe("LargeBlobs", () => {
     render(LargeBlobs);
 
     expect(screen.getByText("Large blob inventory may be stale")).toBeInTheDocument();
+    expect(screen.getByText(/Communication with the authenticator failed\./)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Zero User, zero@example.com/ }));
     expect(controllerMocks.readLargeBlob).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Write" })).toBeDisabled();
@@ -454,6 +483,7 @@ describe("LargeBlobs", () => {
     render(LargeBlobs);
 
     const dialog = screen.getByRole("dialog", { name: "Large blob cleanup" });
+    expect(within(dialog).getAllByText("No unmatched large-blob entries need cleanup.")).toHaveLength(1);
     expect(within(dialog).getByText("0 matched")).toBeInTheDocument();
     expect(within(dialog).getByText("0 unmatched")).toBeInTheDocument();
     expect(within(dialog).queryByText("Credential ID")).not.toBeInTheDocument();
@@ -483,32 +513,39 @@ describe("LargeBlobs", () => {
     expect(within(dialog).getByRole("button", { name: "Confirm delete" })).toBeInTheDocument();
   });
 
-  it("renders write review in a regular dialog with explicit confirmation", () => {
+  it("renders write review and keeps its confirmation label while executing", async () => {
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     const preview = mutationPreview(MutationOperation.MutationCreate, {
       serializedLargeBlobArraySizeAfter: 24,
       proposedByteCount: 5,
     });
     const envelope = mutationEnvelope(preview);
-    mutableLargeBlobsMutation.set({
+    const previewRequest = {
+      sessionId: "session-1",
+      credentialIdHex: "cafe",
+      payload: "aGVsbG8=",
+      dryRun: true,
+    };
+    const mutation = {
       kind: "write",
-      phase: "review",
       credentialIDHex: "cafe",
       draft: { payload: "hello", encoding: "utf8" },
-      previewRequest: {
-        sessionId: "session-1",
-        credentialIdHex: "cafe",
-        payload: "aGVsbG8=",
-        dryRun: true,
-      },
+      previewRequest,
       previewEnvelope: envelope,
-    });
+    } as const;
+    mutableLargeBlobsMutation.set({ ...mutation, phase: "review" });
 
     render(LargeBlobs);
 
     const dialog = screen.getByRole("dialog", { name: "Write large blob" });
     expect(within(dialog).getByRole("button", { name: "Confirm write" })).toBeInTheDocument();
     expect(within(dialog).getByText("5 bytes")).toBeInTheDocument();
+    expect(within(dialog).queryByText("Preview ready")).not.toBeInTheDocument();
+
+    mutableLargeBlobsMutation.set({ ...mutation, phase: "executing" });
+    await tick();
+    expect(within(dialog).getByRole("button", { name: "Confirm write" })).toBeDisabled();
+    expect(within(dialog).queryByRole("button", { name: "Preview write" })).not.toBeInTheDocument();
   });
 
   it("renders cleanup review in an accessible destructive alert dialog", () => {
@@ -536,7 +573,36 @@ describe("LargeBlobs", () => {
     expect(within(dialog).getByRole("button", { name: "Confirm cleanup" })).toBeInTheDocument();
   });
 
-  it("shows capacity metrics from an error preview without enabling confirmation", () => {
+  it("keeps the delete confirmation action after an incorrect PIN", () => {
+    seedLargeBlobsEnvelopeForTest(listEnvelope());
+    const previewEnvelope = mutationEnvelope(mutationPreview(MutationOperation.MutationDelete));
+    const errorEnvelope = {
+      operationId: "large-blob-delete-1",
+      sessionId: "session-1",
+      kind: OperationKind.OperationDeleteLargeBlob,
+      error: failureForCode(Code.CodePINInvalid),
+    } as LargeBlobMutationEnvelope;
+    mutableLargeBlobsMutation.set({
+      kind: "delete",
+      phase: "error",
+      credentialIDHex: "cafe",
+      failedPhase: "executing",
+      previewRequest: { sessionId: "session-1", credentialIdHex: "cafe", dryRun: true },
+      previewEnvelope,
+      responseEnvelope: errorEnvelope,
+      runtimeError: null,
+      failureReason: "response-error",
+    });
+
+    render(LargeBlobs);
+
+    const dialog = screen.getByRole("alertdialog", { name: "Confirm delete" });
+    expect(within(dialog).getByText("The PIN is incorrect.")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Confirm delete" })).toBeEnabled();
+    expect(within(dialog).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+  });
+
+  it("keeps a capacity preview error editable without turning its action into retry", () => {
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     const preview = mutationPreview(MutationOperation.MutationCreate, {
       serializedLargeBlobArraySizeBefore: 10,
@@ -572,6 +638,9 @@ describe("LargeBlobs", () => {
     expect(within(dialog).getByText("10 bytes before")).toBeInTheDocument();
     expect(within(dialog).getByText("1200 bytes after")).toBeInTheDocument();
     expect(within(dialog).getByText("Array limit: 0 bytes")).toBeInTheDocument();
+    expect(within(dialog).getByRole("textbox", { name: "Payload" })).toBeEnabled();
+    expect(within(dialog).getByRole("button", { name: "Preview write" })).toBeEnabled();
     expect(within(dialog).queryByRole("button", { name: "Confirm write" })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
   });
 });

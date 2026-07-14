@@ -55,12 +55,6 @@ export function CloseAllSessions(): $CancellablePromise<service$0.SessionSnapsho
     });
 }
 
-export function CloseSession(id: service$0.SessionID): $CancellablePromise<service$0.SessionSnapshot> {
-    return $Call.ByID(1845624887, id).then(($result: any) => {
-        return $$createType5($result);
-    });
-}
-
 export function ConfigStatus(req: service$0.OperationRequest): $CancellablePromise<service$0.ConfigStatusEnvelope> {
     return $Call.ByID(752855159, req).then(($result: any) => {
         return $$createType7($result);
@@ -151,12 +145,6 @@ export function ResetFactory(req: service$0.ResetFactoryRequest): $CancellablePr
 
 export function ResolveInteraction(answer: service$0.InteractionAnswer): $CancellablePromise<boolean> {
     return $Call.ByID(2432292647, answer);
-}
-
-export function Session(id: service$0.SessionID): $CancellablePromise<service$0.SessionSnapshot> {
-    return $Call.ByID(3844479273, id).then(($result: any) => {
-        return $$createType5($result);
-    });
 }
 
 export function Sessions(): $CancellablePromise<service$0.SessionSnapshot[]> {

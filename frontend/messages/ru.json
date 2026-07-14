@@ -312,8 +312,6 @@
   "lab_make_credential_preview": "Предпросмотр MakeCredential",
   "lab_make_credential_step": "1. MakeCredential",
   "lab_make_result": "Созданные учетные данные",
-  "lab_missing_preview": "Операция завершилась без предпросмотра MakeCredential.",
-  "lab_missing_result": "Операция завершилась без ожидаемого результата.",
   "lab_new_run": "Новый прогон",
   "lab_no_assertions": "Аутентификатор вернул 0 assertions.",
   "lab_normalized_request": "Нормализованный запрос",

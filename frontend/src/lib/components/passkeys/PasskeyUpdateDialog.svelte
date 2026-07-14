@@ -14,7 +14,7 @@
     CredentialUpdateValidationError,
     PasskeysMutationState,
   } from "$lib/features/passkeys/state";
-  import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
+  import { failureMessage as localizeFailure, isCanceledFailure, isIncorrectPINFailure } from "$lib/failure";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -24,8 +24,6 @@
     onEdit: () => void;
     onPreview: () => void | Promise<boolean>;
     onConfirm: () => void | Promise<boolean>;
-    onRetry: () => void | Promise<boolean>;
-    retryAllowed: boolean;
     onClose: () => void;
   };
 
@@ -35,8 +33,6 @@
     onEdit,
     onPreview,
     onConfirm,
-    onRetry,
-    retryAllowed,
     onClose,
   }: Props = $props();
 
@@ -75,10 +71,19 @@
     ),
   );
   let failedPhase = $derived(mutation.phase === "error" ? mutation.failedPhase : null);
+  let incorrectPIN = $derived(
+    mutation.kind === "update" && mutation.phase === "error" && mutation.failedPhase === "executing" &&
+    isIncorrectPINFailure(mutation.responseEnvelope?.error),
+  );
+  let showForm = $derived(
+    mutation.kind === "update" && (
+      mutation.phase === "editing"
+      || mutation.phase === "previewing"
+      || (mutation.phase === "error" && mutation.failedPhase === "previewing")
+    ),
+  );
   let fieldsLocked = $derived(
-    mutation.kind === "update" &&
-    mutation.phase !== "editing" &&
-    !(mutation.phase === "error" && mutation.failedPhase === "previewing"),
+    mutation.kind === "update" && mutation.phase === "previewing",
   );
 
   function validationMessage(error: CredentialUpdateValidationError | null) {
@@ -110,7 +115,8 @@
       return;
     }
     if (mutation.phase === "error") {
-      void onRetry();
+      if (mutation.failedPhase === "previewing") void onPreview();
+      else if (incorrectPIN) void onConfirm();
       return;
     }
     void onPreview();
@@ -125,48 +131,50 @@
       </Dialog.Header>
 
       <form class="passkey-update-form" onsubmit={handleSubmit}>
-        <Field.FieldGroup>
-          <Field.Field
-            data-invalid={validationError === "user-id-required" || validationError === "user-id-invalid-hex"}
-            data-disabled={fieldsLocked ? "true" : undefined}
-          >
-            <Field.FieldLabel for="passkey-update-user-id">{m.user_id_hex()}</Field.FieldLabel>
-            <Input
-              id="passkey-update-user-id"
-              value={mutation.form.userIDHex}
-              disabled={fieldsLocked}
-              aria-invalid={validationError === "user-id-required" || validationError === "user-id-invalid-hex"}
-              autocomplete="off"
-              spellcheck="false"
-              oninput={(event) => onDraftChange({ userIDHex: event.currentTarget.value })}
-            />
-            {#if validationError === "user-id-required" || validationError === "user-id-invalid-hex"}
-              <Field.FieldError>{validationMessage(validationError)}</Field.FieldError>
-            {/if}
-          </Field.Field>
+        {#if showForm}
+          <Field.FieldGroup>
+            <Field.Field
+              data-invalid={validationError === "user-id-required" || validationError === "user-id-invalid-hex"}
+              data-disabled={fieldsLocked ? "true" : undefined}
+            >
+              <Field.FieldLabel for="passkey-update-user-id">{m.user_id_hex()}</Field.FieldLabel>
+              <Input
+                id="passkey-update-user-id"
+                value={mutation.form.userIDHex}
+                disabled={fieldsLocked}
+                aria-invalid={validationError === "user-id-required" || validationError === "user-id-invalid-hex"}
+                autocomplete="off"
+                spellcheck="false"
+                oninput={(event) => onDraftChange({ userIDHex: event.currentTarget.value })}
+              />
+              {#if validationError === "user-id-required" || validationError === "user-id-invalid-hex"}
+                <Field.FieldError>{validationMessage(validationError)}</Field.FieldError>
+              {/if}
+            </Field.Field>
 
-          <Field.Field data-disabled={fieldsLocked ? "true" : undefined}>
-            <Field.FieldLabel for="passkey-update-name">{m.user_name()}</Field.FieldLabel>
-            <Input
-              id="passkey-update-name"
-              value={mutation.form.name}
-              disabled={fieldsLocked}
-              autocomplete="off"
-              oninput={(event) => onDraftChange({ name: event.currentTarget.value })}
-            />
-          </Field.Field>
+            <Field.Field data-disabled={fieldsLocked ? "true" : undefined}>
+              <Field.FieldLabel for="passkey-update-name">{m.user_name()}</Field.FieldLabel>
+              <Input
+                id="passkey-update-name"
+                value={mutation.form.name}
+                disabled={fieldsLocked}
+                autocomplete="off"
+                oninput={(event) => onDraftChange({ name: event.currentTarget.value })}
+              />
+            </Field.Field>
 
-          <Field.Field data-disabled={fieldsLocked ? "true" : undefined}>
-            <Field.FieldLabel for="passkey-update-display-name">{m.display_name()}</Field.FieldLabel>
-            <Input
-              id="passkey-update-display-name"
-              value={mutation.form.displayName}
-              disabled={fieldsLocked}
-              autocomplete="off"
-              oninput={(event) => onDraftChange({ displayName: event.currentTarget.value })}
-            />
-          </Field.Field>
-        </Field.FieldGroup>
+            <Field.Field data-disabled={fieldsLocked ? "true" : undefined}>
+              <Field.FieldLabel for="passkey-update-display-name">{m.display_name()}</Field.FieldLabel>
+              <Input
+                id="passkey-update-display-name"
+                value={mutation.form.displayName}
+                disabled={fieldsLocked}
+                autocomplete="off"
+                oninput={(event) => onDraftChange({ displayName: event.currentTarget.value })}
+              />
+            </Field.Field>
+          </Field.FieldGroup>
+        {/if}
 
         {#if validationError === "no-changes"}
           <Alert.Root role="alert">
@@ -233,15 +241,19 @@
         {/if}
 
         <Dialog.Footer>
-          <Button type="submit" disabled={busy || (mutation.phase === "error" && !retryAllowed)}>
-            {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
-            {mutation.phase === "review"
-              ? m.confirm_update()
-              : mutation.phase === "error"
-                ? m.retry()
+          {#if mutation.phase !== "error" || mutation.failedPhase === "previewing" || incorrectPIN}
+            <Button type="submit" disabled={busy}>
+              {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
+              {mutation.phase === "review" || mutation.phase === "executing" || incorrectPIN
+                ? m.confirm_update()
                 : m.preview_change()}
+            </Button>
+          {/if}
+          <Button variant="outline" type="button" disabled={busy} onclick={onClose}>
+            {mutation.phase === "error" && mutation.failedPhase === "executing" && !incorrectPIN
+              ? m.close()
+              : m.cancel()}
           </Button>
-          <Button variant="outline" type="button" disabled={busy} onclick={onClose}>{m.cancel()}</Button>
         </Dialog.Footer>
       </form>
     </Dialog.Content>

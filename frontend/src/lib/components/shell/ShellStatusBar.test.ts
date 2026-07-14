@@ -15,7 +15,6 @@ function presentation(patch: Partial<ShellStatusPresentation> = {}): ShellStatus
     busy: false,
     progress: null,
     cancel: null,
-    retry: null,
     ...patch,
   };
 }
@@ -38,7 +37,6 @@ describe("ShellStatusBar", () => {
           cancel: { label: "Cancel", ariaLabel: "Cancel operation", disabled: false },
         }),
         onCancel,
-        onRetry: vi.fn(),
       },
     });
 
@@ -46,25 +44,5 @@ describe("ShellStatusBar", () => {
     expect(screen.getByText("2 of 5")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Cancel operation" }));
     expect(onCancel).toHaveBeenCalledTimes(1);
-  });
-
-  it("renders retry for a retryable outcome", async () => {
-    const user = userEvent.setup();
-    const onRetry = vi.fn();
-    render(ShellStatusBar, {
-      props: {
-        presentation: presentation({
-          source: "outcome",
-          tone: "error",
-          title: "Operation failed",
-          retry: { label: "Retry", ariaLabel: "Retry", disabled: false },
-        }),
-        onCancel: vi.fn(),
-        onRetry,
-      },
-    });
-
-    await user.click(screen.getByRole("button", { name: "Retry" }));
-    expect(onRetry).toHaveBeenCalledTimes(1);
   });
 });

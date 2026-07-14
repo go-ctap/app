@@ -26,7 +26,7 @@
     confirmSecurityMutation,
     reloadSecurity,
     reloadSecurityEnrollments,
-    retrySecurityMutation,
+    restartSecurityPreview,
     setAuthenticatorPIN,
   } from "$lib/controller";
   import { configStatusReport } from "$lib/ctapkit-results";
@@ -96,7 +96,7 @@
     {#snippet actions()}
       <Button type="button" disabled={statusLoading || sessionRecovering} onclick={() => void reloadSecurity()}>
         <RefreshCw data-icon="inline-start" aria-hidden="true" />
-        {m.retry()}
+        {m.reload_overview()}
       </Button>
     {/snippet}
   </EmptyState>
@@ -107,12 +107,6 @@
         <TriangleAlert aria-hidden="true" />
         <Alert.Title>{m.security_state_load_failed()}</Alert.Title>
         <Alert.Description>{statusError}</Alert.Description>
-        <Alert.Action>
-          <Button variant="outline" size="sm" type="button" disabled={reloadDisabled} onclick={() => void reloadSecurity()}>
-            <RefreshCw data-icon="inline-start" aria-hidden="true" />
-            {m.retry()}
-          </Button>
-        </Alert.Action>
       </Alert.Root>
     {/if}
 
@@ -147,7 +141,7 @@
         enrollmentState={$securityEnrollments}
         disabled={controlsDisabled}
         loadDisabled={reloadDisabled}
-        onRetryStatus={reloadSecurity}
+        onReloadStatus={reloadSecurity}
         onLoadEnrollments={reloadSecurityEnrollments}
         onEnroll={beginBioEnrollment}
         onRename={beginBioRename}
@@ -175,7 +169,7 @@
     activeOperation={$statusBar.activeOperation}
     disabled={mutationActionDisabled}
     onConfirm={confirmSecurityMutation}
-    onRetry={retrySecurityMutation}
+    onPreview={restartSecurityPreview}
     onClose={() => void closeSecurityMutation()}
     onCancelOperation={async () => { await cancelActiveOperation(); }}
   />

@@ -44,13 +44,6 @@
   );
   let rawJson = $derived(sanitizedJson(row.raw) ?? "null");
 
-  function credProtectLabel(level: number | null) {
-    if (level === 1) return m.cred_protect_level_1();
-    if (level === 2) return m.cred_protect_level_2();
-    if (level === 3) return m.cred_protect_level_3();
-    return m.cred_protect_not_reported();
-  }
-
   function compactCredProtectLabel(level: number | null) {
     return level ? `UV ${level}` : "UV —";
   }
@@ -77,9 +70,7 @@
                 </span>
               {/snippet}
             </Tooltip.Trigger>
-            <Tooltip.Portal>
-              <Tooltip.Content side="top">{m.preview_only()}</Tooltip.Content>
-            </Tooltip.Portal>
+            <Tooltip.Content side="top">{m.preview_only()}</Tooltip.Content>
           </Tooltip.Root>
         {:else}
           <Button
@@ -143,9 +134,7 @@
                     </Button>
                   {/snippet}
                 </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Content side="top">{m.copy_label({ label: m.user_id_hex() })}</Tooltip.Content>
-                </Tooltip.Portal>
+                <Tooltip.Content side="top">{m.copy_label({ label: m.user_id_hex() })}</Tooltip.Content>
               </Tooltip.Root>
             </dd>
           </div>
@@ -178,9 +167,7 @@
                     </Button>
                   {/snippet}
                 </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Content side="top">{m.copy_label({ label: m.credential_id() })}</Tooltip.Content>
-                </Tooltip.Portal>
+                <Tooltip.Content side="top">{m.copy_label({ label: m.credential_id() })}</Tooltip.Content>
               </Tooltip.Root>
             </dd>
           </div>
@@ -196,12 +183,12 @@
         <div class="passkey-cred-protect">
           <Badge
             variant="outline"
-            aria-label={credProtectLabel(row.credProtectLevel)}
-            title={credProtectLabel(row.credProtectLevel)}
+            aria-label={row.credProtect}
+            title={row.credProtect}
           >
             {compactCredProtectLabel(row.credProtectLevel)}
           </Badge>
-          <span>{credProtectLabel(row.credProtectLevel)}</span>
+          <span>{row.credProtect}</span>
         </div>
         <div class="passkey-status-badges">
           <Badge variant="outline">
@@ -257,9 +244,7 @@
               </Button>
             {/snippet}
           </Tooltip.Trigger>
-          <Tooltip.Portal>
-            <Tooltip.Content side="top">{m.copy_json()}</Tooltip.Content>
-          </Tooltip.Portal>
+          <Tooltip.Content side="top">{m.copy_json()}</Tooltip.Content>
         </Tooltip.Root>
       </div>
 

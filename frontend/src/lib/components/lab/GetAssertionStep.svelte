@@ -19,6 +19,7 @@
     LabState,
   } from "$lib/features/lab/state";
   import { failureMessage as localizeFailure } from "$lib/failure";
+  import { validateGetAssertionDraft } from "$lib/lab-input";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -34,11 +35,10 @@
   type Props = {
     lab: LabState;
     disabled?: boolean;
-    bytesToHex: (value: string) => string;
     onDraftChange: (patch: Partial<GetAssertionDraft>) => void;
     onRegenerateChallenge: () => void;
     onRun: () => void | Promise<boolean>;
-    onRetry: () => void | Promise<boolean>;
+    onRunAgain: () => void | Promise<boolean>;
     onEdit: () => void;
     onNewRun: () => void;
   };
@@ -46,11 +46,10 @@
   let {
     lab,
     disabled = false,
-    bytesToHex,
     onDraftChange,
     onRegenerateChallenge,
     onRun,
-    onRetry,
+    onRunAgain,
     onEdit,
     onNewRun,
   }: Props = $props();
@@ -72,11 +71,11 @@
   });
   let runtimeError = $derived(step.phase === "error" ? step.runtimeError : null);
   let result = $derived(getAssertionResult(responseEnvelope));
-  let validationErrors = $derived(step.validation.errors);
-  let validationWarnings = $derived(step.validation.warnings);
+  let validation = $derived(validateGetAssertionDraft(draft));
+  let validationErrors = $derived(validation.errors);
+  let validationWarnings = $derived(validation.warnings);
   let failureMessage = $derived.by(() => {
     if (step.phase !== "error") return null;
-    if (step.failureReason === "missing-result") return m.lab_missing_result();
     return localizeFailure(step.runtimeError) ?? operationError(step.responseEnvelope) ?? m.lab_request_failed();
   });
 
@@ -280,8 +279,8 @@
         <LabRawDisclosure title={m.lab_normalized_request()} value={request} />
       {/if}
 
-      {#if result}
-        <GetAssertionResult {result} {responseEnvelope} {runtimeError} {bytesToHex} />
+      {#if result && responseEnvelope}
+        <GetAssertionResult {responseEnvelope} />
       {/if}
     </form>
   </Card.Content>
@@ -311,16 +310,10 @@
         <Pencil data-icon="inline-start" aria-hidden="true" />
         {m.lab_edit()}
       </Button>
-      <Button variant="outline" type="button" {disabled} onclick={onNewRun}>
-        <RotateCcw data-icon="inline-start" aria-hidden="true" />
-        {m.lab_new_run()}
+      <Button type="button" {disabled} onclick={onRunAgain}>
+        <Send data-icon="inline-start" aria-hidden="true" />
+        {m.lab_run_assertion()}
       </Button>
-      {#if step.phase === "error" && step.failureReason !== "invalid-session"}
-        <Button type="button" {disabled} onclick={onRetry}>
-          <RefreshCw data-icon="inline-start" aria-hidden="true" />
-          {m.lab_retry()}
-        </Button>
-      {/if}
     {/if}
   </Card.Footer>
 </Card.Root>

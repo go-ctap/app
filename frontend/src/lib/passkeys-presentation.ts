@@ -3,11 +3,10 @@ import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/r
 
 import { m } from "../paraglide/messages.js";
 import { credentialsReport } from "./ctapkit-results.js";
-import type { PasskeysInventoryState, PasskeysMutationState, PasskeysStatusFilter } from "./features/passkeys/state.js";
+import type { PasskeysInventoryState, PasskeysStatusFilter } from "./features/passkeys/state.js";
 import { passkeysInventoryIsStale } from "./features/passkeys/state.js";
 import { deviceName } from "./format.js";
-import { failureMessage, isCanceledFailure, isRetryableFailure } from "./failure.js";
-import type { SessionStatus } from "./session-model.js";
+import { failureMessage } from "./failure.js";
 
 export type PasskeyCredentialTarget = {
   relyingParty: CredentialGroup;
@@ -50,18 +49,12 @@ export type PasskeysPresentationInput = {
   sessionBusy: boolean;
   sessionReady: boolean;
   inventoryState: PasskeysInventoryState;
-  query?: string;
-  statusFilter?: PasskeysStatusFilter;
-  selectedCredentialID?: string;
+  query: string;
+  statusFilter: PasskeysStatusFilter;
+  selectedCredentialID: string;
 };
 
 export type PasskeysPresentation = ReturnType<typeof buildPasskeysPresentation>;
-
-export function canRetryPasskeysMutation(mutation: PasskeysMutationState, session: SessionStatus) {
-  if (mutation.phase !== "error" || session.state !== "ready" || !session.sessionId) return false;
-  const error = mutation.runtimeError ?? mutation.responseEnvelope?.error;
-  return isRetryableFailure(error);
-}
 
 function displayValue(value: string | number | boolean | null | undefined) {
   if (value === true) return m.state_available();
@@ -187,13 +180,13 @@ export function passkeysCapacity(report: InventoryReport | null): PasskeysCapaci
 }
 
 export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
-  const query = input.query ?? "";
-  const statusFilter = input.statusFilter ?? "all";
+  const query = input.query;
+  const statusFilter = input.statusFilter;
   const envelope = input.inventoryState.lastSuccessfulEnvelope;
   const report = credentialsReport(envelope);
   const allRows = buildPasskeyRows(report);
   const rows = buildPasskeyRows(report, query, statusFilter);
-  const selectedCredentialID = input.selectedCredentialID ?? "";
+  const selectedCredentialID = input.selectedCredentialID;
   const support = report?.support;
   const loading = input.inventoryState.phase === "loading" || input.inventoryState.phase === "refreshing";
   const stale = passkeysInventoryIsStale(input.inventoryState);
@@ -207,8 +200,6 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
     failureMessage: failureMessage(input.inventoryState.runtimeError)
       ?? failureMessage(input.inventoryState.responseEnvelope?.error)
       ?? (input.inventoryState.phase === "error" && input.inventoryState.responseEnvelope ? m.operation_missing_result() : null),
-    canceled: isCanceledFailure(input.inventoryState.runtimeError)
-      || isCanceledFailure(input.inventoryState.responseEnvelope?.error),
     unsupported: report
       ? !report.support.credentialManagement
       : input.inventoryState.phase === "unsupported",

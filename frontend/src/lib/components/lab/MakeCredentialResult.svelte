@@ -1,7 +1,5 @@
 <script lang="ts">
-  import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
   import type { MakeCredentialEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
-  import type { MakeCredentialResult as MakeCredentialResultDTO } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
 
   import { Badge } from "$lib/components/ui/badge/index.js";
 
@@ -11,12 +9,11 @@
   import LabRawDisclosure from "./LabRawDisclosure.svelte";
 
   type Props = {
-    result: MakeCredentialResultDTO;
-    responseEnvelope: MakeCredentialEnvelope | null;
-    runtimeError: Failure | null;
+    responseEnvelope: MakeCredentialEnvelope;
   };
 
-  let { result, responseEnvelope, runtimeError }: Props = $props();
+  let { responseEnvelope }: Props = $props();
+  let result = $derived(responseEnvelope.result!.result!);
 
   function booleanLabel(value: boolean) {
     return value ? m.lab_true() : m.lab_false();
@@ -71,7 +68,7 @@
 
   <LabRawDisclosure
     title={m.lab_raw_response()}
-    value={{ responseEnvelope, runtimeError, result }}
+    value={responseEnvelope}
   />
 </section>
 

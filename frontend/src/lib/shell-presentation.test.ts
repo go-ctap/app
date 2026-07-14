@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
@@ -6,7 +6,7 @@ import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "./i18n.js";
-import { failureForCode } from "./failure.js";
+import { failureForCode } from "./test-failure.js";
 import { buildShellStatusPresentation, buildSidebarPresentation } from "./shell-presentation.js";
 import type { SessionStatus } from "./session-model.js";
 import type { StatusBarState } from "./stores.js";
@@ -60,7 +60,6 @@ describe("shell status presentation", () => {
       busy: true,
       progress: { value: 2, max: 5, label: "2 of 5" },
       cancel: { disabled: false, ariaLabel: "Cancel operation" },
-      retry: null,
     });
   });
 
@@ -108,20 +107,6 @@ describe("shell status presentation", () => {
       busy: false,
       tone: "error",
     });
-  });
-
-  it("offers retry only for an outcome backed by a live ready session", () => {
-    const retry = vi.fn();
-    const outcome = statusBar({ lastOutcome: { tone: "error", title: "Failed", retry } });
-    const ready = buildShellStatusPresentation({ selectedDevice: token, sessionStatus: session("ready"), statusBar: outcome });
-    const idle = buildShellStatusPresentation({
-      selectedDevice: null,
-      sessionStatus: { state: "idle" },
-      statusBar: outcome,
-    });
-
-    expect(ready.retry?.label).toBe("Retry");
-    expect(idle.retry).toBeNull();
   });
 });
 

@@ -1,9 +1,8 @@
 <script lang="ts">
-  import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
   import type { GetAssertionEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
-  import type { GetAssertionResult as GetAssertionResultDTO } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
 
   import { Badge } from "$lib/components/ui/badge/index.js";
+  import { base64ToHex } from "$lib/lab-input";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -11,14 +10,12 @@
   import LabRawDisclosure from "./LabRawDisclosure.svelte";
 
   type Props = {
-    result: GetAssertionResultDTO;
-    responseEnvelope: GetAssertionEnvelope | null;
-    runtimeError: Failure | null;
-    bytesToHex: (value: string) => string;
+    responseEnvelope: GetAssertionEnvelope;
   };
 
-  let { result, responseEnvelope, runtimeError, bytesToHex }: Props = $props();
+  let { responseEnvelope }: Props = $props();
 
+  let result = $derived(responseEnvelope.result!.result);
   let assertions = $derived(result.assertions ?? []);
 
   function booleanLabel(value: boolean) {
@@ -60,7 +57,7 @@
               <dd>
                 <LabHexValue
                   label={m.lab_credential_id()}
-                  value={bytesToHex(assertion.credential.id)}
+                  value={base64ToHex(assertion.credential.id)}
                 />
               </dd>
             </div>
@@ -70,7 +67,7 @@
                 {#if assertion.user}
                   <LabHexValue
                     label={m.lab_user_id()}
-                    value={bytesToHex(assertion.user.id)}
+                    value={base64ToHex(assertion.user.id)}
                   />
                 {:else}
                   {m.lab_not_reported()}
@@ -115,7 +112,7 @@
 
   <LabRawDisclosure
     title={m.lab_raw_response()}
-    value={{ responseEnvelope, runtimeError, result }}
+    value={responseEnvelope}
   />
 </section>
 

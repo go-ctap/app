@@ -8,7 +8,7 @@ import type {
   ConfigStatusEnvelope,
 } from "../../../../bindings/github.com/go-ctap/kit/service";
 
-import { failureForCode } from "../../failure";
+import { failureForCode } from "../../test-failure";
 
 import {
   beginSecurityStatusLoad,
@@ -16,7 +16,6 @@ import {
   failSecurityBioSensorLoadAtRuntime,
   failSecurityStatusLoadWithResponse,
   resetSecurityStateForTest,
-  securityResourceIsStale,
   securitySensor,
   securityStatus,
 } from "./state";
@@ -41,7 +40,7 @@ describe("security state", () => {
     beginSecurityStatusLoad();
     expect(get(securityStatus).phase).toBe("loading");
 
-    completeSecurityStatusLoad(successful, "2026-07-12T12:00:00Z");
+    completeSecurityStatusLoad(successful);
     beginSecurityStatusLoad();
     expect(get(securityStatus).phase).toBe("refreshing");
 
@@ -52,7 +51,6 @@ describe("security state", () => {
       responseEnvelope: failed,
       runtimeError: null,
     });
-    expect(securityResourceIsStale(get(securityStatus))).toBe(true);
   });
 
   it("keeps thrown runtime failures separate from generated envelopes", () => {
@@ -65,7 +63,6 @@ describe("security state", () => {
       lastSuccessfulEnvelope: null,
       responseEnvelope: null,
       runtimeError: error,
-      lastSuccessfulAt: null,
     });
   });
 

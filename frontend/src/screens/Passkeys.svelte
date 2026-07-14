@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { KeyRound, RefreshCw, TriangleAlert } from "@lucide/svelte";
+  import { KeyRound, TriangleAlert } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
 
   import PasskeyDeleteDialog from "$lib/components/passkeys/PasskeyDeleteDialog.svelte";
@@ -18,14 +18,13 @@
     editCredentialUpdate,
     previewCredentialUpdate,
     reloadPasskeys,
-    retryPasskeysMutation,
     selectPasskeyCredential,
     setPasskeysQuery,
     setPasskeysStatusFilter,
     setPasskeysVerificationFlow,
     updateCredentialDraft,
   } from "$lib/controller";
-  import { buildPasskeysPresentation, canRetryPasskeysMutation } from "$lib/passkeys-presentation";
+  import { buildPasskeysPresentation } from "$lib/passkeys-presentation";
   import {
     passkeysInventoryState,
     passkeysMutation,
@@ -51,8 +50,6 @@
     statusFilter: $passkeysStatusFilter,
     selectedCredentialID: $passkeysSelectedCredentialID,
   }));
-  let mutationRetryAllowed = $derived(canRetryPasskeysMutation($passkeysMutation, $sessionStatus));
-
   async function handleReload() {
     const refreshed = await reloadPasskeys();
     if (refreshed) toast.success(m.credential_inventory_reloaded());
@@ -87,13 +84,10 @@
       <Alert.Root variant="warning" role="alert" class="passkeys-state-alert" data-state="stale">
         <TriangleAlert aria-hidden="true" />
         <Alert.Title>{m.passkeys_stale_title()}</Alert.Title>
-        <Alert.Description>{m.passkeys_stale_message()}</Alert.Description>
-        <Alert.Action>
-          <Button variant="outline" size="sm" type="button" disabled={passkeys.reloadDisabled} onclick={handleReload}>
-            <RefreshCw data-icon="inline-start" aria-hidden="true" />
-            {m.retry()}
-          </Button>
-        </Alert.Action>
+        <Alert.Description>
+          {m.passkeys_stale_message()}
+          {#if passkeys.failureMessage} {passkeys.failureMessage}{/if}
+        </Alert.Description>
       </Alert.Root>
     {/if}
 
@@ -108,7 +102,7 @@
     {:else if !passkeys.hasReport && !passkeys.loading}
       <EmptyState
         title={m.passkeys_not_loaded()}
-        message={m.passkeys_not_loaded_message()}
+        message={passkeys.failureMessage ?? m.passkeys_not_loaded_message()}
         variant="compact"
       >
         {#snippet icon()}<KeyRound aria-hidden="true" />{/snippet}
@@ -140,15 +134,12 @@
     onEdit={editCredentialUpdate}
     onPreview={previewCredentialUpdate}
     onConfirm={handleConfirmUpdate}
-    onRetry={retryPasskeysMutation}
-    retryAllowed={mutationRetryAllowed}
     onClose={closePasskeysMutation}
   />
   <PasskeyDeleteDialog
     mutation={$passkeysMutation}
+    onPreview={beginCredentialDelete}
     onConfirm={handleConfirmDelete}
-    onRetry={retryPasskeysMutation}
-    retryAllowed={mutationRetryAllowed}
     onClose={closePasskeysMutation}
   />
 {/if}

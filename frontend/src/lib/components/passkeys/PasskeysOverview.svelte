@@ -22,21 +22,15 @@
 
   let { presentation, verificationFlow, onReload, onVerificationFlowChange }: Props = $props();
 
-  let verificationValue = $state<"auto" | "pin">("auto");
   let support = $derived(presentation.report?.support ?? null);
   let summary = $derived(presentation.report?.summary ?? null);
 
-  $effect(() => {
-    verificationValue = verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto";
-  });
+  function getVerificationValue() {
+    return verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto";
+  }
 
   function handleVerificationChange(value: string | string[]) {
-    if (Array.isArray(value)) return;
-    if (!value) {
-      verificationValue = verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto";
-      return;
-    }
-    verificationValue = value === "pin" ? "pin" : "auto";
+    if (Array.isArray(value) || !value) return;
     onVerificationFlowChange(
       value === "pin"
         ? VerificationFlow.VerificationFlowPIN
@@ -136,12 +130,11 @@
         <span>{m.user_verification()}</span>
         <ToggleGroup.Root
           type="single"
-          bind:value={verificationValue}
+          bind:value={getVerificationValue, handleVerificationChange}
           variant="outline"
           size="sm"
           aria-label={m.user_verification()}
           disabled={presentation.loading}
-          onValueChange={handleVerificationChange}
         >
           <ToggleGroup.Item value="auto" aria-label={m.verification_auto()}>
             {m.verification_auto()}

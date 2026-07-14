@@ -177,9 +177,7 @@
                     </Button>
                   {/snippet}
                 </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Content side="top">{m.copy_label({ label: m.credential_id() })}</Tooltip.Content>
-                </Tooltip.Portal>
+                <Tooltip.Content side="top">{m.copy_label({ label: m.credential_id() })}</Tooltip.Content>
               </Tooltip.Root>
             </dd>
           </div>

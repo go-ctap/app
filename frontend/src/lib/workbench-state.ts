@@ -28,7 +28,7 @@ import {
 } from "./features/workbench/state.js";
 import { currentSessionId } from "./session-boundary.js";
 import type { Discovery } from "./session-model.js";
-import { failureMessage, isCanceledFailure, isRetryableFailure } from "./failure.js";
+import { failureMessage, isCanceledFailure } from "./failure.js";
 
 export function applyDiscovery(response: Discovery): boolean {
   const nextSelector = response.selectedSelector || "";
@@ -74,12 +74,6 @@ function notifyOperationFailure(outcome: StatusBarOutcome) {
     description: outcome.message,
     duration: outcome.tone === "error" ? 10_000 : 7_000,
     important: true,
-    action: outcome.retry
-      ? {
-          label: m.retry(),
-          onClick: () => { void outcome.retry?.(); },
-        }
-      : undefined,
   };
 
   if (outcome.tone === "error") {
@@ -97,14 +91,9 @@ export function clearWorkbenchScreenCaches() {
   resetPasskeysDeviceState();
   resetLargeBlobsDeviceState();
   resetSecurityDeviceState();
-  statusBar.update((state) => ({
-    ...state,
-    lastOutcome: state.lastOutcome ? { ...state.lastOutcome, retry: undefined } : null,
-  }));
 }
 
-export function summarizeEnvelope(label: string, envelope: OperationEnvelope | null | undefined, retry?: () => void | Promise<void>) {
-  if (!envelope) return;
+export function summarizeEnvelope(label: string, envelope: OperationEnvelope) {
   finishOperation();
   const error = envelope.error;
   if (error) {
@@ -114,7 +103,6 @@ export function summarizeEnvelope(label: string, envelope: OperationEnvelope | n
       tone: canceled ? "info" : "error",
       title,
       message: failureMessage(error),
-      retry: !canceled && isRetryableFailure(error) ? retry : undefined,
     };
     setStatusOutcome(outcome);
     notifyOperationFailure(outcome);
@@ -130,24 +118,21 @@ export function summarizeEnvelope(label: string, envelope: OperationEnvelope | n
 export function summarizeOperationFailure(
   label: string,
   error: Failure,
-  retry?: () => void | Promise<void>,
 ) {
-  summarizeOperationFailureWithMessage(label, error, failureMessage(error), retry);
+  summarizeOperationFailureWithMessage(label, error, failureMessage(error));
 }
 
 export function summarizeOperationContractFailure(
   label: string,
   error: Failure,
-  retry?: () => void | Promise<void>,
 ) {
-  summarizeOperationFailureWithMessage(label, error, m.failure_result_type_mismatch(), retry);
+  summarizeOperationFailureWithMessage(label, error, m.failure_result_type_mismatch());
 }
 
 function summarizeOperationFailureWithMessage(
   label: string,
   error: Failure,
   message: string,
-  retry?: () => void | Promise<void>,
 ) {
   finishOperation();
   const canceled = isCanceledFailure(error);
@@ -156,7 +141,6 @@ function summarizeOperationFailureWithMessage(
     tone: canceled ? "info" : "error",
     title,
     message,
-    retry: !canceled && isRetryableFailure(error) ? retry : undefined,
   };
   setStatusOutcome(outcome);
   notifyOperationFailure(outcome);

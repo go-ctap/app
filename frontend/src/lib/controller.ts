@@ -1,9 +1,19 @@
-import { loadPasskeys as loadPasskeysOperation } from "./passkeys-controller.js";
-import { loadLargeBlobs as loadLargeBlobsOperation } from "./largeblobs-controller.js";
+import {
+  beginCredentialDelete as beginCredentialDeleteOperation,
+  loadPasskeys as loadPasskeysOperation,
+  previewCredentialUpdate as previewCredentialUpdateOperation,
+} from "./passkeys-controller.js";
+import {
+  beginLargeBlobCleanup as beginLargeBlobCleanupOperation,
+  beginLargeBlobDelete as beginLargeBlobDeleteOperation,
+  loadLargeBlobs as loadLargeBlobsOperation,
+  previewLargeBlobWrite as previewLargeBlobWriteOperation,
+} from "./largeblobs-controller.js";
+import { loadOverview as loadOverviewOperation } from "./overview-controller.js";
 import {
   loadSecurityEnrollments as loadSecurityEnrollmentsOperation,
   loadSecurityStatus as loadSecurityStatusOperation,
-  retrySecurityMutation as retrySecurityMutationOperation,
+  restartSecurityPreview as restartSecurityPreviewOperation,
 } from "./security-controller.js";
 import { ensureSelectedSessionReady } from "./session-controller.js";
 
@@ -17,6 +27,11 @@ export async function reloadLargeBlobs(): Promise<boolean> {
   return loadLargeBlobsOperation({ refresh: true });
 }
 
+export async function reloadOverview(): Promise<void> {
+  if (!await ensureSelectedSessionReady()) return;
+  await loadOverviewOperation();
+}
+
 export async function reloadSecurity(): Promise<boolean> {
   if (!await ensureSelectedSessionReady()) return false;
   return loadSecurityStatusOperation();
@@ -27,9 +42,34 @@ export async function reloadSecurityEnrollments(): Promise<boolean> {
   return loadSecurityEnrollmentsOperation();
 }
 
-export async function retrySecurityMutation(): Promise<boolean> {
+export async function restartSecurityPreview(): Promise<boolean> {
   if (!await ensureSelectedSessionReady()) return false;
-  return retrySecurityMutationOperation();
+  return restartSecurityPreviewOperation();
+}
+
+export async function previewCredentialUpdate(): Promise<boolean> {
+  if (!await ensureSelectedSessionReady()) return false;
+  return previewCredentialUpdateOperation();
+}
+
+export async function beginCredentialDelete(credentialIDHex?: string): Promise<boolean> {
+  if (!await ensureSelectedSessionReady()) return false;
+  return beginCredentialDeleteOperation(credentialIDHex);
+}
+
+export async function previewLargeBlobWrite(): Promise<boolean> {
+  if (!await ensureSelectedSessionReady()) return false;
+  return previewLargeBlobWriteOperation();
+}
+
+export async function beginLargeBlobDelete(credentialIDHex?: string): Promise<boolean> {
+  if (!await ensureSelectedSessionReady()) return false;
+  return beginLargeBlobDeleteOperation(credentialIDHex);
+}
+
+export async function beginLargeBlobCleanup(): Promise<boolean> {
+  if (!await ensureSelectedSessionReady()) return false;
+  return beginLargeBlobCleanupOperation();
 }
 
 export {
@@ -39,7 +79,6 @@ export {
 export { handleOperationProgress } from "./event-controller.js";
 export {
   cancelActiveOperation,
-  retryLastStatusOutcome,
 } from "./operation-controller.js";
 export {
   handleDiscoveryChanged,
@@ -51,8 +90,6 @@ export {
   loadOverviewMDS,
 } from "./overview-controller.js";
 export {
-  beginLargeBlobCleanup,
-  beginLargeBlobDelete,
   beginLargeBlobWrite,
   closeLargeBlobMutation,
   confirmLargeBlobCleanup,
@@ -60,9 +97,7 @@ export {
   confirmLargeBlobWrite,
   editLargeBlobWrite,
   loadLargeBlobs,
-  previewLargeBlobWrite,
   readLargeBlob,
-  retryLargeBlobMutation,
   selectLargeBlobCredential,
   setLargeBlobsDecodeMode,
   setLargeBlobsPayloadEncoding,
@@ -87,23 +122,18 @@ export {
   regenerateLabMakeChallenge,
   regenerateLabUserID,
   requestLabPreset,
-  retryLabGetAssertion,
-  retryLabMakeCredential,
+  rerunLabGetAssertion,
   runLabGetAssertion,
   updateLabGetAssertionDraft,
   updateLabMakeCredentialDraft,
 } from "./lab-controller.js";
-export { base64ToHex } from "./lab-input.js";
 export {
-  beginCredentialDelete,
   beginCredentialUpdate,
   closePasskeysMutation,
   confirmCredentialDelete,
   confirmCredentialUpdate,
   editCredentialUpdate,
   loadPasskeys,
-  previewCredentialUpdate,
-  retryPasskeysMutation,
   selectPasskeyCredential,
   setPasskeysQuery,
   setPasskeysStatusFilter,

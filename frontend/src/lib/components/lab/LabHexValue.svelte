@@ -44,9 +44,7 @@
           </Button>
         {/snippet}
       </Tooltip.Trigger>
-      <Tooltip.Portal>
-        <Tooltip.Content side="top">{m.lab_copy({ label })}</Tooltip.Content>
-      </Tooltip.Portal>
+      <Tooltip.Content side="top">{m.lab_copy({ label })}</Tooltip.Content>
     </Tooltip.Root>
   </span>
 </Tooltip.Provider>

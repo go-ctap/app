@@ -9,19 +9,18 @@
   import { Spinner } from "$lib/components/ui/spinner/index.js";
   import { largeBlobMutationPreview } from "$lib/ctapkit-results";
   import type { LargeBlobMutationState } from "$lib/features/largeblobs/state";
-  import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
+  import { failureMessage as localizeFailure, isCanceledFailure, isIncorrectPINFailure } from "$lib/failure";
 
   import { m } from "../../../paraglide/messages.js";
 
   type Props = {
     mutation: LargeBlobMutationState;
-    retryAllowed: boolean;
+    onPreview: () => void | Promise<boolean>;
     onConfirm: () => void | Promise<boolean>;
-    onRetry: () => void | Promise<boolean>;
     onClose: () => void;
   };
 
-  let { mutation, retryAllowed, onConfirm, onRetry, onClose }: Props = $props();
+  let { mutation, onPreview, onConfirm, onClose }: Props = $props();
 
   let confirmationOpen = $derived(
     mutation.kind === "cleanup" && (
@@ -56,6 +55,10 @@
       || isCanceledFailure(mutation.responseEnvelope?.error)
     ),
   );
+  let incorrectPIN = $derived(
+    mutation.kind === "cleanup" && mutation.phase === "error" && mutation.failedPhase === "executing" &&
+    isIncorrectPINFailure(mutation.responseEnvelope?.error),
+  );
 
   function handleOpenChange(next: boolean) {
     if (!next && !busy) onClose();
@@ -64,10 +67,6 @@
   function handleAction(event: MouseEvent) {
     event.preventDefault();
     if (busy || mutation.kind !== "cleanup") return;
-    if (mutation.phase === "error") {
-      void onRetry();
-      return;
-    }
     void onConfirm();
   }
 </script>
@@ -105,9 +104,7 @@
       {#if preview}<LargeBlobMutationPreview {preview} />{/if}
 
       <Dialog.Footer>
-        {#if retryAllowed}
-          <Button type="button" onclick={() => void onRetry()}>{m.retry()}</Button>
-        {/if}
+        <Button type="button" onclick={() => void onPreview()}>{m.preview_cleanup()}</Button>
         <Button variant="outline" type="button" onclick={onClose}>{m.close()}</Button>
       </Dialog.Footer>
     </Dialog.Content>
@@ -141,11 +138,13 @@
       {#if preview}<LargeBlobMutationPreview {preview} />{/if}
 
       <AlertDialog.Footer>
-        <AlertDialog.Cancel disabled={busy} onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
-        {#if mutation.phase !== "error" || retryAllowed}
+        <AlertDialog.Cancel disabled={busy} onclick={onClose}>
+          {mutation.phase === "error" && !incorrectPIN ? m.close() : m.cancel()}
+        </AlertDialog.Cancel>
+        {#if mutation.phase !== "error" || incorrectPIN}
           <AlertDialog.Action variant="destructive" disabled={busy} onclick={handleAction}>
             {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
-            {mutation.phase === "error" ? m.retry() : m.confirm_cleanup()}
+            {m.confirm_cleanup()}
           </AlertDialog.Action>
         {/if}
       </AlertDialog.Footer>

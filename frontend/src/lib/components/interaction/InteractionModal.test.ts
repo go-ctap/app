@@ -10,9 +10,9 @@ import { resetAppStateForTest } from "$lib/store-test-utils";
 
 import InteractionModal from "./InteractionModal.svelte";
 
-function pinPrompt() {
+function pinPrompt(interactionId = "interaction-1") {
   return new InteractionPrompt({
-    interactionId: "interaction-1",
+    interactionId,
     operationId: "operation-1",
     sessionId: "session-1",
     request: new InteractionRequest({
@@ -67,6 +67,18 @@ describe("InteractionModal", () => {
     expect(screen.getByText((_, element) => element?.tagName === "PRE" && element.textContent?.includes('"pinUvAuthToken": "[redacted]"'))).toBeInTheDocument();
   });
 
+  it("does not submit an empty PIN", async () => {
+    render(InteractionModal, {
+      props: { presentation: buildInteractionModalPresentation(pinPrompt()), onAnswer },
+    });
+
+    const input = await screen.findByLabelText("PIN");
+    expect(screen.getByRole("button", { name: "Send PIN" })).toBeDisabled();
+    await fireEvent.submit(input.closest("form")!);
+
+    expect(onAnswer).not.toHaveBeenCalled();
+  });
+
   it("cancels the prompt from Escape", async () => {
     const user = userEvent.setup();
     render(InteractionModal, {
@@ -103,5 +115,21 @@ describe("InteractionModal", () => {
 
     expect(onAnswer).toHaveBeenCalledTimes(1);
     resolveAnswer();
+  });
+
+  it("does not carry a PIN into the next prompt after an external dismissal", async () => {
+    const user = userEvent.setup();
+    const view = render(InteractionModal, {
+      props: { presentation: buildInteractionModalPresentation(pinPrompt()), onAnswer },
+    });
+
+    await user.type(await screen.findByLabelText("PIN"), "123456");
+    await view.rerender({ presentation: null, onAnswer });
+    await view.rerender({
+      presentation: buildInteractionModalPresentation(pinPrompt("interaction-2")),
+      onAnswer,
+    });
+
+    expect(await screen.findByLabelText("PIN")).toHaveValue("");
   });
 });

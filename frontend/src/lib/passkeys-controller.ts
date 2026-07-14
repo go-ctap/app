@@ -1,7 +1,6 @@
 import { get } from "svelte/store";
 
 import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   CredentialDeleteEnvelope,
   CredentialDeleteRequest,
@@ -38,8 +37,8 @@ import {
 } from "./features/passkeys/state.js";
 import { selectedSelector, sessionStatus } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
-import { canRetryPasskeysMutation, findPasskeyCredential } from "./passkeys-presentation.js";
-import { failureForCode, runtimeFailureFrom } from "./failure.js";
+import { findPasskeyCredential } from "./passkeys-presentation.js";
+import { internalFailure, isIncorrectPINFailure, runtimeFailureFrom } from "./failure.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
 import {
   beginOperation,
@@ -49,16 +48,6 @@ import {
 } from "./workbench-state.js";
 
 export type LoadPasskeysOptions = { refresh?: boolean };
-
-function retryAction(action: () => Promise<unknown>) {
-  return async () => {
-    await action();
-  };
-}
-
-function missingOperationOutput() {
-  return failureForCode(Code.CodeInternalError);
-}
 
 function passkeysAutoLoadKey() {
   const selector = get(selectedSelector).trim();
@@ -115,16 +104,16 @@ export async function loadPasskeys(options: LoadPasskeysOptions = {}) {
       reconcileSelectedCredential();
     }
     if (envelope.error || report) {
-      summarizeEnvelope(m.credential_inventory(), envelope, retryAction(() => loadPasskeys({ refresh })));
+      summarizeEnvelope(m.credential_inventory(), envelope);
     } else {
-      summarizeOperationContractFailure(m.credential_inventory(), missingOperationOutput());
+      summarizeOperationContractFailure(m.credential_inventory(), internalFailure());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(report);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     failPasskeysInventoryLoadAtRuntime(runtimeError);
-    summarizeOperationFailure(m.credential_inventory(), runtimeError, retryAction(() => loadPasskeys({ refresh })));
+    summarizeOperationFailure(m.credential_inventory(), runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -296,22 +285,13 @@ export async function previewCredentialUpdate(): Promise<boolean> {
     return false;
   }
 
-  let request: CredentialUpdateRequest;
-  try {
-    request = buildCredentialUpdatePreviewRequest(
-      selectedSessionId(),
-      get(passkeysVerificationFlow),
-      current.credentialIDHex,
-      current.original,
-      current.form,
-    );
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    updateError(current, "previewing", null, null, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.credential_update_preview(), runtimeError);
-    applyInvalidSessionError(runtimeError);
-    return false;
-  }
+  const request = buildCredentialUpdatePreviewRequest(
+    selectedSessionId(),
+    get(passkeysVerificationFlow),
+    current.credentialIDHex,
+    current.original,
+    current.form,
+  );
 
   passkeysMutation.set({ ...current, phase: "previewing", previewRequest: request });
   try {
@@ -326,16 +306,16 @@ export async function previewCredentialUpdate(): Promise<boolean> {
       passkeysMutation.set({ ...current, phase: "review", previewRequest: request, previewEnvelope: envelope });
     }
     if (envelope.error || preview) {
-      summarizeEnvelope(m.credential_update_preview(), envelope, retryAction(previewCredentialUpdate));
+      summarizeEnvelope(m.credential_update_preview(), envelope);
     } else {
-      summarizeOperationContractFailure(m.credential_update_preview(), missingOperationOutput());
+      summarizeOperationContractFailure(m.credential_update_preview(), internalFailure());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(preview);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     updateError(current, "previewing", request, null, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.credential_update_preview(), runtimeError, retryAction(previewCredentialUpdate));
+    summarizeOperationFailure(m.credential_update_preview(), runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -343,30 +323,42 @@ export async function previewCredentialUpdate(): Promise<boolean> {
 
 export async function confirmCredentialUpdate(): Promise<boolean> {
   const current = get(passkeysMutation);
-  if (current.kind !== "update" || current.phase !== "review") return false;
+  if (current.kind !== "update" || (current.phase !== "review" && current.phase !== "error")) return false;
+  const { previewRequest, previewEnvelope } = current;
+  if (!previewRequest || !previewEnvelope) return false;
+  if (current.phase === "error"
+    && (current.failedPhase !== "executing" || !isIncorrectPINFailure(current.responseEnvelope?.error))) return false;
   const request: CredentialUpdateRequest = {
-    ...current.previewRequest,
+    ...previewRequest,
     dryRun: false,
     confirmed: true,
     confirmationMessage: m.confirm_update(),
   };
-  passkeysMutation.set({ ...current, phase: "executing" });
+  passkeysMutation.set({
+    kind: "update",
+    phase: "executing",
+    credentialIDHex: current.credentialIDHex,
+    original: current.original,
+    form: current.form,
+    previewRequest,
+    previewEnvelope,
+  });
   try {
     beginOperation(m.credential_update());
     const envelope = await api.updateCredentialUser(request);
     const result = credentialUpdateResult(envelope);
     if (envelope.error) {
-      updateError(current, "executing", current.previewRequest, current.previewEnvelope, envelope, null, "response-error");
+      updateError(current, "executing", previewRequest, previewEnvelope, envelope, null, "response-error");
     } else if (!result) {
-      updateError(current, "executing", current.previewRequest, current.previewEnvelope, envelope, null, "missing-result");
+      updateError(current, "executing", previewRequest, previewEnvelope, envelope, null, "missing-result");
     } else {
       passkeysSelectedCredentialID.set(current.credentialIDHex);
       passkeysMutation.set({ kind: "idle", phase: "idle" });
     }
     if (envelope.error || result) {
-      summarizeEnvelope(m.credential_update(), envelope, retryAction(retryPasskeysMutation));
+      summarizeEnvelope(m.credential_update(), envelope);
     } else {
-      summarizeOperationContractFailure(m.credential_update(), missingOperationOutput());
+      summarizeOperationContractFailure(m.credential_update(), internalFailure());
     }
     applyInvalidSessionError(envelope.error);
     if (envelope.error || !result) return false;
@@ -374,8 +366,8 @@ export async function confirmCredentialUpdate(): Promise<boolean> {
     return true;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
-    updateError(current, "executing", current.previewRequest, current.previewEnvelope, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.credential_update(), runtimeError, retryAction(retryPasskeysMutation));
+    updateError(current, "executing", previewRequest, previewEnvelope, null, runtimeError, "runtime-error");
+    summarizeOperationFailure(m.credential_update(), runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -405,21 +397,12 @@ function deleteError(
 
 async function previewCredentialDelete(credentialIDHex: string): Promise<boolean> {
   if (!mutationsAvailable("delete") || !findPasskeyCredential(credentialsReport(get(passkeysInventoryState).lastSuccessfulEnvelope), credentialIDHex)) return false;
-  let request: CredentialDeleteRequest;
-  try {
-    request = {
-      sessionId: selectedSessionId(),
-      verificationFlow: get(passkeysVerificationFlow),
-      credentialIdHex: credentialIDHex,
-      dryRun: true,
-    };
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    deleteError(credentialIDHex, "previewing", null, null, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.credential_delete_preview(), runtimeError);
-    applyInvalidSessionError(runtimeError);
-    return false;
-  }
+  const request: CredentialDeleteRequest = {
+    sessionId: selectedSessionId(),
+    verificationFlow: get(passkeysVerificationFlow),
+    credentialIdHex: credentialIDHex,
+    dryRun: true,
+  };
 
   passkeysSelectedCredentialID.set(credentialIDHex);
   passkeysMutation.set({ kind: "delete", phase: "previewing", credentialIDHex, previewRequest: request });
@@ -435,16 +418,16 @@ async function previewCredentialDelete(credentialIDHex: string): Promise<boolean
       passkeysMutation.set({ kind: "delete", phase: "review", credentialIDHex, previewRequest: request, previewEnvelope: envelope });
     }
     if (envelope.error || preview) {
-      summarizeEnvelope(m.credential_delete_preview(), envelope, retryAction(() => previewCredentialDelete(credentialIDHex)));
+      summarizeEnvelope(m.credential_delete_preview(), envelope);
     } else {
-      summarizeOperationContractFailure(m.credential_delete_preview(), missingOperationOutput());
+      summarizeOperationContractFailure(m.credential_delete_preview(), internalFailure());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(preview);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     deleteError(credentialIDHex, "previewing", request, null, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.credential_delete_preview(), runtimeError, retryAction(() => previewCredentialDelete(credentialIDHex)));
+    summarizeOperationFailure(m.credential_delete_preview(), runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
@@ -456,30 +439,40 @@ export function beginCredentialDelete(credentialIDHex = get(passkeysSelectedCred
 
 export async function confirmCredentialDelete(): Promise<boolean> {
   const current = get(passkeysMutation);
-  if (current.kind !== "delete" || current.phase !== "review") return false;
+  if (current.kind !== "delete" || (current.phase !== "review" && current.phase !== "error")) return false;
+  const { previewRequest, previewEnvelope } = current;
+  if (!previewRequest || !previewEnvelope) return false;
+  if (current.phase === "error"
+    && (current.failedPhase !== "executing" || !isIncorrectPINFailure(current.responseEnvelope?.error))) return false;
   const request: CredentialDeleteRequest = {
-    ...current.previewRequest,
+    ...previewRequest,
     dryRun: false,
     confirmed: true,
     confirmationMessage: m.confirm_delete(),
   };
-  passkeysMutation.set({ ...current, phase: "executing" });
+  passkeysMutation.set({
+    kind: "delete",
+    phase: "executing",
+    credentialIDHex: current.credentialIDHex,
+    previewRequest,
+    previewEnvelope,
+  });
   try {
     beginOperation(m.credential_delete());
     const envelope = await api.deleteCredential(request);
     const result = credentialDeleteResult(envelope);
     if (envelope.error) {
-      deleteError(current.credentialIDHex, "executing", current.previewRequest, current.previewEnvelope, envelope, null, "response-error");
+      deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, envelope, null, "response-error");
     } else if (!result) {
-      deleteError(current.credentialIDHex, "executing", current.previewRequest, current.previewEnvelope, envelope, null, "missing-result");
+      deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, envelope, null, "missing-result");
     } else {
       passkeysSelectedCredentialID.set("");
       passkeysMutation.set({ kind: "idle", phase: "idle" });
     }
     if (envelope.error || result) {
-      summarizeEnvelope(m.credential_delete(), envelope, retryAction(retryPasskeysMutation));
+      summarizeEnvelope(m.credential_delete(), envelope);
     } else {
-      summarizeOperationContractFailure(m.credential_delete(), missingOperationOutput());
+      summarizeOperationContractFailure(m.credential_delete(), internalFailure());
     }
     applyInvalidSessionError(envelope.error);
     if (envelope.error || !result) return false;
@@ -487,73 +480,11 @@ export async function confirmCredentialDelete(): Promise<boolean> {
     return true;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
-    deleteError(current.credentialIDHex, "executing", current.previewRequest, current.previewEnvelope, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.credential_delete(), runtimeError, retryAction(retryPasskeysMutation));
+    deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, null, runtimeError, "runtime-error");
+    summarizeOperationFailure(m.credential_delete(), runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }
-}
-
-export async function retryPasskeysMutation(): Promise<boolean> {
-  const current = get(passkeysMutation);
-  if (!canRetryPasskeysMutation(current, get(sessionStatus)) || current.phase !== "error") return false;
-
-  if (current.failedPhase === "previewing") {
-    return current.kind === "update"
-      ? previewCredentialUpdate()
-      : previewCredentialDelete(current.credentialIDHex);
-  }
-  if (!current.previewRequest || !current.previewEnvelope) return false;
-
-  if (current.kind === "update") {
-    passkeysMutation.set({
-      kind: "update",
-      phase: "executing",
-      credentialIDHex: current.credentialIDHex,
-      original: current.original,
-      form: current.form,
-      previewRequest: current.previewRequest,
-      previewEnvelope: current.previewEnvelope,
-    });
-  } else {
-    passkeysMutation.set({
-      kind: "delete",
-      phase: "executing",
-      credentialIDHex: current.credentialIDHex,
-      previewRequest: current.previewRequest,
-      previewEnvelope: current.previewEnvelope,
-    });
-  }
-  const refreshed = await loadPasskeys({ refresh: true });
-  if (!refreshed) {
-    passkeysMutation.set(current);
-    return false;
-  }
-
-  const report = credentialsReport(get(passkeysInventoryState).lastSuccessfulEnvelope);
-  if (!findPasskeyCredential(report, current.credentialIDHex)) {
-    passkeysMutation.set(current);
-    return false;
-  }
-
-  if (current.kind === "update") {
-    passkeysSelectedCredentialID.set(current.credentialIDHex);
-    passkeysMutation.set({
-      kind: "update",
-      phase: "editing",
-      credentialIDHex: current.credentialIDHex,
-      original: current.original,
-      form: current.form,
-      validationError: null,
-    });
-    const previewed = await previewCredentialUpdate();
-    if (!previewed && get(passkeysMutation).phase === "editing") passkeysMutation.set(current);
-    return previewed;
-  }
-
-  const previewed = await previewCredentialDelete(current.credentialIDHex);
-  if (!previewed && get(passkeysMutation).phase === "executing") passkeysMutation.set(current);
-  return previewed;
 }
 
 export function closePasskeysMutation() {

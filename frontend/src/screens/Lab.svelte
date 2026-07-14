@@ -8,7 +8,6 @@
   import MakeCredentialStep from "$lib/components/lab/MakeCredentialStep.svelte";
   import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
   import {
-    base64ToHex,
     cancelLabHandoff,
     cancelLabPreset,
     confirmLabHandoff,
@@ -24,8 +23,7 @@
     regenerateLabMakeChallenge,
     regenerateLabUserID,
     requestLabPreset,
-    retryLabGetAssertion,
-    retryLabMakeCredential,
+    rerunLabGetAssertion,
     runLabGetAssertion,
     updateLabGetAssertionDraft,
     updateLabMakeCredentialDraft,
@@ -35,22 +33,20 @@
     selectedDevice,
     selectedSelector,
     sessionBusy,
-    sessionStatus,
     type LabPresetID,
   } from "$lib/stores";
 
   import { m } from "../paraglide/messages.js";
 
-  let operationRunning = $derived(
-    $labState.makeStep.phase === "previewing"
-      || $labState.makeStep.phase === "executing"
-      || $labState.getStep.phase === "executing",
+  let scenarioDirty = $derived(
+    $labState.isCustom
+      || $labState.makeStep.phase !== "editing"
+      || $labState.getStep.phase !== "editing"
+      || $labState.pendingHandoff !== null,
   );
   let presetDialogOpen = $derived(Boolean($labState.pendingPresetID));
   let handoffDialogOpen = $derived(Boolean($labState.pendingHandoff));
-  let controlsDisabled = $derived(
-    operationRunning || $sessionBusy || $sessionStatus.state === "opening",
-  );
+  let controlsDisabled = $derived($sessionBusy);
 
   async function focusGetAssertion() {
     await tick();
@@ -94,6 +90,8 @@
       device={$selectedDevice}
       presetID={$labState.presetID}
       isCustom={$labState.isCustom}
+      dirty={scenarioDirty}
+      pendingPresetID={$labState.pendingPresetID}
       disabled={controlsDisabled}
       onPresetChange={(presetID: LabPresetID) => requestLabPreset(presetID)}
     />
@@ -107,7 +105,6 @@
         onRegenerateChallenge={regenerateLabMakeChallenge}
         onPreview={previewLabMakeCredential}
         onConfirm={confirmLabMakeCredential}
-        onRetry={retryLabMakeCredential}
         onEdit={editLabMakeCredential}
         onNewRun={newLabMakeCredentialRun}
         onHandoff={handleHandoff}
@@ -115,11 +112,10 @@
       <GetAssertionStep
         lab={$labState}
         disabled={controlsDisabled}
-        bytesToHex={base64ToHex}
         onDraftChange={updateLabGetAssertionDraft}
         onRegenerateChallenge={regenerateLabGetChallenge}
         onRun={runLabGetAssertion}
-        onRetry={retryLabGetAssertion}
+        onRunAgain={rerunLabGetAssertion}
         onEdit={editLabGetAssertion}
         onNewRun={newLabGetAssertionRun}
       />

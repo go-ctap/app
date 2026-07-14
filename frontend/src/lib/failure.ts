@@ -7,150 +7,6 @@ import {
 import { m } from "../paraglide/messages.js";
 
 type Message = () => string;
-type KnownCategory = Exclude<Category, Category.$zero>;
-
-const CODES_BY_CATEGORY = {
-  [Category.CategoryInternal]: [
-    Code.CodeInternalError,
-  ],
-  [Category.CategoryUnsupported]: [
-    Code.CodeOperationUnsupported,
-    Code.CodeVerificationFlowUnsupported,
-    Code.CodeTransportModeUnsupported,
-    Code.CodeCredentialManagementUnsupported,
-    Code.CodePINUnsupported,
-    Code.CodeBioUnsupported,
-    Code.CodeAuthenticatorConfigUnsupported,
-    Code.CodeMinPINLengthUnsupported,
-    Code.CodeLargeBlobUnsupported,
-    Code.CodeLargeBlobDecodeModeUnsupported,
-    Code.CodeCTAPCommandInvalid,
-    Code.CodeAlgorithmUnsupported,
-    Code.CodeCTAPOptionUnsupported,
-    Code.CodeCTAPSubcommandInvalid,
-    Code.CodeGetInfoUnsupported,
-  ],
-  [Category.CategoryPermissionDenied]: [
-    Code.CodeTransportPermissionDenied,
-  ],
-  [Category.CategoryTransportFailure]: [
-    Code.CodeTransportProxyUnavailable,
-    Code.CodeTransportFailure,
-    Code.CodeMDSFetchFailed,
-    Code.CodeCTAPSequenceInvalid,
-    Code.CodeCTAPLockRequired,
-    Code.CodeCTAPChannelInvalid,
-    Code.CodeCTAPIntegrityFailure,
-    Code.CodeCTAPOtherError,
-    Code.CodeCTAPReservedStatus,
-    Code.CodeCTAPExtensionError,
-    Code.CodeCTAPVendorError,
-  ],
-  [Category.CategoryTimeout]: [
-    Code.CodeOperationTimeout,
-    Code.CodeResetTouchTimeout,
-    Code.CodeAuthenticatorTimeout,
-    Code.CodeUserActionTimeout,
-    Code.CodeAuthenticatorActionTimeout,
-    Code.CodeAuthenticatorSelectionTimeout,
-    Code.CodeBioInteractionTimeout,
-  ],
-  [Category.CategoryBusy]: [
-    Code.CodeDeviceBusy,
-    Code.CodeAuthenticatorBusy,
-    Code.CodeAuthenticatorProcessing,
-    Code.CodeUserActionPending,
-    Code.CodeAuthenticatorOperationPending,
-  ],
-  [Category.CategoryInvalidSession]: [
-    Code.CodeSessionInvalid,
-    Code.CodeSessionClosed,
-  ],
-  [Category.CategoryCanceled]: [
-    Code.CodeOperationCanceled,
-    Code.CodeInteractionCanceled,
-    Code.CodeAuthenticatorOperationCanceled,
-    Code.CodeAuthenticatorSelectionCanceled,
-  ],
-  [Category.CategoryInvalidOperation]: [
-    Code.CodeOperationRequired,
-    Code.CodeRequestJSONInvalid,
-    Code.CodeConfirmationRequired,
-    Code.CodeInteractionKindRequired,
-    Code.CodeInteractionHandlerRequired,
-    Code.CodeDeviceHandleInvalid,
-    Code.CodeDeviceSelectionRequired,
-    Code.CodeMDSAAGUIDInvalid,
-    Code.CodeConformanceTargetInvalid,
-    Code.CodeRelyingPartyIDRequired,
-    Code.CodeUserIDRequired,
-    Code.CodeClientDataJSONRequired,
-    Code.CodePublicKeyCredentialParametersRequired,
-    Code.CodePublicKeyCredentialAlgorithmRequired,
-    Code.CodeCredentialIDRequired,
-    Code.CodeCredentialChangesRequired,
-    Code.CodeUserIDHexInvalid,
-    Code.CodePINRequired,
-    Code.CodeBioTemplateIDRequired,
-    Code.CodeBioTemplateIDInvalid,
-    Code.CodeLargeBlobArrayInvalid,
-    Code.CodeLargeBlobWriteSequenceInvalid,
-    Code.CodeCTAPParameterInvalid,
-    Code.CodeCTAPLengthInvalid,
-    Code.CodeCTAPCBORTypeInvalid,
-    Code.CodeCTAPCBORInvalid,
-    Code.CodeCTAPParameterMissing,
-    Code.CodeCTAPLimitExceeded,
-    Code.CodeCTAPOptionInvalid,
-    Code.CodeCTAPRequestTooLarge,
-  ],
-  [Category.CategoryInvalidState]: [
-    Code.CodeServiceClosed,
-    Code.CodeDeviceNotFound,
-    Code.CodeDeviceUnavailable,
-    Code.CodeMDSVerificationFailed,
-    Code.CodeCredentialNotFound,
-    Code.CodeCredentialExcluded,
-    Code.CodeCredentialStoreFull,
-    Code.CodeAttestedCredentialDataMissing,
-    Code.CodeCredentialCreationDenied,
-    Code.CodeAssertionDenied,
-    Code.CodeAssertionNotAllowed,
-    Code.CodeAssertionContinuationUnavailable,
-    Code.CodePINAlreadyConfigured,
-    Code.CodePINNotConfigured,
-    Code.CodePINInvalid,
-    Code.CodePINBlocked,
-    Code.CodePINUVAuthInvalid,
-    Code.CodePINUVAuthBlocked,
-    Code.CodePINPolicyViolation,
-    Code.CodePINUVAuthTokenRequired,
-    Code.CodePINUVPermissionUnauthorized,
-    Code.CodeUserPresenceRequired,
-    Code.CodeUserVerificationBlocked,
-    Code.CodeUserVerificationInvalid,
-    Code.CodeBioNoEnrollments,
-    Code.CodeBioEnrollmentNotFound,
-    Code.CodeBioDatabaseFull,
-    Code.CodeAuthenticatorConfigStorageFull,
-    Code.CodeAuthenticatorOperationDenied,
-    Code.CodeAuthenticatorOperationNotAllowed,
-    Code.CodeAlwaysUVStateUnknown,
-    Code.CodeAlwaysUVAlreadyTarget,
-    Code.CodeMinPINLengthDecreaseNotAllowed,
-    Code.CodeResetWindowExpired,
-    Code.CodeLargeBlobKeyMissing,
-    Code.CodeLargeBlobArrayTooLarge,
-    Code.CodeLargeBlobStorageFull,
-    Code.CodeLargeBlobIntegrityFailure,
-    Code.CodeLargeBlobMissing,
-    Code.CodeLargeBlobUTF8Invalid,
-    Code.CodeLargeBlobJSONInvalid,
-    Code.CodeLargeBlobCBORInvalid,
-    Code.CodeCredentialInvalid,
-    Code.CodeAuthenticatorNoOperations,
-  ],
-} satisfies Record<KnownCategory, readonly Code[]>;
 
 const CODE_MESSAGES: Record<Exclude<Code, Code.$zero>, Message> = {
   [Code.CodeInternalError]: m.failure_internal_error,
@@ -275,41 +131,16 @@ const CODE_MESSAGES: Record<Exclude<Code, Code.$zero>, Message> = {
   [Code.CodeBioInteractionTimeout]: m.failure_bio_interaction_timeout,
 };
 
-const CATEGORY_BY_CODE = new Map<Code, KnownCategory>();
-for (const [category, codes] of Object.entries(CODES_BY_CATEGORY) as [KnownCategory, readonly Code[]][]) {
-  for (const code of codes) {
-    if (CATEGORY_BY_CODE.has(code)) throw new Error(`duplicate failure code: ${code}`);
-    CATEGORY_BY_CODE.set(code, category);
-  }
-}
-
-const KNOWN_CODES = Object.values(Code).filter((code) => code !== Code.$zero);
-if (CATEGORY_BY_CODE.size !== KNOWN_CODES.length || KNOWN_CODES.some((code) => !CATEGORY_BY_CODE.has(code))) {
-  throw new Error("failure code registry is incomplete");
-}
-
-const KNOWN_CODE_SET = new Set<Code>(KNOWN_CODES);
-
 export function runtimeFailureFrom(error: unknown): Failure {
-  if (error instanceof Failure) return failureForCode(error.code);
-
-  if (error instanceof Error) {
-    const cause = failureCause(error.cause);
-    if (cause) return cause;
-
-    const code = knownCode(error.message);
-    if (code) return failureForCode(code);
-  }
-
-  return failureForCode(Code.CodeInternalError);
+  if (error instanceof Failure) return error;
+  if (error instanceof Error) return failureCause(error.cause) ?? internalFailure();
+  return internalFailure();
 }
 
-export function failureForCode(code: Code): Failure {
-  const canonicalCode = knownCode(code) ?? Code.CodeInternalError;
-
+export function internalFailure(): Failure {
   return new Failure({
-    code: canonicalCode,
-    category: categoryForCode(canonicalCode),
+    code: Code.CodeInternalError,
+    category: Category.CategoryInternal,
   });
 }
 
@@ -318,8 +149,8 @@ export function failureMessage(failure: Failure | null | undefined): string | nu
 export function failureMessage(failure: Failure | null | undefined): string | null {
   if (!failure) return null;
 
-  const code = knownCode(failure.code) ?? Code.CodeInternalError;
-  return CODE_MESSAGES[code as Exclude<Code, Code.$zero>]();
+  const message = CODE_MESSAGES[failure.code as Exclude<Code, Code.$zero>] ?? m.failure_internal_error;
+  return message();
 }
 
 export function isCanceledFailure(failure: Failure | null | undefined): boolean {
@@ -330,10 +161,8 @@ export function isInvalidSessionFailure(failure: Failure | null | undefined): bo
   return failure?.category === Category.CategoryInvalidSession;
 }
 
-export function isRetryableFailure(failure: Failure | null | undefined): boolean {
-  return failure?.category === Category.CategoryTransportFailure
-    || failure?.category === Category.CategoryTimeout
-    || failure?.category === Category.CategoryBusy;
+export function isIncorrectPINFailure(failure: Failure | null | undefined): boolean {
+  return failure?.code === Code.CodePINInvalid;
 }
 
 export function isUnsupportedFailure(failure: Failure | null | undefined): boolean {
@@ -341,19 +170,19 @@ export function isUnsupportedFailure(failure: Failure | null | undefined): boole
 }
 
 function failureCause(value: unknown): Failure | null {
-  if (value instanceof Failure) return failureForCode(value.code);
   if (!value || typeof value !== "object") return null;
 
-  const code = knownCode((value as { code?: unknown }).code);
-  if (!code) return null;
-
-  return failureForCode(code);
+  try {
+    const failure = Failure.createFrom(value);
+    return validFailure(failure) ? failure : null;
+  } catch {
+    return null;
+  }
 }
 
-function categoryForCode(code: Code): KnownCategory {
-  return CATEGORY_BY_CODE.get(code) ?? Category.CategoryInternal;
-}
-
-function knownCode(value: unknown): Code | null {
-  return typeof value === "string" && KNOWN_CODE_SET.has(value as Code) ? value as Code : null;
+function validFailure(failure: Failure) {
+  return failure.code !== Code.$zero
+    && failure.category !== Category.$zero
+    && Object.values(Code).includes(failure.code)
+    && Object.values(Category).includes(failure.category);
 }

@@ -312,8 +312,6 @@
   "lab_make_credential_preview": "MakeCredential preview",
   "lab_make_credential_step": "1. MakeCredential",
   "lab_make_result": "Created credential",
-  "lab_missing_preview": "The operation completed without a MakeCredential preview.",
-  "lab_missing_result": "The operation completed without the expected result.",
   "lab_new_run": "New run",
   "lab_no_assertions": "The authenticator returned 0 assertions.",
   "lab_normalized_request": "Normalized request",

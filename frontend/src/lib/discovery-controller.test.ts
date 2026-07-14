@@ -15,7 +15,7 @@ import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 
 import { setAppLocale } from "$lib/i18n";
-import { failureForCode } from "$lib/failure";
+import { failureForCode } from "$lib/test-failure";
 
 import {
   resetAppStateForTest,

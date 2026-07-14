@@ -23,7 +23,6 @@ import type {
 
 export type LabRandomSource = (target: Uint8Array<ArrayBuffer>) => void | Uint8Array<ArrayBuffer>;
 export type LabClientDataOperation = "create" | "get";
-export type LabValidationSeverity = "error" | "warning";
 export type LabValidationCode =
   | "required"
   | "invalid-origin"
@@ -35,7 +34,6 @@ export type LabValidationCode =
 export type LabValidationIssue = {
   field: string;
   code: LabValidationCode;
-  severity: LabValidationSeverity;
 };
 
 export type LabValidationResult = {
@@ -43,10 +41,6 @@ export type LabValidationResult = {
   errors: LabValidationIssue[];
   warnings: LabValidationIssue[];
 };
-
-export function emptyLabValidation(): LabValidationResult {
-  return { valid: true, errors: [], warnings: [] };
-}
 
 function defaultRandomSource(target: Uint8Array<ArrayBuffer>) {
   globalThis.crypto.getRandomValues(target);
@@ -202,9 +196,8 @@ export function clientDataJSONBase64(
 function issue(
   field: string,
   code: LabValidationCode,
-  severity: LabValidationSeverity = "error",
 ): LabValidationIssue {
-  return { field, code, severity };
+  return { field, code };
 }
 
 function validateClientData(
@@ -227,7 +220,7 @@ function validateClientData(
   try {
     JSON.parse(clientData.rawJSON);
   } catch {
-    warnings.push(issue(`${prefix}.rawJSON`, "invalid-json", "warning"));
+    warnings.push(issue(`${prefix}.rawJSON`, "invalid-json"));
   }
 }
 
@@ -326,17 +319,10 @@ function buildDescriptors(descriptors: LabDescriptorDraft[]) {
   }));
 }
 
-function requireValid(validation: LabValidationResult) {
-  if (!validation.valid) {
-    throw new Error(`invalid WebAuthn Lab draft: ${validation.errors.map(({ field, code }) => `${field}:${code}`).join(", ")}`);
-  }
-}
-
 export function buildMakeCredentialRequest(
   sessionId: SessionID,
   draft: MakeCredentialDraft,
 ) {
-  requireValid(validateMakeCredentialDraft(draft));
   const excludeList = buildDescriptors(draft.excludeList);
   const options = buildAuthenticatorOptions(draft);
   const verificationFlow = draft.verificationFlow === VerificationFlow.VerificationFlowDefault
@@ -366,7 +352,6 @@ export function buildGetAssertionRequest(
   sessionId: SessionID,
   draft: GetAssertionDraft,
 ) {
-  requireValid(validateGetAssertionDraft(draft));
   const allowList = buildDescriptors(draft.allowList);
   const options = buildAuthenticatorOptions(draft);
   const verificationFlow = draft.verificationFlow === VerificationFlow.VerificationFlowDefault

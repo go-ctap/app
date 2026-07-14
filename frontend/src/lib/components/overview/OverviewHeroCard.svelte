@@ -167,7 +167,7 @@
       white-space: nowrap;
     }
 
-    :global(.hero-title h1) {
+    :global(.hero-title h2) {
       margin: 0;
       font: inherit;
     }

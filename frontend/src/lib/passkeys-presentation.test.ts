@@ -5,7 +5,7 @@ import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { CredentialsEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { setAppLocale } from "$lib/i18n";
-import { failureForCode } from "$lib/failure";
+import { failureForCode } from "$lib/test-failure";
 import { emptyPasskeysInventoryState, type PasskeysInventoryState } from "$lib/features/passkeys/state";
 
 import { buildPasskeyRows, buildPasskeysPresentation } from "./passkeys-presentation";
@@ -49,6 +49,12 @@ function inventoryState(credentials: CredentialsEnvelope): PasskeysInventoryStat
   };
 }
 
+const defaultView = {
+  query: "",
+  statusFilter: "all" as const,
+  selectedCredentialID: "",
+};
+
 describe("buildPasskeysPresentation", () => {
   beforeEach(() => {
     setAppLocale("en");
@@ -57,6 +63,7 @@ describe("buildPasskeysPresentation", () => {
   it("summarizes an empty credential inventory", () => {
     const credentials = envelope([]);
     const presentation = buildPasskeysPresentation({
+      ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,
@@ -87,6 +94,7 @@ describe("buildPasskeysPresentation", () => {
       }],
     }]);
     const presentation = buildPasskeysPresentation({
+      ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,
@@ -135,6 +143,7 @@ describe("buildPasskeysPresentation", () => {
       "billing admin",
     ]) {
       const match = buildPasskeysPresentation({
+        ...defaultView,
         selectedSelector: "token-1",
         selectedDevice: null,
         sessionBusy: false,
@@ -147,6 +156,7 @@ describe("buildPasskeysPresentation", () => {
     }
 
     const missingBlob = buildPasskeysPresentation({
+      ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,
@@ -162,6 +172,7 @@ describe("buildPasskeysPresentation", () => {
     credentials.result!.report.summary.existingResidentCredentialsCount = 3;
     credentials.result!.report.summary.maxPossibleRemainingResidentCredentialsCount = 9;
     const presentation = buildPasskeysPresentation({
+      ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,
@@ -206,6 +217,7 @@ describe("buildPasskeysPresentation", () => {
       credentials: [{ credentialIDHex: "one", displayName: "Selected User" }],
     }]);
     const filtered = buildPasskeysPresentation({
+      ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,
@@ -219,6 +231,7 @@ describe("buildPasskeysPresentation", () => {
     expect(filtered.selectedCredentialID).toBe("one");
 
     const restored = buildPasskeysPresentation({
+      ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,
@@ -236,6 +249,7 @@ describe("buildPasskeysPresentation", () => {
       credentials: [{ credentialIDHex: "one" }],
     }]);
     const previewOnly = buildPasskeysPresentation({
+      ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,
@@ -249,6 +263,7 @@ describe("buildPasskeysPresentation", () => {
     credentials.result!.report.support.previewOnly = false;
     credentials.result!.report.support.readOnlyPermission = true;
     const readOnlyListing = buildPasskeysPresentation({
+      ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,
@@ -267,6 +282,7 @@ describe("buildPasskeysPresentation", () => {
     credentials.result!.report.support.previewOnly = false;
 
     const presentation = buildPasskeysPresentation({
+      ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,
@@ -296,6 +312,7 @@ describe("buildPasskeysPresentation", () => {
       } as CredentialsEnvelope,
     };
     const presentation = buildPasskeysPresentation({
+      ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
       sessionBusy: false,

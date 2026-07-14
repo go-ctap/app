@@ -28,13 +28,8 @@ function reportDegradedOverviewLoad(label: string, error: Failure) {
   });
 }
 
-function inspectResultFromEnvelope(envelope: InspectEnvelope) {
-  if (envelope.error || !envelope.result) throw new Error("inspect result is required");
-  return envelope.result.result;
-}
-
 function shouldLoadBioSensor(envelope: InspectEnvelope) {
-  const options = inspectResultFromEnvelope(envelope).info.options ?? {};
+  const options = envelope.result!.result.info.options ?? {};
   return options.bioEnroll === true || options.uvBioEnroll === true;
 }
 
@@ -66,38 +61,45 @@ export async function loadOverview() {
     beginOperation(m.overview_inspection());
     const sessionId = selectedSessionId();
     const envelope = await api.inspect({ sessionId });
-    overviewInspection.set(readyLoadState(envelope));
-    const aaguid = envelope.error ? "" : inspectResultFromEnvelope(envelope).info.aaguid.trim();
-    if (aaguid) {
-      void loadOverviewMDS(aaguid);
-    }
-    if (!envelope.error && shouldLoadBioSensor(envelope)) {
-      overviewBioSensor.set(loadingLoadState());
-      try {
-        const bioEnvelope = await api.bioSensorInfo({ sessionId });
-        if (bioEnvelope.error) {
-          overviewBioSensor.set(errorLoadState(bioEnvelope.error, bioEnvelope));
-          reportDegradedOverviewLoad(m.biometrics(), bioEnvelope.error);
-        } else {
-          overviewBioSensor.set(readyLoadState(bioEnvelope));
+    overviewInspection.set(
+      envelope.error
+        ? errorLoadState(envelope.error, envelope)
+        : readyLoadState(envelope),
+    );
+    let biometricFailure: Failure | null = null;
+    if (!envelope.error) {
+      const aaguid = envelope.result!.result.info.aaguid.trim();
+      if (aaguid) {
+        void loadOverviewMDS(aaguid);
+      }
+      if (shouldLoadBioSensor(envelope)) {
+        overviewBioSensor.set(loadingLoadState());
+        try {
+          const bioEnvelope = await api.bioSensorInfo({ sessionId });
+          if (bioEnvelope.error) {
+            biometricFailure = bioEnvelope.error;
+            overviewBioSensor.set(errorLoadState(bioEnvelope.error, bioEnvelope));
+          } else {
+            overviewBioSensor.set(readyLoadState(bioEnvelope));
+          }
+        } catch (error) {
+          biometricFailure = runtimeFailureFrom(error);
+          overviewBioSensor.set(errorLoadState(biometricFailure));
         }
-      } catch (error) {
-        const runtimeError = runtimeFailureFrom(error);
-        overviewBioSensor.set(errorLoadState(runtimeError));
-        reportDegradedOverviewLoad(m.biometrics(), runtimeError);
       }
     }
-    summarizeEnvelope(m.overview_inspection(), envelope, () => loadOverview());
+    summarizeEnvelope(m.overview_inspection(), envelope);
     applyInvalidSessionError(envelope.error);
+    if (biometricFailure) {
+      reportDegradedOverviewLoad(m.biometrics(), biometricFailure);
+      applyInvalidSessionError(biometricFailure);
+    }
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     overviewInspection.set(errorLoadState(runtimeError));
     overviewBioSensor.set(idleLoadState());
-    summarizeOperationFailure(m.overview_inspection(), runtimeError, () => loadOverview());
+    summarizeOperationFailure(m.overview_inspection(), runtimeError);
     applyInvalidSessionError(runtimeError);
-  } finally {
-    const current = get(overviewInspection);
-    if (current.state === "loading") overviewInspection.set(idleLoadState());
   }
 }
 
@@ -119,8 +121,5 @@ export async function loadOverviewMDS(aaguid: string, refresh = false) {
     overviewMDS.set(errorLoadState(runtimeError));
     reportDegradedOverviewLoad(m.metadata_service(), runtimeError);
     return false;
-  } finally {
-    const current = get(overviewMDS);
-    if (current.state === "loading") overviewMDS.set(idleLoadState());
   }
 }
