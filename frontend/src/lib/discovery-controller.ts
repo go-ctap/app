@@ -20,6 +20,7 @@ import {
   reportForSelector,
   selectorFromDevice,
 } from "./session-model.js";
+import { selectToken } from "./session-controller.js";
 import {
   clearWorkbenchScreenCaches,
   finishOperation,
@@ -38,6 +39,7 @@ function invalidateSelectedSession() {
 
 function applyTopology(envelope: DiscoveryChangedEnvelope) {
   const previousSelector = get(selectedSelector);
+  const previousDeviceCount = get(devices).length;
   const snapshot = envelope.snapshot;
   const nextDevices = snapshot ? snapshot.devices : get(devices);
   const nextSelectedDevice = snapshot && previousSelector
@@ -45,6 +47,14 @@ function applyTopology(envelope: DiscoveryChangedEnvelope) {
     : get(selectedDevice);
   const selectedDeviceMissing = Boolean(snapshot && previousSelector && !nextSelectedDevice);
   const selectedDisconnected = Boolean(previousSelector && selectedDeviceMissing);
+  const autoSelectSelector = snapshot
+    && snapshot.devices.length > 0
+    && (
+      selectedDeviceMissing
+      || (previousDeviceCount === 0 && !previousSelector)
+    )
+      ? selectorFromDevice(snapshot.devices[0])
+      : "";
 
   if (snapshot) {
     devices.set(snapshot.devices);
@@ -55,6 +65,7 @@ function applyTopology(envelope: DiscoveryChangedEnvelope) {
     return {
       deviceCount: nextDevices.length,
       selectedDisconnected,
+      autoSelectSelector,
     };
   }
 
@@ -67,6 +78,7 @@ function applyTopology(envelope: DiscoveryChangedEnvelope) {
   return {
     deviceCount: nextDevices.length,
     selectedDisconnected,
+    autoSelectSelector,
   };
 }
 
@@ -108,8 +120,12 @@ function recordDiscoveryRuntimeFailure(error: Failure) {
   });
 }
 
-export function handleDiscoveryChanged(envelope: DiscoveryChangedEnvelope) {
+export async function handleDiscoveryChanged(envelope: DiscoveryChangedEnvelope) {
   const result = applyTopology(envelope);
+  if (!envelope.error && result.autoSelectSelector) {
+    await selectToken(result.autoSelectSelector);
+    return;
+  }
   if (
     envelope.trigger === DiscoveryTrigger.DiscoveryTriggerEnriched
     && !envelope.error

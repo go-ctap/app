@@ -13,7 +13,7 @@
 - Treat generated Wails bindings and `ctapkit/service` DTOs as first-party contracts. Do not add defensive optional chaining, fallback object construction, or "unknown JSON" normalization around fields that are required by those Go types; open `../ctapkit` and the generated bindings when in doubt.
 - Operation responses use typed generated envelopes from `ctapkit/service`. Screens must not call raw generated Wails service methods directly. Centralize operation envelope/result traversal in named typed extractors/controllers under `frontend/src/lib/`; after extraction, UI builders and components may accept generated DTO types directly. Do not add `resultOf()`, `objectValue()`, defensive `Partial<>`, or `Record<string, unknown>` normalization around required generated DTO fields. `MDSLookupEnvelope.result` is a typed `LookupResult`; use it directly.
 - Do not fabricate generated `ctapkit/service` operation envelopes or model DTOs to represent frontend, bridge, transport, or thrown runtime failures. If a service call returns a real generated envelope with `error`, pass that envelope through. If a call throws or fails before returning a generated envelope, keep the generated DTO `data` empty/null, store a `failure.Failure` as the error, and report status/log entries through an explicit runtime-failure path rather than constructing fake `CredentialsEnvelope`, `InspectEnvelope`, or similar objects.
-- Startup discovery may automatically select and open a session only when exactly one authenticator is discovered. When multiple authenticators are discovered, wait for an explicit device selection.
+- When selection is empty, discovery must automatically select and open the first available authenticator.
 - The selected device is the session boundary: changing selection must close any existing open session, clear pending interaction UI state, clear per-device screen state, and open one session for the newly selected device. The app should not expose manual session management controls.
 - Clearing selection or app shutdown must close open sessions and clear pending interaction UI state; `ctapkit` owns operation and interaction cancellation when sessions close.
 - Close/cancel paths must release sessions and resolve pending interactions without holding service locks while closing handles.
@@ -50,3 +50,27 @@
 - Frontend: `cd frontend; pnpm run build`.
 - Frontend type checking: `cd frontend; pnpm run check`.
 - UI smoke tests must use the real Wails window. Wails 3 dev runtime is not reliable through browser automation; ask the user to run `wails3 dev` or `task dev`.
+
+You are able to use the Svelte MCP server, where you have access to comprehensive Svelte 5 and SvelteKit documentation. Here's how to use the available tools effectively:
+
+## Available Svelte MCP Tools:
+
+### 1. list-sections
+
+Use this FIRST to discover all available documentation sections. Returns a structured list with titles, use_cases, and paths.
+When asked about Svelte or SvelteKit topics, ALWAYS use this tool at the start of the chat to find relevant sections.
+
+### 2. get-documentation
+
+Retrieves full documentation content for specific sections. Accepts single or multiple sections.
+After calling the list-sections tool, you MUST analyze the returned documentation sections (especially the use_cases field) and then use the get-documentation tool to fetch ALL documentation sections that are relevant for the user's task.
+
+### 3. svelte-autofixer
+
+Analyzes Svelte code and returns issues and suggestions.
+You MUST use this tool whenever writing Svelte code before sending it to the user. Keep calling it until no issues or suggestions are returned.
+
+### 4. playground-link
+
+Generates a Svelte Playground link with the provided code.
+After completing the code, ask the user if they want a playground link. Only call this tool after user confirmation and NEVER if code was written to files in their project.

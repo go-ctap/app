@@ -69,9 +69,7 @@
   }
 </script>
 
-{#if !passkeys.selector}
-  <EmptyState title={m.select_authenticator()} message={m.select_authenticator_for_credentials()} />
-{:else}
+{#if passkeys.selector}
   <section class="passkeys-screen" aria-labelledby="passkeys-title">
     <PasskeysOverview
       presentation={passkeys}

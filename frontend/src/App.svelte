@@ -128,7 +128,7 @@
 		});
 
 		const offDiscovery = Events.On("ctapkit:discovery-changed", (event) => {
-			handleDiscoveryChanged(event.data);
+			void handleDiscoveryChanged(event.data);
 		});
 
 		refreshing = true;
@@ -182,6 +182,15 @@
 			<main class="main-view">
 				{#if $activeScreen === "settings"}
 					<Settings />
+				{:else if noDevices}
+					<EmptyState
+						title={m.insert_token()}
+						variant="workspace"
+					>
+						{#snippet icon()}
+							<ShieldCheck size={34} strokeWidth={1.8} />
+						{/snippet}
+					</EmptyState>
 				{:else if $activeScreen === "large-blobs"}
 					<LargeBlobs />
 				{:else if $activeScreen === "passkeys"}
@@ -190,16 +199,6 @@
 					<Lab />
 				{:else if $activeScreen === "security"}
 					<Security />
-				{:else if noDevices}
-					<EmptyState
-						title={m.no_authenticators_connected()}
-						message={m.no_authenticators_connected_message()}
-						variant="workspace"
-					>
-						{#snippet icon()}
-							<ShieldCheck size={34} strokeWidth={1.8} />
-						{/snippet}
-					</EmptyState>
 				{:else}
 					<Overview />
 				{/if}

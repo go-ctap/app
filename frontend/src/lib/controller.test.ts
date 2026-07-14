@@ -242,15 +242,18 @@ describe("controller lifecycle", () => {
     expect(serviceMocks.Inspect).toHaveBeenCalledWith({ sessionId: "session-token-1" });
   });
 
-  it("does not auto-select when discovery returns multiple authenticators", async () => {
+  it("auto-selects the first authenticator when discovery returns several", async () => {
     const { bootstrap } = await import("./controller");
-    serviceMocks.Discover.mockResolvedValue({ devices: [device("token-1"), device("token-2")] });
+    const first = device("token-1");
+    serviceMocks.Discover.mockResolvedValue({ devices: [first, device("token-2")] });
+    serviceMocks.OpenSession.mockResolvedValue(snapshot(first));
+    serviceMocks.Inspect.mockResolvedValue(inspectEnvelope(first));
 
     await bootstrap();
 
-    expect(get(selectedSelector)).toBe("");
-    expect(serviceMocks.OpenSession).not.toHaveBeenCalled();
-    expect(serviceMocks.Inspect).not.toHaveBeenCalled();
+    expect(get(selectedSelector)).toBe("token-1");
+    expect(serviceMocks.OpenSession).toHaveBeenCalledWith({ selector: "token-1" });
+    expect(serviceMocks.Inspect).toHaveBeenCalledWith({ sessionId: "session-token-1" });
   });
 
   it("loads overview once when navigating back to overview with an existing selected session", async () => {

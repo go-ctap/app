@@ -44,9 +44,8 @@ function deviceSelection(devices: DeviceReport[], requestedSelector: string) {
   };
 }
 
-function initialSelectorForDevices(devices: DeviceReport[], preferredSelector: string) {
-  if (reportForSelector(devices, preferredSelector)) return preferredSelector;
-  return devices.length === 1 ? selectorFromDevice(devices[0]) : "";
+function initialSelectorForDevices(devices: DeviceReport[]) {
+  return selectorFromDevice(devices[0]);
 }
 
 function discoverySnapshot(
@@ -166,15 +165,15 @@ export async function ensureSelectedSessionReady(): Promise<boolean> {
   return recovered.state === "ready" && Boolean(recovered.sessionId);
 }
 
-async function discoverAndSelect(preferredSelector: string): Promise<Discovery> {
+async function discoverAndSelect(): Promise<Discovery> {
   const discoveredDevices = await api.discover();
-  const selector = initialSelectorForDevices(discoveredDevices, preferredSelector);
+  const selector = initialSelectorForDevices(discoveredDevices);
   return selectFromDevices(discoveredDevices, selector);
 }
 
 export async function bootstrap() {
   try {
-    const discovery = await discoverAndSelect(get(selectedSelector));
+    const discovery = await discoverAndSelect();
     applyDiscovery(discovery);
     await maybeLoadOverview();
     await maybeLoadPasskeys();
@@ -234,8 +233,7 @@ export async function navigateToScreen(screen: ActiveScreen) {
 /**
  * Factory reset invalidates the selected authenticator as an application
  * session boundary. Close the old session, clear selection-owned state, then
- * apply the normal startup rule: auto-open only when discovery finds exactly
- * one authenticator.
+ * apply the normal startup rule: auto-open the first discovered authenticator.
  */
 export async function rediscoverAfterFactoryReset(): Promise<Failure | null> {
   let closeError: Failure | null = null;
@@ -256,7 +254,7 @@ export async function rediscoverAfterFactoryReset(): Promise<Failure | null> {
     const discoveredDevices = await api.discover();
     let discovery = discoverySnapshot(discoveredDevices, "", null, idleSessionStatus());
 
-    if (discoveredDevices.length === 1) {
+    if (discoveredDevices.length > 0) {
       const selection = deviceSelection(discoveredDevices, selectorFromDevice(discoveredDevices[0]));
       if (selection.selectedSelector && selection.selectedDevice) {
         try {

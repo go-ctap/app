@@ -82,12 +82,7 @@
   }
 </script>
 
-{#if !largeBlobs.selector}
-  <EmptyState
-    title={m.select_authenticator()}
-    message={m.select_authenticator_for_large_blobs()}
-  />
-{:else}
+{#if largeBlobs.selector}
   <section class="large-blobs-screen" aria-labelledby="large-blobs-title">
     <LargeBlobsOverview
       presentation={largeBlobs}

@@ -1,8 +1,7 @@
 <script lang="ts">
   import { tick } from "svelte";
-  import { FlaskConical, TriangleAlert } from "@lucide/svelte";
+  import { TriangleAlert } from "@lucide/svelte";
 
-  import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import GetAssertionStep from "$lib/components/lab/GetAssertionStep.svelte";
   import LabHeader from "$lib/components/lab/LabHeader.svelte";
   import MakeCredentialStep from "$lib/components/lab/MakeCredentialStep.svelte";
@@ -77,15 +76,8 @@
   }
 </script>
 
-{#if !$selectedSelector || !$selectedDevice}
-  <EmptyState
-    title={m.lab_select_authenticator_title()}
-    message={m.lab_select_authenticator_message()}
-  >
-    {#snippet icon()}<FlaskConical aria-hidden="true" />{/snippet}
-  </EmptyState>
-{:else}
-  <section class="lab-screen" aria-labelledby="lab-title">
+{#if $selectedSelector && $selectedDevice}
+  <section class="lab-screen" aria-label={m.lab_title()}>
     <LabHeader
       device={$selectedDevice}
       presetID={$labState.presetID}

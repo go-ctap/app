@@ -8,6 +8,7 @@ import type {
   InspectEnvelope,
   InteractionPrompt,
   LargeBlobListEnvelope,
+  SessionSnapshot,
 } from "../../bindings/github.com/go-ctap/kit/service";
 import { DiscoveryTrigger } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
@@ -19,6 +20,7 @@ import { failureForCode } from "$lib/test-failure";
 
 import {
   resetAppStateForTest,
+  seedActiveScreenForTest,
   seedDevicesForTest,
   seedLargeBlobsEnvelopeForTest,
   seedOverviewEnvelopeForTest,
@@ -39,7 +41,10 @@ import {
 } from "./stores.js";
 
 const serviceMocks = vi.hoisted(() => ({
+  CloseAllSessions: vi.fn(),
+  OpenSession: vi.fn(),
   RefreshDiscovery: vi.fn(),
+  Sessions: vi.fn(),
   StartDiscoveryMonitoring: vi.fn(),
 }));
 
@@ -79,27 +84,58 @@ function seedSelected(token: DeviceReport, state: "ready" | "running" = "ready")
   });
 }
 
+function snapshot(token: DeviceReport): SessionSnapshot {
+  return {
+    id: `session-${token.deviceId}`,
+    running: false,
+    info: { device: token, closed: false },
+  } as SessionSnapshot;
+}
+
 describe("discovery controller", () => {
   beforeEach(() => {
     setAppLocale("en");
     vi.clearAllMocks();
     resetAppStateForTest();
+    serviceMocks.CloseAllSessions.mockResolvedValue([]);
+    serviceMocks.Sessions.mockResolvedValue([]);
   });
 
-  it("adds a late authenticator without selecting or opening it", async () => {
+  it("auto-selects a late authenticator when none were available", async () => {
     const token = device("token-1");
     const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+    seedActiveScreenForTest("settings");
+    serviceMocks.OpenSession.mockResolvedValue(snapshot(token));
 
-    handleDiscoveryChanged(event({ devices: [token] }));
+    await handleDiscoveryChanged(event({ devices: [token] }));
 
     expect(get(devices)).toEqual([token]);
-    expect(get(selectedSelector)).toBe("");
-    expect(get(selectedDevice)).toBeNull();
-    expect(get(sessionStatus).sessionId).toBeUndefined();
+    expect(get(selectedSelector)).toBe("token-1");
+    expect(get(selectedDevice)).toEqual(token);
+    expect(get(sessionStatus)).toMatchObject({
+      state: "ready",
+      sessionId: "session-token-1",
+    });
+    expect(serviceMocks.OpenSession).toHaveBeenCalledWith({ selector: "token-1" });
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "info",
-      title: "Authenticator list updated",
+      title: "Token selected",
     });
+  });
+
+  it("auto-selects the first when several authenticators appear after none", async () => {
+    const first = device("token-1");
+    const second = device("token-2");
+    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+    seedActiveScreenForTest("settings");
+    serviceMocks.OpenSession.mockResolvedValue(snapshot(first));
+
+    await handleDiscoveryChanged(event({ devices: [first, second] }));
+
+    expect(get(devices)).toEqual([first, second]);
+    expect(get(selectedSelector)).toBe("token-1");
+    expect(get(selectedDevice)).toEqual(first);
+    expect(serviceMocks.OpenSession).toHaveBeenCalledWith({ selector: "token-1" });
   });
 
   it("preserves the selected session and screen state when its device remains", async () => {
@@ -186,18 +222,24 @@ describe("discovery controller", () => {
     expect(get(overviewInspection).data).toBe(inspection);
   });
 
-  it("clears an idle selected session when its authenticator disappears", async () => {
+  it("selects the first remaining authenticator when the selected one disappears", async () => {
     const selected = device("token-1");
     const remaining = device("token-2");
     const { handleDiscoveryChanged } = await import("./discovery-controller.js");
     seedSelected(selected);
+    seedActiveScreenForTest("settings");
+    serviceMocks.OpenSession.mockResolvedValue(snapshot(remaining));
 
-    handleDiscoveryChanged(event({ devices: [remaining] }));
+    await handleDiscoveryChanged(event({ devices: [remaining] }));
 
     expect(get(devices)).toEqual([remaining]);
-    expect(get(selectedSelector)).toBe("");
-    expect(get(sessionStatus)).toMatchObject({ state: "idle" });
-    expect(get(sessionStatus).sessionId).toBeUndefined();
+    expect(get(selectedSelector)).toBe("token-2");
+    expect(get(selectedDevice)).toEqual(remaining);
+    expect(get(sessionStatus)).toMatchObject({
+      state: "ready",
+      sessionId: "session-token-2",
+    });
+    expect(serviceMocks.OpenSession).toHaveBeenCalledWith({ selector: "token-2" });
   });
 
   it("clears running and interaction state when the selected authenticator disappears", async () => {

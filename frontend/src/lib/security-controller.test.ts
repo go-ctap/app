@@ -747,7 +747,7 @@ describe("factory reset lifecycle", () => {
     expect(configStatus).toHaveBeenCalledWith({ sessionId: "session-token-after-reset" });
   });
 
-  it("closes old sessions and leaves multiple rediscovered authenticators unselected", async () => {
+  it("closes old sessions and selects the first rediscovered authenticator", async () => {
     const replacements = [device("token-a"), device("token-b")];
     seedActiveScreenForTest("security");
     vi.spyOn(api, "resetFactory")
@@ -758,18 +758,24 @@ describe("factory reset lifecycle", () => {
       .mockResolvedValue([]);
     const closeAllSessions = vi.spyOn(api, "closeAllSessions").mockResolvedValue([]);
     vi.spyOn(api, "discover").mockResolvedValue(replacements);
-    const openSession = vi.spyOn(api, "openSession");
-    const configStatus = vi.spyOn(api, "configStatus");
+    const openSession = vi.spyOn(api, "openSession").mockResolvedValue(snapshot(replacements[0]));
+    const configStatus = vi.spyOn(api, "configStatus").mockResolvedValue(statusEnvelope({
+      item: replacements[0],
+      sessionId: "session-token-a",
+    }));
 
     expect(await beginFactoryReset()).toBe(true);
     expect(await confirmSecurityMutation()).toBe(true);
 
     expect(closeAllSessions).toHaveBeenCalledTimes(1);
-    expect(openSession).not.toHaveBeenCalled();
-    expect(configStatus).not.toHaveBeenCalled();
+    expect(openSession).toHaveBeenCalledWith({ selector: replacements[0].deviceId });
+    expect(configStatus).toHaveBeenCalledWith({ sessionId: "session-token-a" });
     expect(get(devices)).toEqual(replacements);
-    expect(get(selectedSelector)).toBe("");
-    expect(get(sessionStatus)).toEqual({ state: "idle" });
+    expect(get(selectedSelector)).toBe(replacements[0].deviceId);
+    expect(get(sessionStatus)).toMatchObject({
+      state: "ready",
+      sessionId: "session-token-a",
+    });
   });
 
   it("does not reuse a pre-reset session when close-all reports an error", async () => {

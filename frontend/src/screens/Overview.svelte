@@ -38,9 +38,7 @@
   }
 </script>
 
-{#if !overview.selector}
-  <EmptyState title={m.choose_authenticator()} message={m.choose_authenticator_message()} />
-{:else if !overview.hasReport && !overview.loading}
+{#if overview.selector && !overview.hasReport && !overview.loading}
   <EmptyState title={m.overview_not_loaded()} message={m.overview_not_loaded_message()}>
     {#snippet actions()}
       <Button type="button" disabled={overview.reloadDisabled} onclick={reloadOverview}>
@@ -48,7 +46,7 @@
       </Button>
     {/snippet}
   </EmptyState>
-{:else}
+{:else if overview.selector}
   <section class="overview-screen flow">
     {#if overview.hasReport}
       <OverviewHeroCard

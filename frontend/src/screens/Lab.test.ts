@@ -62,11 +62,10 @@ describe("WebAuthn Lab screen", () => {
     document.body.style.pointerEvents = "";
   });
 
-  it("shows a dedicated no-device state", () => {
+  it("does not render a local token-selection empty state", () => {
     render(Lab);
 
-    expect(screen.getByText("Select an authenticator")).toBeInTheDocument();
-    expect(screen.getByText(/run MakeCredential and GetAssertion/)).toBeInTheDocument();
+    expect(screen.queryByText("Select an authenticator")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "WebAuthn Lab" })).not.toBeInTheDocument();
   });
 
@@ -74,8 +73,12 @@ describe("WebAuthn Lab screen", () => {
     selectToken();
     render(Lab);
 
-    expect(screen.getByRole("heading", { level: 2, name: "WebAuthn Lab" })).toBeInTheDocument();
-    expect(screen.getByText(/Test authenticator/)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "WebAuthn Lab" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Scenario" })).toBeInTheDocument();
+    expect(screen.getByText("Create a credential, review the exact request, then exercise it with an assertion."))
+      .toBeInTheDocument();
+    expect(screen.getByText("Test authenticator")).toBeInTheDocument();
+    expect(screen.queryByText("1. Test authenticator")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Preset" })).toHaveTextContent("Discoverable passkey");
     expect(screen.getByRole("heading", { level: 2, name: "1. MakeCredential" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "2. GetAssertion" })).toBeInTheDocument();

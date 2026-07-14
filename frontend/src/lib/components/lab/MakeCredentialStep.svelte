@@ -450,8 +450,10 @@
   }
 
   .lab-fixed-value {
-    min-height: 2rem;
-    padding: var(--space-2);
+    display: flex;
+    align-items: center;
+    block-size: 2rem;
+    padding-inline: var(--space-2);
     border: 1px solid var(--border);
     background: var(--muted);
     font-family: var(--font-mono);

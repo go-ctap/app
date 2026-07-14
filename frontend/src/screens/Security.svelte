@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RefreshCw, Shield, TriangleAlert } from "@lucide/svelte";
+  import { RefreshCw, TriangleAlert } from "@lucide/svelte";
 
   import SecurityBiometrics from "$lib/components/security/SecurityBiometrics.svelte";
   import SecurityFactoryReset from "$lib/components/security/SecurityFactoryReset.svelte";
@@ -65,11 +65,7 @@
 
 </script>
 
-{#if !$selectedSelector}
-  <EmptyState title={m.select_authenticator()} message={m.select_authenticator_for_security()}>
-    {#snippet icon()}<Shield aria-hidden="true" />{/snippet}
-  </EmptyState>
-{:else if (statusLoading || $sessionStatus.state === "opening") && !report}
+{#if $selectedSelector && (statusLoading || $sessionStatus.state === "opening") && !report}
   <section class="security-loading" aria-busy="true" aria-label={m.security_state_loading()}>
     <div class="security-loading-header">
       <Skeleton class="loading-title" />
@@ -85,7 +81,7 @@
       </Card.Root>
     {/each}
   </section>
-{:else if !report}
+{:else if $selectedSelector && !report}
   <EmptyState title={m.security_state_load_failed()} message={m.security_unsupported_message()}>
     {#snippet icon()}<TriangleAlert aria-hidden="true" />{/snippet}
     {#snippet actions()}
@@ -95,7 +91,7 @@
       </Button>
     {/snippet}
   </EmptyState>
-{:else}
+{:else if $selectedSelector && report}
   <section class="security-screen" aria-labelledby="security-title">
     <div class="security-sections">
       <SecurityOverview
