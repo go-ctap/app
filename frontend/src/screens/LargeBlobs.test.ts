@@ -1,6 +1,7 @@
 import { cleanup, render, screen, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { tick } from "svelte";
+import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
@@ -39,8 +40,17 @@ import {
 import LargeBlobs from "./LargeBlobs.svelte";
 
 const controllerMocks = vi.hoisted(() => ({
-  readLargeBlob: vi.fn(() => Promise.resolve(true)),
+  readLargeBlob: vi.fn((_credentialIDHex: string) => Promise.resolve(true)),
   reloadLargeBlobs: vi.fn(() => Promise.resolve(true)),
+  selectLargeBlobCredential: vi.fn((credentialIDHex: string) => {
+    mutableLargeBlobsSelectedCredentialID.set(credentialIDHex);
+    return credentialIDHex ? controllerMocks.readLargeBlob(credentialIDHex) : Promise.resolve(true);
+  }),
+  setLargeBlobsDecodeMode: vi.fn((mode: DecodeMode) => {
+    mutableLargeBlobsDecodeMode.set(mode);
+    const credentialIDHex = get(mutableLargeBlobsSelectedCredentialID);
+    return credentialIDHex ? controllerMocks.readLargeBlob(credentialIDHex) : Promise.resolve(true);
+  }),
 }));
 const toastMocks = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
@@ -48,6 +58,8 @@ vi.mock("$lib/controller", async (importOriginal) => ({
   ...(await importOriginal<typeof import("$lib/controller")>()),
   readLargeBlob: controllerMocks.readLargeBlob,
   reloadLargeBlobs: controllerMocks.reloadLargeBlobs,
+  selectLargeBlobCredential: controllerMocks.selectLargeBlobCredential,
+  setLargeBlobsDecodeMode: controllerMocks.setLargeBlobsDecodeMode,
 }));
 vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
 
@@ -203,6 +215,8 @@ describe("LargeBlobs", () => {
     setAppLocale("en");
     controllerMocks.readLargeBlob.mockClear();
     controllerMocks.reloadLargeBlobs.mockClear();
+    controllerMocks.selectLargeBlobCredential.mockClear();
+    controllerMocks.setLargeBlobsDecodeMode.mockClear();
     toastMocks.success.mockClear();
     toastMocks.error.mockClear();
     resetAppStateForTest();
@@ -273,7 +287,7 @@ describe("LargeBlobs", () => {
     expect(screen.queryByText("Large blob management unavailable")).not.toBeInTheDocument();
   });
 
-  it("opens metadata without reading until the explicit Read action", async () => {
+  it("reads the default format as soon as credential details open", async () => {
     const user = userEvent.setup();
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     render(LargeBlobs);
@@ -296,11 +310,15 @@ describe("LargeBlobs", () => {
     expect(details).toHaveAttribute("id", "large-blob-row-details-cafe");
     expect(details.closest("table")).toBe(table);
     expect(within(table).getAllByRole("row")).toHaveLength(5);
-    expect(controllerMocks.readLargeBlob).not.toHaveBeenCalled();
-
-    await user.click(within(details).getByRole("button", { name: "Read large blob" }));
+    expect(controllerMocks.selectLargeBlobCredential).toHaveBeenCalledWith("cafe");
     expect(controllerMocks.readLargeBlob).toHaveBeenCalledOnce();
     expect(controllerMocks.readLargeBlob).toHaveBeenCalledWith("cafe");
+    expect(within(details).queryByRole("button", { name: "Read large blob" })).not.toBeInTheDocument();
+
+    await user.click(within(details).getByRole("radio", { name: "CBOR" }));
+    expect(controllerMocks.setLargeBlobsDecodeMode).toHaveBeenCalledWith(DecodeMode.DecodeModeCBOR);
+    expect(controllerMocks.readLargeBlob).toHaveBeenCalledTimes(2);
+    expect(controllerMocks.readLargeBlob).toHaveBeenLastCalledWith("cafe");
   });
 
   it("keeps stale rows and their actions available while showing the warning", async () => {
@@ -313,13 +331,13 @@ describe("LargeBlobs", () => {
     expect(screen.getByText("Large blob inventory may be stale")).toBeInTheDocument();
     expect(screen.getByText(/Communication with the authenticator failed\./)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Zero User, zero@example.com/ }));
-    expect(controllerMocks.readLargeBlob).not.toHaveBeenCalled();
-    expect(screen.getByRole("button", { name: "Read large blob" })).toBeEnabled();
+    expect(controllerMocks.readLargeBlob).toHaveBeenCalledWith("cafe");
+    expect(screen.queryByRole("button", { name: "Read large blob" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Write" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Delete" })).toBeEnabled();
   });
 
-  it("renders a present zero-byte result and keeps Read available", () => {
+  it("renders a present zero-byte result without a manual Read action", () => {
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     mutableLargeBlobsSelectedCredentialID.set("cafe");
     mutableLargeBlobsReadState.set({
@@ -339,10 +357,10 @@ describe("LargeBlobs", () => {
     expect(within(details).queryByRole("region", { name: "Raw hex" })).not.toBeInTheDocument();
     expect(within(details).getByText("Present")).toBeInTheDocument();
     expect(controllerMocks.readLargeBlob).not.toHaveBeenCalled();
-    expect(within(details).getByRole("button", { name: "Read large blob" })).toBeEnabled();
+    expect(within(details).queryByRole("button", { name: "Read large blob" })).not.toBeInTheDocument();
   });
 
-  it("keeps read available for a missing key and shows its typed state", () => {
+  it("shows the typed state for a missing key without a manual Read action", () => {
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     mutableLargeBlobsSelectedCredentialID.set("beef");
     mutableLargeBlobsReadState.set({
@@ -358,15 +376,14 @@ describe("LargeBlobs", () => {
     render(LargeBlobs);
 
     const details = document.getElementById("large-blob-row-details-beef") as HTMLElement;
-    expect(within(details).getByRole("button", { name: "Read large blob" })).toBeEnabled();
+    expect(within(details).queryByRole("button", { name: "Read large blob" })).not.toBeInTheDocument();
     expect(within(details).getAllByText("Large-blob key unavailable").length).toBeGreaterThan(0);
     expect(within(details).getAllByText("Key unavailable").length).toBeGreaterThan(0);
   });
 
   it.each([Code.CodeOperationCanceled, Code.CodeTransportFailure])(
-    "keeps the explicit Read action after %s",
-    async (code) => {
-      const user = userEvent.setup();
+    "does not restore a manual Read action after %s",
+    (code) => {
       seedLargeBlobsEnvelopeForTest(listEnvelope());
       mutableLargeBlobsSelectedCredentialID.set("cafe");
       mutableLargeBlobsReadState.set({
@@ -386,10 +403,7 @@ describe("LargeBlobs", () => {
       render(LargeBlobs);
 
       const details = document.getElementById("large-blob-row-details-cafe") as HTMLElement;
-      const read = within(details).getByRole("button", { name: "Read large blob" });
-      expect(read).toBeEnabled();
-      await user.click(read);
-      expect(controllerMocks.readLargeBlob).toHaveBeenCalledWith("cafe");
+      expect(within(details).queryByRole("button", { name: "Read large blob" })).not.toBeInTheDocument();
     },
   );
 

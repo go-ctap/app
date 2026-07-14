@@ -26,6 +26,7 @@ import {
   confirmLargeBlobWrite,
   previewLargeBlobWrite,
   readLargeBlob,
+  selectLargeBlobCredential,
   setLargeBlobsDecodeMode,
   setLargeBlobsPayloadEncoding,
   updateLargeBlobWriteDraft,
@@ -129,6 +130,26 @@ function resultEnvelope(kind: OperationKind, operation: MutationOperation): Larg
   return envelope;
 }
 
+function readEnvelope(mode: DecodeMode): LargeBlobReadEnvelope {
+  return {
+    operationId: "read-1",
+    sessionId: "session-1",
+    kind: OperationKind.OperationReadLargeBlob,
+    result: {
+      report: {
+        device: { deviceId: "token-1", stableId: true },
+        support: { largeBlobs: true, largeBlobKeyExtension: true },
+        target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
+        largeBlobKeyState: "available",
+        array: { read: true, blobCount: 1, blobPresent: true, blobState: "present" },
+        blobPresent: true,
+        rawByteCount: 0,
+        decode: { requested: true, mode, success: true },
+      },
+    },
+  } as unknown as LargeBlobReadEnvelope;
+}
+
 beforeEach(() => {
   setAppLocale("en");
   resetSessionStateForTest();
@@ -161,11 +182,39 @@ describe("large blob controller", () => {
     });
   });
 
-  it("changes decode mode without reading until the explicit Read action", () => {
+  it("reads on selection and decodes again immediately when the mode changes", async () => {
+    const initial = readEnvelope(DecodeMode.DecodeModeJSON);
+    const decoded = readEnvelope(DecodeMode.DecodeModeCBOR);
+    const read = vi.spyOn(api, "readLargeBlob")
+      .mockResolvedValueOnce(initial)
+      .mockResolvedValueOnce(decoded);
+
+    expect(await selectLargeBlobCredential("cafe")).toBe(true);
+    expect(read).toHaveBeenNthCalledWith(1, {
+      sessionId: "session-1",
+      verificationFlow: VerificationFlow.VerificationFlowDefault,
+      credentialIdHex: "cafe",
+      decodeMode: DecodeMode.DecodeModeJSON,
+    });
+
+    expect(await setLargeBlobsDecodeMode(DecodeMode.DecodeModeCBOR)).toBe(true);
+
+    expect(get(largeBlobsDecodeMode)).toBe(DecodeMode.DecodeModeCBOR);
+    expect(read).toHaveBeenNthCalledWith(2, {
+      sessionId: "session-1",
+      verificationFlow: VerificationFlow.VerificationFlowDefault,
+      credentialIdHex: "cafe",
+      decodeMode: DecodeMode.DecodeModeCBOR,
+    });
+    expect(get(largeBlobsReadState)).toMatchObject({ phase: "ready", responseEnvelope: decoded });
+  });
+
+  it("only updates the decode preference when no credential is selected", async () => {
     largeBlobsSelectedCredentialID.set("cafe");
     const read = vi.spyOn(api, "readLargeBlob");
+    largeBlobsSelectedCredentialID.set("");
 
-    setLargeBlobsDecodeMode(DecodeMode.DecodeModeCBOR);
+    expect(await setLargeBlobsDecodeMode(DecodeMode.DecodeModeCBOR)).toBe(true);
 
     expect(get(largeBlobsDecodeMode)).toBe(DecodeMode.DecodeModeCBOR);
     expect(get(largeBlobsReadState)).toEqual({ phase: "idle" });
@@ -392,6 +441,24 @@ describe("large blob controller", () => {
     expect(get(largeBlobsReadState)).toMatchObject({ phase: "ready", responseEnvelope: read });
   });
 
+  it("re-reads an open credential after a successful inventory refresh", async () => {
+    const refreshedRead = readEnvelope(DecodeMode.DecodeModeJSON);
+    largeBlobsSelectedCredentialID.set("cafe");
+    vi.spyOn(api, "listLargeBlobs").mockResolvedValue(listEnvelope());
+    const read = vi.spyOn(api, "readLargeBlob").mockResolvedValue(refreshedRead);
+
+    const { loadLargeBlobs } = await import("./largeblobs-controller");
+    expect(await loadLargeBlobs({ refresh: true })).toBe(true);
+
+    expect(read).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      verificationFlow: VerificationFlow.VerificationFlowDefault,
+      credentialIdHex: "cafe",
+      decodeMode: DecodeMode.DecodeModeJSON,
+    });
+    expect(get(largeBlobsReadState)).toMatchObject({ phase: "ready", responseEnvelope: refreshedRead });
+  });
+
   it("keeps last-known-good inventory action-capable after a forced refresh failure", async () => {
     const failed = {
       operationId: "list-failed",
@@ -419,7 +486,7 @@ describe("large blob controller", () => {
     expect(get(largeBlobsInventoryState)).toMatchObject({ phase: "error" });
     expect(largeBlobsInventoryIsStale(get(largeBlobsInventoryState))).toBe(true);
     expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).not.toBeNull();
-    expect(get(largeBlobsReadState)).toEqual({ phase: "idle" });
+    expect(get(largeBlobsReadState)).toMatchObject({ phase: "ready", credentialIDHex: "cafe" });
     expect(beginLargeBlobWrite("cafe")).toBe(true);
   });
 

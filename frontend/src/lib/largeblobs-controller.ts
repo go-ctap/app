@@ -99,7 +99,6 @@ export async function loadLargeBlobs(options: LoadLargeBlobsOptions = {}) {
   }
 
   const refresh = Boolean(options.refresh);
-  if (refresh) resetLargeBlobReadState();
   beginLargeBlobsInventoryLoad();
   try {
     beginOperation(m.large_blob_list());
@@ -123,6 +122,10 @@ export async function loadLargeBlobs(options: LoadLargeBlobsOptions = {}) {
       summarizeOperationContractFailure(m.large_blob_list(), internalFailure());
     }
     applyInvalidSessionError(envelope.error);
+    const selectedCredentialID = get(largeBlobsSelectedCredentialID);
+    if (!envelope.error && report && selectedCredentialID) {
+      await readLargeBlob(selectedCredentialID);
+    }
     return !envelope.error && Boolean(report);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -141,21 +144,26 @@ export function setLargeBlobsStatusFilter(value: LargeBlobsStatusFilter) {
   largeBlobsStatusFilter.set(value);
 }
 
-export function selectLargeBlobCredential(credentialIDHex: string) {
-  if (get(largeBlobsSelectedCredentialID) === credentialIDHex) return;
+export async function selectLargeBlobCredential(credentialIDHex: string): Promise<boolean> {
+  if (get(largeBlobsSelectedCredentialID) === credentialIDHex) return true;
   largeBlobsSelectedCredentialID.set(credentialIDHex);
   resetLargeBlobReadState();
   largeBlobsMutation.set({ kind: "idle", phase: "idle" });
+  if (!credentialIDHex) return true;
+  return readLargeBlob(credentialIDHex);
 }
 
 export function setLargeBlobsVerificationFlow(value: VerificationFlow) {
   largeBlobsVerificationFlow.set(value);
 }
 
-export function setLargeBlobsDecodeMode(value: DecodeMode) {
-  if (get(largeBlobsDecodeMode) === value) return;
+export async function setLargeBlobsDecodeMode(value: DecodeMode): Promise<boolean> {
+  if (get(largeBlobsDecodeMode) === value) return true;
   largeBlobsDecodeMode.set(value);
   resetLargeBlobReadState();
+  const credentialIDHex = get(largeBlobsSelectedCredentialID);
+  if (!credentialIDHex) return true;
+  return readLargeBlob(credentialIDHex);
 }
 
 export function setLargeBlobsPayloadEncoding(value: LargeBlobPayloadEncoding) {
@@ -541,7 +549,6 @@ export async function beginLargeBlobCleanup(): Promise<boolean> {
 }
 
 async function refreshAfterMutation() {
-  resetLargeBlobReadState();
   largeBlobsMutation.set({ kind: "idle", phase: "idle" });
   await loadLargeBlobs({ refresh: true });
 }

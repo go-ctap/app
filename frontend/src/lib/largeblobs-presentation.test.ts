@@ -115,7 +115,6 @@ describe("large blob presentation", () => {
     expect(presentation.rows.find((row) => row.id === "zero")).toMatchObject({ blobPresent: true, blobByteCount: 0 });
     expect(presentation.maxSerializedLargeBlobArray).toBe(0);
     expect(presentation.blobCount).toBe(2);
-    expect(presentation.readDisabled).toBe(false);
     expect(presentation.writeDisabled).toBe(false);
   });
 
@@ -130,7 +129,7 @@ describe("large blob presentation", () => {
     expect(buildLargeBlobRows(report, "", "key-unavailable").map((row) => row.id)).toEqual(["no-key"]);
   });
 
-  it("allows typed reads for missing keys while blocking unsupported mutations", () => {
+  it("blocks mutations for credentials with missing large-blob keys", () => {
     const presentation = buildLargeBlobsPresentation({
       ...defaultView,
       selectedSelector: "token-1",
@@ -141,7 +140,6 @@ describe("large blob presentation", () => {
       selectedCredentialID: "no-key",
     });
 
-    expect(presentation.readDisabled).toBe(false);
     expect(presentation.writeDisabled).toBe(true);
     expect(presentation.deleteDisabled).toBe(true);
   });
@@ -170,7 +168,6 @@ describe("large blob presentation", () => {
 
     expect(presentation.rows).toHaveLength(3);
     expect(presentation.stale).toBe(true);
-    expect(presentation.readDisabled).toBe(false);
     expect(presentation.writeDisabled).toBe(false);
     expect(presentation.deleteDisabled).toBe(false);
     expect(presentation.cleanupDisabled).toBe(false);

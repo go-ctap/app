@@ -33,9 +33,8 @@
     decodeMode: DecodeMode;
     onQueryChange: (query: string) => void;
     onFilterChange: (filter: LargeBlobsStatusFilter) => void;
-    onSelect: (credentialIDHex: string) => void;
+    onSelect: (credentialIDHex: string) => void | Promise<boolean>;
     onDecodeModeChange: (mode: DecodeMode) => void | Promise<boolean>;
-    onRead: (credentialIDHex: string) => void | Promise<boolean>;
     onWrite: (credentialIDHex: string) => void;
     onDelete: (credentialIDHex: string) => void | Promise<boolean>;
   };
@@ -49,7 +48,6 @@
     onFilterChange,
     onSelect,
     onDecodeModeChange,
-    onRead,
     onWrite,
     onDelete,
   }: Props = $props();
@@ -270,11 +268,9 @@
                     {row}
                     {readState}
                     {decodeMode}
-                    readDisabled={presentation.readDisabled}
                     writeDisabled={presentation.writeDisabled}
                     deleteDisabled={presentation.deleteDisabled}
                     {onDecodeModeChange}
-                    {onRead}
                     {onWrite}
                     {onDelete}
                   />

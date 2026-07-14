@@ -12,7 +12,6 @@
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
-  import { Spinner } from "$lib/components/ui/spinner/index.js";
   import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import { largeBlobReadReport } from "$lib/ctapkit-results";
@@ -26,11 +25,9 @@
     row: LargeBlobCredentialRow;
     readState: LargeBlobReadState;
     decodeMode: DecodeMode;
-    readDisabled: boolean;
     writeDisabled: boolean;
     deleteDisabled: boolean;
     onDecodeModeChange: (mode: DecodeMode) => void | Promise<boolean>;
-    onRead: (credentialIDHex: string) => void | Promise<boolean>;
     onWrite: (credentialIDHex: string) => void;
     onDelete: (credentialIDHex: string) => void | Promise<boolean>;
   };
@@ -39,11 +36,9 @@
     row,
     readState,
     decodeMode,
-    readDisabled,
     writeDisabled,
     deleteDisabled,
     onDecodeModeChange,
-    onRead,
     onWrite,
     onDelete,
   }: Props = $props();
@@ -194,16 +189,6 @@
                 <ToggleGroup.Item value={mode}>{decodeModeLabel(mode)}</ToggleGroup.Item>
               {/each}
             </ToggleGroup.Root>
-            <Button
-              variant="outline"
-              size="sm"
-              type="button"
-              disabled={readDisabled || readingSelected}
-              onclick={() => onRead(row.id)}
-            >
-              {#if readingSelected}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
-              {m.large_blob_read()}
-            </Button>
           </div>
         </div>
 
@@ -282,7 +267,7 @@
             {/if}
           {/if}
         {:else}
-          <p class="large-blob-read-hint">{m.run_read_blob_hint()}</p>
+          <p class="large-blob-read-hint">{m.waiting_for_authenticator_response()}</p>
         {/if}
       </section>
     </div>

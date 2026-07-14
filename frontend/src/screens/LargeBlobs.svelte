@@ -20,7 +20,6 @@
     confirmLargeBlobWrite,
     editLargeBlobWrite,
     previewLargeBlobWrite,
-    readLargeBlob,
     reloadLargeBlobs,
     selectLargeBlobCredential,
     setLargeBlobsDecodeMode,
@@ -140,7 +139,6 @@
         onFilterChange={setLargeBlobsStatusFilter}
         onSelect={selectLargeBlobCredential}
         onDecodeModeChange={setLargeBlobsDecodeMode}
-        onRead={readLargeBlob}
         onWrite={beginLargeBlobWrite}
         onDelete={beginLargeBlobDelete}
       />

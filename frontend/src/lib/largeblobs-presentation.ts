@@ -142,7 +142,6 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
     unsupported: report ? !report.support.largeBlobs : input.inventoryState.phase === "unsupported",
     reloadDisabled: loading || input.sessionBusy,
     actionsBlocked,
-    readDisabled: actionsBlocked || !supported || !selectedRow,
     writeDisabled: actionsBlocked || !supported || !selectedKeyAvailable,
     deleteDisabled: actionsBlocked || !supported || !selectedKeyAvailable,
     cleanupDisabled: actionsBlocked || !supported,
