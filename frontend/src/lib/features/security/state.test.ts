@@ -1,12 +1,14 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { ErrorCategory, OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model";
+import { OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model";
+import { Code, type Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   BioSensorEnvelope,
   ConfigStatusEnvelope,
-  RuntimeErrorEnvelope,
 } from "../../../../bindings/github.com/go-ctap/kit/service";
+
+import { failureForCode } from "../../failure";
 
 import {
   beginSecurityStatusLoad,
@@ -33,7 +35,7 @@ describe("security state", () => {
       operationId: "status-2",
       sessionId: "session-1",
       kind: OperationKind.OperationConfigStatus,
-      error: { category: ErrorCategory.ErrorUnsupported, message: "unsupported" },
+      error: failureForCode(Code.CodeOperationUnsupported),
     } as ConfigStatusEnvelope;
 
     beginSecurityStatusLoad();
@@ -54,7 +56,7 @@ describe("security state", () => {
   });
 
   it("keeps thrown runtime failures separate from generated envelopes", () => {
-    const error: RuntimeErrorEnvelope = { message: "bridge unavailable" };
+    const error: Failure = failureForCode(Code.CodeInternalError);
 
     failSecurityBioSensorLoadAtRuntime(error);
 

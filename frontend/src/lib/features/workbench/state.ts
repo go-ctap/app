@@ -1,7 +1,7 @@
 import { writable } from "svelte/store";
 
 import type { OperationStage } from "../../../../bindings/github.com/go-ctap/kit/model";
-import type { RuntimeErrorEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
+import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 
 export type ActiveOperation = {
   operationId?: string;
@@ -13,7 +13,7 @@ export type ActiveOperation = {
   sampleStatus?: string;
   cancelPending?: boolean;
   cancelRequested?: boolean;
-  cancelError?: RuntimeErrorEnvelope | null;
+  cancelError?: Failure | null;
 };
 
 export type StatusBarOutcome = {

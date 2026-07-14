@@ -1,12 +1,14 @@
 import { cleanup, render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { ErrorCategory, OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model";
+import { OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model";
 import { StateValue } from "../../../../bindings/github.com/go-ctap/kit/model/config";
+import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import { PreviewMode, Severity } from "../../../../bindings/github.com/go-ctap/kit/model/safety";
 import type { ResetFactoryEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
 
 import type { SecurityMutationState } from "$lib/features/security/state";
+import { failureForCode } from "$lib/failure";
 import { setAppLocale } from "$lib/i18n";
 
 import SecurityMutationDetails from "./SecurityMutationDetails.svelte";
@@ -16,10 +18,7 @@ function erroredPreviewMutation(): SecurityMutationState {
     operationId: "reset-preview-error",
     sessionId: "session-1",
     kind: OperationKind.OperationResetFactory,
-    error: {
-      category: ErrorCategory.ErrorInvalidState,
-      message: "reset must follow reconnect",
-    },
+    error: failureForCode(Code.CodeResetWindowExpired),
     result: {
       preview: {
         device: { deviceId: "token-1", stableId: true },
@@ -60,7 +59,7 @@ describe("SecurityMutationDetails", () => {
       props: { mutation: erroredPreviewMutation(), activeOperation: null },
     });
 
-    expect(screen.getByText("reset must follow reconnect")).toBeInTheDocument();
+    expect(screen.getByText("The authenticator reset window has expired.")).toBeInTheDocument();
     expect(screen.getByText("usb")).toBeInTheDocument();
     expect(screen.getByText("Factory reset permanently removes authenticator state and cannot be undone.")).toBeInTheDocument();
     expect(screen.queryByText("backend fallback")).not.toBeInTheDocument();

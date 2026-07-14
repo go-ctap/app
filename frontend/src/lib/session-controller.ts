@@ -1,8 +1,7 @@
 import { get } from "svelte/store";
 
-import { ErrorCategory } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code, type Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import { RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
@@ -19,7 +18,7 @@ import { maybeLoadLargeBlobs } from "./largeblobs-controller.js";
 import { maybeLoadOverview } from "./overview-controller.js";
 import { maybeLoadPasskeys } from "./passkeys-controller.js";
 import { maybeLoadSecurity } from "./security-controller.js";
-import { runtimeErrorFrom } from "./runtime-error.js";
+import { failureForCode, failureMessage, runtimeFailureFrom } from "./failure.js";
 import {
   idleSessionStatus,
   reportForSelector,
@@ -55,7 +54,7 @@ function discoverySnapshot(
   selectedSelector: string,
   selectedDevice: DeviceReport | null,
   session: SessionStatus,
-  error?: RuntimeErrorEnvelope | null,
+  error?: Failure | null,
 ): Discovery {
   const discovery: Discovery = {
     devices,
@@ -117,7 +116,7 @@ async function selectFromDevices(devices: DeviceReport[], selector: string): Pro
   try {
     return await openSessionForDevice(devices, canonicalSelector);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     return discoverySnapshot(
       devices,
       canonicalSelector,
@@ -147,10 +146,7 @@ export async function ensureSelectedSessionReady(): Promise<boolean> {
 
   const recovery = recoverySelection(get(deviceStore), selector);
   if (!recovery.device) {
-    const error = new RuntimeErrorEnvelope({
-      category: ErrorCategory.ErrorTransportFailure,
-      message: m.selected_authenticator_disconnected_message(),
-    });
+    const error = failureForCode(Code.CodeDeviceUnavailable);
     applyDiscovery(discoverySnapshot(
       recovery.devices,
       selector,
@@ -185,9 +181,9 @@ export async function bootstrap() {
     await maybeLoadLargeBlobs();
     await maybeLoadSecurity();
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     sessionStatus.set(idleSessionStatus("error", runtimeError));
-    setStatusOutcome({ tone: "error", title: m.discovery_issue(), message: runtimeError.message });
+    setStatusOutcome({ tone: "error", title: m.discovery_issue(), message: failureMessage(runtimeError) });
   }
 }
 
@@ -209,9 +205,9 @@ export async function selectToken(selector: string) {
     await maybeLoadLargeBlobs();
     await maybeLoadSecurity();
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     sessionStatus.set(idleSessionStatus("error", runtimeError));
-    setStatusOutcome({ tone: "error", title: m.token_selection_issue(), message: runtimeError.message });
+    setStatusOutcome({ tone: "error", title: m.token_selection_issue(), message: failureMessage(runtimeError) });
   }
 }
 
@@ -230,14 +226,14 @@ export async function navigateToScreen(screen: ActiveScreen) {
  * apply the normal startup rule: auto-open only when discovery finds exactly
  * one authenticator.
  */
-export async function rediscoverAfterFactoryReset(): Promise<RuntimeErrorEnvelope | null> {
-  let closeError: RuntimeErrorEnvelope | null = null;
+export async function rediscoverAfterFactoryReset(): Promise<Failure | null> {
+  let closeError: Failure | null = null;
   try {
     // Reset invalidates the old handle. Close service ownership without first
     // reading session snapshots, and never reuse a pre-reset open snapshot.
     await api.closeAllSessions();
   } catch (error) {
-    closeError = runtimeErrorFrom(error);
+    closeError = runtimeFailureFrom(error);
   }
 
   clearWorkbenchScreenCaches();
@@ -261,7 +257,7 @@ export async function rediscoverAfterFactoryReset(): Promise<RuntimeErrorEnvelop
             statusFromSession(snapshot),
           );
         } catch (error) {
-          const runtimeError = runtimeErrorFrom(error);
+          const runtimeError = runtimeFailureFrom(error);
           discovery = discoverySnapshot(
             discoveredDevices,
             selection.selectedSelector,
@@ -276,7 +272,7 @@ export async function rediscoverAfterFactoryReset(): Promise<RuntimeErrorEnvelop
     applyDiscovery(discovery);
     return discovery.error ?? closeError;
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     applyDiscovery(discoverySnapshot(
       [],
       "",

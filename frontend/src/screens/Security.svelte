@@ -30,6 +30,7 @@
     setAuthenticatorPIN,
   } from "$lib/controller";
   import { configStatusReport } from "$lib/ctapkit-results";
+  import { failureMessage } from "$lib/failure";
   import {
     securityEnrollments,
     securityMutation,
@@ -44,7 +45,7 @@
 
   let report = $derived(configStatusReport($securityStatus.lastSuccessfulEnvelope));
   let statusError = $derived(
-    $securityStatus.runtimeError?.message ?? $securityStatus.responseEnvelope?.error?.message ?? null,
+    failureMessage($securityStatus.runtimeError) ?? failureMessage($securityStatus.responseEnvelope?.error),
   );
   let statusLoading = $derived(
     $securityStatus.phase === "loading" || $securityStatus.phase === "refreshing",

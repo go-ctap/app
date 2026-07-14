@@ -18,6 +18,7 @@
     LabState,
     MakeCredentialDraft,
   } from "$lib/features/lab/state";
+  import { failureMessage as localizeFailure } from "$lib/failure";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -88,7 +89,7 @@
     if (step.phase !== "error") return null;
     if (step.failureReason === "missing-preview") return m.lab_missing_preview();
     if (step.failureReason === "missing-result") return m.lab_missing_result();
-    return step.runtimeError?.message ?? operationError(step.responseEnvelope) ?? m.lab_request_failed();
+    return localizeFailure(step.runtimeError) ?? operationError(step.responseEnvelope) ?? m.lab_request_failed();
   });
 
   function phaseLabel() {

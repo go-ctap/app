@@ -1,7 +1,7 @@
 import { writable, type Writable } from "svelte/store";
 
-import { ErrorCategory } from "../../../../bindings/github.com/go-ctap/kit/model";
 import type { AlwaysUVTarget } from "../../../../bindings/github.com/go-ctap/kit/model/config";
+import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   AlwaysUVRequest,
   AuthenticatorConfigEnvelope,
@@ -16,8 +16,8 @@ import type {
   MinPINLengthRequest,
   ResetFactoryEnvelope,
   ResetFactoryRequest,
-  RuntimeErrorEnvelope,
 } from "../../../../bindings/github.com/go-ctap/kit/service";
+import { isUnsupportedFailure } from "../../failure.js";
 
 export type SecurityResourcePhase = "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";
 
@@ -30,7 +30,7 @@ export type SecurityResourceState<TEnvelope> = {
   phase: SecurityResourcePhase;
   lastSuccessfulEnvelope: TEnvelope | null;
   responseEnvelope: TEnvelope | null;
-  runtimeError: RuntimeErrorEnvelope | null;
+  runtimeError: Failure | null;
   lastSuccessfulAt: string | null;
 };
 
@@ -130,7 +130,7 @@ type SecurityMutationLifecycle<TBase, TRequest, TEnvelope> =
       previewRequest: TRequest | null;
       previewEnvelope: TEnvelope | null;
       responseEnvelope: TEnvelope | null;
-      runtimeError: RuntimeErrorEnvelope | null;
+      runtimeError: Failure | null;
       failureReason: SecurityMutationFailureReason;
       validationError: SecurityMutationValidationError | null;
     });
@@ -159,7 +159,7 @@ export const securityStatus = securityStatusState;
 export const securitySensor = securityBioSensorState;
 export const securityEnrollments = securityBioListState;
 
-type ErrorBearingEnvelope = { error?: RuntimeErrorEnvelope | null };
+type ErrorBearingEnvelope = { error?: Failure | null };
 
 export function beginSecurityResourceLoad<TEnvelope>(store: Writable<SecurityResourceState<TEnvelope>>) {
   store.update((current) => ({
@@ -190,7 +190,7 @@ export function failSecurityResourceLoadWithResponse<TEnvelope extends ErrorBear
 ) {
   store.update((current) => ({
     ...current,
-    phase: envelope.error?.category === ErrorCategory.ErrorUnsupported ? "unsupported" : "error",
+    phase: isUnsupportedFailure(envelope.error) ? "unsupported" : "error",
     responseEnvelope: envelope,
     runtimeError: null,
   }));
@@ -198,7 +198,7 @@ export function failSecurityResourceLoadWithResponse<TEnvelope extends ErrorBear
 
 export function failSecurityResourceLoadAtRuntime<TEnvelope>(
   store: Writable<SecurityResourceState<TEnvelope>>,
-  error: RuntimeErrorEnvelope,
+  error: Failure,
 ) {
   store.update((current) => ({
     ...current,
@@ -211,7 +211,7 @@ export function failSecurityResourceLoadAtRuntime<TEnvelope>(
 export function failSecurityResourceLoadWithContractError<TEnvelope>(
   store: Writable<SecurityResourceState<TEnvelope>>,
   envelope: TEnvelope,
-  error: RuntimeErrorEnvelope,
+  error: Failure,
 ) {
   store.update((current) => ({
     ...current,
@@ -233,13 +233,13 @@ export function failSecurityStatusLoadWithResponse(envelope: ConfigStatusEnvelop
   failSecurityResourceLoadWithResponse(securityStatusState, envelope);
 }
 
-export function failSecurityStatusLoadAtRuntime(error: RuntimeErrorEnvelope) {
+export function failSecurityStatusLoadAtRuntime(error: Failure) {
   failSecurityResourceLoadAtRuntime(securityStatusState, error);
 }
 
 export function failSecurityStatusLoadWithContractError(
   envelope: ConfigStatusEnvelope,
-  error: RuntimeErrorEnvelope,
+  error: Failure,
 ) {
   failSecurityResourceLoadWithContractError(securityStatusState, envelope, error);
 }
@@ -256,13 +256,13 @@ export function failSecurityBioSensorLoadWithResponse(envelope: BioSensorEnvelop
   failSecurityResourceLoadWithResponse(securityBioSensorState, envelope);
 }
 
-export function failSecurityBioSensorLoadAtRuntime(error: RuntimeErrorEnvelope) {
+export function failSecurityBioSensorLoadAtRuntime(error: Failure) {
   failSecurityResourceLoadAtRuntime(securityBioSensorState, error);
 }
 
 export function failSecurityBioSensorLoadWithContractError(
   envelope: BioSensorEnvelope,
-  error: RuntimeErrorEnvelope,
+  error: Failure,
 ) {
   failSecurityResourceLoadWithContractError(securityBioSensorState, envelope, error);
 }
@@ -279,13 +279,13 @@ export function failSecurityBioListLoadWithResponse(envelope: BioListEnvelope) {
   failSecurityResourceLoadWithResponse(securityBioListState, envelope);
 }
 
-export function failSecurityBioListLoadAtRuntime(error: RuntimeErrorEnvelope) {
+export function failSecurityBioListLoadAtRuntime(error: Failure) {
   failSecurityResourceLoadAtRuntime(securityBioListState, error);
 }
 
 export function failSecurityBioListLoadWithContractError(
   envelope: BioListEnvelope,
-  error: RuntimeErrorEnvelope,
+  error: Failure,
 ) {
   failSecurityResourceLoadWithContractError(securityBioListState, envelope, error);
 }

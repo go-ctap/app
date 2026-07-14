@@ -23,6 +23,7 @@
     SecurityBioListState,
     SecurityBioSensorState,
   } from "$lib/features/security/state";
+  import { failureMessage } from "$lib/failure";
 
   import { m } from "../../../paraglide/messages.js";
   import { reportedNumber, utf8ByteLength } from "./security-ui.js";
@@ -56,10 +57,10 @@
   let sensor = $derived(bioSensorReport(sensorState.lastSuccessfulEnvelope));
   let enrollments = $derived(bioListReport(enrollmentState.lastSuccessfulEnvelope));
   let sensorError = $derived(
-    sensorState.runtimeError?.message ?? sensorState.responseEnvelope?.error?.message ?? null,
+    failureMessage(sensorState.runtimeError) ?? failureMessage(sensorState.responseEnvelope?.error),
   );
   let enrollmentError = $derived(
-    enrollmentState.runtimeError?.message ?? enrollmentState.responseEnvelope?.error?.message ?? null,
+    failureMessage(enrollmentState.runtimeError) ?? failureMessage(enrollmentState.responseEnvelope?.error),
   );
   let sensorLoading = $derived(
     sensorState.phase === "loading" || sensorState.phase === "refreshing",

@@ -1,8 +1,6 @@
 <script lang="ts">
-  import type {
-    MakeCredentialEnvelope,
-    RuntimeErrorEnvelope,
-  } from "../../../../bindings/github.com/go-ctap/kit/service";
+  import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+  import type { MakeCredentialEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
   import type { MakeCredentialResult as MakeCredentialResultDTO } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
 
   import { Badge } from "$lib/components/ui/badge/index.js";
@@ -15,7 +13,7 @@
   type Props = {
     result: MakeCredentialResultDTO;
     responseEnvelope: MakeCredentialEnvelope | null;
-    runtimeError: RuntimeErrorEnvelope | null;
+    runtimeError: Failure | null;
   };
 
   let { result, responseEnvelope, runtimeError }: Props = $props();

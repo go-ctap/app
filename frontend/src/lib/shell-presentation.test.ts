@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "./i18n.js";
+import { failureForCode } from "./failure.js";
 import { buildShellStatusPresentation, buildSidebarPresentation } from "./shell-presentation.js";
 import type { SessionStatus } from "./session-model.js";
 import type { StatusBarState } from "./stores.js";
@@ -94,12 +96,18 @@ describe("shell status presentation", () => {
     const opening = buildShellStatusPresentation({ selectedDevice: token, sessionStatus: session("opening"), statusBar: outcome });
     const errored = buildShellStatusPresentation({
       selectedDevice: token,
-      sessionStatus: { ...session("error"), error: { message: "Session lost" } },
+      sessionStatus: { ...session("error"), error: failureForCode(Code.CodeSessionInvalid) },
       statusBar: outcome,
     });
 
     expect(opening).toMatchObject({ source: "session", title: "Opening", busy: true });
-    expect(errored).toMatchObject({ source: "session", title: "Error", detail: "Session lost", busy: false, tone: "error" });
+    expect(errored).toMatchObject({
+      source: "session",
+      title: "Error",
+      detail: "The authenticator session is invalid.",
+      busy: false,
+      tone: "error",
+    });
   });
 
   it("offers retry only for an outcome backed by a live ready session", () => {

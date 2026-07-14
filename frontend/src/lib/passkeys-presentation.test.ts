@@ -1,9 +1,11 @@
 import { describe, expect, it, beforeEach } from "vitest";
 
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { CredentialsEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { setAppLocale } from "$lib/i18n";
+import { failureForCode } from "$lib/failure";
 import { emptyPasskeysInventoryState, type PasskeysInventoryState } from "$lib/features/passkeys/state";
 
 import { buildPasskeyRows, buildPasskeysPresentation } from "./passkeys-presentation";
@@ -290,7 +292,7 @@ describe("buildPasskeysPresentation", () => {
         operationId: "operation-2",
         sessionId: "session-1",
         kind: OperationKind.OperationListCredentials,
-        error: { category: "unsupported", message: "feature disappeared" },
+        error: failureForCode(Code.CodeCredentialManagementUnsupported),
       } as CredentialsEnvelope,
     };
     const presentation = buildPasskeysPresentation({

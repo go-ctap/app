@@ -1,6 +1,7 @@
 import { get } from "svelte/store";
 
-import type { InspectEnvelope, RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import type { InspectEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
@@ -15,15 +16,15 @@ import {
 } from "./features/overview/state.js";
 import { selectedSelector, sessionStatus } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
-import { runtimeErrorFrom } from "./runtime-error.js";
+import { failureMessage, runtimeFailureFrom } from "./failure.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
 import { beginOperation, setStatusOutcome, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
 
-function reportDegradedOverviewLoad(label: string, error: RuntimeErrorEnvelope) {
+function reportDegradedOverviewLoad(label: string, error: Failure) {
   setStatusOutcome({
     tone: "warning",
     title: m.operation_failed_with_label({ label }),
-    message: error.message,
+    message: failureMessage(error),
   });
 }
 
@@ -81,7 +82,7 @@ export async function loadOverview() {
           overviewBioSensor.set(readyLoadState(bioEnvelope));
         }
       } catch (error) {
-        const runtimeError = runtimeErrorFrom(error);
+        const runtimeError = runtimeFailureFrom(error);
         overviewBioSensor.set(errorLoadState(runtimeError));
         reportDegradedOverviewLoad(m.biometrics(), runtimeError);
       }
@@ -89,7 +90,7 @@ export async function loadOverview() {
     summarizeEnvelope(m.overview_inspection(), envelope, () => loadOverview());
     applyInvalidSessionError(envelope.error);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     overviewInspection.set(errorLoadState(runtimeError));
     overviewBioSensor.set(idleLoadState());
     summarizeOperationFailure(m.overview_inspection(), runtimeError, () => loadOverview());
@@ -114,7 +115,7 @@ export async function loadOverviewMDS(aaguid: string, refresh = false) {
     overviewMDS.set(readyLoadState(envelope.result));
     return true;
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     overviewMDS.set(errorLoadState(runtimeError));
     reportDegradedOverviewLoad(m.metadata_service(), runtimeError);
     return false;

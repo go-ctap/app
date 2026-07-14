@@ -2,8 +2,8 @@ import { get } from "svelte/store";
 
 import type {
   DiscoveryChangedEnvelope,
-  RuntimeErrorEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
+import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { DiscoveryTrigger } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { m } from "../paraglide/messages.js";
@@ -14,7 +14,7 @@ import {
   selectedSelector,
   sessionStatus,
 } from "./features/session/state.js";
-import { runtimeErrorFrom } from "./runtime-error.js";
+import { failureMessage, runtimeFailureFrom } from "./failure.js";
 import {
   idleSessionStatus,
   reportForSelector,
@@ -79,7 +79,7 @@ function discoveryPresentation(
     return {
       tone: "error",
       title: m.discovery_issue(),
-      message: envelope.error.message,
+      message: failureMessage(envelope.error),
     };
   }
   if (selectedDisconnected) {
@@ -100,11 +100,11 @@ function recordDiscoveryOutcome(presentation: { tone: DiscoveryTone; title: stri
   setStatusOutcome(presentation);
 }
 
-function recordDiscoveryRuntimeFailure(error: RuntimeErrorEnvelope) {
+function recordDiscoveryRuntimeFailure(error: Failure) {
   setStatusOutcome({
     tone: "error",
     title: m.discovery_issue(),
-    message: error.message,
+    message: failureMessage(error),
   });
 }
 
@@ -124,7 +124,7 @@ export async function startDiscoveryMonitoring() {
   try {
     return await api.startDiscoveryMonitoring();
   } catch (error) {
-    recordDiscoveryRuntimeFailure(runtimeErrorFrom(error));
+    recordDiscoveryRuntimeFailure(runtimeFailureFrom(error));
     return null;
   }
 }
@@ -133,6 +133,6 @@ export async function refreshDiscovery() {
   try {
     await api.refreshDiscovery();
   } catch (error) {
-    recordDiscoveryRuntimeFailure(runtimeErrorFrom(error));
+    recordDiscoveryRuntimeFailure(runtimeFailureFrom(error));
   }
 }

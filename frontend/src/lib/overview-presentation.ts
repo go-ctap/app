@@ -4,6 +4,7 @@ import type { BioSensorEnvelope, InspectEnvelope } from "../../bindings/github.c
 
 import { bioSensorReport, inspectResult, operationError } from "./ctapkit-results.js";
 import type { LoadState } from "./features/overview/state.js";
+import { failureMessage as localizeFailure } from "./failure.js";
 import {
   buildOverviewConformancePresentation,
   buildOverviewHero,
@@ -33,7 +34,7 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
   const loading = input.overviewState.state === "loading";
   const mdsLoading = input.overviewMDSState.state === "loading";
   const failureMessage = operationError(envelope);
-  const mdsFailureMessage = input.overviewMDSState.error?.message || null;
+  const mdsFailureMessage = localizeFailure(input.overviewMDSState.error);
   const report = inspectResult(envelope);
   const info = report?.info;
   const device = report?.device || input.selectedDevice;
@@ -47,8 +48,8 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
     mdsLoading,
     failureMessage,
     degradedMessages: [
-      input.overviewBioSensorState.error?.message,
-      input.overviewMDSState.error?.message,
+      localizeFailure(input.overviewBioSensorState.error),
+      localizeFailure(input.overviewMDSState.error),
     ].filter((message): message is string => Boolean(message)),
     reloadDisabled: loading || input.sessionBusy,
     hasReport: Boolean(report),

@@ -16,6 +16,9 @@ import * as model$0 from "../model/models.js";
 import * as config$0 from "../model/config/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as failure$0 from "../model/failure/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as largeblobs$0 from "../model/largeblobs/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -63,7 +66,7 @@ export class AuthenticatorConfigEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.AuthenticatorConfigOutput | null;
 
     /** Creates a new AuthenticatorConfigEnvelope instance. */
@@ -102,7 +105,7 @@ export class BioEnrollEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.BioEnrollOutput | null;
 
     /** Creates a new BioEnrollEnvelope instance. */
@@ -167,7 +170,7 @@ export class BioListEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.BioListOutput | null;
 
     /** Creates a new BioListEnvelope instance. */
@@ -206,7 +209,7 @@ export class BioMutationEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.BioMutationOutput | null;
 
     /** Creates a new BioMutationEnvelope instance. */
@@ -307,7 +310,7 @@ export class BioSensorEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.BioSensorOutput | null;
 
     /** Creates a new BioSensorEnvelope instance. */
@@ -367,7 +370,7 @@ export class ConfigStatusEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.ConfigStatusOutput | null;
 
     /** Creates a new ConfigStatusEnvelope instance. */
@@ -406,7 +409,7 @@ export class CredentialDeleteEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.CredentialDeleteOutput | null;
 
     /** Creates a new CredentialDeleteEnvelope instance. */
@@ -497,7 +500,7 @@ export class CredentialUpdateEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.CredentialUpdateOutput | null;
 
     /** Creates a new CredentialUpdateEnvelope instance. */
@@ -571,7 +574,7 @@ export class CredentialsEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.CredentialsOutput | null;
 
     /** Creates a new CredentialsEnvelope instance. */
@@ -627,7 +630,7 @@ export class DiscoverRequest {
 export class DiscoveryChangedEnvelope {
     "trigger": DiscoveryTrigger;
     "snapshot"?: DiscoverySnapshot | null;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
 
     /** Creates a new DiscoveryChangedEnvelope instance. */
     constructor($$source: Partial<DiscoveryChangedEnvelope> = {}) {
@@ -696,7 +699,7 @@ export class GetAssertionEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.GetAssertionOutput | null;
 
     /** Creates a new GetAssertionEnvelope instance. */
@@ -779,7 +782,7 @@ export class InspectEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.InspectOutput | null;
 
     /** Creates a new InspectEnvelope instance. */
@@ -906,7 +909,7 @@ export class LargeBlobListEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.LargeBlobListOutput | null;
 
     /** Creates a new LargeBlobListEnvelope instance. */
@@ -968,7 +971,7 @@ export class LargeBlobMutationEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.LargeBlobMutationOutput | null;
 
     /** Creates a new LargeBlobMutationEnvelope instance. */
@@ -1041,7 +1044,7 @@ export class LargeBlobReadEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.LargeBlobReadOutput | null;
 
     /** Creates a new LargeBlobReadEnvelope instance. */
@@ -1156,7 +1159,7 @@ export class MakeCredentialEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.MakeCredentialOutput | null;
 
     /** Creates a new MakeCredentialEnvelope instance. */
@@ -1408,7 +1411,7 @@ export class PINEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.PINOutput | null;
 
     /** Creates a new PINEnvelope instance. */
@@ -1481,7 +1484,7 @@ export class ResetFactoryEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
-    "error"?: RuntimeErrorEnvelope | null;
+    "error"?: failure$0.Failure | null;
     "result"?: model$0.ResetFactoryOutput | null;
 
     /** Creates a new ResetFactoryEnvelope instance. */
@@ -1541,28 +1544,6 @@ export class ResetFactoryRequest {
     }
 }
 
-export class RuntimeErrorEnvelope {
-    "category"?: model$0.ErrorCategory;
-    "message": string;
-
-    /** Creates a new RuntimeErrorEnvelope instance. */
-    constructor($$source: Partial<RuntimeErrorEnvelope> = {}) {
-        if (!("message" in $$source)) {
-            this["message"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new RuntimeErrorEnvelope instance from a string or object.
-     */
-    static createFrom($$source: any = {}): RuntimeErrorEnvelope {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new RuntimeErrorEnvelope($$parsedSource as Partial<RuntimeErrorEnvelope>);
-    }
-}
-
 export type SessionID = string;
 
 export class SessionSnapshot {
@@ -1604,7 +1585,7 @@ export class SessionSnapshot {
 }
 
 // Private type creation functions
-const $$createType0 = RuntimeErrorEnvelope.createFrom;
+const $$createType0 = failure$0.Failure.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
 const $$createType2 = model$0.AuthenticatorConfigOutput.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);

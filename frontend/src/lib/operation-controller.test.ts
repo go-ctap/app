@@ -1,12 +1,14 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ErrorCategory, OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { CredentialsEnvelope, InteractionPrompt, OperationEventEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { pendingInteraction } from "./features/interaction/state.js";
+import { failureForCode } from "./failure.js";
 import { statusBar as mutableStatusBar } from "./features/workbench/state.js";
 import { setAppLocale } from "./i18n.js";
 import { resetAppStateForTest, seedPendingInteractionForTest, seedSelectionForTest } from "./store-test-utils.js";
@@ -103,7 +105,7 @@ describe("operation controller", () => {
     expect(get(statusBar).activeOperation).toMatchObject({
       operationId: "operation-1",
       cancelPending: false,
-      cancelError: { message: "bridge offline" },
+      cancelError: failureForCode(Code.CodeInternalError),
     });
     expect(get(readonlyPendingInteraction)?.interactionId).toBe("interaction-1");
     expect(get(statusBar).lastOutcome).toMatchObject({ tone: "error", title: "Could not cancel operation" });
@@ -129,7 +131,7 @@ describe("operation controller", () => {
 
     summarizeOperationFailure(
       "Credential inventory",
-      { category: ErrorCategory.ErrorCanceled, message: "context canceled" },
+      failureForCode(Code.CodeOperationCanceled),
       retry,
     );
 
@@ -141,7 +143,7 @@ describe("operation controller", () => {
     expect(get(statusBar).lastOutcome?.retry).toBeUndefined();
     expect(toastMocks.info).toHaveBeenCalledWith(
       "Credential inventory canceled",
-      expect.objectContaining({ description: "context canceled", important: true }),
+      expect.objectContaining({ description: "The operation was canceled.", important: true }),
     );
   });
 
@@ -154,7 +156,7 @@ describe("operation controller", () => {
       operationId: "operation-1",
       sessionId: "session-1",
       kind: OperationKind.OperationListCredentials,
-      error: { category: ErrorCategory.ErrorCanceled, message: "operation canceled" },
+      error: failureForCode(Code.CodeOperationCanceled),
     } as CredentialsEnvelope, retry);
 
     expect(get(statusBar).lastOutcome).toMatchObject({
@@ -169,12 +171,12 @@ describe("operation controller", () => {
     seedSession();
     seedOperation();
 
-    summarizeOperationFailure("Credential inventory", { message: "TypeError: invalid payload" }, retry);
+    summarizeOperationFailure("Credential inventory", failureForCode(Code.CodeInternalError), retry);
 
     expect(get(statusBar).lastOutcome?.retry).toBeUndefined();
     expect(toastMocks.error).toHaveBeenCalledWith(
       "Credential inventory failed",
-      expect.objectContaining({ description: "TypeError: invalid payload", important: true }),
+      expect.objectContaining({ description: "The operation failed because of an internal error.", important: true }),
     );
   });
 
@@ -185,13 +187,13 @@ describe("operation controller", () => {
 
     summarizeOperationFailure(
       "Credential inventory",
-      { category: ErrorCategory.ErrorTimeout, message: "authenticator timed out" },
+      failureForCode(Code.CodeOperationTimeout),
       retry,
     );
 
     const options = toastMocks.error.mock.calls.at(-1)?.[1];
     expect(options).toMatchObject({
-      description: "authenticator timed out",
+      description: "The operation timed out.",
       action: { label: "Retry" },
     });
     options.action.onClick();

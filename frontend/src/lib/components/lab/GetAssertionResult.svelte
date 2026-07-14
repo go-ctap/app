@@ -1,8 +1,6 @@
 <script lang="ts">
-  import type {
-    GetAssertionEnvelope,
-    RuntimeErrorEnvelope,
-  } from "../../../../bindings/github.com/go-ctap/kit/service";
+  import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+  import type { GetAssertionEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
   import type { GetAssertionResult as GetAssertionResultDTO } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
 
   import { Badge } from "$lib/components/ui/badge/index.js";
@@ -15,7 +13,7 @@
   type Props = {
     result: GetAssertionResultDTO;
     responseEnvelope: GetAssertionEnvelope | null;
-    runtimeError: RuntimeErrorEnvelope | null;
+    runtimeError: Failure | null;
     bytesToHex: (value: string) => string;
   };
 

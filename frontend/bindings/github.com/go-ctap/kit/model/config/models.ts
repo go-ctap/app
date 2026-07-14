@@ -7,6 +7,9 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as failure$0 from "../failure/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as report$0 from "../report/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -802,7 +805,7 @@ export class RetryState {
     "state": StateValue;
     "remaining"?: number | null;
     "powerCycleState"?: boolean | null;
-    "error"?: string;
+    "failure"?: failure$0.Failure | null;
 
     /** Creates a new RetryState instance. */
     constructor($$source: Partial<RetryState> = {}) {
@@ -817,7 +820,11 @@ export class RetryState {
      * Creates a new RetryState instance from a string or object.
      */
     static createFrom($$source: any = {}): RetryState {
+        const $$createField3_0 = $$createType14;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("failure" in $$parsedSource) {
+            $$parsedSource["failure"] = $$createField3_0($$parsedSource["failure"]);
+        }
         return new RetryState($$parsedSource as Partial<RetryState>);
     }
 }
@@ -878,11 +885,11 @@ export class StatusReport {
     static createFrom($$source: any = {}): StatusReport {
         const $$createField0_0 = $$createType0;
         const $$createField1_0 = $$createType10;
-        const $$createField2_0 = $$createType13;
-        const $$createField3_0 = $$createType14;
+        const $$createField2_0 = $$createType15;
+        const $$createField3_0 = $$createType16;
         const $$createField4_0 = $$createType1;
         const $$createField5_0 = $$createType12;
-        const $$createField6_0 = $$createType15;
+        const $$createField6_0 = $$createType17;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
@@ -958,6 +965,8 @@ const $$createType9 = $Create.Array($$createType8);
 const $$createType10 = PINStatus.createFrom;
 const $$createType11 = RetryState.createFrom;
 const $$createType12 = ResetHints.createFrom;
-const $$createType13 = UVStatus.createFrom;
-const $$createType14 = BioStatus.createFrom;
-const $$createType15 = LimitsStatus.createFrom;
+const $$createType13 = failure$0.Failure.createFrom;
+const $$createType14 = $Create.Nullable($$createType13);
+const $$createType15 = UVStatus.createFrom;
+const $$createType16 = BioStatus.createFrom;
+const $$createType17 = LimitsStatus.createFrom;

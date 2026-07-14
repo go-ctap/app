@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-ctap/kit/model"
+	"github.com/go-ctap/kit/model/failure"
 	kitservice "github.com/go-ctap/kit/service"
 )
 
@@ -30,8 +31,9 @@ func TestListCredentialsPreservesToolkitErrorEnvelopeAcrossWailsBoundary(t *test
 	if envelope.Kind != model.OperationListCredentials {
 		t.Fatalf("kind = %q, want %q", envelope.Kind, model.OperationListCredentials)
 	}
-	if envelope.Error == nil || envelope.Error.Category != model.ErrorInvalidSession {
-		t.Fatalf("error = %#v, want invalid-session", envelope.Error)
+	if envelope.Error == nil || envelope.Error.Code != failure.CodeSessionInvalid ||
+		envelope.Error.Category != failure.CategoryInvalidSession {
+		t.Fatalf("error = %#v, want SESSION_INVALID/invalid-session", envelope.Error)
 	}
 }
 
@@ -57,7 +59,8 @@ func TestListLargeBlobsPreservesToolkitErrorEnvelopeAcrossWailsBoundary(t *testi
 	if envelope.Kind != model.OperationListLargeBlobs {
 		t.Fatalf("kind = %q, want %q", envelope.Kind, model.OperationListLargeBlobs)
 	}
-	if envelope.Error == nil || envelope.Error.Category != model.ErrorInvalidSession {
-		t.Fatalf("error = %#v, want invalid-session", envelope.Error)
+	if envelope.Error == nil || envelope.Error.Code != failure.CodeSessionInvalid ||
+		envelope.Error.Category != failure.CategoryInvalidSession {
+		t.Fatalf("error = %#v, want SESSION_INVALID/invalid-session", envelope.Error)
 	}
 }

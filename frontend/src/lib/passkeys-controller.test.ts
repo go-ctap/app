@@ -2,16 +2,17 @@ import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  ErrorCategory,
   OperationKind,
   VerificationFlow,
 } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   CredentialUpdateEnvelope,
   CredentialsEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { api } from "./api";
+import { failureForCode } from "./failure";
 import {
   completePasskeysInventoryLoad,
   passkeysMutation,
@@ -156,10 +157,7 @@ describe("passkeys mutation requests", () => {
 
   it("retries an execution failure through refresh and a new preview without auto-confirming", async () => {
     const executionFailure = updatePreviewEnvelope();
-    executionFailure.error = {
-      category: ErrorCategory.ErrorTransportFailure,
-      message: "connection dropped",
-    };
+    executionFailure.error = failureForCode(Code.CodeTransportFailure);
     const update = vi.spyOn(api, "updateCredentialUser")
       .mockResolvedValueOnce(updatePreviewEnvelope())
       .mockResolvedValueOnce(executionFailure)

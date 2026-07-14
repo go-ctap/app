@@ -70,6 +70,7 @@ import type {
 } from "../../bindings/github.com/go-ctap/kit/model/webauthn";
 
 import type { OperationEnvelope } from "./api.js";
+import { failureMessage } from "./failure.js";
 
 export function inspectResult(envelope: InspectEnvelope | null | undefined) {
   if (!envelope || envelope.error || !envelope.result) return null;
@@ -259,7 +260,7 @@ export function getAssertionResult(envelope: OperationEnvelope | null | undefine
 
 export function operationError(envelope: OperationEnvelope | null | undefined) {
   if (!envelope || !envelope.error) return null;
-  return envelope.error.message;
+  return failureMessage(envelope.error);
 }
 
 function isCredentialsEnvelope(envelope: OperationEnvelope | null | undefined): envelope is CredentialsEnvelope {

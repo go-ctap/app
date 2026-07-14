@@ -1,7 +1,6 @@
 <script lang="ts">
   import { TriangleAlert } from "@lucide/svelte";
 
-  import { ErrorCategory } from "../../../../bindings/github.com/go-ctap/kit/model";
   import type { Warning } from "../../../../bindings/github.com/go-ctap/kit/model/safety";
 
   import * as Alert from "$lib/components/ui/alert/index.js";
@@ -17,6 +16,7 @@
   } from "$lib/ctapkit-results";
   import type { SecurityMutationState } from "$lib/features/security/state";
   import type { ActiveOperation } from "$lib/features/workbench/state";
+  import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
 
   import { m } from "../../../paraglide/messages.js";
   import { booleanState, reportedNumber, warningMessage } from "./security-ui.js";
@@ -48,12 +48,12 @@
     if (mutation.phase !== "error") return null;
     if (mutation.failureReason === "missing-preview") return m.operation_missing_preview();
     if (mutation.failureReason === "missing-result") return m.operation_missing_result();
-    return mutation.runtimeError?.message ?? mutation.responseEnvelope?.error?.message ?? m.operation_failed();
+    return localizeFailure(mutation.runtimeError) ?? localizeFailure(mutation.responseEnvelope?.error) ?? m.operation_failed();
   });
   let failureCanceled = $derived(
     mutation.phase === "error" && (
-      mutation.runtimeError?.category === ErrorCategory.ErrorCanceled
-      || mutation.responseEnvelope?.error?.category === ErrorCategory.ErrorCanceled
+      isCanceledFailure(mutation.runtimeError)
+      || isCanceledFailure(mutation.responseEnvelope?.error)
     ),
   );
 </script>

@@ -1,4 +1,5 @@
 import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
+import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type {
   BioSensorEnvelope,
@@ -6,7 +7,6 @@ import type {
   InspectEnvelope,
   InteractionPrompt,
   LargeBlobListEnvelope,
-  RuntimeErrorEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { resetInteractionStateForTest, pendingInteraction } from "./features/interaction/state.js";
@@ -83,7 +83,7 @@ export function seedOverviewBioSensorEnvelopeForTest(envelope: BioSensorEnvelope
   overviewBioSensor.set(envelope ? readyLoadState(envelope) : idleLoadState());
 }
 
-export function seedOverviewMDSForTest(data: LookupResult | null, error?: RuntimeErrorEnvelope | null) {
+export function seedOverviewMDSForTest(data: LookupResult | null, error?: Failure | null) {
   if (error) {
     overviewMDS.set({ state: "error", data, error });
     return;
@@ -95,7 +95,7 @@ export function seedOverviewMDSForTest(data: LookupResult | null, error?: Runtim
   overviewMDS.set(readyLoadState(data));
 }
 
-export function seedPasskeysEnvelopeForTest(envelope: CredentialsEnvelope | null, error?: RuntimeErrorEnvelope | null) {
+export function seedPasskeysEnvelopeForTest(envelope: CredentialsEnvelope | null, error?: Failure | null) {
   if (error) {
     passkeysInventoryState.set({
       ...emptyPasskeysInventoryState(),
@@ -112,7 +112,7 @@ export function seedPasskeysEnvelopeForTest(envelope: CredentialsEnvelope | null
   completePasskeysInventoryLoad(envelope, "2026-06-22T00:00:00.000Z");
 }
 
-export function seedLargeBlobsEnvelopeForTest(envelope: LargeBlobListEnvelope | null, error?: RuntimeErrorEnvelope | null) {
+export function seedLargeBlobsEnvelopeForTest(envelope: LargeBlobListEnvelope | null, error?: Failure | null) {
   if (error) {
     largeBlobsInventoryState.set({
       ...emptyLargeBlobsInventoryState(),

@@ -1,14 +1,16 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ErrorCategory, OperationKind, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { OperationKind, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { BioSensorEnvelope, CredentialsEnvelope, InteractionPrompt, LargeBlobListEnvelope, MDSLookupEnvelope, OperationEventEnvelope, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
 import { failPasskeysInventoryLoadAtRuntime } from "$lib/features/passkeys/state";
+import { failureForCode } from "$lib/failure";
 
 import {
   resetAppStateForTest,
@@ -327,13 +329,10 @@ describe("controller lifecycle", () => {
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
-      error: { category: ErrorCategory.ErrorInvalidSession, message: "session expired" },
+      error: failureForCode(Code.CodeSessionInvalid),
     });
     seedPasskeysEnvelopeForTest(previous);
-    failPasskeysInventoryLoadAtRuntime({
-      category: ErrorCategory.ErrorInvalidSession,
-      message: "session expired",
-    });
+    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeSessionInvalid));
     serviceMocks.Sessions.mockResolvedValue([]);
     serviceMocks.OpenSession.mockResolvedValue(snapshot(token, "session-reopened"));
 
@@ -377,13 +376,10 @@ describe("controller lifecycle", () => {
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
-      error: { category: ErrorCategory.ErrorInvalidSession, message: "session expired" },
+      error: failureForCode(Code.CodeSessionInvalid),
     });
     seedPasskeysEnvelopeForTest(previous);
-    failPasskeysInventoryLoadAtRuntime({
-      category: ErrorCategory.ErrorInvalidSession,
-      message: "session expired",
-    });
+    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeSessionInvalid));
     serviceMocks.Sessions.mockResolvedValue([]);
     serviceMocks.OpenSession.mockRejectedValueOnce(new Error("session bridge offline"));
 
@@ -392,7 +388,7 @@ describe("controller lifecycle", () => {
     expect(get(selectedSelector)).toBe("token-1");
     expect(get(sessionStatus)).toMatchObject({
       state: "error",
-      error: { message: "session bridge offline" },
+      error: failureForCode(Code.CodeInternalError),
     });
     expect(get(passkeysInventoryState)).toMatchObject({
       phase: "error",
@@ -412,18 +408,15 @@ describe("controller lifecycle", () => {
       operationId: "refresh-1",
       sessionId: "session-reopened",
       kind: OperationKind.OperationListCredentials,
-      error: { category: ErrorCategory.ErrorTransportFailure, message: "refresh failed" },
+      error: failureForCode(Code.CodeTransportFailure),
     } as CredentialsEnvelope;
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
-      error: { category: ErrorCategory.ErrorInvalidSession, message: "session expired" },
+      error: failureForCode(Code.CodeSessionInvalid),
     });
     seedPasskeysEnvelopeForTest(previous);
-    failPasskeysInventoryLoadAtRuntime({
-      category: ErrorCategory.ErrorInvalidSession,
-      message: "session expired",
-    });
+    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeSessionInvalid));
     serviceMocks.Sessions.mockResolvedValue([]);
     serviceMocks.OpenSession.mockResolvedValue(snapshot(token, "session-reopened"));
     serviceMocks.ListCredentials.mockResolvedValue(refreshError);
@@ -688,7 +681,7 @@ describe("controller lifecycle", () => {
       phase: "error",
       lastSuccessfulEnvelope: inventory,
       responseEnvelope: null,
-      runtimeError: { message: "refresh bridge offline" },
+      runtimeError: failureForCode(Code.CodeInternalError),
     });
   });
 
@@ -714,7 +707,7 @@ describe("controller lifecycle", () => {
       operationId: "update-1",
       sessionId: "session-token-1",
       kind: OperationKind.OperationUpdateCredentialUser,
-      error: { category: ErrorCategory.ErrorTransportFailure, message: "device disconnected" },
+      error: failureForCode(Code.CodeTransportFailure),
     };
     serviceMocks.UpdateCredentialUser
       .mockResolvedValueOnce({
@@ -787,7 +780,7 @@ describe("controller lifecycle", () => {
       operationId: "update-1",
       sessionId: "session-token-1",
       kind: OperationKind.OperationUpdateCredentialUser,
-      error: { category: ErrorCategory.ErrorInvalidSession, message: "session expired" },
+      error: failureForCode(Code.CodeSessionInvalid),
     };
     serviceMocks.UpdateCredentialUser
       .mockResolvedValueOnce({
@@ -805,7 +798,7 @@ describe("controller lifecycle", () => {
 
     expect(get(sessionStatus)).toMatchObject({
       state: "error",
-      error: { category: ErrorCategory.ErrorInvalidSession, message: "session expired" },
+      error: failureForCode(Code.CodeSessionInvalid),
     });
     expect(get(sessionStatus).sessionId).toBeUndefined();
     expect(get(passkeysMutation)).toMatchObject({
@@ -837,7 +830,7 @@ describe("controller lifecycle", () => {
       failedPhase: "previewing",
       failureReason: "runtime-error",
       responseEnvelope: null,
-      runtimeError: { message: "mutation bridge offline" },
+      runtimeError: failureForCode(Code.CodeInternalError),
     });
   });
 
@@ -888,7 +881,7 @@ describe("controller lifecycle", () => {
     });
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "error",
-      message: "The operation completed without an execution result.",
+      message: "The operation returned an unexpected result type.",
     });
     expect(get(statusBar).lastOutcome?.retry).toBeUndefined();
   });
@@ -907,10 +900,10 @@ describe("controller lifecycle", () => {
     expect(inventory.phase).toBe("error");
     expect(inventory.lastSuccessfulEnvelope).toBeNull();
     expect(inventory.responseEnvelope).toBeNull();
-    expect(inventory.runtimeError?.message).toBe("bridge offline");
+    expect(inventory.runtimeError?.code).toBe(Code.CodeInternalError);
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBeNull();
     expect(get(statusBar).activeOperation).toBeNull();
-    expect(get(statusBar).lastOutcome?.message).toBe("bridge offline");
+    expect(get(statusBar).lastOutcome?.message).toBe("The operation failed because of an internal error.");
   });
 
   it("keeps an exact result-less credential-list envelope and reports the contract failure separately", async () => {
@@ -934,7 +927,7 @@ describe("controller lifecycle", () => {
     });
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "error",
-      message: "The operation completed without an execution result.",
+      message: "The operation returned an unexpected result type.",
     });
   });
 
@@ -954,14 +947,14 @@ describe("controller lifecycle", () => {
       operationId: "credentials-token-1",
       sessionId: "session-token-1",
       kind: OperationKind.OperationListCredentials,
-      error: { category: ErrorCategory.ErrorInvalidSession, message: "session expired" },
+      error: failureForCode(Code.CodeSessionInvalid),
     } as CredentialsEnvelope);
 
     await loadPasskeys();
 
     expect(get(sessionStatus)).toMatchObject({
       state: "error",
-      error: { category: ErrorCategory.ErrorInvalidSession, message: "session expired" },
+      error: failureForCode(Code.CodeSessionInvalid),
     });
     expect(get(sessionStatus).sessionId).toBeUndefined();
     expect(get(pendingInteraction)).toBeNull();
@@ -1079,7 +1072,7 @@ describe("controller lifecycle", () => {
 
     expect(get(overviewInspection).data).toBeNull();
     expect(get(statusBar).activeOperation).toBeNull();
-    expect(get(statusBar).lastOutcome?.message).toBe("inspect bridge offline");
+    expect(get(statusBar).lastOutcome?.message).toBe("The operation failed because of an internal error.");
   });
 
   it("records operation events from the runtime", async () => {

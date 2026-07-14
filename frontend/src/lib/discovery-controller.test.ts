@@ -12,8 +12,10 @@ import type {
 import { DiscoveryTrigger } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 
 import { setAppLocale } from "$lib/i18n";
+import { failureForCode } from "$lib/failure";
 
 import {
   resetAppStateForTest,
@@ -243,14 +245,14 @@ describe("discovery controller", () => {
     const { handleDiscoveryChanged } = await import("./discovery-controller.js");
     seedSelected(token);
 
-    handleDiscoveryChanged(event(null, { message: "rescan failed" }));
+    handleDiscoveryChanged(event(null, failureForCode(Code.CodeTransportFailure)));
 
     expect(get(devices)).toEqual([token]);
     expect(get(selectedSelector)).toBe("token-1");
     expect(get(sessionStatus).sessionId).toBe("session-token-1");
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "error",
-      message: "rescan failed",
+      message: "Communication with the authenticator failed.",
     });
   });
 

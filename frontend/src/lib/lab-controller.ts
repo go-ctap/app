@@ -1,13 +1,12 @@
 import { get } from "svelte/store";
 import { toast } from "svelte-sonner";
 
-import { ErrorCategory } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code, type Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   GetAssertionEnvelope,
   GetAssertionRequest,
   MakeCredentialEnvelope,
   MakeCredentialRequest,
-  RuntimeErrorEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
@@ -36,13 +35,14 @@ import {
   validateGetAssertionDraft,
   validateMakeCredentialDraft,
 } from "./lab-input.js";
-import { runtimeErrorFrom } from "./runtime-error.js";
+import { failureForCode, isInvalidSessionFailure, runtimeFailureFrom } from "./failure.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
 import { ensureSelectedSessionReady } from "./session-controller.js";
 import {
   beginOperation,
   setStatusOutcome,
   summarizeEnvelope,
+  summarizeOperationContractFailure,
   summarizeOperationFailure,
 } from "./workbench-state.js";
 
@@ -50,11 +50,8 @@ function retryAction(action: () => Promise<unknown>) {
   return async () => { await action(); };
 }
 
-function missingOutput(kind: "preview" | "result") {
-  return {
-    category: ErrorCategory.ErrorInvalidState,
-    message: kind === "preview" ? m.lab_missing_preview() : m.lab_missing_result(),
-  };
+function missingOutput() {
+  return failureForCode(Code.CodeInternalError);
 }
 
 function operationIsActive(state: LabState) {
@@ -148,7 +145,7 @@ function makeError(
   previewEnvelope: MakeCredentialEnvelope | null,
   request: MakeCredentialRequest | null,
   responseEnvelope: MakeCredentialEnvelope | null,
-  runtimeError: RuntimeErrorEnvelope | null,
+  runtimeError: Failure | null,
   failureReason: LabMakeFailureReason,
 ) {
   labState.update((state) => ({
@@ -186,7 +183,7 @@ export async function previewLabMakeCredential(): Promise<boolean> {
       dryRun: true,
     };
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     makeError(current, "previewing", null, null, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.lab_make_credential_preview(), runtimeError);
     applyInvalidSessionError(runtimeError);
@@ -210,7 +207,7 @@ export async function previewLabMakeCredential(): Promise<boolean> {
         null,
         envelope,
         null,
-        envelope.error.category === ErrorCategory.ErrorInvalidSession ? "invalid-session" : "response-error",
+        isInvalidSessionFailure(envelope.error) ? "invalid-session" : "response-error",
       );
     } else if (!preview) {
       makeError(current, "previewing", previewRequest, null, null, envelope, null, "missing-preview");
@@ -223,14 +220,14 @@ export async function previewLabMakeCredential(): Promise<boolean> {
     if (envelope.error || preview) {
       summarizeEnvelope(m.lab_make_credential_preview(), envelope, retryAction(retryLabMakeCredential));
     } else {
-      summarizeOperationFailure(m.lab_make_credential_preview(), missingOutput("preview"));
+      summarizeOperationContractFailure(m.lab_make_credential_preview(), missingOutput());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(preview);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     makeError(current, "previewing", previewRequest, null, null, null, runtimeError,
-      runtimeError.category === ErrorCategory.ErrorInvalidSession ? "invalid-session" : "runtime-error");
+      isInvalidSessionFailure(runtimeError) ? "invalid-session" : "runtime-error");
     summarizeOperationFailure(m.lab_make_credential_preview(), runtimeError, retryAction(retryLabMakeCredential));
     applyInvalidSessionError(runtimeError);
     return false;
@@ -272,7 +269,7 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
         request,
         envelope,
         null,
-        envelope.error.category === ErrorCategory.ErrorInvalidSession ? "invalid-session" : "response-error",
+        isInvalidSessionFailure(envelope.error) ? "invalid-session" : "response-error",
       );
     } else if (!result) {
       makeError(current, "executing", review.previewRequest, review.previewEnvelope, request, envelope, null, "missing-result");
@@ -294,12 +291,12 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
     if (envelope.error || result) {
       summarizeEnvelope(m.lab_make_credential(), envelope, retryAction(retryLabMakeCredential));
     } else {
-      summarizeOperationFailure(m.lab_make_credential(), missingOutput("result"));
+      summarizeOperationContractFailure(m.lab_make_credential(), missingOutput());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(result);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     makeError(
       current,
       "executing",
@@ -308,7 +305,7 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
       request,
       null,
       runtimeError,
-      runtimeError.category === ErrorCategory.ErrorInvalidSession ? "invalid-session" : "runtime-error",
+      isInvalidSessionFailure(runtimeError) ? "invalid-session" : "runtime-error",
     );
     summarizeOperationFailure(m.lab_make_credential(), runtimeError, retryAction(retryLabMakeCredential));
     applyInvalidSessionError(runtimeError);
@@ -358,7 +355,7 @@ function getError(
   _base: LabState,
   request: GetAssertionRequest | null,
   responseEnvelope: GetAssertionEnvelope | null,
-  runtimeError: RuntimeErrorEnvelope | null,
+  runtimeError: Failure | null,
   failureReason: LabGetFailureReason,
 ) {
   labState.update((state) => ({
@@ -390,7 +387,7 @@ async function executeGetAssertion(base: LabState, request: GetAssertionRequest)
         request,
         envelope,
         null,
-        envelope.error.category === ErrorCategory.ErrorInvalidSession ? "invalid-session" : "response-error",
+        isInvalidSessionFailure(envelope.error) ? "invalid-session" : "response-error",
       );
     } else if (!result) {
       getError(base, request, envelope, null, "missing-result");
@@ -403,14 +400,14 @@ async function executeGetAssertion(base: LabState, request: GetAssertionRequest)
     if (envelope.error || result) {
       summarizeEnvelope(m.lab_get_assertion(), envelope, retryAction(retryLabGetAssertion));
     } else {
-      summarizeOperationFailure(m.lab_get_assertion(), missingOutput("result"));
+      summarizeOperationContractFailure(m.lab_get_assertion(), missingOutput());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(result);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     getError(base, request, null, runtimeError,
-      runtimeError.category === ErrorCategory.ErrorInvalidSession ? "invalid-session" : "runtime-error");
+      isInvalidSessionFailure(runtimeError) ? "invalid-session" : "runtime-error");
     summarizeOperationFailure(m.lab_get_assertion(), runtimeError, retryAction(retryLabGetAssertion));
     applyInvalidSessionError(runtimeError);
     return false;
@@ -432,7 +429,7 @@ export async function runLabGetAssertion(): Promise<boolean> {
   try {
     request = buildGetAssertionRequest(selectedSessionId(), current.getDraft);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     getError(current, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.lab_get_assertion(), runtimeError);
     applyInvalidSessionError(runtimeError);

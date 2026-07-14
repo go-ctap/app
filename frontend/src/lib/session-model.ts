@@ -1,5 +1,6 @@
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { RuntimeErrorEnvelope, SessionID, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
+import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import type { SessionID, SessionSnapshot } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { deviceName } from "./format.js";
 
@@ -8,7 +9,7 @@ export type SessionState = "idle" | "opening" | "ready" | "running" | "error";
 export type SessionStatus = {
   sessionId?: SessionID;
   state: SessionState;
-  error?: RuntimeErrorEnvelope | null;
+  error?: Failure | null;
 };
 
 export type Discovery = {
@@ -16,7 +17,7 @@ export type Discovery = {
   selectedSelector: string;
   selectedDevice: DeviceReport | null;
   session: SessionStatus;
-  error?: RuntimeErrorEnvelope | null;
+  error?: Failure | null;
 };
 
 export function selectorFromDevice(device: DeviceReport | null | undefined) {
@@ -34,7 +35,7 @@ export function labelForDevice(device: DeviceReport) {
   return [name, device.metadata?.serial || device.serial].filter(Boolean).join(" · ");
 }
 
-export function idleSessionStatus(state: SessionState = "idle", error?: RuntimeErrorEnvelope | null): SessionStatus {
+export function idleSessionStatus(state: SessionState = "idle", error?: Failure | null): SessionStatus {
   const status: SessionStatus = { state };
   if (error) status.error = error;
   return status;
@@ -52,7 +53,7 @@ export function sessionMatches(snapshot: SessionSnapshot, selector: string) {
 export function statusFromSession(
   snapshot: SessionSnapshot,
   stateOverride?: SessionState,
-  error?: RuntimeErrorEnvelope | null,
+  error?: Failure | null,
 ): SessionStatus {
   const status: SessionStatus = {
     sessionId: snapshot.id,

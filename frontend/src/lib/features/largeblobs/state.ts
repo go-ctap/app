@@ -1,6 +1,7 @@
 import { writable } from "svelte/store";
 
-import { ErrorCategory, VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
+import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import { DecodeMode } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import type {
   LargeBlobGarbageCollectRequest,
@@ -9,8 +10,8 @@ import type {
   LargeBlobMutationRequest,
   LargeBlobReadEnvelope,
   LargeBlobReadRequest,
-  RuntimeErrorEnvelope,
 } from "../../../../bindings/github.com/go-ctap/kit/service";
+import { isUnsupportedFailure } from "../../failure.js";
 
 import type {
   LargeBlobPayloadEncoding,
@@ -33,7 +34,7 @@ export type LargeBlobsInventoryState = {
   phase: LargeBlobsInventoryPhase;
   lastSuccessfulEnvelope: LargeBlobListEnvelope | null;
   responseEnvelope: LargeBlobListEnvelope | null;
-  runtimeError: RuntimeErrorEnvelope | null;
+  runtimeError: Failure | null;
   lastSuccessfulAt: string | null;
 };
 
@@ -64,7 +65,7 @@ export type LargeBlobReadState =
       credentialIDHex: string;
       request: LargeBlobReadRequest | null;
       responseEnvelope: LargeBlobReadEnvelope | null;
-      runtimeError: RuntimeErrorEnvelope | null;
+      runtimeError: Failure | null;
       failureReason: LargeBlobReadFailureReason;
     };
 
@@ -96,7 +97,7 @@ type WriteMutationError = WriteMutationBase & {
   previewRequest: LargeBlobMutationRequest | null;
   previewEnvelope: LargeBlobMutationEnvelope | null;
   responseEnvelope: LargeBlobMutationEnvelope | null;
-  runtimeError: RuntimeErrorEnvelope | null;
+  runtimeError: Failure | null;
   failureReason: LargeBlobMutationFailureReason;
   validationError: LargeBlobPayloadValidationError | null;
 };
@@ -107,7 +108,7 @@ type DeleteMutationError = DeleteMutationBase & {
   previewRequest: LargeBlobMutationRequest | null;
   previewEnvelope: LargeBlobMutationEnvelope | null;
   responseEnvelope: LargeBlobMutationEnvelope | null;
-  runtimeError: RuntimeErrorEnvelope | null;
+  runtimeError: Failure | null;
   failureReason: LargeBlobMutationFailureReason;
 };
 
@@ -117,7 +118,7 @@ type CleanupMutationError = CleanupMutationBase & {
   previewRequest: LargeBlobGarbageCollectRequest | null;
   previewEnvelope: LargeBlobMutationEnvelope | null;
   responseEnvelope: LargeBlobMutationEnvelope | null;
-  runtimeError: RuntimeErrorEnvelope | null;
+  runtimeError: Failure | null;
   failureReason: LargeBlobMutationFailureReason;
 };
 
@@ -215,13 +216,13 @@ export function completeLargeBlobsInventoryLoad(envelope: LargeBlobListEnvelope,
 export function failLargeBlobsInventoryLoadWithResponse(envelope: LargeBlobListEnvelope) {
   largeBlobsInventoryState.update((current) => ({
     ...current,
-    phase: envelope.error?.category === ErrorCategory.ErrorUnsupported ? "unsupported" : "error",
+    phase: isUnsupportedFailure(envelope.error) ? "unsupported" : "error",
     responseEnvelope: envelope,
     runtimeError: null,
   }));
 }
 
-export function failLargeBlobsInventoryLoadAtRuntime(error: RuntimeErrorEnvelope) {
+export function failLargeBlobsInventoryLoadAtRuntime(error: Failure) {
   largeBlobsInventoryState.update((current) => ({
     ...current,
     phase: "error",

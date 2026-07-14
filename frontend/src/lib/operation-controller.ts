@@ -5,7 +5,7 @@ import { api } from "./api.js";
 import { pendingInteraction } from "./features/interaction/state.js";
 import { selectedDevice, sessionStatus } from "./features/session/state.js";
 import { statusBar, type ActiveOperation } from "./features/workbench/state.js";
-import { runtimeErrorFrom } from "./runtime-error.js";
+import { failureMessage, runtimeFailureFrom } from "./failure.js";
 import {
   finishOperation,
   setStatusOperation,
@@ -53,7 +53,7 @@ export async function cancelActiveOperation(): Promise<CancelOperationResult> {
     });
     return "already-finished";
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     const stillActive = patchCurrentOperation(operationId, {
       cancelPending: false,
       cancelError: runtimeError,
@@ -62,7 +62,7 @@ export async function cancelActiveOperation(): Promise<CancelOperationResult> {
       setStatusOutcome({
         tone: "error",
         title: m.operation_cancel_failed(),
-        message: runtimeError.message,
+        message: failureMessage(runtimeError),
       });
     }
     return "failed";

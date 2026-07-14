@@ -1,4 +1,3 @@
-import { ErrorCategory, type ErrorCategory as ErrorCategoryValue } from "../../bindings/github.com/go-ctap/kit/model";
 import {
   BlobState,
   LargeBlobKeyState,
@@ -18,13 +17,8 @@ import type {
 } from "./features/largeblobs/state.js";
 import { largeBlobsInventoryIsStale } from "./features/largeblobs/state.js";
 import { deviceName } from "./format.js";
+import { failureMessage, isCanceledFailure, isRetryableFailure } from "./failure.js";
 import type { SessionStatus } from "./session-model.js";
-
-const RETRYABLE_MUTATION_CATEGORIES = new Set<ErrorCategoryValue>([
-  ErrorCategory.ErrorTransportFailure,
-  ErrorCategory.ErrorTimeout,
-  ErrorCategory.ErrorBusy,
-]);
 
 export type LargeBlobCredentialRow = {
   id: string;
@@ -59,7 +53,7 @@ export type LargeBlobsPresentation = ReturnType<typeof buildLargeBlobsPresentati
 export function canRetryLargeBlobMutation(mutation: LargeBlobMutationState, session: SessionStatus) {
   if (mutation.phase !== "error" || session.state !== "ready" || !session.sessionId) return false;
   const error = mutation.runtimeError ?? mutation.responseEnvelope?.error;
-  return Boolean(error?.category && RETRYABLE_MUTATION_CATEGORIES.has(error.category));
+  return isRetryableFailure(error);
 }
 
 function displayValue(value: string | null | undefined) {
@@ -150,13 +144,13 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
     loading,
     stale,
     lastSuccessfulAt: input.inventoryState.lastSuccessfulAt,
-    failureMessage: input.inventoryState.runtimeError?.message
-      ?? input.inventoryState.responseEnvelope?.error?.message
+    failureMessage: failureMessage(input.inventoryState.runtimeError)
+      ?? failureMessage(input.inventoryState.responseEnvelope?.error)
       ?? (input.inventoryState.phase === "error" && input.inventoryState.responseEnvelope
         ? m.operation_missing_result()
         : null),
-    canceled: input.inventoryState.runtimeError?.category === ErrorCategory.ErrorCanceled
-      || input.inventoryState.responseEnvelope?.error?.category === ErrorCategory.ErrorCanceled,
+    canceled: isCanceledFailure(input.inventoryState.runtimeError)
+      || isCanceledFailure(input.inventoryState.responseEnvelope?.error),
     unsupported: report ? !report.support.largeBlobs : input.inventoryState.phase === "unsupported",
     reloadDisabled: loading || input.sessionBusy,
     actionsBlocked,

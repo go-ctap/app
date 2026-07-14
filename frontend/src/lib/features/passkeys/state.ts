@@ -1,14 +1,15 @@
 import { writable } from "svelte/store";
 
-import { ErrorCategory, VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
+import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   CredentialDeleteEnvelope,
   CredentialDeleteRequest,
   CredentialUpdateEnvelope,
   CredentialUpdateRequest,
   CredentialsEnvelope,
-  RuntimeErrorEnvelope,
 } from "../../../../bindings/github.com/go-ctap/kit/service";
+import { isUnsupportedFailure } from "../../failure.js";
 
 export type PasskeysInventoryPhase = "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";
 
@@ -21,7 +22,7 @@ export type PasskeysInventoryState = {
   phase: PasskeysInventoryPhase;
   lastSuccessfulEnvelope: CredentialsEnvelope | null;
   responseEnvelope: CredentialsEnvelope | null;
-  runtimeError: RuntimeErrorEnvelope | null;
+  runtimeError: Failure | null;
   lastSuccessfulAt: string | null;
 };
 
@@ -87,7 +88,7 @@ export type PasskeysMutationState =
       previewRequest: CredentialUpdateRequest | null;
       previewEnvelope: CredentialUpdateEnvelope | null;
       responseEnvelope: CredentialUpdateEnvelope | null;
-      runtimeError: RuntimeErrorEnvelope | null;
+      runtimeError: Failure | null;
       failureReason: PasskeysMutationFailureReason;
       validationError: CredentialUpdateValidationError | null;
     })
@@ -111,7 +112,7 @@ export type PasskeysMutationState =
       previewRequest: CredentialDeleteRequest | null;
       previewEnvelope: CredentialDeleteEnvelope | null;
       responseEnvelope: CredentialDeleteEnvelope | null;
-      runtimeError: RuntimeErrorEnvelope | null;
+      runtimeError: Failure | null;
       failureReason: PasskeysMutationFailureReason;
     });
 
@@ -155,13 +156,13 @@ export function completePasskeysInventoryLoad(envelope: CredentialsEnvelope, com
 export function failPasskeysInventoryLoadWithResponse(envelope: CredentialsEnvelope) {
   passkeysInventoryState.update((current) => ({
     ...current,
-    phase: envelope.error?.category === ErrorCategory.ErrorUnsupported ? "unsupported" : "error",
+    phase: isUnsupportedFailure(envelope.error) ? "unsupported" : "error",
     responseEnvelope: envelope,
     runtimeError: null,
   }));
 }
 
-export function failPasskeysInventoryLoadAtRuntime(error: RuntimeErrorEnvelope) {
+export function failPasskeysInventoryLoadAtRuntime(error: Failure) {
   passkeysInventoryState.update((current) => ({
     ...current,
     phase: "error",

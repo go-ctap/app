@@ -1,4 +1,3 @@
-import { ErrorCategory, type ErrorCategory as ErrorCategoryValue } from "../../bindings/github.com/go-ctap/kit/model";
 import type { CredentialGroup, CredentialRecord, InventoryReport } from "../../bindings/github.com/go-ctap/kit/model/credentials";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 
@@ -7,13 +6,8 @@ import { credentialsReport } from "./ctapkit-results.js";
 import type { PasskeysInventoryState, PasskeysMutationState, PasskeysStatusFilter } from "./features/passkeys/state.js";
 import { passkeysInventoryIsStale } from "./features/passkeys/state.js";
 import { deviceName } from "./format.js";
+import { failureMessage, isCanceledFailure, isRetryableFailure } from "./failure.js";
 import type { SessionStatus } from "./session-model.js";
-
-const RETRYABLE_MUTATION_CATEGORIES = new Set<ErrorCategoryValue>([
-  ErrorCategory.ErrorTransportFailure,
-  ErrorCategory.ErrorTimeout,
-  ErrorCategory.ErrorBusy,
-]);
 
 export type PasskeyCredentialTarget = {
   relyingParty: CredentialGroup;
@@ -66,7 +60,7 @@ export type PasskeysPresentation = ReturnType<typeof buildPasskeysPresentation>;
 export function canRetryPasskeysMutation(mutation: PasskeysMutationState, session: SessionStatus) {
   if (mutation.phase !== "error" || session.state !== "ready" || !session.sessionId) return false;
   const error = mutation.runtimeError ?? mutation.responseEnvelope?.error;
-  return Boolean(error?.category && RETRYABLE_MUTATION_CATEGORIES.has(error.category));
+  return isRetryableFailure(error);
 }
 
 function displayValue(value: string | number | boolean | null | undefined) {
@@ -210,11 +204,11 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
     loading,
     stale,
     lastSuccessfulAt: input.inventoryState.lastSuccessfulAt,
-    failureMessage: input.inventoryState.runtimeError?.message
-      ?? input.inventoryState.responseEnvelope?.error?.message
+    failureMessage: failureMessage(input.inventoryState.runtimeError)
+      ?? failureMessage(input.inventoryState.responseEnvelope?.error)
       ?? (input.inventoryState.phase === "error" && input.inventoryState.responseEnvelope ? m.operation_missing_result() : null),
-    canceled: input.inventoryState.runtimeError?.category === ErrorCategory.ErrorCanceled
-      || input.inventoryState.responseEnvelope?.error?.category === ErrorCategory.ErrorCanceled,
+    canceled: isCanceledFailure(input.inventoryState.runtimeError)
+      || isCanceledFailure(input.inventoryState.responseEnvelope?.error),
     unsupported: report
       ? !report.support.credentialManagement
       : input.inventoryState.phase === "unsupported",

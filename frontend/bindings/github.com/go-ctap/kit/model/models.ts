@@ -301,23 +301,6 @@ export class CredentialsOutput {
     }
 }
 
-export enum ErrorCategory {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    ErrorUnsupported = "unsupported",
-    ErrorPermissionDenied = "permission-denied",
-    ErrorTransportFailure = "transport-failure",
-    ErrorTimeout = "timeout",
-    ErrorBusy = "busy",
-    ErrorInvalidSession = "invalid-session",
-    ErrorInvalidOperation = "invalid-operation",
-    ErrorInvalidState = "invalid-state",
-    ErrorCanceled = "canceled",
-};
-
 export class GetAssertionOutput {
     "result": webauthn$0.GetAssertionResult;
 

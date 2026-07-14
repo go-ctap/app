@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { toast } from "svelte-sonner";
 
-import { ErrorCategory, type ErrorCategory as ErrorCategoryValue } from "../../bindings/github.com/go-ctap/kit/model";
+import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { m } from "../paraglide/messages.js";
 import type { OperationEnvelope } from "./api.js";
 import { pendingInteraction } from "./features/interaction/state.js";
@@ -28,12 +28,7 @@ import {
 } from "./features/workbench/state.js";
 import { currentSessionId } from "./session-boundary.js";
 import type { Discovery } from "./session-model.js";
-
-const RETRYABLE_ERROR_CATEGORIES = new Set<ErrorCategoryValue>([
-  ErrorCategory.ErrorTransportFailure,
-  ErrorCategory.ErrorTimeout,
-  ErrorCategory.ErrorBusy,
-]);
+import { failureMessage, isCanceledFailure, isRetryableFailure } from "./failure.js";
 
 export function applyDiscovery(response: Discovery): boolean {
   const nextSelector = response.selectedSelector || "";
@@ -113,13 +108,13 @@ export function summarizeEnvelope(label: string, envelope: OperationEnvelope | n
   finishOperation();
   const error = envelope.error;
   if (error) {
-    const canceled = error.category === ErrorCategory.ErrorCanceled;
+    const canceled = isCanceledFailure(error);
     const title = canceled ? m.operation_canceled_with_label({ label }) : m.operation_failed_with_label({ label });
     const outcome: StatusBarOutcome = {
       tone: canceled ? "info" : "error",
       title,
-      message: error.message,
-      retry: !canceled && error.category && RETRYABLE_ERROR_CATEGORIES.has(error.category) ? retry : undefined,
+      message: failureMessage(error),
+      retry: !canceled && isRetryableFailure(error) ? retry : undefined,
     };
     setStatusOutcome(outcome);
     notifyOperationFailure(outcome);
@@ -134,17 +129,34 @@ export function summarizeEnvelope(label: string, envelope: OperationEnvelope | n
 
 export function summarizeOperationFailure(
   label: string,
-  error: { message: string; category?: ErrorCategoryValue },
+  error: Failure,
+  retry?: () => void | Promise<void>,
+) {
+  summarizeOperationFailureWithMessage(label, error, failureMessage(error), retry);
+}
+
+export function summarizeOperationContractFailure(
+  label: string,
+  error: Failure,
+  retry?: () => void | Promise<void>,
+) {
+  summarizeOperationFailureWithMessage(label, error, m.failure_result_type_mismatch(), retry);
+}
+
+function summarizeOperationFailureWithMessage(
+  label: string,
+  error: Failure,
+  message: string,
   retry?: () => void | Promise<void>,
 ) {
   finishOperation();
-  const canceled = error.category === ErrorCategory.ErrorCanceled;
+  const canceled = isCanceledFailure(error);
   const title = canceled ? m.operation_canceled_with_label({ label }) : m.operation_failed_with_label({ label });
   const outcome: StatusBarOutcome = {
     tone: canceled ? "info" : "error",
     title,
-    message: error.message,
-    retry: !canceled && error.category && RETRYABLE_ERROR_CATEGORIES.has(error.category) ? retry : undefined,
+    message,
+    retry: !canceled && isRetryableFailure(error) ? retry : undefined,
   };
   setStatusOutcome(outcome);
   notifyOperationFailure(outcome);

@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { LargeBlobListEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { setAppLocale } from "./i18n";
+import { failureForCode } from "./failure";
 import {
   emptyLargeBlobsInventoryState,
   type LargeBlobsInventoryState,
@@ -133,7 +135,7 @@ describe("large blob presentation", () => {
         operationId: "failed-list",
         sessionId: "session-1",
         kind: OperationKind.OperationListLargeBlobs,
-        error: { category: "transport-failure", message: "offline" },
+        error: failureForCode(Code.CodeTransportFailure),
       } as LargeBlobListEnvelope,
     };
     const presentation = buildLargeBlobsPresentation({

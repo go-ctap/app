@@ -6,6 +6,7 @@ import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OperationKind, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   CredentialDeleteEnvelope,
   CredentialUpdateEnvelope,
@@ -20,6 +21,7 @@ import {
   passkeysVerificationFlow as mutablePasskeysVerificationFlow,
 } from "$lib/features/passkeys/state";
 import { setAppLocale } from "$lib/i18n";
+import { failureForCode } from "$lib/failure";
 import { resetAppStateForTest, seedPasskeysEnvelopeForTest, seedSelectionForTest } from "$lib/store-test-utils";
 
 import Passkeys from "./Passkeys.svelte";
@@ -423,7 +425,7 @@ describe("Passkeys", () => {
       sessionId: "session-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
-    failPasskeysInventoryLoadAtRuntime({ message: "refresh failed" });
+    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeTransportFailure));
 
     render(Passkeys);
 
@@ -566,7 +568,7 @@ describe("Passkeys", () => {
       operationId: "delete-preview-1",
       sessionId: "session-1",
       kind: OperationKind.OperationDeleteCredential,
-      error: { category: "transport-failure", message: "preview failed" },
+      error: failureForCode(Code.CodeTransportFailure),
     } as CredentialDeleteEnvelope;
     mutablePasskeysMutation.set({
       kind: "delete",
@@ -584,6 +586,6 @@ describe("Passkeys", () => {
 
     expect(screen.queryByRole("alertdialog", { name: "Confirm delete" })).not.toBeInTheDocument();
     expect(screen.getByRole("dialog", { name: "Credential delete preview" })).toBeInTheDocument();
-    expect(screen.getByText("preview failed")).toBeInTheDocument();
+    expect(screen.getByText("Communication with the authenticator failed.")).toBeInTheDocument();
   });
 });

@@ -2,12 +2,12 @@ import { writable } from "svelte/store";
 
 import type { AuthenticatorTransport } from "../../../../bindings/github.com/go-ctap/ctap/credential";
 import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
+import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   GetAssertionEnvelope,
   GetAssertionRequest,
   MakeCredentialEnvelope,
   MakeCredentialRequest,
-  RuntimeErrorEnvelope,
 } from "../../../../bindings/github.com/go-ctap/kit/service";
 
 import {
@@ -108,7 +108,7 @@ export type LabMakeStep =
       previewEnvelope: MakeCredentialEnvelope | null;
       request: MakeCredentialRequest | null;
       responseEnvelope: MakeCredentialEnvelope | null;
-      runtimeError: RuntimeErrorEnvelope | null;
+      runtimeError: Failure | null;
       failureReason: LabMakeFailureReason;
       validation: LabValidationResult;
     };
@@ -130,7 +130,7 @@ export type LabGetStep =
       phase: "error";
       request: GetAssertionRequest | null;
       responseEnvelope: GetAssertionEnvelope | null;
-      runtimeError: RuntimeErrorEnvelope | null;
+      runtimeError: Failure | null;
       failureReason: LabGetFailureReason;
       validation: LabValidationResult;
     };

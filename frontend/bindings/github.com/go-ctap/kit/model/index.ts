@@ -11,7 +11,6 @@ export {
     CredentialDeleteOutput,
     CredentialUpdateOutput,
     CredentialsOutput,
-    ErrorCategory,
     GetAssertionOutput,
     InspectInfo,
     InspectOutput,

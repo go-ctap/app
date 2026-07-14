@@ -1,6 +1,7 @@
 import { get } from "svelte/store";
 
-import { ErrorCategory, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import {
   DecodeMode,
   LargeBlobKeyState,
@@ -48,9 +49,14 @@ import { selectedSelector, sessionStatus } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { parseLargeBlobPayload, type LargeBlobPayloadEncoding } from "./largeblobs-payload.js";
 import { canRetryLargeBlobMutation, findLargeBlobCredential } from "./largeblobs-presentation.js";
-import { runtimeErrorFrom } from "./runtime-error.js";
+import { failureForCode, runtimeFailureFrom } from "./failure.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
-import { beginOperation, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
+import {
+  beginOperation,
+  summarizeEnvelope,
+  summarizeOperationContractFailure,
+  summarizeOperationFailure,
+} from "./workbench-state.js";
 
 export type LoadLargeBlobsOptions = { refresh?: boolean };
 
@@ -60,11 +66,8 @@ function retryAction(action: () => Promise<unknown>) {
   };
 }
 
-function missingOperationOutput(kind: "preview" | "result") {
-  return {
-    category: ErrorCategory.ErrorInvalidState,
-    message: kind === "preview" ? m.operation_missing_preview() : m.operation_missing_result(),
-  };
+function missingOperationOutput() {
+  return failureForCode(Code.CodeInternalError);
 }
 
 function largeBlobsAutoLoadKey() {
@@ -127,12 +130,12 @@ export async function loadLargeBlobs(options: LoadLargeBlobsOptions = {}) {
     if (envelope.error || report) {
       summarizeEnvelope(m.large_blob_list(), envelope, retryAction(() => loadLargeBlobs({ refresh })));
     } else {
-      summarizeOperationFailure(m.large_blob_list(), missingOperationOutput("result"));
+      summarizeOperationContractFailure(m.large_blob_list(), missingOperationOutput());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(report);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     failLargeBlobsInventoryLoadAtRuntime(runtimeError);
     summarizeOperationFailure(m.large_blob_list(), runtimeError, retryAction(() => loadLargeBlobs({ refresh })));
     applyInvalidSessionError(runtimeError);
@@ -210,7 +213,7 @@ function readError(
   credentialIDHex: string,
   request: LargeBlobReadRequest | null,
   responseEnvelope: LargeBlobReadEnvelope | null,
-  runtimeError: ReturnType<typeof runtimeErrorFrom> | null,
+  runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
   failureReason: "response-error" | "runtime-error" | "missing-result",
 ) {
   largeBlobsReadState.set({
@@ -236,7 +239,7 @@ export async function readLargeBlob(credentialIDHex = get(largeBlobsSelectedCred
       get(largeBlobsDecodeMode),
     );
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     readError(credentialIDHex, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_read(), runtimeError);
     applyInvalidSessionError(runtimeError);
@@ -259,12 +262,12 @@ export async function readLargeBlob(credentialIDHex = get(largeBlobsSelectedCred
     if (envelope.error || report) {
       summarizeEnvelope(m.large_blob_read(), envelope, retryAction(() => readLargeBlob(credentialIDHex)));
     } else {
-      summarizeOperationFailure(m.large_blob_read(), missingOperationOutput("result"));
+      summarizeOperationContractFailure(m.large_blob_read(), missingOperationOutput());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(report);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     readError(credentialIDHex, request, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_read(), runtimeError, retryAction(() => readLargeBlob(credentialIDHex)));
     applyInvalidSessionError(runtimeError);
@@ -360,7 +363,7 @@ function writeError(
   previewRequest: LargeBlobMutationRequest | null,
   previewEnvelope: LargeBlobMutationEnvelope | null,
   responseEnvelope: LargeBlobMutationEnvelope | null,
-  runtimeError: ReturnType<typeof runtimeErrorFrom> | null,
+  runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
   failureReason: LargeBlobMutationFailureReason,
 ) {
   largeBlobsMutation.set({
@@ -405,7 +408,7 @@ export async function previewLargeBlobWrite(): Promise<boolean> {
       dryRun: true,
     };
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     writeError(current, "previewing", null, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_write(), runtimeError);
     applyInvalidSessionError(runtimeError);
@@ -432,12 +435,12 @@ export async function previewLargeBlobWrite(): Promise<boolean> {
     if (envelope.error || preview) {
       summarizeEnvelope(m.large_blob_write(), envelope, retryAction(previewLargeBlobWrite));
     } else {
-      summarizeOperationFailure(m.large_blob_write(), missingOperationOutput("preview"));
+      summarizeOperationContractFailure(m.large_blob_write(), missingOperationOutput());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(preview);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     writeError(current, "previewing", request, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_write(), runtimeError, retryAction(previewLargeBlobWrite));
     applyInvalidSessionError(runtimeError);
@@ -451,7 +454,7 @@ function deleteError(
   previewRequest: LargeBlobMutationRequest | null,
   previewEnvelope: LargeBlobMutationEnvelope | null,
   responseEnvelope: LargeBlobMutationEnvelope | null,
-  runtimeError: ReturnType<typeof runtimeErrorFrom> | null,
+  runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
   failureReason: LargeBlobMutationFailureReason,
 ) {
   largeBlobsMutation.set({
@@ -477,7 +480,7 @@ export async function beginLargeBlobDelete(credentialIDHex = get(largeBlobsSelec
       credentialIDHex,
     );
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     deleteError(credentialIDHex, "previewing", null, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_delete(), runtimeError);
     applyInvalidSessionError(runtimeError);
@@ -507,12 +510,12 @@ export async function beginLargeBlobDelete(credentialIDHex = get(largeBlobsSelec
     if (envelope.error || preview) {
       summarizeEnvelope(m.large_blob_delete(), envelope, retryAction(() => beginLargeBlobDelete(credentialIDHex)));
     } else {
-      summarizeOperationFailure(m.large_blob_delete(), missingOperationOutput("preview"));
+      summarizeOperationContractFailure(m.large_blob_delete(), missingOperationOutput());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(preview);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     deleteError(credentialIDHex, "previewing", request, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_delete(), runtimeError, retryAction(() => beginLargeBlobDelete(credentialIDHex)));
     applyInvalidSessionError(runtimeError);
@@ -525,7 +528,7 @@ function cleanupError(
   previewRequest: LargeBlobGarbageCollectRequest | null,
   previewEnvelope: LargeBlobMutationEnvelope | null,
   responseEnvelope: LargeBlobMutationEnvelope | null,
-  runtimeError: ReturnType<typeof runtimeErrorFrom> | null,
+  runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
   failureReason: LargeBlobMutationFailureReason,
 ) {
   largeBlobsMutation.set({
@@ -546,7 +549,7 @@ export async function beginLargeBlobCleanup(): Promise<boolean> {
   try {
     request = buildLargeBlobCleanupPreviewRequest(selectedSessionId(), get(largeBlobsVerificationFlow));
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     cleanupError("previewing", null, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_cleanup_preview(), runtimeError);
     applyInvalidSessionError(runtimeError);
@@ -573,12 +576,12 @@ export async function beginLargeBlobCleanup(): Promise<boolean> {
     if (envelope.error || preview) {
       summarizeEnvelope(m.large_blob_cleanup_preview(), envelope, retryAction(beginLargeBlobCleanup));
     } else {
-      summarizeOperationFailure(m.large_blob_cleanup_preview(), missingOperationOutput("preview"));
+      summarizeOperationContractFailure(m.large_blob_cleanup_preview(), missingOperationOutput());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(preview);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     cleanupError("previewing", request, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_cleanup_preview(), runtimeError, retryAction(beginLargeBlobCleanup));
     applyInvalidSessionError(runtimeError);
@@ -614,14 +617,14 @@ export async function confirmLargeBlobWrite(): Promise<boolean> {
     if (envelope.error || result) {
       summarizeEnvelope(m.large_blob_write(), envelope, retryAction(retryLargeBlobMutation));
     } else {
-      summarizeOperationFailure(m.large_blob_write(), missingOperationOutput("result"));
+      summarizeOperationContractFailure(m.large_blob_write(), missingOperationOutput());
     }
     applyInvalidSessionError(envelope.error);
     if (envelope.error || !result) return false;
     await refreshAfterMutation();
     return true;
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     writeError(current, "executing", current.previewRequest, current.previewEnvelope, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_write(), runtimeError, retryAction(retryLargeBlobMutation));
     applyInvalidSessionError(runtimeError);
@@ -651,14 +654,14 @@ export async function confirmLargeBlobDelete(): Promise<boolean> {
     if (envelope.error || result) {
       summarizeEnvelope(m.large_blob_delete(), envelope, retryAction(retryLargeBlobMutation));
     } else {
-      summarizeOperationFailure(m.large_blob_delete(), missingOperationOutput("result"));
+      summarizeOperationContractFailure(m.large_blob_delete(), missingOperationOutput());
     }
     applyInvalidSessionError(envelope.error);
     if (envelope.error || !result) return false;
     await refreshAfterMutation();
     return true;
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     deleteError(current.credentialIDHex, "executing", current.previewRequest, current.previewEnvelope, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_delete(), runtimeError, retryAction(retryLargeBlobMutation));
     applyInvalidSessionError(runtimeError);
@@ -688,14 +691,14 @@ export async function confirmLargeBlobCleanup(): Promise<boolean> {
     if (envelope.error || result) {
       summarizeEnvelope(m.large_blob_cleanup(), envelope, retryAction(retryLargeBlobMutation));
     } else {
-      summarizeOperationFailure(m.large_blob_cleanup(), missingOperationOutput("result"));
+      summarizeOperationContractFailure(m.large_blob_cleanup(), missingOperationOutput());
     }
     applyInvalidSessionError(envelope.error);
     if (envelope.error || !result) return false;
     await refreshAfterMutation();
     return true;
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     cleanupError("executing", current.previewRequest, current.previewEnvelope, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_cleanup(), runtimeError, retryAction(retryLargeBlobMutation));
     applyInvalidSessionError(runtimeError);

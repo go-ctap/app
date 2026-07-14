@@ -3,10 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  ErrorCategory,
-  OperationKind,
-} from "../../bindings/github.com/go-ctap/kit/model";
+import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import {
   BlobState,
   DecodeMode,
@@ -30,6 +28,7 @@ import {
   largeBlobsSelectedCredentialID as mutableLargeBlobsSelectedCredentialID,
 } from "$lib/features/largeblobs/state";
 import { setAppLocale } from "$lib/i18n";
+import { failureForCode } from "$lib/failure";
 import {
   resetAppStateForTest,
   seedLargeBlobsEnvelopeForTest,
@@ -276,10 +275,7 @@ describe("LargeBlobs", () => {
   it("keeps stale rows inspectable while blocking read and mutation actions", async () => {
     const user = userEvent.setup();
     const envelope = listEnvelope();
-    seedLargeBlobsEnvelopeForTest(envelope, {
-      category: ErrorCategory.ErrorTransportFailure,
-      message: "refresh failed",
-    });
+    seedLargeBlobsEnvelopeForTest(envelope, failureForCode(Code.CodeTransportFailure));
 
     render(LargeBlobs);
 
@@ -424,7 +420,7 @@ describe("LargeBlobs", () => {
         requested: true,
         mode: DecodeMode.DecodeModeUTF8,
         success: false,
-        failure: "payload is not valid UTF-8",
+        failure: failureForCode(Code.CodeLargeBlobUTF8Invalid),
       },
     });
     seedLargeBlobsEnvelopeForTest(listEnvelope());
@@ -549,7 +545,7 @@ describe("LargeBlobs", () => {
     });
     const envelope = {
       ...mutationEnvelope(preview),
-      error: { category: ErrorCategory.ErrorInvalidState, message: "capacity exceeded" },
+      error: failureForCode(Code.CodeLargeBlobArrayTooLarge),
     } as LargeBlobMutationEnvelope;
     mutableLargeBlobsMutation.set({
       kind: "write",

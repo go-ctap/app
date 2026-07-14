@@ -48,7 +48,6 @@ export {
     PINSetRequest,
     ResetFactoryEnvelope,
     ResetFactoryRequest,
-    RuntimeErrorEnvelope,
     SessionSnapshot
 } from "./models.js";
 

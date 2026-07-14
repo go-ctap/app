@@ -11,6 +11,7 @@ import {
   type BioSensorReport,
 } from "../../bindings/github.com/go-ctap/kit/model/config";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { MutationOperation } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { PreviewMode } from "../../bindings/github.com/go-ctap/kit/model/safety";
@@ -33,6 +34,8 @@ import type {
   ResetFactoryEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+
+import { failureForCode } from "./failure";
 
 import {
   authenticatorConfigPreview,
@@ -128,8 +131,8 @@ describe("ctapkit result extractors", () => {
     expect(bioListReport(list)).toBe(list.result!.report);
     expect(bioListReport(status)).toBeNull();
 
-    status.error = { message: "status failed" };
-    list.error = { message: "list failed" };
+    status.error = failureForCode(Code.CodeInternalError);
+    list.error = failureForCode(Code.CodeInternalError);
     expect(configStatusReport(status)).toBeNull();
     expect(bioListReport(list)).toBeNull();
   });
@@ -137,7 +140,7 @@ describe("ctapkit result extractors", () => {
   it("uses generated operation and mode fields to recognize meaningful security previews", () => {
     const pin = {
       kind: OperationKind.OperationChangePIN,
-      error: { message: "confirmation required" },
+      error: failureForCode(Code.CodeConfirmationRequired),
       result: {
         preview: { operation: PINMutationOperation.PINMutationChange },
         result: null,
@@ -145,7 +148,7 @@ describe("ctapkit result extractors", () => {
     } as unknown as PINEnvelope;
     const authenticatorConfig = {
       kind: OperationKind.OperationSetAlwaysUV,
-      error: { message: "confirmation required" },
+      error: failureForCode(Code.CodeConfirmationRequired),
       result: {
         preview: { operation: AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV },
         result: null,
@@ -153,7 +156,7 @@ describe("ctapkit result extractors", () => {
     } as unknown as AuthenticatorConfigEnvelope;
     const enroll = {
       kind: OperationKind.OperationBioEnroll,
-      error: { message: "confirmation required" },
+      error: failureForCode(Code.CodeConfirmationRequired),
       result: {
         preview: { mode: PreviewMode.PreviewModeDryRun },
         result: null,
@@ -161,7 +164,7 @@ describe("ctapkit result extractors", () => {
     } as unknown as BioEnrollEnvelope;
     const bioMutation = {
       kind: OperationKind.OperationBioRename,
-      error: { message: "confirmation required" },
+      error: failureForCode(Code.CodeConfirmationRequired),
       result: {
         preview: { operation: BioMutationOperation.BioMutationRename },
         result: null,
@@ -169,7 +172,7 @@ describe("ctapkit result extractors", () => {
     } as unknown as BioMutationEnvelope;
     const reset = {
       kind: OperationKind.OperationResetFactory,
-      error: { message: "confirmation required" },
+      error: failureForCode(Code.CodeConfirmationRequired),
       result: {
         preview: { mode: PreviewMode.PreviewModeDryRun },
         result: null,
@@ -250,11 +253,11 @@ describe("ctapkit result extractors", () => {
     expect(bioMutationResult(bioMutation)).toBe(bioMutation.result!.result);
     expect(resetFactoryResult(reset)).toBe(reset.result!.result);
 
-    pin.error = { message: "failed" };
-    authenticatorConfig.error = { message: "failed" };
-    enroll.error = { message: "capture timed out" };
-    bioMutation.error = { message: "failed" };
-    reset.error = { message: "reset may not have completed" };
+    pin.error = failureForCode(Code.CodeInternalError);
+    authenticatorConfig.error = failureForCode(Code.CodeInternalError);
+    enroll.error = failureForCode(Code.CodeBioInteractionTimeout);
+    bioMutation.error = failureForCode(Code.CodeInternalError);
+    reset.error = failureForCode(Code.CodeResetTouchTimeout);
 
     expect(pinMutationResult(pin)).toBeNull();
     expect(authenticatorConfigResult(authenticatorConfig)).toBeNull();
@@ -294,8 +297,8 @@ describe("ctapkit result extractors", () => {
     expect(largeBlobReadReport(read)).toBe(read.result!.report);
     expect(largeBlobReadReport(list)).toBeNull();
 
-    list.error = { message: "failed" };
-    read.error = { message: "failed" };
+    list.error = failureForCode(Code.CodeInternalError);
+    read.error = failureForCode(Code.CodeInternalError);
     expect(largeBlobListReport(list)).toBeNull();
     expect(largeBlobReadReport(read)).toBeNull();
   });
@@ -305,7 +308,7 @@ describe("ctapkit result extractors", () => {
       operationId: "op-capacity",
       sessionId: "session-1",
       kind: OperationKind.OperationWriteLargeBlob,
-      error: { category: "invalid-state", message: "array is too large" },
+      error: failureForCode(Code.CodeLargeBlobArrayTooLarge),
       result: {
         preview: {
           operation: MutationOperation.MutationCreate,
@@ -335,7 +338,7 @@ describe("ctapkit result extractors", () => {
     } as LargeBlobMutationEnvelope;
 
     expect(largeBlobMutationResult(envelope)?.credentialIDHex).toBe("cafe");
-    envelope.error = { message: "write may not have completed" };
+    envelope.error = failureForCode(Code.CodeTransportFailure);
     expect(largeBlobMutationResult(envelope)).toBeNull();
   });
 
@@ -408,7 +411,7 @@ describe("ctapkit result extractors", () => {
       kind: OperationKind.OperationMakeCredential,
     } as MakeCredentialEnvelope)).toBeNull();
 
-    envelope.error = { message: "authenticator rejected the request" };
+    envelope.error = failureForCode(Code.CodeCredentialCreationDenied);
     expect(makeCredentialPreview(envelope)).toBeNull();
     expect(makeCredentialResult(envelope)).toBeNull();
 
@@ -442,7 +445,7 @@ describe("ctapkit result extractors", () => {
       result: { result: null },
     } as unknown as GetAssertionEnvelope)).toBeNull();
 
-    envelope.error = { message: "assertion failed" };
+    envelope.error = failureForCode(Code.CodeAssertionDenied);
     expect(getAssertionResult(envelope)).toBeNull();
   });
 });

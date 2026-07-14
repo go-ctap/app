@@ -1,7 +1,6 @@
 <script lang="ts">
   import { Copy, FilePenLine, Trash2 } from "@lucide/svelte";
 
-  import { ErrorCategory } from "../../../../bindings/github.com/go-ctap/kit/model";
   import {
     BlobState,
     DecodeMode,
@@ -19,6 +18,7 @@
   import { largeBlobReadReport } from "$lib/ctapkit-results";
   import type { LargeBlobMutationState, LargeBlobReadState } from "$lib/features/largeblobs/state";
   import type { LargeBlobCredentialRow } from "$lib/largeblobs-presentation";
+  import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -60,14 +60,14 @@
   let failureMessage = $derived.by(() => {
     if (!readSelected || readState.phase !== "error") return null;
     if (readState.failureReason === "missing-result") return m.operation_missing_result();
-    return readState.runtimeError?.message
-      ?? readState.responseEnvelope?.error?.message
+    return localizeFailure(readState.runtimeError)
+      ?? localizeFailure(readState.responseEnvelope?.error)
       ?? m.operation_failed();
   });
   let failureCanceled = $derived(
     readSelected && readState.phase === "error" && (
-      readState.runtimeError?.category === ErrorCategory.ErrorCanceled
-      || readState.responseEnvelope?.error?.category === ErrorCategory.ErrorCanceled
+      isCanceledFailure(readState.runtimeError)
+      || isCanceledFailure(readState.responseEnvelope?.error)
     ),
   );
   let readKeyAvailable = $derived(
@@ -258,7 +258,7 @@
               {#if report.decode.requested && report.decode.failure}
                 <Alert.Root variant="warning" role="status">
                   <Alert.Title>{m.large_blob_decode_failed()}</Alert.Title>
-                  <Alert.Description>{report.decode.failure}</Alert.Description>
+                  <Alert.Description>{localizeFailure(report.decode.failure)}</Alert.Description>
                 </Alert.Root>
               {/if}
               {#if report.rawHex}

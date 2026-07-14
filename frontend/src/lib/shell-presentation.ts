@@ -3,6 +3,7 @@ import type { InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/se
 
 import { m } from "../paraglide/messages.js";
 import { deviceDetail, deviceName, labelDevice, operationStageLabel, sessionStateLabel } from "./format.js";
+import { failureMessage } from "./failure.js";
 import { selectorFromDevice, type SessionStatus } from "./session-model.js";
 import type { ActiveScreen, StatusBarState } from "./stores.js";
 
@@ -126,7 +127,7 @@ export function buildShellStatusPresentation(input: {
       title: active.cancelRequested ? m.cancel_requested() : active.label || m.operation_running(),
       detail: cancellationPending
         ? m.cancel_requested_message()
-        : active.cancelError?.message
+        : failureMessage(active.cancelError)
           || [operationStageLabel(active.stage), active.sampleStatus?.replaceAll("_", " ")].filter(Boolean).join(" · "),
       busy: true,
       progress: activeProgress(input.statusBar),
@@ -145,7 +146,7 @@ export function buildShellStatusPresentation(input: {
       source: "session",
       tone: error ? "error" : "info",
       title: sessionStateLabel(input.sessionStatus.state),
-      detail: input.sessionStatus.error?.message
+      detail: failureMessage(input.sessionStatus.error)
         || (input.selectedDevice ? deviceName(input.selectedDevice) : m.no_token_selected()),
       busy: !error,
       progress: null,

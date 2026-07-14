@@ -1,13 +1,12 @@
 import { get } from "svelte/store";
 import { toast } from "svelte-sonner";
 
-import { ErrorCategory } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code, type Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import {
   AlwaysUVTarget,
   type StatusReport,
 } from "../../bindings/github.com/go-ctap/kit/model/config";
 import {
-  RuntimeErrorEnvelope,
   type AlwaysUVRequest,
   type AuthenticatorConfigEnvelope,
   type BioEnrollEnvelope,
@@ -66,13 +65,14 @@ import {
 } from "./features/security/state.js";
 import { selectedSelector, sessionStatus } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
-import { runtimeErrorFrom } from "./runtime-error.js";
+import { failureForCode, failureMessage, runtimeFailureFrom } from "./failure.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
 import { rediscoverAfterFactoryReset } from "./session-controller.js";
 import {
   beginOperation,
   setStatusOutcome,
   summarizeEnvelope,
+  summarizeOperationContractFailure,
   summarizeOperationFailure,
 } from "./workbench-state.js";
 
@@ -90,11 +90,8 @@ function retryAction(action: () => Promise<unknown>) {
   };
 }
 
-function missingOperationOutput(kind: "preview" | "result") {
-  return new RuntimeErrorEnvelope({
-    category: ErrorCategory.ErrorInvalidState,
-    message: kind === "preview" ? m.operation_missing_preview() : m.operation_missing_result(),
-  });
+function missingOperationOutput() {
+  return failureForCode(Code.CodeInternalError);
 }
 
 function currentStatusReport(): StatusReport | null {
@@ -105,7 +102,7 @@ function sessionIdForMutation(label: string): string | null {
   try {
     return selectedSessionId();
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     summarizeOperationFailure(label, runtimeError);
     applyInvalidSessionError(runtimeError);
     return null;
@@ -138,9 +135,9 @@ export async function loadSecurityStatus(): Promise<boolean> {
     if (envelope.error) {
       failSecurityStatusLoadWithResponse(envelope);
     } else if (!report) {
-      const missing = missingOperationOutput("result");
+      const missing = missingOperationOutput();
       failSecurityStatusLoadWithContractError(envelope, missing);
-      summarizeOperationFailure(m.security_status_operation(), missing, retryAction(loadSecurityStatus));
+      summarizeOperationContractFailure(m.security_status_operation(), missing, retryAction(loadSecurityStatus));
       applyInvalidSessionError(missing);
       return false;
     } else {
@@ -158,7 +155,7 @@ export async function loadSecurityStatus(): Promise<boolean> {
     }
     return true;
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     failSecurityStatusLoadAtRuntime(runtimeError);
     summarizeOperationFailure(m.security_status_operation(), runtimeError, retryAction(loadSecurityStatus));
     applyInvalidSessionError(runtimeError);
@@ -181,9 +178,9 @@ export async function loadSecurityBioSensor(sessionId = ""): Promise<boolean> {
     if (envelope.error) {
       failSecurityBioSensorLoadWithResponse(envelope);
     } else if (!sensor) {
-      const missing = missingOperationOutput("result");
+      const missing = missingOperationOutput();
       failSecurityBioSensorLoadWithContractError(envelope, missing);
-      summarizeOperationFailure(m.security_bio_sensor_operation(), missing, retryAction(loadSecurityBioSensor));
+      summarizeOperationContractFailure(m.security_bio_sensor_operation(), missing, retryAction(loadSecurityBioSensor));
       applyInvalidSessionError(missing);
       return false;
     } else {
@@ -194,7 +191,7 @@ export async function loadSecurityBioSensor(sessionId = ""): Promise<boolean> {
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(sensor);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     failSecurityBioSensorLoadAtRuntime(runtimeError);
     summarizeOperationFailure(m.security_bio_sensor_operation(), runtimeError, retryAction(loadSecurityBioSensor));
     applyInvalidSessionError(runtimeError);
@@ -218,9 +215,9 @@ export async function loadSecurityEnrollments(): Promise<boolean> {
     if (envelope.error) {
       failSecurityBioListLoadWithResponse(envelope);
     } else if (!list) {
-      const missing = missingOperationOutput("result");
+      const missing = missingOperationOutput();
       failSecurityBioListLoadWithContractError(envelope, missing);
-      summarizeOperationFailure(m.security_bio_list_operation(), missing, retryAction(loadSecurityEnrollments));
+      summarizeOperationContractFailure(m.security_bio_list_operation(), missing, retryAction(loadSecurityEnrollments));
       applyInvalidSessionError(missing);
       return false;
     } else {
@@ -231,7 +228,7 @@ export async function loadSecurityEnrollments(): Promise<boolean> {
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(list);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     failSecurityBioListLoadAtRuntime(runtimeError);
     summarizeOperationFailure(m.security_bio_list_operation(), runtimeError, retryAction(loadSecurityEnrollments));
     applyInvalidSessionError(runtimeError);
@@ -250,7 +247,7 @@ async function runPINOperation(
     if (envelope.error || result) {
       summarizeEnvelope(label, envelope);
     } else {
-      summarizeOperationFailure(label, missingOperationOutput("result"));
+      summarizeOperationContractFailure(label, missingOperationOutput());
     }
     applyInvalidSessionError(envelope.error);
     if (envelope.error || !result) return false;
@@ -259,7 +256,7 @@ async function runPINOperation(
     await loadSecurityStatus();
     return true;
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     summarizeOperationFailure(label, runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
@@ -280,7 +277,7 @@ export async function setAuthenticatorPIN(input: PINSetInput): Promise<boolean> 
     input.newPIN = "";
     return await runPINOperation(label, () => operation);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     summarizeOperationFailure(label, runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
@@ -305,7 +302,7 @@ export async function changeAuthenticatorPIN(input: PINChangeInput): Promise<boo
     input.newPIN = "";
     return await runPINOperation(label, () => operation);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     summarizeOperationFailure(label, runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
@@ -374,7 +371,7 @@ function summarizePreviewEnvelope(
   if (envelope.error || hasPreview) {
     summarizeEnvelope(label, envelope, retryAction(retry));
   } else {
-    summarizeOperationFailure(label, missingOperationOutput("preview"), retryAction(retry));
+    summarizeOperationContractFailure(label, missingOperationOutput(), retryAction(retry));
   }
   applyInvalidSessionError(envelope.error);
 }
@@ -388,7 +385,7 @@ function summarizeExecuteEnvelope(
   if (envelope.error || hasResult) {
     summarizeEnvelope(label, envelope, retryAction(retry));
   } else {
-    summarizeOperationFailure(label, missingOperationOutput("result"), retryAction(retry));
+    summarizeOperationContractFailure(label, missingOperationOutput(), retryAction(retry));
   }
   applyInvalidSessionError(envelope.error);
 }
@@ -454,7 +451,7 @@ export async function beginAlwaysUVChange(target: AlwaysUVTarget): Promise<boole
     );
     return !envelope.error && Boolean(preview);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     securityMutation.set({
       kind: "alwaysUv",
       phase: "error",
@@ -525,7 +522,7 @@ export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promi
     );
     return !envelope.error && Boolean(preview);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     securityMutation.set({
       kind: "pinPolicy",
       phase: "error",
@@ -598,7 +595,7 @@ export async function beginBioEnrollment(): Promise<boolean> {
     );
     return !envelope.error && Boolean(preview);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     securityMutation.set({
       kind: "bioEnroll",
       phase: "error",
@@ -671,7 +668,7 @@ export async function beginBioRename(templateIDHex: string, friendlyName: string
     );
     return !envelope.error && Boolean(preview);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     securityMutation.set({
       kind: "bioRename",
       phase: "error",
@@ -729,7 +726,7 @@ export async function beginBioRemove(templateIDHex: string): Promise<boolean> {
     );
     return !envelope.error && Boolean(preview);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     securityMutation.set({
       kind: "bioRemove",
       phase: "error",
@@ -785,7 +782,7 @@ export async function beginFactoryReset(): Promise<boolean> {
     );
     return !envelope.error && Boolean(preview);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     securityMutation.set({
       kind: "reset",
       phase: "error",
@@ -859,9 +856,9 @@ async function finishSuccessfulSecurityMutation(kind: ReviewMutation["kind"]) {
         setStatusOutcome({
           tone: "warning",
           title: m.security_reset_rediscovery_failed(),
-          message: rediscoveryError.message,
+          message: failureMessage(rediscoveryError),
         });
-        toast.warning(m.security_reset_rediscovery_failed(), { description: rediscoveryError.message });
+        toast.warning(m.security_reset_rediscovery_failed(), { description: failureMessage(rediscoveryError) });
       }
     }
   }
@@ -896,7 +893,7 @@ function executingMutation(current: ReviewMutation): SecurityMutationState {
 function failedExecutingMutation(
   current: ReviewMutation,
   responseEnvelope: AuthenticatorConfigEnvelope | BioEnrollEnvelope | BioMutationEnvelope | ResetFactoryEnvelope | null,
-  runtimeError: RuntimeErrorEnvelope | null,
+  runtimeError: Failure | null,
   failureReason: ExecuteFailureReason,
 ): SecurityMutationState {
   return {
@@ -955,7 +952,7 @@ export async function confirmSecurityMutation(): Promise<boolean> {
     await finishSuccessfulSecurityMutation(current.kind);
     return true;
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     securityMutation.set(failedExecutingMutation(current, null, runtimeError, "runtime-error"));
     summarizeOperationFailure(label, runtimeError, retryAction(() => restartSecurityMutation(current)));
     applyInvalidSessionError(runtimeError);

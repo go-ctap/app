@@ -10,6 +10,9 @@ import { Create as $Create } from "@wailsio/runtime";
 import * as credentials$0 from "../credentials/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as failure$0 from "../failure/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as report$0 from "../report/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -117,7 +120,7 @@ export class DecodeStatus {
     "success": boolean;
     "decodedText"?: string;
     "decodedValue"?: any;
-    "failure"?: string;
+    "failure"?: failure$0.Failure | null;
 
     /** Creates a new DecodeStatus instance. */
     constructor($$source: Partial<DecodeStatus> = {}) {
@@ -138,7 +141,11 @@ export class DecodeStatus {
      * Creates a new DecodeStatus instance from a string or object.
      */
     static createFrom($$source: any = {}): DecodeStatus {
+        const $$createField6_0 = $$createType3;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("failure" in $$parsedSource) {
+            $$parsedSource["failure"] = $$createField6_0($$parsedSource["failure"]);
+        }
         return new DecodeStatus($$parsedSource as Partial<DecodeStatus>);
     }
 }
@@ -265,10 +272,10 @@ export class ListReport {
      * Creates a new ListReport instance from a string or object.
      */
     static createFrom($$source: any = {}): ListReport {
-        const $$createField0_0 = $$createType2;
-        const $$createField1_0 = $$createType3;
-        const $$createField2_0 = $$createType4;
-        const $$createField3_0 = $$createType6;
+        const $$createField0_0 = $$createType4;
+        const $$createField1_0 = $$createType5;
+        const $$createField2_0 = $$createType6;
+        const $$createField3_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
@@ -365,10 +372,10 @@ export class MutationPreview {
      * Creates a new MutationPreview instance from a string or object.
      */
     static createFrom($$source: any = {}): MutationPreview {
-        const $$createField1_0 = $$createType2;
-        const $$createField2_0 = $$createType3;
-        const $$createField3_0 = $$createType7;
-        const $$createField17_0 = $$createType9;
+        const $$createField1_0 = $$createType4;
+        const $$createField2_0 = $$createType5;
+        const $$createField3_0 = $$createType9;
+        const $$createField17_0 = $$createType11;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField1_0($$parsedSource["device"]);
@@ -501,11 +508,11 @@ export class ReadReport {
      * Creates a new ReadReport instance from a string or object.
      */
     static createFrom($$source: any = {}): ReadReport {
-        const $$createField0_0 = $$createType2;
-        const $$createField1_0 = $$createType3;
-        const $$createField2_0 = $$createType7;
-        const $$createField4_0 = $$createType10;
-        const $$createField8_0 = $$createType11;
+        const $$createField0_0 = $$createType4;
+        const $$createField1_0 = $$createType5;
+        const $$createField2_0 = $$createType9;
+        const $$createField4_0 = $$createType12;
+        const $$createField8_0 = $$createType13;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
@@ -555,13 +562,15 @@ export class SupportReport {
 // Private type creation functions
 const $$createType0 = credentials$0.RelyingParty.createFrom;
 const $$createType1 = credentials$0.UserIdentity.createFrom;
-const $$createType2 = report$0.DeviceReport.createFrom;
-const $$createType3 = SupportReport.createFrom;
-const $$createType4 = ListArraySummary.createFrom;
-const $$createType5 = ListCredential.createFrom;
-const $$createType6 = $Create.Array($$createType5);
-const $$createType7 = BlobTarget.createFrom;
-const $$createType8 = safety$0.Warning.createFrom;
-const $$createType9 = $Create.Array($$createType8);
-const $$createType10 = ArrayState.createFrom;
-const $$createType11 = DecodeStatus.createFrom;
+const $$createType2 = failure$0.Failure.createFrom;
+const $$createType3 = $Create.Nullable($$createType2);
+const $$createType4 = report$0.DeviceReport.createFrom;
+const $$createType5 = SupportReport.createFrom;
+const $$createType6 = ListArraySummary.createFrom;
+const $$createType7 = ListCredential.createFrom;
+const $$createType8 = $Create.Array($$createType7);
+const $$createType9 = BlobTarget.createFrom;
+const $$createType10 = safety$0.Warning.createFrom;
+const $$createType11 = $Create.Array($$createType10);
+const $$createType12 = ArrayState.createFrom;
+const $$createType13 = DecodeStatus.createFrom;

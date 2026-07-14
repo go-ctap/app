@@ -1,8 +1,6 @@
 <script lang="ts">
   import { Pencil } from "@lucide/svelte";
 
-  import { ErrorCategory } from "../../../../bindings/github.com/go-ctap/kit/model";
-
   import LargeBlobMutationPreview from "$lib/components/largeblobs/LargeBlobMutationPreview.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
@@ -22,6 +20,7 @@
     type LargeBlobPayloadEncoding,
     type LargeBlobPayloadValidationError,
   } from "$lib/largeblobs-payload";
+  import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -82,14 +81,14 @@
     if (mutation.kind !== "write" || mutation.phase !== "error") return null;
     if (mutation.failureReason === "missing-preview") return m.operation_missing_preview();
     if (mutation.failureReason === "missing-result") return m.operation_missing_result();
-    return mutation.runtimeError?.message
-      ?? mutation.responseEnvelope?.error?.message
+    return localizeFailure(mutation.runtimeError)
+      ?? localizeFailure(mutation.responseEnvelope?.error)
       ?? m.operation_failed();
   });
   let failureCanceled = $derived(
     mutation.kind === "write" && mutation.phase === "error" && (
-      mutation.runtimeError?.category === ErrorCategory.ErrorCanceled
-      || mutation.responseEnvelope?.error?.category === ErrorCategory.ErrorCanceled
+      isCanceledFailure(mutation.runtimeError)
+      || isCanceledFailure(mutation.responseEnvelope?.error)
     ),
   );
   let failedPhase = $derived(mutation.phase === "error" ? mutation.failedPhase : null);

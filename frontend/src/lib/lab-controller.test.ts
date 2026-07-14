@@ -7,10 +7,10 @@ import {
   PublicKeyCredentialType,
 } from "../../bindings/github.com/go-ctap/ctap/credential";
 import {
-  ErrorCategory,
   OperationKind,
   VerificationFlow,
 } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { DecodeMode } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type {
@@ -24,6 +24,7 @@ import type {
 } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { api } from "./api";
+import { failureForCode } from "./failure";
 import { labState, resetLabStateForTest } from "./features/lab/state";
 import {
   completeLargeBlobsInventoryLoad,
@@ -297,10 +298,7 @@ describe("WebAuthn Lab request lifecycle", () => {
 
   it("retries an execution error with a fresh preview and requires Confirm again", async () => {
     const executionFailure = makePreviewEnvelope();
-    executionFailure.error = {
-      category: ErrorCategory.ErrorTransportFailure,
-      message: "connection dropped",
-    };
+    executionFailure.error = failureForCode(Code.CodeTransportFailure);
     const makeCredential = vi.spyOn(api, "makeCredential")
       .mockResolvedValueOnce(makePreviewEnvelope())
       .mockResolvedValueOnce(executionFailure)
@@ -337,10 +335,7 @@ describe("WebAuthn Lab request lifecycle", () => {
       },
     })).toBe(true);
     const failure = getResultEnvelope();
-    failure.error = {
-      category: ErrorCategory.ErrorTransportFailure,
-      message: "retry me",
-    };
+    failure.error = failureForCode(Code.CodeTransportFailure);
     const getAssertion = vi.spyOn(api, "getAssertion")
       .mockResolvedValueOnce(failure)
       .mockResolvedValueOnce(getResultEnvelope());
@@ -369,10 +364,7 @@ describe("WebAuthn Lab request lifecycle", () => {
 
   it("keeps a real error envelope separate from a thrown runtime failure", async () => {
     const responseFailure = makePreviewEnvelope();
-    responseFailure.error = {
-      category: ErrorCategory.ErrorTransportFailure,
-      message: "authenticator disconnected",
-    };
+    responseFailure.error = failureForCode(Code.CodeTransportFailure);
     const makeCredential = vi.spyOn(api, "makeCredential")
       .mockResolvedValueOnce(responseFailure)
       .mockRejectedValueOnce(new Error("Wails bridge unavailable"));
@@ -394,7 +386,7 @@ describe("WebAuthn Lab request lifecycle", () => {
       responseEnvelope: null,
       previewEnvelope: null,
       failureReason: "runtime-error",
-      runtimeError: { message: "Wails bridge unavailable" },
+      runtimeError: failureForCode(Code.CodeInternalError),
     });
   });
 
@@ -425,10 +417,7 @@ describe("WebAuthn Lab request lifecycle", () => {
     selectedSelector.set("token-1");
     selectedDevice.set(token);
     const invalidSession = makePreviewEnvelope();
-    invalidSession.error = {
-      category: ErrorCategory.ErrorInvalidSession,
-      message: "session expired",
-    };
+    invalidSession.error = failureForCode(Code.CodeSessionInvalid);
     const makeCredential = vi.spyOn(api, "makeCredential")
       .mockResolvedValueOnce(invalidSession)
       .mockResolvedValueOnce(makePreviewEnvelope());
@@ -453,10 +442,7 @@ describe("WebAuthn Lab request lifecycle", () => {
 
   it("applies an invalid-session response to the shared session boundary", async () => {
     const envelope = getResultEnvelope();
-    envelope.error = {
-      category: ErrorCategory.ErrorInvalidSession,
-      message: "session expired",
-    };
+    envelope.error = failureForCode(Code.CodeSessionInvalid);
     vi.spyOn(api, "getAssertion").mockResolvedValue(envelope);
 
     expect(await runLabGetAssertion()).toBe(false);
@@ -468,10 +454,7 @@ describe("WebAuthn Lab request lifecycle", () => {
     });
     expect(get(sessionStatus)).toEqual({
       state: "error",
-      error: {
-        category: ErrorCategory.ErrorInvalidSession,
-        message: "session expired",
-      },
+      error: failureForCode(Code.CodeSessionInvalid),
     });
     expect(await retryLabGetAssertion()).toBe(false);
     expect(api.getAssertion).toHaveBeenCalledTimes(1);

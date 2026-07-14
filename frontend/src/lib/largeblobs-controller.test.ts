@@ -1,7 +1,8 @@
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ErrorCategory, OperationKind, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { OperationKind, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import {
   DecodeMode,
   MutationOperation,
@@ -13,6 +14,7 @@ import type {
 } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { api } from "./api";
+import { failureForCode } from "./failure";
 import { setAppLocale } from "./i18n";
 import {
   beginLargeBlobCleanup,
@@ -192,7 +194,7 @@ describe("large blob controller", () => {
         serializedLargeBlobArrayLimit: 0,
       },
     );
-    capacity.error = { category: ErrorCategory.ErrorInvalidState, message: "array too large" };
+    capacity.error = failureForCode(Code.CodeLargeBlobArrayTooLarge);
     vi.spyOn(api, "writeLargeBlob").mockResolvedValue(capacity);
 
     expect(beginLargeBlobWrite("cafe")).toBe(true);
@@ -211,7 +213,7 @@ describe("large blob controller", () => {
   it("retries an execution failure through refresh and a new preview without re-executing", async () => {
     const firstPreview = previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace);
     const executionFailure = previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace);
-    executionFailure.error = { category: ErrorCategory.ErrorTransportFailure, message: "connection dropped" };
+    executionFailure.error = failureForCode(Code.CodeTransportFailure);
     const secondPreview = previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace);
     const write = vi.spyOn(api, "writeLargeBlob")
       .mockResolvedValueOnce(firstPreview)
@@ -243,7 +245,7 @@ describe("large blob controller", () => {
 
   it("keeps execution retry non-dismissible during forced refresh and restores the error if refresh fails", async () => {
     const executionFailure = previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace);
-    executionFailure.error = { category: ErrorCategory.ErrorTransportFailure, message: "connection dropped" };
+    executionFailure.error = failureForCode(Code.CodeTransportFailure);
     vi.spyOn(api, "writeLargeBlob")
       .mockResolvedValueOnce(previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace))
       .mockResolvedValueOnce(executionFailure);
@@ -270,7 +272,7 @@ describe("large blob controller", () => {
       operationId: "refresh-failed",
       sessionId: "session-1",
       kind: OperationKind.OperationListLargeBlobs,
-      error: { category: ErrorCategory.ErrorTransportFailure, message: "still offline" },
+      error: failureForCode(Code.CodeTransportFailure),
     } as LargeBlobListEnvelope);
     expect(await retry).toBe(false);
     expect(get(largeBlobsMutation)).toEqual(originalError);
@@ -278,7 +280,7 @@ describe("large blob controller", () => {
 
   it("restores the execution error when refreshed credentials lose their large-blob key", async () => {
     const executionFailure = previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace);
-    executionFailure.error = { category: ErrorCategory.ErrorTransportFailure, message: "connection dropped" };
+    executionFailure.error = failureForCode(Code.CodeTransportFailure);
     const write = vi.spyOn(api, "writeLargeBlob")
       .mockResolvedValueOnce(previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace))
       .mockResolvedValueOnce(executionFailure);
@@ -299,7 +301,7 @@ describe("large blob controller", () => {
       OperationKind.OperationGarbageCollectLargeBlobs,
       MutationOperation.MutationGC,
     );
-    executionFailure.error = { category: ErrorCategory.ErrorTransportFailure, message: "connection dropped" };
+    executionFailure.error = failureForCode(Code.CodeTransportFailure);
     const cleanup = vi.spyOn(api, "garbageCollectLargeBlobs")
       .mockResolvedValueOnce(previewEnvelope(
         OperationKind.OperationGarbageCollectLargeBlobs,
@@ -347,7 +349,7 @@ describe("large blob controller", () => {
       operationId: "refresh-failed",
       sessionId: "session-1",
       kind: OperationKind.OperationListLargeBlobs,
-      error: { category: ErrorCategory.ErrorTransportFailure, message: "offline after write" },
+      error: failureForCode(Code.CodeTransportFailure),
     } as LargeBlobListEnvelope);
 
     beginLargeBlobWrite("cafe");
@@ -401,7 +403,7 @@ describe("large blob controller", () => {
             requested: true,
             mode: DecodeMode.DecodeModeCBOR,
             success: false,
-            failure: "no blob present",
+            failure: failureForCode(Code.CodeLargeBlobMissing),
           },
         },
       },
@@ -424,7 +426,7 @@ describe("large blob controller", () => {
       operationId: "list-failed",
       sessionId: "session-1",
       kind: OperationKind.OperationListLargeBlobs,
-      error: { category: ErrorCategory.ErrorTransportFailure, message: "offline" },
+      error: failureForCode(Code.CodeTransportFailure),
     } as LargeBlobListEnvelope;
     vi.spyOn(api, "listLargeBlobs").mockResolvedValue(failed);
     largeBlobsReadState.set({

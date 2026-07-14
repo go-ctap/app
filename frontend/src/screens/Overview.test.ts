@@ -5,11 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import { InspectInfo, InspectOutput, InspectResult, OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import { Finding, Profile, Report, RuleID, SpecificationID, Target } from "../../bindings/github.com/go-ctap/kit/model/conformance";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import { InspectEnvelope, RuntimeErrorEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import { InspectEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
+import { failureForCode } from "$lib/failure";
 import {
   resetAppStateForTest,
   seedOverviewEnvelopeForTest,
@@ -120,11 +122,11 @@ describe("Overview", () => {
       state: "ready",
       sessionId: "session-1",
     });
-    seedOverviewMDSForTest(null, new RuntimeErrorEnvelope({ message: "MDS offline" }));
+    seedOverviewMDSForTest(null, failureForCode(Code.CodeMDSFetchFailed));
 
     render(Overview);
 
-    expect(screen.getByRole("status")).toHaveTextContent("MDS offline");
+    expect(screen.getByRole("status")).toHaveTextContent("Authenticator metadata could not be downloaded.");
   });
 
   it("preserves a manual conformance toggle across MDS updates and resets it for a new inspection", async () => {
@@ -143,7 +145,7 @@ describe("Overview", () => {
     expect(screen.getByRole("button", { name: "Collapse conformance details" })).toHaveAttribute("aria-expanded", "true");
 
     await act(() => {
-      seedOverviewMDSForTest(null, new RuntimeErrorEnvelope({ message: "MDS offline" }));
+      seedOverviewMDSForTest(null, failureForCode(Code.CodeMDSFetchFailed));
     });
     expect(screen.getByRole("button", { name: "Collapse conformance details" })).toHaveAttribute("aria-expanded", "true");
 

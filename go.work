@@ -2,6 +2,8 @@ go 1.26.3
 
 use (
 	.
-	../kit
+	../ctap
 	../hid
+	../kit
+	../token2
 )

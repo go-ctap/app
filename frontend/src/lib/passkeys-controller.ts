@@ -1,6 +1,7 @@
 import { get } from "svelte/store";
 
-import { ErrorCategory, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   CredentialDeleteEnvelope,
   CredentialDeleteRequest,
@@ -38,9 +39,14 @@ import {
 import { selectedSelector, sessionStatus } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { canRetryPasskeysMutation, findPasskeyCredential } from "./passkeys-presentation.js";
-import { runtimeErrorFrom } from "./runtime-error.js";
+import { failureForCode, runtimeFailureFrom } from "./failure.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
-import { beginOperation, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
+import {
+  beginOperation,
+  summarizeEnvelope,
+  summarizeOperationContractFailure,
+  summarizeOperationFailure,
+} from "./workbench-state.js";
 
 export type LoadPasskeysOptions = { refresh?: boolean };
 
@@ -50,11 +56,8 @@ function retryAction(action: () => Promise<unknown>) {
   };
 }
 
-function missingOperationOutput(kind: "preview" | "result") {
-  return {
-    category: ErrorCategory.ErrorInvalidState,
-    message: kind === "preview" ? m.operation_missing_preview() : m.operation_missing_result(),
-  };
+function missingOperationOutput() {
+  return failureForCode(Code.CodeInternalError);
 }
 
 function passkeysAutoLoadKey() {
@@ -114,12 +117,12 @@ export async function loadPasskeys(options: LoadPasskeysOptions = {}) {
     if (envelope.error || report) {
       summarizeEnvelope(m.credential_inventory(), envelope, retryAction(() => loadPasskeys({ refresh })));
     } else {
-      summarizeOperationFailure(m.credential_inventory(), missingOperationOutput("result"));
+      summarizeOperationContractFailure(m.credential_inventory(), missingOperationOutput());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(report);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     failPasskeysInventoryLoadAtRuntime(runtimeError);
     summarizeOperationFailure(m.credential_inventory(), runtimeError, retryAction(() => loadPasskeys({ refresh })));
     applyInvalidSessionError(runtimeError);
@@ -257,7 +260,7 @@ function updateError(
   previewRequest: CredentialUpdateRequest | null,
   previewEnvelope: CredentialUpdateEnvelope | null,
   responseEnvelope: CredentialUpdateEnvelope | null,
-  runtimeError: ReturnType<typeof runtimeErrorFrom> | null,
+  runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
   failureReason: "response-error" | "runtime-error" | "missing-preview" | "missing-result",
 ) {
   passkeysMutation.set({
@@ -303,7 +306,7 @@ export async function previewCredentialUpdate(): Promise<boolean> {
       current.form,
     );
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     updateError(current, "previewing", null, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.credential_update_preview(), runtimeError);
     applyInvalidSessionError(runtimeError);
@@ -325,12 +328,12 @@ export async function previewCredentialUpdate(): Promise<boolean> {
     if (envelope.error || preview) {
       summarizeEnvelope(m.credential_update_preview(), envelope, retryAction(previewCredentialUpdate));
     } else {
-      summarizeOperationFailure(m.credential_update_preview(), missingOperationOutput("preview"));
+      summarizeOperationContractFailure(m.credential_update_preview(), missingOperationOutput());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(preview);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     updateError(current, "previewing", request, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.credential_update_preview(), runtimeError, retryAction(previewCredentialUpdate));
     applyInvalidSessionError(runtimeError);
@@ -363,14 +366,14 @@ export async function confirmCredentialUpdate(): Promise<boolean> {
     if (envelope.error || result) {
       summarizeEnvelope(m.credential_update(), envelope, retryAction(retryPasskeysMutation));
     } else {
-      summarizeOperationFailure(m.credential_update(), missingOperationOutput("result"));
+      summarizeOperationContractFailure(m.credential_update(), missingOperationOutput());
     }
     applyInvalidSessionError(envelope.error);
     if (envelope.error || !result) return false;
     await loadPasskeys({ refresh: true });
     return true;
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     updateError(current, "executing", current.previewRequest, current.previewEnvelope, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.credential_update(), runtimeError, retryAction(retryPasskeysMutation));
     applyInvalidSessionError(runtimeError);
@@ -384,7 +387,7 @@ function deleteError(
   previewRequest: CredentialDeleteRequest | null,
   previewEnvelope: CredentialDeleteEnvelope | null,
   responseEnvelope: CredentialDeleteEnvelope | null,
-  runtimeError: ReturnType<typeof runtimeErrorFrom> | null,
+  runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
   failureReason: "response-error" | "runtime-error" | "missing-preview" | "missing-result",
 ) {
   passkeysMutation.set({
@@ -411,7 +414,7 @@ async function previewCredentialDelete(credentialIDHex: string): Promise<boolean
       dryRun: true,
     };
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     deleteError(credentialIDHex, "previewing", null, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.credential_delete_preview(), runtimeError);
     applyInvalidSessionError(runtimeError);
@@ -434,12 +437,12 @@ async function previewCredentialDelete(credentialIDHex: string): Promise<boolean
     if (envelope.error || preview) {
       summarizeEnvelope(m.credential_delete_preview(), envelope, retryAction(() => previewCredentialDelete(credentialIDHex)));
     } else {
-      summarizeOperationFailure(m.credential_delete_preview(), missingOperationOutput("preview"));
+      summarizeOperationContractFailure(m.credential_delete_preview(), missingOperationOutput());
     }
     applyInvalidSessionError(envelope.error);
     return !envelope.error && Boolean(preview);
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     deleteError(credentialIDHex, "previewing", request, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.credential_delete_preview(), runtimeError, retryAction(() => previewCredentialDelete(credentialIDHex)));
     applyInvalidSessionError(runtimeError);
@@ -476,14 +479,14 @@ export async function confirmCredentialDelete(): Promise<boolean> {
     if (envelope.error || result) {
       summarizeEnvelope(m.credential_delete(), envelope, retryAction(retryPasskeysMutation));
     } else {
-      summarizeOperationFailure(m.credential_delete(), missingOperationOutput("result"));
+      summarizeOperationContractFailure(m.credential_delete(), missingOperationOutput());
     }
     applyInvalidSessionError(envelope.error);
     if (envelope.error || !result) return false;
     await loadPasskeys({ refresh: true });
     return true;
   } catch (error) {
-    const runtimeError = runtimeErrorFrom(error);
+    const runtimeError = runtimeFailureFrom(error);
     deleteError(current.credentialIDHex, "executing", current.previewRequest, current.previewEnvelope, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.credential_delete(), runtimeError, retryAction(retryPasskeysMutation));
     applyInvalidSessionError(runtimeError);

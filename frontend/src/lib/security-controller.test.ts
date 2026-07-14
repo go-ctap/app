@@ -1,16 +1,14 @@
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  ErrorCategory,
-  OperationKind,
-} from "../../bindings/github.com/go-ctap/kit/model";
+import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import {
   AlwaysUVTarget,
   AuthenticatorConfigOperation,
   BioMutationOperation,
   StateValue,
 } from "../../bindings/github.com/go-ctap/kit/model/config";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { PreviewMode } from "../../bindings/github.com/go-ctap/kit/model/safety";
 import type {
@@ -27,6 +25,7 @@ import type {
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { api } from "./api";
+import { failureForCode } from "./failure";
 import {
   completeSecurityBioSensorLoad,
   completeSecurityStatusLoad,
@@ -195,10 +194,7 @@ function pinErrorEnvelope(kind: OperationKind): PINEnvelope {
     operationId: `pin-error-${kind}`,
     sessionId: "session-1",
     kind,
-    error: {
-      category: ErrorCategory.ErrorTransportFailure,
-      message: "connection dropped",
-    },
+    error: failureForCode(Code.CodeTransportFailure),
   } as PINEnvelope;
 }
 
@@ -214,9 +210,7 @@ function authenticatorConfigEnvelope(
     operationId: `${phase}-${operation}`,
     sessionId: "session-1",
     kind,
-    error: error
-      ? { category: ErrorCategory.ErrorTransportFailure, message: "connection dropped" }
-      : undefined,
+    error: error ? failureForCode(Code.CodeTransportFailure) : undefined,
     result: {
       preview: {
         operation,
@@ -257,10 +251,7 @@ function partialBioEnrollErrorEnvelope(): BioEnrollEnvelope {
     operationId: "bio-partial-1",
     sessionId: "session-1",
     kind: OperationKind.OperationBioEnroll,
-    error: {
-      category: ErrorCategory.ErrorTimeout,
-      message: "enrollment timed out",
-    },
+    error: failureForCode(Code.CodeBioInteractionTimeout),
     result: {
       preview: {
         device: TOKEN,
@@ -309,10 +300,7 @@ function invalidSessionStatusEnvelope(): ConfigStatusEnvelope {
     operationId: "status-invalid-session",
     sessionId: "session-1",
     kind: OperationKind.OperationConfigStatus,
-    error: {
-      category: ErrorCategory.ErrorInvalidSession,
-      message: "session expired",
-    },
+    error: failureForCode(Code.CodeSessionInvalid),
   } as ConfigStatusEnvelope;
 }
 
@@ -420,7 +408,7 @@ describe("security controller loading", () => {
       phase: "error",
       lastSuccessfulEnvelope: null,
       responseEnvelope: null,
-      runtimeError: { message: "Wails bridge unavailable" },
+      runtimeError: failureForCode(Code.CodeInternalError),
     });
   });
 
@@ -435,7 +423,10 @@ describe("security controller loading", () => {
 
     expect(await loadSecurityStatus()).toBe(false);
     expect(get(securityStatus).responseEnvelope).toBe(invalidEnvelope);
-    expect(get(sessionStatus)).toMatchObject({ state: "error", error: { message: "session expired" } });
+    expect(get(sessionStatus)).toMatchObject({
+      state: "error",
+      error: failureForCode(Code.CodeSessionInvalid),
+    });
     expect(get(sessionStatus).sessionId).toBeUndefined();
 
     expect(await reloadSecurity()).toBe(true);
@@ -662,7 +653,7 @@ describe("security controller mutations", () => {
       "preview",
       true,
     );
-    invalidExecution.error!.category = ErrorCategory.ErrorInvalidSession;
+    invalidExecution.error = failureForCode(Code.CodeSessionInvalid);
     const setAlwaysUV = vi.spyOn(api, "setAlwaysUV")
       .mockResolvedValueOnce(authenticatorConfigEnvelope(
         AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
@@ -779,7 +770,7 @@ describe("factory reset lifecycle", () => {
     expect(get(sessionStatus)).toMatchObject({ state: "ready", sessionId: "fresh-session" });
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "warning",
-      message: "old handle close failed",
+      message: "The operation failed because of an internal error.",
     });
   });
 });
