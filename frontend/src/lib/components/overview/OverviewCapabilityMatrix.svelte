@@ -102,10 +102,6 @@
     border: 1px solid var(--border);
   }
 
-  .table-frame :global([data-slot="table-container"]) {
-    overscroll-behavior-y: auto;
-  }
-
   :global(.capability-table) {
     min-width: 58rem;
   }

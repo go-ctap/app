@@ -68,6 +68,9 @@
   let readBlobPresent = $derived(
     Boolean(report?.blobPresent || report?.array.blobState === BlobState.BlobStatePresent),
   );
+  let writeActionDisabled = $derived(
+    writeDisabled || (row.blobPresent && (!report || !readBlobPresent)),
+  );
   const decodeModes = [
     DecodeMode.DecodeModeNone,
     DecodeMode.DecodeModeUTF8,
@@ -119,11 +122,11 @@
           variant="outline"
           size="sm"
           type="button"
-          disabled={writeDisabled}
+          disabled={writeActionDisabled}
           onclick={() => onWrite(row.id)}
         >
           <FilePenLine data-icon="inline-start" aria-hidden="true" />
-          {m.write()}
+          {row.blobPresent ? m.edit() : m.write()}
         </Button>
         <Button
           variant="destructive"

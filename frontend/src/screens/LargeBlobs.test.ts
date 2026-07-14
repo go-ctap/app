@@ -328,12 +328,13 @@ describe("LargeBlobs", () => {
 
     render(LargeBlobs);
 
-    expect(screen.getByText("Large blob inventory may be stale")).toBeInTheDocument();
+    expect(screen.getByText("Large blob inventory could not be refreshed")).toBeInTheDocument();
+    expect(screen.getByText(/The last successfully loaded data remains visible\. Reload large blobs to try again\./)).toBeInTheDocument();
     expect(screen.getByText(/Communication with the authenticator failed\./)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Zero User, zero@example.com/ }));
     expect(controllerMocks.readLargeBlob).toHaveBeenCalledWith("cafe");
     expect(screen.queryByRole("button", { name: "Read large blob" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Write" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Edit" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Delete" })).toBeEnabled();
   });
 
@@ -488,6 +489,53 @@ describe("LargeBlobs", () => {
     expect(within(details).getByRole("region", { name: "UTF-8 text" })).toHaveTextContent("text view");
     expect(within(details).queryByText("Decoded as JSON")).not.toBeInTheDocument();
     expect(within(details).queryByRole("region", { name: "Raw hex" })).not.toBeInTheDocument();
+  });
+
+  it("opens an existing blob as an edit with its current UTF-8 value", async () => {
+    const user = userEvent.setup();
+    const envelope = readEnvelope({
+      rawHex: "746578742076696577",
+      decode: {
+        requested: true,
+        mode: DecodeMode.DecodeModeUTF8,
+        success: true,
+        decodedText: "text view",
+      },
+    });
+    mutableLargeBlobsDecodeMode.set(DecodeMode.DecodeModeUTF8);
+    seedLargeBlobsEnvelopeForTest(listEnvelope());
+    mutableLargeBlobsSelectedCredentialID.set("cafe");
+    mutableLargeBlobsReadState.set({
+      phase: "ready",
+      credentialIDHex: "cafe",
+      request: { sessionId: "session-1", credentialIdHex: "cafe" },
+      responseEnvelope: envelope,
+    });
+    render(LargeBlobs);
+
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Edit large blob" });
+    expect(within(dialog).getByRole("textbox", { name: "Payload" })).toHaveValue("text view");
+    expect(within(dialog).getByRole("radio", { name: "UTF-8 text" })).toBeChecked();
+    expect(within(dialog).getByRole("button", { name: "Preview changes" })).toBeEnabled();
+
+    mutableLargeBlobsMutation.set({
+      kind: "write",
+      phase: "review",
+      credentialIDHex: "cafe",
+      draft: { payload: "text view", encoding: "utf8" },
+      previewRequest: {
+        sessionId: "session-1",
+        credentialIdHex: "cafe",
+        payload: "dGV4dCB2aWV3",
+        dryRun: true,
+      },
+      previewEnvelope: mutationEnvelope(mutationPreview(MutationOperation.MutationReplace)),
+    });
+    await tick();
+
+    expect(within(dialog).getByRole("button", { name: "Save changes" })).toBeEnabled();
   });
 
   it("shows only raw hex when automatic interpretation fails", () => {

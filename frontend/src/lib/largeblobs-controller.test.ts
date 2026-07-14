@@ -47,7 +47,7 @@ import {
 import { resetSessionStateForTest, selectedSelector, sessionStatus } from "./features/session/state";
 import { resetWorkbenchStateForTest, statusBar } from "./features/workbench/state";
 
-function listEnvelope(keyState = "available"): LargeBlobListEnvelope {
+function listEnvelope(keyState = "available", blobPresent = false): LargeBlobListEnvelope {
   return {
     operationId: "list-1",
     sessionId: "session-1",
@@ -62,8 +62,8 @@ function listEnvelope(keyState = "available"): LargeBlobListEnvelope {
         },
         array: {
           read: true,
-          blobCount: 1,
-          matchedBlobCount: 1,
+          blobCount: blobPresent ? 1 : 0,
+          matchedBlobCount: blobPresent ? 1 : 0,
           unmatchedBlobCount: 0,
         },
         credentials: [{
@@ -71,8 +71,8 @@ function listEnvelope(keyState = "available"): LargeBlobListEnvelope {
           rp: { id: "example.test", name: "Example" },
           user: { userIDHex: "01", name: "user" },
           largeBlobKeyState: keyState,
-          blobPresent: true,
-          blobState: "present",
+          blobPresent,
+          blobState: blobPresent ? "present" : "missing",
           blobByteCount: 0,
         }],
       },
@@ -219,6 +219,48 @@ describe("large blob controller", () => {
     expect(get(largeBlobsDecodeMode)).toBe(DecodeMode.DecodeModeCBOR);
     expect(get(largeBlobsReadState)).toEqual({ phase: "idle" });
     expect(read).not.toHaveBeenCalled();
+  });
+
+  it("prefills an existing UTF-8 blob when editing starts", () => {
+    completeLargeBlobsInventoryLoad(listEnvelope("available", true), "2026-07-11T00:00:00.000Z");
+    const envelope = readEnvelope(DecodeMode.DecodeModeUTF8);
+    envelope.result!.report.rawHex = "68656c6c6f";
+    envelope.result!.report.rawByteCount = 5;
+    envelope.result!.report.decode.decodedText = "hello";
+    largeBlobsReadState.set({
+      phase: "ready",
+      credentialIDHex: "cafe",
+      request: { sessionId: "session-1", credentialIdHex: "cafe" },
+      responseEnvelope: envelope,
+    });
+
+    expect(beginLargeBlobWrite("cafe")).toBe(true);
+    expect(get(largeBlobsMutation)).toMatchObject({
+      kind: "write",
+      phase: "editing",
+      draft: { payload: "hello", encoding: "utf8" },
+    });
+  });
+
+  it("prefills existing non-UTF-8 bytes as hex", () => {
+    completeLargeBlobsInventoryLoad(listEnvelope("available", true), "2026-07-11T00:00:00.000Z");
+    const envelope = readEnvelope(DecodeMode.DecodeModeJSON);
+    envelope.result!.report.rawHex = "fffe";
+    envelope.result!.report.rawByteCount = 2;
+    envelope.result!.report.decode.success = false;
+    largeBlobsReadState.set({
+      phase: "ready",
+      credentialIDHex: "cafe",
+      request: { sessionId: "session-1", credentialIdHex: "cafe" },
+      responseEnvelope: envelope,
+    });
+
+    expect(beginLargeBlobWrite("cafe")).toBe(true);
+    expect(get(largeBlobsMutation)).toMatchObject({
+      kind: "write",
+      phase: "editing",
+      draft: { payload: "fffe", encoding: "hex" },
+    });
   });
 
   it("retains a capacity response on error and lets the user edit the draft", async () => {

@@ -14,10 +14,13 @@ import { setStatusOperation, summarizeOperationFailure } from "./workbench-state
 
 export async function answerPendingInteraction(answer: InteractionAnswer) {
   const label = get(statusBar).activeOperation?.label ?? m.operation_running();
+  const interactionId = answer.interactionId;
   try {
     const resolution = ResolveInteraction(answer);
     if (answer.pin) answer.pin = "";
-    return await resolution;
+    const accepted = await resolution;
+    pendingInteraction.update((prompt) => prompt?.interactionId === interactionId ? null : prompt);
+    return accepted;
   } catch (error) {
     const failure = runtimeFailureFrom(error);
     summarizeOperationFailure(label, failure);
@@ -25,7 +28,6 @@ export async function answerPendingInteraction(answer: InteractionAnswer) {
     return false;
   } finally {
     if (answer.pin) answer.pin = "";
-    pendingInteraction.set(null);
   }
 }
 

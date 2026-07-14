@@ -24,6 +24,7 @@
 
   type Props = {
     mutation: LargeBlobMutationState;
+    editingExisting: boolean;
     onDraftChange: (patch: Partial<LargeBlobWriteDraft>) => void;
     onEncodingChange: (encoding: LargeBlobPayloadEncoding) => void;
     onEdit: () => void;
@@ -34,6 +35,7 @@
 
   let {
     mutation,
+    editingExisting,
     onDraftChange,
     onEncodingChange,
     onEdit,
@@ -123,7 +125,7 @@
   {#if open && mutation.kind === "write"}
     <Dialog.Content class="large-blob-write-dialog">
       <Dialog.Header>
-        <Dialog.Title>{m.large_blob_write()}</Dialog.Title>
+        <Dialog.Title>{editingExisting ? m.large_blob_edit() : m.large_blob_write()}</Dialog.Title>
       </Dialog.Header>
 
       <form class="large-blob-write-form" onsubmit={handleSubmit}>
@@ -181,7 +183,11 @@
           >
             <Alert.Title>
               {failureCanceled
-                ? m.operation_canceled_with_label({ label: failedPhase === "previewing" ? m.write_preview() : m.large_blob_write() })
+                ? m.operation_canceled_with_label({
+                    label: failedPhase === "previewing"
+                      ? (editingExisting ? m.preview_changes() : m.write_preview())
+                      : (editingExisting ? m.large_blob_edit() : m.large_blob_write()),
+                  })
                 : m.operation_failed()}
             </Alert.Title>
             <Alert.Description>{failureMessage}</Alert.Description>
@@ -204,8 +210,8 @@
           <Button type="submit">
             {mutation.phase === "review"
               || (mutation.phase === "error" && mutation.failedPhase === "executing")
-              ? m.confirm_write()
-              : m.preview_write()}
+              ? (editingExisting ? m.save_changes() : m.confirm_write())
+              : (editingExisting ? m.preview_changes() : m.preview_write())}
           </Button>
           <Button variant="outline" type="button" onclick={onClose}>{m.cancel()}</Button>
         </Dialog.Footer>

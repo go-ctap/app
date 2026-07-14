@@ -1290,6 +1290,28 @@ describe("controller lifecycle", () => {
     expect(get(pendingInteraction)).toBeNull();
   });
 
+  it("does not clear a retry prompt emitted while the previous answer resolves", async () => {
+    const { answerPendingInteraction, handleInteractionRequested } = await import("./controller");
+    seedPendingInteractionForTest({ interactionId: "interaction-1" } as InteractionPrompt);
+    serviceMocks.ResolveInteraction.mockImplementationOnce(async () => {
+      handleInteractionRequested({
+        interactionId: "interaction-2",
+        operationId: "operation-1",
+        sessionId: "session-1",
+        request: { kind: "pin" },
+      } as InteractionPrompt);
+      return true;
+    });
+
+    await answerPendingInteraction(new InteractionAnswer({
+      interactionId: "interaction-1",
+      pin: "1234",
+      confirmed: true,
+    }));
+
+    expect(get(pendingInteraction)?.interactionId).toBe("interaction-2");
+  });
+
   it("preserves a typed interaction failure code in the UI outcome", async () => {
     const { answerPendingInteraction } = await import("./controller");
     seedPendingInteractionForTest({ interactionId: "interaction-current" } as InteractionPrompt);

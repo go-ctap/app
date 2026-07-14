@@ -88,7 +88,6 @@ export enum Code {
     CodeDeviceNotFound = "DEVICE_NOT_FOUND",
     CodeDeviceSelectionRequired = "DEVICE_SELECTION_REQUIRED",
     CodeDeviceUnavailable = "DEVICE_UNAVAILABLE",
-    CodeDeviceBusy = "DEVICE_BUSY",
     CodeTransportModeUnsupported = "TRANSPORT_MODE_UNSUPPORTED",
     CodeTransportPermissionDenied = "TRANSPORT_PERMISSION_DENIED",
     CodeTransportProxyUnavailable = "TRANSPORT_PROXY_UNAVAILABLE",

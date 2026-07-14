@@ -144,6 +144,7 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
     actionsBlocked,
     writeDisabled: actionsBlocked || !supported || !selectedKeyAvailable,
     deleteDisabled: actionsBlocked || !supported || !selectedKeyAvailable,
+    selectedBlobPresent: Boolean(selectedRow?.blobPresent),
     cleanupDisabled: actionsBlocked || !supported,
     hasReport: Boolean(report),
     support: report?.support ?? null,

@@ -3,6 +3,7 @@
   import { InteractionAnswer } from "../../../../bindings/github.com/go-ctap/kit/service";
 
   import JsonView from "$lib/components/shared/JsonView.svelte";
+  import * as Alert from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import type { InteractionModalPresentation } from "$lib/shell-presentation";
@@ -29,16 +30,14 @@
   async function answer(confirmed: boolean, canceled = false) {
     if (!presentation) return;
     if (confirmed && presentation.kind === InteractionKind.InteractionKindPIN && !pin) return;
-    try {
-      await onAnswer(new InteractionAnswer({
-        interactionId: presentation.interactionId,
-        ...(confirmed && presentation.kind === InteractionKind.InteractionKindPIN ? { pin } : {}),
-        confirmed,
-        canceled,
-      }));
-    } finally {
-      pin = "";
-    }
+    const pending = onAnswer(new InteractionAnswer({
+      interactionId: presentation.interactionId,
+      ...(confirmed && presentation.kind === InteractionKind.InteractionKindPIN ? { pin } : {}),
+      confirmed,
+      canceled,
+    }));
+    pin = "";
+    await pending;
   }
 
   function submit(event: SubmitEvent) {
@@ -64,8 +63,16 @@
           <JsonView value={presentation.preview} title={m.preview_json()} variant="bare" />
         {/if}
 
+        {#if presentation.warning}
+          <Alert.Root variant="warning">
+            <Alert.Description>{presentation.warning}</Alert.Description>
+          </Alert.Root>
+        {/if}
+
         {#if presentation.kind === InteractionKind.InteractionKindPIN}
-          <SensitivePinField bind:value={pin} label={m.pin()} autofocus />
+          {#key presentation.interactionId}
+            <SensitivePinField bind:value={pin} label={m.pin()} autofocus />
+          {/key}
         {/if}
 
         <Dialog.Footer>

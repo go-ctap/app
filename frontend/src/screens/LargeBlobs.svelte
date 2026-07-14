@@ -147,6 +147,7 @@
 
   <LargeBlobWriteDialog
     mutation={$largeBlobsMutation}
+    editingExisting={largeBlobs.selectedBlobPresent}
     onDraftChange={updateLargeBlobWriteDraft}
     onEncodingChange={setLargeBlobsPayloadEncoding}
     onEdit={editLargeBlobWrite}

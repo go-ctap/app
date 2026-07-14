@@ -2,6 +2,7 @@ import { get } from "svelte/store";
 
 import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
 import {
+  BlobState,
   DecodeMode,
   LargeBlobKeyState,
   MutationOperation,
@@ -289,13 +290,37 @@ export function buildLargeBlobCleanupPreviewRequest(
 }
 
 export function beginLargeBlobWrite(credentialIDHex = get(largeBlobsSelectedCredentialID)) {
-  if (!targetForMutation(credentialIDHex)) return false;
+  const target = targetForMutation(credentialIDHex);
+  if (!target) return false;
+
+  let draft: LargeBlobWriteDraft = {
+    payload: "",
+    encoding: get(largeBlobsPayloadEncoding),
+  };
+  const blobPresent = target.blobPresent || target.blobState === BlobState.BlobStatePresent;
+  if (blobPresent) {
+    const readState = get(largeBlobsReadState);
+    if (readState.phase !== "ready" || readState.credentialIDHex !== credentialIDHex) return false;
+    const report = largeBlobReadReport(readState.responseEnvelope);
+    if (!report || !(report.blobPresent || report.array.blobState === BlobState.BlobStatePresent)) return false;
+
+    if (
+      report.decode.success
+      && report.decode.mode === DecodeMode.DecodeModeUTF8
+      && report.decode.decodedText !== undefined
+    ) {
+      draft = { payload: report.decode.decodedText, encoding: "utf8" };
+    } else {
+      draft = { payload: report.rawHex ?? "", encoding: "hex" };
+    }
+  }
+
   largeBlobsSelectedCredentialID.set(credentialIDHex);
   largeBlobsMutation.set({
     kind: "write",
     phase: "editing",
     credentialIDHex,
-    draft: { payload: "", encoding: get(largeBlobsPayloadEncoding) },
+    draft,
     validationError: null,
   });
   return true;

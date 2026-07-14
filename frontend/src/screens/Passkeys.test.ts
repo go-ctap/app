@@ -422,7 +422,8 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(screen.getByText("Inventory may be stale")).toBeInTheDocument();
+    expect(screen.getByText("Credential inventory could not be refreshed")).toBeInTheDocument();
+    expect(screen.getByText(/The last successfully loaded data remains visible\. Reload credentials to try again\./)).toBeInTheDocument();
     expect(screen.getByText(/Communication with the authenticator failed\./)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reload credentials" })).toBeEnabled();
     await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
