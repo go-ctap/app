@@ -12,9 +12,8 @@ import type { SessionStatus } from "./session-model.js";
 import type { StatusBarState } from "./stores.js";
 
 const token: DeviceReport = {
-  deviceId: "token-1",
+  fingerprint: "token-1",
   ordinalAlias: "1",
-  stableId: true,
   transport: Mode.ModeHID,
   path: "token-1",
   vendorId: 1,
@@ -132,20 +131,20 @@ describe("sidebar presentation", () => {
     ]);
   });
 
-  it("orders tokens by stable device identity instead of discovery order", () => {
+  it("orders tokens by stable discovery fields instead of discovery order or attachment fingerprint", () => {
     const first: DeviceReport = {
       ...token,
-      deviceId: "token-a",
+      fingerprint: "token-z",
       ordinalAlias: "2",
       path: "hid://a",
-      product: "Zebra Key",
+      product: "Alpha Key",
     };
     const second: DeviceReport = {
       ...token,
-      deviceId: "token-b",
+      fingerprint: "token-a",
       ordinalAlias: "1",
       path: "hid://b",
-      product: "Alpha Key",
+      product: "Zebra Key",
     };
     const discoveryOrder = [second, first];
 
@@ -156,7 +155,7 @@ describe("sidebar presentation", () => {
       busy: false,
     });
 
-    expect(presentation.tokens.map(({ value }) => value)).toEqual(["token-a", "token-b"]);
+    expect(presentation.tokens.map(({ value }) => value)).toEqual(["token-z", "token-a"]);
     expect(discoveryOrder).toEqual([second, first]);
   });
 

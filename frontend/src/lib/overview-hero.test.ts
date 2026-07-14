@@ -49,7 +49,7 @@ describe("buildOverviewHero", () => {
 
   it("prefers the normalized vendor model over the discovery product", () => {
     const device = new DeviceReport({
-      deviceId: "token-1",
+      fingerprint: "token-1",
       product: "Yubico Security Key",
       vendor: Vendor.VendorYubico,
       metadata: new DeviceMetadata({ model: "YubiKey 5C NFC" }),

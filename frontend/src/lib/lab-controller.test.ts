@@ -84,7 +84,7 @@ function makePreviewEnvelope(): MakeCredentialEnvelope {
     kind: OperationKind.OperationMakeCredential,
     result: {
       preview: {
-        device: { deviceId: "token-1", stableId: true },
+        device: { fingerprint: "token-1" },
         rp: { id: "lab.example", name: "Lab" },
         user: { id: "AAECAw==", name: "alice", displayName: "Alice" },
         pubKeyCredParams: [{
@@ -105,7 +105,7 @@ function makeResultEnvelope(
   const envelope = makePreviewEnvelope();
   envelope.operationId = "make-result-1";
   envelope.result!.result = {
-    deviceId: "token-1",
+    deviceFingerprint: "token-1",
     rpID,
     fmt: AttestationStatementFormatIdentifier.AttestationStatementFormatIdentifierPacked,
     credentialIDHex,
@@ -128,7 +128,7 @@ function getResultEnvelope(rpID = "example.com"): GetAssertionEnvelope {
     kind: OperationKind.OperationGetAssertion,
     result: {
       result: {
-        deviceId: "token-1",
+        deviceFingerprint: "token-1",
         rpID,
         assertions: [],
       },
@@ -377,7 +377,7 @@ describe("WebAuthn Lab request lifecycle", () => {
   });
 
   it("reopens an invalid session before starting a fresh MakeCredential preview", async () => {
-    const token = new DeviceReport({ deviceId: "token-1", product: "Test authenticator" });
+    const token = new DeviceReport({ fingerprint: "token-1", product: "Test authenticator" });
     devices.set([token]);
     selectedSelector.set("token-1");
     selectedDevice.set(token);
@@ -415,7 +415,7 @@ describe("WebAuthn Lab request lifecycle", () => {
         rawJSON: "{not-json\n",
       },
     })).toBe(true);
-    const token = new DeviceReport({ deviceId: "token-1", product: "Test authenticator" });
+    const token = new DeviceReport({ fingerprint: "token-1", product: "Test authenticator" });
     devices.set([token]);
     selectedSelector.set("token-1");
     selectedDevice.set(token);

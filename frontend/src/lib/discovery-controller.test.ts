@@ -52,9 +52,8 @@ vi.mock("../../bindings/fidobench/ctapkitservice", () => serviceMocks);
 
 function device(id: string, product = id): DeviceReport {
   return {
-    deviceId: id,
+    fingerprint: id,
     ordinalAlias: id,
-    stableId: true,
     transport: Mode.ModeHID,
     path: id,
     vendorId: 1,
@@ -78,15 +77,15 @@ function event(
 
 function seedSelected(token: DeviceReport, state: "ready" | "running" = "ready") {
   seedDevicesForTest([token]);
-  seedSelectionForTest(token.deviceId, token, {
+  seedSelectionForTest(token.fingerprint, token, {
     state,
-    sessionId: `session-${token.deviceId}`,
+    sessionId: `session-${token.fingerprint}`,
   });
 }
 
 function snapshot(token: DeviceReport): SessionSnapshot {
   return {
-    id: `session-${token.deviceId}`,
+    id: `session-${token.fingerprint}`,
     running: false,
     info: { device: token, closed: false },
   } as SessionSnapshot;
@@ -208,7 +207,7 @@ describe("discovery controller", () => {
     const inspection = { operationId: "inspect-1" } as InspectEnvelope;
     const { handleDiscoveryChanged } = await import("./discovery-controller.js");
     seedDevicesForTest([selected, unselected]);
-    seedSelectionForTest(selected.deviceId, selected, {
+    seedSelectionForTest(selected.fingerprint, selected, {
       state: "ready",
       sessionId: "session-token-1",
     });

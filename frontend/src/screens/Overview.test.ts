@@ -35,9 +35,8 @@ vi.mock("$lib/controller", () => ({
 vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
 
 const device = new DeviceReport({
-  deviceId: "token-1",
+  fingerprint: "token-1",
   ordinalAlias: "token-1",
-  stableId: true,
   transport: Mode.ModeHID,
   path: "token-1",
   vendorId: 1,

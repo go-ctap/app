@@ -8,8 +8,8 @@ import { activeScreen } from "./features/workbench/state";
 import { resetAppStateForTest, seedSelectionForTest } from "./store-test-utils";
 import { applyDiscovery, clearWorkbenchScreenCaches } from "./workbench-state";
 
-const first = new DeviceReport({ deviceId: "token-1", product: "First" });
-const second = new DeviceReport({ deviceId: "token-2", product: "Second" });
+const first = new DeviceReport({ fingerprint: "token-1", product: "First" });
+const second = new DeviceReport({ fingerprint: "token-2", product: "Second" });
 
 describe("WebAuthn Lab session lifecycle", () => {
   beforeEach(() => resetAppStateForTest());

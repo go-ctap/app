@@ -127,7 +127,7 @@ describe("buildOverviewRows", () => {
   it("presents normalized vendor identity and interface applications", () => {
     setAppLocale("en");
     const device = new DeviceReport({
-      deviceId: "token-1",
+      fingerprint: "token-1",
       product: "Yubico Security Key",
       vendor: Vendor.VendorYubico,
       metadata: new DeviceMetadata({
@@ -163,7 +163,7 @@ describe("buildOverviewRows", () => {
   it("does not present unknown Token2 enabled state as an empty enabled list", () => {
     setAppLocale("en");
     const device = new DeviceReport({
-      deviceId: "token-2",
+      fingerprint: "token-2",
       vendor: Vendor.VendorToken2,
       metadata: new DeviceMetadata({
         model: "Token2 T2F2",

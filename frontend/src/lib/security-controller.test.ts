@@ -69,9 +69,8 @@ const TOKEN = device("token-1");
 
 function device(id: string): DeviceReport {
   return {
-    deviceId: id,
+    fingerprint: id,
     ordinalAlias: id,
-    stableId: true,
     transport: Mode.ModeHID,
     path: id,
     vendorId: 1,
@@ -81,7 +80,7 @@ function device(id: string): DeviceReport {
   };
 }
 
-function snapshot(item: DeviceReport, sessionId = `session-${item.deviceId}`): SessionSnapshot {
+function snapshot(item: DeviceReport, sessionId = `session-${item.fingerprint}`): SessionSnapshot {
   return {
     id: sessionId,
     info: { device: item, closed: false },
@@ -223,7 +222,7 @@ function authenticatorConfigEnvelope(
       result: phase === "result"
         ? {
             operation,
-            deviceId: TOKEN.deviceId,
+            deviceFingerprint: TOKEN.fingerprint,
             state: StateValue.StateConfigured,
           }
         : null,
@@ -262,7 +261,7 @@ function partialBioEnrollErrorEnvelope(): BioEnrollEnvelope {
         mode: PreviewMode.PreviewModeExecute,
       },
       result: {
-        deviceId: TOKEN.deviceId,
+        deviceFingerprint: TOKEN.fingerprint,
         previewOnly: false,
         templateIDHex: "beef",
         samples: [
@@ -318,7 +317,7 @@ function resetEnvelope(phase: "preview" | "result"): ResetFactoryEnvelope {
         mode: phase === "preview" ? PreviewMode.PreviewModeDryRun : PreviewMode.PreviewModeExecute,
       },
       result: phase === "result"
-        ? { deviceId: TOKEN.deviceId, reset: true }
+        ? { deviceFingerprint: TOKEN.fingerprint, reset: true }
         : null,
     },
   } as unknown as ResetFactoryEnvelope;
@@ -332,7 +331,7 @@ beforeEach(() => {
   setAppLocale("en");
   resetAppStateForTest();
   seedDevicesForTest([TOKEN]);
-  seedSelectionForTest(TOKEN.deviceId, TOKEN, { state: "ready", sessionId: "session-1" });
+  seedSelectionForTest(TOKEN.fingerprint, TOKEN, { state: "ready", sessionId: "session-1" });
 });
 
 afterEach(() => {
@@ -354,7 +353,7 @@ describe("security controller loading", () => {
     selectedSelector.set("");
     expect(await maybeLoadSecurity()).toBe(false);
 
-    selectedSelector.set(TOKEN.deviceId);
+    selectedSelector.set(TOKEN.fingerprint);
     expect(await maybeLoadSecurity()).toBe(true);
     expect(await maybeLoadSecurity()).toBe(false);
 
@@ -433,7 +432,7 @@ describe("security controller loading", () => {
     expect(get(sessionStatus).sessionId).toBeUndefined();
 
     expect(await reloadSecurity()).toBe(true);
-    expect(openSession).toHaveBeenCalledWith({ selector: TOKEN.deviceId });
+    expect(openSession).toHaveBeenCalledWith({ selector: TOKEN.fingerprint });
     expect(configStatus.mock.calls[1][0]).toEqual({ sessionId: "session-2" });
     expect(get(sessionStatus)).toMatchObject({ state: "ready", sessionId: "session-2" });
     expect(get(securityStatus).phase).toBe("ready");
@@ -737,9 +736,9 @@ describe("factory reset lifecycle", () => {
     expect(closeAllSessions).toHaveBeenCalledTimes(1);
     expect(closeAllSessions.mock.invocationCallOrder[0]).toBeLessThan(discover.mock.invocationCallOrder[0]);
     expect(discover.mock.invocationCallOrder[0]).toBeLessThan(openSession.mock.invocationCallOrder[0]);
-    expect(openSession).toHaveBeenCalledWith({ selector: replacement.deviceId });
+    expect(openSession).toHaveBeenCalledWith({ selector: replacement.fingerprint });
     expect(get(devices)).toEqual([replacement]);
-    expect(get(selectedSelector)).toBe(replacement.deviceId);
+    expect(get(selectedSelector)).toBe(replacement.fingerprint);
     expect(get(sessionStatus)).toMatchObject({
       state: "ready",
       sessionId: "session-token-after-reset",
@@ -768,10 +767,10 @@ describe("factory reset lifecycle", () => {
     expect(await confirmSecurityMutation()).toBe(true);
 
     expect(closeAllSessions).toHaveBeenCalledTimes(1);
-    expect(openSession).toHaveBeenCalledWith({ selector: replacements[0].deviceId });
+    expect(openSession).toHaveBeenCalledWith({ selector: replacements[0].fingerprint });
     expect(configStatus).toHaveBeenCalledWith({ sessionId: "session-token-a" });
     expect(get(devices)).toEqual(replacements);
-    expect(get(selectedSelector)).toBe(replacements[0].deviceId);
+    expect(get(selectedSelector)).toBe(replacements[0].fingerprint);
     expect(get(sessionStatus)).toMatchObject({
       state: "ready",
       sessionId: "session-token-a",
@@ -797,7 +796,7 @@ describe("factory reset lifecycle", () => {
     expect(await confirmSecurityMutation()).toBe(true);
 
     expect(sessions).not.toHaveBeenCalled();
-    expect(openSession).toHaveBeenCalledWith({ selector: replacement.deviceId });
+    expect(openSession).toHaveBeenCalledWith({ selector: replacement.fingerprint });
     expect(get(sessionStatus)).toMatchObject({ state: "ready", sessionId: "fresh-session" });
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "warning",

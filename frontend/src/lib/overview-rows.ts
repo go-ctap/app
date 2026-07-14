@@ -77,7 +77,7 @@ export function buildOverviewRows(context: OverviewContext = {}): OverviewRow[] 
 
   return [
     row("Identity", m.matrix_name_aaguid, m.matrix_desc_aaguid_model, "informational", info.aaguid, "aaguid"),
-    row("Identity", m.matrix_name_device_id, m.matrix_desc_device_id, valueStatus(device?.deviceId), textValue(device?.deviceId, value.notReported()), "device.deviceId"),
+    row("Identity", m.matrix_name_device_fingerprint, m.matrix_desc_device_fingerprint, valueStatus(device?.fingerprint), textValue(device?.fingerprint, value.notReported()), "device.fingerprint"),
     ...vendorIdentityRows(device),
     transportRow(info, device, transports),
     optionRow("Identity", m.matrix_name_platform_attachment, m.matrix_desc_platform_attachment, optionValue(options, optionKey.plat), "enabled", "disabled", "options.plat", value.defaultFalse()),

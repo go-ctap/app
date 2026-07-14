@@ -23,9 +23,8 @@ const serviceMocks = vi.hoisted(() => ({
 vi.mock("../../bindings/fidobench/ctapkitservice", () => serviceMocks);
 
 const token: DeviceReport = {
-  deviceId: "token-1",
+  fingerprint: "token-1",
   ordinalAlias: "1",
-  stableId: true,
   transport: Mode.ModeHID,
   path: "token-1",
   vendorId: 1,

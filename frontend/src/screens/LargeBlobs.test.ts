@@ -70,7 +70,7 @@ function listEnvelope(): LargeBlobListEnvelope {
     kind: OperationKind.OperationListLargeBlobs,
     result: {
       report: {
-        device: { deviceId: "token-1", stableId: true },
+        device: { fingerprint: "token-1" },
         support: {
           largeBlobs: true,
           largeBlobKeyExtension: true,
@@ -129,7 +129,7 @@ function readEnvelope(options: {
     kind: OperationKind.OperationReadLargeBlob,
     result: {
       report: {
-        device: { deviceId: "token-1", stableId: true },
+        device: { fingerprint: "token-1" },
         support: { largeBlobs: true, largeBlobKeyExtension: true, maxSerializedLargeBlobArray: 0 },
         target: {
           credentialIDHex: missingKey ? "beef" : "cafe",
@@ -175,7 +175,7 @@ function missingBlobReadEnvelope(): LargeBlobReadEnvelope {
 function mutationPreview(operation: MutationOperation, overrides: Partial<MutationPreview> = {}): MutationPreview {
   return {
     operation,
-    device: { deviceId: "token-1", stableId: true },
+    device: { fingerprint: "token-1" },
     support: { largeBlobs: true, largeBlobKeyExtension: true, maxSerializedLargeBlobArray: 0 },
     target: {
       credentialIDHex: operation === MutationOperation.MutationGC ? "" : "cafe",

@@ -54,7 +54,7 @@ function listEnvelope(keyState = "available", blobPresent = false): LargeBlobLis
     kind: OperationKind.OperationListLargeBlobs,
     result: {
       report: {
-        device: { deviceId: "token-1", stableId: true },
+        device: { fingerprint: "token-1" },
         support: {
           largeBlobs: true,
           largeBlobKeyExtension: true,
@@ -92,7 +92,7 @@ function previewEnvelope(
     result: {
       preview: {
         operation,
-        device: { deviceId: "token-1", stableId: true },
+        device: { fingerprint: "token-1" },
         support: { largeBlobs: true, largeBlobKeyExtension: true },
         target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
         largeBlobKeyState: "available",
@@ -116,7 +116,7 @@ function resultEnvelope(kind: OperationKind, operation: MutationOperation): Larg
   envelope.operationId = `result-${kind}`;
   envelope.result!.result = {
     operation,
-    deviceId: "token-1",
+    deviceFingerprint: "token-1",
     credentialIDHex: "cafe",
     rpID: "example.test",
     currentByteCount: 0,
@@ -137,7 +137,7 @@ function readEnvelope(mode: DecodeMode): LargeBlobReadEnvelope {
     kind: OperationKind.OperationReadLargeBlob,
     result: {
       report: {
-        device: { deviceId: "token-1", stableId: true },
+        device: { fingerprint: "token-1" },
         support: { largeBlobs: true, largeBlobKeyExtension: true },
         target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
         largeBlobKeyState: "available",
@@ -454,7 +454,7 @@ describe("large blob controller", () => {
       kind: OperationKind.OperationReadLargeBlob,
       result: {
         report: {
-          device: { deviceId: "token-1", stableId: true },
+          device: { fingerprint: "token-1" },
           support: { largeBlobs: true, largeBlobKeyExtension: true },
           target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
           largeBlobKeyState: "missing",

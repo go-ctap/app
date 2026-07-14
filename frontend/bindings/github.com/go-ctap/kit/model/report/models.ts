@@ -55,10 +55,13 @@ export class DeviceMetadata {
     }
 }
 
+/**
+ * DeviceReport describes a discovered authenticator. Fingerprint identifies the
+ * current transport attachment and may change after device reinsertion.
+ */
 export class DeviceReport {
-    "deviceId": string;
+    "fingerprint": string;
     "ordinalAlias"?: string;
-    "stableId": boolean;
     "transport": transport$0.Mode;
     "path": string;
     "manufacturer"?: string;
@@ -71,11 +74,8 @@ export class DeviceReport {
 
     /** Creates a new DeviceReport instance. */
     constructor($$source: Partial<DeviceReport> = {}) {
-        if (!("deviceId" in $$source)) {
-            this["deviceId"] = "";
-        }
-        if (!("stableId" in $$source)) {
-            this["stableId"] = false;
+        if (!("fingerprint" in $$source)) {
+            this["fingerprint"] = "";
         }
         if (!("transport" in $$source)) {
             this["transport"] = transport$0.Mode.$zero;
@@ -100,10 +100,10 @@ export class DeviceReport {
      * Creates a new DeviceReport instance from a string or object.
      */
     static createFrom($$source: any = {}): DeviceReport {
-        const $$createField11_0 = $$createType3;
+        const $$createField10_0 = $$createType3;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("metadata" in $$parsedSource) {
-            $$parsedSource["metadata"] = $$createField11_0($$parsedSource["metadata"]);
+            $$parsedSource["metadata"] = $$createField10_0($$parsedSource["metadata"]);
         }
         return new DeviceReport($$parsedSource as Partial<DeviceReport>);
     }

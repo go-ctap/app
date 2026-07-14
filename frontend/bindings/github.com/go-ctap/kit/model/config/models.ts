@@ -96,7 +96,7 @@ export class AuthenticatorConfigPreview {
 
 export class AuthenticatorConfigResult {
     "operation": AuthenticatorConfigOperation;
-    "deviceId": string;
+    "deviceFingerprint": string;
     "target"?: AlwaysUVTarget;
     "newMinPINLength"?: number;
     "state": StateValue;
@@ -106,8 +106,8 @@ export class AuthenticatorConfigResult {
         if (!("operation" in $$source)) {
             this["operation"] = AuthenticatorConfigOperation.$zero;
         }
-        if (!("deviceId" in $$source)) {
-            this["deviceId"] = "";
+        if (!("deviceFingerprint" in $$source)) {
+            this["deviceFingerprint"] = "";
         }
         if (!("state" in $$source)) {
             this["state"] = StateValue.$zero;
@@ -219,7 +219,7 @@ export class BioEnrollPreview {
 }
 
 export class BioEnrollResult {
-    "deviceId": string;
+    "deviceFingerprint": string;
     "previewOnly": boolean;
     "templateIDHex": string;
     "samples"?: BioEnrollSample[];
@@ -230,8 +230,8 @@ export class BioEnrollResult {
 
     /** Creates a new BioEnrollResult instance. */
     constructor($$source: Partial<BioEnrollResult> = {}) {
-        if (!("deviceId" in $$source)) {
-            this["deviceId"] = "";
+        if (!("deviceFingerprint" in $$source)) {
+            this["deviceFingerprint"] = "";
         }
         if (!("previewOnly" in $$source)) {
             this["previewOnly"] = false;
@@ -415,7 +415,7 @@ export class BioMutationPreview {
 
 export class BioMutationResult {
     "operation": BioMutationOperation;
-    "deviceId": string;
+    "deviceFingerprint": string;
     "previewOnly": boolean;
     "templateIDHex": string;
     "friendlyName"?: string;
@@ -425,8 +425,8 @@ export class BioMutationResult {
         if (!("operation" in $$source)) {
             this["operation"] = BioMutationOperation.$zero;
         }
-        if (!("deviceId" in $$source)) {
-            this["deviceId"] = "";
+        if (!("deviceFingerprint" in $$source)) {
+            this["deviceFingerprint"] = "";
         }
         if (!("previewOnly" in $$source)) {
             this["previewOnly"] = false;
@@ -638,7 +638,7 @@ export class PINMutationPreview {
 
 export class PINMutationResult {
     "operation": PINMutationOperation;
-    "deviceId": string;
+    "deviceFingerprint": string;
     "pinState": StateValue;
 
     /** Creates a new PINMutationResult instance. */
@@ -646,8 +646,8 @@ export class PINMutationResult {
         if (!("operation" in $$source)) {
             this["operation"] = PINMutationOperation.$zero;
         }
-        if (!("deviceId" in $$source)) {
-            this["deviceId"] = "";
+        if (!("deviceFingerprint" in $$source)) {
+            this["deviceFingerprint"] = "";
         }
         if (!("pinState" in $$source)) {
             this["pinState"] = StateValue.$zero;
@@ -777,13 +777,13 @@ export class ResetPreview {
 }
 
 export class ResetResult {
-    "deviceId": string;
+    "deviceFingerprint": string;
     "reset": boolean;
 
     /** Creates a new ResetResult instance. */
     constructor($$source: Partial<ResetResult> = {}) {
-        if (!("deviceId" in $$source)) {
-            this["deviceId"] = "";
+        if (!("deviceFingerprint" in $$source)) {
+            this["deviceFingerprint"] = "";
         }
         if (!("reset" in $$source)) {
             this["reset"] = false;

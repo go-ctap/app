@@ -34,14 +34,13 @@ vi.mock("$lib/controller", async (importOriginal) => ({
 }));
 
 const token = new DeviceReport({
-  deviceId: "token-1",
+  fingerprint: "token-1",
   ordinalAlias: "1",
-  stableId: true,
   product: "Test authenticator",
 });
 
 function selectToken() {
-  seedSelectionForTest(token.deviceId, token, { state: "ready", sessionId: "session-1" });
+  seedSelectionForTest(token.fingerprint, token, { state: "ready", sessionId: "session-1" });
 }
 
 function stepCard(name: string) {
@@ -122,7 +121,7 @@ describe("WebAuthn Lab screen", () => {
   });
 
   it("locks both steps while the shared authenticator session is running", () => {
-    seedSelectionForTest(token.deviceId, token, { state: "running", sessionId: "session-1" });
+    seedSelectionForTest(token.fingerprint, token, { state: "running", sessionId: "session-1" });
     render(Lab);
 
     const make = stepCard("1. MakeCredential");

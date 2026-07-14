@@ -26,8 +26,7 @@ function envelope(): LargeBlobListEnvelope {
     result: {
       report: {
         device: {
-          deviceId: "token-1",
-          stableId: true,
+          fingerprint: "token-1",
           transport: Mode.ModeHID,
           path: "token-1",
           vendorId: 1,

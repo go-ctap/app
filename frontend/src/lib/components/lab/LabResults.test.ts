@@ -69,7 +69,7 @@ describe("WebAuthn Lab results", () => {
 
   it("distinguishes a successful GetAssertion response with 0 assertions", () => {
     const result = new GetAssertionResultDTO({
-      deviceId: "token-1",
+      deviceFingerprint: "token-1",
       rpID: "example.com",
       assertions: [],
     });
@@ -116,7 +116,7 @@ describe("WebAuthn Lab results", () => {
       }),
     ];
 
-    const result = new GetAssertionResultDTO({ deviceId: "token-1", rpID: "example.com", assertions });
+    const result = new GetAssertionResultDTO({ deviceFingerprint: "token-1", rpID: "example.com", assertions });
     render(GetAssertionResult, { responseEnvelope: getAssertionEnvelope(result) });
 
     expect(screen.getByText("2 assertions")).toBeInTheDocument();
@@ -133,7 +133,7 @@ describe("WebAuthn Lab results", () => {
     const user = userEvent.setup();
     const credentialIDHex = "00112233445566778899aabbccddeeff0011223344556677";
     const result = new MakeCredentialResultDTO({
-      deviceId: "token-1",
+      deviceFingerprint: "token-1",
       rpID: "example.com",
       fmt: AttestationStatementFormatIdentifier.AttestationStatementFormatIdentifierPacked,
       credentialIDHex,

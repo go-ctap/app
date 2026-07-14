@@ -32,9 +32,8 @@ import { failureForCode } from "$lib/test-failure";
 import Security from "./Security.svelte";
 
 const token = new DeviceReport({
-  deviceId: "token-1",
+  fingerprint: "token-1",
   ordinalAlias: "token-1",
-  stableId: true,
   transport: Mode.ModeHID,
   path: "token-1",
   vendorId: 1,
@@ -101,7 +100,7 @@ describe("Security screen", () => {
   beforeEach(() => {
     setAppLocale("en");
     resetAppStateForTest();
-    seedSelectionForTest(token.deviceId, token, { state: "ready", sessionId: "session-1" });
+    seedSelectionForTest(token.fingerprint, token, { state: "ready", sessionId: "session-1" });
     completeSecurityStatusLoad(statusEnvelope());
   });
 

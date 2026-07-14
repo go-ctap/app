@@ -78,8 +78,7 @@ import {
 } from "./ctapkit-results";
 
 const device: DeviceReport = {
-  deviceId: "dev-1",
-  stableId: true,
+  fingerprint: "dev-1",
   transport: Mode.ModeHID,
   path: "path",
   vendorId: 1,
@@ -214,7 +213,7 @@ describe("ctapkit result extractors", () => {
       kind: OperationKind.OperationSetPIN,
       result: {
         preview: { operation: PINMutationOperation.PINMutationSet },
-        result: { operation: PINMutationOperation.PINMutationSet, deviceId: "dev-1" },
+        result: { operation: PINMutationOperation.PINMutationSet, deviceFingerprint: "dev-1" },
       },
     } as unknown as PINEnvelope;
     const authenticatorConfig = {
@@ -223,7 +222,7 @@ describe("ctapkit result extractors", () => {
         preview: { operation: AuthenticatorConfigOperation.AuthenticatorConfigMinPINLength },
         result: {
           operation: AuthenticatorConfigOperation.AuthenticatorConfigMinPINLength,
-          deviceId: "dev-1",
+          deviceFingerprint: "dev-1",
         },
       },
     } as unknown as AuthenticatorConfigEnvelope;
@@ -232,7 +231,7 @@ describe("ctapkit result extractors", () => {
       result: {
         preview: { mode: PreviewMode.PreviewModeExecute },
         result: {
-          deviceId: "dev-1",
+          deviceFingerprint: "dev-1",
           templateIDHex: "",
           samples: [{ status: "good" }],
           remainingSamples: 2,
@@ -245,7 +244,7 @@ describe("ctapkit result extractors", () => {
         preview: { operation: BioMutationOperation.BioMutationRemove },
         result: {
           operation: BioMutationOperation.BioMutationRemove,
-          deviceId: "dev-1",
+          deviceFingerprint: "dev-1",
           templateIDHex: "cafe",
         },
       },
@@ -254,7 +253,7 @@ describe("ctapkit result extractors", () => {
       kind: OperationKind.OperationResetFactory,
       result: {
         preview: { mode: PreviewMode.PreviewModeExecute },
-        result: { deviceId: "dev-1", reset: true },
+        result: { deviceFingerprint: "dev-1", reset: true },
       },
     } as unknown as ResetFactoryEnvelope;
 
@@ -363,7 +362,7 @@ describe("ctapkit result extractors", () => {
           proposed: { userIDHex: "02" },
         },
         result: {
-          deviceId: "dev-1",
+          deviceFingerprint: "dev-1",
           credentialIDHex: "cafe",
           rpID: "example.test",
           previous: { userIDHex: "01" },
@@ -375,14 +374,14 @@ describe("ctapkit result extractors", () => {
       kind: OperationKind.OperationDeleteCredential,
       result: {
         preview: { credentialIDHex: "cafe", rpID: "example.test" },
-        result: { deviceId: "dev-1", credentialIDHex: "cafe", rpID: "example.test" },
+        result: { deviceFingerprint: "dev-1", credentialIDHex: "cafe", rpID: "example.test" },
       },
     } as CredentialDeleteEnvelope;
 
     expect(credentialUpdatePreview(update)?.proposed.userIDHex).toBe("02");
     expect(credentialUpdateResult(update)?.current.userIDHex).toBe("02");
     expect(credentialDeletePreview(deletion)?.credentialIDHex).toBe("cafe");
-    expect(credentialDeleteResult(deletion)?.deviceId).toBe("dev-1");
+    expect(credentialDeleteResult(deletion)?.deviceFingerprint).toBe("dev-1");
   });
 
   it("extracts MakeCredential preview and completed result from its typed envelope", () => {
@@ -394,7 +393,7 @@ describe("ctapkit result extractors", () => {
       warnings: [],
     });
     const result = new MakeCredentialResult({
-      deviceId: "dev-1",
+      deviceFingerprint: "dev-1",
       rpID: "example.com",
       fmt: AttestationStatementFormatIdentifier.AttestationStatementFormatIdentifierPacked,
       credentialIDHex: "cafe",
@@ -428,7 +427,7 @@ describe("ctapkit result extractors", () => {
 
   it("extracts GetAssertion result from its successful typed envelope", () => {
     const result = new GetAssertionResult({
-      deviceId: "dev-1",
+      deviceFingerprint: "dev-1",
       rpID: "example.com",
       assertions: [],
     });

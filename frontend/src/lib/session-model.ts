@@ -21,13 +21,13 @@ export type Discovery = {
 };
 
 export function selectorFromDevice(device: DeviceReport | null | undefined) {
-  return device?.deviceId || device?.ordinalAlias || "";
+  return device?.fingerprint || device?.ordinalAlias || "";
 }
 
 export function reportForSelector(devices: DeviceReport[], selector: string) {
   const requestedSelector = selector.trim();
   if (!requestedSelector) return null;
-  return devices.find((device) => device.deviceId === requestedSelector || device.ordinalAlias === requestedSelector) || null;
+  return devices.find((device) => device.fingerprint === requestedSelector || device.ordinalAlias === requestedSelector) || null;
 }
 
 export function labelForDevice(device: DeviceReport) {
@@ -47,7 +47,7 @@ export function sessionIsOpen(snapshot: SessionSnapshot) {
 
 export function sessionMatches(snapshot: SessionSnapshot, selector: string) {
   const requestedSelector = selector.trim();
-  return sessionIsOpen(snapshot) && (snapshot.info.device.deviceId === requestedSelector || snapshot.info.device.ordinalAlias === requestedSelector);
+  return sessionIsOpen(snapshot) && (snapshot.info.device.fingerprint === requestedSelector || snapshot.info.device.ordinalAlias === requestedSelector);
 }
 
 export function statusFromSession(

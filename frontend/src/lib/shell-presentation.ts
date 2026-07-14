@@ -58,14 +58,29 @@ export type InteractionModalPresentation = {
   kind: InteractionKind;
 };
 
+const deviceIdentityCollator = new Intl.Collator("en", {
+  numeric: true,
+  sensitivity: "base",
+});
+
 function compareDeviceIdentity(left: DeviceReport, right: DeviceReport) {
-  const deviceIDOrder = left.deviceId.localeCompare(right.deviceId);
-  if (deviceIDOrder !== 0) return deviceIDOrder;
+  // Prefer descriptor identity; enrichment and ordinal aliases can change between events.
+  const orderFields: Array<[string | number, string | number]> = [
+    [left.manufacturer ?? "", right.manufacturer ?? ""],
+    [left.product ?? "", right.product ?? ""],
+    [left.serial ?? "", right.serial ?? ""],
+    [left.vendorId, right.vendorId],
+    [left.productId, right.productId],
+    [left.transport, right.transport],
+    [left.fingerprint, right.fingerprint],
+    [left.path, right.path],
+  ];
 
-  const transportOrder = left.transport.localeCompare(right.transport);
-  if (transportOrder !== 0) return transportOrder;
-
-  return left.path.localeCompare(right.path);
+  for (const [leftValue, rightValue] of orderFields) {
+    const order = deviceIdentityCollator.compare(String(leftValue), String(rightValue));
+    if (order !== 0) return order;
+  }
+  return 0;
 }
 
 export function buildSidebarPresentation(input: {

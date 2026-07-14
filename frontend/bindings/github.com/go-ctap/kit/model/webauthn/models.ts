@@ -95,14 +95,14 @@ export class AuthenticatorOptions {
 }
 
 export class GetAssertionResult {
-    "deviceId": string;
+    "deviceFingerprint": string;
     "rpID": string;
     "assertions"?: Assertion[];
 
     /** Creates a new GetAssertionResult instance. */
     constructor($$source: Partial<GetAssertionResult> = {}) {
-        if (!("deviceId" in $$source)) {
-            this["deviceId"] = "";
+        if (!("deviceFingerprint" in $$source)) {
+            this["deviceFingerprint"] = "";
         }
         if (!("rpID" in $$source)) {
             this["rpID"] = "";
@@ -189,7 +189,7 @@ export class MakeCredentialPreview {
 }
 
 export class MakeCredentialResult {
-    "deviceId": string;
+    "deviceFingerprint": string;
     "rpID": string;
     "fmt": attestation$0.AttestationStatementFormatIdentifier;
     "credentialIDHex": string;
@@ -204,8 +204,8 @@ export class MakeCredentialResult {
 
     /** Creates a new MakeCredentialResult instance. */
     constructor($$source: Partial<MakeCredentialResult> = {}) {
-        if (!("deviceId" in $$source)) {
-            this["deviceId"] = "";
+        if (!("deviceFingerprint" in $$source)) {
+            this["deviceFingerprint"] = "";
         }
         if (!("rpID" in $$source)) {
             this["rpID"] = "";

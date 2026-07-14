@@ -194,7 +194,7 @@ export class ListArraySummary {
 }
 
 export class ListCredential {
-    "deviceId"?: string;
+    "deviceFingerprint"?: string;
     "credentialIDHex": string;
     "rp": credentials$0.RelyingParty;
     "user": credentials$0.UserIdentity;
@@ -395,7 +395,7 @@ export class MutationPreview {
 
 export class MutationResult {
     "operation": MutationOperation;
-    "deviceId": string;
+    "deviceFingerprint": string;
     "credentialIDHex": string;
     "rpID": string;
     "rpName"?: string;
@@ -420,8 +420,8 @@ export class MutationResult {
         if (!("operation" in $$source)) {
             this["operation"] = MutationOperation.$zero;
         }
-        if (!("deviceId" in $$source)) {
-            this["deviceId"] = "";
+        if (!("deviceFingerprint" in $$source)) {
+            this["deviceFingerprint"] = "";
         }
         if (!("credentialIDHex" in $$source)) {
             this["credentialIDHex"] = "";

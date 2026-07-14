@@ -8,7 +8,7 @@ export function labelDevice(device: DeviceReport | null | undefined) {
   const serialValue = device.metadata?.serial || device.serial;
   const serial = serialValue ? ` · ${serialValue}` : "";
   const alias = device.ordinalAlias ? `${device.ordinalAlias}. ` : "";
-  return `${alias}${name || device.deviceId || m.authenticator()}${serial}`;
+  return `${alias}${name || device.fingerprint || m.authenticator()}${serial}`;
 }
 
 export function deviceName(device: DeviceReport | null | undefined) {
@@ -16,7 +16,7 @@ export function deviceName(device: DeviceReport | null | undefined) {
   return displayModel(device)
     || [device.manufacturer, device.product].filter(Boolean).join(" ")
     || device.product
-    || device.deviceId
+    || device.fingerprint
     || m.authenticator();
 }
 
@@ -31,7 +31,7 @@ function displayModel(device: DeviceReport) {
 
 export function deviceDetail(device: DeviceReport | null | undefined) {
   if (!device) return "";
-  return device.metadata?.serial || device.serial || device.deviceId || "";
+  return device.metadata?.serial || device.serial || device.fingerprint || "";
 }
 
 export function sessionStateLabel(value: unknown) {

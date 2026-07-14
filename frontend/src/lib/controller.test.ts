@@ -86,9 +86,8 @@ vi.mock("../../bindings/fidobench/ctapkitservice", () => serviceMocks);
 
 function device(id: string): DeviceReport {
   return {
-    deviceId: id,
+    fingerprint: id,
     ordinalAlias: id,
-    stableId: true,
     transport: Mode.ModeHID,
     path: id,
     vendorId: 1,
@@ -98,7 +97,7 @@ function device(id: string): DeviceReport {
   };
 }
 
-function snapshot(item: DeviceReport, sessionId = `session-${item.deviceId}`): SessionSnapshot {
+function snapshot(item: DeviceReport, sessionId = `session-${item.fingerprint}`): SessionSnapshot {
   return {
     id: sessionId,
     info: {
@@ -113,8 +112,8 @@ function snapshot(item: DeviceReport, sessionId = `session-${item.deviceId}`): S
 
 function inspectEnvelope(item: DeviceReport) {
   return {
-    operationId: `inspect-${item.deviceId}`,
-    sessionId: `session-${item.deviceId}`,
+    operationId: `inspect-${item.fingerprint}`,
+    sessionId: `session-${item.fingerprint}`,
     kind: OperationKind.OperationInspect,
     result: {
       result: {
@@ -132,8 +131,8 @@ function inspectEnvelope(item: DeviceReport) {
 
 function bioSensorEnvelope(item: DeviceReport): BioSensorEnvelope {
   return {
-    operationId: `bio-${item.deviceId}`,
-    sessionId: `session-${item.deviceId}`,
+    operationId: `bio-${item.fingerprint}`,
+    sessionId: `session-${item.fingerprint}`,
     kind: OperationKind.OperationBioSensorInfo,
     result: {
       report: {
@@ -145,9 +144,9 @@ function bioSensorEnvelope(item: DeviceReport): BioSensorEnvelope {
   } as BioSensorEnvelope;
 }
 
-function credentialsEnvelope(item: DeviceReport, sessionId = `session-${item.deviceId}`, credentialIDHex = "cafe"): CredentialsEnvelope {
+function credentialsEnvelope(item: DeviceReport, sessionId = `session-${item.fingerprint}`, credentialIDHex = "cafe"): CredentialsEnvelope {
   return {
-    operationId: `credentials-${item.deviceId}`,
+    operationId: `credentials-${item.fingerprint}`,
     sessionId,
     kind: OperationKind.OperationListCredentials,
     result: {
@@ -181,9 +180,9 @@ function credentialsEnvelope(item: DeviceReport, sessionId = `session-${item.dev
   } as CredentialsEnvelope;
 }
 
-function largeBlobListEnvelope(item: DeviceReport, sessionId = `session-${item.deviceId}`): LargeBlobListEnvelope {
+function largeBlobListEnvelope(item: DeviceReport, sessionId = `session-${item.fingerprint}`): LargeBlobListEnvelope {
   return {
-    operationId: `large-blobs-${item.deviceId}`,
+    operationId: `large-blobs-${item.fingerprint}`,
     sessionId,
     kind: OperationKind.OperationListLargeBlobs,
     result: {
@@ -592,7 +591,7 @@ describe("controller lifecycle", () => {
         result: {
           preview,
           result: {
-            deviceId: "token-1",
+            deviceFingerprint: "token-1",
             credentialIDHex: "cafe",
             rpID: "example.com",
             previous: preview.current,
@@ -662,7 +661,7 @@ describe("controller lifecycle", () => {
         result: {
           preview,
           result: {
-            deviceId: "token-1",
+            deviceFingerprint: "token-1",
             credentialIDHex: "cafe",
             rpID: "example.com",
             previous: preview.current,
@@ -726,7 +725,7 @@ describe("controller lifecycle", () => {
         result: {
           preview,
           result: {
-            deviceId: "token-1",
+            deviceFingerprint: "token-1",
             credentialIDHex: "cafe",
             rpID: "example.com",
             rpName: "Example",

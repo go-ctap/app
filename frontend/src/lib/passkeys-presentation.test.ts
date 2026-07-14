@@ -19,8 +19,7 @@ function envelope(groups: NonNullable<CredentialsEnvelope["result"]>["report"]["
     result: {
       report: {
         device: {
-          deviceId: "token-1",
-          stableId: true,
+          fingerprint: "token-1",
         },
         support: {
           credentialManagement: true,

@@ -21,7 +21,7 @@ function erroredPreviewMutation(longTouchForReset = StateValue.StateSupported): 
     error: failureForCode(Code.CodeResetWindowExpired),
     result: {
       preview: {
-        device: { deviceId: "token-1", stableId: true },
+        device: { fingerprint: "token-1" },
         resetHints: {
           longTouchForReset,
           transportsForReset: ["usb"],

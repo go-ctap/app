@@ -41,7 +41,7 @@ function inventoryEnvelope(): CredentialsEnvelope {
     kind: OperationKind.OperationListCredentials,
     result: {
       report: {
-        device: { deviceId: "token-1", stableId: true },
+        device: { fingerprint: "token-1" },
         support: { credentialManagement: true, previewOnly: false, readOnlyPermission: false },
         summary: {
           existingResidentCredentialsCount: 1,
@@ -84,7 +84,7 @@ function updateResultEnvelope(): CredentialUpdateEnvelope {
   const envelope = updatePreviewEnvelope();
   envelope.operationId = "update-1";
   envelope.result!.result = {
-    deviceId: "token-1",
+    deviceFingerprint: "token-1",
     credentialIDHex: "cafe",
     rpID: "example.test",
     previous: { userIDHex: "01", name: "user", displayName: "Old name" },
@@ -113,7 +113,7 @@ function deleteResultEnvelope(): CredentialDeleteEnvelope {
   const envelope = deletePreviewEnvelope();
   envelope.operationId = "delete-1";
   envelope.result!.result = {
-    deviceId: "token-1",
+    deviceFingerprint: "token-1",
     credentialIDHex: "cafe",
     rpID: "example.test",
     userIDHex: "01",
