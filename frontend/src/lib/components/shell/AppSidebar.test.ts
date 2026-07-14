@@ -30,9 +30,9 @@ describe("AppSidebar", () => {
     expect(screen.getAllByRole("button").map((button) => button.getAttribute("aria-label"))).toEqual([
       "Overview",
       "Passkeys",
-      "WebAuthn Lab",
       "Large blobs",
       "Security",
+      "WebAuthn Lab",
       "Settings",
     ]);
 
@@ -94,6 +94,7 @@ describe("AppSidebar", () => {
 
     expect(screen.getByRole("heading", { name: "Tokens" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "YubiKey 5 · ABC" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("YubiKey 5")).toHaveAttribute("title", "YubiKey 5");
     await user.click(screen.getByRole("button", { name: "SoloKey · DEF" }));
     expect(onSelectToken).toHaveBeenCalledWith("token-2");
   });

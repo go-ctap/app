@@ -3,12 +3,12 @@
 
   import * as Alert from "$lib/components/ui/alert/index.js";
   import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import { credentialDeleteOutput } from "$lib/ctapkit-results";
   import type { PasskeysMutationState } from "$lib/features/passkeys/state";
   import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
+  import { warningMessage } from "$lib/warning-message";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -52,12 +52,6 @@
       || isCanceledFailure(mutation.responseEnvelope?.error)
     ),
   );
-  function warningMessage(code: string, fallback: string) {
-    if (code === "credential.delete.destructive") return m.credential_delete_warning_destructive();
-    if (code === "credential.delete.irreversible") return m.credential_delete_warning_irreversible();
-    return fallback;
-  }
-
   function shown(value: string | undefined) {
     return value?.trim() || m.not_reported();
   }
@@ -143,8 +137,7 @@
             <strong>{m.preview_warnings()}</strong>
             {#each output.preview.warnings as warning (warning.code)}
               <Alert.Root variant={warning.severity === "destructive" ? "destructive" : "warning"}>
-                <Alert.Title><Badge variant="outline">{warning.code}</Badge></Alert.Title>
-                <Alert.Description>{warningMessage(warning.code, warning.message)}</Alert.Description>
+                <Alert.Description>{warningMessage(warning)}</Alert.Description>
               </Alert.Root>
             {/each}
           </div>

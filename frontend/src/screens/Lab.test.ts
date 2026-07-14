@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { Severity, Warning } from "../../bindings/github.com/go-ctap/kit/model/safety";
 import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/credential";
 import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { MakeCredentialPreview } from "../../bindings/github.com/go-ctap/kit/model/webauthn";
@@ -150,6 +151,11 @@ describe("WebAuthn Lab screen", () => {
           rp: { id: "example.com", name: "Example" },
           user: { id: "AA==", name: "alice@example.com", displayName: "Alice" },
           pubKeyCredParams: [{ type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 }],
+          warnings: [new Warning({
+            severity: Severity.SeverityWarning,
+            code: "webauthn.make_credential.mutation",
+            message: "Backend fallback",
+          })],
         }),
         result: null,
       },
@@ -179,6 +185,8 @@ describe("WebAuthn Lab screen", () => {
     expect(within(make).getByRole("button", { name: "Typed preview" })).toBeInTheDocument();
     expect(within(make).getByRole("button", { name: "Confirm" })).toBeInTheDocument();
     expect(within(make).getAllByText(/not valid JSON/).length).toBeGreaterThan(0);
+    expect(within(make).getByText("A new credential may be created on this authenticator.")).toBeInTheDocument();
+    expect(within(make).queryByText("webauthn.make_credential.mutation")).not.toBeInTheDocument();
   });
 
   it("keeps the original action for each failed MakeCredential phase", async () => {

@@ -2,7 +2,6 @@
   import { ArrowRight, Pencil } from "@lucide/svelte";
 
   import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import * as Field from "$lib/components/ui/field/index.js";
@@ -14,6 +13,7 @@
     PasskeysMutationState,
   } from "$lib/features/passkeys/state";
   import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
+  import { warningMessage } from "$lib/warning-message";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -84,12 +84,6 @@
     if (error === "user-id-invalid-hex") return m.user_id_invalid_hex();
     if (error === "no-changes") return m.credential_update_no_changes();
     return "";
-  }
-
-  function warningMessage(code: string, fallback: string) {
-    if (code === "credential.update_user.mutation") return m.credential_update_warning_mutation();
-    if (code === "credential.update_user.scope") return m.credential_update_warning_scope();
-    return fallback;
   }
 
   function shown(value: string | undefined) {
@@ -220,8 +214,7 @@
                 <strong>{m.preview_warnings()}</strong>
                 {#each preview.warnings as warning (warning.code)}
                   <Alert.Root variant={warning.severity === "destructive" ? "destructive" : "warning"}>
-                    <Alert.Title><Badge variant="outline">{warning.code}</Badge></Alert.Title>
-                    <Alert.Description>{warningMessage(warning.code, warning.message)}</Alert.Description>
+                    <Alert.Description>{warningMessage(warning)}</Alert.Description>
                   </Alert.Root>
                 {/each}
               </div>

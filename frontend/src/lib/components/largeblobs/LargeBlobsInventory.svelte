@@ -325,7 +325,6 @@
 
   .large-blobs-table-frame {
     min-width: 0;
-    overflow: hidden;
     border: 1px solid var(--border);
   }
 

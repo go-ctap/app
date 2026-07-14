@@ -13,7 +13,7 @@ import { setAppLocale } from "$lib/i18n";
 
 import SecurityMutationDetails from "./SecurityMutationDetails.svelte";
 
-function erroredPreviewMutation(): SecurityMutationState {
+function erroredPreviewMutation(longTouchForReset = StateValue.StateSupported): SecurityMutationState {
   const responseEnvelope = {
     operationId: "reset-preview-error",
     sessionId: "session-1",
@@ -23,7 +23,7 @@ function erroredPreviewMutation(): SecurityMutationState {
       preview: {
         device: { deviceId: "token-1", stableId: true },
         resetHints: {
-          longTouchForReset: StateValue.StateSupported,
+          longTouchForReset,
           transportsForReset: ["usb"],
         },
         mode: PreviewMode.PreviewModeDryRun,
@@ -54,7 +54,7 @@ describe("SecurityMutationDetails", () => {
   beforeEach(() => setAppLocale("en"));
   afterEach(() => cleanup());
 
-  it("keeps a typed preview and localized warnings visible when its envelope also has an error", () => {
+  it("keeps a typed preview and its localized warning visible when its envelope also has an error", () => {
     render(SecurityMutationDetails, {
       props: { mutation: erroredPreviewMutation(), activeOperation: null },
     });
@@ -62,6 +62,20 @@ describe("SecurityMutationDetails", () => {
     expect(screen.getByText("The authenticator reset window has expired.")).toBeInTheDocument();
     expect(screen.getByText("usb")).toBeInTheDocument();
     expect(screen.getByText("Factory reset permanently removes authenticator state and cannot be undone.")).toBeInTheDocument();
-    expect(screen.queryByText("backend fallback")).not.toBeInTheDocument();
+    expect(screen.queryByText("reset.factory.destructive")).not.toBeInTheDocument();
+  });
+
+  it("localizes an unknown long-touch reset hint", () => {
+    setAppLocale("ru");
+
+    render(SecurityMutationDetails, {
+      props: {
+        mutation: erroredPreviewMutation(StateValue.StateUnknown),
+        activeOperation: null,
+      },
+    });
+
+    expect(screen.getByText("Неизвестно")).toBeInTheDocument();
+    expect(screen.queryByText("unknown")).not.toBeInTheDocument();
   });
 });

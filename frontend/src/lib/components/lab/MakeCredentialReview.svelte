@@ -6,6 +6,7 @@
 
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
+  import { warningMessage } from "$lib/warning-message";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -39,8 +40,7 @@
       {#each preview.warnings as warning, index (`${warning.code}-${index}`)}
         <Alert.Root variant={warningVariant(warning.severity)} role="alert">
           <TriangleAlert aria-hidden="true" />
-          <Alert.Title>{warning.code}</Alert.Title>
-          <Alert.Description>{warning.message}</Alert.Description>
+          <Alert.Description>{warningMessage(warning)}</Alert.Description>
         </Alert.Root>
       {/each}
     </section>

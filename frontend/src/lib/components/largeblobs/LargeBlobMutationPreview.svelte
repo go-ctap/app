@@ -11,6 +11,7 @@
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { buttonVariants } from "$lib/components/ui/button/index.js";
   import * as Collapsible from "$lib/components/ui/collapsible/index.js";
+  import { warningMessage } from "$lib/warning-message";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -26,15 +27,6 @@
     preview.serializedLargeBlobArrayLimit !== null
       && preview.serializedLargeBlobArrayLimit !== undefined,
   );
-
-  function warningMessage(code: string, fallback: string) {
-    if (code === "large_blob.shared_array_rewrite") return m.large_blob_shared_array_warning();
-    if (code === "large_blob.replace_existing") return m.large_blob_replace_warning();
-    if (code === "large_blob.delete_existing") return m.large_blob_delete_warning();
-    if (code === "large_blob.delete_noop") return m.large_blob_delete_noop();
-    if (code === "large_blob.garbage_collect_unmatched") return m.large_blob_cleanup_warning_unmatched();
-    return fallback;
-  }
 
   function shown(value: string | undefined) {
     return value?.trim() || m.not_reported();
@@ -111,8 +103,7 @@
               ? "warning"
               : "default"}
         >
-          <Alert.Title><Badge variant="outline">{warning.code}</Badge></Alert.Title>
-          <Alert.Description>{warningMessage(warning.code, warning.message)}</Alert.Description>
+          <Alert.Description>{warningMessage(warning)}</Alert.Description>
         </Alert.Root>
       {/each}
     </div>

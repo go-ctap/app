@@ -293,9 +293,11 @@
 		.main-view {
 			container: workspace / inline-size;
 			display: grid;
+			grid-template-columns: minmax(0, 1fr);
 			min-width: 0;
 			min-height: 0;
-			overflow: auto;
+			overflow-x: hidden;
+			overflow-y: auto;
 			scrollbar-gutter: stable;
 			padding: var(--space-4);
 			background: var(--workspace-surface);

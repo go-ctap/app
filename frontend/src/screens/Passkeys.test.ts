@@ -525,6 +525,7 @@ describe("Passkeys", () => {
     const dialog = await screen.findByRole("dialog", { name: "Edit credential user" });
     expect(dialog).toBeInTheDocument();
     expect(screen.getByText("This changes the user information stored with the resident credential.")).toBeInTheDocument();
+    expect(screen.queryByText("credential.update_user.mutation")).not.toBeInTheDocument();
     expect(screen.getByText("Current value")).toBeInTheDocument();
     expect(screen.getByText("Proposed value")).toBeInTheDocument();
     expect(within(dialog).queryByRole("textbox")).not.toBeInTheDocument();
@@ -595,6 +596,7 @@ describe("Passkeys", () => {
 
     expect(screen.getByRole("alertdialog", { name: "Confirm delete" })).toBeInTheDocument();
     expect(screen.getByText("Deleting this resident credential is destructive and cannot be undone.")).toBeInTheDocument();
+    expect(screen.queryByText("credential.delete.destructive")).not.toBeInTheDocument();
     expect(screen.getAllByText("cafe").length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: "Cancel" }));
   });

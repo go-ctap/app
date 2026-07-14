@@ -21,9 +21,9 @@
   const navItems: { id: ActiveScreen; label: string; icon: Component }[] = [
     { id: "overview", label: m.overview(), icon: Gauge },
     { id: "passkeys", label: m.passkeys(), icon: KeyRound },
-    { id: "lab", label: m.webauthn_lab(), icon: FlaskConical },
     { id: "large-blobs", label: m.nav_large_blobs(), icon: Database },
     { id: "security", label: m.security(), icon: Shield },
+    { id: "lab", label: m.webauthn_lab(), icon: FlaskConical },
     { id: "settings", label: m.settings(), icon: Settings },
   ];
 
@@ -84,7 +84,7 @@
             <Usb data-icon="inline-start" aria-hidden="true" />
           {/if}
           <span class="sidebar-token-copy">
-            <span class="sidebar-token-name">{token.name}</span>
+            <span class="sidebar-token-name" title={token.name}>{token.name}</span>
             <span class="sidebar-token-detail">{token.detail}</span>
           </span>
         </Button>

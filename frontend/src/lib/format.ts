@@ -53,6 +53,60 @@ export function operationStageLabel(value: unknown) {
   return labels[raw] || raw.replaceAll("-", " ") || m.operation_running();
 }
 
+const permissionMessages: Readonly<Record<string, () => string>> = {
+  authenticatorconfiguration: m.permission_authenticator_configuration,
+  bioenrollment: m.permission_bio_enrollment,
+  credentialmanagement: m.permission_credential_management,
+  getassertion: m.permission_get_assertion,
+  largeblobwrite: m.permission_large_blob_write,
+  makecredential: m.permission_make_credential,
+  none: m.permission_none,
+  persistentcredentialmanagementreadonly: m.permission_persistent_credential_management_read_only,
+};
+
+export function permissionLabel(value: unknown) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const key = raw.replace(/^Permission/, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
+  return permissionMessages[key]?.() ?? humanizeIdentifier(raw, "Permission");
+}
+
+const sampleStatusMessages: Readonly<Record<string, () => string>> = {
+  exists: m.sample_status_fingerprint_exists,
+  good: m.sample_status_fingerprint_good,
+  mergefailure: m.sample_status_fingerprint_merge_failure,
+  nouseractivity: m.sample_status_no_user_activity,
+  nouserpresencetransition: m.sample_status_no_user_presence_transition,
+  poorquality: m.sample_status_fingerprint_poor_quality,
+  toofast: m.sample_status_fingerprint_too_fast,
+  toohigh: m.sample_status_fingerprint_too_high,
+  tooleft: m.sample_status_fingerprint_too_left,
+  toolow: m.sample_status_fingerprint_too_low,
+  tooright: m.sample_status_fingerprint_too_right,
+  tooshort: m.sample_status_fingerprint_too_short,
+  tooskewed: m.sample_status_fingerprint_too_skewed,
+  tooslow: m.sample_status_fingerprint_too_slow,
+};
+
+export function bioSampleStatusLabel(value: unknown) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const key = raw
+    .replace(/^LastEnrollSampleStatus/, "")
+    .replace(/^Fingerprint/, "")
+    .replace(/[^a-z0-9]/gi, "")
+    .toLowerCase();
+  return sampleStatusMessages[key]?.() ?? humanizeIdentifier(raw, "LastEnrollSampleStatus");
+}
+
+function humanizeIdentifier(value: string, prefix: string) {
+  return value
+    .replace(new RegExp(`^${prefix}`), "")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim();
+}
+
 function sessionStateText(raw: string) {
   const labels: Record<string, string> = {
     idle: m.session_idle(),

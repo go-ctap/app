@@ -3,7 +3,7 @@ import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/r
 import type { InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { m } from "../paraglide/messages.js";
-import { deviceDetail, deviceName, labelDevice, operationStageLabel, sessionStateLabel } from "./format.js";
+import { bioSampleStatusLabel, deviceDetail, deviceName, labelDevice, operationStageLabel, permissionLabel, sessionStateLabel } from "./format.js";
 import { failureMessage } from "./failure.js";
 import { selectorFromDevice, type SessionStatus } from "./session-model.js";
 import type { ActiveScreen, StatusBarState } from "./stores.js";
@@ -123,7 +123,7 @@ export function buildShellStatusPresentation(input: {
       detail: cancellationPending
         ? m.cancel_requested_message()
         : failureMessage(active.cancelError)
-          || [operationStageLabel(active.stage), active.sampleStatus?.replaceAll("_", " ")].filter(Boolean).join(" · "),
+          || [operationStageLabel(active.stage), bioSampleStatusLabel(active.sampleStatus)].filter(Boolean).join(" · "),
       busy: true,
       progress: activeProgress(input.statusBar),
       cancel: active.operationId && !active.cancelRequested ? {
@@ -179,7 +179,7 @@ export function buildInteractionModalPresentation(prompt: InteractionPrompt): In
     title: destructive ? m.confirm_destructive_operation() : m.authenticator_needs_you(),
     destructive,
     message: request.message ?? m.continue_on_authenticator(),
-    permission: request.permission ?? "",
+    permission: permissionLabel(request.permission),
     preview: request.preview ?? null,
     kind: request.kind,
     warning: failureMessage(request.previousFailure) ?? "",

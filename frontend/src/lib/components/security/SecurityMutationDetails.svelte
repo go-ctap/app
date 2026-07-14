@@ -4,7 +4,6 @@
   import type { Warning } from "../../../../bindings/github.com/go-ctap/kit/model/safety";
 
   import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
   import { Progress } from "$lib/components/ui/progress/index.js";
   import {
     authenticatorConfigPreview,
@@ -16,9 +15,11 @@
   import type { SecurityMutationState } from "$lib/features/security/state";
   import type { ActiveOperation } from "$lib/features/workbench/state";
   import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
+  import { bioSampleStatusLabel } from "$lib/format";
+  import { warningMessage } from "$lib/warning-message";
 
   import { m } from "../../../paraglide/messages.js";
-  import { booleanState, reportedNumber, warningMessage } from "./security-ui.js";
+  import { booleanState, reportedNumber, stateLabel } from "./security-ui.js";
 
   let {
     mutation,
@@ -115,7 +116,7 @@
     </dl>
   {:else if resetPreview}
     <dl class="preview-facts">
-      <div><dt>{m.security_long_touch_for_reset()}</dt><dd>{resetPreview.resetHints.longTouchForReset}</dd></div>
+      <div><dt>{m.security_long_touch_for_reset()}</dt><dd>{stateLabel(resetPreview.resetHints.longTouchForReset)}</dd></div>
       <div><dt>{m.security_transports_for_reset()}</dt><dd>{resetPreview.resetHints.transportsForReset?.join(", ") || m.not_reported()}</dd></div>
     </dl>
   {/if}
@@ -130,7 +131,7 @@
       </div>
       <Progress value={activeOperation?.completed ?? 0} max={activeOperation?.total ?? 1} />
       {#if activeOperation?.sampleStatus}
-        <p>{m.security_enrollment_capture_status({ status: activeOperation.sampleStatus })}</p>
+        <p>{m.security_enrollment_capture_status({ status: bioSampleStatusLabel(activeOperation.sampleStatus) })}</p>
       {/if}
     </section>
   {/if}
@@ -140,7 +141,7 @@
       <Alert.Title>{m.security_partial_enrollment()}</Alert.Title>
       <Alert.Description>
         {partialEnrollment.samples?.length ?? 0} ·
-        {partialEnrollment.lastEnrollSampleStatus || m.not_reported()}
+        {bioSampleStatusLabel(partialEnrollment.lastEnrollSampleStatus) || m.not_reported()}
       </Alert.Description>
     </Alert.Root>
   {/if}
@@ -150,7 +151,6 @@
       <h3 id="security-preview-warnings-title">{m.preview_warnings()}</h3>
       {#each warnings as warning (warning.code)}
         <Alert.Root variant={warning.severity === "destructive" ? "destructive" : "warning"}>
-          <Alert.Title><Badge variant="outline">{warning.code}</Badge></Alert.Title>
           <Alert.Description>{warningMessage(warning)}</Alert.Description>
         </Alert.Root>
       {/each}

@@ -1,0 +1,29 @@
+import { afterEach, describe, expect, it } from "vitest";
+
+import { Severity, Warning } from "../../bindings/github.com/go-ctap/kit/model/safety";
+
+import { setAppLocale } from "$lib/i18n";
+
+import { warningMessage } from "./warning-message.js";
+
+describe("warningMessage", () => {
+  afterEach(() => setAppLocale("en"));
+
+  it("localizes known ctapkit warning codes without exposing the code", () => {
+    setAppLocale("ru");
+
+    expect(warningMessage(new Warning({
+      severity: Severity.SeverityWarning,
+      code: "webauthn.make_credential.mutation",
+      message: "backend fallback",
+    }))).toBe("На этом аутентификаторе могут быть созданы новые учетные данные.");
+  });
+
+  it("preserves the ctapkit message for unknown future warning codes", () => {
+    expect(warningMessage(new Warning({
+      severity: Severity.SeverityWarning,
+      code: "future.warning",
+      message: "Future warning message",
+    }))).toBe("Future warning message");
+  });
+});

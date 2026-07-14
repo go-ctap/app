@@ -6,8 +6,8 @@
 		variants: {
 			variant: {
 				default: "bg-card text-card-foreground",
-				warning: "border-warning-foreground/20 bg-warning text-warning-foreground *:data-[slot=alert-description]:text-warning-foreground/90 *:[svg]:text-current",
-				destructive: "text-destructive bg-card *:data-[slot=alert-description]:text-destructive/90 *:[svg]:text-current",
+				warning: "border-warning-foreground/50 bg-warning-foreground/20 text-warning-foreground *:data-[slot=alert-description]:text-warning-foreground *:[svg]:text-current",
+				destructive: "border-destructive/50 bg-destructive/20 text-destructive *:data-[slot=alert-description]:text-destructive *:[svg]:text-current",
 			},
 		},
 		defaultVariants: {
