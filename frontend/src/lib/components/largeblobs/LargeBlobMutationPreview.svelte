@@ -1,16 +1,12 @@
 <script lang="ts">
-  import { ChevronDown } from "@lucide/svelte";
-
   import {
     MutationOperation,
     type MutationPreview,
   } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
 
-  import JsonView from "$lib/components/shared/JsonView.svelte";
+  import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
-  import { buttonVariants } from "$lib/components/ui/button/index.js";
-  import * as Collapsible from "$lib/components/ui/collapsible/index.js";
   import { warningMessage } from "$lib/warning-message";
 
   import { m } from "../../../paraglide/messages.js";
@@ -109,17 +105,7 @@
     </div>
   {/if}
 
-  <Collapsible.Root class="large-blob-preview-json">
-    <Collapsible.Trigger
-      class={buttonVariants({ variant: "ghost", size: "sm", class: "large-blob-preview-json-trigger" })}
-    >
-      <span>{m.preview_json()}</span>
-      <ChevronDown data-icon="inline-end" aria-hidden="true" />
-    </Collapsible.Trigger>
-    <Collapsible.Content class="large-blob-preview-json-content">
-      <JsonView value={preview} variant="code" />
-    </Collapsible.Content>
-  </Collapsible.Root>
+  <JsonDisclosure value={preview} title={m.preview_json()} />
 </section>
 
 <style>
@@ -174,25 +160,5 @@
     color: var(--muted-foreground);
   }
 
-  :global(.large-blob-preview-json-trigger) {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  :global(.large-blob-preview-json) {
-    display: grid;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    overflow: hidden;
-  }
-
-  :global(.large-blob-preview-json-content) {
-    display: grid;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    padding-top: var(--space-2);
-  }
 }
 </style>

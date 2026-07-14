@@ -237,11 +237,13 @@
               report.decode.mode === DecodeMode.DecodeModeJSON
               || report.decode.mode === DecodeMode.DecodeModeCBOR
             )}
-              <JsonView
-                value={report.decode.decodedValue}
-                title={m.decoded_as({ mode: decodeModeLabel(report.decode.mode) })}
-                variant="bare"
-              />
+              <div class="large-blob-decoded-json">
+                <JsonView
+                  value={report.decode.decodedValue}
+                  title={m.decoded_as({ mode: decodeModeLabel(report.decode.mode) })}
+                  variant="bare"
+                />
+              </div>
             {:else}
               {#if report.decode.requested && report.decode.failure}
                 <Alert.Root variant="warning" role="status">
@@ -398,6 +400,13 @@
     scrollbar-gutter: stable;
     border: 1px solid var(--border);
     background: var(--muted);
+  }
+
+  .large-blob-decoded-json {
+    display: grid;
+    gap: var(--space-3);
+    min-width: 0;
+    padding-block: var(--space-2);
   }
 
   .large-blob-decoded-text pre {

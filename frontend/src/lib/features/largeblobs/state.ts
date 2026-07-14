@@ -15,7 +15,7 @@ import type {
 import type {
   LargeBlobPayloadEncoding,
   LargeBlobPayloadValidationError,
-} from "../../largeblobs-payload.js";
+} from "$lib/largeblobs-payload";
 
 export type {
   LargeBlobPayloadEncoding,

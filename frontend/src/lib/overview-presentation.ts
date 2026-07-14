@@ -2,9 +2,9 @@ import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/m
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { BioSensorEnvelope, InspectEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
-import { bioSensorReport, inspectResult, operationError } from "./ctapkit-results.js";
+import { m } from "../paraglide/messages.js";
+import { bioSensorReport, inspectResult } from "./ctapkit-results.js";
 import type { LoadState } from "./features/overview/state.js";
-import { failureMessage as localizeFailure } from "./failure.js";
 import {
   buildOverviewConformancePresentation,
   buildOverviewHero,
@@ -13,7 +13,6 @@ import {
   buildOverviewRows,
   groupOverviewRows,
 } from "./overview-rules.js";
-import { sanitizedJson } from "./redaction.js";
 
 export type OverviewPresentationInput = {
   selectedSelector: string;
@@ -31,8 +30,7 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
   const envelope = input.overviewState.data;
   const loading = input.overviewState.state === "loading";
   const mdsLoading = input.overviewMDSState.state === "loading";
-  const failureMessage = localizeFailure(input.overviewState.error) ?? operationError(envelope);
-  const mdsFailureMessage = localizeFailure(input.overviewMDSState.error);
+  const mdsFailureMessage = input.overviewMDSState.state === "error" ? m.mds_unavailable_description() : null;
   const report = inspectResult(envelope);
   const info = report?.info;
   const device = report?.device || input.selectedDevice;
@@ -44,16 +42,10 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
     selector,
     loading,
     mdsLoading,
-    failureMessage,
-    degradedMessages: [
-      localizeFailure(input.overviewBioSensorState.error),
-      localizeFailure(input.overviewMDSState.error),
-    ].filter((message): message is string => Boolean(message)),
     reloadDisabled: loading || input.sessionBusy,
     hasReport: Boolean(report),
     report,
     info,
-    rawInspectionJson: sanitizedJson(report ?? null),
     hero: buildOverviewHero({ info, device, mds: mdsResult, mdsLoading, mdsError: mdsFailureMessage }),
     signalGroups: buildOverviewHeroSignalGroups({ info }),
     overviewGroups: groupOverviewRows(overviewRows),

@@ -2,7 +2,7 @@
   import { InteractionKind } from "../../../../bindings/github.com/go-ctap/kit/model";
   import { InteractionAnswer } from "../../../../bindings/github.com/go-ctap/kit/service";
 
-  import JsonView from "$lib/components/shared/JsonView.svelte";
+  import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
@@ -60,7 +60,7 @@
         {/if}
 
         {#if presentation.preview}
-          <JsonView value={presentation.preview} title={m.preview_json()} variant="bare" />
+          <JsonDisclosure value={presentation.preview} title={m.preview_json()} />
         {/if}
 
         {#if presentation.warning}

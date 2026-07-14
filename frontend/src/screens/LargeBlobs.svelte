@@ -101,10 +101,7 @@
       <Alert.Root variant="warning" role="alert" class="large-blobs-state-alert" data-state="stale">
         <TriangleAlert aria-hidden="true" />
         <Alert.Title>{m.large_blobs_stale_title()}</Alert.Title>
-        <Alert.Description>
-          {m.large_blobs_stale_message()}
-          {#if largeBlobs.failureMessage} {largeBlobs.failureMessage}{/if}
-        </Alert.Description>
+        <Alert.Description>{m.large_blobs_stale_message()}</Alert.Description>
       </Alert.Root>
     {/if}
 
@@ -119,7 +116,7 @@
     {:else if !largeBlobs.hasReport && !largeBlobs.loading}
       <EmptyState
         title={m.large_blobs_not_loaded()}
-        message={largeBlobs.failureMessage ?? m.large_blobs_not_loaded_message()}
+        message={m.large_blobs_not_loaded_message()}
         variant="compact"
       >
         {#snippet icon()}<Database aria-hidden="true" />{/snippet}

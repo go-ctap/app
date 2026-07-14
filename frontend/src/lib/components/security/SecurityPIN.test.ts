@@ -12,13 +12,13 @@ import { setAppLocale } from "$lib/i18n";
 
 import SecurityPIN from "./SecurityPIN.svelte";
 
-function unsetPIN() {
+function unsetPIN(minPINLength = 4) {
   return new PINStatus({
     state: StateValue.StateNotConfigured,
     supported: true,
     configured: false,
     protocolSupported: true,
-    minPINLength: 4,
+    minPINLength,
     maxPINLength: 63,
     retries: new RetryState({ state: StateValue.StateUnknown }),
   });
@@ -101,6 +101,22 @@ describe("SecurityPIN", () => {
 
     expect(screen.getByLabelText("New PIN")).toHaveValue("");
     expect(screen.getByLabelText("Confirm new PIN")).toHaveValue("");
+  });
+
+  it("applies the reported minimum length to both new PIN fields", async () => {
+    render(SecurityPIN, {
+      props: {
+        pin: unsetPIN(6),
+        disabled: false,
+        onSetPIN: vi.fn(async () => true),
+        onChangePIN: vi.fn(async () => true),
+      },
+    });
+
+    await fireEvent.click(screen.getByRole("button", { name: "Set PIN" }));
+
+    expect(screen.getByLabelText("New PIN")).toHaveAttribute("minlength", "6");
+    expect(screen.getByLabelText("Confirm new PIN")).toHaveAttribute("minlength", "6");
   });
 
   it("clears secrets on Escape and restores focus to the trigger", async () => {

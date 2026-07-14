@@ -9,7 +9,6 @@
   import SecurityPINPolicy from "$lib/components/security/SecurityPINPolicy.svelte";
   import SecurityUserVerification from "$lib/components/security/SecurityUserVerification.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import { Skeleton } from "$lib/components/ui/skeleton/index.js";
@@ -30,7 +29,6 @@
     setAuthenticatorPIN,
   } from "$lib/controller";
   import { configStatusReport } from "$lib/ctapkit-results";
-  import { failureMessage } from "$lib/failure";
   import {
     securityEnrollments,
     securityMutation,
@@ -44,9 +42,6 @@
   import { m } from "../paraglide/messages.js";
 
   let report = $derived(configStatusReport($securityStatus.lastSuccessfulEnvelope));
-  let statusError = $derived(
-    failureMessage($securityStatus.runtimeError) ?? failureMessage($securityStatus.responseEnvelope?.error),
-  );
   let statusLoading = $derived(
     $securityStatus.phase === "loading" || $securityStatus.phase === "refreshing",
   );
@@ -91,7 +86,7 @@
     {/each}
   </section>
 {:else if !report}
-  <EmptyState title={m.security_state_load_failed()} message={statusError ?? m.security_unsupported_message()}>
+  <EmptyState title={m.security_state_load_failed()} message={m.security_unsupported_message()}>
     {#snippet icon()}<TriangleAlert aria-hidden="true" />{/snippet}
     {#snippet actions()}
       <Button type="button" disabled={statusLoading || sessionRecovering} onclick={() => void reloadSecurity()}>
@@ -102,14 +97,6 @@
   </EmptyState>
 {:else}
   <section class="security-screen" aria-labelledby="security-title">
-    {#if statusError}
-      <Alert.Root variant="warning" role="alert" class="security-state-alert" data-state="stale">
-        <TriangleAlert aria-hidden="true" />
-        <Alert.Title>{m.security_state_load_failed()}</Alert.Title>
-        <Alert.Description>{statusError}</Alert.Description>
-      </Alert.Root>
-    {/if}
-
     <div class="security-sections">
       <SecurityOverview
         {report}
@@ -197,9 +184,6 @@
   :global(.loading-copy) { width: min(28rem, 85%); height: 0.8rem; }
   :global(.loading-card) { width: 100%; height: 7rem; }
 
-  :global(.security-state-alert) {
-    min-width: 0;
-  }
 }
 
 </style>

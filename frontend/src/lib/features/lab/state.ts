@@ -15,7 +15,7 @@ import {
   randomBase64URL,
   randomHex,
   type LabRandomSource,
-} from "../../lab-input.js";
+} from "$lib/lab-input";
 
 export type LabPresetID = "minimal" | "discoverable" | "non-discoverable" | "uv-required";
 export type LabTriState = "auto" | "true" | "false";

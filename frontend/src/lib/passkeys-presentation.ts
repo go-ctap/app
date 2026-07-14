@@ -6,7 +6,6 @@ import { credentialsReport } from "./ctapkit-results.js";
 import type { PasskeysInventoryState, PasskeysStatusFilter } from "./features/passkeys/state.js";
 import { passkeysInventoryIsStale } from "./features/passkeys/state.js";
 import { deviceName } from "./format.js";
-import { failureMessage } from "./failure.js";
 
 export type PasskeyCredentialTarget = {
   relyingParty: CredentialGroup;
@@ -197,9 +196,6 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
     loading,
     stale,
     lastSuccessfulAt: input.inventoryState.lastSuccessfulAt,
-    failureMessage: failureMessage(input.inventoryState.runtimeError)
-      ?? failureMessage(input.inventoryState.responseEnvelope?.error)
-      ?? (input.inventoryState.phase === "error" && input.inventoryState.responseEnvelope ? m.operation_missing_result() : null),
     unsupported: report
       ? !report.support.credentialManagement
       : input.inventoryState.phase === "unsupported",

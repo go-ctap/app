@@ -159,6 +159,7 @@
             autocomplete="off"
             autocapitalize="none"
             spellcheck={false}
+            minlength={pin.minPINLength ?? undefined}
             value={newPIN}
             aria-invalid={validationError === "new-required" || validationError === "mismatch"}
             oninput={(event) => (newPIN = event.currentTarget.value)}
@@ -178,6 +179,7 @@
             autocomplete="off"
             autocapitalize="none"
             spellcheck={false}
+            minlength={pin.minPINLength ?? undefined}
             value={confirmation}
             aria-invalid={validationError === "confirmation-required" || validationError === "mismatch"}
             oninput={(event) => (confirmation = event.currentTarget.value)}

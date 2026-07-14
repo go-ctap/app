@@ -13,10 +13,10 @@ require (
 	github.com/coder/websocket v1.8.15 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.2 // indirect
-	github.com/go-ctap/ctap v0.21.0 // indirect
+	github.com/go-ctap/ctap v0.22.0 // indirect
 	github.com/go-ctap/hid v0.9.1 // indirect
 	github.com/go-ctap/pcsc v0.3.0 // indirect
-	github.com/go-ctap/token2 v0.4.0 // indirect
+	github.com/go-ctap/token2 v0.4.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect

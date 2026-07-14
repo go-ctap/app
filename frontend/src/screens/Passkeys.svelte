@@ -84,10 +84,7 @@
       <Alert.Root variant="warning" role="alert" class="passkeys-state-alert" data-state="stale">
         <TriangleAlert aria-hidden="true" />
         <Alert.Title>{m.passkeys_stale_title()}</Alert.Title>
-        <Alert.Description>
-          {m.passkeys_stale_message()}
-          {#if passkeys.failureMessage} {passkeys.failureMessage}{/if}
-        </Alert.Description>
+        <Alert.Description>{m.passkeys_stale_message()}</Alert.Description>
       </Alert.Root>
     {/if}
 
@@ -102,7 +99,7 @@
     {:else if !passkeys.hasReport && !passkeys.loading}
       <EmptyState
         title={m.passkeys_not_loaded()}
-        message={passkeys.failureMessage ?? m.passkeys_not_loaded_message()}
+        message={m.passkeys_not_loaded_message()}
         variant="compact"
       >
         {#snippet icon()}<KeyRound aria-hidden="true" />{/snippet}

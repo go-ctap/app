@@ -67,7 +67,8 @@ describe("InteractionModal", () => {
       canceled: false,
     }));
     expect(screen.queryByText("secret-token")).not.toBeInTheDocument();
-    expect(screen.getByText((_, element) => element?.tagName === "PRE" && element.textContent?.includes('"pinUvAuthToken": "[redacted]"'))).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Preview JSON" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByText((_, element) => element?.tagName === "PRE" && element.textContent?.includes('"pinUvAuthToken": "[redacted]"'))).not.toBeVisible();
   });
 
   it("does not submit an empty PIN", async () => {

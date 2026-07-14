@@ -132,6 +132,34 @@ describe("sidebar presentation", () => {
     ]);
   });
 
+  it("orders tokens by stable device identity instead of discovery order", () => {
+    const first: DeviceReport = {
+      ...token,
+      deviceId: "token-a",
+      ordinalAlias: "2",
+      path: "hid://a",
+      product: "Zebra Key",
+    };
+    const second: DeviceReport = {
+      ...token,
+      deviceId: "token-b",
+      ordinalAlias: "1",
+      path: "hid://b",
+      product: "Alpha Key",
+    };
+    const discoveryOrder = [second, first];
+
+    const presentation = buildSidebarPresentation({
+      activeScreen: "overview",
+      devices: discoveryOrder,
+      selectedSelector: "",
+      busy: false,
+    });
+
+    expect(presentation.tokens.map(({ value }) => value)).toEqual(["token-a", "token-b"]);
+    expect(discoveryOrder).toEqual([second, first]);
+  });
+
   it("labels the WebAuthn Lab screen", () => {
     const presentation = buildSidebarPresentation({
       activeScreen: "lab",

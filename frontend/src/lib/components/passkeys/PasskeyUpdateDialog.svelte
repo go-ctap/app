@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowRight, Pencil } from "@lucide/svelte";
 
+  import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
@@ -219,6 +220,8 @@
                 {/each}
               </div>
             {/if}
+
+            <JsonDisclosure value={preview} title={m.preview_json()} />
           </section>
         {/if}
 

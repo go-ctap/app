@@ -59,6 +59,16 @@ export type InteractionModalPresentation = {
   warning: string;
 };
 
+function compareDeviceIdentity(left: DeviceReport, right: DeviceReport) {
+  const deviceIDOrder = left.deviceId.localeCompare(right.deviceId);
+  if (deviceIDOrder !== 0) return deviceIDOrder;
+
+  const transportOrder = left.transport.localeCompare(right.transport);
+  if (transportOrder !== 0) return transportOrder;
+
+  return left.path.localeCompare(right.path);
+}
+
 export function buildSidebarPresentation(input: {
   activeScreen: ActiveScreen;
   devices: DeviceReport[];
@@ -68,7 +78,7 @@ export function buildSidebarPresentation(input: {
   return {
     activeScreen: input.activeScreen,
     activeScreenLabel: screenLabel(input.activeScreen),
-    tokens: input.devices.map((device) => {
+    tokens: input.devices.toSorted(compareDeviceIdentity).map((device) => {
       const value = selectorFromDevice(device);
       const detail = `S/N ${deviceDetail(device) || value}`;
       return {

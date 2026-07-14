@@ -259,18 +259,18 @@ describe("LargeBlobs", () => {
     expect(screen.getByText("No resident credentials found")).toBeInTheDocument();
   });
 
-  it("shows the concrete kit error from a typed inventory envelope", () => {
+  it("keeps a typed inventory error out of the empty state", () => {
     failLargeBlobsInventoryLoadWithResponse({
       operationId: "large-blob-list-error",
       sessionId: "session-1",
       kind: OperationKind.OperationListLargeBlobs,
-      error: failureForCode(Code.CodeDeviceBusy),
+      error: failureForCode(Code.CodePINInvalid),
     } as LargeBlobListEnvelope);
 
     render(LargeBlobs);
 
-    expect(screen.getByText("The selected authenticator is already in use.")).toBeInTheDocument();
-    expect(screen.queryByText("Load the large-blob inventory to inspect stored payloads.")).not.toBeInTheDocument();
+    expect(screen.getByText("Load credentials and the serialized large-blob array from the authenticator.")).toBeInTheDocument();
+    expect(screen.queryByText("The PIN is invalid.")).not.toBeInTheDocument();
   });
 
   it("does not turn an unsupported verification flow into unsupported large blobs", () => {
@@ -283,7 +283,8 @@ describe("LargeBlobs", () => {
 
     render(LargeBlobs);
 
-    expect(screen.getByText("The requested verification flow is not supported.")).toBeInTheDocument();
+    expect(screen.getByText("Load credentials and the serialized large-blob array from the authenticator.")).toBeInTheDocument();
+    expect(screen.queryByText("The requested verification flow is not supported.")).not.toBeInTheDocument();
     expect(screen.queryByText("Large blob management unavailable")).not.toBeInTheDocument();
   });
 
@@ -330,7 +331,7 @@ describe("LargeBlobs", () => {
 
     expect(screen.getByText("Large blob inventory could not be refreshed")).toBeInTheDocument();
     expect(screen.getByText(/The last successfully loaded data remains visible\. Reload large blobs to try again\./)).toBeInTheDocument();
-    expect(screen.getByText(/Communication with the authenticator failed\./)).toBeInTheDocument();
+    expect(screen.queryByText(/Communication with the authenticator failed\./)).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Zero User, zero@example.com/ }));
     expect(controllerMocks.readLargeBlob).toHaveBeenCalledWith("cafe");
     expect(screen.queryByRole("button", { name: "Read large blob" })).not.toBeInTheDocument();
@@ -425,6 +426,7 @@ describe("LargeBlobs", () => {
 
     const details = document.getElementById("large-blob-row-details-feed") as HTMLElement;
     expect(within(details).getAllByText("Missing").length).toBeGreaterThan(0);
+    expect(within(details).getByRole("button", { name: "Delete" })).toBeDisabled();
     expect(within(details).queryByText("Decoded payload is empty.")).not.toBeInTheDocument();
     expect(within(details).queryByRole("region", { name: "Raw hex" })).not.toBeInTheDocument();
     expect(within(details).queryByRole("region", { name: "UTF-8 text" })).not.toBeInTheDocument();

@@ -1,29 +1,51 @@
 <script lang="ts">
-  import { ChevronDown, Copy } from "@lucide/svelte";
-  import type { InspectResult } from "../../../../bindings/github.com/go-ctap/kit/model";
+  import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
+  import CopyIcon from "@lucide/svelte/icons/copy";
 
-  import JsonView from "$lib/components/shared/JsonView.svelte";
+  import { copyToClipboard } from "$lib/clipboard";
   import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
   import * as Collapsible from "$lib/components/ui/collapsible/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+  import { sanitizedJson } from "$lib/redaction";
 
   import { m } from "../../../paraglide/messages.js";
+  import JsonView from "./JsonView.svelte";
 
-  let { result = null, onCopy = () => {} }: { result?: InspectResult | null; onCopy?: () => void | Promise<void> } = $props();
+  type Props = {
+    value: unknown;
+    title?: string;
+    description?: string;
+    open?: boolean;
+  };
+
+  let {
+    value,
+    title = m.raw_json(),
+    description,
+    open = $bindable(false),
+  }: Props = $props();
+
+  let source = $derived(sanitizedJson(value) ?? "null");
+
+  async function copy() {
+    await copyToClipboard(source, m.json_copied());
+  }
 </script>
 
 <Tooltip.Provider delayDuration={350}>
-  <Collapsible.Root class="raw-inspection">
-    <div class="raw-inspection-header">
+  <Collapsible.Root class="json-disclosure" bind:open>
+    <div class="json-disclosure-header">
       <Collapsible.Trigger
-        class={buttonVariants({ variant: "ghost", size: "sm", class: "raw-inspection-trigger" })}
-        aria-label={m.raw_inspection_data()}
+        class={buttonVariants({ variant: "ghost", size: "sm", class: "json-disclosure-trigger" })}
+        aria-label={title}
       >
-        <span class="raw-inspection-heading">
-          <span class="raw-inspection-title">{m.raw_inspection_data()}</span>
-          <span class="raw-inspection-meta"><code>ctapkit</code> · {m.raw_operation_response()}</span>
+        <span class="json-disclosure-heading">
+          <span class="json-disclosure-title">{title}</span>
+          {#if description}
+            <span class="json-disclosure-description">{description}</span>
+          {/if}
         </span>
-        <ChevronDown class="raw-inspection-chevron" aria-hidden="true" />
+        <ChevronDownIcon class="json-disclosure-chevron" data-icon="inline-end" aria-hidden="true" />
       </Collapsible.Trigger>
 
       <Tooltip.Root>
@@ -35,9 +57,9 @@
               size="icon-sm"
               type="button"
               aria-label={m.copy_json()}
-              onclick={onCopy}
+              onclick={copy}
             >
-              <Copy data-icon="inline-start" aria-hidden="true" />
+              <CopyIcon data-icon="inline-start" aria-hidden="true" />
             </Button>
           {/snippet}
         </Tooltip.Trigger>
@@ -45,15 +67,15 @@
       </Tooltip.Root>
     </div>
 
-    <Collapsible.Content class="raw-inspection-content">
-      <JsonView value={result} variant="code" />
+    <Collapsible.Content class="json-disclosure-content">
+      <JsonView {value} {title} variant="code" />
     </Collapsible.Content>
   </Collapsible.Root>
 </Tooltip.Provider>
 
 <style>
 @layer blocks {
-  :global(.raw-inspection) {
+  :global(.json-disclosure) {
     display: grid;
     width: 100%;
     max-width: 100%;
@@ -63,7 +85,7 @@
     background: var(--card);
   }
 
-  .raw-inspection-header {
+  .json-disclosure-header {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
@@ -71,7 +93,7 @@
     padding-right: var(--space-3);
   }
 
-  :global(.raw-inspection-trigger) {
+  :global(.json-disclosure-trigger) {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -82,31 +104,31 @@
     text-align: left;
   }
 
-  .raw-inspection-heading {
+  .json-disclosure-heading {
     display: grid;
     gap: 2px;
     min-width: 0;
   }
 
-  .raw-inspection-title,
-  .raw-inspection-meta {
+  .json-disclosure-title,
+  .json-disclosure-description {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .raw-inspection-meta {
+  .json-disclosure-description {
     color: var(--muted-foreground);
     font-size: 0.72rem;
     font-weight: 400;
   }
 
-  :global(.raw-inspection-chevron) {
+  :global(.json-disclosure-chevron) {
     transition: transform 120ms ease;
   }
 
-  :global(.raw-inspection-content) {
+  :global(.json-disclosure-content) {
     display: grid;
     width: 100%;
     max-width: 100%;
@@ -117,16 +139,13 @@
 }
 
 @layer exceptions {
-  .raw-inspection-header:hover,
-  .raw-inspection-header:focus-within {
+  .json-disclosure-header:hover,
+  .json-disclosure-header:focus-within,
+  :global(.json-disclosure[data-state="open"]) .json-disclosure-header {
     background: var(--muted);
   }
 
-  :global(.raw-inspection[data-state="open"]) .raw-inspection-header {
-    background: var(--muted);
-  }
-
-  :global(.raw-inspection[data-state="open"] .raw-inspection-chevron) {
+  :global(.json-disclosure[data-state="open"] .json-disclosure-chevron) {
     transform: rotate(180deg);
   }
 }

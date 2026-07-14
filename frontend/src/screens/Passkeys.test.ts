@@ -147,7 +147,7 @@ describe("Passkeys", () => {
     expect(screen.getByText("Passkeys not loaded")).toBeInTheDocument();
   });
 
-  it("shows the concrete kit error from a typed inventory envelope", () => {
+  it("keeps a typed inventory error out of the empty state", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
       sessionId: "session-1",
@@ -156,13 +156,13 @@ describe("Passkeys", () => {
       operationId: "operation-error",
       sessionId: "session-1",
       kind: OperationKind.OperationListCredentials,
-      error: failureForCode(Code.CodeDeviceBusy),
+      error: failureForCode(Code.CodePINInvalid),
     } as CredentialsEnvelope);
 
     render(Passkeys);
 
-    expect(screen.getByText("The selected authenticator is already in use.")).toBeInTheDocument();
-    expect(screen.queryByText("Load credential inventory to inspect resident passkeys.")).not.toBeInTheDocument();
+    expect(screen.getByText("Load resident credentials from the selected authenticator.")).toBeInTheDocument();
+    expect(screen.queryByText("The PIN is invalid.")).not.toBeInTheDocument();
   });
 
   it("does not turn an unsupported verification flow into unsupported credential management", () => {
@@ -179,7 +179,8 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(screen.getByText("The requested verification flow is not supported.")).toBeInTheDocument();
+    expect(screen.getByText("Load resident credentials from the selected authenticator.")).toBeInTheDocument();
+    expect(screen.queryByText("The requested verification flow is not supported.")).not.toBeInTheDocument();
     expect(screen.queryByText("Credential management unavailable")).not.toBeInTheDocument();
   });
 
@@ -424,7 +425,7 @@ describe("Passkeys", () => {
 
     expect(screen.getByText("Credential inventory could not be refreshed")).toBeInTheDocument();
     expect(screen.getByText(/The last successfully loaded data remains visible\. Reload credentials to try again\./)).toBeInTheDocument();
-    expect(screen.getByText(/Communication with the authenticator failed\./)).toBeInTheDocument();
+    expect(screen.queryByText(/Communication with the authenticator failed\./)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reload credentials" })).toBeEnabled();
     await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
     expect(screen.getByRole("button", { name: "Edit" })).toBeEnabled();
@@ -529,6 +530,7 @@ describe("Passkeys", () => {
     expect(screen.getByText("Current value")).toBeInTheDocument();
     expect(screen.getByText("Proposed value")).toBeInTheDocument();
     expect(within(dialog).queryByRole("textbox")).not.toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Preview JSON" })).toHaveAttribute("aria-expanded", "false");
     expect(within(dialog).getByRole("button", { name: "Confirm update" })).toBeEnabled();
 
     mutablePasskeysMutation.set({ ...mutation, phase: "executing" });
@@ -594,10 +596,12 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(screen.getByRole("alertdialog", { name: "Confirm delete" })).toBeInTheDocument();
+    const dialog = screen.getByRole("alertdialog", { name: "Confirm delete" });
+    expect(dialog).toBeInTheDocument();
     expect(screen.getByText("Deleting this resident credential is destructive and cannot be undone.")).toBeInTheDocument();
     expect(screen.queryByText("credential.delete.destructive")).not.toBeInTheDocument();
     expect(screen.getAllByText("cafe").length).toBeGreaterThan(0);
+    expect(within(dialog).getByRole("button", { name: "Preview JSON" })).toHaveAttribute("aria-expanded", "false");
     await user.click(screen.getByRole("button", { name: "Cancel" }));
   });
 

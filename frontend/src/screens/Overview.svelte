@@ -4,12 +4,10 @@
   import OverviewHeroCard from "$lib/components/overview/OverviewHeroCard.svelte";
   import OverviewLoadingCard from "$lib/components/overview/OverviewLoadingCard.svelte";
   import OverviewMDSObservations from "$lib/components/overview/OverviewMDSObservations.svelte";
-  import OverviewRawInspectionData from "$lib/components/overview/OverviewRawInspectionData.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
+  import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import { toast } from "svelte-sonner";
-  import { copyToClipboard } from "$lib/clipboard";
   import { loadOverviewMDS, reloadOverview } from "$lib/controller";
   import { buildOverviewPresentation } from "$lib/overview-presentation";
   import {
@@ -38,37 +36,20 @@
       if (refreshed) toast.success(m.mds_refresh_complete());
     }
   }
-
-  async function copyReport() {
-    await copyToClipboard(overview.rawInspectionJson, m.json_copied());
-  }
 </script>
 
 {#if !overview.selector}
   <EmptyState title={m.choose_authenticator()} message={m.choose_authenticator_message()} />
-{:else if !overview.hasReport && !overview.loading && !overview.failureMessage && overview.degradedMessages.length === 0}
-  <EmptyState title={m.overview_not_loaded()} message={m.overview_not_loaded_message()} />
+{:else if !overview.hasReport && !overview.loading}
+  <EmptyState title={m.overview_not_loaded()} message={m.overview_not_loaded_message()}>
+    {#snippet actions()}
+      <Button type="button" disabled={overview.reloadDisabled} onclick={reloadOverview}>
+        {m.reload_overview()}
+      </Button>
+    {/snippet}
+  </EmptyState>
 {:else}
   <section class="overview-screen flow">
-    {#each overview.degradedMessages as message (message)}
-      <Alert.Root variant="warning" role="status">
-        <Alert.Description>{message}</Alert.Description>
-      </Alert.Root>
-    {/each}
-
-    {#if overview.failureMessage}
-      <Alert.Root variant="destructive" role="alert">
-        <Alert.Description>{overview.failureMessage}</Alert.Description>
-        {#if !overview.hasReport}
-          <Alert.Action>
-            <Button variant="outline" size="sm" type="button" disabled={overview.reloadDisabled} onclick={reloadOverview}>
-              {m.reload_overview()}
-            </Button>
-          </Alert.Action>
-        {/if}
-      </Alert.Root>
-    {/if}
-
     {#if overview.hasReport}
       <OverviewHeroCard
         hero={overview.hero}
@@ -86,7 +67,7 @@
       {/if}
       <OverviewCapabilityMatrix groups={overview.overviewGroups} warningCount={overview.warningCount} />
       <OverviewMDSObservations observations={overview.mdsObservations} />
-      <OverviewRawInspectionData result={overview.report} onCopy={copyReport} />
+      <JsonDisclosure value={overview.report} />
     {:else if overview.loading}
       <OverviewLoadingCard />
     {/if}

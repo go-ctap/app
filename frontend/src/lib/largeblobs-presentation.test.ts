@@ -144,6 +144,21 @@ describe("large blob presentation", () => {
     expect(presentation.deleteDisabled).toBe(true);
   });
 
+  it("blocks deletion when the selected credential has no blob", () => {
+    const presentation = buildLargeBlobsPresentation({
+      ...defaultView,
+      selectedSelector: "token-1",
+      selectedDevice: null,
+      sessionBusy: false,
+      sessionReady: true,
+      inventoryState: state(envelope()),
+      selectedCredentialID: "missing",
+    });
+
+    expect(presentation.writeDisabled).toBe(false);
+    expect(presentation.deleteDisabled).toBe(true);
+  });
+
   it("keeps last-known-good rows and their actions available when stale", () => {
     const successful = envelope();
     const stale: LargeBlobsInventoryState = {

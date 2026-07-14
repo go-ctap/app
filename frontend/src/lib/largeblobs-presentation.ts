@@ -16,7 +16,6 @@ import type {
 } from "./features/largeblobs/state.js";
 import { largeBlobsInventoryIsStale } from "./features/largeblobs/state.js";
 import { deviceName } from "./format.js";
-import { failureMessage } from "./failure.js";
 
 export type LargeBlobCredentialRow = {
   id: string;
@@ -127,6 +126,7 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
   const actionsBlocked = loading || input.sessionBusy || !input.sessionReady;
   const supported = Boolean(report?.support.largeBlobs);
   const selectedKeyAvailable = Boolean(selectedRow?.largeBlobKeyAvailable);
+  const selectedBlobPresent = Boolean(selectedRow?.blobPresent);
   const device = input.selectedDevice ?? report?.device ?? null;
 
   return {
@@ -134,17 +134,12 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
     loading,
     stale,
     lastSuccessfulAt: input.inventoryState.lastSuccessfulAt,
-    failureMessage: failureMessage(input.inventoryState.runtimeError)
-      ?? failureMessage(input.inventoryState.responseEnvelope?.error)
-      ?? (input.inventoryState.phase === "error" && input.inventoryState.responseEnvelope
-        ? m.operation_missing_result()
-        : null),
     unsupported: report ? !report.support.largeBlobs : input.inventoryState.phase === "unsupported",
     reloadDisabled: loading || input.sessionBusy,
     actionsBlocked,
     writeDisabled: actionsBlocked || !supported || !selectedKeyAvailable,
-    deleteDisabled: actionsBlocked || !supported || !selectedKeyAvailable,
-    selectedBlobPresent: Boolean(selectedRow?.blobPresent),
+    deleteDisabled: actionsBlocked || !supported || !selectedKeyAvailable || !selectedBlobPresent,
+    selectedBlobPresent,
     cleanupDisabled: actionsBlocked || !supported,
     hasReport: Boolean(report),
     support: report?.support ?? null,

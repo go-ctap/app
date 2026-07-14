@@ -1,6 +1,7 @@
 <script lang="ts">
   import { TriangleAlert } from "@lucide/svelte";
 
+  import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -142,6 +143,8 @@
             {/each}
           </div>
         {/if}
+
+        <JsonDisclosure value={output.preview} title={m.preview_json()} />
       {/if}
 
       <AlertDialog.Footer>

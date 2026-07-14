@@ -2,6 +2,7 @@ import { cleanup, render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import {
   AuthenticatorConfigStatus,
   BioStatus,
@@ -18,9 +19,15 @@ import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report
 import type { ConfigStatusEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
-import { completeSecurityStatusLoad } from "$lib/features/security/state";
+import {
+  completeSecurityStatusLoad,
+  emptySecurityResourceState,
+  failSecurityStatusLoadAtRuntime,
+  securityStatus,
+} from "$lib/features/security/state";
 import { setAppLocale } from "$lib/i18n";
 import { resetAppStateForTest, seedSelectionForTest } from "$lib/store-test-utils";
+import { failureForCode } from "$lib/test-failure";
 
 import Security from "./Security.svelte";
 
@@ -106,5 +113,15 @@ describe("Security screen", () => {
     expect(screen.getByText(/Client PIN or built-in UV/)).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "Always UV" })).toBeEnabled();
     expect(screen.getByRole("heading", { name: "Factory reset" })).toBeInTheDocument();
+  });
+
+  it("keeps a status-load failure out of the empty state", () => {
+    securityStatus.set(emptySecurityResourceState());
+    failSecurityStatusLoadAtRuntime(failureForCode(Code.CodePINInvalid));
+
+    render(Security);
+
+    expect(screen.getByText("This authenticator does not expose the requested security capability.")).toBeInTheDocument();
+    expect(screen.queryByText("The PIN is invalid.")).not.toBeInTheDocument();
   });
 });

@@ -89,7 +89,7 @@ describe("Overview", () => {
     cleanup();
   });
 
-  it("shows the concrete kit error from a typed Inspect envelope", () => {
+  it("keeps a typed Inspect error out of the empty state", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
       sessionId: "session-1",
@@ -98,15 +98,17 @@ describe("Overview", () => {
       operationId: "inspect-error",
       sessionId: "session-1",
       kind: OperationKind.OperationInspect,
-      error: failureForCode(Code.CodeDeviceBusy),
+      error: failureForCode(Code.CodePINInvalid),
     }));
 
     render(Overview);
 
-    expect(screen.getByRole("alert")).toHaveTextContent("The selected authenticator is already in use.");
+    expect(screen.getByText("Inspect the authenticator to populate its capability matrix.")).toBeInTheDocument();
+    expect(screen.queryByText("The PIN is invalid.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reload overview" })).toBeInTheDocument();
   });
 
-  it("shows a thrown Wails failure instead of a generic empty state", () => {
+  it("keeps a thrown Wails failure out of the empty state", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
       sessionId: "session-1",
@@ -115,8 +117,8 @@ describe("Overview", () => {
 
     render(Overview);
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Communication with the authenticator failed.");
-    expect(screen.queryByText("Authenticator overview is not loaded yet.")).not.toBeInTheDocument();
+    expect(screen.getByText("Inspect the authenticator to populate its capability matrix.")).toBeInTheDocument();
+    expect(screen.queryByText("Communication with the authenticator failed.")).not.toBeInTheDocument();
   });
 
   it("forces an MDS refresh and confirms completion", async () => {
@@ -129,6 +131,7 @@ describe("Overview", () => {
     seedOverviewEnvelopeForTest(inspectEnvelope("inspect-1", aaguid));
 
     render(Overview);
+    expect(screen.getByRole("button", { name: "Raw JSON" })).toHaveAttribute("aria-expanded", "false");
     await user.click(screen.getByRole("button", { name: "Refresh MDS" }));
 
     await waitFor(() => {
@@ -137,7 +140,7 @@ describe("Overview", () => {
     });
   });
 
-  it("renders degraded Overview warnings without owning global errors", () => {
+  it("keeps degraded Overview errors out of the page", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
       sessionId: "session-1",
@@ -146,7 +149,8 @@ describe("Overview", () => {
 
     render(Overview);
 
-    expect(screen.getByRole("status")).toHaveTextContent("Authenticator metadata could not be downloaded.");
+    expect(screen.getByText("Inspect the authenticator to populate its capability matrix.")).toBeInTheDocument();
+    expect(screen.queryByText("Authenticator metadata could not be downloaded.")).not.toBeInTheDocument();
   });
 
   it("preserves a manual conformance toggle across MDS updates and resets it for a new inspection", async () => {

@@ -3,6 +3,7 @@
 
   import type { Warning } from "../../../../bindings/github.com/go-ctap/kit/model/safety";
 
+  import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Progress } from "$lib/components/ui/progress/index.js";
   import {
@@ -64,6 +65,12 @@
     ?? resetPreview?.warnings
     ?? []
   ));
+  let jsonPreview = $derived(
+    configPreview
+    ?? enrollmentPreview
+    ?? biometricPreview
+    ?? resetPreview,
+  );
   let failureMessage = $derived.by(() => {
     if (mutation.phase !== "error") return null;
     if (mutation.failureReason === "missing-preview") return m.operation_missing_preview();
@@ -155,6 +162,10 @@
         </Alert.Root>
       {/each}
     </section>
+  {/if}
+
+  {#if jsonPreview}
+    <JsonDisclosure value={jsonPreview} title={m.preview_json()} />
   {/if}
 </div>
 

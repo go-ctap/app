@@ -1,15 +1,13 @@
 <script lang="ts">
-  import { ChevronDown, Copy, Pencil, Trash2 } from "@lucide/svelte";
+  import { Copy, Pencil, Trash2 } from "@lucide/svelte";
 
   import { copyToClipboard } from "$lib/clipboard";
-  import JsonView from "$lib/components/shared/JsonView.svelte";
+  import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
-  import * as Collapsible from "$lib/components/ui/collapsible/index.js";
+  import { Button } from "$lib/components/ui/button/index.js";
   import { Separator } from "$lib/components/ui/separator/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import type { PasskeyCredentialRow } from "$lib/passkeys-presentation";
-  import { sanitizedJson } from "$lib/redaction";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -30,8 +28,6 @@
     onEdit,
     onDelete,
   }: Props = $props();
-
-  let rawJson = $derived(sanitizedJson(row.raw) ?? "null");
 
   function compactCredProtectLabel(level: number | null) {
     return level ? `UV ${level}` : "UV —";
@@ -205,38 +201,9 @@
 
     <Separator class="passkey-raw-separator" />
 
-    <Collapsible.Root class="passkey-raw">
-      <div class="passkey-raw-header">
-        <Collapsible.Trigger
-          class={buttonVariants({ variant: "ghost", size: "sm", class: "passkey-raw-trigger" })}
-        >
-          <span>{m.raw_credential_details()}</span>
-          <ChevronDown class="passkey-raw-chevron" aria-hidden="true" />
-        </Collapsible.Trigger>
-
-        <Tooltip.Root>
-          <Tooltip.Trigger>
-            {#snippet child({ props })}
-              <Button
-                {...props}
-                variant="ghost"
-                size="icon-sm"
-                type="button"
-                aria-label={m.copy_json()}
-                onclick={() => copyToClipboard(rawJson, m.json_copied())}
-              >
-                <Copy data-icon="inline-start" aria-hidden="true" />
-              </Button>
-            {/snippet}
-          </Tooltip.Trigger>
-          <Tooltip.Content side="top">{m.copy_json()}</Tooltip.Content>
-        </Tooltip.Root>
-      </div>
-
-      <Collapsible.Content class="passkey-raw-content">
-        <JsonView value={row.raw} variant="code" />
-      </Collapsible.Content>
-    </Collapsible.Root>
+    <div class="passkey-raw">
+      <JsonDisclosure value={row.raw} title={m.raw_credential_details()} />
+    </div>
   </section>
 </Tooltip.Provider>
 
@@ -371,62 +338,15 @@
     overflow-wrap: anywhere;
   }
 
-  :global(.passkey-raw) {
-    display: grid;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    overflow: hidden;
-  }
-
-  .passkey-raw-header {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    min-width: 0;
-    padding-right: var(--space-3);
-  }
-
-  :global(.passkey-raw-trigger) {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    height: auto;
+  .passkey-raw {
     min-width: 0;
     padding: var(--space-3);
-    text-align: left;
-  }
-
-  :global(.passkey-raw-trigger span) {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .passkey-raw-chevron {
-    transition: transform 120ms ease;
-  }
-
-  :global(.passkey-raw-content) {
-    display: grid;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    padding: 0 var(--space-3) var(--space-3);
   }
 
   @container workspace (max-width: 56.25rem) {
     .passkey-inspector-content {
       grid-template-columns: minmax(0, 1fr);
     }
-  }
-}
-
-@layer exceptions {
-  :global(.passkey-raw[data-state="open"] .passkey-raw-chevron) {
-    transform: rotate(180deg);
   }
 }
 </style>

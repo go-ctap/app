@@ -63,6 +63,7 @@ describe("SecurityMutationDetails", () => {
     expect(screen.getByText("usb")).toBeInTheDocument();
     expect(screen.getByText("Factory reset permanently removes authenticator state and cannot be undone.")).toBeInTheDocument();
     expect(screen.queryByText("reset.factory.destructive")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Preview JSON" })).toHaveAttribute("aria-expanded", "false");
   });
 
   it("localizes an unknown long-touch reset hint", () => {
