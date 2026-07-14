@@ -462,7 +462,7 @@ describe("Passkeys", () => {
     expect(screen.queryByText("No matching passkeys")).not.toBeInTheDocument();
   });
 
-  it("renders the typed update preview and keeps its confirmation label while executing", async () => {
+  it("keeps the update action through execution and any execution error", async () => {
     const envelope = credentialsEnvelope();
     seedSelectionForTest("token-1", null, {
       state: "ready",
@@ -519,6 +519,25 @@ describe("Passkeys", () => {
     await tick();
     expect(within(dialog).getByRole("button", { name: "Confirm update" })).toBeDisabled();
     expect(within(dialog).queryByRole("button", { name: "Preview change" })).not.toBeInTheDocument();
+
+    mutablePasskeysMutation.set({
+      ...mutation,
+      phase: "error",
+      failedPhase: "executing",
+      responseEnvelope: {
+        operationId: "update-error-1",
+        sessionId: "session-1",
+        kind: OperationKind.OperationUpdateCredentialUser,
+        error: failureForCode(Code.CodeTransportFailure),
+      } as CredentialUpdateEnvelope,
+      runtimeError: null,
+      failureReason: "response-error",
+      validationError: null,
+    });
+    await tick();
+    expect(within(dialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Confirm update" })).toBeEnabled();
+    expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
   });
 
   it("renders the typed delete preview in an accessible alert dialog", async () => {
@@ -565,7 +584,7 @@ describe("Passkeys", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
   });
 
-  it("keeps the delete confirmation action after an incorrect PIN", () => {
+  it("keeps the delete confirmation action after any execution error", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
       sessionId: "session-1",
@@ -592,7 +611,7 @@ describe("Passkeys", () => {
       operationId: "delete-1",
       sessionId: "session-1",
       kind: OperationKind.OperationDeleteCredential,
-      error: failureForCode(Code.CodePINInvalid),
+      error: failureForCode(Code.CodeTransportFailure),
     } as CredentialDeleteEnvelope;
     mutablePasskeysMutation.set({
       kind: "delete",
@@ -609,8 +628,9 @@ describe("Passkeys", () => {
     render(Passkeys);
 
     const dialog = screen.getByRole("alertdialog", { name: "Confirm delete" });
-    expect(within(dialog).getByText("The PIN is incorrect.")).toBeInTheDocument();
+    expect(within(dialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Confirm delete" })).toBeEnabled();
+    expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
   });
 

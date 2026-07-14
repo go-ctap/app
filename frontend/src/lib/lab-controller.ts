@@ -26,7 +26,7 @@ import {
   validateGetAssertionDraft,
   validateMakeCredentialDraft,
 } from "./lab-input.js";
-import { isIncorrectPINFailure, runtimeFailureFrom } from "./failure.js";
+import { runtimeFailureFrom } from "./failure.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
 import { ensureSelectedSessionReady } from "./session-controller.js";
 import {
@@ -182,7 +182,7 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
   if (step.phase !== "review" && !(
     step.phase === "error"
     && step.previewEnvelope
-    && isIncorrectPINFailure(step.responseEnvelope?.error)
+    && step.request
   )) return false;
   const previewRequest = step.previewRequest;
   const previewEnvelope = step.previewEnvelope;

@@ -7,6 +7,7 @@ import {
 } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
+  CredentialDeleteEnvelope,
   CredentialUpdateEnvelope,
   CredentialsEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
@@ -21,8 +22,10 @@ import {
 import { resetSessionStateForTest, selectedSelector, sessionStatus } from "./features/session/state";
 import { resetWorkbenchStateForTest } from "./features/workbench/state";
 import {
+  beginCredentialDelete,
   beginCredentialUpdate,
   buildCredentialUpdatePreviewRequest,
+  confirmCredentialDelete,
   confirmCredentialUpdate,
   normalizeCredentialUpdateForm,
   previewCredentialUpdate,
@@ -85,6 +88,34 @@ function updateResultEnvelope(): CredentialUpdateEnvelope {
     rpID: "example.test",
     previous: { userIDHex: "01", name: "user", displayName: "Old name" },
     current: { userIDHex: "01", name: "user", displayName: "New name" },
+  };
+  return envelope;
+}
+
+function deletePreviewEnvelope(): CredentialDeleteEnvelope {
+  return {
+    operationId: "delete-preview-1",
+    sessionId: "session-1",
+    kind: OperationKind.OperationDeleteCredential,
+    result: {
+      preview: {
+        credentialIDHex: "cafe",
+        rpID: "example.test",
+        userIDHex: "01",
+      },
+      result: null,
+    },
+  } as CredentialDeleteEnvelope;
+}
+
+function deleteResultEnvelope(): CredentialDeleteEnvelope {
+  const envelope = deletePreviewEnvelope();
+  envelope.operationId = "delete-1";
+  envelope.result!.result = {
+    deviceId: "token-1",
+    credentialIDHex: "cafe",
+    rpID: "example.test",
+    userIDHex: "01",
   };
   return envelope;
 }
@@ -167,9 +198,9 @@ describe("passkeys mutation requests", () => {
     )).toBe("no-changes");
   });
 
-  it("reconfirms an incorrect PIN directly without rebuilding the preview", async () => {
+  it("reconfirms after any execution failure without rebuilding the preview", async () => {
     const executionFailure = updatePreviewEnvelope();
-    executionFailure.error = failureForCode(Code.CodePINInvalid);
+    executionFailure.error = failureForCode(Code.CodeTransportFailure);
     const update = vi.spyOn(api, "updateCredentialUser")
       .mockResolvedValueOnce(updatePreviewEnvelope())
       .mockResolvedValueOnce(executionFailure)
@@ -186,5 +217,23 @@ describe("passkeys mutation requests", () => {
     expect(update.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
     expect(update.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
     expect(list).toHaveBeenCalledTimes(1);
+  });
+
+  it("reconfirms a delete after any execution failure", async () => {
+    const executionFailure = deletePreviewEnvelope();
+    executionFailure.error = failureForCode(Code.CodeTransportFailure);
+    const remove = vi.spyOn(api, "deleteCredential")
+      .mockResolvedValueOnce(deletePreviewEnvelope())
+      .mockResolvedValueOnce(executionFailure)
+      .mockResolvedValueOnce(deleteResultEnvelope());
+    vi.spyOn(api, "listCredentials").mockResolvedValue(inventoryEnvelope());
+
+    expect(await beginCredentialDelete("cafe")).toBe(true);
+    expect(await confirmCredentialDelete()).toBe(false);
+    expect(await confirmCredentialDelete()).toBe(true);
+
+    expect(remove).toHaveBeenCalledTimes(3);
+    expect(remove.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(remove.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
   });
 });

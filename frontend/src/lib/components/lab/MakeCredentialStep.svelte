@@ -18,7 +18,7 @@
     LabState,
     MakeCredentialDraft,
   } from "$lib/features/lab/state";
-  import { failureMessage as localizeFailure, isIncorrectPINFailure } from "$lib/failure";
+  import { failureMessage as localizeFailure } from "$lib/failure";
   import { validateMakeCredentialDraft } from "$lib/lab-input";
 
   import { m } from "../../../paraglide/messages.js";
@@ -89,11 +89,8 @@
     if (step.phase !== "error") return null;
     return localizeFailure(step.runtimeError) ?? operationError(step.responseEnvelope) ?? m.lab_request_failed();
   });
-  let incorrectPIN = $derived(
-    step.phase === "error" && Boolean(step.previewEnvelope) &&
-    isIncorrectPINFailure(step.responseEnvelope?.error),
-  );
   let previewFailed = $derived(step.phase === "error" && step.request === null);
+  let executionFailed = $derived(step.phase === "error" && step.request !== null);
 
   function phaseLabel() {
     if (phase === "previewing") return m.lab_phase_previewing();
@@ -407,7 +404,7 @@
         <Pencil data-icon="inline-start" aria-hidden="true" />
         {m.lab_edit()}
       </Button>
-      {#if incorrectPIN}
+      {#if executionFailed}
         <Button type="button" {disabled} onclick={onConfirm}>
           <Send data-icon="inline-start" aria-hidden="true" />
           {m.lab_confirm()}

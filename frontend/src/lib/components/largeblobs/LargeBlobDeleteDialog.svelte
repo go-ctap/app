@@ -9,7 +9,7 @@
   import { Spinner } from "$lib/components/ui/spinner/index.js";
   import { largeBlobMutationPreview } from "$lib/ctapkit-results";
   import type { LargeBlobMutationState } from "$lib/features/largeblobs/state";
-  import { failureMessage as localizeFailure, isCanceledFailure, isIncorrectPINFailure } from "$lib/failure";
+  import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -26,7 +26,7 @@
     mutation.kind === "delete" && (
       mutation.phase === "review"
       || mutation.phase === "executing"
-      || (mutation.phase === "error" && mutation.failedPhase === "executing" && Boolean(mutation.previewEnvelope))
+      || (mutation.phase === "error" && mutation.failedPhase === "executing")
     ),
   );
   let noopOpen = $derived(mutation.kind === "delete" && mutation.phase === "noop");
@@ -55,11 +55,6 @@
       || isCanceledFailure(mutation.responseEnvelope?.error)
     ),
   );
-  let incorrectPIN = $derived(
-    mutation.kind === "delete" && mutation.phase === "error" && mutation.failedPhase === "executing" &&
-    isIncorrectPINFailure(mutation.responseEnvelope?.error),
-  );
-
   function handleOpenChange(next: boolean) {
     if (!next && !busy) onClose();
   }
@@ -116,7 +111,7 @@
   {#if mutation.kind === "delete" && (
     mutation.phase === "review"
     || mutation.phase === "executing"
-    || (mutation.phase === "error" && mutation.failedPhase === "executing" && mutation.previewEnvelope)
+    || (mutation.phase === "error" && mutation.failedPhase === "executing")
   )}
     <AlertDialog.Content class="large-blob-delete-dialog">
       <AlertDialog.Header>
@@ -138,15 +133,11 @@
       {#if preview}<LargeBlobMutationPreview {preview} />{/if}
 
       <AlertDialog.Footer>
-        <AlertDialog.Cancel disabled={busy} onclick={onClose}>
-          {mutation.phase === "error" && !incorrectPIN ? m.close() : m.cancel()}
-        </AlertDialog.Cancel>
-        {#if mutation.phase !== "error" || incorrectPIN}
-          <AlertDialog.Action variant="destructive" disabled={busy} onclick={handleAction}>
-            {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
-            {m.confirm_delete()}
-          </AlertDialog.Action>
-        {/if}
+        <AlertDialog.Cancel disabled={busy} onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
+        <AlertDialog.Action variant="destructive" disabled={busy} onclick={handleAction}>
+          {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
+          {m.confirm_delete()}
+        </AlertDialog.Action>
       </AlertDialog.Footer>
     </AlertDialog.Content>
   {/if}

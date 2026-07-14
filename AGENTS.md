@@ -20,6 +20,7 @@
 - Mutating or destructive authenticator actions need preview/confirmation semantics matching `ctapkit`.
 - Do not add frontend epoch counters, stale-response filters, duplicate in-flight interaction guards, or current-session revalidation layers for ordinary authenticator operations. `ctapkit` is the runtime boundary, local authenticators are single-operation devices, and frontend code should trust generated operation/session/interaction contracts instead of modelling imagined concurrency.
 - Do not hand-edit `frontend/bindings/` unless intentionally updating generated Wails artifacts.
+- Treat Taskfile files as Wails integration-critical. Small targeted edits such as package-manager or lockfile updates are allowed, but never remove or broadly restructure tasks without an explicit user request.
 
 ## Frontend
 - Bindings are the model. Do not create local copies of `DeviceReport`, `LookupResult`, `AuthenticatorGetInfoResponse`, service envelopes, or other `ctapkit` model DTOs.

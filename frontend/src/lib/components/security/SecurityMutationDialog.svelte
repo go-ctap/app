@@ -7,7 +7,6 @@
   import { Spinner } from "$lib/components/ui/spinner/index.js";
   import type { SecurityMutationState } from "$lib/features/security/state";
   import type { ActiveOperation } from "$lib/features/workbench/state";
-  import { isIncorrectPINFailure } from "$lib/failure";
 
   import { m } from "../../../paraglide/messages.js";
   import SecurityMutationDetails from "./SecurityMutationDetails.svelte";
@@ -27,14 +26,12 @@
   let open = $derived(mutation.kind !== "idle" && mutation.phase !== "editing");
   let destructive = $derived(mutation.kind === "bioRemove" || mutation.kind === "reset");
   let busy = $derived(mutation.phase === "previewing" || mutation.phase === "executing");
-  let incorrectPIN = $derived(
-    mutation.phase === "error" && mutation.failedPhase === "executing" &&
-    isIncorrectPINFailure(mutation.responseEnvelope?.error),
-  );
   let previewFailed = $derived(
     mutation.phase === "error" && mutation.failedPhase === "previewing",
   );
-  let primaryAvailable = $derived(mutation.phase === "review" || previewFailed || incorrectPIN);
+  let executionFailed = $derived(
+    mutation.phase === "error" && mutation.failedPhase === "executing",
+  );
 
   function title() {
     if (mutation.kind === "alwaysUv") return m.security_always_uv();
@@ -79,7 +76,7 @@
 
   function runPrimary(event?: Event) {
     event?.preventDefault();
-    if (mutation.phase === "review" || incorrectPIN) void onConfirm();
+    if (mutation.phase === "review" || executionFailed) void onConfirm();
     else if (previewFailed) void onPreview();
   }
 
@@ -104,15 +101,13 @@
       <SecurityMutationDetails {mutation} {activeOperation} />
 
       <AlertDialog.Footer>
-        <AlertDialog.Cancel disabled={busy} onclick={onClose}>
-          {mutation.phase === "error" && !primaryAvailable ? m.close() : m.cancel()}
-        </AlertDialog.Cancel>
+        <AlertDialog.Cancel disabled={busy} onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
         {#if busy}
           <AlertDialog.Action variant="destructive" disabled>
             <Spinner data-icon="inline-start" aria-hidden="true" />
             {busyLabel()}
           </AlertDialog.Action>
-        {:else if primaryAvailable}
+        {:else}
           <AlertDialog.Action variant="destructive" disabled={disabled} onclick={runPrimary}>
             {primaryLabel()}
           </AlertDialog.Action>
@@ -122,7 +117,7 @@
   </AlertDialog.Root>
 {:else}
   <Dialog.Root {open} onOpenChange={handleOpenChange}>
-    <Dialog.Content class="security-mutation-dialog" showCloseButton={!busy && primaryAvailable}>
+    <Dialog.Content class="security-mutation-dialog" showCloseButton={!busy}>
       <Dialog.Header>
         <Dialog.Title>{title()}</Dialog.Title>
         {#if description()}
@@ -143,13 +138,11 @@
             <Spinner data-icon="inline-start" aria-hidden="true" />
             {busyLabel()}
           </Button>
-        {:else if primaryAvailable}
+        {:else}
           <Button type="button" disabled={disabled} onclick={runPrimary}>
             {primaryLabel()}
           </Button>
           <Button variant="outline" type="button" onclick={onClose}>{m.cancel()}</Button>
-        {:else}
-          <Button type="button" onclick={onClose}>{m.close()}</Button>
         {/if}
       </Dialog.Footer>
     </Dialog.Content>

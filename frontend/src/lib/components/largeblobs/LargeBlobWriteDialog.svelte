@@ -19,7 +19,7 @@
     type LargeBlobPayloadEncoding,
     type LargeBlobPayloadValidationError,
   } from "$lib/largeblobs-payload";
-  import { failureMessage as localizeFailure, isCanceledFailure, isIncorrectPINFailure } from "$lib/failure";
+  import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -89,10 +89,6 @@
     ),
   );
   let failedPhase = $derived(mutation.phase === "error" ? mutation.failedPhase : null);
-  let incorrectPIN = $derived(
-    mutation.kind === "write" && mutation.phase === "error" && mutation.failedPhase === "executing" &&
-    isIncorrectPINFailure(mutation.responseEnvelope?.error),
-  );
 
   function validationMessage(error: LargeBlobPayloadValidationError | null) {
     if (error === "invalid-hex-character") return m.payload_hex_invalid();
@@ -119,7 +115,7 @@
     }
     if (mutation.phase === "error") {
       if (mutation.failedPhase === "previewing") void onPreview();
-      else if (incorrectPIN) void onConfirm();
+      else void onConfirm();
       return;
     }
     void onPreview();
@@ -208,19 +204,15 @@
         {/if}
 
         <Dialog.Footer>
-          {#if mutation.phase !== "error" || mutation.failedPhase === "previewing" || incorrectPIN}
-            <Button type="submit" disabled={busy}>
-              {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
-              {mutation.phase === "review" || mutation.phase === "executing" || incorrectPIN
-                ? m.confirm_write()
-                : m.preview_write()}
-            </Button>
-          {/if}
-          <Button variant="outline" type="button" disabled={busy} onclick={onClose}>
-            {mutation.phase === "error" && mutation.failedPhase === "executing" && !incorrectPIN
-              ? m.close()
-              : m.cancel()}
+          <Button type="submit" disabled={busy}>
+            {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
+            {mutation.phase === "review"
+              || mutation.phase === "executing"
+              || (mutation.phase === "error" && mutation.failedPhase === "executing")
+              ? m.confirm_write()
+              : m.preview_write()}
           </Button>
+          <Button variant="outline" type="button" disabled={busy} onclick={onClose}>{m.cancel()}</Button>
         </Dialog.Footer>
       </form>
     </Dialog.Content>

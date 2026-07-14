@@ -181,7 +181,7 @@ describe("WebAuthn Lab screen", () => {
     expect(within(make).getAllByText(/not valid JSON/).length).toBeGreaterThan(0);
   });
 
-  it("offers only actions that match the failed MakeCredential phase", async () => {
+  it("keeps the original action for each failed MakeCredential phase", async () => {
     selectToken();
     const current = get(mutableLabState);
     const previewRequest = new MakeCredentialRequest({
@@ -243,26 +243,6 @@ describe("WebAuthn Lab screen", () => {
         previewEnvelope,
         request: executionRequest,
         responseEnvelope: new MakeCredentialEnvelope({
-          operationId: "make-pin-error",
-          sessionId: "session-1",
-          kind: OperationKind.OperationMakeCredential,
-          error: failureForCode(Code.CodePINInvalid),
-        }),
-        runtimeError: null,
-      },
-    }));
-    await tick();
-    expect(within(make).getByRole("button", { name: "Confirm" })).toBeInTheDocument();
-    expect(within(make).queryByRole("button", { name: "Preview" })).not.toBeInTheDocument();
-
-    mutableLabState.update((state) => ({
-      ...state,
-      makeStep: {
-        phase: "error",
-        previewRequest,
-        previewEnvelope,
-        request: executionRequest,
-        responseEnvelope: new MakeCredentialEnvelope({
           operationId: "make-execution-error",
           sessionId: "session-1",
           kind: OperationKind.OperationMakeCredential,
@@ -272,9 +252,9 @@ describe("WebAuthn Lab screen", () => {
       },
     }));
     await tick();
-    expect(within(make).getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(within(make).getByRole("button", { name: "Confirm" })).toBeInTheDocument();
     expect(within(make).queryByRole("button", { name: "Preview" })).not.toBeInTheDocument();
-    expect(within(make).queryByRole("button", { name: "Confirm" })).not.toBeInTheDocument();
+    expect(within(make).getByRole("button", { name: "Edit" })).toBeInTheDocument();
   });
 
   it("can cancel and then reapply the current preset to a custom scenario", async () => {

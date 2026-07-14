@@ -288,12 +288,13 @@ describe("WebAuthn Lab request lifecycle", () => {
     expect(get(labState).makeStep.phase).toBe("success");
   });
 
-  it("does not re-preview after an execution failure with an unknown outcome", async () => {
+  it("reconfirms directly after any execution failure without rebuilding the preview", async () => {
     const executionFailure = makePreviewEnvelope();
     executionFailure.error = failureForCode(Code.CodeTransportFailure);
     const makeCredential = vi.spyOn(api, "makeCredential")
       .mockResolvedValueOnce(makePreviewEnvelope())
-      .mockResolvedValueOnce(executionFailure);
+      .mockResolvedValueOnce(executionFailure)
+      .mockResolvedValueOnce(makeResultEnvelope());
 
     expect(await previewLabMakeCredential()).toBe(true);
     expect(await confirmLabMakeCredential()).toBe(false);
@@ -304,29 +305,14 @@ describe("WebAuthn Lab request lifecycle", () => {
     });
 
     expect(await previewLabMakeCredential()).toBe(false);
-    expect(makeCredential).toHaveBeenCalledTimes(2);
+    expect(await confirmLabMakeCredential()).toBe(true);
+    expect(makeCredential).toHaveBeenCalledTimes(3);
     expect(makeCredential.mock.calls[1][0]).toMatchObject({
       dryRun: false,
       confirmed: true,
     });
-    expect(get(labState).makeStep.phase).toBe("error");
-  });
-
-  it("reconfirms MakeCredential directly after an incorrect PIN", async () => {
-    const incorrectPIN = makePreviewEnvelope();
-    incorrectPIN.error = failureForCode(Code.CodePINInvalid);
-    const makeCredential = vi.spyOn(api, "makeCredential")
-      .mockResolvedValueOnce(makePreviewEnvelope())
-      .mockResolvedValueOnce(incorrectPIN)
-      .mockResolvedValueOnce(makeResultEnvelope());
-
-    expect(await previewLabMakeCredential()).toBe(true);
-    expect(await confirmLabMakeCredential()).toBe(false);
-    expect(await confirmLabMakeCredential()).toBe(true);
-
-    expect(makeCredential).toHaveBeenCalledTimes(3);
-    expect(makeCredential.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
     expect(makeCredential.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(get(labState).makeStep.phase).toBe("success");
   });
 
   it("retries GetAssertion with the exact frozen request, including raw client-data bytes", async () => {

@@ -38,7 +38,7 @@ import {
 import { selectedSelector, sessionStatus } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { findPasskeyCredential } from "./passkeys-presentation.js";
-import { internalFailure, isIncorrectPINFailure, runtimeFailureFrom } from "./failure.js";
+import { internalFailure, runtimeFailureFrom } from "./failure.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
 import {
   beginOperation,
@@ -326,8 +326,7 @@ export async function confirmCredentialUpdate(): Promise<boolean> {
   if (current.kind !== "update" || (current.phase !== "review" && current.phase !== "error")) return false;
   const { previewRequest, previewEnvelope } = current;
   if (!previewRequest || !previewEnvelope) return false;
-  if (current.phase === "error"
-    && (current.failedPhase !== "executing" || !isIncorrectPINFailure(current.responseEnvelope?.error))) return false;
+  if (current.phase === "error" && current.failedPhase !== "executing") return false;
   const request: CredentialUpdateRequest = {
     ...previewRequest,
     dryRun: false,
@@ -442,8 +441,7 @@ export async function confirmCredentialDelete(): Promise<boolean> {
   if (current.kind !== "delete" || (current.phase !== "review" && current.phase !== "error")) return false;
   const { previewRequest, previewEnvelope } = current;
   if (!previewRequest || !previewEnvelope) return false;
-  if (current.phase === "error"
-    && (current.failedPhase !== "executing" || !isIncorrectPINFailure(current.responseEnvelope?.error))) return false;
+  if (current.phase === "error" && current.failedPhase !== "executing") return false;
   const request: CredentialDeleteRequest = {
     ...previewRequest,
     dryRun: false,

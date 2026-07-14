@@ -161,10 +161,6 @@ export function isInvalidSessionFailure(failure: Failure | null | undefined): bo
   return failure?.category === Category.CategoryInvalidSession;
 }
 
-export function isIncorrectPINFailure(failure: Failure | null | undefined): boolean {
-  return failure?.code === Code.CodePINInvalid;
-}
-
 export function isUnsupportedFailure(failure: Failure | null | undefined): boolean {
   return failure?.category === Category.CategoryUnsupported;
 }

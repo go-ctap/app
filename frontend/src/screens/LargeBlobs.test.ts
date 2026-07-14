@@ -513,7 +513,7 @@ describe("LargeBlobs", () => {
     expect(within(dialog).getByRole("button", { name: "Confirm delete" })).toBeInTheDocument();
   });
 
-  it("renders write review and keeps its confirmation label while executing", async () => {
+  it("keeps the write action through execution and any execution error", async () => {
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     const preview = mutationPreview(MutationOperation.MutationCreate, {
       serializedLargeBlobArraySizeAfter: 24,
@@ -546,9 +546,28 @@ describe("LargeBlobs", () => {
     await tick();
     expect(within(dialog).getByRole("button", { name: "Confirm write" })).toBeDisabled();
     expect(within(dialog).queryByRole("button", { name: "Preview write" })).not.toBeInTheDocument();
+
+    mutableLargeBlobsMutation.set({
+      ...mutation,
+      phase: "error",
+      failedPhase: "executing",
+      responseEnvelope: {
+        operationId: "write-error-1",
+        sessionId: "session-1",
+        kind: OperationKind.OperationWriteLargeBlob,
+        error: failureForCode(Code.CodeTransportFailure),
+      } as LargeBlobMutationEnvelope,
+      runtimeError: null,
+      failureReason: "response-error",
+      validationError: null,
+    });
+    await tick();
+    expect(within(dialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Confirm write" })).toBeEnabled();
+    expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
   });
 
-  it("renders cleanup review in an accessible destructive alert dialog", () => {
+  it("keeps the cleanup action after any execution error", async () => {
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     const preview = mutationPreview(MutationOperation.MutationGC, {
       serializedLargeBlobArraySizeAfter: 4,
@@ -558,12 +577,13 @@ describe("LargeBlobs", () => {
       noop: false,
     });
     const envelope = mutationEnvelope(preview);
-    mutableLargeBlobsMutation.set({
+    const previewRequest = { sessionId: "session-1", dryRun: true };
+    const mutation = {
       kind: "cleanup",
-      phase: "review",
-      previewRequest: { sessionId: "session-1", dryRun: true },
+      previewRequest,
       previewEnvelope: envelope,
-    });
+    } as const;
+    mutableLargeBlobsMutation.set({ ...mutation, phase: "review" });
 
     render(LargeBlobs);
 
@@ -571,16 +591,34 @@ describe("LargeBlobs", () => {
     expect(within(dialog).getByText("1 unmatched")).toBeInTheDocument();
     expect(within(dialog).queryByText("Credential ID")).not.toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Confirm cleanup" })).toBeInTheDocument();
+
+    mutableLargeBlobsMutation.set({
+      ...mutation,
+      phase: "error",
+      failedPhase: "executing",
+      responseEnvelope: {
+        operationId: "cleanup-error-1",
+        sessionId: "session-1",
+        kind: OperationKind.OperationGarbageCollectLargeBlobs,
+        error: failureForCode(Code.CodeTransportFailure),
+      } as LargeBlobMutationEnvelope,
+      runtimeError: null,
+      failureReason: "response-error",
+    });
+    await tick();
+    expect(within(dialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Confirm cleanup" })).toBeEnabled();
+    expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
   });
 
-  it("keeps the delete confirmation action after an incorrect PIN", () => {
+  it("keeps the delete confirmation action after any execution error", () => {
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     const previewEnvelope = mutationEnvelope(mutationPreview(MutationOperation.MutationDelete));
     const errorEnvelope = {
       operationId: "large-blob-delete-1",
       sessionId: "session-1",
       kind: OperationKind.OperationDeleteLargeBlob,
-      error: failureForCode(Code.CodePINInvalid),
+      error: failureForCode(Code.CodeTransportFailure),
     } as LargeBlobMutationEnvelope;
     mutableLargeBlobsMutation.set({
       kind: "delete",
@@ -597,8 +635,9 @@ describe("LargeBlobs", () => {
     render(LargeBlobs);
 
     const dialog = screen.getByRole("alertdialog", { name: "Confirm delete" });
-    expect(within(dialog).getByText("The PIN is incorrect.")).toBeInTheDocument();
+    expect(within(dialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Confirm delete" })).toBeEnabled();
+    expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
   });
 

@@ -9,7 +9,7 @@
   import { Spinner } from "$lib/components/ui/spinner/index.js";
   import { credentialDeleteOutput } from "$lib/ctapkit-results";
   import type { PasskeysMutationState } from "$lib/features/passkeys/state";
-  import { failureMessage as localizeFailure, isCanceledFailure, isIncorrectPINFailure } from "$lib/failure";
+  import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -26,7 +26,7 @@
     mutation.kind === "delete" && (
       mutation.phase === "review"
       || mutation.phase === "executing"
-      || (mutation.phase === "error" && mutation.failedPhase === "executing" && Boolean(mutation.previewEnvelope))
+      || (mutation.phase === "error" && mutation.failedPhase === "executing")
     ),
   );
   let previewErrorOpen = $derived(
@@ -57,11 +57,6 @@
       || isCanceledFailure(mutation.responseEnvelope?.error)
     ),
   );
-  let incorrectPIN = $derived(
-    mutation.kind === "delete" && mutation.phase === "error" && mutation.failedPhase === "executing" &&
-    isIncorrectPINFailure(mutation.responseEnvelope?.error),
-  );
-
   function warningMessage(code: string, fallback: string) {
     if (code === "credential.delete.destructive") return m.credential_delete_warning_destructive();
     if (code === "credential.delete.irreversible") return m.credential_delete_warning_irreversible();
@@ -111,7 +106,7 @@
   {#if mutation.kind === "delete" && (
     mutation.phase === "review"
     || mutation.phase === "executing"
-    || (mutation.phase === "error" && mutation.failedPhase === "executing" && mutation.previewEnvelope)
+    || (mutation.phase === "error" && mutation.failedPhase === "executing")
   )}
     <AlertDialog.Content class="passkey-delete-dialog">
       <AlertDialog.Header>
@@ -164,19 +159,15 @@
       {/if}
 
       <AlertDialog.Footer>
-        <AlertDialog.Cancel disabled={busy} onclick={onClose}>
-          {mutation.phase === "error" && !incorrectPIN ? m.close() : m.cancel()}
-        </AlertDialog.Cancel>
-        {#if mutation.phase !== "error" || incorrectPIN}
-          <AlertDialog.Action
-            variant="destructive"
-            disabled={busy}
-            onclick={handleAction}
-          >
-            {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
-            {m.confirm_delete()}
-          </AlertDialog.Action>
-        {/if}
+        <AlertDialog.Cancel disabled={busy} onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
+        <AlertDialog.Action
+          variant="destructive"
+          disabled={busy}
+          onclick={handleAction}
+        >
+          {#if busy}<Spinner data-icon="inline-start" aria-hidden="true" />{/if}
+          {m.confirm_delete()}
+        </AlertDialog.Action>
       </AlertDialog.Footer>
     </AlertDialog.Content>
   {/if}

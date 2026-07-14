@@ -8,6 +8,8 @@ import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure"
 import {
   AlwaysUVRequest,
   AuthenticatorConfigEnvelope,
+  ResetFactoryEnvelope,
+  ResetFactoryRequest,
 } from "../../../../bindings/github.com/go-ctap/kit/service";
 
 import type { SecurityMutationState } from "$lib/features/security/state";
@@ -80,24 +82,51 @@ describe("SecurityMutationDialog", () => {
     expect(callbacks.onConfirm).not.toHaveBeenCalled();
   });
 
-  it("keeps the confirmation action after an incorrect PIN", async () => {
-    const callbacks = renderDialog(errorMutation("executing", Code.CodePINInvalid));
+  it.each([
+    Code.CodePINInvalid,
+    Code.CodePINPolicyViolation,
+    Code.CodeTransportFailure,
+  ])("keeps the confirmation action after execution error %s", async (code) => {
+    const callbacks = renderDialog(errorMutation("executing", code));
 
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Waiting for authenticator response." })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Update Always UV" }));
 
     expect(callbacks.onConfirm).toHaveBeenCalledOnce();
     expect(callbacks.onPreview).not.toHaveBeenCalled();
   });
 
-  it("shows only Close after another execution failure", async () => {
-    const callbacks = renderDialog(errorMutation("executing", Code.CodeTransportFailure));
+  it("keeps the destructive action after any execution failure", async () => {
+    const request = new ResetFactoryRequest({ sessionId: "session-1", dryRun: true });
+    const previewEnvelope = new ResetFactoryEnvelope({
+      operationId: "reset-preview-1",
+      sessionId: "session-1",
+      kind: OperationKind.OperationResetFactory,
+    });
+    const callbacks = renderDialog({
+      kind: "reset",
+      phase: "error",
+      failedPhase: "executing",
+      previewRequest: request,
+      previewEnvelope,
+      responseEnvelope: new ResetFactoryEnvelope({
+        operationId: "reset-response-1",
+        sessionId: "session-1",
+        kind: OperationKind.OperationResetFactory,
+        error: failureForCode(Code.CodeTransportFailure),
+      }),
+      runtimeError: null,
+      failureReason: "response-error",
+      validationError: null,
+    });
 
-    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Update Always UV" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Waiting for authenticator response." })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Reset authenticator" }));
 
-    expect(callbacks.onClose).toHaveBeenCalledOnce();
+    expect(callbacks.onConfirm).toHaveBeenCalledOnce();
+    expect(callbacks.onPreview).not.toHaveBeenCalled();
   });
 
   it("keeps one spinner on the named action while a preview is running", () => {

@@ -19,7 +19,6 @@
   } = $props();
 
   let pin = $state("");
-  let submitting = $state(false);
 
   // Session close and device loss can dismiss a prompt without submitting it.
   $effect(() => {
@@ -28,9 +27,8 @@
   });
 
   async function answer(confirmed: boolean, canceled = false) {
-    if (!presentation || submitting) return;
+    if (!presentation) return;
     if (confirmed && presentation.kind === InteractionKind.InteractionKindPIN && !pin) return;
-    submitting = true;
     try {
       await onAnswer(new InteractionAnswer({
         interactionId: presentation.interactionId,
@@ -40,7 +38,6 @@
       }));
     } finally {
       pin = "";
-      submitting = false;
     }
   }
 
@@ -68,15 +65,15 @@
         {/if}
 
         {#if presentation.kind === InteractionKind.InteractionKindPIN}
-          <SensitivePinField bind:value={pin} label={m.pin()} disabled={submitting} autofocus />
+          <SensitivePinField bind:value={pin} label={m.pin()} autofocus />
         {/if}
 
         <Dialog.Footer>
-          <Button variant="outline" type="button" disabled={submitting} onclick={() => answer(false, true)}>{m.cancel()}</Button>
+          <Button variant="outline" type="button" onclick={() => answer(false, true)}>{m.cancel()}</Button>
           <Button
             variant={presentation.destructive ? "destructive" : "default"}
             type="submit"
-            disabled={submitting || (presentation.kind === InteractionKind.InteractionKindPIN && !pin)}
+            disabled={presentation.kind === InteractionKind.InteractionKindPIN && !pin}
           >
             {presentation.kind === InteractionKind.InteractionKindPIN ? m.send_pin() : m.continue_action()}
           </Button>

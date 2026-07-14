@@ -184,10 +184,10 @@ describe("large blob controller", () => {
     expect(await confirmLargeBlobWrite()).toBe(false);
   });
 
-  it("reconfirms an incorrect PIN directly without rebuilding the delete preview", async () => {
+  it("reconfirms after any execution failure without rebuilding the delete preview", async () => {
     const preview = previewEnvelope(OperationKind.OperationDeleteLargeBlob, MutationOperation.MutationDelete);
     const executionFailure = previewEnvelope(OperationKind.OperationDeleteLargeBlob, MutationOperation.MutationDelete);
-    executionFailure.error = failureForCode(Code.CodePINInvalid);
+    executionFailure.error = failureForCode(Code.CodeTransportFailure);
     const remove = vi.spyOn(api, "deleteLargeBlob")
       .mockResolvedValueOnce(preview)
       .mockResolvedValueOnce(executionFailure)
@@ -202,6 +202,62 @@ describe("large blob controller", () => {
     expect(remove.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
     expect(remove.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
     expect(list).toHaveBeenCalledTimes(1);
+  });
+
+  it("reconfirms a write after any execution failure", async () => {
+    const executionFailure = previewEnvelope(
+      OperationKind.OperationWriteLargeBlob,
+      MutationOperation.MutationReplace,
+    );
+    executionFailure.error = failureForCode(Code.CodeTransportFailure);
+    const write = vi.spyOn(api, "writeLargeBlob")
+      .mockResolvedValueOnce(previewEnvelope(
+        OperationKind.OperationWriteLargeBlob,
+        MutationOperation.MutationReplace,
+      ))
+      .mockResolvedValueOnce(executionFailure)
+      .mockResolvedValueOnce(resultEnvelope(
+        OperationKind.OperationWriteLargeBlob,
+        MutationOperation.MutationReplace,
+      ));
+    vi.spyOn(api, "listLargeBlobs").mockResolvedValue(listEnvelope());
+
+    expect(beginLargeBlobWrite("cafe")).toBe(true);
+    expect(updateLargeBlobWriteDraft({ payload: "updated", encoding: "utf8" })).toBe(true);
+    expect(await previewLargeBlobWrite()).toBe(true);
+    expect(await confirmLargeBlobWrite()).toBe(false);
+    expect(await confirmLargeBlobWrite()).toBe(true);
+
+    expect(write).toHaveBeenCalledTimes(3);
+    expect(write.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(write.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
+  });
+
+  it("reconfirms cleanup after any execution failure", async () => {
+    const executionFailure = previewEnvelope(
+      OperationKind.OperationGarbageCollectLargeBlobs,
+      MutationOperation.MutationGC,
+    );
+    executionFailure.error = failureForCode(Code.CodeTransportFailure);
+    const cleanup = vi.spyOn(api, "garbageCollectLargeBlobs")
+      .mockResolvedValueOnce(previewEnvelope(
+        OperationKind.OperationGarbageCollectLargeBlobs,
+        MutationOperation.MutationGC,
+      ))
+      .mockResolvedValueOnce(executionFailure)
+      .mockResolvedValueOnce(resultEnvelope(
+        OperationKind.OperationGarbageCollectLargeBlobs,
+        MutationOperation.MutationGC,
+      ));
+    vi.spyOn(api, "listLargeBlobs").mockResolvedValue(listEnvelope());
+
+    expect(await beginLargeBlobCleanup()).toBe(true);
+    expect(await confirmLargeBlobCleanup()).toBe(false);
+    expect(await confirmLargeBlobCleanup()).toBe(true);
+
+    expect(cleanup).toHaveBeenCalledTimes(3);
+    expect(cleanup.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(cleanup.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
   });
 
   it("executes the exact previewed write request with only confirmation fields changed", async () => {

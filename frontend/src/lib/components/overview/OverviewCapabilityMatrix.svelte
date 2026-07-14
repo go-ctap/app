@@ -99,8 +99,11 @@
 @layer blocks {
   .table-frame {
     min-width: 0;
-    overflow: auto;
     border: 1px solid var(--border);
+  }
+
+  .table-frame :global([data-slot="table-container"]) {
+    overscroll-behavior-y: auto;
   }
 
   :global(.capability-table) {

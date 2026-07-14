@@ -65,7 +65,7 @@ import {
 } from "./features/security/state.js";
 import { selectedSelector, sessionStatus } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
-import { failureMessage, internalFailure, isIncorrectPINFailure, runtimeFailureFrom } from "./failure.js";
+import { failureMessage, internalFailure, runtimeFailureFrom } from "./failure.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
 import { rediscoverAfterFactoryReset } from "./session-controller.js";
 import {
@@ -834,8 +834,7 @@ export async function confirmSecurityMutation(): Promise<boolean> {
   const current = get(securityMutation);
   if (current.kind === "idle" || (current.phase !== "review" && current.phase !== "error")) return false;
   if (!current.previewRequest || !current.previewEnvelope) return false;
-  if (current.phase === "error"
-    && (current.failedPhase !== "executing" || !isIncorrectPINFailure(current.responseEnvelope?.error))) return false;
+  if (current.phase === "error" && current.failedPhase !== "executing") return false;
   const label = operationLabel(current.kind);
   securityMutation.set(executingMutation(current));
 

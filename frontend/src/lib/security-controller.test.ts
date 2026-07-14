@@ -592,31 +592,13 @@ describe("security controller mutations", () => {
     expect(get(securityMutation)).toMatchObject({ kind: "alwaysUv", phase: "review" });
   });
 
-  it("does not restart an execution after its outcome becomes unknown", async () => {
-    seedReadyStatus(statusEnvelope({ alwaysUVConfigured: false }));
-    vi.spyOn(api, "setAlwaysUV")
-      .mockResolvedValueOnce(authenticatorConfigEnvelope(
-        AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
-        "preview",
-      ))
-      .mockResolvedValueOnce(authenticatorConfigEnvelope(
-        AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
-        "preview",
-        true,
-      ));
-
-    expect(await beginAlwaysUVChange(AlwaysUVTarget.AlwaysUVTargetEnable)).toBe(true);
-    expect(await confirmSecurityMutation()).toBe(false);
-    expect(await restartSecurityPreview()).toBe(false);
-  });
-
-  it("reconfirms an incorrect PIN directly without rebuilding the preview", async () => {
+  it("reconfirms after any execution failure without rebuilding the preview", async () => {
     seedReadyStatus(statusEnvelope({ alwaysUVConfigured: false }));
     const executionFailure = authenticatorConfigEnvelope(
       AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
       "preview",
     );
-    executionFailure.error = failureForCode(Code.CodePINInvalid);
+    executionFailure.error = failureForCode(Code.CodeTransportFailure);
     const setAlwaysUV = vi.spyOn(api, "setAlwaysUV")
       .mockResolvedValueOnce(authenticatorConfigEnvelope(
         AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,

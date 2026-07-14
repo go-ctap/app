@@ -97,26 +97,6 @@ describe("InteractionModal", () => {
     }));
   });
 
-  it("submits a PIN prompt only once while resolution is pending", async () => {
-    const user = userEvent.setup();
-    let resolveAnswer!: () => void;
-    onAnswer.mockReturnValueOnce(new Promise<void>((resolve) => {
-      resolveAnswer = resolve;
-    }));
-    render(InteractionModal, {
-      props: { presentation: buildInteractionModalPresentation(pinPrompt()), onAnswer },
-    });
-
-    const input = await screen.findByLabelText("PIN");
-    await user.type(input, "123456");
-    const form = input.closest("form")!;
-    await fireEvent.submit(form);
-    await fireEvent.submit(form);
-
-    expect(onAnswer).toHaveBeenCalledTimes(1);
-    resolveAnswer();
-  });
-
   it("does not carry a PIN into the next prompt after an external dismissal", async () => {
     const user = userEvent.setup();
     const view = render(InteractionModal, {
