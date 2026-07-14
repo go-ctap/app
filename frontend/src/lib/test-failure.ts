@@ -6,11 +6,12 @@ import {
 
 const TEST_CATEGORY_BY_CODE: Partial<Record<Code, Category>> = {
   [Code.CodeAssertionDenied]: Category.CategoryInvalidState,
+  [Code.CodeAuthenticatorBusy]: Category.CategoryBusy,
   [Code.CodeBioInteractionTimeout]: Category.CategoryTimeout,
   [Code.CodeConfirmationRequired]: Category.CategoryInvalidOperation,
   [Code.CodeCredentialCreationDenied]: Category.CategoryInvalidState,
   [Code.CodeCredentialManagementUnsupported]: Category.CategoryUnsupported,
-  [Code.CodeDeviceBusy]: Category.CategoryBusy,
+  [Code.CodeDeviceUnavailable]: Category.CategoryInvalidState,
   [Code.CodeInternalError]: Category.CategoryInternal,
   [Code.CodeLargeBlobArrayTooLarge]: Category.CategoryInvalidState,
   [Code.CodeLargeBlobMissing]: Category.CategoryInvalidState,

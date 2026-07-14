@@ -3,16 +3,14 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { InteractionKind, InteractionRequest } from "../../../../bindings/github.com/go-ctap/kit/model";
-import { Code, type Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import { InteractionAnswer, InteractionPrompt } from "../../../../bindings/github.com/go-ctap/kit/service";
 
 import { buildInteractionModalPresentation } from "$lib/shell-presentation";
 import { resetAppStateForTest } from "$lib/store-test-utils";
-import { failureForCode } from "$lib/test-failure";
 
 import InteractionModal from "./InteractionModal.svelte";
 
-function pinPrompt(interactionId = "interaction-1", previousFailure?: Failure) {
+function pinPrompt(interactionId = "interaction-1") {
   return new InteractionPrompt({
     interactionId,
     operationId: "operation-1",
@@ -24,7 +22,6 @@ function pinPrompt(interactionId = "interaction-1", previousFailure?: Failure) {
         pinUvAuthToken: "secret-token",
         options: { pinUvAuthToken: true },
       },
-      previousFailure,
     }),
   });
 }
@@ -83,7 +80,7 @@ describe("InteractionModal", () => {
     expect(onAnswer).not.toHaveBeenCalled();
   });
 
-  it("keeps the dialog open and shows the failure on the next PIN attempt", async () => {
+  it("keeps the dialog open and resets the PIN for the next prompt", async () => {
     const user = userEvent.setup();
     const submitted: Array<{ interactionId: string; pin: string }> = [];
     const answer = vi.fn(async (answer: InteractionAnswer) => {
@@ -97,15 +94,11 @@ describe("InteractionModal", () => {
 
     expect(submitted).toEqual([{ interactionId: "interaction-1", pin: "1111" }]);
     await view.rerender({
-      presentation: buildInteractionModalPresentation(pinPrompt(
-        "interaction-2",
-        failureForCode(Code.CodePINInvalid),
-      )),
+      presentation: buildInteractionModalPresentation(pinPrompt("interaction-2")),
       onAnswer: answer,
     });
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent("The PIN is incorrect.");
     const retryInput = screen.getByLabelText("PIN");
     expect(retryInput).toBeEnabled();
     expect(retryInput).toHaveValue("");

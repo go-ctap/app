@@ -27,7 +27,6 @@ const CODE_MESSAGES: Record<Exclude<Code, Code.$zero>, Message> = {
   [Code.CodeDeviceNotFound]: m.failure_device_not_found,
   [Code.CodeDeviceSelectionRequired]: m.failure_device_selection_required,
   [Code.CodeDeviceUnavailable]: m.failure_device_unavailable,
-  [Code.CodeDeviceBusy]: m.failure_device_busy,
   [Code.CodeTransportModeUnsupported]: m.failure_transport_mode_unsupported,
   [Code.CodeTransportPermissionDenied]: m.failure_transport_permission_denied,
   [Code.CodeTransportProxyUnavailable]: m.failure_transport_proxy_unavailable,

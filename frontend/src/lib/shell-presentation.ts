@@ -56,7 +56,6 @@ export type InteractionModalPresentation = {
   permission: string;
   preview: unknown;
   kind: InteractionKind;
-  warning: string;
 };
 
 function compareDeviceIdentity(left: DeviceReport, right: DeviceReport) {
@@ -192,6 +191,5 @@ export function buildInteractionModalPresentation(prompt: InteractionPrompt): In
     permission: permissionLabel(request.permission),
     preview: request.preview ?? null,
     kind: request.kind,
-    warning: failureMessage(request.previousFailure) ?? "",
   };
 }

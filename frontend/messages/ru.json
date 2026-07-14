@@ -176,7 +176,6 @@
   "failure_ctap_sequence_invalid": "Последовательность сообщений CTAP недействительна.",
   "failure_ctap_subcommand_invalid": "Аутентификатор не распознал подкоманду CTAP.",
   "failure_ctap_vendor_error": "Аутентификатор вернул ошибку CTAP производителя.",
-  "failure_device_busy": "Выбранный аутентификатор уже используется.",
   "failure_device_handle_invalid": "Дескриптор аутентификатора недействителен.",
   "failure_device_not_found": "Аутентификатор не найден.",
   "failure_device_selection_required": "Выберите аутентификатор, чтобы продолжить.",

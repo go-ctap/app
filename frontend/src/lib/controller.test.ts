@@ -1143,14 +1143,14 @@ describe("controller lifecycle", () => {
     const { selectToken } = await import("./controller");
     seedDevicesForTest([token]);
     serviceMocks.Sessions.mockRejectedValue(new Error("session open failed", {
-      cause: failureForCode(Code.CodeDeviceBusy),
+      cause: failureForCode(Code.CodeDeviceUnavailable),
     }));
 
     await selectToken("token-1");
 
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "error",
-      message: "The selected authenticator is already in use.",
+      message: "The authenticator is unavailable.",
     });
   });
 
@@ -1196,7 +1196,7 @@ describe("controller lifecycle", () => {
       operationId: "inspect-error",
       sessionId: "session-token-1",
       kind: OperationKind.OperationInspect,
-      error: failureForCode(Code.CodeDeviceBusy),
+      error: failureForCode(Code.CodeAuthenticatorBusy),
     };
     seedDevicesForTest([token]);
     seedActiveScreenForTest("overview");
@@ -1208,9 +1208,9 @@ describe("controller lifecycle", () => {
     expect(get(overviewInspection)).toMatchObject({
       state: "error",
       data: envelope,
-      error: failureForCode(Code.CodeDeviceBusy),
+      error: failureForCode(Code.CodeAuthenticatorBusy),
     });
-    expect(get(statusBar).lastOutcome?.message).toBe("The selected authenticator is already in use.");
+    expect(get(statusBar).lastOutcome?.message).toBe("The authenticator is busy processing another request.");
   });
 
   it("keeps a biometric sub-load failure visible instead of overwriting it with inspect success", async () => {

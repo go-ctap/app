@@ -3,7 +3,6 @@
   import { InteractionAnswer } from "../../../../bindings/github.com/go-ctap/kit/service";
 
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import type { InteractionModalPresentation } from "$lib/shell-presentation";
@@ -19,12 +18,9 @@
     onAnswer: (answer: InteractionAnswer) => void | Promise<void>;
   } = $props();
 
-  let pin = $state("");
-
-  // Session close and device loss can dismiss a prompt without submitting it.
-  $effect(() => {
-    void presentation?.interactionId;
-    pin = "";
+  let pin = $derived.by(() => {
+    presentation?.interactionId;
+    return "";
   });
 
   async function answer(confirmed: boolean, canceled = false) {
@@ -61,12 +57,6 @@
 
         {#if presentation.preview}
           <JsonDisclosure value={presentation.preview} title={m.preview_json()} />
-        {/if}
-
-        {#if presentation.warning}
-          <Alert.Root variant="warning">
-            <Alert.Description>{presentation.warning}</Alert.Description>
-          </Alert.Root>
         {/if}
 
         {#if presentation.kind === InteractionKind.InteractionKindPIN}

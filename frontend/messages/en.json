@@ -176,7 +176,6 @@
   "failure_ctap_sequence_invalid": "The CTAP message sequence is invalid.",
   "failure_ctap_subcommand_invalid": "The authenticator does not recognize the CTAP subcommand.",
   "failure_ctap_vendor_error": "The authenticator returned a vendor-specific CTAP error.",
-  "failure_device_busy": "The selected authenticator is already in use.",
   "failure_device_handle_invalid": "The authenticator handle is invalid.",
   "failure_device_not_found": "The authenticator was not found.",
   "failure_device_selection_required": "Select an authenticator before continuing.",
