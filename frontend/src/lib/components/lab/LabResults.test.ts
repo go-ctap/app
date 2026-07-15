@@ -11,13 +11,24 @@ import {
 } from "../../../../bindings/github.com/go-ctap/ctap/credential";
 import { AttestationStatementFormatIdentifier } from "../../../../bindings/github.com/go-ctap/ctap/attestation";
 import {
+  AuthenticationExtensionsPRFValues,
+  CredentialPropertiesOutput,
+} from "../../../../bindings/github.com/go-ctap/ctap/webauthn";
+import {
   GetAssertionOutput,
   MakeCredentialOutput,
   OperationKind,
 } from "../../../../bindings/github.com/go-ctap/kit/model";
 import {
   Assertion,
+  CredentialBlobCreateOutput,
+  GetAssertionClientExtensionResults,
+  GetAssertionExtensionResults,
+  GetAssertionPRFOutput,
   GetAssertionResult as GetAssertionResultDTO,
+  MakeCredentialClientExtensionResults,
+  MakeCredentialExtensionResults,
+  MakeCredentialPRFOutput,
   MakeCredentialResult as MakeCredentialResultDTO,
 } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
 import {
@@ -28,6 +39,7 @@ import {
 import GetAssertionResult from "$lib/components/lab/GetAssertionResult.svelte";
 import MakeCredentialResult from "$lib/components/lab/MakeCredentialResult.svelte";
 import { setAppLocale } from "$lib/i18n";
+import { hexToBase64 } from "$lib/lab-input";
 
 const toastMocks = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
@@ -52,6 +64,14 @@ function makeCredentialEnvelope(result: MakeCredentialResultDTO) {
   });
 }
 
+function renderGetResult(result: GetAssertionResultDTO) {
+  return render(GetAssertionResult, { result, responseEnvelope: getAssertionEnvelope(result) });
+}
+
+function renderMakeResult(result: MakeCredentialResultDTO) {
+  return render(MakeCredentialResult, { result, responseEnvelope: makeCredentialEnvelope(result) });
+}
+
 describe("WebAuthn Lab results", () => {
   beforeEach(() => {
     setAppLocale("en");
@@ -64,6 +84,7 @@ describe("WebAuthn Lab results", () => {
   afterEach(async () => {
     cleanup();
     await tick();
+    await new Promise((resolve) => setTimeout(resolve, 30));
     document.body.style.pointerEvents = "";
   });
 
@@ -73,13 +94,14 @@ describe("WebAuthn Lab results", () => {
       rpID: "example.com",
       assertions: [],
     });
-    render(GetAssertionResult, { responseEnvelope: getAssertionEnvelope(result) });
+    renderGetResult(result);
 
     expect(screen.getByText("0 assertions")).toBeInTheDocument();
     expect(screen.getByText("The authenticator returned 0 assertions.")).toBeInTheDocument();
   });
 
-  it("renders every assertion and preserves explicit 0 and false values", () => {
+  it("selects assertions and preserves explicit 0 and false values", async () => {
+    const user = userEvent.setup();
     const assertions = [
       new Assertion({
         index: 0,
@@ -117,19 +139,50 @@ describe("WebAuthn Lab results", () => {
     ];
 
     const result = new GetAssertionResultDTO({ deviceFingerprint: "token-1", rpID: "example.com", assertions });
-    render(GetAssertionResult, { responseEnvelope: getAssertionEnvelope(result) });
+    renderGetResult(result);
 
     expect(screen.getByText("2 assertions")).toBeInTheDocument();
-    const first = screen.getByRole("heading", { level: 4, name: "Assertion 0" }).closest("section") as HTMLElement;
-    const second = screen.getByRole("heading", { level: 4, name: "Assertion 1" }).closest("section") as HTMLElement;
-    expect(within(first).getByText("00")).toBeInTheDocument();
-    expect(within(first).getByText("01")).toBeInTheDocument();
-    expect(within(first).getAllByText("0")).toHaveLength(2);
-    expect(within(first).getAllByText("False")).toHaveLength(3);
-    expect(within(second).getAllByText("True")).toHaveLength(3);
+    expect(screen.getByText("00")).toBeInTheDocument();
+    expect(screen.getByText("01")).toBeInTheDocument();
+    expect(screen.getAllByText("0")).toHaveLength(2);
+    expect(screen.getAllByText("False")).toHaveLength(3);
+
+    await user.click(screen.getByRole("tab", { name: "Assertion 1" }));
+    expect(screen.getAllByText("True")).toHaveLength(3);
+    expect(screen.getByText("02")).toBeInTheDocument();
   });
 
-  it("copies the complete MakeCredential hex while displaying its byte count and raw disclosure", async () => {
+  it("renders authentication PRF results without a registration-only enabled field", () => {
+    const secret = "cd".repeat(32);
+    const result = new GetAssertionResultDTO({
+      deviceFingerprint: "token-1",
+      rpID: "example.com",
+      assertions: [new Assertion({
+        index: 0,
+        credential: new PublicKeyCredentialDescriptor({
+          type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
+          id: "AA==",
+        }),
+        authenticatorDataHex: "cafe",
+        signatureHex: "aa",
+        extensionResults: new GetAssertionExtensionResults({
+          client: new GetAssertionClientExtensionResults({
+            prf: new GetAssertionPRFOutput({
+              results: new AuthenticationExtensionsPRFValues({ first: hexToBase64(secret) }),
+            }),
+          }),
+        }),
+      })],
+    });
+
+    renderGetResult(result);
+
+    expect(screen.getByText("prf · first")).toBeInTheDocument();
+    expect(screen.queryByText("prf · enabled")).not.toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(secret);
+  });
+
+  it("copies the credential ID and opens the sanitized full response from technical details", async () => {
     const user = userEvent.setup();
     const credentialIDHex = "00112233445566778899aabbccddeeff0011223344556677";
     const result = new MakeCredentialResultDTO({
@@ -146,14 +199,59 @@ describe("WebAuthn Lab results", () => {
       enterpriseAttestation: false,
     });
 
-    render(MakeCredentialResult, { responseEnvelope: makeCredentialEnvelope(result) });
+    renderMakeResult(result);
 
     expect(screen.getByText("24 bytes")).toBeInTheDocument();
     expect(screen.queryByText(credentialIDHex)).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Copy Credential ID" }));
     expect(clipboardSetText).toHaveBeenCalledWith(credentialIDHex);
 
-    await user.click(screen.getByRole("button", { name: "Raw envelope and result" }));
+    await user.click(screen.getByRole("button", { name: "Technical details 4" }));
+    const responseRow = screen.getByText("Full sanitized response").closest(".lab-protocol-row") as HTMLElement;
+    await user.click(within(responseRow).getByRole("button", { name: "View" }));
     expect(screen.getByText(new RegExp(credentialIDHex))).toBeInTheDocument();
+  });
+
+  it("keeps PRF outputs out of the DOM until one value is explicitly revealed", async () => {
+    const user = userEvent.setup();
+    const secret = "ab".repeat(32);
+    const result = new MakeCredentialResultDTO({
+      deviceFingerprint: "token-1",
+      rpID: "example.com",
+      fmt: AttestationStatementFormatIdentifier.AttestationStatementFormatIdentifierPacked,
+      credentialIDHex: "0011",
+      publicKeyCOSEHex: "aabb",
+      authenticatorDataHex: "ccdd",
+      attestationObjectCBORHex: "eeff",
+      extensionResults: new MakeCredentialExtensionResults({
+        client: new MakeCredentialClientExtensionResults({
+          credBlob: new CredentialBlobCreateOutput({ accepted: true }),
+          credProps: new CredentialPropertiesOutput({ rk: false }),
+          prf: new MakeCredentialPRFOutput({
+            enabled: true,
+            results: new AuthenticationExtensionsPRFValues({ first: hexToBase64(secret) }),
+          }),
+        }),
+      }),
+    });
+
+    renderMakeResult(result);
+
+    expect(document.body).not.toHaveTextContent(secret);
+    expect(screen.getByLabelText("Hidden secret, 32 bytes")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "WebAuthn client outputs" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "CTAP extension outputs" })).toBeInTheDocument();
+    const credentialPropertiesRow = screen.getByText("credProps · rk").closest("div") as HTMLElement;
+    expect(within(credentialPropertiesRow).getByText("False")).toBeInTheDocument();
+    const secretRow = screen.getByText("prf · first").closest("div") as HTMLElement;
+    expect(within(secretRow).queryByRole("button", { name: /copy/i })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Reveal this secret" }));
+    expect(screen.getByText(secret)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Technical details 4" }));
+    const responseRow = screen.getByText("Full sanitized response").closest(".lab-protocol-row") as HTMLElement;
+    await user.click(within(responseRow).getByRole("button", { name: "View" }));
+    expect(document.body).toHaveTextContent("[redacted]");
   });
 });

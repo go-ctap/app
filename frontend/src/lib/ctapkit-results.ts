@@ -61,6 +61,7 @@ import type {
   ResetFactoryEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
 import type {
+  GetAssertionPreview,
   GetAssertionResult,
   MakeCredentialPreview,
   MakeCredentialResult,
@@ -250,6 +251,12 @@ export function makeCredentialResult(envelope: MakeCredentialEnvelope | null | u
 export function getAssertionResult(envelope: GetAssertionEnvelope | null | undefined): GetAssertionResult | null {
   if (!envelope || envelope.error || !envelope.result) return null;
   return envelope.result.result;
+}
+
+/** Typed traversal for the WebAuthn Lab GetAssertion preview contract. */
+export function getAssertionPreview(envelope: GetAssertionEnvelope | null | undefined): GetAssertionPreview | null {
+  if (!envelope || envelope.error || !envelope.result) return null;
+  return envelope.result.preview;
 }
 
 export function operationError(envelope: OperationEnvelope | null | undefined) {

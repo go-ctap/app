@@ -25,6 +25,9 @@ import * as conformance$0 from "./conformance/models.js";
 import * as credentials$0 from "./credentials/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as failure$0 from "./failure/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as largeblobs$0 from "./largeblobs/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -302,12 +305,16 @@ export class CredentialsOutput {
 }
 
 export class GetAssertionOutput {
-    "result": webauthn$0.GetAssertionResult;
+    "preview": webauthn$0.GetAssertionPreview;
+    "result": webauthn$0.GetAssertionResult | null;
 
     /** Creates a new GetAssertionOutput instance. */
     constructor($$source: Partial<GetAssertionOutput> = {}) {
+        if (!("preview" in $$source)) {
+            this["preview"] = (new webauthn$0.GetAssertionPreview());
+        }
         if (!("result" in $$source)) {
-            this["result"] = (new webauthn$0.GetAssertionResult());
+            this["result"] = null;
         }
 
         Object.assign(this, $$source);
@@ -318,9 +325,13 @@ export class GetAssertionOutput {
      */
     static createFrom($$source: any = {}): GetAssertionOutput {
         const $$createField0_0 = $$createType19;
+        const $$createField1_0 = $$createType21;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("preview" in $$parsedSource) {
+            $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
+        }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField0_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField1_0($$parsedSource["result"]);
         }
         return new GetAssertionOutput($$parsedSource as Partial<GetAssertionOutput>);
     }
@@ -380,20 +391,20 @@ export class InspectInfo {
      * Creates a new InspectInfo instance from a string or object.
      */
     static createFrom($$source: any = {}): InspectInfo {
-        const $$createField0_0 = $$createType20;
-        const $$createField1_0 = $$createType22;
-        const $$createField3_0 = $$createType23;
-        const $$createField5_0 = $$createType24;
-        const $$createField8_0 = $$createType25;
-        const $$createField9_0 = $$createType27;
-        const $$createField18_0 = $$createType28;
-        const $$createField20_0 = $$createType29;
-        const $$createField21_0 = $$createType25;
+        const $$createField0_0 = $$createType22;
+        const $$createField1_0 = $$createType24;
+        const $$createField3_0 = $$createType25;
+        const $$createField5_0 = $$createType26;
+        const $$createField8_0 = $$createType27;
+        const $$createField9_0 = $$createType29;
+        const $$createField18_0 = $$createType30;
+        const $$createField20_0 = $$createType31;
+        const $$createField21_0 = $$createType27;
         const $$createField24_0 = $Create.ByteSlice;
-        const $$createField25_0 = $$createType25;
+        const $$createField25_0 = $$createType27;
         const $$createField29_0 = $Create.ByteSlice;
-        const $$createField30_0 = $$createType29;
-        const $$createField32_0 = $$createType30;
+        const $$createField30_0 = $$createType31;
+        const $$createField32_0 = $$createType32;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("versions" in $$parsedSource) {
             $$parsedSource["versions"] = $$createField0_0($$parsedSource["versions"]);
@@ -457,7 +468,7 @@ export class InspectOutput {
      * Creates a new InspectOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): InspectOutput {
-        const $$createField0_0 = $$createType31;
+        const $$createField0_0 = $$createType33;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("result" in $$parsedSource) {
             $$parsedSource["result"] = $$createField0_0($$parsedSource["result"]);
@@ -486,8 +497,8 @@ export class InspectResult {
      * Creates a new InspectResult instance from a string or object.
      */
     static createFrom($$source: any = {}): InspectResult {
-        const $$createField0_0 = $$createType32;
-        const $$createField1_0 = $$createType33;
+        const $$createField0_0 = $$createType34;
+        const $$createField1_0 = $$createType35;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
@@ -552,7 +563,7 @@ export class LargeBlobListOutput {
      * Creates a new LargeBlobListOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): LargeBlobListOutput {
-        const $$createField0_0 = $$createType34;
+        const $$createField0_0 = $$createType36;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("report" in $$parsedSource) {
             $$parsedSource["report"] = $$createField0_0($$parsedSource["report"]);
@@ -581,8 +592,8 @@ export class LargeBlobMutationOutput {
      * Creates a new LargeBlobMutationOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): LargeBlobMutationOutput {
-        const $$createField0_0 = $$createType35;
-        const $$createField1_0 = $$createType37;
+        const $$createField0_0 = $$createType37;
+        const $$createField1_0 = $$createType39;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("preview" in $$parsedSource) {
             $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
@@ -610,12 +621,231 @@ export class LargeBlobReadOutput {
      * Creates a new LargeBlobReadOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): LargeBlobReadOutput {
-        const $$createField0_0 = $$createType38;
+        const $$createField0_0 = $$createType40;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("report" in $$parsedSource) {
             $$parsedSource["report"] = $$createField0_0($$parsedSource["report"]);
         }
         return new LargeBlobReadOutput($$parsedSource as Partial<LargeBlobReadOutput>);
+    }
+}
+
+export enum LogCode {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    LogCodeDiscoveryRun = "discovery.run",
+    LogCodeDiscoveryChanged = "discovery.changed",
+    LogCodeMDSLookup = "mds.lookup",
+    LogCodeSessionOpen = "session.open",
+    LogCodeSessionClose = "session.close",
+    LogCodeOperationRun = "operation.run",
+    LogCodeOperationProgress = "operation.progress",
+    LogCodeInteractionRequest = "interaction.request",
+    LogCodeInteractionResolve = "interaction.resolve",
+    LogCodeCTAPCommand = "ctap.command",
+};
+
+export class LogEntry {
+    "timestamp": string;
+    "durationMilliseconds"?: number;
+    "layer": LogLayer;
+    "level": LogLevel;
+    "outcome": LogOutcome;
+    "code": LogCode;
+    "params"?: { [_ in string]?: string };
+    "operationKind"?: OperationKind;
+    "command"?: string;
+    "commandCode"?: number;
+    "subCommandFamily"?: string;
+    "subCommand"?: string;
+    "subCommandCode"?: number | null;
+    "request"?: LogPayload | null;
+    "response"?: LogPayload | null;
+    "error"?: failure$0.Failure | null;
+    "errorMessage"?: string;
+    "redactedFields"?: string[];
+    "sessionId"?: string;
+    "operationId"?: string;
+
+    /** Creates a new LogEntry instance. */
+    constructor($$source: Partial<LogEntry> = {}) {
+        if (!("timestamp" in $$source)) {
+            this["timestamp"] = "0001-01-01T00:00:00.000Z";
+        }
+        if (!("layer" in $$source)) {
+            this["layer"] = LogLayer.$zero;
+        }
+        if (!("level" in $$source)) {
+            this["level"] = LogLevel.$zero;
+        }
+        if (!("outcome" in $$source)) {
+            this["outcome"] = LogOutcome.$zero;
+        }
+        if (!("code" in $$source)) {
+            this["code"] = LogCode.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LogEntry instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LogEntry {
+        const $$createField6_0 = $$createType41;
+        const $$createField13_0 = $$createType43;
+        const $$createField14_0 = $$createType43;
+        const $$createField15_0 = $$createType45;
+        const $$createField17_0 = $$createType27;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("params" in $$parsedSource) {
+            $$parsedSource["params"] = $$createField6_0($$parsedSource["params"]);
+        }
+        if ("request" in $$parsedSource) {
+            $$parsedSource["request"] = $$createField13_0($$parsedSource["request"]);
+        }
+        if ("response" in $$parsedSource) {
+            $$parsedSource["response"] = $$createField14_0($$parsedSource["response"]);
+        }
+        if ("error" in $$parsedSource) {
+            $$parsedSource["error"] = $$createField15_0($$parsedSource["error"]);
+        }
+        if ("redactedFields" in $$parsedSource) {
+            $$parsedSource["redactedFields"] = $$createField17_0($$parsedSource["redactedFields"]);
+        }
+        return new LogEntry($$parsedSource as Partial<LogEntry>);
+    }
+}
+
+export class LogJournalBatch {
+    "entries": LogJournalRecord[];
+    "cursor": number;
+    "truncated"?: boolean;
+
+    /** Creates a new LogJournalBatch instance. */
+    constructor($$source: Partial<LogJournalBatch> = {}) {
+        if (!("entries" in $$source)) {
+            this["entries"] = [];
+        }
+        if (!("cursor" in $$source)) {
+            this["cursor"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LogJournalBatch instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LogJournalBatch {
+        const $$createField0_0 = $$createType47;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("entries" in $$parsedSource) {
+            $$parsedSource["entries"] = $$createField0_0($$parsedSource["entries"]);
+        }
+        return new LogJournalBatch($$parsedSource as Partial<LogJournalBatch>);
+    }
+}
+
+export class LogJournalRecord {
+    "sequence": number;
+    "entry": LogEntry;
+
+    /** Creates a new LogJournalRecord instance. */
+    constructor($$source: Partial<LogJournalRecord> = {}) {
+        if (!("sequence" in $$source)) {
+            this["sequence"] = 0;
+        }
+        if (!("entry" in $$source)) {
+            this["entry"] = (new LogEntry());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LogJournalRecord instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LogJournalRecord {
+        const $$createField1_0 = $$createType48;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("entry" in $$parsedSource) {
+            $$parsedSource["entry"] = $$createField1_0($$parsedSource["entry"]);
+        }
+        return new LogJournalRecord($$parsedSource as Partial<LogJournalRecord>);
+    }
+}
+
+export enum LogLayer {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    LogLayerService = "service",
+    LogLayerSession = "session",
+    LogLayerOperation = "operation",
+    LogLayerInteraction = "interaction",
+    LogLayerCTAP = "ctap",
+};
+
+export enum LogLevel {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    LogLevelDebug = "debug",
+    LogLevelInfo = "info",
+    LogLevelWarning = "warning",
+    LogLevelError = "error",
+};
+
+export enum LogOutcome {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    LogOutcomeEvent = "event",
+    LogOutcomeSucceeded = "succeeded",
+    LogOutcomeFailed = "failed",
+    LogOutcomeCanceled = "canceled",
+};
+
+export class LogPayload {
+    "json": string;
+    "originalBytes": number;
+    "storedBytes": number;
+    "truncated": boolean;
+
+    /** Creates a new LogPayload instance. */
+    constructor($$source: Partial<LogPayload> = {}) {
+        if (!("json" in $$source)) {
+            this["json"] = "";
+        }
+        if (!("originalBytes" in $$source)) {
+            this["originalBytes"] = 0;
+        }
+        if (!("storedBytes" in $$source)) {
+            this["storedBytes"] = 0;
+        }
+        if (!("truncated" in $$source)) {
+            this["truncated"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LogPayload instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LogPayload {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new LogPayload($$parsedSource as Partial<LogPayload>);
     }
 }
 
@@ -639,8 +869,8 @@ export class MakeCredentialOutput {
      * Creates a new MakeCredentialOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): MakeCredentialOutput {
-        const $$createField0_0 = $$createType39;
-        const $$createField1_0 = $$createType41;
+        const $$createField0_0 = $$createType49;
+        const $$createField1_0 = $$createType51;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("preview" in $$parsedSource) {
             $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
@@ -740,8 +970,8 @@ export class PINOutput {
      * Creates a new PINOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): PINOutput {
-        const $$createField0_0 = $$createType42;
-        const $$createField1_0 = $$createType44;
+        const $$createField0_0 = $$createType52;
+        const $$createField1_0 = $$createType54;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("preview" in $$parsedSource) {
             $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
@@ -773,8 +1003,8 @@ export class ResetFactoryOutput {
      * Creates a new ResetFactoryOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): ResetFactoryOutput {
-        const $$createField0_0 = $$createType45;
-        const $$createField1_0 = $$createType47;
+        const $$createField0_0 = $$createType55;
+        const $$createField1_0 = $$createType57;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("preview" in $$parsedSource) {
             $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
@@ -806,7 +1036,7 @@ export class SessionInfo {
      * Creates a new SessionInfo instance from a string or object.
      */
     static createFrom($$source: any = {}): SessionInfo {
-        const $$createField0_0 = $$createType32;
+        const $$createField0_0 = $$createType34;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
@@ -845,37 +1075,47 @@ const $$createType15 = credentials$0.UpdateUserPreview.createFrom;
 const $$createType16 = credentials$0.UpdateUserResult.createFrom;
 const $$createType17 = $Create.Nullable($$createType16);
 const $$createType18 = credentials$0.InventoryReport.createFrom;
-const $$createType19 = webauthn$0.GetAssertionResult.createFrom;
-var $$createType20 = (function $$initCreateType20(...args: any[]): any {
-    if ($$createType20 === $$initCreateType20) {
-        $$createType20 = $$createType21;
+const $$createType19 = webauthn$0.GetAssertionPreview.createFrom;
+const $$createType20 = webauthn$0.GetAssertionResult.createFrom;
+const $$createType21 = $Create.Nullable($$createType20);
+var $$createType22 = (function $$initCreateType22(...args: any[]): any {
+    if ($$createType22 === $$initCreateType22) {
+        $$createType22 = $$createType23;
     }
-    return $$createType20(...args);
+    return $$createType22(...args);
 });
-const $$createType21 = $Create.Array($Create.Any);
-const $$createType22 = $Create.Array($Create.Any);
-const $$createType23 = $Create.Map($Create.Any, $Create.Any);
+const $$createType23 = $Create.Array($Create.Any);
 const $$createType24 = $Create.Array($Create.Any);
-const $$createType25 = $Create.Array($Create.Any);
-const $$createType26 = credential$0.PublicKeyCredentialParameters.createFrom;
-const $$createType27 = $Create.Array($$createType26);
-const $$createType28 = $Create.Map($Create.Any, $Create.Any);
-const $$createType29 = $Create.Array($Create.Any);
-const $$createType30 = conformance$0.Report.createFrom;
-const $$createType31 = InspectResult.createFrom;
-const $$createType32 = report$0.DeviceReport.createFrom;
-const $$createType33 = InspectInfo.createFrom;
-const $$createType34 = largeblobs$0.ListReport.createFrom;
-const $$createType35 = largeblobs$0.MutationPreview.createFrom;
-const $$createType36 = largeblobs$0.MutationResult.createFrom;
-const $$createType37 = $Create.Nullable($$createType36);
-const $$createType38 = largeblobs$0.ReadReport.createFrom;
-const $$createType39 = webauthn$0.MakeCredentialPreview.createFrom;
-const $$createType40 = webauthn$0.MakeCredentialResult.createFrom;
-const $$createType41 = $Create.Nullable($$createType40);
-const $$createType42 = config$0.PINMutationPreview.createFrom;
-const $$createType43 = config$0.PINMutationResult.createFrom;
-const $$createType44 = $Create.Nullable($$createType43);
-const $$createType45 = config$0.ResetPreview.createFrom;
-const $$createType46 = config$0.ResetResult.createFrom;
-const $$createType47 = $Create.Nullable($$createType46);
+const $$createType25 = $Create.Map($Create.Any, $Create.Any);
+const $$createType26 = $Create.Array($Create.Any);
+const $$createType27 = $Create.Array($Create.Any);
+const $$createType28 = credential$0.PublicKeyCredentialParameters.createFrom;
+const $$createType29 = $Create.Array($$createType28);
+const $$createType30 = $Create.Map($Create.Any, $Create.Any);
+const $$createType31 = $Create.Array($Create.Any);
+const $$createType32 = conformance$0.Report.createFrom;
+const $$createType33 = InspectResult.createFrom;
+const $$createType34 = report$0.DeviceReport.createFrom;
+const $$createType35 = InspectInfo.createFrom;
+const $$createType36 = largeblobs$0.ListReport.createFrom;
+const $$createType37 = largeblobs$0.MutationPreview.createFrom;
+const $$createType38 = largeblobs$0.MutationResult.createFrom;
+const $$createType39 = $Create.Nullable($$createType38);
+const $$createType40 = largeblobs$0.ReadReport.createFrom;
+const $$createType41 = $Create.Map($Create.Any, $Create.Any);
+const $$createType42 = LogPayload.createFrom;
+const $$createType43 = $Create.Nullable($$createType42);
+const $$createType44 = failure$0.Failure.createFrom;
+const $$createType45 = $Create.Nullable($$createType44);
+const $$createType46 = LogJournalRecord.createFrom;
+const $$createType47 = $Create.Array($$createType46);
+const $$createType48 = LogEntry.createFrom;
+const $$createType49 = webauthn$0.MakeCredentialPreview.createFrom;
+const $$createType50 = webauthn$0.MakeCredentialResult.createFrom;
+const $$createType51 = $Create.Nullable($$createType50);
+const $$createType52 = config$0.PINMutationPreview.createFrom;
+const $$createType53 = config$0.PINMutationResult.createFrom;
+const $$createType54 = $Create.Nullable($$createType53);
+const $$createType55 = config$0.ResetPreview.createFrom;
+const $$createType56 = config$0.ResetResult.createFrom;
+const $$createType57 = $Create.Nullable($$createType56);

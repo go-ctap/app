@@ -33,10 +33,13 @@ describe("JsonDisclosure", () => {
 
     const disclosure = screen.getByRole("button", { name: "Raw response" });
     const copy = screen.getByRole("button", { name: "Copy JSON" });
+    const json = screen.getByRole("region", { name: "Raw response", hidden: true });
 
     expect(disclosure).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByText("ctapkit · Operation response")).toBeInTheDocument();
-    expect(screen.getByText(/"ok": true/)).not.toBeVisible();
+    await waitFor(() => expect(json.querySelector("pre.shiki")).toBeInTheDocument());
+    expect(json).toHaveTextContent(/"ok": true/);
+    expect(json).not.toBeVisible();
 
     await user.click(copy);
 
@@ -48,6 +51,6 @@ describe("JsonDisclosure", () => {
     await user.click(disclosure);
 
     expect(disclosure).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText(/"ok": true/)).toBeVisible();
+    expect(json).toBeVisible();
   });
 });

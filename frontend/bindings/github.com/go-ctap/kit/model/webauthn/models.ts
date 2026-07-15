@@ -13,6 +13,12 @@ import * as attestation$0 from "../../../ctap/attestation/models.js";
 import * as credential$0 from "../../../ctap/credential/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as extension$0 from "../../../ctap/extension/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as webauthn$0 from "../../../ctap/webauthn/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as report$0 from "../report/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -29,6 +35,7 @@ export class Assertion {
     "signCount": number;
     "userPresent": boolean;
     "userVerified": boolean;
+    "extensionResults"?: GetAssertionExtensionResults | null;
 
     /** Creates a new Assertion instance. */
     constructor($$source: Partial<Assertion> = {}) {
@@ -63,12 +70,16 @@ export class Assertion {
     static createFrom($$source: any = {}): Assertion {
         const $$createField1_0 = $$createType0;
         const $$createField4_0 = $$createType2;
+        const $$createField10_0 = $$createType4;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("credential" in $$parsedSource) {
             $$parsedSource["credential"] = $$createField1_0($$parsedSource["credential"]);
         }
         if ("user" in $$parsedSource) {
             $$parsedSource["user"] = $$createField4_0($$parsedSource["user"]);
+        }
+        if ("extensionResults" in $$parsedSource) {
+            $$parsedSource["extensionResults"] = $$createField10_0($$parsedSource["extensionResults"]);
         }
         return new Assertion($$parsedSource as Partial<Assertion>);
     }
@@ -94,6 +105,227 @@ export class AuthenticatorOptions {
     }
 }
 
+export class CredentialBlobCreateOutput {
+    "accepted": boolean;
+
+    /** Creates a new CredentialBlobCreateOutput instance. */
+    constructor($$source: Partial<CredentialBlobCreateOutput> = {}) {
+        if (!("accepted" in $$source)) {
+            this["accepted"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CredentialBlobCreateOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CredentialBlobCreateOutput {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new CredentialBlobCreateOutput($$parsedSource as Partial<CredentialBlobCreateOutput>);
+    }
+}
+
+export class CredentialBlobGetOutput {
+    "valueHex": string;
+
+    /** Creates a new CredentialBlobGetOutput instance. */
+    constructor($$source: Partial<CredentialBlobGetOutput> = {}) {
+        if (!("valueHex" in $$source)) {
+            this["valueHex"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CredentialBlobGetOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CredentialBlobGetOutput {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new CredentialBlobGetOutput($$parsedSource as Partial<CredentialBlobGetOutput>);
+    }
+}
+
+export class CredentialProtectionOutput {
+    "policy": extension$0.CredentialProtectionPolicy;
+
+    /** Creates a new CredentialProtectionOutput instance. */
+    constructor($$source: Partial<CredentialProtectionOutput> = {}) {
+        if (!("policy" in $$source)) {
+            this["policy"] = extension$0.CredentialProtectionPolicy.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CredentialProtectionOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CredentialProtectionOutput {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new CredentialProtectionOutput($$parsedSource as Partial<CredentialProtectionOutput>);
+    }
+}
+
+export class GetAssertionClientExtensionResults {
+    "getCredBlob"?: CredentialBlobGetOutput | null;
+    "hmac-secret"?: HMACSecretOutput | null;
+    "prf"?: GetAssertionPRFOutput | null;
+
+    /** Creates a new GetAssertionClientExtensionResults instance. */
+    constructor($$source: Partial<GetAssertionClientExtensionResults> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new GetAssertionClientExtensionResults instance from a string or object.
+     */
+    static createFrom($$source: any = {}): GetAssertionClientExtensionResults {
+        const $$createField0_0 = $$createType6;
+        const $$createField1_0 = $$createType8;
+        const $$createField2_0 = $$createType10;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("getCredBlob" in $$parsedSource) {
+            $$parsedSource["getCredBlob"] = $$createField0_0($$parsedSource["getCredBlob"]);
+        }
+        if ("hmac-secret" in $$parsedSource) {
+            $$parsedSource["hmac-secret"] = $$createField1_0($$parsedSource["hmac-secret"]);
+        }
+        if ("prf" in $$parsedSource) {
+            $$parsedSource["prf"] = $$createField2_0($$parsedSource["prf"]);
+        }
+        return new GetAssertionClientExtensionResults($$parsedSource as Partial<GetAssertionClientExtensionResults>);
+    }
+}
+
+export class GetAssertionExtensionResults {
+    "client"?: GetAssertionClientExtensionResults | null;
+
+    /** Creates a new GetAssertionExtensionResults instance. */
+    constructor($$source: Partial<GetAssertionExtensionResults> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new GetAssertionExtensionResults instance from a string or object.
+     */
+    static createFrom($$source: any = {}): GetAssertionExtensionResults {
+        const $$createField0_0 = $$createType12;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("client" in $$parsedSource) {
+            $$parsedSource["client"] = $$createField0_0($$parsedSource["client"]);
+        }
+        return new GetAssertionExtensionResults($$parsedSource as Partial<GetAssertionExtensionResults>);
+    }
+}
+
+export class GetAssertionInput {
+    "rpID": string;
+    "clientDataJSON": string;
+    "allowList"?: credential$0.PublicKeyCredentialDescriptor[];
+    "options"?: AuthenticatorOptions;
+    "extensions"?: webauthn$0.GetAuthenticationExtensionsClientInputs | null;
+
+    /** Creates a new GetAssertionInput instance. */
+    constructor($$source: Partial<GetAssertionInput> = {}) {
+        if (!("rpID" in $$source)) {
+            this["rpID"] = "";
+        }
+        if (!("clientDataJSON" in $$source)) {
+            this["clientDataJSON"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new GetAssertionInput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): GetAssertionInput {
+        const $$createField1_0 = $Create.ByteSlice;
+        const $$createField2_0 = $$createType13;
+        const $$createField3_0 = $$createType14;
+        const $$createField4_0 = $$createType16;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("clientDataJSON" in $$parsedSource) {
+            $$parsedSource["clientDataJSON"] = $$createField1_0($$parsedSource["clientDataJSON"]);
+        }
+        if ("allowList" in $$parsedSource) {
+            $$parsedSource["allowList"] = $$createField2_0($$parsedSource["allowList"]);
+        }
+        if ("options" in $$parsedSource) {
+            $$parsedSource["options"] = $$createField3_0($$parsedSource["options"]);
+        }
+        if ("extensions" in $$parsedSource) {
+            $$parsedSource["extensions"] = $$createField4_0($$parsedSource["extensions"]);
+        }
+        return new GetAssertionInput($$parsedSource as Partial<GetAssertionInput>);
+    }
+}
+
+export class GetAssertionPRFOutput {
+    "results"?: webauthn$0.AuthenticationExtensionsPRFValues;
+
+    /** Creates a new GetAssertionPRFOutput instance. */
+    constructor($$source: Partial<GetAssertionPRFOutput> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new GetAssertionPRFOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): GetAssertionPRFOutput {
+        const $$createField0_0 = $$createType17;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("results" in $$parsedSource) {
+            $$parsedSource["results"] = $$createField0_0($$parsedSource["results"]);
+        }
+        return new GetAssertionPRFOutput($$parsedSource as Partial<GetAssertionPRFOutput>);
+    }
+}
+
+export class GetAssertionPreview {
+    "device": report$0.DeviceReport;
+    "input": GetAssertionInput;
+    "warnings"?: safety$0.Warning[];
+
+    /** Creates a new GetAssertionPreview instance. */
+    constructor($$source: Partial<GetAssertionPreview> = {}) {
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("input" in $$source)) {
+            this["input"] = (new GetAssertionInput());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new GetAssertionPreview instance from a string or object.
+     */
+    static createFrom($$source: any = {}): GetAssertionPreview {
+        const $$createField0_0 = $$createType18;
+        const $$createField1_0 = $$createType19;
+        const $$createField2_0 = $$createType21;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
+        }
+        if ("input" in $$parsedSource) {
+            $$parsedSource["input"] = $$createField1_0($$parsedSource["input"]);
+        }
+        if ("warnings" in $$parsedSource) {
+            $$parsedSource["warnings"] = $$createField2_0($$parsedSource["warnings"]);
+        }
+        return new GetAssertionPreview($$parsedSource as Partial<GetAssertionPreview>);
+    }
+}
+
 export class GetAssertionResult {
     "deviceFingerprint": string;
     "rpID": string;
@@ -115,7 +347,7 @@ export class GetAssertionResult {
      * Creates a new GetAssertionResult instance from a string or object.
      */
     static createFrom($$source: any = {}): GetAssertionResult {
-        const $$createField2_0 = $$createType4;
+        const $$createField2_0 = $$createType23;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("assertions" in $$parsedSource) {
             $$parsedSource["assertions"] = $$createField2_0($$parsedSource["assertions"]);
@@ -124,25 +356,169 @@ export class GetAssertionResult {
     }
 }
 
-export class MakeCredentialPreview {
-    "device": report$0.DeviceReport;
+export class HMACSecretCreateOutput {
+    "enabled": boolean;
+
+    /** Creates a new HMACSecretCreateOutput instance. */
+    constructor($$source: Partial<HMACSecretCreateOutput> = {}) {
+        if (!("enabled" in $$source)) {
+            this["enabled"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new HMACSecretCreateOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): HMACSecretCreateOutput {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new HMACSecretCreateOutput($$parsedSource as Partial<HMACSecretCreateOutput>);
+    }
+}
+
+export class HMACSecretOutput {
+    "output1Hex": string;
+    "output2Hex"?: string;
+
+    /** Creates a new HMACSecretOutput instance. */
+    constructor($$source: Partial<HMACSecretOutput> = {}) {
+        if (!("output1Hex" in $$source)) {
+            this["output1Hex"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new HMACSecretOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): HMACSecretOutput {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new HMACSecretOutput($$parsedSource as Partial<HMACSecretOutput>);
+    }
+}
+
+export class MakeCredentialAuthenticatorExtensionOutputs {
+    "credProtect"?: CredentialProtectionOutput | null;
+    "minPinLength"?: MinPINLengthOutput | null;
+    "pinComplexityPolicy"?: PINComplexityPolicyOutput | null;
+
+    /** Creates a new MakeCredentialAuthenticatorExtensionOutputs instance. */
+    constructor($$source: Partial<MakeCredentialAuthenticatorExtensionOutputs> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MakeCredentialAuthenticatorExtensionOutputs instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MakeCredentialAuthenticatorExtensionOutputs {
+        const $$createField0_0 = $$createType25;
+        const $$createField1_0 = $$createType27;
+        const $$createField2_0 = $$createType29;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("credProtect" in $$parsedSource) {
+            $$parsedSource["credProtect"] = $$createField0_0($$parsedSource["credProtect"]);
+        }
+        if ("minPinLength" in $$parsedSource) {
+            $$parsedSource["minPinLength"] = $$createField1_0($$parsedSource["minPinLength"]);
+        }
+        if ("pinComplexityPolicy" in $$parsedSource) {
+            $$parsedSource["pinComplexityPolicy"] = $$createField2_0($$parsedSource["pinComplexityPolicy"]);
+        }
+        return new MakeCredentialAuthenticatorExtensionOutputs($$parsedSource as Partial<MakeCredentialAuthenticatorExtensionOutputs>);
+    }
+}
+
+export class MakeCredentialClientExtensionResults {
+    "credProps"?: webauthn$0.CredentialPropertiesOutput | null;
+    "credBlob"?: CredentialBlobCreateOutput | null;
+    "hmac-secret"?: HMACSecretCreateOutput | null;
+    "hmac-secret-mc"?: HMACSecretOutput | null;
+    "prf"?: MakeCredentialPRFOutput | null;
+
+    /** Creates a new MakeCredentialClientExtensionResults instance. */
+    constructor($$source: Partial<MakeCredentialClientExtensionResults> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MakeCredentialClientExtensionResults instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MakeCredentialClientExtensionResults {
+        const $$createField0_0 = $$createType31;
+        const $$createField1_0 = $$createType33;
+        const $$createField2_0 = $$createType35;
+        const $$createField3_0 = $$createType8;
+        const $$createField4_0 = $$createType37;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("credProps" in $$parsedSource) {
+            $$parsedSource["credProps"] = $$createField0_0($$parsedSource["credProps"]);
+        }
+        if ("credBlob" in $$parsedSource) {
+            $$parsedSource["credBlob"] = $$createField1_0($$parsedSource["credBlob"]);
+        }
+        if ("hmac-secret" in $$parsedSource) {
+            $$parsedSource["hmac-secret"] = $$createField2_0($$parsedSource["hmac-secret"]);
+        }
+        if ("hmac-secret-mc" in $$parsedSource) {
+            $$parsedSource["hmac-secret-mc"] = $$createField3_0($$parsedSource["hmac-secret-mc"]);
+        }
+        if ("prf" in $$parsedSource) {
+            $$parsedSource["prf"] = $$createField4_0($$parsedSource["prf"]);
+        }
+        return new MakeCredentialClientExtensionResults($$parsedSource as Partial<MakeCredentialClientExtensionResults>);
+    }
+}
+
+export class MakeCredentialExtensionResults {
+    "client"?: MakeCredentialClientExtensionResults | null;
+    "authenticator"?: MakeCredentialAuthenticatorExtensionOutputs | null;
+
+    /** Creates a new MakeCredentialExtensionResults instance. */
+    constructor($$source: Partial<MakeCredentialExtensionResults> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MakeCredentialExtensionResults instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MakeCredentialExtensionResults {
+        const $$createField0_0 = $$createType39;
+        const $$createField1_0 = $$createType41;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("client" in $$parsedSource) {
+            $$parsedSource["client"] = $$createField0_0($$parsedSource["client"]);
+        }
+        if ("authenticator" in $$parsedSource) {
+            $$parsedSource["authenticator"] = $$createField1_0($$parsedSource["authenticator"]);
+        }
+        return new MakeCredentialExtensionResults($$parsedSource as Partial<MakeCredentialExtensionResults>);
+    }
+}
+
+export class MakeCredentialInput {
     "rp": credential$0.PublicKeyCredentialRpEntity;
     "user": credential$0.PublicKeyCredentialUserEntity;
+    "clientDataJSON": string;
     "pubKeyCredParams": credential$0.PublicKeyCredentialParameters[];
     "excludeList"?: credential$0.PublicKeyCredentialDescriptor[];
     "options"?: AuthenticatorOptions;
-    "warnings"?: safety$0.Warning[];
+    "extensions"?: webauthn$0.CreateAuthenticationExtensionsClientInputs | null;
 
-    /** Creates a new MakeCredentialPreview instance. */
-    constructor($$source: Partial<MakeCredentialPreview> = {}) {
-        if (!("device" in $$source)) {
-            this["device"] = (new report$0.DeviceReport());
-        }
+    /** Creates a new MakeCredentialInput instance. */
+    constructor($$source: Partial<MakeCredentialInput> = {}) {
         if (!("rp" in $$source)) {
             this["rp"] = (new credential$0.PublicKeyCredentialRpEntity());
         }
         if (!("user" in $$source)) {
             this["user"] = (new credential$0.PublicKeyCredentialUserEntity());
+        }
+        if (!("clientDataJSON" in $$source)) {
+            this["clientDataJSON"] = "";
         }
         if (!("pubKeyCredParams" in $$source)) {
             this["pubKeyCredParams"] = [];
@@ -152,25 +528,25 @@ export class MakeCredentialPreview {
     }
 
     /**
-     * Creates a new MakeCredentialPreview instance from a string or object.
+     * Creates a new MakeCredentialInput instance from a string or object.
      */
-    static createFrom($$source: any = {}): MakeCredentialPreview {
-        const $$createField0_0 = $$createType5;
-        const $$createField1_0 = $$createType6;
-        const $$createField2_0 = $$createType1;
-        const $$createField3_0 = $$createType8;
-        const $$createField4_0 = $$createType9;
-        const $$createField5_0 = $$createType10;
-        const $$createField6_0 = $$createType12;
+    static createFrom($$source: any = {}): MakeCredentialInput {
+        const $$createField0_0 = $$createType42;
+        const $$createField1_0 = $$createType1;
+        const $$createField2_0 = $Create.ByteSlice;
+        const $$createField3_0 = $$createType44;
+        const $$createField4_0 = $$createType13;
+        const $$createField5_0 = $$createType14;
+        const $$createField6_0 = $$createType46;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("device" in $$parsedSource) {
-            $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
-        }
         if ("rp" in $$parsedSource) {
-            $$parsedSource["rp"] = $$createField1_0($$parsedSource["rp"]);
+            $$parsedSource["rp"] = $$createField0_0($$parsedSource["rp"]);
         }
         if ("user" in $$parsedSource) {
-            $$parsedSource["user"] = $$createField2_0($$parsedSource["user"]);
+            $$parsedSource["user"] = $$createField1_0($$parsedSource["user"]);
+        }
+        if ("clientDataJSON" in $$parsedSource) {
+            $$parsedSource["clientDataJSON"] = $$createField2_0($$parsedSource["clientDataJSON"]);
         }
         if ("pubKeyCredParams" in $$parsedSource) {
             $$parsedSource["pubKeyCredParams"] = $$createField3_0($$parsedSource["pubKeyCredParams"]);
@@ -181,8 +557,72 @@ export class MakeCredentialPreview {
         if ("options" in $$parsedSource) {
             $$parsedSource["options"] = $$createField5_0($$parsedSource["options"]);
         }
+        if ("extensions" in $$parsedSource) {
+            $$parsedSource["extensions"] = $$createField6_0($$parsedSource["extensions"]);
+        }
+        return new MakeCredentialInput($$parsedSource as Partial<MakeCredentialInput>);
+    }
+}
+
+export class MakeCredentialPRFOutput {
+    "enabled": boolean;
+    "results"?: webauthn$0.AuthenticationExtensionsPRFValues;
+
+    /** Creates a new MakeCredentialPRFOutput instance. */
+    constructor($$source: Partial<MakeCredentialPRFOutput> = {}) {
+        if (!("enabled" in $$source)) {
+            this["enabled"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MakeCredentialPRFOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MakeCredentialPRFOutput {
+        const $$createField1_0 = $$createType17;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("results" in $$parsedSource) {
+            $$parsedSource["results"] = $$createField1_0($$parsedSource["results"]);
+        }
+        return new MakeCredentialPRFOutput($$parsedSource as Partial<MakeCredentialPRFOutput>);
+    }
+}
+
+export class MakeCredentialPreview {
+    "device": report$0.DeviceReport;
+    "input": MakeCredentialInput;
+    "warnings"?: safety$0.Warning[];
+
+    /** Creates a new MakeCredentialPreview instance. */
+    constructor($$source: Partial<MakeCredentialPreview> = {}) {
+        if (!("device" in $$source)) {
+            this["device"] = (new report$0.DeviceReport());
+        }
+        if (!("input" in $$source)) {
+            this["input"] = (new MakeCredentialInput());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MakeCredentialPreview instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MakeCredentialPreview {
+        const $$createField0_0 = $$createType18;
+        const $$createField1_0 = $$createType47;
+        const $$createField2_0 = $$createType21;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("device" in $$parsedSource) {
+            $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
+        }
+        if ("input" in $$parsedSource) {
+            $$parsedSource["input"] = $$createField1_0($$parsedSource["input"]);
+        }
         if ("warnings" in $$parsedSource) {
-            $$parsedSource["warnings"] = $$createField6_0($$parsedSource["warnings"]);
+            $$parsedSource["warnings"] = $$createField2_0($$parsedSource["warnings"]);
         }
         return new MakeCredentialPreview($$parsedSource as Partial<MakeCredentialPreview>);
     }
@@ -201,6 +641,7 @@ export class MakeCredentialResult {
     "userPresent": boolean;
     "userVerified": boolean;
     "enterpriseAttestation"?: boolean;
+    "extensionResults"?: MakeCredentialExtensionResults | null;
 
     /** Creates a new MakeCredentialResult instance. */
     constructor($$source: Partial<MakeCredentialResult> = {}) {
@@ -242,8 +683,54 @@ export class MakeCredentialResult {
      * Creates a new MakeCredentialResult instance from a string or object.
      */
     static createFrom($$source: any = {}): MakeCredentialResult {
+        const $$createField12_0 = $$createType49;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("extensionResults" in $$parsedSource) {
+            $$parsedSource["extensionResults"] = $$createField12_0($$parsedSource["extensionResults"]);
+        }
         return new MakeCredentialResult($$parsedSource as Partial<MakeCredentialResult>);
+    }
+}
+
+export class MinPINLengthOutput {
+    "value": number;
+
+    /** Creates a new MinPINLengthOutput instance. */
+    constructor($$source: Partial<MinPINLengthOutput> = {}) {
+        if (!("value" in $$source)) {
+            this["value"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MinPINLengthOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MinPINLengthOutput {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new MinPINLengthOutput($$parsedSource as Partial<MinPINLengthOutput>);
+    }
+}
+
+export class PINComplexityPolicyOutput {
+    "enabled": boolean;
+
+    /** Creates a new PINComplexityPolicyOutput instance. */
+    constructor($$source: Partial<PINComplexityPolicyOutput> = {}) {
+        if (!("enabled" in $$source)) {
+            this["enabled"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PINComplexityPolicyOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PINComplexityPolicyOutput {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new PINComplexityPolicyOutput($$parsedSource as Partial<PINComplexityPolicyOutput>);
     }
 }
 
@@ -251,13 +738,50 @@ export class MakeCredentialResult {
 const $$createType0 = credential$0.PublicKeyCredentialDescriptor.createFrom;
 const $$createType1 = credential$0.PublicKeyCredentialUserEntity.createFrom;
 const $$createType2 = $Create.Nullable($$createType1);
-const $$createType3 = Assertion.createFrom;
-const $$createType4 = $Create.Array($$createType3);
-const $$createType5 = report$0.DeviceReport.createFrom;
-const $$createType6 = credential$0.PublicKeyCredentialRpEntity.createFrom;
-const $$createType7 = credential$0.PublicKeyCredentialParameters.createFrom;
-const $$createType8 = $Create.Array($$createType7);
-const $$createType9 = $Create.Array($$createType0);
-const $$createType10 = AuthenticatorOptions.createFrom;
-const $$createType11 = safety$0.Warning.createFrom;
-const $$createType12 = $Create.Array($$createType11);
+const $$createType3 = GetAssertionExtensionResults.createFrom;
+const $$createType4 = $Create.Nullable($$createType3);
+const $$createType5 = CredentialBlobGetOutput.createFrom;
+const $$createType6 = $Create.Nullable($$createType5);
+const $$createType7 = HMACSecretOutput.createFrom;
+const $$createType8 = $Create.Nullable($$createType7);
+const $$createType9 = GetAssertionPRFOutput.createFrom;
+const $$createType10 = $Create.Nullable($$createType9);
+const $$createType11 = GetAssertionClientExtensionResults.createFrom;
+const $$createType12 = $Create.Nullable($$createType11);
+const $$createType13 = $Create.Array($$createType0);
+const $$createType14 = AuthenticatorOptions.createFrom;
+const $$createType15 = webauthn$0.GetAuthenticationExtensionsClientInputs.createFrom;
+const $$createType16 = $Create.Nullable($$createType15);
+const $$createType17 = webauthn$0.AuthenticationExtensionsPRFValues.createFrom;
+const $$createType18 = report$0.DeviceReport.createFrom;
+const $$createType19 = GetAssertionInput.createFrom;
+const $$createType20 = safety$0.Warning.createFrom;
+const $$createType21 = $Create.Array($$createType20);
+const $$createType22 = Assertion.createFrom;
+const $$createType23 = $Create.Array($$createType22);
+const $$createType24 = CredentialProtectionOutput.createFrom;
+const $$createType25 = $Create.Nullable($$createType24);
+const $$createType26 = MinPINLengthOutput.createFrom;
+const $$createType27 = $Create.Nullable($$createType26);
+const $$createType28 = PINComplexityPolicyOutput.createFrom;
+const $$createType29 = $Create.Nullable($$createType28);
+const $$createType30 = webauthn$0.CredentialPropertiesOutput.createFrom;
+const $$createType31 = $Create.Nullable($$createType30);
+const $$createType32 = CredentialBlobCreateOutput.createFrom;
+const $$createType33 = $Create.Nullable($$createType32);
+const $$createType34 = HMACSecretCreateOutput.createFrom;
+const $$createType35 = $Create.Nullable($$createType34);
+const $$createType36 = MakeCredentialPRFOutput.createFrom;
+const $$createType37 = $Create.Nullable($$createType36);
+const $$createType38 = MakeCredentialClientExtensionResults.createFrom;
+const $$createType39 = $Create.Nullable($$createType38);
+const $$createType40 = MakeCredentialAuthenticatorExtensionOutputs.createFrom;
+const $$createType41 = $Create.Nullable($$createType40);
+const $$createType42 = credential$0.PublicKeyCredentialRpEntity.createFrom;
+const $$createType43 = credential$0.PublicKeyCredentialParameters.createFrom;
+const $$createType44 = $Create.Array($$createType43);
+const $$createType45 = webauthn$0.CreateAuthenticationExtensionsClientInputs.createFrom;
+const $$createType46 = $Create.Nullable($$createType45);
+const $$createType47 = MakeCredentialInput.createFrom;
+const $$createType48 = MakeCredentialExtensionResults.createFrom;
+const $$createType49 = $Create.Nullable($$createType48);

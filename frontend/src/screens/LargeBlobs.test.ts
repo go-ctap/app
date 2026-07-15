@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/svelte";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { tick } from "svelte";
 import { get } from "svelte/store";
@@ -432,7 +432,7 @@ describe("LargeBlobs", () => {
     expect(within(details).queryByRole("region", { name: "UTF-8 text" })).not.toBeInTheDocument();
   });
 
-  it("renders valid UTF-8 JSON as structured data", () => {
+  it("renders valid UTF-8 JSON as structured data", async () => {
     const envelope = readEnvelope({
       rawHex: "7b22666f726d6174223a226a736f6e227d",
       decode: {
@@ -458,7 +458,9 @@ describe("LargeBlobs", () => {
 
     const details = document.getElementById("large-blob-row-details-cafe") as HTMLElement;
     expect(within(details).getAllByText("Decoded as JSON").length).toBeGreaterThan(0);
-    expect(within(details).getByText(/"format": "json"/)).toBeInTheDocument();
+    const json = within(details).getByRole("region", { name: "Decoded as JSON" });
+    await waitFor(() => expect(json.querySelector("pre.shiki")).toBeInTheDocument());
+    expect(json).toHaveTextContent(/"format": "json"/);
     expect(within(details).queryByRole("region", { name: "Raw hex" })).not.toBeInTheDocument();
   });
 

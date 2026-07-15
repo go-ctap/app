@@ -4,6 +4,7 @@
   import { sanitizedJson } from "$lib/redaction";
 
   import { m } from "../../../paraglide/messages.js";
+  import JsonCode from "./JsonCode.svelte";
 
   type Props = {
     value: unknown;
@@ -27,7 +28,7 @@
 {/if}
 <!-- svelte-ignore a11y_no_noninteractive_tabindex (scrollable code region) -->
 <div class="json-frame" role="region" aria-label={title} tabindex="0">
-  <pre>{source}</pre>
+  <JsonCode {source} />
 </div>
 
 <style>
@@ -57,15 +58,5 @@
     background: var(--muted);
   }
 
-  .json-frame pre {
-    inline-size: max-content;
-    min-inline-size: 100%;
-    margin: 0;
-    padding: var(--space-3);
-    color: var(--foreground);
-    font-size: 0.82rem;
-    line-height: 1.55;
-    white-space: pre;
-  }
 }
 </style>

@@ -27,6 +27,7 @@ import {
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
+import { logController } from "$lib/features/logs/state.svelte.js";
 import { failPasskeysInventoryLoadAtRuntime } from "$lib/features/passkeys/state";
 import { failureForCode } from "$lib/test-failure";
 
@@ -52,7 +53,7 @@ import {
   largeBlobsStatusFilter,
   largeBlobsVerificationFlow,
   overviewBioSensor,
-  overviewInspection,
+  authenticatorInspection,
   overviewMDS,
   passkeysInventoryState,
   passkeysMutation,
@@ -217,6 +218,7 @@ describe("controller lifecycle", () => {
     setAppLocale("en");
     vi.clearAllMocks();
     resetAppStateForTest();
+    logController.clear();
     serviceMocks.BioSensorInfo.mockResolvedValue(null);
     serviceMocks.CloseAllSessions.mockResolvedValue([]);
     serviceMocks.ListCredentials.mockResolvedValue(null);
@@ -1043,7 +1045,7 @@ describe("controller lifecycle", () => {
     setPasskeysStatusFilter("large-blob-missing");
     setPasskeysVerificationFlow(VerificationFlow.VerificationFlowPIN);
     expect(beginCredentialUpdate("cafe")).toBe(true);
-    selectLargeBlobCredential("cafe");
+    await selectLargeBlobCredential("cafe");
     setLargeBlobsQuery("example");
     setLargeBlobsStatusFilter("present");
     setLargeBlobsVerificationFlow(VerificationFlow.VerificationFlowPIN);
@@ -1055,11 +1057,12 @@ describe("controller lifecycle", () => {
       sessionId: "session-token-1",
       request: { kind: "confirm" },
     } as InteractionPrompt);
+	logController.recordRuntimeFailure("selection-survivor", new Error("not persisted"));
 
     await selectToken("");
 
     expect(get(selectedSelector)).toBe("");
-    expect(get(overviewInspection).data).toBeNull();
+    expect(get(authenticatorInspection).data).toBeNull();
     expect(get(overviewBioSensor).data).toBeNull();
     expect(get(overviewMDS).data).toBeNull();
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBeNull();
@@ -1076,6 +1079,7 @@ describe("controller lifecycle", () => {
     expect(get(largeBlobsVerificationFlow)).toBe(VerificationFlow.VerificationFlowPIN);
     expect(get(largeBlobsPayloadEncoding)).toBe("hex");
     expect(get(pendingInteraction)).toBeNull();
+    expect(logController.records.some((record) => record.source === "app/runtime" && record.context === "selection-survivor")).toBe(true);
     expect(serviceMocks.ResolveInteraction).not.toHaveBeenCalled();
   });
 
@@ -1113,6 +1117,60 @@ describe("controller lifecycle", () => {
     expect(get(passkeysVerificationFlow)).toBe(VerificationFlow.VerificationFlowPIN);
     expect(serviceMocks.CloseAllSessions).toHaveBeenCalledOnce();
     expect(serviceMocks.OpenSession).toHaveBeenCalledWith({ selector: "token-2" });
+  });
+
+  it("opens the selected authenticator after the detached old handle fails to close", async () => {
+    const first = device("token-1");
+    const second = device("token-2");
+    const { selectToken } = await import("./controller");
+    seedDevicesForTest([first, second]);
+    seedSelectionForTest("token-1", first, {
+      state: "ready",
+      sessionId: "session-token-1",
+    });
+    serviceMocks.Sessions.mockResolvedValue([snapshot(first)]);
+    serviceMocks.CloseAllSessions.mockRejectedValue(new Error("old handle close failed", {
+      cause: failureForCode(Code.CodeTransportFailure),
+    }));
+    serviceMocks.OpenSession.mockResolvedValue(snapshot(second));
+
+    await selectToken("token-2");
+
+    expect(get(selectedSelector)).toBe("token-2");
+    expect(get(sessionStatus)).toMatchObject({
+      state: "ready",
+      sessionId: "session-token-2",
+    });
+    expect(serviceMocks.CloseAllSessions).toHaveBeenCalledOnce();
+    expect(serviceMocks.OpenSession).toHaveBeenCalledWith({ selector: "token-2" });
+    expect(logController.records).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        source: "app/runtime",
+        context: "ctapkit.session.closeAll",
+        error: expect.objectContaining({ code: Code.CodeTransportFailure }),
+      }),
+    ]));
+  });
+
+  it("does not open the selected authenticator after an unknown close failure", async () => {
+    const first = device("token-1");
+    const second = device("token-2");
+    const { selectToken } = await import("./controller");
+    seedDevicesForTest([first, second]);
+    seedSelectionForTest("token-1", first, {
+      state: "ready",
+      sessionId: "session-token-1",
+    });
+    serviceMocks.Sessions.mockResolvedValue([snapshot(first)]);
+    serviceMocks.CloseAllSessions.mockRejectedValue(new Error("request has been stopped"));
+
+    await selectToken("token-2");
+
+    expect(serviceMocks.OpenSession).not.toHaveBeenCalled();
+    expect(get(sessionStatus)).toMatchObject({
+      state: "error",
+      error: expect.objectContaining({ code: Code.CodeInternalError }),
+    });
   });
 
   it("keeps the current operation and screen state when its selected token is clicked again", async () => {
@@ -1163,9 +1221,45 @@ describe("controller lifecycle", () => {
 
     await loadOverview();
 
-    expect(get(overviewInspection).data).toBeNull();
+    expect(get(authenticatorInspection).data).toBeNull();
     expect(get(statusBar).activeOperation).toBeNull();
     expect(get(statusBar).lastOutcome?.message).toBe("The operation failed because of an internal error.");
+  });
+
+  it("loads session inspection on Lab entry without starting Overview-only subloads", async () => {
+    const token = device("token-1");
+    const envelope = inspectEnvelope(token);
+    envelope.result.result.info.options = { bioEnroll: true };
+    const { maybeLoadOverview } = await import("./overview-controller");
+    seedDevicesForTest([token]);
+    seedActiveScreenForTest("lab");
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
+    serviceMocks.Inspect.mockResolvedValue(envelope);
+
+    await maybeLoadOverview();
+
+    expect(serviceMocks.Inspect).toHaveBeenCalledOnce();
+    expect(serviceMocks.BioSensorInfo).not.toHaveBeenCalled();
+    expect(serviceMocks.LookupMDS).not.toHaveBeenCalled();
+    expect(get(authenticatorInspection).data).toBe(envelope);
+  });
+
+  it("reuses Lab inspection when Overview only needs biometric and MDS details", async () => {
+    const token = device("token-1");
+    const envelope = inspectEnvelope(token);
+    envelope.result.result.info.options = { bioEnroll: true };
+    const { maybeLoadOverview } = await import("./overview-controller");
+    seedDevicesForTest([token]);
+    seedActiveScreenForTest("overview");
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
+    seedOverviewEnvelopeForTest(envelope);
+    serviceMocks.BioSensorInfo.mockResolvedValue(bioSensorEnvelope(token));
+
+    await maybeLoadOverview();
+
+    expect(serviceMocks.Inspect).not.toHaveBeenCalled();
+    expect(serviceMocks.BioSensorInfo).toHaveBeenCalledWith({ sessionId: "session-token-1" });
+    expect(get(authenticatorInspection).data).toBe(envelope);
   });
 
   it("reopens an invalid selected session before reloading overview", async () => {
@@ -1204,7 +1298,7 @@ describe("controller lifecycle", () => {
 
     await loadOverview();
 
-    expect(get(overviewInspection)).toMatchObject({
+    expect(get(authenticatorInspection)).toMatchObject({
       state: "error",
       data: envelope,
       error: failureForCode(Code.CodeAuthenticatorBusy),

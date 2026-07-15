@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Database, FlaskConical, Gauge, KeyRound, Settings, Shield, ShieldCheck, Usb } from "@lucide/svelte";
+  import { Database, FlaskConical, Gauge, KeyRound, ScrollText, Settings, Shield, ShieldCheck, Usb } from "@lucide/svelte";
   import {type Component} from "svelte";
 
   import { Button } from "$lib/components/ui/button/index.js";
@@ -24,6 +24,7 @@
     { id: "large-blobs", label: m.nav_large_blobs(), icon: Database },
     { id: "security", label: m.security(), icon: Shield },
     { id: "lab", label: m.webauthn_lab(), icon: FlaskConical },
+    { id: "logs", label: m.logs(), icon: ScrollText },
     { id: "settings", label: m.settings(), icon: Settings },
   ];
 

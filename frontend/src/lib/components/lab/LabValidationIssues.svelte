@@ -32,6 +32,10 @@
     if (issue.code === "invalid-base64url") return m.lab_invalid_challenge();
     if (issue.code === "invalid-algorithm") return m.lab_invalid_algorithm();
     if (issue.code === "invalid-json") return m.lab_raw_json_warning();
+    if (issue.code === "invalid-length") return m.lab_invalid_length();
+    if (issue.code === "too-long") return m.lab_value_too_long();
+    if (issue.code === "extension-conflict") return m.lab_extension_conflict();
+    if (issue.code === "unsupported-prf-credential-selection") return m.lab_prf_single_credential();
     if (issue.field.includes("excludeList") || issue.field.includes("allowList")) {
       return m.lab_invalid_descriptor();
     }

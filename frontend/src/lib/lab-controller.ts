@@ -4,10 +4,11 @@ import { toast } from "svelte-sonner";
 import {
   GetAssertionRequest,
   MakeCredentialRequest,
+  type GetAssertionEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
-import { makeCredentialResult } from "./ctapkit-results.js";
+import { inspectResult, makeCredentialResult } from "./ctapkit-results.js";
 import {
   labState,
   createPresetState,
@@ -18,6 +19,7 @@ import {
 } from "./features/lab/state.js";
 import { invalidateLargeBlobsInventory } from "./features/largeblobs/state.js";
 import { invalidatePasskeysInventory } from "./features/passkeys/state.js";
+import { authenticatorInspection } from "./features/session/state.js";
 import {
   buildGetAssertionRequest,
   buildMakeCredentialRequest,
@@ -44,7 +46,20 @@ function scenarioIsDirty(state: LabState) {
 }
 
 function applyPreset(presetID: LabPresetID) {
-  labState.set(createPresetState(presetID));
+  const activeOperation = get(labState).activeOperation;
+  labState.set({ ...createPresetState(presetID), activeOperation });
+}
+
+export function selectLabOperation(activeOperation: LabState["activeOperation"]) {
+  labState.update((state) => ({ ...state, activeOperation }));
+}
+
+export function selectLabMakeSection(makeSection: LabState["makeSection"]) {
+  labState.update((state) => ({ ...state, makeSection }));
+}
+
+export function selectLabGetSection(getSection: LabState["getSection"]) {
+  labState.update((state) => ({ ...state, getSection }));
 }
 
 /** Returns true when the preset was applied immediately, false when confirmation is pending. */
@@ -71,7 +86,10 @@ export function cancelLabPreset() {
 
 export function updateLabMakeCredentialDraft(patch: Partial<MakeCredentialDraft>) {
   const current = get(labState);
-  if (current.makeStep.phase !== "editing") return false;
+  if (
+    current.makeStep.phase !== "editing"
+    && !(current.makeStep.phase === "error" && current.makeStep.request === null)
+  ) return false;
   const makeDraft = { ...current.makeDraft, ...patch };
   labState.set({
     ...current,
@@ -84,7 +102,10 @@ export function updateLabMakeCredentialDraft(patch: Partial<MakeCredentialDraft>
 
 export function updateLabGetAssertionDraft(patch: Partial<GetAssertionDraft>) {
   const current = get(labState);
-  if (current.getStep.phase !== "editing") return false;
+  if (
+    current.getStep.phase !== "editing"
+    && !(current.getStep.phase === "error" && current.getStep.request === null)
+  ) return false;
   const getDraft = { ...current.getDraft, ...patch };
   labState.set({
     ...current,
@@ -120,7 +141,8 @@ export async function previewLabMakeCredential(): Promise<boolean> {
     && !(current.makeStep.phase === "error" && current.makeStep.request === null)
   ) return false;
 
-  const validation = validateMakeCredentialDraft(current.makeDraft);
+  const maxCredBlobLength = inspectResult(get(authenticatorInspection).data)?.info.maxCredBlobLength;
+  const validation = validateMakeCredentialDraft(current.makeDraft, maxCredBlobLength);
   if (!validation.valid) return false;
   if (!await ensureSelectedSessionReady()) return false;
 
@@ -188,12 +210,14 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
   const previewEnvelope = step.previewEnvelope;
   if (!previewEnvelope) return false;
 
-  const request = new MakeCredentialRequest({
-    ...previewRequest,
-    dryRun: false,
-    confirmed: true,
-    confirmationMessage: m.lab_confirm_make_credential(),
-  });
+  const request = step.phase === "error" && step.request
+    ? step.request
+    : new MakeCredentialRequest({
+        ...previewRequest,
+        dryRun: false,
+        confirmed: true,
+        confirmationMessage: m.lab_confirm_make_credential(),
+      });
   labState.update((state) => ({
     ...state,
     makeStep: {
@@ -284,10 +308,14 @@ export function newLabMakeCredentialRun() {
   return true;
 }
 
-async function executeGetAssertion(request: GetAssertionRequest): Promise<boolean> {
+async function executeGetAssertion(
+  previewRequest: GetAssertionRequest,
+  previewEnvelope: GetAssertionEnvelope,
+  request: GetAssertionRequest,
+): Promise<boolean> {
   labState.update((state) => ({
     ...state,
-    getStep: { phase: "executing", request },
+    getStep: { phase: "executing", previewRequest, previewEnvelope, request },
   }));
   try {
     beginOperation(m.lab_get_assertion());
@@ -295,12 +323,19 @@ async function executeGetAssertion(request: GetAssertionRequest): Promise<boolea
     if (envelope.error) {
       labState.update((state) => ({
         ...state,
-        getStep: { phase: "error", request, responseEnvelope: envelope, runtimeError: null },
+        getStep: {
+          phase: "error",
+          previewRequest,
+          previewEnvelope,
+          request,
+          responseEnvelope: envelope,
+          runtimeError: null,
+        },
       }));
     } else {
       labState.update((state) => ({
         ...state,
-        getStep: { phase: "success", request, responseEnvelope: envelope },
+        getStep: { phase: "success", previewRequest, previewEnvelope, request, responseEnvelope: envelope },
       }));
     }
     summarizeEnvelope(m.lab_get_assertion(), envelope);
@@ -310,7 +345,14 @@ async function executeGetAssertion(request: GetAssertionRequest): Promise<boolea
     const runtimeError = runtimeFailureFrom(error);
     labState.update((state) => ({
       ...state,
-      getStep: { phase: "error", request, responseEnvelope: null, runtimeError },
+      getStep: {
+        phase: "error",
+        previewRequest,
+        previewEnvelope,
+        request,
+        responseEnvelope: null,
+        runtimeError,
+      },
     }));
     summarizeOperationFailure(m.lab_get_assertion(), runtimeError);
     applyInvalidSessionError(runtimeError);
@@ -320,25 +362,87 @@ async function executeGetAssertion(request: GetAssertionRequest): Promise<boolea
 
 export async function runLabGetAssertion(): Promise<boolean> {
   const current = get(labState);
-  if (current.getStep.phase !== "editing") return false;
+  if (
+    current.getStep.phase !== "editing"
+    && !(current.getStep.phase === "error" && current.getStep.request === null)
+  ) return false;
   const validation = validateGetAssertionDraft(current.getDraft);
   if (!validation.valid) return false;
   if (!await ensureSelectedSessionReady()) return false;
 
-  const request = buildGetAssertionRequest(selectedSessionId(), current.getDraft);
-  return executeGetAssertion(request);
+  const previewRequest = new GetAssertionRequest({
+    ...buildGetAssertionRequest(selectedSessionId(), current.getDraft),
+    dryRun: true,
+  });
+  labState.update((state) => ({
+    ...state,
+    getStep: { phase: "previewing", previewRequest },
+  }));
+  try {
+    beginOperation(m.lab_get_assertion());
+    const envelope = await api.getAssertion(previewRequest);
+    if (envelope.error) {
+      labState.update((state) => ({
+        ...state,
+        getStep: {
+          phase: "error",
+          previewRequest,
+          previewEnvelope: null,
+          request: null,
+          responseEnvelope: envelope,
+          runtimeError: null,
+        },
+      }));
+    } else {
+      labState.update((state) => ({
+        ...state,
+        getStep: { phase: "review", previewRequest, previewEnvelope: envelope },
+      }));
+    }
+    summarizeEnvelope(m.lab_get_assertion(), envelope);
+    applyInvalidSessionError(envelope.error);
+    return !envelope.error;
+  } catch (error) {
+    const runtimeError = runtimeFailureFrom(error);
+    labState.update((state) => ({
+      ...state,
+      getStep: {
+        phase: "error",
+        previewRequest,
+        previewEnvelope: null,
+        request: null,
+        responseEnvelope: null,
+        runtimeError,
+      },
+    }));
+    summarizeOperationFailure(m.lab_get_assertion(), runtimeError);
+    applyInvalidSessionError(runtimeError);
+    return false;
+  }
 }
 
-/** GetAssertion retries the frozen payload with the currently open session. */
+export async function confirmLabGetAssertion(): Promise<boolean> {
+  const current = get(labState);
+  const step = current.getStep;
+  if (step.phase !== "review" && !(
+    step.phase === "error"
+    && step.previewEnvelope
+    && step.request
+  )) return false;
+  if (!step.previewEnvelope || !await ensureSelectedSessionReady()) return false;
+
+  const request = step.phase === "error" && step.request
+    ? step.request
+    : new GetAssertionRequest({ ...step.previewRequest, dryRun: false });
+  return executeGetAssertion(step.previewRequest, step.previewEnvelope, request);
+}
+
+/** GetAssertion retries the exact frozen execution request. */
 export async function rerunLabGetAssertion(): Promise<boolean> {
   const current = get(labState);
   if (current.getStep.phase !== "error") return false;
-  if (!await ensureSelectedSessionReady()) return false;
-  const request = new GetAssertionRequest({
-    ...current.getStep.request,
-    sessionId: selectedSessionId(),
-  });
-  return executeGetAssertion(request);
+  if (current.getStep.request === null) return runLabGetAssertion();
+  return confirmLabGetAssertion();
 }
 
 export function editLabGetAssertion() {
@@ -347,6 +451,7 @@ export function editLabGetAssertion() {
   labState.set({
     ...current,
     pendingHandoff: null,
+    activeOperation: "get",
     getStep: { phase: "editing" },
   });
   return true;
@@ -364,6 +469,7 @@ export function newLabGetAssertionRun() {
     ...current,
     isCustom: true,
     pendingHandoff: null,
+    activeOperation: "get",
     getDraft,
     getStep: { phase: "editing" },
   });
@@ -384,6 +490,7 @@ function completeHandoff(rpID: string, credentialIDHex: string, replace: boolean
     ...current,
     isCustom: true,
     pendingHandoff: null,
+    activeOperation: "get",
     getDraft,
     getStep: { phase: "editing" },
   });

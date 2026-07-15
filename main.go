@@ -21,6 +21,7 @@ func init() {
 	application.RegisterEvent[kitservice.DiscoveryChangedEnvelope](kitservice.EventDiscoveryChanged)
 	application.RegisterEvent[kitservice.OperationEventEnvelope](kitservice.EventOperationEvent)
 	application.RegisterEvent[kitservice.InteractionPrompt](kitservice.EventInteractionRequested)
+	application.RegisterEvent[kitservice.LogCursor](kitservice.EventLogsChanged)
 }
 
 func mainWindowOptions(goos string) application.WebviewWindowOptions {

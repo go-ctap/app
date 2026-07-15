@@ -97,12 +97,13 @@ function statusEnvelope(options: {
   bioConfigured?: boolean | null;
   alwaysUVConfigured?: boolean | null;
   minPINLength?: number;
-  maxPINLength?: number;
+  maxPINLength?: number | null;
   maxRPIDs?: number;
 } = {}): ConfigStatusEnvelope {
   const item = options.item ?? TOKEN;
   const bioSupported = options.bioSupported ?? false;
   const minPINLength = options.minPINLength ?? 4;
+  const maxPINLength = options.maxPINLength === undefined ? 63 : options.maxPINLength;
   return {
     operationId: "status-1",
     sessionId: options.sessionId ?? "session-1",
@@ -116,7 +117,7 @@ function statusEnvelope(options: {
           configured: true,
           protocolSupported: true,
           minPINLength,
-          maxPINLength: options.maxPINLength ?? 63,
+          maxPINLength,
           retries: { state: StateValue.StateConfigured, remaining: 8 },
         },
         uv: {
@@ -149,7 +150,7 @@ function statusEnvelope(options: {
         resetHints: { longTouchForReset: StateValue.StateUnknown },
         limits: {
           minPINLength,
-          maxPINLength: options.maxPINLength ?? 63,
+          maxPINLength,
           maxRPIDsForSetMinPINLength: options.maxRPIDs ?? 3,
         },
       },
@@ -559,6 +560,24 @@ describe("security controller mutations", () => {
       confirmed: true,
       confirmationMessage: "Update PIN policy",
     });
+  });
+
+  it("uses the CTAP default maximum when maxPINLength is not reported", async () => {
+    seedReadyStatus(statusEnvelope({ maxPINLength: null }));
+    const setMinPINLength = vi.spyOn(api, "setMinPINLength");
+
+    expect(await beginPINPolicyChange({
+      minPINLength: "64",
+      rpIDs: "",
+      forceChangePin: false,
+      pinComplexityPolicy: false,
+    })).toBe(false);
+    expect(get(securityMutation)).toMatchObject({
+      kind: "pinPolicy",
+      phase: "editing",
+      validationError: "min-pin-length-too-large",
+    });
+    expect(setMinPINLength).not.toHaveBeenCalled();
   });
 
   it("restarts a failed preview through the original preview action", async () => {

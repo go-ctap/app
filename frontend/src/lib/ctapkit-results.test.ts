@@ -42,6 +42,7 @@ import {
 } from "../../bindings/github.com/go-ctap/kit/service";
 import {
   GetAssertionResult,
+  MakeCredentialInput,
   MakeCredentialPreview,
   MakeCredentialResult,
 } from "../../bindings/github.com/go-ctap/kit/model/webauthn";
@@ -387,9 +388,11 @@ describe("ctapkit result extractors", () => {
   it("extracts MakeCredential preview and completed result from its typed envelope", () => {
     const preview = new MakeCredentialPreview({
       device,
-      rp: { id: "example.com", name: "Example" },
-      user: { id: "AQ==", name: "alice", displayName: "Alice" },
-      pubKeyCredParams: [{ type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 }],
+      input: new MakeCredentialInput({
+        rp: { id: "example.com", name: "Example" },
+        user: { id: "AQ==", name: "alice", displayName: "Alice" },
+        pubKeyCredParams: [{ type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 }],
+      }),
       warnings: [],
     });
     const result = new MakeCredentialResult({

@@ -35,6 +35,7 @@ export {
     LargeBlobMutationRequest,
     LargeBlobReadEnvelope,
     LargeBlobReadRequest,
+    LogCursor,
     MDSLookupEnvelope,
     MDSLookupRequest,
     MakeCredentialEnvelope,
@@ -46,6 +47,7 @@ export {
     PINChangeRequest,
     PINEnvelope,
     PINSetRequest,
+    ReadLogsRequest,
     ResetFactoryEnvelope,
     ResetFactoryRequest,
     SessionSnapshot

@@ -9,12 +9,12 @@ import { resetLargeBlobsDeviceState } from "./features/largeblobs/state.js";
 import {
   idleLoadState,
   overviewBioSensor,
-  overviewInspection,
   overviewMDS,
 } from "./features/overview/state.js";
 import { resetPasskeysDeviceState } from "./features/passkeys/state.js";
 import { resetSecurityDeviceState } from "./features/security/state.js";
 import {
+  authenticatorInspection,
   devices,
   selectedDevice,
   selectedSelector,
@@ -69,7 +69,7 @@ export function setStatusOutcome(outcome: StatusBarOutcome | null) {
 }
 
 export function clearWorkbenchScreenCaches() {
-  overviewInspection.set(idleLoadState());
+  authenticatorInspection.set(idleLoadState());
   overviewBioSensor.set(idleLoadState());
   overviewMDS.set(idleLoadState());
   resetLabDeviceState();

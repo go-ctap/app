@@ -2,6 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { AuthenticatorTransport } from "../../bindings/github.com/go-ctap/ctap/credential";
 import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import {
+  AuthenticationExtensionsPRFInputs,
+  AuthenticationExtensionsPRFValues,
+  CreateAuthenticationExtensionsClientInputs,
+  GetAuthenticationExtensionsClientInputs,
+  HMACGetSecretInput,
+} from "../../bindings/github.com/go-ctap/ctap/webauthn";
 
 import { createPresetState } from "./features/lab/state";
 import {
@@ -206,5 +213,214 @@ describe("WebAuthn Lab request builders", () => {
     expect(validateGetAssertionDraft(state.getDraft).errors).toEqual(expect.arrayContaining([
       expect.objectContaining({ field: "get.allowList.0.credentialIDHex", code: "invalid-hex" }),
     ]));
+  });
+
+  it("builds credProps as the WebAuthn boolean while preserving CTAP extension DTOs", () => {
+    const state = createPresetState("minimal", sequentialRandom());
+    state.makeDraft.extensions.credentialProperties = { included: true };
+    state.makeDraft.extensions.credentialBlob = {
+      included: true,
+      payload: { mode: "utf8", value: "" },
+    };
+    state.makeDraft.extensions.hmacSecret = { included: true, value: false };
+    state.makeDraft.extensions.hmacSecretMC = {
+      included: true,
+      salt1Hex: "11".repeat(32),
+      salt2Enabled: false,
+      salt2Hex: "",
+    };
+
+    const request = buildMakeCredentialRequest("session-1", state.makeDraft);
+
+    expect(request.extensions).toBeInstanceOf(CreateAuthenticationExtensionsClientInputs);
+    expect(request.extensions?.credProps).toBe(true);
+    expect(request.extensions?.credBlob).toBe("");
+    expect(request.extensions?.hmacCreateSecret).toBe(false);
+    expect(request.extensions?.hmacGetSecret).toBeInstanceOf(HMACGetSecretInput);
+    expect(base64ToHex(request.extensions!.hmacGetSecret!.salt1)).toBe("11".repeat(32));
+    expect(request.extensions?.hmacGetSecret?.salt2).toBeUndefined();
+  });
+
+  it("builds a direct WebAuthn PRF eval with zero-length BufferSources intact", () => {
+    const state = createPresetState("minimal", sequentialRandom());
+    state.makeDraft.extensions.prf.included = true;
+    state.makeDraft.extensions.prf.useEval = true;
+    state.makeDraft.extensions.prf.eval = {
+      first: { mode: "utf8", value: "" },
+      secondEnabled: true,
+      second: { mode: "hex", value: "" },
+    };
+
+    const request = buildMakeCredentialRequest("session-1", state.makeDraft);
+
+    expect(request.extensions?.prf).toBeInstanceOf(AuthenticationExtensionsPRFInputs);
+    expect(request.extensions?.prf?.eval).toBeInstanceOf(AuthenticationExtensionsPRFValues);
+    expect(request.extensions?.prf?.eval?.first).toBe("");
+    expect(request.extensions?.prf?.eval?.second).toBe("");
+    expect(validateMakeCredentialDraft(state.makeDraft).valid).toBe(true);
+  });
+
+  it("builds WebAuthn PRF global and per-credential evaluations together", () => {
+    const state = createPresetState("minimal", sequentialRandom());
+    state.getDraft.allowList = [{ credentialIDHex: "aabb", transports: [] }];
+    state.getDraft.extensions.prf.included = true;
+    state.getDraft.extensions.prf.useGlobalEval = true;
+    state.getDraft.extensions.prf.eval = {
+      first: { mode: "utf8", value: "global" },
+      secondEnabled: false,
+      second: { mode: "utf8", value: "" },
+    };
+    state.getDraft.extensions.prf.evalByCredential = [{
+      credentialIDHex: "aabb",
+      values: {
+        first: { mode: "hex", value: "0102" },
+        secondEnabled: false,
+        second: { mode: "utf8", value: "" },
+      },
+    }];
+
+    const request = buildGetAssertionRequest("session-1", state.getDraft);
+
+    expect(request.extensions?.prf).toBeInstanceOf(AuthenticationExtensionsPRFInputs);
+    expect(base64ToUTF8(request.extensions!.prf!.eval!.first)).toBe("global");
+    expect(Object.keys(request.extensions!.prf!.evalByCredential!)).toEqual(["qrs"]);
+    expect(base64ToHex(request.extensions!.prf!.evalByCredential!["qrs"]!.first)).toBe("0102");
+  });
+
+  it("builds an empty PRF input when evaluation is not requested", () => {
+    const state = createPresetState("minimal", sequentialRandom());
+    state.makeDraft.extensions.prf.included = true;
+    state.getDraft.extensions.prf.included = true;
+
+    const makePRF = buildMakeCredentialRequest("session-1", state.makeDraft).extensions?.prf;
+    const getPRF = buildGetAssertionRequest("session-1", state.getDraft).extensions?.prf;
+
+    expect(makePRF).toBeInstanceOf(AuthenticationExtensionsPRFInputs);
+    expect(getPRF).toBeInstanceOf(AuthenticationExtensionsPRFInputs);
+    expect(makePRF?.eval).toBeUndefined();
+    expect(getPRF?.eval).toBeUndefined();
+    expect(getPRF?.evalByCredential).toBeUndefined();
+  });
+});
+
+describe("WebAuthn Lab extension validation", () => {
+  it.each([31, 33])("rejects a %i-byte HMAC salt", (byteLength) => {
+    const state = createPresetState("minimal", sequentialRandom());
+    state.makeDraft.extensions.hmacSecretMC.included = true;
+    state.makeDraft.extensions.hmacSecretMC.salt1Hex = "11".repeat(byteLength);
+
+    expect(validateMakeCredentialDraft(state.makeDraft).errors).toContainEqual({
+      field: "make.extensions.hmacSecretMC.salt1Hex",
+      code: "invalid-length",
+    });
+  });
+
+  it("accepts one or two exact 32-byte HMAC salts", () => {
+    const state = createPresetState("minimal", sequentialRandom());
+    state.getDraft.extensions.hmacSecret.included = true;
+    state.getDraft.extensions.hmacSecret.salt1Hex = "11".repeat(32);
+
+    expect(validateGetAssertionDraft(state.getDraft).valid).toBe(true);
+
+    state.getDraft.extensions.hmacSecret.salt2Enabled = true;
+    state.getDraft.extensions.hmacSecret.salt2Hex = "22".repeat(32);
+    expect(validateGetAssertionDraft(state.getDraft).valid).toBe(true);
+    const extensions = buildGetAssertionRequest("session-1", state.getDraft).extensions;
+    expect(extensions).toBeInstanceOf(GetAuthenticationExtensionsClientInputs);
+    expect(extensions?.hmacGetSecret).toBeInstanceOf(HMACGetSecretInput);
+  });
+
+  it("rejects HMAC/PRF conflicts for both operations", () => {
+    const state = createPresetState("minimal", sequentialRandom());
+    state.makeDraft.extensions.hmacSecretMC.included = true;
+    state.makeDraft.extensions.prf.included = true;
+    state.makeDraft.extensions.prf.useEval = true;
+    state.getDraft.extensions.hmacSecret.included = true;
+    state.getDraft.extensions.prf.included = true;
+    state.getDraft.extensions.prf.useGlobalEval = true;
+
+    expect(validateMakeCredentialDraft(state.makeDraft).errors).toContainEqual({
+      field: "make.extensions.hmac-prf",
+      code: "extension-conflict",
+    });
+    expect(validateGetAssertionDraft(state.getDraft).errors).toContainEqual({
+      field: "get.extensions.hmac-prf",
+      code: "extension-conflict",
+    });
+  });
+
+  it("validates credBlob against the reported maximum before preview", () => {
+    const state = createPresetState("minimal", sequentialRandom());
+    state.makeDraft.extensions.credentialBlob.included = true;
+    state.makeDraft.extensions.credentialBlob.payload = { mode: "utf8", value: "four" };
+
+    expect(validateMakeCredentialDraft(state.makeDraft, 3).errors).toContainEqual({
+      field: "make.extensions.credBlob",
+      code: "too-long",
+    });
+    expect(validateMakeCredentialDraft(state.makeDraft, 4).valid).toBe(true);
+  });
+
+  it("allows empty PRF requests to coexist with raw HMAC extensions", () => {
+    const state = createPresetState("minimal", sequentialRandom());
+    state.makeDraft.extensions.hmacSecretMC.included = true;
+    state.makeDraft.extensions.prf.included = true;
+    state.getDraft.extensions.hmacSecret.included = true;
+    state.getDraft.extensions.prf.included = true;
+
+    expect(validateMakeCredentialDraft(state.makeDraft).valid).toBe(true);
+    expect(validateGetAssertionDraft(state.getDraft).valid).toBe(true);
+  });
+
+  it("rejects an included PRF when raw MakeCredential hmac-secret is false", () => {
+    const state = createPresetState("minimal", sequentialRandom());
+    state.makeDraft.extensions.hmacSecret = { included: true, value: false };
+    state.makeDraft.extensions.prf.included = true;
+
+    expect(validateMakeCredentialDraft(state.makeDraft).errors).toContainEqual({
+      field: "make.extensions.hmac-prf",
+      code: "extension-conflict",
+    });
+
+    state.makeDraft.extensions.hmacSecret.value = true;
+    expect(validateMakeCredentialDraft(state.makeDraft).valid).toBe(true);
+  });
+
+  it("requires one matching allow-list credential for per-credential PRF evaluation", () => {
+    const state = createPresetState("minimal", sequentialRandom());
+    state.getDraft.extensions.prf.included = true;
+    state.getDraft.extensions.prf.evalByCredential = [{
+      credentialIDHex: "aabb",
+      values: {
+        first: { mode: "utf8", value: "input" },
+        secondEnabled: false,
+        second: { mode: "utf8", value: "" },
+      },
+    }];
+    const expectedIssue = {
+      field: "get.extensions.prf.evalByCredential",
+      code: "unsupported-prf-credential-selection",
+    };
+
+    expect(validateGetAssertionDraft(state.getDraft).errors).toContainEqual(expectedIssue);
+
+    state.getDraft.allowList = [
+      { credentialIDHex: "aabb", transports: [] },
+      { credentialIDHex: "ccdd", transports: [] },
+    ];
+    expect(validateGetAssertionDraft(state.getDraft).errors).toContainEqual(expectedIssue);
+
+    state.getDraft.allowList = [{ credentialIDHex: "ccdd", transports: [] }];
+    expect(validateGetAssertionDraft(state.getDraft).errors).toContainEqual(expectedIssue);
+
+    state.getDraft.allowList = [{ credentialIDHex: "aabb", transports: [] }];
+    state.getDraft.extensions.prf.evalByCredential.push(
+      structuredClone(state.getDraft.extensions.prf.evalByCredential[0]),
+    );
+    expect(validateGetAssertionDraft(state.getDraft).errors).toContainEqual(expectedIssue);
+
+    state.getDraft.extensions.prf.evalByCredential.pop();
+    state.getDraft.allowList = [{ credentialIDHex: "AABB", transports: [] }];
+    expect(validateGetAssertionDraft(state.getDraft).valid).toBe(true);
   });
 });

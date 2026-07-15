@@ -114,6 +114,7 @@ function screenLabel(screen: ActiveScreen) {
     lab: m.webauthn_lab(),
     "large-blobs": m.nav_large_blobs(),
     security: m.security(),
+    logs: m.logs(),
     settings: m.settings(),
   };
   return labels[screen];

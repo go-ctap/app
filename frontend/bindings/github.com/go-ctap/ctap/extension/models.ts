@@ -5,6 +5,17 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+export enum CredentialProtectionPolicy {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    CredentialProtectionPolicyUserVerificationOptional = "userVerificationOptional",
+    CredentialProtectionPolicyUserVerificationOptionalWithCredentialIDList = "userVerificationOptionalWithCredentialIDList",
+    CredentialProtectionPolicyUserVerificationRequired = "userVerificationRequired",
+};
+
 /**
  * ExtensionIdentifier is an enum consisting of IANA registered Extension Identifiers.
  * https://www.iana.org/assignments/webauthn/webauthn.xhtml
@@ -34,4 +45,14 @@ export enum ExtensionIdentifier {
     ExtensionIdentifierCredentialProperties = "credProps",
     ExtensionIdentifierLargeBlob = "largeBlob",
     ExtensionIdentifierPayment = "payment",
+};
+
+export enum LargeBlobSupport {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    LargeBlobSupportRequired = "required",
+    LargeBlobSupportPreferred = "preferred",
 };

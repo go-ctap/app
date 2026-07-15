@@ -15,6 +15,7 @@
     SecurityMutationValidationError,
     SecurityPINPolicyDraft,
   } from "$lib/features/security/state";
+  import { effectiveClientPINMaxLength } from "$lib/pin-policy.js";
 
   import { m } from "../../../paraglide/messages.js";
   import { reportedNumber } from "./security-ui.js";
@@ -36,6 +37,7 @@
 
   let supported = $derived(report.authenticatorConfig.setMinPINLength.supported);
   let formDisabled = $derived(disabled || !supported);
+  let maxPINLength = $derived(effectiveClientPINMaxLength(report.pin));
   let minPINInvalid = $derived([
     "min-pin-length-required",
     "min-pin-length-invalid",
@@ -88,7 +90,7 @@
               type="number"
               inputmode="numeric"
               min={report.pin.minPINLength ?? 1}
-              max={report.pin.maxPINLength ?? undefined}
+              max={maxPINLength}
               step="1"
               value={minPINLength}
               disabled={formDisabled}
@@ -100,7 +102,7 @@
             />
             <Field.Description>
               {m.security_minimum_pin_length()}: {reportedNumber(report.pin.minPINLength)} ·
-              {m.security_maximum_pin_length()}: {reportedNumber(report.pin.maxPINLength)}
+              {m.security_maximum_pin_length()}: {maxPINLength}
             </Field.Description>
             {#if minPINInvalid}
               <Field.Error>{validationMessage(validationError)}</Field.Error>

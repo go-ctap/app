@@ -22,6 +22,7 @@
 		navigateToScreen,
 		selectToken,
 		startDiscoveryMonitoring,
+		syncLogJournal,
 		shutdownWorkbench
 	} from "$lib/controller";
 	import { currentLocale } from "$lib/i18n";
@@ -40,6 +41,7 @@
 
 	import { m } from "./paraglide/messages.js";
 	import Lab from "./screens/Lab.svelte";
+	import Logs from "./screens/Logs.svelte";
 	import Overview from "./screens/Overview.svelte";
 	import LargeBlobs from "./screens/LargeBlobs.svelte";
 	import Passkeys from "./screens/Passkeys.svelte";
@@ -131,8 +133,13 @@
 			void handleDiscoveryChanged(event.data);
 		});
 
+		const offLogsChanged = Events.On("ctapkit:logs-changed", () => {
+			void syncLogJournal();
+		});
+
 		refreshing = true;
 		void syncWindowPlatform();
+		void syncLogJournal();
 
 		bootstrap()
 			.then(() => disposed ? undefined : startDiscoveryMonitoring())
@@ -151,6 +158,7 @@
 			offProgress();
 			offInteraction();
 			offDiscovery();
+			offLogsChanged();
 			void shutdownWorkbench();
 		};
 	});
@@ -182,6 +190,8 @@
 			<main class="main-view">
 				{#if $activeScreen === "settings"}
 					<Settings />
+				{:else if $activeScreen === "logs"}
+					<Logs />
 				{:else if noDevices}
 					<EmptyState
 						title={m.insert_token()}

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	kitmodel "github.com/go-ctap/kit/model"
 	kitservice "github.com/go-ctap/kit/service"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -24,8 +25,31 @@ func (s *CtapkitService) ServiceName() string {
 	return "CtapkitService"
 }
 
+func (s *CtapkitService) ServiceStartup(ctx context.Context, _ application.ServiceOptions) error {
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-s.core.LogChanges():
+				application.Get().Event.Emit(kitservice.EventLogsChanged, s.core.CurrentLogCursor())
+			}
+		}
+	}()
+
+	return nil
+}
+
 func (s *CtapkitService) ServiceShutdown() error {
 	return s.core.Close()
+}
+
+func (s *CtapkitService) ReadLogs(_ context.Context, req kitservice.ReadLogsRequest) kitmodel.LogJournalBatch {
+	return s.core.ReadLogs(req)
+}
+
+func (s *CtapkitService) ClearLogs(_ context.Context) kitservice.LogCursor {
+	return s.core.ClearLogs()
 }
 
 func (s *CtapkitService) Discover(ctx context.Context, req kitservice.DiscoverRequest) (kitservice.DiscoverySnapshot, error) {
@@ -44,16 +68,16 @@ func (s *CtapkitService) OpenSession(ctx context.Context, req kitservice.OpenSes
 	return s.core.OpenSession(ctx, req)
 }
 
-func (s *CtapkitService) Sessions(ctx context.Context) ([]kitservice.SessionSnapshot, error) {
-	return s.core.Sessions(ctx)
+func (s *CtapkitService) Sessions(_ context.Context) []kitservice.SessionSnapshot {
+	return s.core.Sessions()
 }
 
-func (s *CtapkitService) CloseAllSessions(ctx context.Context) ([]kitservice.SessionSnapshot, error) {
-	return s.core.CloseAllSessions(ctx)
+func (s *CtapkitService) CloseAllSessions(_ context.Context) ([]kitservice.SessionSnapshot, error) {
+	return s.core.CloseAllSessions()
 }
 
-func (s *CtapkitService) CancelOperation(ctx context.Context, req kitservice.CancelOperationRequest) (bool, error) {
-	return s.core.CancelOperation(ctx, req)
+func (s *CtapkitService) CancelOperation(_ context.Context, req kitservice.CancelOperationRequest) bool {
+	return s.core.CancelOperation(req)
 }
 
 func (s *CtapkitService) ResolveInteraction(ctx context.Context, answer kitservice.InteractionAnswer) (bool, error) {

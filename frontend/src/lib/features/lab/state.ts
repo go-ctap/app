@@ -1,6 +1,7 @@
 import { writable } from "svelte/store";
 
 import type { AuthenticatorTransport } from "../../../../bindings/github.com/go-ctap/ctap/credential";
+import { CredentialProtectionPolicy } from "../../../../bindings/github.com/go-ctap/ctap/extension";
 import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
 import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
@@ -20,6 +21,70 @@ import {
 export type LabPresetID = "minimal" | "discoverable" | "non-discoverable" | "uv-required";
 export type LabTriState = "auto" | "true" | "false";
 export type LabClientDataMode = "builder" | "raw";
+export type LabOperationTab = "make" | "get";
+export type LabConfigureSection = "basics" | "extensions" | "advanced";
+export type LabBinaryMode = "utf8" | "hex";
+
+export type LabBinaryDraft = {
+  mode: LabBinaryMode;
+  value: string;
+};
+
+export type LabBooleanExtensionDraft = {
+  included: boolean;
+  value: boolean;
+};
+
+export type LabHMACSecretDraft = {
+  included: boolean;
+  salt1Hex: string;
+  salt2Enabled: boolean;
+  salt2Hex: string;
+};
+
+export type LabPRFValuesDraft = {
+  first: LabBinaryDraft;
+  secondEnabled: boolean;
+  second: LabBinaryDraft;
+};
+
+export type LabPRFCredentialEvaluationDraft = {
+  credentialIDHex: string;
+  values: LabPRFValuesDraft;
+};
+
+export type MakeCredentialExtensionsDraft = {
+  credentialProperties: { included: boolean };
+  credentialProtection: {
+    included: boolean;
+    policy: CredentialProtectionPolicy;
+    enforce: boolean;
+  };
+  credentialBlob: {
+    included: boolean;
+    payload: LabBinaryDraft;
+  };
+  hmacSecret: LabBooleanExtensionDraft;
+  hmacSecretMC: LabHMACSecretDraft;
+  minPINLength: LabBooleanExtensionDraft;
+  pinComplexityPolicy: LabBooleanExtensionDraft;
+  prf: {
+    included: boolean;
+    useEval: boolean;
+    eval: LabPRFValuesDraft;
+  };
+};
+
+export type GetAssertionExtensionsDraft = {
+  getCredentialBlob: LabBooleanExtensionDraft;
+  hmacSecret: LabHMACSecretDraft;
+  prf: {
+    included: boolean;
+    useGlobalEval: boolean;
+    eval: LabPRFValuesDraft;
+    evalByCredential: LabPRFCredentialEvaluationDraft[];
+  };
+};
 
 export type LabDescriptorDraft = {
   credentialIDHex: string;
@@ -46,6 +111,7 @@ export type MakeCredentialDraft = {
   userPresence: LabTriState;
   userVerification: LabTriState;
   verificationFlow: VerificationFlow;
+  extensions: MakeCredentialExtensionsDraft;
 };
 
 export type GetAssertionDraft = {
@@ -56,6 +122,7 @@ export type GetAssertionDraft = {
   userPresence: LabTriState;
   userVerification: LabTriState;
   verificationFlow: VerificationFlow;
+  extensions: GetAssertionExtensionsDraft;
 };
 
 export type LabMakeStep =
@@ -94,17 +161,32 @@ export type LabMakeStep =
 export type LabGetStep =
   | { phase: "editing" }
   | {
+      phase: "previewing";
+      previewRequest: GetAssertionRequest;
+    }
+  | {
+      phase: "review";
+      previewRequest: GetAssertionRequest;
+      previewEnvelope: GetAssertionEnvelope;
+    }
+  | {
       phase: "executing";
+      previewRequest: GetAssertionRequest;
+      previewEnvelope: GetAssertionEnvelope;
       request: GetAssertionRequest;
     }
   | {
       phase: "success";
+      previewRequest: GetAssertionRequest;
+      previewEnvelope: GetAssertionEnvelope;
       request: GetAssertionRequest;
       responseEnvelope: GetAssertionEnvelope;
     }
   | {
       phase: "error";
-      request: GetAssertionRequest;
+      previewRequest: GetAssertionRequest;
+      previewEnvelope: GetAssertionEnvelope | null;
+      request: GetAssertionRequest | null;
       responseEnvelope: GetAssertionEnvelope | null;
       runtimeError: Failure | null;
     };
@@ -115,6 +197,9 @@ export type LabPendingHandoff = {
 };
 
 export type LabState = {
+  activeOperation: LabOperationTab;
+  makeSection: LabConfigureSection;
+  getSection: LabConfigureSection;
   presetID: LabPresetID;
   isCustom: boolean;
   pendingPresetID: LabPresetID | null;
@@ -124,6 +209,54 @@ export type LabState = {
   getStep: LabGetStep;
   pendingHandoff: LabPendingHandoff | null;
 };
+
+function prfValues(first = ""): LabPRFValuesDraft {
+  return {
+    first: { mode: "utf8", value: first },
+    secondEnabled: false,
+    second: { mode: "utf8", value: "" },
+  };
+}
+
+function makeExtensionDefaults(randomSource?: LabRandomSource): MakeCredentialExtensionsDraft {
+  return {
+    credentialProperties: { included: false },
+    credentialProtection: {
+      included: false,
+      policy: CredentialProtectionPolicy.CredentialProtectionPolicyUserVerificationOptional,
+      enforce: false,
+    },
+    credentialBlob: { included: false, payload: { mode: "utf8", value: "" } },
+    hmacSecret: { included: false, value: true },
+    hmacSecretMC: {
+      included: false,
+      salt1Hex: randomHex(32, randomSource),
+      salt2Enabled: false,
+      salt2Hex: "",
+    },
+    minPINLength: { included: false, value: true },
+    pinComplexityPolicy: { included: false, value: true },
+    prf: { included: false, useEval: false, eval: prfValues("registration-prf") },
+  };
+}
+
+function getExtensionDefaults(randomSource?: LabRandomSource): GetAssertionExtensionsDraft {
+  return {
+    getCredentialBlob: { included: false, value: true },
+    hmacSecret: {
+      included: false,
+      salt1Hex: randomHex(32, randomSource),
+      salt2Enabled: false,
+      salt2Hex: "",
+    },
+    prf: {
+      included: false,
+      useGlobalEval: false,
+      eval: prfValues("authentication-prf"),
+      evalByCredential: [],
+    },
+  };
+}
 
 function optionDefaults(presetID: LabPresetID) {
   const make = {
@@ -167,6 +300,9 @@ export function createPresetState(
   getClientData.rawJSON = buildClientDataJSON("get", getClientData);
 
   return {
+    activeOperation: "make",
+    makeSection: "basics",
+    getSection: "basics",
     presetID,
     isCustom: false,
     pendingPresetID: null,
@@ -181,6 +317,7 @@ export function createPresetState(
       excludeList: [],
       ...options.make,
       verificationFlow: VerificationFlow.VerificationFlowDefault,
+      extensions: makeExtensionDefaults(randomSource),
     },
     getDraft: {
       rpID: "example.com",
@@ -188,6 +325,7 @@ export function createPresetState(
       allowList: [],
       ...options.get,
       verificationFlow: VerificationFlow.VerificationFlowDefault,
+      extensions: getExtensionDefaults(randomSource),
     },
     makeStep: { phase: "editing" },
     getStep: { phase: "editing" },

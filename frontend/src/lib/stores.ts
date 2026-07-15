@@ -58,7 +58,7 @@ export const sessionBusy = readonly(session.sessionBusy);
 export const activeScreen = readonly(workbench.activeScreen);
 export const statusBar = readonly(workbench.statusBar);
 
-export const overviewInspection = readonly(overview.overviewInspection);
+export const authenticatorInspection = readonly(session.authenticatorInspection);
 export const overviewBioSensor = readonly(overview.overviewBioSensor);
 export const overviewMDS = readonly(overview.overviewMDS);
 

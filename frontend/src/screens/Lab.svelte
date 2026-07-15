@@ -6,10 +6,12 @@
   import LabHeader from "$lib/components/lab/LabHeader.svelte";
   import MakeCredentialStep from "$lib/components/lab/MakeCredentialStep.svelte";
   import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
+  import * as Tabs from "$lib/components/ui/tabs/index.js";
   import {
     cancelLabHandoff,
     cancelLabPreset,
     confirmLabHandoff,
+    confirmLabGetAssertion,
     confirmLabMakeCredential,
     confirmLabPreset,
     editLabGetAssertion,
@@ -21,14 +23,19 @@
     regenerateLabGetChallenge,
     regenerateLabMakeChallenge,
     regenerateLabUserID,
+    reloadOverview,
     requestLabPreset,
     rerunLabGetAssertion,
     runLabGetAssertion,
+    selectLabGetSection,
+    selectLabMakeSection,
+    selectLabOperation,
     updateLabGetAssertionDraft,
     updateLabMakeCredentialDraft,
   } from "$lib/controller";
   import {
     labState,
+    authenticatorInspection,
     selectedDevice,
     selectedSelector,
     sessionBusy,
@@ -50,7 +57,6 @@
   async function focusGetAssertion() {
     await tick();
     const heading = document.getElementById("lab-get-assertion-heading");
-    heading?.scrollIntoView({ behavior: "smooth", block: "start" });
     heading?.focus({ preventScroll: true });
   }
 
@@ -88,30 +94,51 @@
       onPresetChange={(presetID: LabPresetID) => requestLabPreset(presetID)}
     />
 
-    <div class="lab-steps">
-      <MakeCredentialStep
-        lab={$labState}
-        disabled={controlsDisabled}
-        onDraftChange={updateLabMakeCredentialDraft}
-        onRegenerateUserID={regenerateLabUserID}
-        onRegenerateChallenge={regenerateLabMakeChallenge}
-        onPreview={previewLabMakeCredential}
-        onConfirm={confirmLabMakeCredential}
-        onEdit={editLabMakeCredential}
-        onNewRun={newLabMakeCredentialRun}
-        onHandoff={handleHandoff}
-      />
-      <GetAssertionStep
-        lab={$labState}
-        disabled={controlsDisabled}
-        onDraftChange={updateLabGetAssertionDraft}
-        onRegenerateChallenge={regenerateLabGetChallenge}
-        onRun={runLabGetAssertion}
-        onRunAgain={rerunLabGetAssertion}
-        onEdit={editLabGetAssertion}
-        onNewRun={newLabGetAssertionRun}
-      />
-    </div>
+    <Tabs.Root
+      value={$labState.activeOperation}
+      onValueChange={(operation) => {
+        if (operation === "make" || operation === "get") selectLabOperation(operation);
+      }}
+      class="lab-operation-tabs"
+    >
+      <Tabs.List aria-label={m.lab_title()}>
+        <Tabs.Trigger value="make">{m.lab_make_credential()}</Tabs.Trigger>
+        <Tabs.Trigger value="get">{m.lab_get_assertion()}</Tabs.Trigger>
+      </Tabs.List>
+      <Tabs.Content value="make" class="lab-operation-panel">
+        <MakeCredentialStep
+          lab={$labState}
+          inspection={$authenticatorInspection}
+          disabled={controlsDisabled}
+          onSectionChange={selectLabMakeSection}
+          onDraftChange={updateLabMakeCredentialDraft}
+          onRegenerateUserID={regenerateLabUserID}
+          onRegenerateChallenge={regenerateLabMakeChallenge}
+          onPreview={previewLabMakeCredential}
+          onConfirm={confirmLabMakeCredential}
+          onEdit={editLabMakeCredential}
+          onNewRun={newLabMakeCredentialRun}
+          onHandoff={handleHandoff}
+          onRetryInspection={reloadOverview}
+        />
+      </Tabs.Content>
+      <Tabs.Content value="get" class="lab-operation-panel">
+        <GetAssertionStep
+          lab={$labState}
+          inspection={$authenticatorInspection}
+          disabled={controlsDisabled}
+          onSectionChange={selectLabGetSection}
+          onDraftChange={updateLabGetAssertionDraft}
+          onRegenerateChallenge={regenerateLabGetChallenge}
+          onPreview={runLabGetAssertion}
+          onConfirm={confirmLabGetAssertion}
+          onRetry={rerunLabGetAssertion}
+          onEdit={editLabGetAssertion}
+          onNewRun={newLabGetAssertionRun}
+          onRetryInspection={reloadOverview}
+        />
+      </Tabs.Content>
+    </Tabs.Root>
   </section>
 
   <AlertDialog.Root open={presetDialogOpen} onOpenChange={handlePresetDialogChange}>
@@ -149,8 +176,7 @@
 
 <style>
 @layer blocks {
-  .lab-screen,
-  .lab-steps {
+  .lab-screen {
     display: grid;
     align-content: start;
     gap: var(--space-4);
@@ -162,11 +188,17 @@
     max-width: none;
   }
 
-  @container workspace (min-width: 64rem) {
-    .lab-steps {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-items: start;
-    }
+  :global(.lab-operation-tabs),
+  :global(.lab-operation-panel) {
+    min-width: 0;
+  }
+
+  :global(.lab-operation-tabs > [data-slot="tabs-list"]) {
+    width: min(30rem, 100%);
+  }
+
+  :global(.lab-operation-panel) {
+    padding-top: var(--space-3);
   }
 }
 </style>

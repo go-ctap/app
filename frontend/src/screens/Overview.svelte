@@ -12,7 +12,7 @@
   import { buildOverviewPresentation } from "$lib/overview-presentation";
   import {
     overviewBioSensor,
-    overviewInspection,
+    authenticatorInspection,
     overviewMDS,
     selectedDevice,
     selectedSelector,
@@ -25,7 +25,7 @@
     selectedSelector: $selectedSelector,
     selectedDevice: $selectedDevice,
     sessionBusy: $sessionBusy,
-    overviewState: $overviewInspection,
+    overviewState: $authenticatorInspection,
     overviewBioSensorState: $overviewBioSensor,
     overviewMDSState: $overviewMDS,
   }));

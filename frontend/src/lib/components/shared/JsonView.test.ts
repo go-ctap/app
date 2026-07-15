@@ -31,10 +31,13 @@ describe("JsonView", () => {
     expect(screen.queryByText("123456")).not.toBeInTheDocument();
     expect(screen.queryByText(/0011223344556677/)).not.toBeInTheDocument();
     expect(screen.queryByText(/ffeeddccbbaa9988/)).not.toBeInTheDocument();
-    expect(screen.getByText(/"pin": "\[redacted\]"/)).toBeInTheDocument();
-    expect(screen.getByText(/"encIdentifier": "\[redacted\]"/)).toBeInTheDocument();
-    expect(screen.getByText(/"encCredStoreState": "\[redacted\]"/)).toBeInTheDocument();
-    expect(screen.getByText(/"pinUvAuthToken": true/)).toBeInTheDocument();
+    const region = screen.getByRole("region", { name: "Raw JSON" });
+    await waitFor(() => expect(region.querySelector("pre.shiki")).toBeInTheDocument());
+    expect(region).toHaveTextContent(/"pin": "\[redacted\]"/);
+    expect(region).toHaveTextContent(/"encIdentifier": "\[redacted\]"/);
+    expect(region).toHaveTextContent(/"encCredStoreState": "\[redacted\]"/);
+    expect(region).toHaveTextContent(/"pinUvAuthToken": true/);
+    expect(region.querySelectorAll("pre.shiki span").length).toBeGreaterThan(1);
 
     screen.getByRole("button", { name: "Copy" }).click();
 

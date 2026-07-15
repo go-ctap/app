@@ -54,6 +54,7 @@ import { setAppLocale } from "./i18n";
 import {
   cancelLabHandoff,
   confirmLabHandoff,
+  confirmLabGetAssertion,
   confirmLabMakeCredential,
   confirmLabPreset,
   handoffLabCredential,
@@ -84,7 +85,7 @@ function makePreviewEnvelope(): MakeCredentialEnvelope {
     kind: OperationKind.OperationMakeCredential,
     result: {
       preview: {
-        device: { fingerprint: "token-1" },
+        device: new DeviceReport({ fingerprint: "token-1" }),
         rp: { id: "lab.example", name: "Lab" },
         user: { id: "AAECAw==", name: "alice", displayName: "Alice" },
         pubKeyCredParams: [{
@@ -127,6 +128,16 @@ function getResultEnvelope(rpID = "example.com"): GetAssertionEnvelope {
     sessionId: "session-1",
     kind: OperationKind.OperationGetAssertion,
     result: {
+      preview: {
+        device: new DeviceReport({ fingerprint: "token-1" }),
+        input: {
+          rpID,
+          clientDataJSON: "e30=",
+          allowList: [],
+          options: {},
+        },
+        warnings: [],
+      },
       result: {
         deviceFingerprint: "token-1",
         rpID,
@@ -328,18 +339,21 @@ describe("WebAuthn Lab request lifecycle", () => {
     failure.error = failureForCode(Code.CodeTransportFailure);
     const getAssertion = vi.spyOn(api, "getAssertion")
       .mockResolvedValueOnce(failure)
+      .mockResolvedValueOnce(getResultEnvelope())
       .mockResolvedValueOnce(getResultEnvelope());
 
     expect(await runLabGetAssertion()).toBe(false);
     const frozenRequest = getAssertion.mock.calls[0][0];
-    expect(frozenRequest).toEqual({
+    expect(frozenRequest).toMatchObject({
       sessionId: "session-1",
       rpID: "example.com",
       clientDataJSON: "e25vdC1qc29uCg==",
+      dryRun: true,
     });
     expect(get(labState).getStep).toMatchObject({
       phase: "error",
-      request: frozenRequest,
+      previewRequest: frozenRequest,
+      request: null,
     });
 
     expect(await rerunLabGetAssertion()).toBe(true);
@@ -347,6 +361,11 @@ describe("WebAuthn Lab request lifecycle", () => {
     expect(getAssertion.mock.calls[1][0]).toEqual(frozenRequest);
     expect(getAssertion.mock.calls[1][0]).not.toBe(frozenRequest);
     expect(getAssertion.mock.calls[1][0].clientDataJSON).toBe(frozenRequest.clientDataJSON);
+    expect(get(labState).getStep.phase).toBe("review");
+    expect(await confirmLabGetAssertion()).toBe(true);
+    expect(getAssertion).toHaveBeenCalledTimes(3);
+    expect(getAssertion.mock.calls[2][0]).toMatchObject({ dryRun: false });
+    expect(getAssertion.mock.calls[2][0].clientDataJSON).toBe(frozenRequest.clientDataJSON);
     expect(get(labState).getStep.phase).toBe("success");
   });
 
@@ -425,6 +444,7 @@ describe("WebAuthn Lab request lifecycle", () => {
     success.sessionId = "session-2";
     const getAssertion = vi.spyOn(api, "getAssertion")
       .mockResolvedValueOnce(invalidSession)
+      .mockResolvedValueOnce(success)
       .mockResolvedValueOnce(success);
     vi.spyOn(api, "sessions").mockResolvedValue([]);
     vi.spyOn(api, "closeAllSessions").mockResolvedValue([]);
@@ -455,6 +475,11 @@ describe("WebAuthn Lab request lifecycle", () => {
       sessionId: "session-2",
     });
     expect(getAssertion.mock.calls[1][0].clientDataJSON).toBe(firstRequest.clientDataJSON);
+    expect(get(labState).getStep.phase).toBe("review");
+    expect(await confirmLabGetAssertion()).toBe(true);
+    expect(getAssertion).toHaveBeenCalledTimes(3);
+    expect(getAssertion.mock.calls[2][0]).toMatchObject({ sessionId: "session-2", dryRun: false });
+    expect(getAssertion.mock.calls[2][0].clientDataJSON).toBe(firstRequest.clientDataJSON);
     expect(get(labState).getStep.phase).toBe("success");
   });
 
@@ -588,6 +613,8 @@ describe("WebAuthn Lab credential handoff", () => {
       ...current,
       getStep: {
         phase: "success",
+        previewRequest: request,
+        previewEnvelope: getResultEnvelope("example.com"),
         request,
         responseEnvelope: getResultEnvelope("example.com"),
       },

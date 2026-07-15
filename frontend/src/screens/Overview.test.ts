@@ -11,7 +11,8 @@ import { InspectEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
-import { errorLoadState, overviewInspection } from "$lib/features/overview/state";
+import { errorLoadState } from "$lib/features/overview/state";
+import { authenticatorInspection } from "$lib/features/session/state";
 import { failureForCode } from "$lib/test-failure";
 import {
   resetAppStateForTest,
@@ -112,7 +113,7 @@ describe("Overview", () => {
       state: "ready",
       sessionId: "session-1",
     });
-    overviewInspection.set(errorLoadState(failureForCode(Code.CodeTransportFailure)));
+    authenticatorInspection.set(errorLoadState(failureForCode(Code.CodeTransportFailure)));
 
     render(Overview);
 

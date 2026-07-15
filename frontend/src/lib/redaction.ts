@@ -15,6 +15,10 @@ const SECRET_FIELD_NAMES = new Set([
   "resetPhrase",
   "encIdentifier",
   "encCredStoreState",
+  "output1Hex",
+  "output2Hex",
+  "first",
+  "second",
 ].map(normalizeFieldName));
 
 function normalizeFieldName(value: string) {

@@ -68,3 +68,14 @@ if (!HTMLElement.prototype.releasePointerCapture) {
     configurable: true,
   });
 }
+
+if (!("ResizeObserver" in globalThis)) {
+  Object.defineProperty(globalThis, "ResizeObserver", {
+    value: class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+    configurable: true,
+  });
+}

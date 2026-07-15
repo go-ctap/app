@@ -14,6 +14,7 @@ declare module "@wailsio/runtime" {
         interface CustomEvents {
             "ctapkit:discovery-changed": service$0.DiscoveryChangedEnvelope;
             "ctapkit:interaction-requested": service$0.InteractionPrompt;
+            "ctapkit:logs-changed": service$0.LogCursor;
             "ctapkit:operation-event": service$0.OperationEventEnvelope;
         }
     }

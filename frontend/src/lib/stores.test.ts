@@ -39,4 +39,36 @@ describe("sanitizedJson", () => {
       },
     });
   });
+
+  it("keeps spec-shaped PRF values out of sanitized JSON", () => {
+    const json = sanitizedJson({
+      request: {
+        salt1Hex: "11".repeat(32),
+        salt2Hex: "22".repeat(32),
+        first: "request-prf-input",
+        second: "request-prf-input-2",
+      },
+      result: {
+        output1Hex: "aa".repeat(32),
+        output2Hex: "bb".repeat(32),
+        first: "ee".repeat(32),
+        second: "ff".repeat(32),
+      },
+    });
+
+    expect(JSON.parse(json)).toEqual({
+      request: {
+        salt1Hex: "11".repeat(32),
+        salt2Hex: "22".repeat(32),
+        first: "[redacted]",
+        second: "[redacted]",
+      },
+      result: {
+        output1Hex: "[redacted]",
+        output2Hex: "[redacted]",
+        first: "[redacted]",
+        second: "[redacted]",
+      },
+    });
+  });
 });

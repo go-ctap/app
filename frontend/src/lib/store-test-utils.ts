@@ -21,7 +21,6 @@ import {
   errorLoadState,
   idleLoadState,
   overviewBioSensor,
-  overviewInspection,
   overviewMDS,
   readyLoadState,
   resetOverviewStateForTest,
@@ -33,6 +32,7 @@ import {
   resetPasskeysStateForTest,
 } from "./features/passkeys/state.js";
 import {
+  authenticatorInspection,
   devices,
   selectedDevice,
   selectedSelector,
@@ -78,10 +78,10 @@ export function seedPendingInteractionForTest(prompt: InteractionPrompt | null) 
 
 export function seedOverviewEnvelopeForTest(envelope: InspectEnvelope | null) {
   if (!envelope) {
-    overviewInspection.set(idleLoadState());
+    authenticatorInspection.set(idleLoadState());
     return;
   }
-  overviewInspection.set(
+  authenticatorInspection.set(
     envelope.error
       ? errorLoadState(envelope.error, envelope)
       : readyLoadState(envelope),

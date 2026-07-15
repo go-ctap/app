@@ -9,7 +9,7 @@ import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { Severity, Warning } from "../../bindings/github.com/go-ctap/kit/model/safety";
 import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/credential";
 import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import { MakeCredentialPreview } from "../../bindings/github.com/go-ctap/kit/model/webauthn";
+import { MakeCredentialInput, MakeCredentialPreview } from "../../bindings/github.com/go-ctap/kit/model/webauthn";
 import {
   MakeCredentialEnvelope,
   MakeCredentialRequest,
@@ -68,7 +68,8 @@ describe("WebAuthn Lab screen", () => {
     expect(screen.queryByRole("heading", { name: "WebAuthn Lab" })).not.toBeInTheDocument();
   });
 
-  it("renders the default preset and both ordered steps", () => {
+  it("renders operation tabs and preserves the independent drafts", async () => {
+    const user = userEvent.setup();
     selectToken();
     render(Lab);
 
@@ -79,15 +80,108 @@ describe("WebAuthn Lab screen", () => {
     expect(screen.getByText("Test authenticator")).toBeInTheDocument();
     expect(screen.queryByText("1. Test authenticator")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Preset" })).toHaveTextContent("Discoverable passkey");
-    expect(screen.getByRole("heading", { level: 2, name: "1. MakeCredential" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "2. GetAssertion" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "MakeCredential" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "GetAssertion" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "MakeCredential" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 2, name: "GetAssertion" })).not.toBeInTheDocument();
 
-    const make = stepCard("1. MakeCredential");
-    const assertion = stepCard("2. GetAssertion");
+    const make = stepCard("MakeCredential");
     expect(within(make).getByLabelText("RP name")).toHaveValue("Example");
     expect((within(make).getByLabelText("User ID hex") as HTMLInputElement).value).toMatch(/^[0-9a-f]{32}$/);
+    await user.clear(within(make).getByLabelText("RP name"));
+    await user.type(within(make).getByLabelText("RP name"), "Edited make RP");
+
+    await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
+    const assertion = stepCard("GetAssertion");
     expect(within(assertion).getByLabelText("RP ID")).toHaveValue("example.com");
     expect(within(assertion).getByText(/Leave empty to let the authenticator choose/)).toBeInTheDocument();
+    await user.clear(within(assertion).getByLabelText("RP ID"));
+    await user.type(within(assertion).getByLabelText("RP ID"), "get.example.com");
+
+    await user.click(screen.getByRole("tab", { name: "MakeCredential" }));
+    expect(within(stepCard("MakeCredential")).getByLabelText("RP name")).toHaveValue("Edited make RP");
+    await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
+    expect(within(stepCard("GetAssertion")).getByLabelText("RP ID")).toHaveValue("get.example.com");
+  });
+
+  it("groups WebAuthn and CTAP extensions while keeping include separate from expand", async () => {
+    const user = userEvent.setup();
+    selectToken();
+    render(Lab);
+
+    const make = stepCard("MakeCredential");
+    const basics = within(make).getByRole("tab", { name: "Basics" });
+    basics.focus();
+    await user.keyboard("{ArrowRight}");
+
+    const extensions = within(make).getByRole("tab", { name: "Extensions · 0" });
+    expect(extensions).toHaveFocus();
+    expect(extensions).toHaveAttribute("aria-selected", "true");
+    expect(within(make).getByRole("heading", { name: "WebAuthn client extensions" })).toBeInTheDocument();
+    expect(within(make).getByRole("heading", { name: "CTAP authenticator extensions" })).toBeInTheDocument();
+    expect(within(make).getByRole("button", { name: /prf.*client-side/i })).toBeInTheDocument();
+
+    const includeCredProps = within(make).getByRole("switch", { name: "Include credProps" });
+    const expandCredProps = within(make).getByRole("button", { name: /credProps/i });
+    expect(includeCredProps).not.toBe(expandCredProps);
+    expect(expandCredProps).toHaveAttribute("aria-expanded", "false");
+
+    await user.click(includeCredProps);
+    expect(within(make).getByRole("tab", { name: "Extensions · 1" })).toBeInTheDocument();
+    expect(expandCredProps).toHaveAttribute("aria-expanded", "true");
+    expect(within(make).queryByRole("switch", { name: "Enabled" })).not.toBeInTheDocument();
+    expect(within(make).getByRole("switch", { name: "Include credProtect" })).toBeEnabled();
+    expect(within(make).getByRole("switch", { name: "Include credBlob" })).toBeEnabled();
+    expect(within(make).getByRole("switch", { name: "Include hmac-secret" })).toBeEnabled();
+    expect(within(make).getByRole("switch", { name: "Include hmac-secret-mc" })).toBeEnabled();
+    expect(within(make).queryByText("hmacCreateSecret")).toBeNull();
+    expect(within(make).getByRole("switch", { name: "Include largeBlob" })).toBeDisabled();
+    expect(within(make).getByRole("switch", { name: "Include payment" })).toBeDisabled();
+
+    await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
+    const assertion = stepCard("GetAssertion");
+    await user.click(within(assertion).getByRole("tab", { name: "Extensions · 0" }));
+    expect(within(assertion).getByRole("heading", { name: "WebAuthn client extensions" })).toBeInTheDocument();
+    expect(within(assertion).getByRole("heading", { name: "CTAP authenticator extensions" })).toBeInTheDocument();
+    const includePRF = within(assertion).getByRole("switch", { name: "Include prf" });
+    expect(includePRF).toBeEnabled();
+    expect(within(assertion).getByRole("button", { name: /prf.*client-side/i })).toBeInTheDocument();
+    expect(within(assertion).getByRole("switch", { name: "Include getCredBlob" })).toBeEnabled();
+    expect(within(assertion).getByRole("switch", { name: "Include hmac-secret" })).toBeEnabled();
+    expect(within(assertion).getByRole("switch", { name: "Include largeBlob" })).toBeDisabled();
+    expect(within(assertion).getByRole("switch", { name: "Include payment" })).toBeDisabled();
+
+    await user.click(includePRF);
+    const addOverride = within(assertion).getByRole("button", { name: "Add credential override" });
+    expect(addOverride).toBeDisabled();
+    expect(within(assertion).getByText(/requires exactly one allow-list credential/)).toBeInTheDocument();
+
+    mutableLabState.update((state) => ({
+      ...state,
+      getDraft: {
+        ...state.getDraft,
+        allowList: [{ credentialIDHex: "aabb", transports: [] }],
+      },
+    }));
+    await tick();
+    expect(addOverride).toBeEnabled();
+    await user.click(addOverride);
+    expect(get(mutableLabState).getDraft.extensions.prf.evalByCredential).toHaveLength(1);
+    expect(addOverride).toBeDisabled();
+
+    await user.click(within(assertion).getByRole("button", { name: "Remove" }));
+    mutableLabState.update((state) => ({
+      ...state,
+      getDraft: {
+        ...state.getDraft,
+        allowList: [
+          { credentialIDHex: "aabb", transports: [] },
+          { credentialIDHex: "ccdd", transports: [] },
+        ],
+      },
+    }));
+    await tick();
+    expect(addOverride).toBeDisabled();
   });
 
   it("runs the primary action on single-line Enter but preserves textarea Enter", async () => {
@@ -96,7 +190,7 @@ describe("WebAuthn Lab screen", () => {
     mutableLabState.set(createPresetState("minimal"));
     render(Lab);
 
-    const make = stepCard("1. MakeCredential");
+    const make = stepCard("MakeCredential");
     const rpName = within(make).getByLabelText("RP name");
     rpName.focus();
     await user.keyboard("{Enter}");
@@ -111,7 +205,7 @@ describe("WebAuthn Lab screen", () => {
       },
     }));
     await tick();
-    await user.click(within(make).getByRole("button", { name: "Advanced request" }));
+    await user.click(within(make).getByRole("tab", { name: "Advanced" }));
     const raw = within(make).getByLabelText("Raw client data JSON");
     expect(await fireEvent.keyDown(raw, { key: "Enter" })).toBe(true);
     expect(controllerMocks.previewMakeCredential).not.toHaveBeenCalled();
@@ -120,16 +214,18 @@ describe("WebAuthn Lab screen", () => {
     expect(controllerMocks.previewMakeCredential).toHaveBeenCalledOnce();
   });
 
-  it("locks both steps while the shared authenticator session is running", () => {
+  it("locks action controls in both operation tabs while the session is running", async () => {
+    const user = userEvent.setup();
     seedSelectionForTest(token.fingerprint, token, { state: "running", sessionId: "session-1" });
     render(Lab);
 
-    const make = stepCard("1. MakeCredential");
-    const assertion = stepCard("2. GetAssertion");
+    const make = stepCard("MakeCredential");
     expect(within(make).getByLabelText("RP ID")).toBeDisabled();
-    expect(within(assertion).getByLabelText("RP ID")).toBeDisabled();
     expect(within(make).getByRole("button", { name: "Preview" })).toBeDisabled();
-    expect(within(assertion).getByRole("button", { name: "Run GetAssertion" })).toBeDisabled();
+    await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
+    const assertion = stepCard("GetAssertion");
+    expect(within(assertion).getByLabelText("RP ID")).toBeDisabled();
+    expect(within(assertion).getByRole("button", { name: "Preview" })).toBeDisabled();
   });
 
   it("keeps the reviewed request visible and locks its draft", () => {
@@ -150,9 +246,11 @@ describe("WebAuthn Lab screen", () => {
       result: {
         preview: new MakeCredentialPreview({
           device: token,
-          rp: { id: "example.com", name: "Example" },
-          user: { id: "AA==", name: "alice@example.com", displayName: "Alice" },
-          pubKeyCredParams: [{ type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 }],
+          input: new MakeCredentialInput({
+            rp: { id: "example.com", name: "Example" },
+            user: { id: "AA==", name: "alice@example.com", displayName: "Alice" },
+            pubKeyCredParams: [{ type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 }],
+          }),
           warnings: [new Warning({
             severity: Severity.SeverityWarning,
             code: "webauthn.make_credential.mutation",
@@ -181,12 +279,12 @@ describe("WebAuthn Lab screen", () => {
 
     render(Lab);
 
-    const make = stepCard("1. MakeCredential");
-    expect(within(make).getByLabelText("RP ID")).toBeDisabled();
+    const make = stepCard("MakeCredential");
+    expect(within(make).queryByLabelText("RP ID")).not.toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "Reviewed snapshot" })).toBeInTheDocument();
-    expect(within(make).getByRole("button", { name: "Typed preview" })).toBeInTheDocument();
-    expect(within(make).getByRole("button", { name: "Confirm" })).toBeInTheDocument();
-    expect(within(make).getAllByText(/not valid JSON/).length).toBeGreaterThan(0);
+    expect(within(make).getByRole("button", { name: "View" })).toBeInTheDocument();
+    expect(within(make).getByRole("button", { name: "Execute" })).toBeInTheDocument();
+    expect(within(make).queryByText(/not valid JSON/)).not.toBeInTheDocument();
     expect(within(make).getByText("A new credential may be created on this authenticator.")).toBeInTheDocument();
     expect(within(make).queryByText("webauthn.make_credential.mutation")).not.toBeInTheDocument();
   });
@@ -209,9 +307,11 @@ describe("WebAuthn Lab screen", () => {
       result: {
         preview: new MakeCredentialPreview({
           device: token,
-          rp: { id: "example.com", name: "Example" },
-          user: { id: "AA==", name: "alice@example.com", displayName: "Alice" },
-          pubKeyCredParams: [{ type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 }],
+          input: new MakeCredentialInput({
+            rp: { id: "example.com", name: "Example" },
+            user: { id: "AA==", name: "alice@example.com", displayName: "Alice" },
+            pubKeyCredParams: [{ type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 }],
+          }),
         }),
         result: null,
       },
@@ -240,10 +340,14 @@ describe("WebAuthn Lab screen", () => {
     });
     render(Lab);
 
-    const make = stepCard("1. MakeCredential");
+    const make = stepCard("MakeCredential");
     expect(within(make).getByRole("button", { name: "Edit" })).toBeInTheDocument();
-    expect(within(make).getByRole("button", { name: "Preview" })).toBeInTheDocument();
-    expect(within(make).queryByRole("button", { name: "Confirm" })).not.toBeInTheDocument();
+    expect(within(make).getByRole("button", { name: "Retry preview" })).toBeInTheDocument();
+    expect(within(make).queryByRole("button", { name: "Execute" })).not.toBeInTheDocument();
+    const failedPreviewRP = within(make).getByLabelText("RP ID");
+    expect(failedPreviewRP).toBeEnabled();
+    await fireEvent.input(failedPreviewRP, { target: { value: "edited.example.com" } });
+    expect(get(mutableLabState).makeStep.phase).toBe("editing");
 
     mutableLabState.update((state) => ({
       ...state,
@@ -262,8 +366,8 @@ describe("WebAuthn Lab screen", () => {
       },
     }));
     await tick();
-    expect(within(make).getByRole("button", { name: "Confirm" })).toBeInTheDocument();
-    expect(within(make).queryByRole("button", { name: "Preview" })).not.toBeInTheDocument();
+    expect(within(make).getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    expect(within(make).queryByRole("button", { name: "Retry preview" })).not.toBeInTheDocument();
     expect(within(make).getByRole("button", { name: "Edit" })).toBeInTheDocument();
   });
 
@@ -272,7 +376,7 @@ describe("WebAuthn Lab screen", () => {
     selectToken();
     render(Lab);
 
-    const make = stepCard("1. MakeCredential");
+    const make = stepCard("MakeCredential");
     await user.clear(within(make).getByLabelText("RP name"));
     await user.type(within(make).getByLabelText("RP name"), "Edited");
 

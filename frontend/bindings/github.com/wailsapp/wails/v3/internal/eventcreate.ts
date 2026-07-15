@@ -14,13 +14,15 @@ function configure() {
     Object.freeze(Object.assign($Create.Events, {
         "ctapkit:discovery-changed": $$createType0,
         "ctapkit:interaction-requested": $$createType1,
-        "ctapkit:operation-event": $$createType2,
+        "ctapkit:logs-changed": $$createType2,
+        "ctapkit:operation-event": $$createType3,
     }));
 }
 
 // Private type creation functions
 const $$createType0 = service$0.DiscoveryChangedEnvelope.createFrom;
 const $$createType1 = service$0.InteractionPrompt.createFrom;
-const $$createType2 = service$0.OperationEventEnvelope.createFrom;
+const $$createType2 = service$0.LogCursor.createFrom;
+const $$createType3 = service$0.OperationEventEnvelope.createFrom;
 
 configure();

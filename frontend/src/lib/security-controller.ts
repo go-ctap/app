@@ -66,6 +66,7 @@ import {
 import { selectedSelector, sessionStatus } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { failureMessage, internalFailure, runtimeFailureFrom } from "./failure.js";
+import { effectiveClientPINMaxLength } from "./pin-policy.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
 import { rediscoverAfterFactoryReset } from "./session-controller.js";
 import {
@@ -324,7 +325,7 @@ export function validatePINPolicyDraft(
   if (current !== null && current !== undefined && normalized.minPINLength < current) {
     return "min-pin-length-decrease";
   }
-  const maximum = report?.pin.maxPINLength;
+  const maximum = report ? effectiveClientPINMaxLength(report.pin) : undefined;
   if (maximum !== null && maximum !== undefined && normalized.minPINLength > maximum) {
     return "min-pin-length-too-large";
   }

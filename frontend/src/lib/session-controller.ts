@@ -65,9 +65,14 @@ function discoverySnapshot(
   return discovery;
 }
 
-async function closeOpenSessions() {
+async function closeOpenSessions(options: { continueAfterTransportCloseFailure?: boolean } = {}) {
   try {
     await api.closeAllSessions();
+  } catch (error) {
+    const closeFailure = runtimeFailureFrom(error);
+    if (!options.continueAfterTransportCloseFailure || closeFailure.code !== Code.CodeTransportFailure) {
+      throw error;
+    }
   } finally {
     finishOperation();
   }
@@ -87,7 +92,10 @@ async function openSessionForDevice(devices: DeviceReport[], selector: string): 
     return discoverySnapshot(devices, canonicalSelector, current.info.device, statusFromSession(current));
   }
 
-  await closeOpenSessions();
+  // CloseAllSessions detaches every managed session before closing the
+  // underlying handles. A transport error from that final physical close is
+  // still logged, but must not prevent opening the newly selected device.
+  await closeOpenSessions({ continueAfterTransportCloseFailure: true });
   const snapshot = await api.openSession({ selector: canonicalSelector });
   return discoverySnapshot(devices, canonicalSelector, snapshot.info.device, statusFromSession(snapshot));
 }

@@ -33,6 +33,7 @@ describe("AppSidebar", () => {
       "Large blobs",
       "Security",
       "WebAuthn Lab",
+      "Logs",
       "Settings",
     ]);
 
@@ -40,12 +41,14 @@ describe("AppSidebar", () => {
     await user.click(screen.getByRole("button", { name: "WebAuthn Lab" }));
     await user.click(screen.getByRole("button", { name: "Large blobs" }));
     await user.click(screen.getByRole("button", { name: "Security" }));
+    await user.click(screen.getByRole("button", { name: "Logs" }));
     await user.click(screen.getByRole("button", { name: "Settings" }));
 
     expect(onNavigate).toHaveBeenCalledWith("passkeys");
     expect(onNavigate).toHaveBeenCalledWith("lab");
     expect(onNavigate).toHaveBeenCalledWith("large-blobs");
     expect(onNavigate).toHaveBeenCalledWith("security");
+    expect(onNavigate).toHaveBeenCalledWith("logs");
     expect(onNavigate).toHaveBeenCalledWith("settings");
   });
 

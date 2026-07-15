@@ -26,4 +26,14 @@ describe("warningMessage", () => {
       message: "Future warning message",
     }))).toBe("Future warning message");
   });
+
+  it("localizes WebAuthn capability warnings while preserving execution semantics", () => {
+    setAppLocale("ru");
+
+    expect(warningMessage(new Warning({
+      severity: Severity.SeverityWarning,
+      code: "webauthn.extension.hmac_secret_mc.not_advertised",
+      message: "backend fallback",
+    }))).toBe("Аутентификатор не объявил hmac-secret-mc; отправка всё равно разрешена, а ответ устройства остаётся определяющим.");
+  });
 });

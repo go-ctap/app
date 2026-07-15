@@ -1,5 +1,7 @@
 import { System } from "@wailsio/runtime";
 
+import { runtimeCall } from "./features/logs/state.svelte.js";
+
 export type WindowPlatform = "linux" | "macos" | "windows";
 
 export function windowPlatformFromOS(os: string): WindowPlatform | null {
@@ -23,5 +25,7 @@ export function detectWindowPlatform(): WindowPlatform | null {
 }
 
 export async function resolveWindowPlatform(): Promise<WindowPlatform | null> {
-  return detectWindowPlatform() ?? windowPlatformFromOS((await System.Environment()).OS);
+  const detected = detectWindowPlatform();
+  if (detected) return detected;
+  return runtimeCall("wails.system.environment", async () => windowPlatformFromOS((await System.Environment()).OS));
 }

@@ -1,17 +1,19 @@
 import { Window as WailsWindow } from "@wailsio/runtime";
 
+import { runtimeCall } from "$lib/features/logs/state.svelte.js";
+
 export function minimizeWindow() {
-  return WailsWindow.Minimise();
+  return runtimeCall("wails.window.minimize", () => WailsWindow.Minimise());
 }
 
 export function toggleMaximizeWindow() {
-  return WailsWindow.ToggleMaximise();
+  return runtimeCall("wails.window.toggleMaximize", () => WailsWindow.ToggleMaximise());
 }
 
 export function closeWindow() {
-  return WailsWindow.Close();
+  return runtimeCall("wails.window.close", () => WailsWindow.Close());
 }
 
 export function isWindowMaximized() {
-  return WailsWindow.IsMaximised();
+  return runtimeCall("wails.window.isMaximized", () => WailsWindow.IsMaximised());
 }

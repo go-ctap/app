@@ -26,6 +26,12 @@ const warningMessages: Readonly<Record<string, () => string>> = {
   "reset.factory.credentials": m.security_warning_reset_credentials,
   "reset.factory.destructive": m.security_warning_reset_destructive,
   "reset.factory.power_up_window": m.security_warning_reset_power_up,
+  "webauthn.extension.cred_blob.not_advertised": m.warning_webauthn_extension_cred_blob_not_advertised,
+  "webauthn.extension.cred_protect.not_advertised": m.warning_webauthn_extension_cred_protect_not_advertised,
+  "webauthn.extension.hmac_secret.not_advertised": m.warning_webauthn_extension_hmac_secret_not_advertised,
+  "webauthn.extension.hmac_secret_mc.not_advertised": m.warning_webauthn_extension_hmac_secret_mc_not_advertised,
+  "webauthn.extension.min_pin_length.not_advertised": m.warning_webauthn_extension_min_pin_length_not_advertised,
+  "webauthn.extension.pin_complexity_policy.not_advertised": m.warning_webauthn_extension_pin_complexity_policy_not_advertised,
   "webauthn.make_credential.mutation": m.warning_webauthn_make_credential_mutation,
 };
 

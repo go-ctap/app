@@ -41,7 +41,7 @@ const token = new DeviceReport({
   product: "Test authenticator",
 });
 
-function statusEnvelope(): ConfigStatusEnvelope {
+function statusEnvelope(maxPINLength: number | null = 63): ConfigStatusEnvelope {
   const unsupported = new CapabilityState({
     state: StateValue.StateUnsupported,
     supported: false,
@@ -54,7 +54,7 @@ function statusEnvelope(): ConfigStatusEnvelope {
       configured: true,
       protocolSupported: true,
       minPINLength: 4,
-      maxPINLength: 63,
+      maxPINLength,
       retries: new RetryState({ state: StateValue.StateConfigured, remaining: 8 }),
     }),
     uv: new UVStatus({
@@ -83,7 +83,7 @@ function statusEnvelope(): ConfigStatusEnvelope {
     resetHints: new ResetHints({ longTouchForReset: StateValue.StateSupported }),
     limits: new LimitsStatus({
       minPINLength: 4,
-      maxPINLength: 63,
+      maxPINLength,
       maxRPIDsForSetMinPINLength: 3,
     }),
   });
@@ -112,6 +112,14 @@ describe("Security screen", () => {
     expect(screen.getByText(/Client PIN or built-in UV/)).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "Always UV" })).toBeEnabled();
     expect(screen.getByRole("heading", { name: "Factory reset" })).toBeInTheDocument();
+  });
+
+  it("shows and enforces the CTAP default maximum PIN length when it is not reported", () => {
+    completeSecurityStatusLoad(statusEnvelope(null));
+    render(Security);
+
+    expect(screen.getByRole("spinbutton", { name: "Minimum PIN length" })).toHaveAttribute("max", "63");
+    expect(screen.getByText(/Maximum PIN length: 63/)).toBeInTheDocument();
   });
 
   it("keeps a status-load failure out of the empty state", () => {

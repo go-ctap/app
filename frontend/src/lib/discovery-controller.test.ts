@@ -31,7 +31,7 @@ import {
 import {
   devices,
   largeBlobsInventoryState,
-  overviewInspection,
+  authenticatorInspection,
   passkeysInventoryState,
   pendingInteraction,
   selectedDevice,
@@ -164,7 +164,7 @@ describe("discovery controller", () => {
       state: "ready",
       sessionId: "session-token-1",
     });
-    expect(get(overviewInspection).data).toBe(inspection);
+    expect(get(authenticatorInspection).data).toBe(inspection);
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(inventory);
     expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).toBe(largeBlobs);
     expect(get(pendingInteraction)).toBe(prompt);
@@ -218,7 +218,7 @@ describe("discovery controller", () => {
     expect(get(devices)).toEqual([selected]);
     expect(get(selectedSelector)).toBe("token-1");
     expect(get(sessionStatus).sessionId).toBe("session-token-1");
-    expect(get(overviewInspection).data).toBe(inspection);
+    expect(get(authenticatorInspection).data).toBe(inspection);
   });
 
   it("selects the first remaining authenticator when the selected one disappears", async () => {
@@ -271,7 +271,7 @@ describe("discovery controller", () => {
     expect(get(sessionStatus)).toMatchObject({ state: "idle" });
     expect(get(sessionStatus).sessionId).toBeUndefined();
     expect(get(pendingInteraction)).toBeNull();
-    expect(get(overviewInspection).data).toBeNull();
+    expect(get(authenticatorInspection).data).toBeNull();
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBeNull();
     expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).toBeNull();
     expect(get(statusBar).activeOperation).toBeNull();
@@ -307,7 +307,7 @@ describe("discovery controller", () => {
     handleDiscoveryChanged(event({ devices: [token] }, null, "monitor"));
 
     expect(get(sessionStatus).sessionId).toBe("session-token-1");
-    expect(get(overviewInspection).data).toBe(inspection);
+    expect(get(authenticatorInspection).data).toBe(inspection);
     expect(get(statusBar).lastOutcome).toMatchObject({ tone: "info" });
   });
 

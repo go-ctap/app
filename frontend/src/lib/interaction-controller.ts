@@ -1,10 +1,10 @@
 import { get } from "svelte/store";
 
 import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
-import { ResolveInteraction } from "../../bindings/fidobench/ctapkitservice";
 import type { InteractionAnswer, InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { m } from "../paraglide/messages.js";
+import { api } from "./api.js";
 import { runtimeFailureFrom } from "./failure.js";
 import { pendingInteraction } from "./features/interaction/state.js";
 import { sessionStatus } from "./features/session/state.js";
@@ -16,7 +16,7 @@ export async function answerPendingInteraction(answer: InteractionAnswer) {
   const label = get(statusBar).activeOperation?.label ?? m.operation_running();
   const interactionId = answer.interactionId;
   try {
-    const resolution = ResolveInteraction(answer);
+    const resolution = api.resolveInteraction(answer);
     if (answer.pin) answer.pin = "";
     const accepted = await resolution;
     pendingInteraction.update((prompt) => prompt?.interactionId === interactionId ? null : prompt);

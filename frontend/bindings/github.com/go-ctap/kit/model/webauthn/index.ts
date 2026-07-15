@@ -4,7 +4,24 @@
 export {
     Assertion,
     AuthenticatorOptions,
+    CredentialBlobCreateOutput,
+    CredentialBlobGetOutput,
+    CredentialProtectionOutput,
+    GetAssertionClientExtensionResults,
+    GetAssertionExtensionResults,
+    GetAssertionInput,
+    GetAssertionPRFOutput,
+    GetAssertionPreview,
     GetAssertionResult,
+    HMACSecretCreateOutput,
+    HMACSecretOutput,
+    MakeCredentialAuthenticatorExtensionOutputs,
+    MakeCredentialClientExtensionResults,
+    MakeCredentialExtensionResults,
+    MakeCredentialInput,
+    MakeCredentialPRFOutput,
     MakeCredentialPreview,
-    MakeCredentialResult
+    MakeCredentialResult,
+    MinPINLengthOutput,
+    PINComplexityPolicyOutput
 } from "./models.js";
