@@ -10,7 +10,7 @@
   import * as Card from "$lib/components/ui/card/index.js";
   import { Spinner } from "$lib/components/ui/spinner/index.js";
   import { getAssertionPreview, getAssertionResult, operationError } from "$lib/ctapkit-results";
-  import type { GetAssertionDraft, LabConfigureSection, LabState } from "$lib/features/lab/state";
+  import type { GetAssertionDraft, LabState } from "$lib/features/lab/state";
   import { failureMessage as localizeFailure } from "$lib/failure";
   import { validateGetAssertionDraft } from "$lib/lab-input";
   import type { LoadState } from "$lib/load-state";
@@ -27,7 +27,6 @@
     lab: LabState;
     inspection: LoadState<InspectEnvelope>;
     disabled?: boolean;
-    onSectionChange: (section: LabConfigureSection) => void;
     onDraftChange: (patch: Partial<GetAssertionDraft>) => void;
     onRegenerateChallenge: () => void;
     onPreview: () => void | Promise<boolean>;
@@ -42,7 +41,6 @@
     lab,
     inspection,
     disabled = false,
-    onSectionChange,
     onDraftChange,
     onRegenerateChallenge,
     onPreview,
@@ -84,15 +82,8 @@
     return m.lab_phase_editing();
   }
 
-  function sectionForField(field: string): LabConfigureSection {
-    if (field.includes(".extensions.")) return "extensions";
-    if (field.endsWith("rawJSON")) return "advanced";
-    return "basics";
-  }
-
   async function handlePreview() {
     if (!validation.valid) {
-      onSectionChange(sectionForField(validation.errors[0].field));
       await tick();
       document.querySelector<HTMLElement>("#lab-get-configure [aria-invalid='true']")?.focus();
       return;
@@ -124,12 +115,10 @@
         <LabValidationIssues issues={validation.warnings} severity="warning" />
         <GetAssertionConfigure
           {draft}
-          section={lab.getSection}
           disabled={disabled || phase === "previewing"}
           errors={validation.errors}
           warnings={validation.warnings}
           {inspection}
-          {onSectionChange}
           {onDraftChange}
           {onRegenerateChallenge}
           onPrimary={handlePreview}

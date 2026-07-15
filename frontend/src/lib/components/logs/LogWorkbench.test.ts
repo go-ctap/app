@@ -65,6 +65,21 @@ function appendEntry(sequence: number, values: Partial<LogEntry>) {
   }));
 }
 
+function layoutRect(element: HTMLElement) {
+  const height = element.hasAttribute("data-index") ? 64 : 800;
+  return {
+    x: 0,
+    y: 0,
+    top: 0,
+    right: 1_200,
+    bottom: height,
+    left: 0,
+    width: 1_200,
+    height,
+    toJSON: () => ({}),
+  } as DOMRect;
+}
+
 describe("LogWorkbench", () => {
   beforeEach(() => {
     setAppLocale("en");
@@ -73,6 +88,13 @@ describe("LogWorkbench", () => {
     logController.setFilters({ level: "all", layer: "all", outcome: "all" });
     vi.spyOn(api, "clearLogs").mockResolvedValue(new LogCursor({ sequence: 1 }));
     vi.spyOn(api, "readLogs").mockResolvedValue(new LogJournalBatch({ cursor: 1 }));
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      return layoutRect(this);
+    });
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this.hasAttribute("data-index") ? 64 : 800;
+    });
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(1_200);
   });
 
   afterEach(() => {
@@ -195,10 +217,7 @@ describe("LogWorkbench", () => {
 
     const overviewRows = screen.getAllByRole("button", { name: /Operation: Overview/ });
     const previous = overviewRows[0];
-    const next = overviewRows.at(-1);
     const parent = screen.getByRole("button", { name: "Operation: Credential inventory" });
-    const scrollIntoView = vi.fn();
-    parent.scrollIntoView = scrollIntoView;
 
     expect(screen.getByRole("button", {
       name: "Expand events for Operation: Credential inventory",
@@ -208,7 +227,6 @@ describe("LogWorkbench", () => {
     await fireEvent.pointerMove(window, { clientX: 120, clientY: 80 });
     await user.keyboard("{Alt>}{ArrowUp}{/Alt}");
     expect(parent).toHaveAttribute("aria-pressed", "true");
-    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
     expect(container.querySelector(".log-workbench"))
       .toHaveAttribute("data-keyboard-navigation", "true");
 
@@ -265,7 +283,8 @@ describe("LogWorkbench", () => {
       .toHaveAttribute("aria-pressed", "true");
 
     await user.keyboard("{Alt>}{ArrowRight}{/Alt}");
-    expect(next).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getAllByRole("button", { name: /Operation: Overview/ }).at(-1))
+      .toHaveAttribute("aria-pressed", "true");
   });
 
   it("groups correlated CTAP failures under their failed application operation", async () => {
@@ -349,7 +368,6 @@ describe("LogWorkbench", () => {
     logController.setFilters({ level: "all", layer: LogLayer.LogLayerCTAP, outcome: "all" });
 
     await waitFor(() => {
-      expect(screen.getByText("1 of 2 entries")).toBeInTheDocument();
       expect(screen.getByRole("button", {
         name: "Collapse events for Operation: Credential inventory",
       })).toHaveAttribute("aria-expanded", "true");
@@ -375,5 +393,36 @@ describe("LogWorkbench", () => {
 
     render(LogWorkbench);
     expect(screen.getByText("Earlier log entries are no longer available")).toBeInTheDocument();
+  });
+
+  it("renders only the visible window for a large journal", async () => {
+    for (let sequence = 1; sequence <= 200; sequence += 1) appendOperation(sequence);
+    logController.setFollowLive(false);
+
+    const { container } = render(LogWorkbench);
+
+    await waitFor(() => {
+      const renderedRows = container.querySelectorAll(".log-virtual-row");
+      expect(renderedRows.length).toBeGreaterThan(0);
+      expect(renderedRows.length).toBeLessThan(200);
+    });
+  });
+
+  it("scrolls the virtual journal to the end when Follow live is enabled", async () => {
+    const user = userEvent.setup();
+    appendOperation(1);
+    appendOperation(2);
+    logController.setFollowLive(false);
+
+    const { container } = render(LogWorkbench);
+    const viewport = container.querySelector<HTMLElement>("[data-slot='scroll-area-viewport']")!;
+    const scrollTo = vi.fn();
+    viewport.scrollTo = scrollTo;
+
+    await user.click(screen.getByRole("button", { name: "Follow live" }));
+
+    await waitFor(() => {
+      expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: "auto" }));
+    });
   });
 });

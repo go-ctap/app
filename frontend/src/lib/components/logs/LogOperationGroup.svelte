@@ -13,23 +13,20 @@
     logTime,
     operationKindLabel,
   } from "$lib/log-presentation.js";
-  import { LogLevel, LogOutcome } from "../../../../bindings/github.com/go-ctap/kit/model/index.js";
+  import { LogLevel } from "../../../../bindings/github.com/go-ctap/kit/model/index.js";
 
   import { m } from "../../../paraglide/messages.js";
-  import LogRecordRow from "./LogRecordRow.svelte";
 
   type Props = {
     group: OperationLogGroup;
     selectedId: string | null;
-    revealMatches?: boolean;
+    open: boolean;
     onSelect: (id: string) => void;
     onOpen?: (id: string) => void;
+    onToggle: () => void;
   };
 
-  let { group, selectedId, revealMatches = false, onSelect, onOpen = onSelect }: Props = $props();
-
-  const componentID = $props.id();
-  const operationEventsID = `${componentID}-events`;
+  let { group, selectedId, open, onSelect, onOpen = onSelect, onToggle }: Props = $props();
 
   let title = $derived.by(() => {
     if (group.operation) return logSummary(group.operation);
@@ -40,16 +37,6 @@
   });
   let groupSelected = $derived(group.allRecords.some((record) => recordID(record) === selectedId));
   let representativeSelected = $derived(recordID(group.representative) === selectedId);
-  let defaultOpen = $derived(
-    group.operation === null
-      || logOutcome(group.representative) !== LogOutcome.LogOutcomeSucceeded,
-  );
-  let openOverride = $state<boolean | null>(null);
-  let effectiveOpen = $derived(revealMatches || (openOverride ?? defaultOpen));
-
-  function toggleOpen() {
-    openOverride = !effectiveOpen;
-  }
 
   function handleRecordClick() {
     onOpen(recordID(group.representative));
@@ -60,8 +47,9 @@
   class="log-operation-group"
   data-log-operation-group
   data-group-selected={groupSelected ? "true" : undefined}
+  data-open={open ? "true" : undefined}
 >
-  <div class="log-operation-header" data-open={effectiveOpen ? "true" : undefined}>
+  <div class="log-operation-header" data-open={open ? "true" : undefined}>
     <button
       type="button"
       class="log-operation-record"
@@ -90,64 +78,35 @@
       type="button"
       class="log-operation-toggle"
       data-log-operation-toggle
-      aria-expanded={effectiveOpen}
-      aria-controls={operationEventsID}
-      aria-label={effectiveOpen
+      aria-expanded={open}
+      aria-label={open
         ? m.logs_collapse_operation_events({ operation: title })
         : m.logs_expand_operation_events({ operation: title })}
-      onclick={toggleOpen}
+      onclick={onToggle}
     >
       <ChevronRight aria-hidden="true" />
     </button>
 
-    {#if effectiveOpen}
+    {#if open}
       <span class="log-operation-header-thread" aria-hidden="true"></span>
     {/if}
   </div>
-
-  {#if effectiveOpen}
-    <div id={operationEventsID} class="log-operation-children">
-      {#each group.records as record, index (recordID(record))}
-        <div
-          class="log-operation-child"
-          data-log-operation-child
-          data-tree-end={index === group.records.length - 1 ? "true" : undefined}
-        >
-          <LogRecordRow
-            {record}
-            nested
-            selected={recordID(record) === selectedId}
-            {onSelect}
-            {onOpen}
-          />
-          <span class="log-operation-tree-segment" aria-hidden="true"></span>
-          <span class="log-operation-tree-node" aria-hidden="true"></span>
-        </div>
-      {/each}
-    </div>
-  {/if}
 </div>
 
 <style>
   @layer blocks {
     .log-operation-group,
-    .log-operation-header,
-    .log-operation-children,
-    .log-operation-child {
+    .log-operation-header {
       display: grid;
     }
 
     .log-operation-group {
       --log-tree-center: calc(var(--space-2) + 0.75rem);
-      --log-tree-junction-y: calc(var(--space-2) + 0.5rem);
       --log-timeline-color: color-mix(in srgb, var(--muted-foreground) 68%, var(--border));
       --log-parent-surface: color-mix(in srgb, var(--muted) 32%, var(--background));
-      --log-children-surface: color-mix(in srgb, var(--muted) 55%, var(--background));
-      border-bottom: 1px solid var(--border);
     }
 
-    .log-operation-header,
-    .log-operation-child {
+    .log-operation-header {
       position: relative;
       min-width: 0;
     }
@@ -259,21 +218,13 @@
       border-color: var(--border);
     }
 
-    .log-operation-children {
-      min-width: 0;
-      background: var(--log-children-surface);
-    }
-
-    .log-operation-header-thread,
-    .log-operation-tree-segment,
-    .log-operation-tree-node {
+    .log-operation-header-thread {
       position: absolute;
       display: block;
       pointer-events: none;
     }
 
-    .log-operation-header-thread,
-    .log-operation-tree-segment {
+    .log-operation-header-thread {
       left: calc(var(--log-tree-center) - 0.5px);
       width: 1px;
       background: var(--log-timeline-color);
@@ -283,22 +234,13 @@
       top: calc(var(--space-2) + 1.5rem - 1px);
       bottom: 0;
     }
-
-    .log-operation-tree-segment {
-      top: 0;
-      bottom: 0;
-    }
-
-    .log-operation-tree-node {
-      top: calc(var(--log-tree-junction-y) - 2px);
-      left: calc(var(--log-tree-center) - 2px);
-      width: 4px;
-      height: 4px;
-      background: var(--muted-foreground);
-    }
   }
 
   @layer exceptions {
+    .log-operation-group:not([data-open="true"]) {
+      border-bottom: 1px solid var(--border);
+    }
+
     .log-operation-header[data-open="true"] {
       background: var(--log-parent-surface);
     }
@@ -312,9 +254,5 @@
       color: var(--accent-foreground);
     }
 
-    .log-operation-child[data-tree-end="true"] .log-operation-tree-segment {
-      bottom: auto;
-      height: var(--log-tree-junction-y);
-    }
   }
 </style>

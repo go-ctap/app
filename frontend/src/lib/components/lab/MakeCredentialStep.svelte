@@ -11,7 +11,7 @@
   import { Spinner } from "$lib/components/ui/spinner/index.js";
   import { makeCredentialPreview, makeCredentialResult, operationError } from "$lib/ctapkit-results";
   import { inspectResult } from "$lib/ctapkit-results";
-  import type { LabConfigureSection, LabState, MakeCredentialDraft } from "$lib/features/lab/state";
+  import type { LabState, MakeCredentialDraft } from "$lib/features/lab/state";
   import { failureMessage as localizeFailure } from "$lib/failure";
   import { validateMakeCredentialDraft } from "$lib/lab-input";
   import type { LoadState } from "$lib/load-state";
@@ -28,7 +28,6 @@
     lab: LabState;
     inspection: LoadState<InspectEnvelope>;
     disabled?: boolean;
-    onSectionChange: (section: LabConfigureSection) => void;
     onDraftChange: (patch: Partial<MakeCredentialDraft>) => void;
     onRegenerateUserID: () => void;
     onRegenerateChallenge: () => void;
@@ -44,7 +43,6 @@
     lab,
     inspection,
     disabled = false,
-    onSectionChange,
     onDraftChange,
     onRegenerateUserID,
     onRegenerateChallenge,
@@ -90,15 +88,8 @@
     return m.lab_phase_editing();
   }
 
-  function sectionForField(field: string): LabConfigureSection {
-    if (field.includes(".extensions.")) return "extensions";
-    if (field.includes(".algorithms") || field.includes(".excludeList") || field.endsWith("rawJSON")) return "advanced";
-    return "basics";
-  }
-
   async function handlePreview() {
     if (!validation.valid) {
-      onSectionChange(sectionForField(validation.errors[0].field));
       await tick();
       document.querySelector<HTMLElement>("#lab-make-configure [aria-invalid='true']")?.focus();
       return;
@@ -130,12 +121,10 @@
         <LabValidationIssues issues={validation.warnings} severity="warning" />
         <MakeCredentialConfigure
           {draft}
-          section={lab.makeSection}
           disabled={disabled || phase === "previewing"}
           errors={validation.errors}
           warnings={validation.warnings}
           {inspection}
-          {onSectionChange}
           {onDraftChange}
           {onRegenerateUserID}
           {onRegenerateChallenge}

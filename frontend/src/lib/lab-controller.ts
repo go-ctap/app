@@ -11,9 +11,7 @@ import { api } from "./api.js";
 import { inspectResult, makeCredentialResult } from "./ctapkit-results.js";
 import {
   labState,
-  createPresetState,
   type GetAssertionDraft,
-  type LabPresetID,
   type LabState,
   type MakeCredentialDraft,
 } from "./features/lab/state.js";
@@ -21,6 +19,7 @@ import { invalidateLargeBlobsInventory } from "./features/largeblobs/state.js";
 import { invalidatePasskeysInventory } from "./features/passkeys/state.js";
 import { authenticatorInspection } from "./features/session/state.js";
 import {
+  buildClientDataJSON,
   buildGetAssertionRequest,
   buildMakeCredentialRequest,
   randomBase64URL,
@@ -38,50 +37,42 @@ import {
   summarizeOperationFailure,
 } from "./workbench-state.js";
 
-function scenarioIsDirty(state: LabState) {
-  return state.isCustom
-    || state.makeStep.phase !== "editing"
-    || state.getStep.phase !== "editing"
-    || state.pendingHandoff !== null;
-}
-
-function applyPreset(presetID: LabPresetID) {
-  const activeOperation = get(labState).activeOperation;
-  labState.set({ ...createPresetState(presetID), activeOperation });
-}
-
 export function selectLabOperation(activeOperation: LabState["activeOperation"]) {
   labState.update((state) => ({ ...state, activeOperation }));
 }
 
-export function selectLabMakeSection(makeSection: LabState["makeSection"]) {
-  labState.update((state) => ({ ...state, makeSection }));
+function demoClientData(
+  type: "create" | "get",
+  current: MakeCredentialDraft["clientData"] | GetAssertionDraft["clientData"],
+) {
+  const clientData = {
+    ...current,
+    origin: "https://example.com",
+    challenge: randomBase64URL(32),
+  };
+  return {
+    ...clientData,
+    rawJSON: buildClientDataJSON(type, clientData),
+  };
 }
 
-export function selectLabGetSection(getSection: LabState["getSection"]) {
-  labState.update((state) => ({ ...state, getSection }));
-}
-
-/** Returns true when the preset was applied immediately, false when confirmation is pending. */
-export function requestLabPreset(presetID: LabPresetID) {
+export function fillLabDemoValues() {
   const current = get(labState);
-  if (scenarioIsDirty(current)) {
-    labState.set({ ...current, pendingPresetID: presetID });
-    return false;
+  if (current.activeOperation === "make") {
+    return updateLabMakeCredentialDraft({
+      rpID: "example.com",
+      rpName: "Example",
+      userIDHex: randomHex(16),
+      userName: "alice@example.com",
+      userDisplayName: "Alice",
+      clientData: demoClientData("create", current.makeDraft.clientData),
+      algorithms: ["-7"],
+    });
   }
-  applyPreset(presetID);
-  return true;
-}
-
-export function confirmLabPreset() {
-  const pendingPresetID = get(labState).pendingPresetID;
-  if (!pendingPresetID) return false;
-  applyPreset(pendingPresetID);
-  return true;
-}
-
-export function cancelLabPreset() {
-  labState.update((state) => ({ ...state, pendingPresetID: null }));
+  return updateLabGetAssertionDraft({
+    rpID: "example.com",
+    clientData: demoClientData("get", current.getDraft.clientData),
+  });
 }
 
 export function updateLabMakeCredentialDraft(patch: Partial<MakeCredentialDraft>) {
@@ -93,7 +84,6 @@ export function updateLabMakeCredentialDraft(patch: Partial<MakeCredentialDraft>
   const makeDraft = { ...current.makeDraft, ...patch };
   labState.set({
     ...current,
-    isCustom: true,
     makeDraft,
     makeStep: { phase: "editing" },
   });
@@ -109,7 +99,6 @@ export function updateLabGetAssertionDraft(patch: Partial<GetAssertionDraft>) {
   const getDraft = { ...current.getDraft, ...patch };
   labState.set({
     ...current,
-    isCustom: true,
     getDraft,
     getStep: { phase: "editing" },
   });
@@ -300,7 +289,6 @@ export function newLabMakeCredentialRun() {
     : current.makeDraft;
   labState.set({
     ...current,
-    isCustom: true,
     pendingHandoff: null,
     makeDraft,
     makeStep: { phase: "editing" },
@@ -467,7 +455,6 @@ export function newLabGetAssertionRun() {
     : current.getDraft;
   labState.set({
     ...current,
-    isCustom: true,
     pendingHandoff: null,
     activeOperation: "get",
     getDraft,
@@ -488,7 +475,6 @@ function completeHandoff(rpID: string, credentialIDHex: string, replace: boolean
   const getDraft = { ...current.getDraft, rpID, allowList };
   labState.set({
     ...current,
-    isCustom: true,
     pendingHandoff: null,
     activeOperation: "get",
     getDraft,

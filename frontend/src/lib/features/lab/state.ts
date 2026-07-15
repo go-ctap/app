@@ -18,11 +18,9 @@ import {
   type LabRandomSource,
 } from "$lib/lab-input";
 
-export type LabPresetID = "minimal" | "discoverable" | "non-discoverable" | "uv-required";
 export type LabTriState = "auto" | "true" | "false";
 export type LabClientDataMode = "builder" | "raw";
 export type LabOperationTab = "make" | "get";
-export type LabConfigureSection = "basics" | "extensions" | "advanced";
 export type LabBinaryMode = "utf8" | "hex";
 
 export type LabBinaryDraft = {
@@ -198,11 +196,6 @@ export type LabPendingHandoff = {
 
 export type LabState = {
   activeOperation: LabOperationTab;
-  makeSection: LabConfigureSection;
-  getSection: LabConfigureSection;
-  presetID: LabPresetID;
-  isCustom: boolean;
-  pendingPresetID: LabPresetID | null;
   makeDraft: MakeCredentialDraft;
   getDraft: GetAssertionDraft;
   makeStep: LabMakeStep;
@@ -258,32 +251,10 @@ function getExtensionDefaults(randomSource?: LabRandomSource): GetAssertionExten
   };
 }
 
-function optionDefaults(presetID: LabPresetID) {
-  const make = {
-    residentKey: "auto" as LabTriState,
-    userPresence: "auto" as LabTriState,
-    userVerification: "auto" as LabTriState,
-  };
-  const get = { ...make };
-
-  if (presetID === "discoverable") make.residentKey = "true";
-  if (presetID === "non-discoverable") make.residentKey = "false";
-  if (presetID === "uv-required") {
-    make.userVerification = "true";
-    get.userVerification = "true";
-  }
-
-  return { make, get };
-}
-
-export function createPresetState(
-  presetID: LabPresetID = "discoverable",
-  randomSource?: LabRandomSource,
-): LabState {
+export function createLabState(randomSource?: LabRandomSource): LabState {
   const userIDHex = randomHex(16, randomSource);
   const makeChallenge = randomBase64URL(32, randomSource);
   const getChallenge = randomBase64URL(32, randomSource);
-  const options = optionDefaults(presetID);
   const makeClientData: LabClientDataDraft = {
     mode: "builder",
     origin: "https://example.com",
@@ -301,11 +272,6 @@ export function createPresetState(
 
   return {
     activeOperation: "make",
-    makeSection: "basics",
-    getSection: "basics",
-    presetID,
-    isCustom: false,
-    pendingPresetID: null,
     makeDraft: {
       rpID: "example.com",
       rpName: "Example",
@@ -315,7 +281,9 @@ export function createPresetState(
       clientData: makeClientData,
       algorithms: ["-7"],
       excludeList: [],
-      ...options.make,
+      residentKey: "auto",
+      userPresence: "auto",
+      userVerification: "auto",
       verificationFlow: VerificationFlow.VerificationFlowDefault,
       extensions: makeExtensionDefaults(randomSource),
     },
@@ -323,7 +291,9 @@ export function createPresetState(
       rpID: "example.com",
       clientData: getClientData,
       allowList: [],
-      ...options.get,
+      residentKey: "auto",
+      userPresence: "auto",
+      userVerification: "auto",
       verificationFlow: VerificationFlow.VerificationFlowDefault,
       extensions: getExtensionDefaults(randomSource),
     },
@@ -333,12 +303,12 @@ export function createPresetState(
   };
 }
 
-export const labState = writable<LabState>(createPresetState());
+export const labState = writable<LabState>(createLabState());
 
 export function resetLabDeviceState() {
-  labState.set(createPresetState());
+  labState.set(createLabState());
 }
 
 export function resetLabStateForTest(randomSource?: LabRandomSource) {
-  labState.set(createPresetState("discoverable", randomSource));
+  labState.set(createLabState(randomSource));
 }

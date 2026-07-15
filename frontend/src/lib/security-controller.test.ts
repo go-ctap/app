@@ -27,6 +27,11 @@ import type {
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { api } from "./api";
+import {
+  errorLoadState,
+  overviewBioSensor,
+  overviewMDS,
+} from "./features/overview/state";
 import { failureForCode } from "./test-failure";
 import {
   completeSecurityBioSensorLoad,
@@ -37,6 +42,7 @@ import {
   securityStatus,
 } from "./features/security/state";
 import {
+  authenticatorInspection,
   devices,
   selectedSelector,
   sessionStatus,
@@ -490,6 +496,10 @@ describe("security controller mutations", () => {
 
   it("previews and then executes the exact Always UV request", async () => {
     seedReadyStatus(statusEnvelope({ alwaysUVConfigured: false }));
+    const staleOverviewFailure = failureForCode(Code.CodeTransportFailure);
+    authenticatorInspection.set(errorLoadState(staleOverviewFailure));
+    overviewBioSensor.set(errorLoadState(staleOverviewFailure));
+    overviewMDS.set(errorLoadState(staleOverviewFailure));
     const setAlwaysUV = vi.spyOn(api, "setAlwaysUV")
       .mockResolvedValueOnce(authenticatorConfigEnvelope(
         AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
@@ -518,6 +528,11 @@ describe("security controller mutations", () => {
       confirmationMessage: "Update Always UV",
     });
     expect(get(securityMutation)).toEqual({ kind: "idle", phase: "idle" });
+    const refreshedStatus = get(securityStatus).lastSuccessfulEnvelope!;
+    expect(refreshedStatus.result!.report.authenticatorConfig.alwaysUv.configured).toBe(true);
+    expect(get(authenticatorInspection).state).toBe("idle");
+    expect(get(overviewBioSensor).state).toBe("idle");
+    expect(get(overviewMDS).state).toBe("idle");
   });
 
   it("normalizes, previews, and then executes the exact PIN policy request", async () => {

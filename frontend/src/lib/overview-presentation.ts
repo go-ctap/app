@@ -17,7 +17,6 @@ import {
 export type OverviewPresentationInput = {
   selectedSelector: string;
   selectedDevice: DeviceReport | null;
-  sessionBusy: boolean;
   overviewState: LoadState<InspectEnvelope>;
   overviewBioSensorState: LoadState<BioSensorEnvelope>;
   overviewMDSState: LoadState<LookupResult | null>;
@@ -42,7 +41,6 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
     selector,
     loading,
     mdsLoading,
-    reloadDisabled: loading || input.sessionBusy,
     hasReport: Boolean(report),
     report,
     info,

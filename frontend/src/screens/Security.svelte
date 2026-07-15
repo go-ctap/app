@@ -94,12 +94,7 @@
 {:else if $selectedSelector && report}
   <section class="security-screen" aria-labelledby="security-title">
     <div class="security-sections">
-      <SecurityOverview
-        {report}
-        loading={statusLoading}
-        disabled={reloadDisabled || statusLoading}
-        onReload={reloadSecurity}
-      />
+      <SecurityOverview {report} />
 
       {#key $selectedSelector}
         <SecurityPIN

@@ -20,7 +20,6 @@ export type {
   LabDescriptorDraft,
   LabGetStep,
   LabMakeStep,
-  LabPresetID,
   LabState,
   LabTriState,
   MakeCredentialDraft,

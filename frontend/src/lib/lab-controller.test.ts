@@ -56,12 +56,12 @@ import {
   confirmLabHandoff,
   confirmLabGetAssertion,
   confirmLabMakeCredential,
-  confirmLabPreset,
+  fillLabDemoValues,
   handoffLabCredential,
   previewLabMakeCredential,
-  requestLabPreset,
   rerunLabGetAssertion,
   runLabGetAssertion,
+  selectLabOperation,
   updateLabGetAssertionDraft,
   updateLabMakeCredentialDraft,
 } from "./lab-controller";
@@ -188,28 +188,56 @@ afterEach(() => {
 });
 
 describe("WebAuthn Lab request lifecycle", () => {
-  it("confirms a dirty preset replacement and regenerates all random inputs", () => {
+  it("fills required demo fields without replacing optional configuration", () => {
     const before = get(labState);
-    expect(updateLabMakeCredentialDraft({ rpName: "Edited" })).toBe(true);
+    expect(updateLabMakeCredentialDraft({
+      rpID: "edited.example",
+      rpName: "Edited",
+      residentKey: "true",
+      extensions: {
+        ...before.makeDraft.extensions,
+        credentialProperties: { included: true },
+      },
+    })).toBe(true);
 
-    expect(requestLabPreset("uv-required")).toBe(false);
-    expect(get(labState).pendingPresetID).toBe("uv-required");
-    expect(get(labState).makeDraft.rpName).toBe("Edited");
-
-    expect(confirmLabPreset()).toBe(true);
+    expect(fillLabDemoValues()).toBe(true);
     const after = get(labState);
-    expect(after).toMatchObject({
-      presetID: "uv-required",
-      isCustom: false,
-      pendingPresetID: null,
-      makeStep: { phase: "editing" },
-      getStep: { phase: "editing" },
-      makeDraft: { userVerification: "true" },
-      getDraft: { userVerification: "true" },
+    expect(after.makeDraft).toMatchObject({
+      rpID: "example.com",
+      rpName: "Example",
+      userName: "alice@example.com",
+      userDisplayName: "Alice",
+      algorithms: ["-7"],
+      residentKey: "true",
+      extensions: { credentialProperties: { included: true } },
     });
     expect(after.makeDraft.userIDHex).not.toBe(before.makeDraft.userIDHex);
     expect(after.makeDraft.clientData.challenge).not.toBe(before.makeDraft.clientData.challenge);
+    expect(after.getDraft).toEqual(before.getDraft);
+  });
+
+  it("fills demo values only in the selected GetAssertion draft", () => {
+    selectLabOperation("get");
+    const initial = get(labState);
+    expect(updateLabGetAssertionDraft({
+      rpID: "edited.example",
+      userPresence: "false",
+      extensions: {
+        ...initial.getDraft.extensions,
+        getCredentialBlob: { included: true, value: true },
+      },
+    })).toBe(true);
+    const before = get(labState);
+
+    expect(fillLabDemoValues()).toBe(true);
+    const after = get(labState);
+    expect(after.getDraft).toMatchObject({
+      rpID: "example.com",
+      userPresence: "false",
+      extensions: { getCredentialBlob: { included: true, value: true } },
+    });
     expect(after.getDraft.clientData.challenge).not.toBe(before.getDraft.clientData.challenge);
+    expect(after.makeDraft).toEqual(before.makeDraft);
   });
 
   it("does not call either operation when its draft is invalid", async () => {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Check, CircleAlert } from "@lucide/svelte";
+  import { CircleAlert } from "@lucide/svelte";
 
   import type { LabGetStep, LabMakeStep } from "$lib/features/lab/state";
 
@@ -24,14 +24,11 @@
   {#each labels as label, index (index)}
     <li
       data-current={index === currentIndex}
-      data-completed={index < currentIndex}
       data-error={step.phase === "error" && index === currentIndex}
       aria-current={index === currentIndex ? "step" : undefined}
     >
       <span class="lab-workflow-marker" aria-hidden="true">
-        {#if index < currentIndex}
-          <Check />
-        {:else if step.phase === "error" && index === currentIndex}
+        {#if step.phase === "error" && index === currentIndex}
           <CircleAlert />
         {:else}
           {index + 1}
@@ -89,10 +86,6 @@
   .lab-workflow-steps li[data-current="true"] {
     color: var(--foreground);
     font-weight: 600;
-  }
-
-  .lab-workflow-steps li[data-completed="true"] {
-    color: var(--primary);
   }
 
   .lab-workflow-steps li[data-error="true"] {

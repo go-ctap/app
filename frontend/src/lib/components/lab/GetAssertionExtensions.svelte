@@ -201,15 +201,6 @@
       status="unavailable"
       onInclude={() => undefined}
     />
-    <LabExtensionItem
-      value="payment"
-      title="payment"
-      description={m.lab_extension_unavailable_description()}
-      included={false}
-      disabled
-      status="unavailable"
-      onInclude={() => undefined}
-    />
   </section>
 
   <section class="lab-extension-group" aria-labelledby="lab-get-ctap-extensions-title">
@@ -220,7 +211,7 @@
 
     <LabExtensionItem
       value="getCredentialBlob"
-      title="getCredBlob"
+      title="credBlob"
       description={m.lab_extension_ctap_description()}
       included={value.getCredentialBlob.included}
       {disabled}

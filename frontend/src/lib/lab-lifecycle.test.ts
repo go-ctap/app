@@ -17,7 +17,6 @@ describe("WebAuthn Lab session lifecycle", () => {
   it("retains drafts and results while navigating on the same authenticator", () => {
     labState.update((state) => ({
       ...state,
-      isCustom: true,
       makeDraft: { ...state.makeDraft, rpID: "kept.example" },
     }));
 
@@ -26,22 +25,17 @@ describe("WebAuthn Lab session lifecycle", () => {
     activeScreen.set("lab");
 
     expect(get(labState).makeDraft.rpID).toBe("kept.example");
-    expect(get(labState).isCustom).toBe(true);
   });
 
   it("resets all Lab state at the shared per-device cache boundary", () => {
     labState.update((state) => ({
       ...state,
-      isCustom: true,
       makeDraft: { ...state.makeDraft, rpID: "discard.example" },
     }));
 
     clearWorkbenchScreenCaches();
 
     expect(get(labState)).toMatchObject({
-      presetID: "discoverable",
-      isCustom: false,
-      pendingPresetID: null,
       pendingHandoff: null,
       makeStep: { phase: "editing" },
       getStep: { phase: "editing" },
@@ -54,7 +48,6 @@ describe("WebAuthn Lab session lifecycle", () => {
     seedSelectionForTest("token-1", first, { state: "ready", sessionId: "session-1" });
     labState.update((state) => ({
       ...state,
-      isCustom: true,
       getDraft: { ...state.getDraft, rpID: "kept.example" },
     }));
 
@@ -73,6 +66,5 @@ describe("WebAuthn Lab session lifecycle", () => {
       session: { state: "ready", sessionId: "session-2" },
     })).toBe(true);
     expect(get(labState).getDraft.rpID).toBe("example.com");
-    expect(get(labState).isCustom).toBe(false);
   });
 });

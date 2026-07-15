@@ -16,7 +16,6 @@
     overviewMDS,
     selectedDevice,
     selectedSelector,
-    sessionBusy,
   } from "$lib/stores";
 
   import { m } from "../paraglide/messages.js";
@@ -24,7 +23,6 @@
   let overview = $derived(buildOverviewPresentation({
     selectedSelector: $selectedSelector,
     selectedDevice: $selectedDevice,
-    sessionBusy: $sessionBusy,
     overviewState: $authenticatorInspection,
     overviewBioSensorState: $overviewBioSensor,
     overviewMDSState: $overviewMDS,
@@ -41,7 +39,7 @@
 {#if overview.selector && !overview.hasReport && !overview.loading}
   <EmptyState title={m.overview_not_loaded()} message={m.overview_not_loaded_message()}>
     {#snippet actions()}
-      <Button type="button" disabled={overview.reloadDisabled} onclick={reloadOverview}>
+      <Button type="button" onclick={reloadOverview}>
         {m.reload_overview()}
       </Button>
     {/snippet}
@@ -52,10 +50,7 @@
       <OverviewHeroCard
         hero={overview.hero}
         signalGroups={overview.signalGroups}
-        loading={overview.loading}
         mdsLoading={overview.mdsLoading}
-        reloadDisabled={overview.reloadDisabled}
-        onReload={reloadOverview}
         onRefreshMDS={refreshMDS}
       />
       {#if overview.conformance}

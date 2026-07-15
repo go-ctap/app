@@ -15,7 +15,7 @@ import {
   MakeCredentialRequest,
 } from "../../bindings/github.com/go-ctap/kit/service";
 
-import { createPresetState, labState as mutableLabState } from "$lib/features/lab/state";
+import { createLabState, labState as mutableLabState } from "$lib/features/lab/state";
 import { setAppLocale } from "$lib/i18n";
 import { failureForCode } from "$lib/test-failure";
 import { resetAppStateForTest, seedSelectionForTest } from "$lib/store-test-utils";
@@ -79,7 +79,7 @@ describe("WebAuthn Lab screen", () => {
       .toBeInTheDocument();
     expect(screen.getByText("Test authenticator")).toBeInTheDocument();
     expect(screen.queryByText("1. Test authenticator")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Preset" })).toHaveTextContent("Discoverable passkey");
+    expect(screen.getByRole("button", { name: "Fill demo values" })).toBeEnabled();
     expect(screen.getByRole("tab", { name: "MakeCredential" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("tab", { name: "GetAssertion" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "MakeCredential" })).toBeInTheDocument();
@@ -104,19 +104,16 @@ describe("WebAuthn Lab screen", () => {
     expect(within(stepCard("GetAssertion")).getByLabelText("RP ID")).toHaveValue("get.example.com");
   });
 
-  it("groups WebAuthn and CTAP extensions while keeping include separate from expand", async () => {
+  it("renders configure sections sequentially and keeps extension include separate from expand", async () => {
     const user = userEvent.setup();
     selectToken();
     render(Lab);
 
     const make = stepCard("MakeCredential");
-    const basics = within(make).getByRole("tab", { name: "Basics" });
-    basics.focus();
-    await user.keyboard("{ArrowRight}");
-
-    const extensions = within(make).getByRole("tab", { name: "Extensions · 0" });
-    expect(extensions).toHaveFocus();
-    expect(extensions).toHaveAttribute("aria-selected", "true");
+    expect(within(make).queryByRole("tab")).not.toBeInTheDocument();
+    expect(within(make).getByRole("heading", { name: "Basics" })).toBeInTheDocument();
+    expect(within(make).getByRole("heading", { name: "Extensions · 0" })).toBeInTheDocument();
+    expect(within(make).getByRole("heading", { name: "Advanced" })).toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "WebAuthn client extensions" })).toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "CTAP authenticator extensions" })).toBeInTheDocument();
     expect(within(make).getByRole("button", { name: /prf.*client-side/i })).toBeInTheDocument();
@@ -127,7 +124,7 @@ describe("WebAuthn Lab screen", () => {
     expect(expandCredProps).toHaveAttribute("aria-expanded", "false");
 
     await user.click(includeCredProps);
-    expect(within(make).getByRole("tab", { name: "Extensions · 1" })).toBeInTheDocument();
+    expect(within(make).getByRole("heading", { name: "Extensions · 1" })).toBeInTheDocument();
     expect(expandCredProps).toHaveAttribute("aria-expanded", "true");
     expect(within(make).queryByRole("switch", { name: "Enabled" })).not.toBeInTheDocument();
     expect(within(make).getByRole("switch", { name: "Include credProtect" })).toBeEnabled();
@@ -140,16 +137,17 @@ describe("WebAuthn Lab screen", () => {
 
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
     const assertion = stepCard("GetAssertion");
-    await user.click(within(assertion).getByRole("tab", { name: "Extensions · 0" }));
+    expect(within(assertion).queryByRole("tab")).not.toBeInTheDocument();
+    expect(within(assertion).getByRole("heading", { name: "Extensions · 0" })).toBeInTheDocument();
     expect(within(assertion).getByRole("heading", { name: "WebAuthn client extensions" })).toBeInTheDocument();
     expect(within(assertion).getByRole("heading", { name: "CTAP authenticator extensions" })).toBeInTheDocument();
     const includePRF = within(assertion).getByRole("switch", { name: "Include prf" });
     expect(includePRF).toBeEnabled();
     expect(within(assertion).getByRole("button", { name: /prf.*client-side/i })).toBeInTheDocument();
-    expect(within(assertion).getByRole("switch", { name: "Include getCredBlob" })).toBeEnabled();
+    expect(within(assertion).getByRole("switch", { name: "Include credBlob" })).toBeEnabled();
     expect(within(assertion).getByRole("switch", { name: "Include hmac-secret" })).toBeEnabled();
     expect(within(assertion).getByRole("switch", { name: "Include largeBlob" })).toBeDisabled();
-    expect(within(assertion).getByRole("switch", { name: "Include payment" })).toBeDisabled();
+    expect(within(assertion).queryByRole("switch", { name: "Include payment" })).not.toBeInTheDocument();
 
     await user.click(includePRF);
     const addOverride = within(assertion).getByRole("button", { name: "Add credential override" });
@@ -169,7 +167,8 @@ describe("WebAuthn Lab screen", () => {
     expect(get(mutableLabState).getDraft.extensions.prf.evalByCredential).toHaveLength(1);
     expect(addOverride).toBeDisabled();
 
-    await user.click(within(assertion).getByRole("button", { name: "Remove" }));
+    const override = assertion.querySelector(".lab-prf-override") as HTMLElement;
+    await user.click(within(override).getByRole("button", { name: "Remove" }));
     mutableLabState.update((state) => ({
       ...state,
       getDraft: {
@@ -187,7 +186,7 @@ describe("WebAuthn Lab screen", () => {
   it("runs the primary action on single-line Enter but preserves textarea Enter", async () => {
     const user = userEvent.setup();
     selectToken();
-    mutableLabState.set(createPresetState("minimal"));
+    mutableLabState.set(createLabState());
     render(Lab);
 
     const make = stepCard("MakeCredential");
@@ -205,7 +204,7 @@ describe("WebAuthn Lab screen", () => {
       },
     }));
     await tick();
-    await user.click(within(make).getByRole("tab", { name: "Advanced" }));
+    expect(within(make).getByRole("heading", { name: "Advanced" })).toBeInTheDocument();
     const raw = within(make).getByLabelText("Raw client data JSON");
     expect(await fireEvent.keyDown(raw, { key: "Enter" })).toBe(true);
     expect(controllerMocks.previewMakeCredential).not.toHaveBeenCalled();
@@ -282,6 +281,7 @@ describe("WebAuthn Lab screen", () => {
     const make = stepCard("MakeCredential");
     expect(within(make).queryByLabelText("RP ID")).not.toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "Reviewed snapshot" })).toBeInTheDocument();
+    expect(within(make).getByText("Configure").closest("li")).not.toHaveAttribute("data-completed");
     expect(within(make).getByRole("button", { name: "View" })).toBeInTheDocument();
     expect(within(make).getByRole("button", { name: "Execute" })).toBeInTheDocument();
     expect(within(make).queryByText(/not valid JSON/)).not.toBeInTheDocument();
@@ -371,36 +371,23 @@ describe("WebAuthn Lab screen", () => {
     expect(within(make).getByRole("button", { name: "Edit" })).toBeInTheDocument();
   });
 
-  it("can cancel and then reapply the current preset to a custom scenario", async () => {
+  it("fills demo values for the active operation without replacing the scenario", async () => {
     const user = userEvent.setup();
     selectToken();
     render(Lab);
 
     const make = stepCard("MakeCredential");
+    const before = get(mutableLabState);
     await user.clear(within(make).getByLabelText("RP name"));
     await user.type(within(make).getByLabelText("RP name"), "Edited");
 
-    const preset = screen.getByRole("button", { name: "Preset" });
-    await user.click(preset);
-    await user.keyboard("{ArrowDown}{Enter}");
+    await user.click(screen.getByRole("button", { name: "Fill demo values" }));
 
-    let dialog = screen.getByRole("alertdialog", { name: "Discard the current Lab run?" });
-    expect(within(dialog).getByText(/edited fields, a reviewed request, or operation results/)).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
-    expect(get(mutableLabState).pendingPresetID).toBeNull();
-    document.body.style.pointerEvents = "";
-
-    await user.click(preset);
-    await user.keyboard("{ArrowDown}{Enter}");
-    dialog = screen.getByRole("alertdialog", { name: "Discard the current Lab run?" });
-    await user.click(within(dialog).getByRole("button", { name: "Apply preset" }));
-
-    expect(get(mutableLabState)).toMatchObject({
-      presetID: "discoverable",
-      isCustom: false,
-      pendingPresetID: null,
-      makeDraft: { rpName: "Example" },
-    });
+    const after = get(mutableLabState);
+    expect(within(make).getByLabelText("RP name")).toHaveValue("Example");
+    expect(after.makeDraft.userIDHex).not.toBe(before.makeDraft.userIDHex);
+    expect(after.getDraft).toEqual(before.getDraft);
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
   it("renders and cancels a context-aware handoff replacement AlertDialog", async () => {

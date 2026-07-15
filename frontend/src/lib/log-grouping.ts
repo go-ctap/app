@@ -16,6 +16,25 @@ export type LogListItem =
   | { kind: "record"; record: LogRecord }
   | OperationLogGroup;
 
+export type VisibleLogListRow =
+  | {
+      kind: "record";
+      key: string;
+      record: LogRecord;
+    }
+  | {
+      kind: "operation";
+      key: string;
+      group: OperationLogGroup;
+    }
+  | {
+      kind: "operation-child";
+      key: string;
+      operationId: string;
+      record: KitLogRecord;
+      last: boolean;
+    };
+
 function operationID(record: LogRecord) {
   if (record.source !== "kit") return "";
   return record.entry.operationId?.trim() ?? "";
@@ -74,4 +93,37 @@ export function buildLogListItems(
   }
 
   return items;
+}
+
+export function buildVisibleLogListRows(
+  items: readonly LogListItem[],
+  operationOpen: (group: OperationLogGroup) => boolean,
+): VisibleLogListRow[] {
+  return items.flatMap((item): VisibleLogListRow[] => {
+    if (item.kind === "record") {
+      return [{
+        kind: "record",
+        key: recordID(item.record),
+        record: item.record,
+      }];
+    }
+
+    const parent: VisibleLogListRow = {
+      kind: "operation",
+      key: `operation:${item.operationId}`,
+      group: item,
+    };
+    if (!operationOpen(item)) return [parent];
+
+    return [
+      parent,
+      ...item.records.map((record, index): VisibleLogListRow => ({
+        kind: "operation-child",
+        key: recordID(record),
+        operationId: item.operationId,
+        record,
+        last: index === item.records.length - 1,
+      })),
+    ];
+  });
 }

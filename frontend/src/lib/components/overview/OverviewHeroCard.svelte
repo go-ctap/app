@@ -4,7 +4,6 @@
 
 <script lang="ts">
   import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
   import type { OverviewHeroPresentation, OverviewHeroSignalGroup, OverviewMDSState } from "$lib/overview-rules";
 
@@ -15,18 +14,12 @@
   let {
     hero,
     signalGroups = [],
-    loading = false,
     mdsLoading = false,
-    reloadDisabled = false,
-    onReload = () => {},
     onRefreshMDS = () => {},
   }: {
     hero: OverviewHeroPresentation;
     signalGroups?: OverviewHeroSignalGroup[];
-    loading?: boolean;
     mdsLoading?: boolean;
-    reloadDisabled?: boolean;
-    onReload?: () => void | Promise<void>;
     onRefreshMDS?: () => void | Promise<void>;
   } = $props();
 
@@ -62,12 +55,6 @@
           </div>
         </div>
       </div>
-
-      <Card.Action>
-        <Button variant="outline" type="button" onclick={onReload} disabled={reloadDisabled}>
-          {loading ? m.reloading() : m.reload_overview()}
-        </Button>
-      </Card.Action>
     </Card.Header>
 
     <Card.Content class="hero-content">

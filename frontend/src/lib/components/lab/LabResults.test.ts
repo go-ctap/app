@@ -22,6 +22,7 @@ import {
 import {
   Assertion,
   CredentialBlobCreateOutput,
+  CredentialBlobGetOutput,
   GetAssertionClientExtensionResults,
   GetAssertionExtensionResults,
   GetAssertionPRFOutput,
@@ -180,6 +181,32 @@ describe("WebAuthn Lab results", () => {
     expect(screen.getByText("prf · first")).toBeInTheDocument();
     expect(screen.queryByText("prf · enabled")).not.toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(secret);
+  });
+
+  it("labels credential blob output with the extension identifier", () => {
+    const result = new GetAssertionResultDTO({
+      deviceFingerprint: "token-1",
+      rpID: "example.com",
+      assertions: [new Assertion({
+        index: 0,
+        credential: new PublicKeyCredentialDescriptor({
+          type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
+          id: "AA==",
+        }),
+        authenticatorDataHex: "cafe",
+        signatureHex: "aa",
+        extensionResults: new GetAssertionExtensionResults({
+          client: new GetAssertionClientExtensionResults({
+            getCredBlob: new CredentialBlobGetOutput({ valueHex: "0102" }),
+          }),
+        }),
+      })],
+    });
+
+    renderGetResult(result);
+
+    expect(screen.getByText("credBlob")).toBeInTheDocument();
+    expect(screen.queryByText("getCredBlob")).not.toBeInTheDocument();
   });
 
   it("copies the credential ID and opens the sanitized full response from technical details", async () => {

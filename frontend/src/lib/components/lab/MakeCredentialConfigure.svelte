@@ -7,8 +7,8 @@
   import * as Field from "$lib/components/ui/field/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import * as InputGroup from "$lib/components/ui/input-group/index.js";
-  import * as Tabs from "$lib/components/ui/tabs/index.js";
-  import type { LabConfigureSection, MakeCredentialDraft } from "$lib/features/lab/state";
+  import { Separator } from "$lib/components/ui/separator/index.js";
+  import type { MakeCredentialDraft } from "$lib/features/lab/state";
   import type { LabValidationIssue } from "$lib/lab-input";
   import type { LoadState } from "$lib/load-state";
 
@@ -24,12 +24,10 @@
 
   type Props = {
     draft: MakeCredentialDraft;
-    section: LabConfigureSection;
     disabled?: boolean;
     errors: LabValidationIssue[];
     warnings: LabValidationIssue[];
     inspection: LoadState<InspectEnvelope>;
-    onSectionChange: (section: LabConfigureSection) => void;
     onDraftChange: (patch: Partial<MakeCredentialDraft>) => void;
     onRegenerateUserID: () => void;
     onRegenerateChallenge: () => void;
@@ -39,12 +37,10 @@
 
   let {
     draft,
-    section,
     disabled = false,
     errors,
     warnings,
     inspection,
-    onSectionChange,
     onDraftChange,
     onRegenerateUserID,
     onRegenerateChallenge,
@@ -83,21 +79,16 @@
     });
   }
 
-  function changeSection(next: string) {
-    if (next === "basics" || next === "extensions" || next === "advanced") onSectionChange(next);
-  }
 </script>
 
-<Tabs.Root value={section} onValueChange={changeSection} class="lab-configure-tabs">
-  <Tabs.List variant="line" aria-label={m.lab_configure()}>
-    <Tabs.Trigger value="basics">{m.lab_basics()}</Tabs.Trigger>
-    <Tabs.Trigger value="extensions">{m.lab_extensions_count({ count: extensionCount })}</Tabs.Trigger>
-    <Tabs.Trigger value="advanced">{m.lab_advanced()}</Tabs.Trigger>
-  </Tabs.List>
-
-  <Tabs.Content value="basics" class="lab-configure-panel">
+<div class="lab-configure-sections">
+  <section class="lab-configure-section" aria-labelledby="lab-make-basics-title">
+    <header class="lab-configure-section-header">
+      <h3 id="lab-make-basics-title">{m.lab_basics()}</h3>
+      <p>{m.lab_basic_fields()}</p>
+    </header>
     <Field.Set {disabled} data-disabled={disabled}>
-      <Field.Legend>{m.lab_basic_fields()}</Field.Legend>
+      <Field.Legend class="sr-only">{m.lab_basic_fields()}</Field.Legend>
       <Field.Group class="lab-basic-grid">
         <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("make.rpID")}>
           <Field.Label for="lab-make-rp-id">{m.lab_rp_id()}</Field.Label>
@@ -149,9 +140,14 @@
         </Field.Field>
       </Field.Group>
     </Field.Set>
-  </Tabs.Content>
+  </section>
 
-  <Tabs.Content value="extensions" class="lab-configure-panel">
+  <Separator />
+
+  <section class="lab-configure-section" aria-labelledby="lab-make-extensions-title">
+    <header class="lab-configure-section-header">
+      <h3 id="lab-make-extensions-title">{m.lab_extensions_count({ count: extensionCount })}</h3>
+    </header>
     <MakeCredentialExtensions
       value={draft.extensions}
       {disabled}
@@ -160,9 +156,15 @@
       onChange={(extensions) => onDraftChange({ extensions })}
       {onRetryInspection}
     />
-  </Tabs.Content>
+  </section>
 
-  <Tabs.Content value="advanced" class="lab-configure-panel">
+  <Separator />
+
+  <section class="lab-configure-section" aria-labelledby="lab-make-advanced-title">
+    <header class="lab-configure-section-header">
+      <h3 id="lab-make-advanced-title">{m.lab_advanced()}</h3>
+      <p>{m.lab_advanced_fields()}</p>
+    </header>
     <Field.Group>
       <LabAlgorithmEditor id="lab-make-algorithms" values={draft.algorithms} {disabled} invalid={errors.some((issue) => issue.field.startsWith("make.algorithms"))} onChange={(algorithms) => onDraftChange({ algorithms })} onPrimary={onPrimary} />
       <LabDescriptorEditor id="lab-make-exclude" label={m.lab_exclude_list()} description={m.lab_exclude_list_description()} descriptors={draft.excludeList} {disabled} invalidIndices={descriptorInvalidIndices("make.excludeList")} onChange={(excludeList) => onDraftChange({ excludeList })} onPrimary={onPrimary} />
@@ -178,24 +180,35 @@
       <LabVerificationFlow id="lab-make-verification" value={draft.verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto"} {disabled} onChange={handleVerificationChange} />
       <LabClientDataEditor id="lab-make-client-data" mode={draft.clientData.mode} rawValue={draft.clientData.rawJSON} {disabled} warning={draft.clientData.mode === "raw" && warnings.length ? m.lab_raw_json_warning() : null} onModeChange={(mode) => updateClientData({ mode })} onRawChange={(rawJSON) => updateClientData({ rawJSON })} onPrimary={onPrimary} />
     </Field.Group>
-  </Tabs.Content>
-</Tabs.Root>
+  </section>
+</div>
 
 <style>
 @layer blocks {
-  :global(.lab-configure-tabs),
-  :global(.lab-configure-panel) {
+  .lab-configure-sections,
+  .lab-configure-section {
+    display: grid;
+    gap: var(--space-4);
     min-width: 0;
   }
 
-  :global(.lab-configure-tabs [data-slot="tabs-list"]) {
-    width: 100%;
+  .lab-configure-section-header {
+    display: grid;
+    gap: var(--space-1);
   }
 
-  :global(.lab-configure-panel) {
-    display: grid;
-    gap: var(--space-4);
-    padding-top: var(--space-3);
+  .lab-configure-section-header h3,
+  .lab-configure-section-header p {
+    margin: 0;
+  }
+
+  .lab-configure-section-header h3 {
+    font-size: 0.86rem;
+  }
+
+  .lab-configure-section-header p {
+    color: var(--muted-foreground);
+    font-size: 0.7rem;
   }
 
   :global(.lab-basic-grid),

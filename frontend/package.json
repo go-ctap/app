@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/svelte-virtual": "^3.13.32",
     "@wailsio/runtime": "3.0.0-alpha.97"
   },
   "devDependencies": {

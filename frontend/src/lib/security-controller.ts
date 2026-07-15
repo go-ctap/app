@@ -66,6 +66,7 @@ import {
 import { selectedSelector, sessionStatus } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { failureMessage, internalFailure, runtimeFailureFrom } from "./failure.js";
+import { invalidateOverviewCache } from "./overview-controller.js";
 import { effectiveClientPINMaxLength } from "./pin-policy.js";
 import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
 import { rediscoverAfterFactoryReset } from "./session-controller.js";
@@ -234,7 +235,7 @@ async function runPINOperation(
     if (envelope.error || !result) return false;
 
     toast.success(m.security_configuration_updated());
-    await loadSecurityStatus();
+    await refreshSecurityAfterConfigurationChange();
     return true;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -242,6 +243,11 @@ async function runPINOperation(
     applyInvalidSessionError(runtimeError);
     return false;
   }
+}
+
+async function refreshSecurityAfterConfigurationChange() {
+  invalidateOverviewCache();
+  await loadSecurityStatus();
 }
 
 export async function setAuthenticatorPIN(input: PINSetInput): Promise<boolean> {
@@ -774,13 +780,13 @@ async function finishSuccessfulSecurityMutation(kind: NonIdleSecurityMutation["k
     case "alwaysUv":
     case "pinPolicy":
       toast.success(m.security_configuration_updated());
-      await loadSecurityStatus();
+      await refreshSecurityAfterConfigurationChange();
       return;
     case "bioEnroll":
     case "bioRename":
     case "bioRemove":
       toast.success(m.security_configuration_updated());
-      await loadSecurityStatus();
+      await refreshSecurityAfterConfigurationChange();
       await loadSecurityEnrollments();
       return;
     case "reset": {

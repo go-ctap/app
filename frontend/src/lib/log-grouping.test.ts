@@ -10,7 +10,7 @@ import {
 } from "../../bindings/github.com/go-ctap/kit/model";
 
 import type { KitLogRecord } from "./features/logs/state.svelte.js";
-import { buildLogListItems } from "./log-grouping.js";
+import { buildLogListItems, buildVisibleLogListRows } from "./log-grouping.js";
 
 function record(sequence: number, values: Partial<LogEntry>): KitLogRecord {
   const entry = new LogEntry({
@@ -79,6 +79,29 @@ describe("log grouping", () => {
     expect(items).toEqual([
       { kind: "record", record: standalone },
       { kind: "record", record: operation },
+    ]);
+  });
+
+  it("flattens expanded operation groups into stable virtual rows", () => {
+    const firstCommand = record(1, { command: "authenticatorGetInfo" });
+    const secondCommand = record(2, { command: "authenticatorClientPIN" });
+    const operation = record(3, {
+      layer: LogLayer.LogLayerOperation,
+      code: LogCode.LogCodeOperationRun,
+      operationKind: OperationKind.OperationListCredentials,
+    });
+    const items = buildLogListItems(
+      [firstCommand, secondCommand, operation],
+      [firstCommand, secondCommand, operation],
+    );
+
+    expect(buildVisibleLogListRows(items, () => false)).toMatchObject([
+      { kind: "operation", key: "operation:operation-1" },
+    ]);
+    expect(buildVisibleLogListRows(items, () => true)).toMatchObject([
+      { kind: "operation", key: "operation:operation-1" },
+      { kind: "operation-child", key: "kit:1", last: false },
+      { kind: "operation-child", key: "kit:2", last: true },
     ]);
   });
 });

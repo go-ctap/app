@@ -132,6 +132,7 @@ describe("Overview", () => {
 
     render(Overview);
     expect(screen.getByRole("button", { name: "Raw JSON" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("button", { name: "Reload overview" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Refresh MDS" }));
 
     await waitFor(() => {

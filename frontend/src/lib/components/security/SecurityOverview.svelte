@@ -1,25 +1,20 @@
 <script lang="ts">
-  import { KeyRound, RefreshCw, Settings2, ShieldCheck } from "@lucide/svelte";
+  import { KeyRound, Settings2, ShieldCheck } from "@lucide/svelte";
 
   import type { StatusReport } from "../../../../bindings/github.com/go-ctap/kit/model/config";
 
   import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
-  import { Spinner } from "$lib/components/ui/spinner/index.js";
 
   import { m } from "../../../paraglide/messages.js";
   import { booleanState, reportedNumber, retryValue, stateLabel, stateTone } from "./security-ui.js";
 
   type Props = {
     report: StatusReport;
-    loading: boolean;
-    disabled: boolean;
-    onReload: () => void | Promise<boolean>;
   };
 
-  let { report, loading, disabled, onReload }: Props = $props();
+  let { report }: Props = $props();
 
   let resetTransports = $derived(report.resetHints.transportsForReset?.join(", ") || m.not_reported());
 </script>
@@ -27,16 +22,6 @@
 <Card.Root id="security-overview" aria-labelledby="security-title">
   <Card.Header>
     <Card.Title><h2 id="security-title" class="security-card-title">{m.security_overview()}</h2></Card.Title>
-    <Card.Action>
-      <Button variant="outline" type="button" {disabled} onclick={onReload}>
-        {#if loading}
-          <Spinner data-icon="inline-start" aria-hidden="true" />
-        {:else}
-          <RefreshCw data-icon="inline-start" aria-hidden="true" />
-        {/if}
-        {m.reload_overview()}
-      </Button>
-    </Card.Action>
   </Card.Header>
   <Card.Content>
     <div class="security-summary-grid">

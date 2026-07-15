@@ -9,13 +9,12 @@
   import * as Tabs from "$lib/components/ui/tabs/index.js";
   import {
     cancelLabHandoff,
-    cancelLabPreset,
     confirmLabHandoff,
     confirmLabGetAssertion,
     confirmLabMakeCredential,
-    confirmLabPreset,
     editLabGetAssertion,
     editLabMakeCredential,
+    fillLabDemoValues,
     handoffLabCredential,
     newLabGetAssertionRun,
     newLabMakeCredentialRun,
@@ -24,11 +23,8 @@
     regenerateLabMakeChallenge,
     regenerateLabUserID,
     reloadOverview,
-    requestLabPreset,
     rerunLabGetAssertion,
     runLabGetAssertion,
-    selectLabGetSection,
-    selectLabMakeSection,
     selectLabOperation,
     updateLabGetAssertionDraft,
     updateLabMakeCredentialDraft,
@@ -39,20 +35,17 @@
     selectedDevice,
     selectedSelector,
     sessionBusy,
-    type LabPresetID,
   } from "$lib/stores";
 
   import { m } from "../paraglide/messages.js";
 
-  let scenarioDirty = $derived(
-    $labState.isCustom
-      || $labState.makeStep.phase !== "editing"
-      || $labState.getStep.phase !== "editing"
-      || $labState.pendingHandoff !== null,
-  );
-  let presetDialogOpen = $derived(Boolean($labState.pendingPresetID));
   let handoffDialogOpen = $derived(Boolean($labState.pendingHandoff));
   let controlsDisabled = $derived($sessionBusy);
+  let demoValuesDisabled = $derived.by(() => {
+    const step = $labState.activeOperation === "make" ? $labState.makeStep : $labState.getStep;
+    const editable = step.phase === "editing" || (step.phase === "error" && step.request === null);
+    return controlsDisabled || !editable;
+  });
 
   async function focusGetAssertion() {
     await tick();
@@ -73,10 +66,6 @@
     await focusGetAssertion();
   }
 
-  function handlePresetDialogChange(open: boolean) {
-    if (!open) cancelLabPreset();
-  }
-
   function handleHandoffDialogChange(open: boolean) {
     if (!open) cancelLabHandoff();
   }
@@ -86,12 +75,8 @@
   <section class="lab-screen" aria-label={m.lab_title()}>
     <LabHeader
       device={$selectedDevice}
-      presetID={$labState.presetID}
-      isCustom={$labState.isCustom}
-      dirty={scenarioDirty}
-      pendingPresetID={$labState.pendingPresetID}
-      disabled={controlsDisabled}
-      onPresetChange={(presetID: LabPresetID) => requestLabPreset(presetID)}
+      disabled={demoValuesDisabled}
+      onFillDemoValues={fillLabDemoValues}
     />
 
     <Tabs.Root
@@ -110,7 +95,6 @@
           lab={$labState}
           inspection={$authenticatorInspection}
           disabled={controlsDisabled}
-          onSectionChange={selectLabMakeSection}
           onDraftChange={updateLabMakeCredentialDraft}
           onRegenerateUserID={regenerateLabUserID}
           onRegenerateChallenge={regenerateLabMakeChallenge}
@@ -127,7 +111,6 @@
           lab={$labState}
           inspection={$authenticatorInspection}
           disabled={controlsDisabled}
-          onSectionChange={selectLabGetSection}
           onDraftChange={updateLabGetAssertionDraft}
           onRegenerateChallenge={regenerateLabGetChallenge}
           onPreview={runLabGetAssertion}
@@ -140,22 +123,6 @@
       </Tabs.Content>
     </Tabs.Root>
   </section>
-
-  <AlertDialog.Root open={presetDialogOpen} onOpenChange={handlePresetDialogChange}>
-    {#if $labState.pendingPresetID}
-      <AlertDialog.Content class="lab-confirmation-dialog">
-        <AlertDialog.Header>
-          <AlertDialog.Media><TriangleAlert aria-hidden="true" /></AlertDialog.Media>
-          <AlertDialog.Title>{m.lab_preset_dirty_title()}</AlertDialog.Title>
-          <AlertDialog.Description>{m.lab_preset_dirty_description()}</AlertDialog.Description>
-        </AlertDialog.Header>
-        <AlertDialog.Footer>
-          <AlertDialog.Cancel onclick={cancelLabPreset}>{m.lab_cancel()}</AlertDialog.Cancel>
-          <AlertDialog.Action onclick={confirmLabPreset}>{m.lab_apply_preset()}</AlertDialog.Action>
-        </AlertDialog.Footer>
-      </AlertDialog.Content>
-    {/if}
-  </AlertDialog.Root>
 
   <AlertDialog.Root open={handoffDialogOpen} onOpenChange={handleHandoffDialogChange}>
     {#if $labState.pendingHandoff}

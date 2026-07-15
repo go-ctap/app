@@ -158,8 +158,8 @@
             <dl class="lab-extension-result-list">
               {#if clientExtensions?.getCredBlob}
                 <div>
-                  <dt>getCredBlob</dt>
-                  <dd><LabHexValue label="getCredBlob" value={clientExtensions.getCredBlob.valueHex} /></dd>
+                  <dt>credBlob</dt>
+                  <dd><LabHexValue label="credBlob" value={clientExtensions.getCredBlob.valueHex} /></dd>
                 </div>
               {/if}
               {#if clientExtensions?.["hmac-secret"]}

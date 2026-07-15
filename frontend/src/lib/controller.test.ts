@@ -272,6 +272,29 @@ describe("controller lifecycle", () => {
     expect(serviceMocks.Inspect).toHaveBeenCalledTimes(1);
   });
 
+  it("loads a fresh inspection when navigating to an invalidated Overview", async () => {
+    const token = device("token-1");
+    const cached = inspectEnvelope(token);
+    const refreshed = inspectEnvelope(token);
+    refreshed.operationId = "inspect-refreshed";
+    const { navigateToScreen } = await import("./controller");
+    const { invalidateOverviewCache } = await import("./overview-controller");
+    seedDevicesForTest([token]);
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
+    seedOverviewEnvelopeForTest(cached);
+    seedActiveScreenForTest("security");
+    serviceMocks.Inspect.mockResolvedValue(refreshed);
+
+    invalidateOverviewCache();
+    expect(get(authenticatorInspection).state).toBe("idle");
+
+    await navigateToScreen("overview");
+
+    expect(serviceMocks.Inspect).toHaveBeenCalledOnce();
+    expect(serviceMocks.Inspect).toHaveBeenCalledWith({ sessionId: "session-token-1" });
+    expect(get(authenticatorInspection).data).toBe(refreshed);
+  });
+
   it("loads passkeys once when navigating to passkeys with an existing selected session", async () => {
     const token = device("token-1");
     const { navigateToScreen } = await import("./controller");

@@ -32,6 +32,12 @@ function shouldLoadBioSensor(envelope: InspectEnvelope) {
   return options.bioEnroll === true || options.uvBioEnroll === true;
 }
 
+export function invalidateOverviewCache() {
+  authenticatorInspection.set(idleLoadState());
+  overviewBioSensor.set(idleLoadState());
+  overviewMDS.set(idleLoadState());
+}
+
 function canAutoLoadOverview() {
   const selector = get(selectedSelector).trim();
   const screen = get(activeScreen);

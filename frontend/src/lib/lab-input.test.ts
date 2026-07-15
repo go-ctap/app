@@ -10,7 +10,7 @@ import {
   HMACGetSecretInput,
 } from "../../bindings/github.com/go-ctap/ctap/webauthn";
 
-import { createPresetState } from "./features/lab/state";
+import { createLabState } from "./features/lab/state";
 import {
   base64ToHex,
   base64ToUTF8,
@@ -65,9 +65,9 @@ describe("WebAuthn Lab binary inputs", () => {
   });
 });
 
-describe("WebAuthn Lab presets", () => {
-  it("creates fresh independent identifiers and challenges from the provided source", () => {
-    const state = createPresetState("discoverable", sequentialRandom());
+describe("WebAuthn Lab default state", () => {
+  it("creates a minimal request with fresh independent identifiers and challenges", () => {
+    const state = createLabState(sequentialRandom());
 
     expect(state.makeDraft.userIDHex).toBe("000102030405060708090a0b0c0d0e0f");
     expect(base64URLToHex(state.makeDraft.clientData.challenge)).toBe(
@@ -77,25 +77,10 @@ describe("WebAuthn Lab presets", () => {
       "303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f",
     );
     expect(state.makeDraft.clientData.challenge).not.toBe(state.getDraft.clientData.challenge);
-    expect(state.presetID).toBe("discoverable");
-    expect(state.isCustom).toBe(false);
-  });
-
-  it("applies each preset without inventing unrelated options", () => {
-    const minimal = createPresetState("minimal", sequentialRandom());
-    expect(buildAuthenticatorOptions(minimal.makeDraft)).toBeUndefined();
-    expect(buildAuthenticatorOptions(minimal.getDraft)).toBeUndefined();
-
-    const discoverable = createPresetState("discoverable", sequentialRandom());
-    expect(buildAuthenticatorOptions(discoverable.makeDraft)).toEqual({ residentKey: true });
-    expect(buildAuthenticatorOptions(discoverable.getDraft)).toBeUndefined();
-
-    const securityKey = createPresetState("non-discoverable", sequentialRandom());
-    expect(buildAuthenticatorOptions(securityKey.makeDraft)).toEqual({ residentKey: false });
-
-    const uv = createPresetState("uv-required", sequentialRandom());
-    expect(buildAuthenticatorOptions(uv.makeDraft)).toEqual({ userVerification: true });
-    expect(buildAuthenticatorOptions(uv.getDraft)).toEqual({ userVerification: true });
+    expect(buildAuthenticatorOptions(state.makeDraft)).toBeUndefined();
+    expect(buildAuthenticatorOptions(state.getDraft)).toBeUndefined();
+    expect(Object.values(state.makeDraft.extensions).every((extension) => !extension.included)).toBe(true);
+    expect(Object.values(state.getDraft.extensions).every((extension) => !extension.included)).toBe(true);
   });
 });
 
@@ -111,7 +96,7 @@ describe("WebAuthn Lab client data and validation", () => {
   });
 
   it("requires an exact HTTP(S) origin and a nonempty strict base64url challenge in builder mode", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.makeDraft.clientData.origin = "https://example.com/path";
     state.makeDraft.clientData.challenge = "not+padded=";
 
@@ -132,7 +117,7 @@ describe("WebAuthn Lab client data and validation", () => {
   });
 
   it("warns about invalid raw JSON without blocking exact raw UTF-8 bytes", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.getDraft.clientData.mode = "raw";
     state.getDraft.clientData.rawJSON = "{not JSON}\nПривет";
 
@@ -149,7 +134,7 @@ describe("WebAuthn Lab client data and validation", () => {
 
 describe("WebAuthn Lab request builders", () => {
   it("keeps algorithm order and duplicates and omits every Auto option", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.makeDraft.algorithms = ["-7", "-257", "-7", "42"];
     const request = buildMakeCredentialRequest("session-1", state.makeDraft);
 
@@ -167,7 +152,7 @@ describe("WebAuthn Lab request builders", () => {
   });
 
   it("passes explicit false, PIN flow, descriptors, and their order exactly", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.getDraft.verificationFlow = VerificationFlow.VerificationFlowPIN;
     state.getDraft.userPresence = "false";
     state.getDraft.allowList = [
@@ -192,7 +177,7 @@ describe("WebAuthn Lab request builders", () => {
   });
 
   it("reports zero, fractional, unsafe, and malformed algorithm IDs", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.makeDraft.algorithms = ["0", "1.5", "9007199254740992", "ES256"];
     const validation = validateMakeCredentialDraft(state.makeDraft);
 
@@ -201,7 +186,7 @@ describe("WebAuthn Lab request builders", () => {
   });
 
   it("validates all user and descriptor IDs as nonempty even-length hex", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.makeDraft.userIDHex = "abc";
     state.makeDraft.excludeList = [{ credentialIDHex: "", transports: [] }];
     state.getDraft.allowList = [{ credentialIDHex: "zz", transports: [] }];
@@ -216,7 +201,7 @@ describe("WebAuthn Lab request builders", () => {
   });
 
   it("builds credProps as the WebAuthn boolean while preserving CTAP extension DTOs", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.makeDraft.extensions.credentialProperties = { included: true };
     state.makeDraft.extensions.credentialBlob = {
       included: true,
@@ -242,7 +227,7 @@ describe("WebAuthn Lab request builders", () => {
   });
 
   it("builds a direct WebAuthn PRF eval with zero-length BufferSources intact", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.makeDraft.extensions.prf.included = true;
     state.makeDraft.extensions.prf.useEval = true;
     state.makeDraft.extensions.prf.eval = {
@@ -261,7 +246,7 @@ describe("WebAuthn Lab request builders", () => {
   });
 
   it("builds WebAuthn PRF global and per-credential evaluations together", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.getDraft.allowList = [{ credentialIDHex: "aabb", transports: [] }];
     state.getDraft.extensions.prf.included = true;
     state.getDraft.extensions.prf.useGlobalEval = true;
@@ -288,7 +273,7 @@ describe("WebAuthn Lab request builders", () => {
   });
 
   it("builds an empty PRF input when evaluation is not requested", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.makeDraft.extensions.prf.included = true;
     state.getDraft.extensions.prf.included = true;
 
@@ -305,7 +290,7 @@ describe("WebAuthn Lab request builders", () => {
 
 describe("WebAuthn Lab extension validation", () => {
   it.each([31, 33])("rejects a %i-byte HMAC salt", (byteLength) => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.makeDraft.extensions.hmacSecretMC.included = true;
     state.makeDraft.extensions.hmacSecretMC.salt1Hex = "11".repeat(byteLength);
 
@@ -316,7 +301,7 @@ describe("WebAuthn Lab extension validation", () => {
   });
 
   it("accepts one or two exact 32-byte HMAC salts", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.getDraft.extensions.hmacSecret.included = true;
     state.getDraft.extensions.hmacSecret.salt1Hex = "11".repeat(32);
 
@@ -331,7 +316,7 @@ describe("WebAuthn Lab extension validation", () => {
   });
 
   it("rejects HMAC/PRF conflicts for both operations", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.makeDraft.extensions.hmacSecretMC.included = true;
     state.makeDraft.extensions.prf.included = true;
     state.makeDraft.extensions.prf.useEval = true;
@@ -350,7 +335,7 @@ describe("WebAuthn Lab extension validation", () => {
   });
 
   it("validates credBlob against the reported maximum before preview", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.makeDraft.extensions.credentialBlob.included = true;
     state.makeDraft.extensions.credentialBlob.payload = { mode: "utf8", value: "four" };
 
@@ -362,7 +347,7 @@ describe("WebAuthn Lab extension validation", () => {
   });
 
   it("allows empty PRF requests to coexist with raw HMAC extensions", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.makeDraft.extensions.hmacSecretMC.included = true;
     state.makeDraft.extensions.prf.included = true;
     state.getDraft.extensions.hmacSecret.included = true;
@@ -373,7 +358,7 @@ describe("WebAuthn Lab extension validation", () => {
   });
 
   it("rejects an included PRF when raw MakeCredential hmac-secret is false", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.makeDraft.extensions.hmacSecret = { included: true, value: false };
     state.makeDraft.extensions.prf.included = true;
 
@@ -387,7 +372,7 @@ describe("WebAuthn Lab extension validation", () => {
   });
 
   it("requires one matching allow-list credential for per-credential PRF evaluation", () => {
-    const state = createPresetState("minimal", sequentialRandom());
+    const state = createLabState(sequentialRandom());
     state.getDraft.extensions.prf.included = true;
     state.getDraft.extensions.prf.evalByCredential = [{
       credentialIDHex: "aabb",

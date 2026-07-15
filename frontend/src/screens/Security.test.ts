@@ -112,6 +112,7 @@ describe("Security screen", () => {
     expect(screen.getByText(/Client PIN or built-in UV/)).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "Always UV" })).toBeEnabled();
     expect(screen.getByRole("heading", { name: "Factory reset" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reload overview" })).not.toBeInTheDocument();
   });
 
   it("shows and enforces the CTAP default maximum PIN length when it is not reported", () => {
