@@ -32,6 +32,7 @@ const warningMessages: Readonly<Record<string, () => string>> = {
   "webauthn.extension.hmac_secret_mc.not_advertised": m.warning_webauthn_extension_hmac_secret_mc_not_advertised,
   "webauthn.extension.min_pin_length.not_advertised": m.warning_webauthn_extension_min_pin_length_not_advertised,
   "webauthn.extension.pin_complexity_policy.not_advertised": m.warning_webauthn_extension_pin_complexity_policy_not_advertised,
+  "webauthn.extension.prf.not_advertised": m.warning_webauthn_extension_prf_not_advertised,
   "webauthn.make_credential.mutation": m.warning_webauthn_make_credential_mutation,
 };
 

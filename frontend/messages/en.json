@@ -1190,6 +1190,7 @@
   "warning_webauthn_extension_hmac_secret_mc_not_advertised": "The authenticator did not advertise hmac-secret-mc; execution is still allowed and the device response remains authoritative.",
   "warning_webauthn_extension_min_pin_length_not_advertised": "The authenticator did not advertise minPinLength; execution is still allowed and the device response remains authoritative.",
   "warning_webauthn_extension_pin_complexity_policy_not_advertised": "The authenticator did not advertise pinComplexityPolicy; execution is still allowed and the device response remains authoritative.",
+  "warning_webauthn_extension_prf_not_advertised": "The authenticator did not advertise prf; execution is still allowed and the device response remains authoritative.",
   "warning_webauthn_make_credential_mutation": "A new credential may be created on this authenticator.",
   "warnings_count": "{count} warnings",
   "window_controls": "Window controls",

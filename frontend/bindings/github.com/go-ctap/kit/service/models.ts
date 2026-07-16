@@ -69,6 +69,7 @@ export class AuthenticatorConfigEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.AuthenticatorConfigOutput | null;
 
@@ -83,6 +84,9 @@ export class AuthenticatorConfigEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -91,14 +95,14 @@ export class AuthenticatorConfigEnvelope {
      * Creates a new AuthenticatorConfigEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): AuthenticatorConfigEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType3;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType3;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new AuthenticatorConfigEnvelope($$parsedSource as Partial<AuthenticatorConfigEnvelope>);
     }
@@ -108,6 +112,7 @@ export class BioEnrollEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.BioEnrollOutput | null;
 
@@ -122,6 +127,9 @@ export class BioEnrollEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -130,14 +138,14 @@ export class BioEnrollEnvelope {
      * Creates a new BioEnrollEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): BioEnrollEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType5;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType5;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new BioEnrollEnvelope($$parsedSource as Partial<BioEnrollEnvelope>);
     }
@@ -173,6 +181,7 @@ export class BioListEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.BioListOutput | null;
 
@@ -187,6 +196,9 @@ export class BioListEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -195,14 +207,14 @@ export class BioListEnvelope {
      * Creates a new BioListEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): BioListEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType7;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new BioListEnvelope($$parsedSource as Partial<BioListEnvelope>);
     }
@@ -212,6 +224,7 @@ export class BioMutationEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.BioMutationOutput | null;
 
@@ -226,6 +239,9 @@ export class BioMutationEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -234,14 +250,14 @@ export class BioMutationEnvelope {
      * Creates a new BioMutationEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): BioMutationEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType9;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType9;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new BioMutationEnvelope($$parsedSource as Partial<BioMutationEnvelope>);
     }
@@ -313,6 +329,7 @@ export class BioSensorEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.BioSensorOutput | null;
 
@@ -327,6 +344,9 @@ export class BioSensorEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -335,14 +355,14 @@ export class BioSensorEnvelope {
      * Creates a new BioSensorEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): BioSensorEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType11;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType11;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new BioSensorEnvelope($$parsedSource as Partial<BioSensorEnvelope>);
     }
@@ -373,6 +393,7 @@ export class ConfigStatusEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.ConfigStatusOutput | null;
 
@@ -387,6 +408,9 @@ export class ConfigStatusEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -395,14 +419,14 @@ export class ConfigStatusEnvelope {
      * Creates a new ConfigStatusEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): ConfigStatusEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType13;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType13;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new ConfigStatusEnvelope($$parsedSource as Partial<ConfigStatusEnvelope>);
     }
@@ -412,6 +436,7 @@ export class CredentialDeleteEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.CredentialDeleteOutput | null;
 
@@ -426,6 +451,9 @@ export class CredentialDeleteEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -434,14 +462,14 @@ export class CredentialDeleteEnvelope {
      * Creates a new CredentialDeleteEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): CredentialDeleteEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType15;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType15;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new CredentialDeleteEnvelope($$parsedSource as Partial<CredentialDeleteEnvelope>);
     }
@@ -503,6 +531,7 @@ export class CredentialUpdateEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.CredentialUpdateOutput | null;
 
@@ -517,6 +546,9 @@ export class CredentialUpdateEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -525,14 +557,14 @@ export class CredentialUpdateEnvelope {
      * Creates a new CredentialUpdateEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): CredentialUpdateEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType17;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType17;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new CredentialUpdateEnvelope($$parsedSource as Partial<CredentialUpdateEnvelope>);
     }
@@ -577,6 +609,7 @@ export class CredentialsEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.CredentialsOutput | null;
 
@@ -591,6 +624,9 @@ export class CredentialsEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -599,14 +635,14 @@ export class CredentialsEnvelope {
      * Creates a new CredentialsEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): CredentialsEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType19;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType19;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new CredentialsEnvelope($$parsedSource as Partial<CredentialsEnvelope>);
     }
@@ -702,6 +738,7 @@ export class GetAssertionEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.GetAssertionOutput | null;
 
@@ -716,6 +753,9 @@ export class GetAssertionEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -724,14 +764,14 @@ export class GetAssertionEnvelope {
      * Creates a new GetAssertionEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): GetAssertionEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType25;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType25;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new GetAssertionEnvelope($$parsedSource as Partial<GetAssertionEnvelope>);
     }
@@ -791,6 +831,7 @@ export class InspectEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.InspectOutput | null;
 
@@ -805,6 +846,9 @@ export class InspectEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -813,14 +857,14 @@ export class InspectEnvelope {
      * Creates a new InspectEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): InspectEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType32;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType32;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new InspectEnvelope($$parsedSource as Partial<InspectEnvelope>);
     }
@@ -918,6 +962,7 @@ export class LargeBlobListEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.LargeBlobListOutput | null;
 
@@ -932,6 +977,9 @@ export class LargeBlobListEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -940,14 +988,14 @@ export class LargeBlobListEnvelope {
      * Creates a new LargeBlobListEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): LargeBlobListEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType35;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType35;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new LargeBlobListEnvelope($$parsedSource as Partial<LargeBlobListEnvelope>);
     }
@@ -980,6 +1028,7 @@ export class LargeBlobMutationEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.LargeBlobMutationOutput | null;
 
@@ -994,6 +1043,9 @@ export class LargeBlobMutationEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -1002,14 +1054,14 @@ export class LargeBlobMutationEnvelope {
      * Creates a new LargeBlobMutationEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): LargeBlobMutationEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType37;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType37;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new LargeBlobMutationEnvelope($$parsedSource as Partial<LargeBlobMutationEnvelope>);
     }
@@ -1053,6 +1105,7 @@ export class LargeBlobReadEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.LargeBlobReadOutput | null;
 
@@ -1067,6 +1120,9 @@ export class LargeBlobReadEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -1075,14 +1131,14 @@ export class LargeBlobReadEnvelope {
      * Creates a new LargeBlobReadEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): LargeBlobReadEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType39;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType39;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new LargeBlobReadEnvelope($$parsedSource as Partial<LargeBlobReadEnvelope>);
     }
@@ -1189,6 +1245,7 @@ export class MakeCredentialEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.MakeCredentialOutput | null;
 
@@ -1203,6 +1260,9 @@ export class MakeCredentialEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -1211,14 +1271,14 @@ export class MakeCredentialEnvelope {
      * Creates a new MakeCredentialEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): MakeCredentialEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType42;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType42;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new MakeCredentialEnvelope($$parsedSource as Partial<MakeCredentialEnvelope>);
     }
@@ -1446,6 +1506,7 @@ export class PINEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.PINOutput | null;
 
@@ -1460,6 +1521,9 @@ export class PINEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -1468,14 +1532,14 @@ export class PINEnvelope {
      * Creates a new PINEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): PINEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType52;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType52;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new PINEnvelope($$parsedSource as Partial<PINEnvelope>);
     }
@@ -1537,6 +1601,7 @@ export class ResetFactoryEnvelope {
     "operationId": OperationID;
     "sessionId": SessionID;
     "kind": model$0.OperationKind;
+    "sessionClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.ResetFactoryOutput | null;
 
@@ -1551,6 +1616,9 @@ export class ResetFactoryEnvelope {
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
+        if (!("sessionClosed" in $$source)) {
+            this["sessionClosed"] = false;
+        }
 
         Object.assign(this, $$source);
     }
@@ -1559,14 +1627,14 @@ export class ResetFactoryEnvelope {
      * Creates a new ResetFactoryEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): ResetFactoryEnvelope {
-        const $$createField3_0 = $$createType1;
-        const $$createField4_0 = $$createType54;
+        const $$createField4_0 = $$createType1;
+        const $$createField5_0 = $$createType54;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField3_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
         }
         if ("result" in $$parsedSource) {
-            $$parsedSource["result"] = $$createField4_0($$parsedSource["result"]);
+            $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new ResetFactoryEnvelope($$parsedSource as Partial<ResetFactoryEnvelope>);
     }

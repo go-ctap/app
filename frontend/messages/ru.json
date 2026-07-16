@@ -1190,6 +1190,7 @@
   "warning_webauthn_extension_hmac_secret_mc_not_advertised": "Аутентификатор не объявил hmac-secret-mc; отправка всё равно разрешена, а ответ устройства остаётся определяющим.",
   "warning_webauthn_extension_min_pin_length_not_advertised": "Аутентификатор не объявил minPinLength; отправка всё равно разрешена, а ответ устройства остаётся определяющим.",
   "warning_webauthn_extension_pin_complexity_policy_not_advertised": "Аутентификатор не объявил pinComplexityPolicy; отправка всё равно разрешена, а ответ устройства остаётся определяющим.",
+  "warning_webauthn_extension_prf_not_advertised": "Аутентификатор не объявил prf; отправка всё равно разрешена, а ответ устройства остаётся определяющим.",
   "warning_webauthn_make_credential_mutation": "На этом аутентификаторе могут быть созданы новые учетные данные.",
   "warnings_count": "Предупреждений: {count}",
   "window_controls": "Управление окном",

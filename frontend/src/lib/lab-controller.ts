@@ -28,7 +28,7 @@ import {
   validateMakeCredentialDraft,
 } from "./lab-input.js";
 import { runtimeFailureFrom } from "./failure.js";
-import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
+import { applyInvalidSessionError, applyOperationSessionBoundary, selectedSessionId } from "./session-boundary.js";
 import { ensureSelectedSessionReady } from "./session-controller.js";
 import {
   beginOperation,
@@ -166,7 +166,7 @@ export async function previewLabMakeCredential(): Promise<boolean> {
       }));
     }
     summarizeEnvelope(m.lab_make_credential_preview(), envelope);
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     return !envelope.error;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -247,7 +247,7 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
       invalidateLargeBlobsInventory();
     }
     summarizeEnvelope(m.lab_make_credential(), envelope);
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     return !envelope.error;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -327,7 +327,7 @@ async function executeGetAssertion(
       }));
     }
     summarizeEnvelope(m.lab_get_assertion(), envelope);
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     return !envelope.error;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -388,7 +388,7 @@ export async function runLabGetAssertion(): Promise<boolean> {
       }));
     }
     summarizeEnvelope(m.lab_get_assertion(), envelope);
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     return !envelope.error;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);

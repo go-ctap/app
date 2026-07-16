@@ -37,6 +37,7 @@
   let summaryRows = $derived(buildSummaryRows(record));
   let request = $derived(record.source === "kit" ? record.entry.request ?? null : null);
   let response = $derived(record.source === "kit" ? record.entry.response ?? null : null);
+  let errorMessage = $derived(record.source === "kit" ? record.entry.errorMessage ?? "" : "");
   let responseJSON = $derived.by(() => {
     if (record.source === "app/runtime") return JSON.stringify(record.error, null, 2);
     if (record.entry.response) return record.entry.response.json;
@@ -125,6 +126,13 @@
     </Tabs.Content>
 
     <Tabs.Content value="response" class="log-detail-tab-content">
+      {#if errorMessage}
+        <Alert.Root variant="destructive">
+          <FileWarning aria-hidden="true" />
+          <Alert.Title>{m.logs_failure()}</Alert.Title>
+          <Alert.Description class="log-error-message"><code>{errorMessage}</code></Alert.Description>
+        </Alert.Root>
+      {/if}
       {#if response?.truncated}
         <Alert.Root variant="warning">
           <FileWarning aria-hidden="true" />
@@ -201,6 +209,11 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    :global(.log-error-message) {
+      overflow-wrap: anywhere;
+      font-family: var(--font-mono);
     }
 
     :global(.log-detail-tabs) {

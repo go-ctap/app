@@ -308,6 +308,7 @@ function invalidSessionStatusEnvelope(): ConfigStatusEnvelope {
     operationId: "status-invalid-session",
     sessionId: "session-1",
     kind: OperationKind.OperationConfigStatus,
+    sessionClosed: false,
     error: failureForCode(Code.CodeSessionInvalid),
   } as ConfigStatusEnvelope;
 }

@@ -126,6 +126,7 @@ describe("operation controller", () => {
       operationId: "operation-1",
       sessionId: "session-1",
       kind: OperationKind.OperationListCredentials,
+      sessionClosed: false,
       error: failureForCode(Code.CodeOperationCanceled),
     } as CredentialsEnvelope);
 

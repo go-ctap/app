@@ -16,7 +16,7 @@ import {
 import { authenticatorInspection, selectedSelector, sessionStatus } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { failureMessage, runtimeFailureFrom } from "./failure.js";
-import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
+import { applyInvalidSessionError, applyOperationSessionBoundary, selectedSessionId } from "./session-boundary.js";
 import { beginOperation, setStatusOutcome, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
 
 function reportDegradedOverviewLoad(label: string, error: Failure) {
@@ -115,7 +115,7 @@ export async function loadOverview() {
       biometricFailure = await loadOverviewDetails(envelope, sessionId);
     }
     summarizeEnvelope(m.overview_inspection(), envelope);
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     if (biometricFailure) {
       reportDegradedOverviewLoad(m.biometrics(), biometricFailure);
       applyInvalidSessionError(biometricFailure);

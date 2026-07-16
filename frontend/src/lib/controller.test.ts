@@ -116,6 +116,7 @@ function inspectEnvelope(item: DeviceReport) {
     operationId: `inspect-${item.fingerprint}`,
     sessionId: `session-${item.fingerprint}`,
     kind: OperationKind.OperationInspect,
+    sessionClosed: false,
     result: {
       result: {
         device: item,
@@ -1027,6 +1028,7 @@ describe("controller lifecycle", () => {
       operationId: "credentials-token-1",
       sessionId: "session-token-1",
       kind: OperationKind.OperationListCredentials,
+      sessionClosed: false,
       error: failureForCode(Code.CodeSessionInvalid),
     } as CredentialsEnvelope);
 
@@ -1037,6 +1039,33 @@ describe("controller lifecycle", () => {
       error: failureForCode(Code.CodeSessionInvalid),
     });
     expect(get(sessionStatus).sessionId).toBeUndefined();
+    expect(get(pendingInteraction)).toBeNull();
+  });
+
+  it("honors a closed-session postcondition on the first transport failure", async () => {
+    const token = device("token-1");
+    const { loadPasskeys } = await import("./controller");
+    seedDevicesForTest([token]);
+    seedActiveScreenForTest("passkeys");
+    seedSelectionForTest("token-1", token, { state: "ready", sessionId: "session-token-1" });
+    seedPendingInteractionForTest({
+      interactionId: "interaction-1",
+      operationId: "operation-1",
+      sessionId: "session-token-1",
+      request: { kind: "confirm" },
+    } as InteractionPrompt);
+    const transportFailure = failureForCode(Code.CodeTransportFailure);
+    serviceMocks.ListCredentials.mockResolvedValue({
+      operationId: "credentials-token-1",
+      sessionId: "session-token-1",
+      kind: OperationKind.OperationListCredentials,
+      sessionClosed: true,
+      error: transportFailure,
+    } as CredentialsEnvelope);
+
+    await loadPasskeys();
+
+    expect(get(sessionStatus)).toEqual({ state: "error", error: transportFailure });
     expect(get(pendingInteraction)).toBeNull();
   });
 

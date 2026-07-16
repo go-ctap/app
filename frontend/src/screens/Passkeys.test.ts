@@ -568,6 +568,7 @@ describe("Passkeys", () => {
       operationId: "delete-preview-1",
       sessionId: "session-1",
       kind: OperationKind.OperationDeleteCredential,
+      sessionClosed: false,
       result: {
         preview: {
           credentialIDHex: "cafe",
@@ -614,6 +615,7 @@ describe("Passkeys", () => {
       operationId: "delete-preview-1",
       sessionId: "session-1",
       kind: OperationKind.OperationDeleteCredential,
+      sessionClosed: false,
       result: {
         preview: {
           credentialIDHex: "cafe",
@@ -631,6 +633,7 @@ describe("Passkeys", () => {
       operationId: "delete-1",
       sessionId: "session-1",
       kind: OperationKind.OperationDeleteCredential,
+      sessionClosed: false,
       error: failureForCode(Code.CodeTransportFailure),
     } as CredentialDeleteEnvelope;
     const mutation = {
@@ -676,6 +679,7 @@ describe("Passkeys", () => {
       operationId: "delete-preview-1",
       sessionId: "session-1",
       kind: OperationKind.OperationDeleteCredential,
+      sessionClosed: false,
       error: failureForCode(Code.CodeTransportFailure),
     } as CredentialDeleteEnvelope;
     mutablePasskeysMutation.set({

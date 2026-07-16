@@ -23,6 +23,7 @@ function envelope(): LargeBlobListEnvelope {
     operationId: "list-1",
     sessionId: "session-1",
     kind: OperationKind.OperationListLargeBlobs,
+    sessionClosed: false,
     result: {
       report: {
         device: {

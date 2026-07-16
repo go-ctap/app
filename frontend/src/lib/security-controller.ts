@@ -68,7 +68,7 @@ import { activeScreen } from "./features/workbench/state.js";
 import { failureMessage, internalFailure, runtimeFailureFrom } from "./failure.js";
 import { invalidateOverviewCache } from "./overview-controller.js";
 import { effectiveClientPINMaxLength } from "./pin-policy.js";
-import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
+import { applyInvalidSessionError, applyOperationSessionBoundary, selectedSessionId } from "./session-boundary.js";
 import { rediscoverAfterFactoryReset } from "./session-controller.js";
 import {
   beginOperation,
@@ -129,7 +129,7 @@ export async function loadSecurityStatus(): Promise<boolean> {
     }
 
     summarizeEnvelope(m.security_status_operation(), envelope);
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     if (envelope.error || !report) return false;
 
     if (report.bio.supported) {
@@ -171,7 +171,7 @@ export async function loadSecurityBioSensor(sessionId = ""): Promise<boolean> {
     }
 
     summarizeEnvelope(m.security_bio_sensor_operation(), envelope);
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     return !envelope.error && Boolean(sensor);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -207,7 +207,7 @@ export async function loadSecurityEnrollments(): Promise<boolean> {
     }
 
     summarizeEnvelope(m.security_bio_list_operation(), envelope);
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     return !envelope.error && Boolean(list);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -231,7 +231,7 @@ async function runPINOperation(
     } else {
       summarizeOperationContractFailure(label, internalFailure());
     }
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     if (envelope.error || !result) return false;
 
     toast.success(m.security_configuration_updated());
@@ -360,7 +360,7 @@ function summarizePreviewEnvelope(
   } else {
     summarizeOperationContractFailure(label, internalFailure());
   }
-  applyInvalidSessionError(envelope.error);
+  applyOperationSessionBoundary(envelope);
 }
 
 function summarizeExecuteEnvelope(
@@ -373,7 +373,7 @@ function summarizeExecuteEnvelope(
   } else {
     summarizeOperationContractFailure(label, internalFailure());
   }
-  applyInvalidSessionError(envelope.error);
+  applyOperationSessionBoundary(envelope);
 }
 
 function friendlyNameTooLong(value: string) {

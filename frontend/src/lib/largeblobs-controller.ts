@@ -49,7 +49,7 @@ import { activeScreen } from "./features/workbench/state.js";
 import { parseLargeBlobPayload, type LargeBlobPayloadEncoding } from "./largeblobs-payload.js";
 import { findLargeBlobCredential } from "./largeblobs-presentation.js";
 import { internalFailure, runtimeFailureFrom } from "./failure.js";
-import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
+import { applyInvalidSessionError, applyOperationSessionBoundary, selectedSessionId } from "./session-boundary.js";
 import {
   beginOperation,
   finishOperation,
@@ -122,7 +122,7 @@ export async function loadLargeBlobs(options: LoadLargeBlobsOptions = {}) {
     } else {
       summarizeOperationContractFailure(m.large_blob_list(), internalFailure());
     }
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     const selectedCredentialID = get(largeBlobsSelectedCredentialID);
     if (!envelope.error && report && selectedCredentialID) {
       await readLargeBlob(selectedCredentialID);
@@ -254,7 +254,7 @@ export async function readLargeBlob(credentialIDHex = get(largeBlobsSelectedCred
     } else {
       summarizeOperationContractFailure(m.large_blob_read(), internalFailure());
     }
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     return !envelope.error && Boolean(report);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -425,7 +425,7 @@ export async function previewLargeBlobWrite(): Promise<boolean> {
     } else {
       summarizeOperationContractFailure(m.large_blob_write(), internalFailure());
     }
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     return !envelope.error && Boolean(preview);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -499,7 +499,7 @@ export async function beginLargeBlobDelete(credentialIDHex = get(largeBlobsSelec
         summarizeEnvelope(m.large_blob_delete(), envelope);
       }
     }
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     return !envelope.error && Boolean(preview);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -562,7 +562,7 @@ export async function beginLargeBlobCleanup(): Promise<boolean> {
       });
       summarizeEnvelope(m.large_blob_cleanup_preview(), envelope);
     }
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     return !envelope.error && Boolean(preview);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -612,7 +612,7 @@ export async function confirmLargeBlobWrite(): Promise<boolean> {
     } else {
       summarizeOperationContractFailure(m.large_blob_write(), internalFailure());
     }
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     if (envelope.error || !result) return false;
     await refreshAfterMutation();
     return true;
@@ -658,7 +658,7 @@ export async function confirmLargeBlobDelete(): Promise<boolean> {
     } else {
       summarizeOperationContractFailure(m.large_blob_delete(), internalFailure());
     }
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     if (envelope.error || !result) return false;
     await refreshAfterMutation();
     return true;
@@ -703,7 +703,7 @@ export async function confirmLargeBlobCleanup(): Promise<boolean> {
     } else {
       summarizeOperationContractFailure(m.large_blob_cleanup(), internalFailure());
     }
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     if (envelope.error || !result) return false;
     await refreshAfterMutation();
     return true;

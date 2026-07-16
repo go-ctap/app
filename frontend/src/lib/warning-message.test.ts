@@ -35,5 +35,11 @@ describe("warningMessage", () => {
       code: "webauthn.extension.hmac_secret_mc.not_advertised",
       message: "backend fallback",
     }))).toBe("Аутентификатор не объявил hmac-secret-mc; отправка всё равно разрешена, а ответ устройства остаётся определяющим.");
+
+    expect(warningMessage(new Warning({
+      severity: Severity.SeverityWarning,
+      code: "webauthn.extension.prf.not_advertised",
+      message: "prf is not advertised by this authenticator; execution is still allowed.",
+    }))).toBe("Аутентификатор не объявил prf; отправка всё равно разрешена, а ответ устройства остаётся определяющим.");
   });
 });

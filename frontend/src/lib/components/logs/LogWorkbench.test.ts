@@ -20,7 +20,7 @@ import { setAppLocale } from "$lib/i18n.js";
 
 import LogWorkbench from "./LogWorkbench.svelte";
 
-function appendOperation(sequence = 1) {
+function appendOperation(sequence = 1, errorMessage?: string) {
   logController.append(new LogJournalRecord({
     sequence,
     entry: new LogEntry({
@@ -33,6 +33,7 @@ function appendOperation(sequence = 1) {
       operationKind: OperationKind.OperationInspect,
       sessionId: "session-1",
       operationId: `operation-${sequence}`,
+      errorMessage,
       request: new LogPayload({
         json: `{\n  "kind": "inspect",\n  "empty": null,\n  "pin": "[REDACTED]"\n}`,
         originalBytes: 70_000,
@@ -136,6 +137,15 @@ describe("LogWorkbench", () => {
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Clear log" }));
     expect(screen.getByText("No log entries yet")).toBeInTheDocument();
+  });
+
+  it("shows the retained transport error message", async () => {
+    const user = userEvent.setup();
+    appendOperation(1, "transport read: io: read/write on closed pipe");
+    render(LogWorkbench);
+
+    await user.click(screen.getByRole("tab", { name: "Response / Error" }));
+    expect(screen.getByText("transport read: io: read/write on closed pipe")).toBeInTheDocument();
   });
 
   it("opens a log entry in a sheet and navigates the filtered journal when the workbench is narrow", async () => {

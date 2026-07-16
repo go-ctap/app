@@ -127,6 +127,7 @@ function getResultEnvelope(rpID = "example.com"): GetAssertionEnvelope {
     operationId: "get-result-1",
     sessionId: "session-1",
     kind: OperationKind.OperationGetAssertion,
+    sessionClosed: false,
     result: {
       preview: {
         device: new DeviceReport({ fingerprint: "token-1" }),

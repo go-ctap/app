@@ -38,7 +38,7 @@ import { selectedSelector, sessionStatus } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { findPasskeyCredential } from "./passkeys-presentation.js";
 import { internalFailure, runtimeFailureFrom } from "./failure.js";
-import { applyInvalidSessionError, selectedSessionId } from "./session-boundary.js";
+import { applyInvalidSessionError, applyOperationSessionBoundary, selectedSessionId } from "./session-boundary.js";
 import {
   beginOperation,
   summarizeEnvelope,
@@ -107,7 +107,7 @@ export async function loadPasskeys(options: LoadPasskeysOptions = {}) {
     } else {
       summarizeOperationContractFailure(m.credential_inventory(), internalFailure());
     }
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     return !envelope.error && Boolean(report);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -309,7 +309,7 @@ export async function previewCredentialUpdate(): Promise<boolean> {
     } else {
       summarizeOperationContractFailure(m.credential_update_preview(), internalFailure());
     }
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     return !envelope.error && Boolean(preview);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -358,7 +358,7 @@ export async function confirmCredentialUpdate(): Promise<boolean> {
     } else {
       summarizeOperationContractFailure(m.credential_update(), internalFailure());
     }
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     if (envelope.error || !result) return false;
     await loadPasskeys({ refresh: true });
     return true;
@@ -420,7 +420,7 @@ async function previewCredentialDelete(credentialIDHex: string): Promise<boolean
     } else {
       summarizeOperationContractFailure(m.credential_delete_preview(), internalFailure());
     }
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     return !envelope.error && Boolean(preview);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -471,7 +471,7 @@ export async function confirmCredentialDelete(): Promise<boolean> {
     } else {
       summarizeOperationContractFailure(m.credential_delete(), internalFailure());
     }
-    applyInvalidSessionError(envelope.error);
+    applyOperationSessionBoundary(envelope);
     if (envelope.error || !result) return false;
     await loadPasskeys({ refresh: true });
     return true;
