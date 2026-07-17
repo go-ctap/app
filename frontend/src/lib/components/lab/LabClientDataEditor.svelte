@@ -1,52 +1,93 @@
 <script lang="ts">
+  import { RefreshCw } from "@lucide/svelte";
+
   import * as Alert from "$lib/components/ui/alert/index.js";
   import * as Field from "$lib/components/ui/field/index.js";
+  import { Input } from "$lib/components/ui/input/index.js";
   import * as InputGroup from "$lib/components/ui/input-group/index.js";
+  import { Switch } from "$lib/components/ui/switch/index.js";
   import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
   import type { LabClientDataMode } from "$lib/features/lab/state";
+  import { buildClientDataJSON, type LabClientDataOperation } from "$lib/lab-input";
 
   import { m } from "../../../paraglide/messages.js";
 
   type Props = {
     id: string;
+    operation: LabClientDataOperation;
     mode: LabClientDataMode;
+    origin: string;
+    challenge: string;
+    crossOrigin: boolean;
+    topOrigin: string;
     rawValue: string;
     disabled?: boolean;
+    originInvalid?: boolean;
+    challengeInvalid?: boolean;
+    topOriginInvalid?: boolean;
     warning?: string | null;
-    onModeChange: (value: LabClientDataMode) => void;
+    onModeChange: (value: LabClientDataMode, generatedRawValue?: string) => void;
+    onOriginChange: (value: string) => void;
+    onChallengeChange: (value: string) => void;
+    onCrossOriginChange: (value: boolean) => void;
+    onTopOriginChange: (value: string) => void;
+    onRegenerateChallenge: () => void;
     onRawChange: (value: string) => void;
     onPrimary: () => unknown | Promise<unknown>;
   };
 
   let {
     id,
+    operation,
     mode,
+    origin,
+    challenge,
+    crossOrigin,
+    topOrigin,
     rawValue,
     disabled = false,
+    originInvalid = false,
+    challengeInvalid = false,
+    topOriginInvalid = false,
     warning = null,
     onModeChange,
+    onOriginChange,
+    onChallengeChange,
+    onCrossOriginChange,
+    onTopOriginChange,
+    onRegenerateChallenge,
     onRawChange,
     onPrimary,
   }: Props = $props();
 
+  let clientDataType = $derived(operation === "create" ? "webauthn.create" : "webauthn.get");
+  let generatedValue = $derived(buildClientDataJSON(operation, {
+    origin,
+    challenge,
+    crossOrigin,
+    topOrigin,
+  }));
+
   function handleModeChange(next: string | string[]) {
     if (Array.isArray(next) || !next) return;
-    if (next === "builder" || next === "raw") onModeChange(next);
+    if (next === "raw") onModeChange(next, generatedValue);
+    else if (next === "builder") onModeChange(next);
   }
 
   function handleRawInput(event: Event) {
     onRawChange((event.currentTarget as HTMLTextAreaElement).value);
   }
 
-  function handleRawKeydown(event: KeyboardEvent) {
-    if (event.key !== "Enter" || (!event.ctrlKey && !event.metaKey) || disabled) return;
+  function handleSingleLineKeydown(event: KeyboardEvent) {
+    if (event.key !== "Enter" || event.isComposing || disabled) return;
     event.preventDefault();
     void onPrimary();
   }
+
 </script>
 
 <Field.Set class="lab-client-data" data-disabled={disabled}>
-  <Field.Legend>{m.lab_client_data()}</Field.Legend>
+  <Field.Legend class="sr-only">{m.lab_client_data()}</Field.Legend>
   <Field.Group>
     <Field.Field>
       <ToggleGroup.Root
@@ -67,30 +108,95 @@
       </Field.Description>
     </Field.Field>
 
-    {#if mode === "raw"}
-      <Field.Field data-disabled={disabled}>
-        <Field.Label for={`${id}-raw`}>{m.lab_raw_client_data()}</Field.Label>
-        <InputGroup.Root>
-          <InputGroup.Textarea
-            id={`${id}-raw`}
-            value={rawValue}
-            rows={8}
-            spellcheck="false"
+    {#if mode === "builder"}
+      <Field.Group class="lab-client-data-grid">
+        <Field.Field>
+          <Field.Label for={`${id}-type`}>{m.lab_client_data_type()}</Field.Label>
+          <output id={`${id}-type`} class="lab-client-data-fixed">{clientDataType}</output>
+        </Field.Field>
+        <Field.Field orientation="horizontal" data-disabled={disabled}>
+          <Field.Content>
+            <Field.Label for={`${id}-cross-origin`}>{m.lab_client_data_cross_origin()}</Field.Label>
+            <Field.Description>{m.lab_cross_origin_description()}</Field.Description>
+          </Field.Content>
+          <Switch
+            id={`${id}-cross-origin`}
+            checked={crossOrigin}
             {disabled}
-            oninput={handleRawInput}
-            onkeydown={handleRawKeydown}
+            onCheckedChange={onCrossOriginChange}
           />
-          <InputGroup.Addon align="block-end">
-            <InputGroup.Text>{m.lab_textarea_shortcut()}</InputGroup.Text>
-          </InputGroup.Addon>
-        </InputGroup.Root>
-      </Field.Field>
+        </Field.Field>
+        <Field.Field data-disabled={disabled} data-invalid={originInvalid}>
+          <Field.Label for={`${id}-origin`}>{m.lab_origin()}</Field.Label>
+          <Input
+            id={`${id}-origin`}
+            value={origin}
+            {disabled}
+            aria-invalid={originInvalid}
+            oninput={(event) => onOriginChange(event.currentTarget.value)}
+            onkeydown={handleSingleLineKeydown}
+          />
+        </Field.Field>
+        <Field.Field data-disabled={disabled} data-invalid={challengeInvalid}>
+          <Field.Label for={`${id}-challenge`}>{m.lab_challenge()}</Field.Label>
+          <InputGroup.Root>
+            <InputGroup.Input
+              id={`${id}-challenge`}
+              value={challenge}
+              spellcheck="false"
+              {disabled}
+              aria-invalid={challengeInvalid}
+              oninput={(event) => onChallengeChange(event.currentTarget.value)}
+              onkeydown={handleSingleLineKeydown}
+            />
+            <InputGroup.Addon align="inline-end">
+              <InputGroup.Button size="sm" {disabled} onclick={onRegenerateChallenge}>
+                <RefreshCw aria-hidden="true" />
+                {m.lab_regenerate()}
+              </InputGroup.Button>
+            </InputGroup.Addon>
+          </InputGroup.Root>
+        </Field.Field>
+        {#if crossOrigin}
+          <Field.Field class="lab-client-data-wide" data-disabled={disabled} data-invalid={topOriginInvalid}>
+            <Field.Label for={`${id}-top-origin`}>{m.lab_top_origin()}</Field.Label>
+            <Input
+              id={`${id}-top-origin`}
+              value={topOrigin}
+              {disabled}
+              aria-invalid={topOriginInvalid}
+              oninput={(event) => onTopOriginChange(event.currentTarget.value)}
+              onkeydown={handleSingleLineKeydown}
+            />
+            <Field.Description>{m.lab_top_origin_description()}</Field.Description>
+          </Field.Field>
+        {/if}
+      </Field.Group>
+    {/if}
 
-      {#if warning}
-        <Alert.Root variant="warning" role="status">
-          <Alert.Description>{warning}</Alert.Description>
-        </Alert.Root>
+    <Field.Field data-disabled={disabled || mode === "builder"}>
+      <Field.Label for={`${id}-json`}>
+        {mode === "builder" ? m.lab_generated_client_data() : m.lab_raw_client_data()}
+      </Field.Label>
+      <InputGroup.Root>
+        <InputGroup.Textarea
+          id={`${id}-json`}
+          value={mode === "builder" ? generatedValue : rawValue}
+          rows={8}
+          spellcheck="false"
+          disabled={disabled || mode === "builder"}
+          oninput={handleRawInput}
+        />
+      </InputGroup.Root>
+      {#if mode === "builder"}
+        <Field.Description>{m.lab_generated_client_data_description()}</Field.Description>
       {/if}
+    </Field.Field>
+
+    {#if mode === "raw" && warning}
+      <Alert.Root variant="warning" role="status">
+        <Alert.Description>{warning}</Alert.Description>
+      </Alert.Root>
     {/if}
   </Field.Group>
 </Field.Set>
@@ -109,8 +215,46 @@
     flex: 1 1 50%;
   }
 
+  :global(.lab-client-data-grid) {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  :global(.lab-client-data-wide) {
+    grid-column: span 2;
+  }
+
+  .lab-client-data-fixed {
+    display: flex;
+    align-items: center;
+    block-size: 2rem;
+    padding-inline: var(--space-2);
+    border: 1px solid var(--border);
+    background: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+  }
+
   :global(.lab-client-data [data-slot="input-group"]) {
     min-width: 0;
+  }
+
+  @container workspace (max-width: 84rem) {
+    :global(.lab-client-data-grid) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @container workspace (max-width: 42rem) {
+    :global(.lab-client-data-grid) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    :global(.lab-client-data-wide) {
+      grid-column: auto;
+    }
   }
 }
 </style>

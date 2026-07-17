@@ -15,9 +15,9 @@
   import { m } from "../../../paraglide/messages.js";
 
   import LabAlgorithmEditor from "./LabAlgorithmEditor.svelte";
+  import LabAttestationEditor from "./LabAttestationEditor.svelte";
   import LabClientDataEditor from "./LabClientDataEditor.svelte";
   import LabDescriptorEditor from "./LabDescriptorEditor.svelte";
-  import LabDescriptorTransports from "./LabDescriptorTransports.svelte";
   import LabTriStateSelect from "./LabTriStateSelect.svelte";
   import LabVerificationFlow from "./LabVerificationFlow.svelte";
   import MakeCredentialExtensions from "./MakeCredentialExtensions.svelte";
@@ -98,7 +98,7 @@
           <Field.Label for="lab-make-rp-name">{m.lab_rp_name()}</Field.Label>
           <Input id="lab-make-rp-name" value={draft.rpName} {disabled} aria-invalid={fieldInvalid("make.rpName")} oninput={(event) => onDraftChange({ rpName: event.currentTarget.value })} onkeydown={handleSingleLineKeydown} />
         </Field.Field>
-        <Field.Field class="lab-field-wide" data-disabled={disabled} data-invalid={fieldInvalid("make.userIDHex")}>
+        <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("make.userIDHex")}>
           <Field.Label for="lab-make-user-id">{m.lab_user_id_hex()}</Field.Label>
           <InputGroup.Root>
             <InputGroup.Input id="lab-make-user-id" value={draft.userIDHex} spellcheck="false" {disabled} aria-invalid={fieldInvalid("make.userIDHex")} oninput={(event) => onDraftChange({ userIDHex: event.currentTarget.value })} onkeydown={handleSingleLineKeydown} />
@@ -118,28 +118,40 @@
           <Field.Label for="lab-make-display-name">{m.lab_display_name()}</Field.Label>
           <Input id="lab-make-display-name" value={draft.userDisplayName} {disabled} aria-invalid={fieldInvalid("make.userDisplayName")} oninput={(event) => onDraftChange({ userDisplayName: event.currentTarget.value })} onkeydown={handleSingleLineKeydown} />
         </Field.Field>
-        <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("make.clientData.origin")}>
-          <Field.Label for="lab-make-origin">{m.lab_origin()}</Field.Label>
-          <Input id="lab-make-origin" value={draft.clientData.origin} {disabled} aria-invalid={fieldInvalid("make.clientData.origin")} oninput={(event) => updateClientData({ origin: event.currentTarget.value })} onkeydown={handleSingleLineKeydown} />
-        </Field.Field>
-        <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("make.clientData.challenge")}>
-          <Field.Label for="lab-make-challenge">{m.lab_challenge()}</Field.Label>
-          <InputGroup.Root>
-            <InputGroup.Input id="lab-make-challenge" value={draft.clientData.challenge} spellcheck="false" {disabled} aria-invalid={fieldInvalid("make.clientData.challenge")} oninput={(event) => updateClientData({ challenge: event.currentTarget.value })} onkeydown={handleSingleLineKeydown} />
-            <InputGroup.Addon align="inline-end">
-              <InputGroup.Button size="sm" {disabled} onclick={onRegenerateChallenge}>
-                <RefreshCw aria-hidden="true" />
-                {m.lab_regenerate()}
-              </InputGroup.Button>
-            </InputGroup.Addon>
-          </InputGroup.Root>
-        </Field.Field>
-        <Field.Field>
-          <Field.Label>{m.lab_credential_type()}</Field.Label>
-          <output class="lab-fixed-value">public-key</output>
-        </Field.Field>
       </Field.Group>
     </Field.Set>
+  </section>
+
+  <Separator />
+
+  <section class="lab-configure-section" aria-labelledby="lab-make-client-data-title">
+    <header class="lab-configure-section-header">
+      <h3 id="lab-make-client-data-title">{m.lab_client_data()}</h3>
+      <p>{m.lab_client_data_section_description()}</p>
+    </header>
+    <LabClientDataEditor
+      id="lab-make-client-data"
+      operation="create"
+      mode={draft.clientData.mode}
+      origin={draft.clientData.origin}
+      challenge={draft.clientData.challenge}
+      crossOrigin={draft.clientData.crossOrigin}
+      topOrigin={draft.clientData.topOrigin}
+      rawValue={draft.clientData.rawJSON}
+      {disabled}
+      originInvalid={fieldInvalid("make.clientData.origin")}
+      challengeInvalid={fieldInvalid("make.clientData.challenge")}
+      topOriginInvalid={fieldInvalid("make.clientData.topOrigin")}
+      warning={draft.clientData.mode === "raw" && warnings.some((issue) => issue.field === "make.clientData.rawJSON") ? m.lab_raw_json_warning() : null}
+      onModeChange={(mode, rawJSON) => updateClientData(rawJSON === undefined ? { mode } : { mode, rawJSON })}
+      onOriginChange={(origin) => updateClientData({ origin })}
+      onChallengeChange={(challenge) => updateClientData({ challenge })}
+      onCrossOriginChange={(crossOrigin) => updateClientData({ crossOrigin })}
+      onTopOriginChange={(topOrigin) => updateClientData({ topOrigin })}
+      {onRegenerateChallenge}
+      onRawChange={(rawJSON) => updateClientData({ rawJSON })}
+      {onPrimary}
+    />
   </section>
 
   <Separator />
@@ -166,20 +178,69 @@
       <p>{m.lab_advanced_fields()}</p>
     </header>
     <Field.Group>
-      <LabAlgorithmEditor id="lab-make-algorithms" values={draft.algorithms} {disabled} invalid={errors.some((issue) => issue.field.startsWith("make.algorithms"))} onChange={(algorithms) => onDraftChange({ algorithms })} onPrimary={onPrimary} />
+      <LabAlgorithmEditor id="lab-make-algorithms" values={draft.algorithms} {disabled} invalid={errors.some((issue) => issue.field.startsWith("make.algorithms"))} onChange={(algorithms) => onDraftChange({ algorithms })} />
+      <LabAttestationEditor
+        id="lab-make-attestation"
+        formats={draft.attestationFormatsPreference}
+        enterpriseAttestation={draft.enterpriseAttestation}
+        {disabled}
+        invalid={errors.some((issue) => issue.field.startsWith("make.attestationFormatsPreference"))}
+        onFormatsChange={(attestationFormatsPreference) => onDraftChange({ attestationFormatsPreference })}
+        onEnterpriseAttestationChange={(enterpriseAttestation) => onDraftChange({ enterpriseAttestation })}
+      />
       <LabDescriptorEditor id="lab-make-exclude" label={m.lab_exclude_list()} description={m.lab_exclude_list_description()} descriptors={draft.excludeList} {disabled} invalidIndices={descriptorInvalidIndices("make.excludeList")} onChange={(excludeList) => onDraftChange({ excludeList })} onPrimary={onPrimary} />
-      <LabDescriptorTransports descriptors={draft.excludeList} {disabled} onChange={(excludeList) => onDraftChange({ excludeList })} />
       <Field.Set {disabled} data-disabled={disabled}>
         <Field.Legend>{m.lab_options()}</Field.Legend>
         <Field.Group class="lab-option-grid">
-          <LabTriStateSelect id="lab-make-resident-key" label={m.lab_resident_key()} value={draft.residentKey} {disabled} onChange={(residentKey) => onDraftChange({ residentKey })} />
-          <LabTriStateSelect id="lab-make-user-presence" label={m.lab_user_presence()} value={draft.userPresence} {disabled} onChange={(userPresence) => onDraftChange({ userPresence })} />
-          <LabTriStateSelect id="lab-make-user-verification" label={m.lab_user_verification()} value={draft.userVerification} {disabled} onChange={(userVerification) => onDraftChange({ userVerification })} />
+          <LabTriStateSelect
+            id="lab-make-resident-key"
+            label={m.lab_resident_key()}
+            value={draft.residentKey}
+            {disabled}
+            helpText={m.lab_make_rk_tooltip()}
+            helpLabel={m.lab_option_help({ label: m.lab_resident_key() })}
+            onChange={(residentKey) => onDraftChange({ residentKey })}
+          />
+          <LabTriStateSelect
+            id="lab-make-user-presence"
+            label={m.lab_user_presence()}
+            value={draft.userPresence}
+            {disabled}
+            allowFalse={false}
+            helpText={m.lab_make_up_tooltip()}
+            helpLabel={m.lab_option_help({ label: m.lab_user_presence() })}
+            autoLabel={m.lab_make_up_omit()}
+            trueLabel={m.lab_make_up_explicit()}
+            onChange={(userPresence) => onDraftChange({ userPresence })}
+          />
+          <LabTriStateSelect
+            id="lab-make-user-verification"
+            label={m.lab_user_verification()}
+            value={draft.userVerification}
+            {disabled}
+            helpText={m.lab_uv_tooltip()}
+            helpLabel={m.lab_option_help({ label: m.lab_user_verification() })}
+            onChange={(userVerification) => onDraftChange({ userVerification })}
+          />
         </Field.Group>
       </Field.Set>
-      <LabVerificationFlow id="lab-make-verification" value={draft.verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto"} {disabled} onChange={handleVerificationChange} />
-      <LabClientDataEditor id="lab-make-client-data" mode={draft.clientData.mode} rawValue={draft.clientData.rawJSON} {disabled} warning={draft.clientData.mode === "raw" && warnings.length ? m.lab_raw_json_warning() : null} onModeChange={(mode) => updateClientData({ mode })} onRawChange={(rawJSON) => updateClientData({ rawJSON })} onPrimary={onPrimary} />
     </Field.Group>
+  </section>
+
+  <Separator />
+
+  <section class="lab-configure-section" aria-labelledby="lab-make-execution-title">
+    <header class="lab-configure-section-header">
+      <h3 id="lab-make-execution-title">{m.lab_execution()}</h3>
+      <p>{m.lab_execution_description()}</p>
+    </header>
+    <LabVerificationFlow
+      id="lab-make-verification"
+      value={draft.verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto"}
+      {disabled}
+      description={m.lab_verification_flow_description()}
+      onChange={handleVerificationChange}
+    />
   </section>
 </div>
 
@@ -214,24 +275,16 @@
   :global(.lab-basic-grid),
   :global(.lab-option-grid) {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-3);
     min-width: 0;
   }
 
-  :global(.lab-field-wide) {
-    grid-column: 1 / -1;
-  }
-
-  .lab-fixed-value {
-    display: flex;
-    align-items: center;
-    block-size: 2rem;
-    padding-inline: var(--space-2);
-    border: 1px solid var(--border);
-    background: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 0.76rem;
+  @container workspace (max-width: 84rem) {
+    :global(.lab-basic-grid),
+    :global(.lab-option-grid) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   @container workspace (max-width: 42rem) {
@@ -240,9 +293,6 @@
       grid-template-columns: minmax(0, 1fr);
     }
 
-    :global(.lab-field-wide) {
-      grid-column: auto;
-    }
   }
 }
 </style>

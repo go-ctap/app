@@ -41,7 +41,7 @@
   }
 
   function addDescriptor() {
-    onChange([...descriptors, { credentialIDHex: "", transports: [] }]);
+    onChange([...descriptors, { credentialIDHex: "" }]);
   }
 
   function handleSingleLineKeydown(event: KeyboardEvent) {

@@ -1,6 +1,5 @@
 import { writable } from "svelte/store";
 
-import type { AuthenticatorTransport } from "../../../../bindings/github.com/go-ctap/ctap/credential";
 import { CredentialProtectionPolicy } from "../../../../bindings/github.com/go-ctap/ctap/extension";
 import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
 import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
@@ -22,6 +21,7 @@ export type LabTriState = "auto" | "true" | "false";
 export type LabClientDataMode = "builder" | "raw";
 export type LabOperationTab = "make" | "get";
 export type LabBinaryMode = "utf8" | "hex";
+export type LabEnterpriseAttestation = 0 | 1 | 2;
 
 export type LabBinaryDraft = {
   mode: LabBinaryMode;
@@ -86,13 +86,14 @@ export type GetAssertionExtensionsDraft = {
 
 export type LabDescriptorDraft = {
   credentialIDHex: string;
-  transports: AuthenticatorTransport[];
 };
 
 export type LabClientDataDraft = {
   mode: LabClientDataMode;
   origin: string;
   challenge: string;
+  crossOrigin: boolean;
+  topOrigin: string;
   rawJSON: string;
 };
 
@@ -104,6 +105,8 @@ export type MakeCredentialDraft = {
   userDisplayName: string;
   clientData: LabClientDataDraft;
   algorithms: string[];
+  attestationFormatsPreference: string[];
+  enterpriseAttestation: LabEnterpriseAttestation;
   excludeList: LabDescriptorDraft[];
   residentKey: LabTriState;
   userPresence: LabTriState;
@@ -116,7 +119,6 @@ export type GetAssertionDraft = {
   rpID: string;
   clientData: LabClientDataDraft;
   allowList: LabDescriptorDraft[];
-  residentKey: LabTriState;
   userPresence: LabTriState;
   userVerification: LabTriState;
   verificationFlow: VerificationFlow;
@@ -259,12 +261,16 @@ export function createLabState(randomSource?: LabRandomSource): LabState {
     mode: "builder",
     origin: "https://example.com",
     challenge: makeChallenge,
+    crossOrigin: false,
+    topOrigin: "https://example.com",
     rawJSON: "",
   };
   const getClientData: LabClientDataDraft = {
     mode: "builder",
     origin: "https://example.com",
     challenge: getChallenge,
+    crossOrigin: false,
+    topOrigin: "https://example.com",
     rawJSON: "",
   };
   makeClientData.rawJSON = buildClientDataJSON("create", makeClientData);
@@ -280,6 +286,8 @@ export function createLabState(randomSource?: LabRandomSource): LabState {
       userDisplayName: "Alice",
       clientData: makeClientData,
       algorithms: ["-7"],
+      attestationFormatsPreference: [],
+      enterpriseAttestation: 0,
       excludeList: [],
       residentKey: "auto",
       userPresence: "auto",
@@ -291,7 +299,6 @@ export function createLabState(randomSource?: LabRandomSource): LabState {
       rpID: "example.com",
       clientData: getClientData,
       allowList: [],
-      residentKey: "auto",
       userPresence: "auto",
       userVerification: "auto",
       verificationFlow: VerificationFlow.VerificationFlowDefault,

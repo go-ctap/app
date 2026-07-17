@@ -14,6 +14,9 @@ importers:
       '@wailsio/runtime':
         specifier: 3.0.0-alpha.97
         version: 3.0.0-alpha.97
+      tldts:
+        specifier: ^7.4.3
+        version: 7.4.3
     devDependencies:
       '@fontsource-variable/jetbrains-mono':
         specifier: ^5.2.8

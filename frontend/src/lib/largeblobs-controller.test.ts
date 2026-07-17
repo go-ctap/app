@@ -312,8 +312,8 @@ describe("large blob controller", () => {
 
     expect(await confirmLargeBlobDelete()).toBe(true);
     expect(remove).toHaveBeenCalledTimes(3);
-    expect(remove.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
-    expect(remove.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(remove.mock.calls[1][0]).toMatchObject({ dryRun: false, prepareInventoryRefresh: true, confirmed: true });
+    expect(remove.mock.calls[2][0]).toMatchObject({ dryRun: false, prepareInventoryRefresh: true, confirmed: true });
     expect(list).toHaveBeenCalledTimes(1);
   });
 
@@ -342,8 +342,8 @@ describe("large blob controller", () => {
     expect(await confirmLargeBlobWrite()).toBe(true);
 
     expect(write).toHaveBeenCalledTimes(3);
-    expect(write.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
-    expect(write.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(write.mock.calls[1][0]).toMatchObject({ dryRun: false, prepareInventoryRefresh: true, confirmed: true });
+    expect(write.mock.calls[2][0]).toMatchObject({ dryRun: false, prepareInventoryRefresh: true, confirmed: true });
   });
 
   it("reconfirms cleanup after any execution failure", async () => {
@@ -369,8 +369,8 @@ describe("large blob controller", () => {
     expect(await confirmLargeBlobCleanup()).toBe(true);
 
     expect(cleanup).toHaveBeenCalledTimes(3);
-    expect(cleanup.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
-    expect(cleanup.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(cleanup.mock.calls[1][0]).toMatchObject({ dryRun: false, prepareInventoryRefresh: true, confirmed: true });
+    expect(cleanup.mock.calls[2][0]).toMatchObject({ dryRun: false, prepareInventoryRefresh: true, confirmed: true });
   });
 
   it("executes the exact previewed write request with only confirmation fields changed", async () => {
@@ -388,6 +388,7 @@ describe("large blob controller", () => {
     expect(write.mock.calls[1][0]).toEqual({
       ...previewRequest,
       dryRun: false,
+      prepareInventoryRefresh: true,
       confirmed: true,
       confirmationMessage: "Confirm write",
     });

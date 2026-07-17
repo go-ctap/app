@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { AuthenticatorTransport } from "../../bindings/github.com/go-ctap/ctap/credential";
 import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
 import {
   AuthenticationExtensionsPRFInputs,
@@ -22,8 +21,10 @@ import {
   hexToBase64,
   hexToBase64URL,
   isHTTPOrigin,
+  isWebAuthnOrigin,
   randomBase64URL,
   randomHex,
+  rpIDMatchesOrigin,
   utf8ToBase64,
   validateGetAssertionDraft,
   validateMakeCredentialDraft,
@@ -78,7 +79,7 @@ describe("WebAuthn Lab default state", () => {
     );
     expect(state.makeDraft.clientData.challenge).not.toBe(state.getDraft.clientData.challenge);
     expect(buildAuthenticatorOptions(state.makeDraft)).toBeUndefined();
-    expect(buildAuthenticatorOptions(state.getDraft)).toBeUndefined();
+    expect(buildGetAssertionRequest("session-1", state.getDraft).options).toBeUndefined();
     expect(Object.values(state.makeDraft.extensions).every((extension) => !extension.included)).toBe(true);
     expect(Object.values(state.getDraft.extensions).every((extension) => !extension.included)).toBe(true);
   });
@@ -86,12 +87,25 @@ describe("WebAuthn Lab default state", () => {
 
 describe("WebAuthn Lab client data and validation", () => {
   it("builds fixed ordered create/get client data JSON", () => {
-    const input = { challenge: "AQID", origin: "https://example.com" };
+    const input = {
+      challenge: "AQID",
+      origin: "https://example.com",
+      crossOrigin: false,
+      topOrigin: "https://example.com",
+    };
     expect(buildClientDataJSON("create", input)).toBe(
       '{"type":"webauthn.create","challenge":"AQID","origin":"https://example.com","crossOrigin":false}',
     );
     expect(buildClientDataJSON("get", input)).toBe(
       '{"type":"webauthn.get","challenge":"AQID","origin":"https://example.com","crossOrigin":false}',
+    );
+
+    expect(buildClientDataJSON("get", {
+      ...input,
+      crossOrigin: true,
+      topOrigin: "https://top.example.com",
+    })).toBe(
+      '{"type":"webauthn.get","challenge":"AQID","origin":"https://example.com","crossOrigin":true,"topOrigin":"https://top.example.com"}',
     );
   });
 
@@ -116,6 +130,33 @@ describe("WebAuthn Lab client data and validation", () => {
     expect(isHTTPOrigin("https://example.com#fragment")).toBe(false);
   });
 
+  it("requires a secure WebAuthn origin and validates RP ID against the registrable domain", () => {
+    expect(isWebAuthnOrigin("https://login.example.com:8443")).toBe(true);
+    expect(isWebAuthnOrigin("http://localhost:8080")).toBe(true);
+    expect(isWebAuthnOrigin("http://example.com")).toBe(false);
+
+    expect(rpIDMatchesOrigin("login.example.com", "https://login.example.com:8443")).toBe(true);
+    expect(rpIDMatchesOrigin("example.com", "https://login.example.com:8443")).toBe(true);
+    expect(rpIDMatchesOrigin("other.example", "https://login.example.com")).toBe(false);
+    expect(rpIDMatchesOrigin("com", "https://login.example.com")).toBe(false);
+    expect(rpIDMatchesOrigin("github.io", "https://alice.github.io")).toBe(false);
+    expect(rpIDMatchesOrigin("localhost", "http://localhost:8080")).toBe(true);
+  });
+
+  it("validates topOrigin only for cross-origin client data", () => {
+    const state = createLabState(sequentialRandom());
+    state.makeDraft.clientData.crossOrigin = true;
+    state.makeDraft.clientData.topOrigin = "http://example.com";
+
+    expect(validateMakeCredentialDraft(state.makeDraft).errors).toContainEqual({
+      field: "make.clientData.topOrigin",
+      code: "insecure-origin",
+    });
+
+    state.makeDraft.clientData.crossOrigin = false;
+    expect(validateMakeCredentialDraft(state.makeDraft).valid).toBe(true);
+  });
+
   it("warns about invalid raw JSON without blocking exact raw UTF-8 bytes", () => {
     const state = createLabState(sequentialRandom());
     state.getDraft.clientData.mode = "raw";
@@ -133,14 +174,13 @@ describe("WebAuthn Lab client data and validation", () => {
 });
 
 describe("WebAuthn Lab request builders", () => {
-  it("keeps algorithm order and duplicates and omits every Auto option", () => {
+  it("keeps algorithm preference order and omits every Auto option", () => {
     const state = createLabState(sequentialRandom());
-    state.makeDraft.algorithms = ["-7", "-257", "-7", "42"];
+    state.makeDraft.algorithms = ["-7", "-257", "42"];
     const request = buildMakeCredentialRequest("session-1", state.makeDraft);
 
-    expect(request.pubKeyCredParams.map(({ alg }) => alg)).toEqual([-7, -257, -7, 42]);
+    expect(request.pubKeyCredParams.map(({ alg }) => alg)).toEqual([-7, -257, 42]);
     expect(request.pubKeyCredParams.map(({ type }) => type)).toEqual([
-      "public-key",
       "public-key",
       "public-key",
       "public-key",
@@ -156,24 +196,16 @@ describe("WebAuthn Lab request builders", () => {
     state.getDraft.verificationFlow = VerificationFlow.VerificationFlowPIN;
     state.getDraft.userPresence = "false";
     state.getDraft.allowList = [
-      {
-        credentialIDHex: "00ff",
-        transports: [
-          AuthenticatorTransport.AuthenticatorTransportUSB,
-          AuthenticatorTransport.AuthenticatorTransportNFC,
-        ],
-      },
-      { credentialIDHex: "aabb", transports: [] },
-      { credentialIDHex: "00ff", transports: [] },
+      { credentialIDHex: "00ff" },
+      { credentialIDHex: "aabb" },
+      { credentialIDHex: "00ff" },
     ];
 
     const request = buildGetAssertionRequest("session-1", state.getDraft);
     expect(request.verificationFlow).toBe("pin");
     expect(request.options).toEqual({ userPresence: false });
     expect(request.allowList?.map(({ id }) => base64ToHex(id))).toEqual(["00ff", "aabb", "00ff"]);
-    expect(request.allowList?.[0].transports).toEqual(["usb", "nfc"]);
-    expect(request.allowList?.[1].transports).toBeUndefined();
-    expect(JSON.parse(JSON.stringify(request.allowList?.[1]))).not.toHaveProperty("transports");
+    expect(request.allowList?.every(({ transports }) => transports === undefined)).toBe(true);
   });
 
   it("reports zero, fractional, unsafe, and malformed algorithm IDs", () => {
@@ -185,11 +217,48 @@ describe("WebAuthn Lab request builders", () => {
     expect(validation.errors.filter(({ code }) => code === "invalid-algorithm")).toHaveLength(4);
   });
 
+  it("rejects duplicate algorithms and invalid MakeCredential user presence", () => {
+    const state = createLabState(sequentialRandom());
+    state.makeDraft.algorithms = ["-7", "-257", "-7"];
+    state.makeDraft.userPresence = "false";
+
+    expect(validateMakeCredentialDraft(state.makeDraft).errors).toEqual(expect.arrayContaining([
+      { field: "make.algorithms.2", code: "duplicate-algorithm" },
+      { field: "make.userPresence", code: "invalid-user-presence" },
+    ]));
+  });
+
+  it("limits user IDs to 64 bytes", () => {
+    const state = createLabState(sequentialRandom());
+    state.makeDraft.userIDHex = "11".repeat(65);
+
+    expect(validateMakeCredentialDraft(state.makeDraft).errors).toContainEqual({
+      field: "make.userIDHex",
+      code: "user-id-too-long",
+    });
+  });
+
+  it("passes CTAP attestation preferences and rejects duplicate formats", () => {
+    const state = createLabState(sequentialRandom());
+    state.makeDraft.attestationFormatsPreference = ["packed", "none"];
+    state.makeDraft.enterpriseAttestation = 2;
+
+    const request = buildMakeCredentialRequest("session-1", state.makeDraft);
+    expect(request.attestationFormatsPreference).toEqual(["packed", "none"]);
+    expect(request.enterpriseAttestation).toBe(2);
+
+    state.makeDraft.attestationFormatsPreference.push("packed");
+    expect(validateMakeCredentialDraft(state.makeDraft).errors).toContainEqual({
+      field: "make.attestationFormatsPreference.2",
+      code: "duplicate-attestation-format",
+    });
+  });
+
   it("validates all user and descriptor IDs as nonempty even-length hex", () => {
     const state = createLabState(sequentialRandom());
     state.makeDraft.userIDHex = "abc";
-    state.makeDraft.excludeList = [{ credentialIDHex: "", transports: [] }];
-    state.getDraft.allowList = [{ credentialIDHex: "zz", transports: [] }];
+    state.makeDraft.excludeList = [{ credentialIDHex: "" }];
+    state.getDraft.allowList = [{ credentialIDHex: "zz" }];
 
     expect(validateMakeCredentialDraft(state.makeDraft).errors).toEqual(expect.arrayContaining([
       expect.objectContaining({ field: "make.userIDHex", code: "invalid-hex" }),
@@ -247,7 +316,7 @@ describe("WebAuthn Lab request builders", () => {
 
   it("builds WebAuthn PRF global and per-credential evaluations together", () => {
     const state = createLabState(sequentialRandom());
-    state.getDraft.allowList = [{ credentialIDHex: "aabb", transports: [] }];
+    state.getDraft.allowList = [{ credentialIDHex: "aabb" }];
     state.getDraft.extensions.prf.included = true;
     state.getDraft.extensions.prf.useGlobalEval = true;
     state.getDraft.extensions.prf.eval = {
@@ -315,14 +384,12 @@ describe("WebAuthn Lab extension validation", () => {
     expect(extensions?.hmacGetSecret).toBeInstanceOf(HMACGetSecretInput);
   });
 
-  it("rejects HMAC/PRF conflicts for both operations", () => {
+  it("rejects raw HMAC/PRF conflicts even without PRF evaluation inputs", () => {
     const state = createLabState(sequentialRandom());
     state.makeDraft.extensions.hmacSecretMC.included = true;
     state.makeDraft.extensions.prf.included = true;
-    state.makeDraft.extensions.prf.useEval = true;
     state.getDraft.extensions.hmacSecret.included = true;
     state.getDraft.extensions.prf.included = true;
-    state.getDraft.extensions.prf.useGlobalEval = true;
 
     expect(validateMakeCredentialDraft(state.makeDraft).errors).toContainEqual({
       field: "make.extensions.hmac-prf",
@@ -334,78 +401,69 @@ describe("WebAuthn Lab extension validation", () => {
     });
   });
 
-  it("validates credBlob against the reported maximum before preview", () => {
+  it("warns without blocking when ctap will omit an oversized credBlob", () => {
     const state = createLabState(sequentialRandom());
     state.makeDraft.extensions.credentialBlob.included = true;
     state.makeDraft.extensions.credentialBlob.payload = { mode: "utf8", value: "four" };
 
-    expect(validateMakeCredentialDraft(state.makeDraft, 3).errors).toContainEqual({
+    const oversized = validateMakeCredentialDraft(state.makeDraft, 3);
+    expect(oversized.valid).toBe(true);
+    expect(oversized.warnings).toContainEqual({
       field: "make.extensions.credBlob",
       code: "too-long",
     });
-    expect(validateMakeCredentialDraft(state.makeDraft, 4).valid).toBe(true);
+    expect(validateMakeCredentialDraft(state.makeDraft, 4).warnings).toEqual([]);
   });
 
-  it("allows empty PRF requests to coexist with raw HMAC extensions", () => {
-    const state = createLabState(sequentialRandom());
-    state.makeDraft.extensions.hmacSecretMC.included = true;
-    state.makeDraft.extensions.prf.included = true;
-    state.getDraft.extensions.hmacSecret.included = true;
-    state.getDraft.extensions.prf.included = true;
-
-    expect(validateMakeCredentialDraft(state.makeDraft).valid).toBe(true);
-    expect(validateGetAssertionDraft(state.getDraft).valid).toBe(true);
-  });
-
-  it("rejects an included PRF when raw MakeCredential hmac-secret is false", () => {
+  it("allows MakeCredential hmac-secret and PRF inputs to coexist", () => {
     const state = createLabState(sequentialRandom());
     state.makeDraft.extensions.hmacSecret = { included: true, value: false };
     state.makeDraft.extensions.prf.included = true;
 
-    expect(validateMakeCredentialDraft(state.makeDraft).errors).toContainEqual({
-      field: "make.extensions.hmac-prf",
-      code: "extension-conflict",
-    });
+    expect(validateMakeCredentialDraft(state.makeDraft).valid).toBe(true);
 
     state.makeDraft.extensions.hmacSecret.value = true;
     expect(validateMakeCredentialDraft(state.makeDraft).valid).toBe(true);
   });
 
-  it("requires one matching allow-list credential for per-credential PRF evaluation", () => {
+  it("accepts multi-credential PRF inputs and validates their credential ID encoding", () => {
     const state = createLabState(sequentialRandom());
     state.getDraft.extensions.prf.included = true;
-    state.getDraft.extensions.prf.evalByCredential = [{
-      credentialIDHex: "aabb",
-      values: {
-        first: { mode: "utf8", value: "input" },
-        secondEnabled: false,
-        second: { mode: "utf8", value: "" },
-      },
-    }];
-    const expectedIssue = {
-      field: "get.extensions.prf.evalByCredential",
-      code: "unsupported-prf-credential-selection",
-    };
-
-    expect(validateGetAssertionDraft(state.getDraft).errors).toContainEqual(expectedIssue);
-
     state.getDraft.allowList = [
-      { credentialIDHex: "aabb", transports: [] },
-      { credentialIDHex: "ccdd", transports: [] },
+      { credentialIDHex: "aabb" },
+      { credentialIDHex: "ccdd" },
     ];
-    expect(validateGetAssertionDraft(state.getDraft).errors).toContainEqual(expectedIssue);
+    state.getDraft.extensions.prf.evalByCredential = [
+      {
+        credentialIDHex: "aabb",
+        values: {
+          first: { mode: "utf8", value: "input" },
+          secondEnabled: false,
+          second: { mode: "utf8", value: "" },
+        },
+      },
+      {
+        credentialIDHex: "ccdd",
+        values: {
+          first: { mode: "utf8", value: "input" },
+          secondEnabled: false,
+          second: { mode: "utf8", value: "" },
+        },
+      },
+    ];
 
-    state.getDraft.allowList = [{ credentialIDHex: "ccdd", transports: [] }];
-    expect(validateGetAssertionDraft(state.getDraft).errors).toContainEqual(expectedIssue);
-
-    state.getDraft.allowList = [{ credentialIDHex: "aabb", transports: [] }];
-    state.getDraft.extensions.prf.evalByCredential.push(
-      structuredClone(state.getDraft.extensions.prf.evalByCredential[0]),
-    );
-    expect(validateGetAssertionDraft(state.getDraft).errors).toContainEqual(expectedIssue);
-
-    state.getDraft.extensions.prf.evalByCredential.pop();
-    state.getDraft.allowList = [{ credentialIDHex: "AABB", transports: [] }];
     expect(validateGetAssertionDraft(state.getDraft).valid).toBe(true);
+
+    state.getDraft.extensions.prf.evalByCredential[1].credentialIDHex = "eeff";
+    expect(validateGetAssertionDraft(state.getDraft).errors).toContainEqual({
+      field: "get.extensions.prf.evalByCredential.1.credentialIDHex",
+      code: "prf-credential-not-allowed",
+    });
+
+    state.getDraft.extensions.prf.evalByCredential[1].credentialIDHex = "not-hex";
+    expect(validateGetAssertionDraft(state.getDraft).errors).toContainEqual({
+      field: "get.extensions.prf.evalByCredential.1.credentialIDHex",
+      code: "invalid-hex",
+    });
   });
 });

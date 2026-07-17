@@ -16,6 +16,7 @@
   import { m } from "../../../paraglide/messages.js";
 
   import LabExtensionItem, { type ExtensionStatus } from "./LabExtensionItem.svelte";
+  import LabFieldLabel from "./LabFieldLabel.svelte";
   import LabHMACEditor from "./LabHMACEditor.svelte";
   import LabPRFValuesEditor from "./LabPRFValuesEditor.svelte";
 
@@ -40,6 +41,12 @@
   }: Props = $props();
 
   let openExtension = $state("");
+  let nextOverrideDescriptor = $derived.by(() => {
+    const overridden = new Set(
+      value.prf.evalByCredential.map((entry) => entry.credentialIDHex.toLowerCase()),
+    );
+    return allowList.find((descriptor) => !overridden.has(descriptor.credentialIDHex.toLowerCase()));
+  });
 
   function status(identifier: ExtensionIdentifier): ExtensionStatus {
     if (inspection.state !== "ready") return "unknown";
@@ -76,11 +83,14 @@
   }
 
   function addOverride() {
-    const descriptor = allowList[0];
-    if (allowList.length !== 1 || value.prf.evalByCredential.length || !descriptor) return;
+    const descriptor = nextOverrideDescriptor;
+    if (!descriptor) return;
     update("prf", {
       ...value.prf,
-      evalByCredential: [{ credentialIDHex: descriptor.credentialIDHex, values: emptyPRFValues() }],
+      evalByCredential: [
+        ...value.prf.evalByCredential,
+        { credentialIDHex: descriptor.credentialIDHex, values: emptyPRFValues() },
+      ],
     });
   }
 
@@ -123,14 +133,19 @@
     <LabExtensionItem
       value="prf"
       title="prf"
-      description={m.lab_extension_client_description()}
+      description={m.lab_extension_prf_description()}
       included={value.prf.included}
       {disabled}
       status="client-side"
       onInclude={(included) => include("prf", included, value.prf)}
     >
       <Field.Field orientation="horizontal">
-        <Field.Label for="lab-ext-get-prf-global">{m.lab_global_evaluation()}</Field.Label>
+        <LabFieldLabel
+          forId="lab-ext-get-prf-global"
+          label={m.lab_global_evaluation()}
+          helpText={m.lab_prf_global_evaluation_tooltip()}
+          helpLabel={m.lab_option_help({ label: `prf: ${m.lab_global_evaluation()}` })}
+        />
         <Switch
           id="lab-ext-get-prf-global"
           checked={value.prf.useGlobalEval}
@@ -156,14 +171,14 @@
             type="button"
             size="xs"
             variant="outline"
-            disabled={disabled || allowList.length !== 1 || value.prf.evalByCredential.length > 0}
+            disabled={disabled || !nextOverrideDescriptor}
             onclick={addOverride}
           >
             <Plus data-icon="inline-start" aria-hidden="true" />
             {m.lab_add_override()}
           </Button>
         </div>
-        <Field.Description>{m.lab_prf_single_credential()}</Field.Description>
+        <Field.Description>{m.lab_prf_credential_overrides_description()}</Field.Description>
         {#each value.prf.evalByCredential as entry, index (entry)}
           <section class="lab-prf-override" aria-label={`${m.lab_credential_id()} ${index + 1}`}>
             <div class="lab-prf-override-heading">
@@ -192,15 +207,6 @@
       </Field.Field>
     </LabExtensionItem>
 
-    <LabExtensionItem
-      value="largeBlob"
-      title="largeBlob"
-      description={m.lab_extension_unavailable_description()}
-      included={false}
-      disabled
-      status="unavailable"
-      onInclude={() => undefined}
-    />
   </section>
 
   <section class="lab-extension-group" aria-labelledby="lab-get-ctap-extensions-title">
@@ -212,14 +218,19 @@
     <LabExtensionItem
       value="getCredentialBlob"
       title="credBlob"
-      description={m.lab_extension_ctap_description()}
+      description={m.lab_extension_cred_blob_get_description()}
       included={value.getCredentialBlob.included}
       {disabled}
       status={status(ExtensionIdentifier.ExtensionIdentifierCredentialBlob)}
       onInclude={(included) => include("getCredentialBlob", included, value.getCredentialBlob)}
     >
       <Field.Field orientation="horizontal">
-        <Field.Label for="lab-ext-get-cred-blob-requested">{m.lab_enabled()}</Field.Label>
+        <LabFieldLabel
+          forId="lab-ext-get-cred-blob-requested"
+          label={m.lab_enabled()}
+          helpText={m.lab_cred_blob_get_tooltip()}
+          helpLabel={m.lab_option_help({ label: `credBlob: ${m.lab_enabled()}` })}
+        />
         <Switch
           id="lab-ext-get-cred-blob-requested"
           checked={value.getCredentialBlob.value}
@@ -235,7 +246,7 @@
     <LabExtensionItem
       value="hmacSecret"
       title="hmac-secret"
-      description={m.lab_extension_ctap_description()}
+      description={m.lab_extension_hmac_secret_get_description()}
       included={value.hmacSecret.included}
       {disabled}
       status={status(ExtensionIdentifier.ExtensionIdentifierHMACSecret)}

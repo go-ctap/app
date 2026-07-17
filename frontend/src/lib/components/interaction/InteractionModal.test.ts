@@ -2,15 +2,21 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/sv
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { InteractionKind, InteractionRequest } from "../../../../bindings/github.com/go-ctap/kit/model";
+import {
+  InteractionKind,
+  InteractionRequest,
+  PINInteractionState,
+} from "../../../../bindings/github.com/go-ctap/kit/model";
+import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import { InteractionAnswer, InteractionPrompt } from "../../../../bindings/github.com/go-ctap/kit/service";
 
 import { buildInteractionModalPresentation } from "$lib/shell-presentation";
 import { resetAppStateForTest } from "$lib/store-test-utils";
+import { failureForCode } from "$lib/test-failure";
 
 import InteractionModal from "./InteractionModal.svelte";
 
-function pinPrompt(interactionId = "interaction-1") {
+function pinPrompt(interactionId = "interaction-1", pinState?: PINInteractionState) {
   return new InteractionPrompt({
     interactionId,
     operationId: "operation-1",
@@ -22,6 +28,7 @@ function pinPrompt(interactionId = "interaction-1") {
         pinUvAuthToken: "secret-token",
         options: { pinUvAuthToken: true },
       },
+      ...(pinState ? { pinState } : {}),
     }),
   });
 }
@@ -78,6 +85,39 @@ describe("InteractionModal", () => {
     await fireEvent.submit(input.closest("form")!);
 
     expect(onAnswer).not.toHaveBeenCalled();
+  });
+
+  it("shows the authenticator's remaining PIN attempts", async () => {
+    render(InteractionModal, {
+      props: {
+        presentation: buildInteractionModalPresentation(pinPrompt("interaction-1", new PINInteractionState({
+          retriesRemaining: 7,
+          powerCycleState: false,
+        }))),
+        onAnswer,
+      },
+    });
+
+    expect(screen.getByText("PIN attempts remaining: 7")).toBeInTheDocument();
+    expect(screen.queryByText("Power cycle required")).not.toBeInTheDocument();
+  });
+
+  it("shows the previous PIN failure and power-cycle guidance on retry", async () => {
+    render(InteractionModal, {
+      props: {
+        presentation: buildInteractionModalPresentation(pinPrompt("interaction-2", new PINInteractionState({
+          failure: failureForCode(Code.CodePINInvalid),
+          retriesRemaining: 6,
+          powerCycleState: true,
+        }))),
+        onAnswer,
+      },
+    });
+
+    expect(screen.getByText("The PIN is incorrect.")).toBeInTheDocument();
+    expect(screen.getByText("PIN attempts remaining: 6")).toBeInTheDocument();
+    expect(screen.getByText("Power cycle required")).toBeInTheDocument();
+    expect(screen.getByText("Reconnect the authenticator before trying the PIN again.")).toBeInTheDocument();
   });
 
   it("keeps the dialog open and resets the PIN for the next prompt", async () => {

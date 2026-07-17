@@ -644,6 +644,7 @@ describe("controller lifecycle", () => {
     expect(serviceMocks.UpdateCredentialUser).toHaveBeenNthCalledWith(2, {
       ...previewRequest,
       dryRun: false,
+      prepareInventoryRefresh: true,
       confirmed: true,
       confirmationMessage: "Confirm update",
     });
@@ -776,6 +777,7 @@ describe("controller lifecycle", () => {
     expect(serviceMocks.DeleteCredential).toHaveBeenNthCalledWith(2, {
       ...previewRequest,
       dryRun: false,
+      prepareInventoryRefresh: true,
       confirmed: true,
       confirmationMessage: "Confirm delete",
     });

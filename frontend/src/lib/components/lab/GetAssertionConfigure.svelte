@@ -1,12 +1,9 @@
 <script lang="ts">
-  import { RefreshCw } from "@lucide/svelte";
-
   import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
   import type { InspectEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
 
   import * as Field from "$lib/components/ui/field/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
-  import * as InputGroup from "$lib/components/ui/input-group/index.js";
   import { Separator } from "$lib/components/ui/separator/index.js";
   import type { GetAssertionDraft } from "$lib/features/lab/state";
   import type { LabValidationIssue } from "$lib/lab-input";
@@ -17,7 +14,6 @@
   import GetAssertionExtensions from "./GetAssertionExtensions.svelte";
   import LabClientDataEditor from "./LabClientDataEditor.svelte";
   import LabDescriptorEditor from "./LabDescriptorEditor.svelte";
-  import LabDescriptorTransports from "./LabDescriptorTransports.svelte";
   import LabTriStateSelect from "./LabTriStateSelect.svelte";
   import LabVerificationFlow from "./LabVerificationFlow.svelte";
 
@@ -91,25 +87,41 @@
           <Field.Label for="lab-get-rp-id">{m.lab_rp_id()}</Field.Label>
           <Input id="lab-get-rp-id" value={draft.rpID} {disabled} aria-invalid={fieldInvalid("get.rpID")} oninput={(event) => onDraftChange({ rpID: event.currentTarget.value })} onkeydown={handleSingleLineKeydown} />
         </Field.Field>
-        <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("get.clientData.origin")}>
-          <Field.Label for="lab-get-origin">{m.lab_origin()}</Field.Label>
-          <Input id="lab-get-origin" value={draft.clientData.origin} {disabled} aria-invalid={fieldInvalid("get.clientData.origin")} oninput={(event) => updateClientData({ origin: event.currentTarget.value })} onkeydown={handleSingleLineKeydown} />
-        </Field.Field>
-        <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("get.clientData.challenge")}>
-          <Field.Label for="lab-get-challenge">{m.lab_challenge()}</Field.Label>
-          <InputGroup.Root>
-            <InputGroup.Input id="lab-get-challenge" value={draft.clientData.challenge} spellcheck="false" {disabled} aria-invalid={fieldInvalid("get.clientData.challenge")} oninput={(event) => updateClientData({ challenge: event.currentTarget.value })} onkeydown={handleSingleLineKeydown} />
-            <InputGroup.Addon align="inline-end">
-              <InputGroup.Button size="sm" {disabled} onclick={onRegenerateChallenge}>
-                <RefreshCw aria-hidden="true" />
-                {m.lab_regenerate()}
-              </InputGroup.Button>
-            </InputGroup.Addon>
-          </InputGroup.Root>
-        </Field.Field>
       </Field.Group>
     </Field.Set>
     <LabDescriptorEditor id="lab-get-allow" label={m.lab_allow_list()} description={m.lab_allow_list_description()} descriptors={draft.allowList} {disabled} invalidIndices={descriptorInvalidIndices("get.allowList")} onChange={(allowList) => onDraftChange({ allowList })} onPrimary={onPrimary} />
+  </section>
+
+  <Separator />
+
+  <section class="lab-configure-section" aria-labelledby="lab-get-client-data-title">
+    <header class="lab-configure-section-header">
+      <h3 id="lab-get-client-data-title">{m.lab_client_data()}</h3>
+      <p>{m.lab_client_data_section_description()}</p>
+    </header>
+    <LabClientDataEditor
+      id="lab-get-client-data"
+      operation="get"
+      mode={draft.clientData.mode}
+      origin={draft.clientData.origin}
+      challenge={draft.clientData.challenge}
+      crossOrigin={draft.clientData.crossOrigin}
+      topOrigin={draft.clientData.topOrigin}
+      rawValue={draft.clientData.rawJSON}
+      {disabled}
+      originInvalid={fieldInvalid("get.clientData.origin")}
+      challengeInvalid={fieldInvalid("get.clientData.challenge")}
+      topOriginInvalid={fieldInvalid("get.clientData.topOrigin")}
+      warning={draft.clientData.mode === "raw" && warnings.some((issue) => issue.field === "get.clientData.rawJSON") ? m.lab_raw_json_warning() : null}
+      onModeChange={(mode, rawJSON) => updateClientData(rawJSON === undefined ? { mode } : { mode, rawJSON })}
+      onOriginChange={(origin) => updateClientData({ origin })}
+      onChallengeChange={(challenge) => updateClientData({ challenge })}
+      onCrossOriginChange={(crossOrigin) => updateClientData({ crossOrigin })}
+      onTopOriginChange={(topOrigin) => updateClientData({ topOrigin })}
+      {onRegenerateChallenge}
+      onRawChange={(rawJSON) => updateClientData({ rawJSON })}
+      {onPrimary}
+    />
   </section>
 
   <Separator />
@@ -137,18 +149,46 @@
       <p>{m.lab_advanced_fields()}</p>
     </header>
     <Field.Group>
-      <LabDescriptorTransports descriptors={draft.allowList} {disabled} onChange={(allowList) => onDraftChange({ allowList })} />
       <Field.Set {disabled} data-disabled={disabled}>
         <Field.Legend>{m.lab_options()}</Field.Legend>
         <Field.Group class="lab-option-grid">
-          <LabTriStateSelect id="lab-get-resident-key" label={m.lab_resident_key()} value={draft.residentKey} {disabled} onChange={(residentKey) => onDraftChange({ residentKey })} />
-          <LabTriStateSelect id="lab-get-user-presence" label={m.lab_user_presence()} value={draft.userPresence} {disabled} onChange={(userPresence) => onDraftChange({ userPresence })} />
-          <LabTriStateSelect id="lab-get-user-verification" label={m.lab_user_verification()} value={draft.userVerification} {disabled} onChange={(userVerification) => onDraftChange({ userVerification })} />
+          <LabTriStateSelect
+            id="lab-get-user-presence"
+            label={m.lab_user_presence()}
+            value={draft.userPresence}
+            {disabled}
+            helpText={m.lab_get_up_tooltip()}
+            helpLabel={m.lab_option_help({ label: m.lab_user_presence() })}
+            onChange={(userPresence) => onDraftChange({ userPresence })}
+          />
+          <LabTriStateSelect
+            id="lab-get-user-verification"
+            label={m.lab_user_verification()}
+            value={draft.userVerification}
+            {disabled}
+            helpText={m.lab_uv_tooltip()}
+            helpLabel={m.lab_option_help({ label: m.lab_user_verification() })}
+            onChange={(userVerification) => onDraftChange({ userVerification })}
+          />
         </Field.Group>
       </Field.Set>
-      <LabVerificationFlow id="lab-get-verification" value={draft.verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto"} {disabled} onChange={handleVerificationChange} />
-      <LabClientDataEditor id="lab-get-client-data" mode={draft.clientData.mode} rawValue={draft.clientData.rawJSON} {disabled} warning={draft.clientData.mode === "raw" && warnings.length ? m.lab_raw_json_warning() : null} onModeChange={(mode) => updateClientData({ mode })} onRawChange={(rawJSON) => updateClientData({ rawJSON })} onPrimary={onPrimary} />
     </Field.Group>
+  </section>
+
+  <Separator />
+
+  <section class="lab-configure-section" aria-labelledby="lab-get-execution-title">
+    <header class="lab-configure-section-header">
+      <h3 id="lab-get-execution-title">{m.lab_execution()}</h3>
+      <p>{m.lab_execution_description()}</p>
+    </header>
+    <LabVerificationFlow
+      id="lab-get-verification"
+      value={draft.verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto"}
+      {disabled}
+      description={m.lab_verification_flow_description()}
+      onChange={handleVerificationChange}
+    />
   </section>
 </div>
 

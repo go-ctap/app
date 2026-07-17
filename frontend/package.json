@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@tanstack/svelte-virtual": "^3.13.32",
-    "@wailsio/runtime": "3.0.0-alpha.97"
+    "@wailsio/runtime": "3.0.0-alpha.97",
+    "tldts": "^7.4.3"
   },
   "devDependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.2.8",

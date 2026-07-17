@@ -508,6 +508,8 @@ export class MakeCredentialInput {
     "excludeList"?: credential$0.PublicKeyCredentialDescriptor[];
     "options"?: AuthenticatorOptions;
     "extensions"?: webauthn$0.CreateAuthenticationExtensionsClientInputs | null;
+    "enterpriseAttestation"?: number;
+    "attestationFormatsPreference"?: attestation$0.AttestationStatementFormatIdentifier[];
 
     /** Creates a new MakeCredentialInput instance. */
     constructor($$source: Partial<MakeCredentialInput> = {}) {
@@ -538,6 +540,7 @@ export class MakeCredentialInput {
         const $$createField4_0 = $$createType13;
         const $$createField5_0 = $$createType14;
         const $$createField6_0 = $$createType46;
+        const $$createField8_0 = $$createType47;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("rp" in $$parsedSource) {
             $$parsedSource["rp"] = $$createField0_0($$parsedSource["rp"]);
@@ -559,6 +562,9 @@ export class MakeCredentialInput {
         }
         if ("extensions" in $$parsedSource) {
             $$parsedSource["extensions"] = $$createField6_0($$parsedSource["extensions"]);
+        }
+        if ("attestationFormatsPreference" in $$parsedSource) {
+            $$parsedSource["attestationFormatsPreference"] = $$createField8_0($$parsedSource["attestationFormatsPreference"]);
         }
         return new MakeCredentialInput($$parsedSource as Partial<MakeCredentialInput>);
     }
@@ -612,7 +618,7 @@ export class MakeCredentialPreview {
      */
     static createFrom($$source: any = {}): MakeCredentialPreview {
         const $$createField0_0 = $$createType18;
-        const $$createField1_0 = $$createType47;
+        const $$createField1_0 = $$createType48;
         const $$createField2_0 = $$createType21;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
@@ -683,7 +689,7 @@ export class MakeCredentialResult {
      * Creates a new MakeCredentialResult instance from a string or object.
      */
     static createFrom($$source: any = {}): MakeCredentialResult {
-        const $$createField12_0 = $$createType49;
+        const $$createField12_0 = $$createType50;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("extensionResults" in $$parsedSource) {
             $$parsedSource["extensionResults"] = $$createField12_0($$parsedSource["extensionResults"]);
@@ -782,6 +788,7 @@ const $$createType43 = credential$0.PublicKeyCredentialParameters.createFrom;
 const $$createType44 = $Create.Array($$createType43);
 const $$createType45 = webauthn$0.CreateAuthenticationExtensionsClientInputs.createFrom;
 const $$createType46 = $Create.Nullable($$createType45);
-const $$createType47 = MakeCredentialInput.createFrom;
-const $$createType48 = MakeCredentialExtensionResults.createFrom;
-const $$createType49 = $Create.Nullable($$createType48);
+const $$createType47 = $Create.Array($Create.Any);
+const $$createType48 = MakeCredentialInput.createFrom;
+const $$createType49 = MakeCredentialExtensionResults.createFrom;
+const $$createType50 = $Create.Nullable($$createType49);

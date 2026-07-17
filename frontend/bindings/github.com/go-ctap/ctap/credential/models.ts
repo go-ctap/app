@@ -7,7 +7,7 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as key$0 from "../../../ldclabs/cose/key/models.js";
+import * as cose$0 from "../cose/models.js";
 
 /**
  * AuthenticatorTransport defines hints as to how clients might communicate
@@ -72,7 +72,7 @@ export class PublicKeyCredentialDescriptor {
  */
 export class PublicKeyCredentialParameters {
     "type": PublicKeyCredentialType;
-    "alg": key$0.Alg;
+    "alg": cose$0.Algorithm;
 
     /** Creates a new PublicKeyCredentialParameters instance. */
     constructor($$source: Partial<PublicKeyCredentialParameters> = {}) {
@@ -80,7 +80,7 @@ export class PublicKeyCredentialParameters {
             this["type"] = PublicKeyCredentialType.$zero;
         }
         if (!("alg" in $$source)) {
-            this["alg"] = 0;
+            this["alg"] = cose$0.Algorithm.$zero;
         }
 
         Object.assign(this, $$source);

@@ -67,8 +67,15 @@ const permissionMessages: Readonly<Record<string, () => string>> = {
 export function permissionLabel(value: unknown) {
   const raw = String(value || "").trim();
   if (!raw) return "";
-  const key = raw.replace(/^Permission/, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
-  return permissionMessages[key]?.() ?? humanizeIdentifier(raw, "Permission");
+  return raw
+    .split(",")
+    .map((permission) => permission.trim())
+    .filter(Boolean)
+    .map((permission) => {
+      const key = permission.replace(/^Permission/, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
+      return permissionMessages[key]?.() ?? humanizeIdentifier(permission, "Permission");
+    })
+    .join(" + ");
 }
 
 const sampleStatusMessages: Readonly<Record<string, () => string>> = {

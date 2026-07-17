@@ -17,6 +17,7 @@
 
   import LabBinaryEditor from "./LabBinaryEditor.svelte";
   import LabExtensionItem, { type ExtensionStatus } from "./LabExtensionItem.svelte";
+  import LabFieldLabel from "./LabFieldLabel.svelte";
   import LabHMACEditor from "./LabHMACEditor.svelte";
   import LabPRFValuesEditor from "./LabPRFValuesEditor.svelte";
 
@@ -108,7 +109,7 @@
     <LabExtensionItem
       value="credentialProperties"
       title="credProps"
-      description={m.lab_extension_client_description()}
+      description={m.lab_extension_cred_props_description()}
       included={value.credentialProperties.included}
       {disabled}
       status="client-side"
@@ -118,14 +119,19 @@
     <LabExtensionItem
       value="prf"
       title="prf"
-      description={m.lab_extension_client_description()}
+      description={m.lab_extension_prf_description()}
       included={value.prf.included}
       {disabled}
       status="client-side"
       onInclude={(included) => include("prf", included, value.prf)}
     >
       <Field.Field orientation="horizontal">
-        <Field.Label for="lab-ext-prf-evaluate">{m.lab_prf_evaluation()}</Field.Label>
+        <LabFieldLabel
+          forId="lab-ext-prf-evaluate"
+          label={m.lab_prf_evaluation()}
+          helpText={m.lab_prf_evaluation_tooltip()}
+          helpLabel={m.lab_option_help({ label: `prf: ${m.lab_prf_evaluation()}` })}
+        />
         <Switch
           id="lab-ext-prf-evaluate"
           checked={value.prf.useEval}
@@ -145,24 +151,6 @@
       {/if}
     </LabExtensionItem>
 
-    <LabExtensionItem
-      value="largeBlob"
-      title="largeBlob"
-      description={m.lab_extension_unavailable_description()}
-      included={false}
-      disabled
-      status="unavailable"
-      onInclude={() => undefined}
-    />
-    <LabExtensionItem
-      value="payment"
-      title="payment"
-      description={m.lab_extension_unavailable_description()}
-      included={false}
-      disabled
-      status="unavailable"
-      onInclude={() => undefined}
-    />
   </section>
 
   <section class="lab-extension-group" aria-labelledby="lab-make-ctap-extensions-title">
@@ -174,14 +162,19 @@
     <LabExtensionItem
       value="credentialProtection"
       title="credProtect"
-      description={m.lab_extension_ctap_description()}
+      description={m.lab_extension_cred_protect_description()}
       included={value.credentialProtection.included}
       {disabled}
       status={status(ExtensionIdentifier.ExtensionIdentifierCredentialProtection)}
       onInclude={(included) => include("credentialProtection", included, value.credentialProtection)}
     >
       <Field.Field>
-        <Field.Label for="lab-ext-cred-protect-policy">{m.lab_policy()}</Field.Label>
+        <LabFieldLabel
+          forId="lab-ext-cred-protect-policy"
+          label={m.lab_policy()}
+          helpText={m.lab_cred_protect_policy_tooltip()}
+          helpLabel={m.lab_option_help({ label: `credProtect: ${m.lab_policy()}` })}
+        />
         <Select.Root type="single" value={value.credentialProtection.policy} onValueChange={changePolicy}>
           <Select.Trigger id="lab-ext-cred-protect-policy" {disabled}>
             {policyLabel(value.credentialProtection.policy)}
@@ -205,7 +198,12 @@
         </Select.Root>
       </Field.Field>
       <Field.Field orientation="horizontal">
-        <Field.Label for="lab-ext-cred-protect-enforce">{m.lab_enforce()}</Field.Label>
+        <LabFieldLabel
+          forId="lab-ext-cred-protect-enforce"
+          label={m.lab_enforce()}
+          helpText={m.lab_cred_protect_enforce_tooltip()}
+          helpLabel={m.lab_option_help({ label: `credProtect: ${m.lab_enforce()}` })}
+        />
         <Switch
           id="lab-ext-cred-protect-enforce"
           checked={value.credentialProtection.enforce}
@@ -221,7 +219,7 @@
     <LabExtensionItem
       value="credentialBlob"
       title="credBlob"
-      description={m.lab_extension_ctap_description()}
+      description={m.lab_extension_cred_blob_create_description()}
       included={value.credentialBlob.included}
       {disabled}
       status={status(ExtensionIdentifier.ExtensionIdentifierCredentialBlob)}
@@ -240,14 +238,19 @@
     <LabExtensionItem
       value="hmacSecret"
       title="hmac-secret"
-      description={m.lab_extension_ctap_description()}
+      description={m.lab_extension_hmac_secret_create_description()}
       included={value.hmacSecret.included}
       {disabled}
       status={status(ExtensionIdentifier.ExtensionIdentifierHMACSecret)}
       onInclude={(included) => include("hmacSecret", included, value.hmacSecret)}
     >
       <Field.Field orientation="horizontal">
-        <Field.Label for="lab-ext-hmac-create-requested">{m.lab_enabled()}</Field.Label>
+        <LabFieldLabel
+          forId="lab-ext-hmac-create-requested"
+          label={m.lab_enabled()}
+          helpText={m.lab_hmac_secret_create_tooltip()}
+          helpLabel={m.lab_option_help({ label: `hmac-secret: ${m.lab_enabled()}` })}
+        />
         <Switch
           id="lab-ext-hmac-create-requested"
           checked={value.hmacSecret.value}
@@ -263,7 +266,7 @@
     <LabExtensionItem
       value="hmacSecretMC"
       title="hmac-secret-mc"
-      description={m.lab_extension_ctap_description()}
+      description={m.lab_extension_hmac_secret_mc_description()}
       included={value.hmacSecretMC.included}
       {disabled}
       status={status(ExtensionIdentifier.ExtensionIdentifierHMACSecretMC)}
@@ -282,14 +285,19 @@
     <LabExtensionItem
       value="minPINLength"
       title="minPinLength"
-      description={m.lab_extension_ctap_description()}
+      description={m.lab_extension_min_pin_length_description()}
       included={value.minPINLength.included}
       {disabled}
       status={status(ExtensionIdentifier.ExtensionIdentifierMinPinLength)}
       onInclude={(included) => include("minPINLength", included, value.minPINLength)}
     >
       <Field.Field orientation="horizontal">
-        <Field.Label for="lab-ext-min-pin-requested">{m.lab_enabled()}</Field.Label>
+        <LabFieldLabel
+          forId="lab-ext-min-pin-requested"
+          label={m.lab_enabled()}
+          helpText={m.lab_min_pin_length_tooltip()}
+          helpLabel={m.lab_option_help({ label: `minPinLength: ${m.lab_enabled()}` })}
+        />
         <Switch
           id="lab-ext-min-pin-requested"
           checked={value.minPINLength.value}
@@ -302,14 +310,19 @@
     <LabExtensionItem
       value="pinComplexityPolicy"
       title="pinComplexityPolicy"
-      description={m.lab_extension_ctap_description()}
+      description={m.lab_extension_pin_complexity_policy_description()}
       included={value.pinComplexityPolicy.included}
       {disabled}
       status={status(ExtensionIdentifier.ExtensionIdentifierPinComplexityPolicy)}
       onInclude={(included) => include("pinComplexityPolicy", included, value.pinComplexityPolicy)}
     >
       <Field.Field orientation="horizontal">
-        <Field.Label for="lab-ext-pin-complexity-requested">{m.lab_enabled()}</Field.Label>
+        <LabFieldLabel
+          forId="lab-ext-pin-complexity-requested"
+          label={m.lab_enabled()}
+          helpText={m.lab_pin_complexity_policy_tooltip()}
+          helpLabel={m.lab_option_help({ label: `pinComplexityPolicy: ${m.lab_enabled()}` })}
+        />
         <Switch
           id="lab-ext-pin-complexity-requested"
           checked={value.pinComplexityPolicy.value}

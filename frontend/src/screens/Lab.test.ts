@@ -47,6 +47,10 @@ function stepCard(name: string) {
   return screen.getByRole("heading", { level: 2, name }).closest('[data-slot="card"]') as HTMLElement;
 }
 
+function extensionTrigger(scope: HTMLElement, title: string) {
+  return within(scope).getByText(title, { selector: "code" }).closest("button") as HTMLButtonElement;
+}
+
 describe("WebAuthn Lab screen", () => {
   beforeEach(() => {
     setAppLocale("en");
@@ -112,8 +116,10 @@ describe("WebAuthn Lab screen", () => {
     const make = stepCard("MakeCredential");
     expect(within(make).queryByRole("tab")).not.toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "Basics" })).toBeInTheDocument();
+    expect(within(make).getByRole("heading", { name: "clientDataJSON" })).toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "Extensions · 0" })).toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "Advanced" })).toBeInTheDocument();
+    expect(within(make).getByRole("heading", { name: "Execution" })).toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "WebAuthn client extensions" })).toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "CTAP authenticator extensions" })).toBeInTheDocument();
     expect(within(make).getByRole("button", { name: /prf.*client-side/i })).toBeInTheDocument();
@@ -132,12 +138,13 @@ describe("WebAuthn Lab screen", () => {
     expect(within(make).getByRole("switch", { name: "Include hmac-secret" })).toBeEnabled();
     expect(within(make).getByRole("switch", { name: "Include hmac-secret-mc" })).toBeEnabled();
     expect(within(make).queryByText("hmacCreateSecret")).toBeNull();
-    expect(within(make).getByRole("switch", { name: "Include largeBlob" })).toBeDisabled();
-    expect(within(make).getByRole("switch", { name: "Include payment" })).toBeDisabled();
+    expect(within(make).queryByRole("switch", { name: "Include largeBlob" })).not.toBeInTheDocument();
+    expect(within(make).queryByRole("switch", { name: "Include payment" })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
     const assertion = stepCard("GetAssertion");
     expect(within(assertion).queryByRole("tab")).not.toBeInTheDocument();
+    expect(within(assertion).getByRole("heading", { name: "clientDataJSON" })).toBeInTheDocument();
     expect(within(assertion).getByRole("heading", { name: "Extensions · 0" })).toBeInTheDocument();
     expect(within(assertion).getByRole("heading", { name: "WebAuthn client extensions" })).toBeInTheDocument();
     expect(within(assertion).getByRole("heading", { name: "CTAP authenticator extensions" })).toBeInTheDocument();
@@ -146,19 +153,19 @@ describe("WebAuthn Lab screen", () => {
     expect(within(assertion).getByRole("button", { name: /prf.*client-side/i })).toBeInTheDocument();
     expect(within(assertion).getByRole("switch", { name: "Include credBlob" })).toBeEnabled();
     expect(within(assertion).getByRole("switch", { name: "Include hmac-secret" })).toBeEnabled();
-    expect(within(assertion).getByRole("switch", { name: "Include largeBlob" })).toBeDisabled();
+    expect(within(assertion).queryByRole("switch", { name: "Include largeBlob" })).not.toBeInTheDocument();
     expect(within(assertion).queryByRole("switch", { name: "Include payment" })).not.toBeInTheDocument();
 
     await user.click(includePRF);
     const addOverride = within(assertion).getByRole("button", { name: "Add credential override" });
     expect(addOverride).toBeDisabled();
-    expect(within(assertion).getByText(/requires exactly one allow-list credential/)).toBeInTheDocument();
+    expect(within(assertion).getByText(/one override for each allow-list credential/)).toBeInTheDocument();
 
     mutableLabState.update((state) => ({
       ...state,
       getDraft: {
         ...state.getDraft,
-        allowList: [{ credentialIDHex: "aabb", transports: [] }],
+        allowList: [{ credentialIDHex: "aabb" }],
       },
     }));
     await tick();
@@ -174,13 +181,140 @@ describe("WebAuthn Lab screen", () => {
       getDraft: {
         ...state.getDraft,
         allowList: [
-          { credentialIDHex: "aabb", transports: [] },
-          { credentialIDHex: "ccdd", transports: [] },
+          { credentialIDHex: "aabb" },
+          { credentialIDHex: "ccdd" },
         ],
       },
     }));
     await tick();
+    expect(addOverride).toBeEnabled();
+    await user.click(addOverride);
+    expect(get(mutableLabState).getDraft.extensions.prf.evalByCredential).toHaveLength(1);
+    expect(addOverride).toBeEnabled();
+    await user.click(addOverride);
+    expect(get(mutableLabState).getDraft.extensions.prf.evalByCredential).toHaveLength(2);
     expect(addOverride).toBeDisabled();
+  });
+
+  it("describes every extension and explains its configurable options", async () => {
+    const user = userEvent.setup();
+    selectToken();
+    render(Lab);
+
+    const make = stepCard("MakeCredential");
+    for (const description of [
+      /Reports whether the newly created credential is discoverable/,
+      /Evaluates a credential-bound pseudo-random function/,
+      /Stores a policy with the credential/,
+      /Stores a small RP-defined opaque blob/,
+      /associate credential-scoped HMAC secret material/,
+      /Evaluates the new credential's HMAC secret during MakeCredential/,
+      /current minimum PIN length during credential creation/,
+      /Requests whether a PIN complexity policy is configured/,
+    ]) {
+      expect(within(make).getByText(description)).toBeInTheDocument();
+    }
+    expect(within(make).queryByText("WebAuthn client extension input.")).not.toBeInTheDocument();
+    expect(within(make).queryByText("Authenticator extension input sent through CTAP.")).not.toBeInTheDocument();
+
+    await user.click(extensionTrigger(make, "prf"));
+    expect(within(make).getByRole("button", { name: "About prf: Evaluate during registration" }))
+      .toBeInTheDocument();
+
+    await user.click(extensionTrigger(make, "credProtect"));
+    expect(within(make).getByRole("button", { name: "About credProtect: Policy" })).toBeInTheDocument();
+    expect(within(make).getByRole("button", { name: "About credProtect: Enforce" })).toBeInTheDocument();
+
+    for (const [extension, helpName] of [
+      ["hmac-secret", "About hmac-secret: Enabled"],
+      ["minPinLength", "About minPinLength: Enabled"],
+      ["pinComplexityPolicy", "About pinComplexityPolicy: Enabled"],
+    ] as const) {
+      await user.click(extensionTrigger(make, extension));
+      expect(within(make).getByRole("button", { name: helpName })).toBeInTheDocument();
+    }
+
+    await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
+    const assertion = stepCard("GetAssertion");
+    expect(within(assertion).getByText(/Evaluates a credential-bound pseudo-random function/)).toBeInTheDocument();
+    expect(within(assertion).getByText(/Requests the opaque blob stored with the selected credential/))
+      .toBeInTheDocument();
+    expect(within(assertion).getByText(/Evaluates the selected credential's HMAC secret/)).toBeInTheDocument();
+
+    await user.click(extensionTrigger(assertion, "prf"));
+    expect(within(assertion).getByRole("button", { name: "About prf: Global evaluation" }))
+      .toBeInTheDocument();
+    await user.click(extensionTrigger(assertion, "credBlob"));
+    expect(within(assertion).getByRole("button", { name: "About credBlob: Enabled" })).toBeInTheDocument();
+  });
+
+  it("explains advanced CTAP options and runtime verification controls", async () => {
+    const user = userEvent.setup();
+    selectToken();
+    render(Lab);
+
+    const make = stepCard("MakeCredential");
+    const userPresence = within(make).getByLabelText("User presence");
+    expect(userPresence).toHaveTextContent("Omit — recommended");
+    expect(within(make).getByRole("button", { name: "About Resident key" })).toBeInTheDocument();
+    expect(within(make).getByRole("button", { name: "About User presence" })).toBeInTheDocument();
+    expect(within(make).getByRole("button", { name: "About User verification" })).toBeInTheDocument();
+    expect(within(make).getByText(/Controls how a pinUvAuthToken is obtained/)).toBeInTheDocument();
+
+    mutableLabState.update((state) => ({
+      ...state,
+      makeDraft: { ...state.makeDraft, userPresence: "true" },
+    }));
+    await tick();
+
+    expect(userPresence).toHaveTextContent("Send true");
+    expect(userPresence).not.toHaveTextContent("CTAP 2.1+");
+    expect(within(make).queryByText("CTAP 2.1+", { exact: true })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
+    const get = stepCard("GetAssertion");
+    expect(within(get).getByRole("button", { name: "About User presence" })).toBeInTheDocument();
+    expect(within(get).getByRole("button", { name: "About User verification" })).toBeInTheDocument();
+    expect(within(get).getByText(/Controls how a pinUvAuthToken is obtained/)).toBeInTheDocument();
+  });
+
+  it("separates browser-style clientDataJSON from exact UTF-8 input", async () => {
+    const user = userEvent.setup();
+    selectToken();
+    render(Lab);
+
+    const make = stepCard("MakeCredential");
+    const basics = within(make).getByRole("heading", { name: "Basics" }).closest("section") as HTMLElement;
+    const clientData = within(make).getByRole("heading", { name: "clientDataJSON" }).closest("section") as HTMLElement;
+
+    expect(within(basics).queryByLabelText("Origin")).not.toBeInTheDocument();
+    expect(within(basics).queryByLabelText("Challenge")).not.toBeInTheDocument();
+    expect(within(clientData).getByLabelText("Origin")).toHaveValue("https://example.com");
+    expect(within(clientData).getByLabelText("Challenge")).toBeInTheDocument();
+    expect(within(clientData).getByText("webauthn.create")).toBeInTheDocument();
+    const generated = within(clientData).getByLabelText("Generated clientDataJSON");
+    expect(generated).toBeDisabled();
+    expect((generated as HTMLTextAreaElement).value).toContain('"type":"webauthn.create"');
+    const crossOrigin = within(clientData).getByRole("switch", { name: "crossOrigin" });
+    expect(crossOrigin).not.toBeChecked();
+    expect(within(clientData).queryByLabelText("topOrigin")).not.toBeInTheDocument();
+
+    await user.click(crossOrigin);
+    expect(crossOrigin).toBeChecked();
+    expect(within(clientData).getByLabelText("topOrigin")).toHaveValue("https://example.com");
+    expect((generated as HTMLTextAreaElement).value).toContain('"topOrigin":"https://example.com"');
+    const generatedValue = (generated as HTMLTextAreaElement).value;
+
+    await user.click(within(clientData).getByRole("radio", { name: "Exact UTF-8 bytes" }));
+    expect(within(clientData).queryByLabelText("Origin")).not.toBeInTheDocument();
+    expect(within(clientData).queryByLabelText("Challenge")).not.toBeInTheDocument();
+    expect(within(clientData).getByLabelText("Exact clientDataJSON bytes (UTF-8)")).toHaveValue(generatedValue);
+    expect(within(clientData).getByText(/without normalization/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
+    const assertion = stepCard("GetAssertion");
+    const assertionClientData = within(assertion).getByRole("heading", { name: "clientDataJSON" }).closest("section") as HTMLElement;
+    expect(within(assertionClientData).getByText("webauthn.get")).toBeInTheDocument();
   });
 
   it("runs the primary action on single-line Enter but preserves textarea Enter", async () => {
@@ -204,13 +338,13 @@ describe("WebAuthn Lab screen", () => {
       },
     }));
     await tick();
-    expect(within(make).getByRole("heading", { name: "Advanced" })).toBeInTheDocument();
-    const raw = within(make).getByLabelText("Raw client data JSON");
+    expect(within(make).getByRole("heading", { name: "clientDataJSON" })).toBeInTheDocument();
+    const raw = within(make).getByLabelText("Exact clientDataJSON bytes (UTF-8)");
     expect(await fireEvent.keyDown(raw, { key: "Enter" })).toBe(true);
     expect(controllerMocks.previewMakeCredential).not.toHaveBeenCalled();
 
-    expect(await fireEvent.keyDown(raw, { key: "Enter", ctrlKey: true })).toBe(false);
-    expect(controllerMocks.previewMakeCredential).toHaveBeenCalledOnce();
+    expect(await fireEvent.keyDown(raw, { key: "Enter", ctrlKey: true })).toBe(true);
+    expect(controllerMocks.previewMakeCredential).not.toHaveBeenCalled();
   });
 
   it("locks action controls in both operation tabs while the session is running", async () => {

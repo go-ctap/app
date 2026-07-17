@@ -1,4 +1,4 @@
-import type { InteractionKind } from "../../bindings/github.com/go-ctap/kit/model";
+import type { InteractionKind, PINInteractionState } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
 
@@ -56,6 +56,7 @@ export type InteractionModalPresentation = {
   permission: string;
   preview: unknown;
   kind: InteractionKind;
+  pinState: PINInteractionState | null;
 };
 
 const deviceIdentityCollator = new Intl.Collator("en", {
@@ -207,5 +208,6 @@ export function buildInteractionModalPresentation(prompt: InteractionPrompt): In
     permission: permissionLabel(request.permission),
     preview: request.preview ?? null,
     kind: request.kind,
+    pinState: request.pinState ?? null,
   };
 }

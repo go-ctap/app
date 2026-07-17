@@ -8,10 +8,11 @@
     id: string;
     value: string;
     disabled?: boolean;
+    description?: string;
     onChange: (value: string) => void;
   };
 
-  let { id, value, disabled = false, onChange }: Props = $props();
+  let { id, value, disabled = false, description, onChange }: Props = $props();
 
   function handleValueChange(next: string | string[]) {
     if (Array.isArray(next) || !next) return;
@@ -34,6 +35,7 @@
     <ToggleGroup.Item value="auto">{m.lab_verification_auto()}</ToggleGroup.Item>
     <ToggleGroup.Item value="pin">{m.lab_verification_pin()}</ToggleGroup.Item>
   </ToggleGroup.Root>
+  {#if description}<Field.Description>{description}</Field.Description>{/if}
 </Field.Field>
 
 <style>

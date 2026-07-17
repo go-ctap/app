@@ -587,6 +587,7 @@ export async function confirmLargeBlobWrite(): Promise<boolean> {
   const request: LargeBlobMutationRequest = {
     ...previewRequest,
     dryRun: false,
+    prepareInventoryRefresh: true,
     confirmed: true,
     confirmationMessage: m.confirm_write(),
   };
@@ -634,6 +635,7 @@ export async function confirmLargeBlobDelete(): Promise<boolean> {
   const request: LargeBlobMutationRequest = {
     ...previewRequest,
     dryRun: false,
+    prepareInventoryRefresh: true,
     confirmed: true,
     confirmationMessage: m.confirm_delete(),
   };
@@ -680,6 +682,7 @@ export async function confirmLargeBlobCleanup(): Promise<boolean> {
   const request: LargeBlobGarbageCollectRequest = {
     ...previewRequest,
     dryRun: false,
+    prepareInventoryRefresh: true,
     confirmed: true,
     confirmationMessage: m.confirm_cleanup(),
   };

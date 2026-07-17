@@ -7,6 +7,9 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as attestation$0 from "../../ctap/attestation/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as credential$0 from "../../ctap/credential/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -479,6 +482,11 @@ export class CredentialDeleteRequest {
     "sessionId": SessionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "credentialIdHex": string;
+
+    /**
+     * PrepareInventoryRefresh broadens the token plan only enough for a subsequent inventory refresh.
+     */
+    "prepareInventoryRefresh"?: boolean;
     "confirmed"?: boolean;
     "confirmationMessage"?: string;
     "dryRun"?: boolean;
@@ -574,6 +582,11 @@ export class CredentialUpdateRequest {
     "sessionId": SessionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "credentialIdHex": string;
+
+    /**
+     * PrepareInventoryRefresh broadens the token plan only enough for a subsequent inventory refresh.
+     */
+    "prepareInventoryRefresh"?: boolean;
     "userIdHex"?: string;
     "name"?: string;
     "displayName"?: string;
@@ -936,6 +949,11 @@ export class InteractionPrompt {
 export class LargeBlobGarbageCollectRequest {
     "sessionId": SessionID;
     "verificationFlow"?: model$0.VerificationFlow;
+
+    /**
+     * PrepareInventoryRefresh broadens the token plan only enough for a subsequent inventory refresh.
+     */
+    "prepareInventoryRefresh"?: boolean;
     "confirmed"?: boolean;
     "confirmationMessage"?: string;
     "dryRun"?: boolean;
@@ -1072,6 +1090,11 @@ export class LargeBlobMutationRequest {
     "verificationFlow"?: model$0.VerificationFlow;
     "credentialIdHex": string;
     "payload"?: string;
+
+    /**
+     * PrepareInventoryRefresh broadens the token plan only enough for a subsequent inventory refresh.
+     */
+    "prepareInventoryRefresh"?: boolean;
     "confirmed"?: boolean;
     "confirmationMessage"?: string;
     "dryRun"?: boolean;
@@ -1294,6 +1317,8 @@ export class MakeCredentialRequest {
     "excludeList"?: credential$0.PublicKeyCredentialDescriptor[];
     "options"?: webauthn$0.AuthenticatorOptions;
     "extensions"?: webauthn$1.CreateAuthenticationExtensionsClientInputs | null;
+    "enterpriseAttestation"?: number;
+    "attestationFormatsPreference"?: attestation$0.AttestationStatementFormatIdentifier[];
     "confirmed"?: boolean;
     "confirmationMessage"?: string;
     "dryRun"?: boolean;
@@ -1330,6 +1355,7 @@ export class MakeCredentialRequest {
         const $$createField6_0 = $$createType27;
         const $$createField7_0 = $$createType28;
         const $$createField8_0 = $$createType48;
+        const $$createField10_0 = $$createType49;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("rp" in $$parsedSource) {
             $$parsedSource["rp"] = $$createField2_0($$parsedSource["rp"]);
@@ -1351,6 +1377,9 @@ export class MakeCredentialRequest {
         }
         if ("extensions" in $$parsedSource) {
             $$parsedSource["extensions"] = $$createField8_0($$parsedSource["extensions"]);
+        }
+        if ("attestationFormatsPreference" in $$parsedSource) {
+            $$parsedSource["attestationFormatsPreference"] = $$createField10_0($$parsedSource["attestationFormatsPreference"]);
         }
         return new MakeCredentialRequest($$parsedSource as Partial<MakeCredentialRequest>);
     }
@@ -1383,7 +1412,7 @@ export class MinPINLengthRequest {
      * Creates a new MinPINLengthRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): MinPINLengthRequest {
-        const $$createField3_0 = $$createType49;
+        const $$createField3_0 = $$createType50;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("minPinLengthRPIDs" in $$parsedSource) {
             $$parsedSource["minPinLengthRPIDs"] = $$createField3_0($$parsedSource["minPinLengthRPIDs"]);
@@ -1431,7 +1460,7 @@ export class OperationEventEnvelope {
      * Creates a new OperationEventEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): OperationEventEnvelope {
-        const $$createField2_0 = $$createType50;
+        const $$createField2_0 = $$createType51;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("event" in $$parsedSource) {
             $$parsedSource["event"] = $$createField2_0($$parsedSource["event"]);
@@ -1533,7 +1562,7 @@ export class PINEnvelope {
      */
     static createFrom($$source: any = {}): PINEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType52;
+        const $$createField5_0 = $$createType53;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -1628,7 +1657,7 @@ export class ResetFactoryEnvelope {
      */
     static createFrom($$source: any = {}): ResetFactoryEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType54;
+        const $$createField5_0 = $$createType55;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -1696,7 +1725,7 @@ export class SessionSnapshot {
      * Creates a new SessionSnapshot instance from a string or object.
      */
     static createFrom($$source: any = {}): SessionSnapshot {
-        const $$createField1_0 = $$createType55;
+        const $$createField1_0 = $$createType56;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("info" in $$parsedSource) {
             $$parsedSource["info"] = $$createField1_0($$parsedSource["info"]);
@@ -1756,9 +1785,10 @@ const $$createType46 = $Create.Array($$createType45);
 const $$createType47 = webauthn$1.CreateAuthenticationExtensionsClientInputs.createFrom;
 const $$createType48 = $Create.Nullable($$createType47);
 const $$createType49 = $Create.Array($Create.Any);
-const $$createType50 = model$0.OperationEvent.createFrom;
-const $$createType51 = model$0.PINOutput.createFrom;
-const $$createType52 = $Create.Nullable($$createType51);
-const $$createType53 = model$0.ResetFactoryOutput.createFrom;
-const $$createType54 = $Create.Nullable($$createType53);
-const $$createType55 = model$0.SessionInfo.createFrom;
+const $$createType50 = $Create.Array($Create.Any);
+const $$createType51 = model$0.OperationEvent.createFrom;
+const $$createType52 = model$0.PINOutput.createFrom;
+const $$createType53 = $Create.Nullable($$createType52);
+const $$createType54 = model$0.ResetFactoryOutput.createFrom;
+const $$createType55 = $Create.Nullable($$createType54);
+const $$createType56 = model$0.SessionInfo.createFrom;

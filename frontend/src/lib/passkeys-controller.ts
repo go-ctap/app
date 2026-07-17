@@ -329,6 +329,7 @@ export async function confirmCredentialUpdate(): Promise<boolean> {
   const request: CredentialUpdateRequest = {
     ...previewRequest,
     dryRun: false,
+    prepareInventoryRefresh: true,
     confirmed: true,
     confirmationMessage: m.confirm_update(),
   };
@@ -444,6 +445,7 @@ export async function confirmCredentialDelete(): Promise<boolean> {
   const request: CredentialDeleteRequest = {
     ...previewRequest,
     dryRun: false,
+    prepareInventoryRefresh: true,
     confirmed: true,
     confirmationMessage: m.confirm_delete(),
   };

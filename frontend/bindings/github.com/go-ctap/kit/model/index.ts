@@ -32,6 +32,7 @@ export {
     OperationEvent,
     OperationKind,
     OperationStage,
+    PINInteractionState,
     PINOutput,
     ResetFactoryOutput,
     SessionInfo,

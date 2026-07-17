@@ -11,6 +11,9 @@ describe("ctapkit display labels", () => {
 
     expect(permissionLabel("PermissionCredentialManagement")).toBe("Управление учетными данными");
     expect(permissionLabel("credentialManagement")).toBe("Управление учетными данными");
+    expect(permissionLabel("credentialManagement,largeBlobWrite")).toBe(
+      "Управление учетными данными + Запись крупного блоба",
+    );
   });
 
   it("localizes biometric sample statuses", () => {

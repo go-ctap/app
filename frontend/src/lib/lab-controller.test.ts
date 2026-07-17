@@ -2,10 +2,7 @@ import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AttestationStatementFormatIdentifier } from "../../bindings/github.com/go-ctap/ctap/attestation";
-import {
-  AuthenticatorTransport,
-  PublicKeyCredentialType,
-} from "../../bindings/github.com/go-ctap/ctap/credential";
+import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/credential";
 import {
   OperationKind,
   VerificationFlow,
@@ -269,13 +266,12 @@ describe("WebAuthn Lab request lifecycle", () => {
         origin: "https://lab.example",
         challenge: "AQID",
       },
-      algorithms: ["-7", "-257", "-7"],
-      excludeList: [{
-        credentialIDHex: "deadbeef",
-        transports: [AuthenticatorTransport.AuthenticatorTransportUSB],
-      }],
+      algorithms: ["-7", "-257"],
+      attestationFormatsPreference: ["packed", "none"],
+      enterpriseAttestation: 2,
+      excludeList: [{ credentialIDHex: "deadbeef" }],
       residentKey: "auto",
-      userPresence: "false",
+      userPresence: "true",
       userVerification: "true",
       verificationFlow: VerificationFlow.VerificationFlowPIN,
     })).toBe(true);
@@ -294,14 +290,14 @@ describe("WebAuthn Lab request lifecycle", () => {
       pubKeyCredParams: [
         { type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 },
         { type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -257 },
-        { type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 },
       ],
+      enterpriseAttestation: 2,
+      attestationFormatsPreference: ["packed", "none"],
       excludeList: [{
         type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
         id: "3q2+7w==",
-        transports: [AuthenticatorTransport.AuthenticatorTransportUSB],
       }],
-      options: { userPresence: false, userVerification: true },
+      options: { userPresence: true, userVerification: true },
       dryRun: true,
     });
     expect(makeCredential.mock.calls[0][0].confirmed).toBeUndefined();
@@ -563,8 +559,8 @@ describe("WebAuthn Lab credential handoff", () => {
     seedSuccessfulMake("example.com", "cafe");
     expect(updateLabGetAssertionDraft({
       allowList: [
-        { credentialIDHex: "beef", transports: [] },
-        { credentialIDHex: "CAFE", transports: [AuthenticatorTransport.AuthenticatorTransportUSB] },
+        { credentialIDHex: "beef" },
+        { credentialIDHex: "CAFE" },
       ],
     })).toBe(true);
 
@@ -572,8 +568,8 @@ describe("WebAuthn Lab credential handoff", () => {
     expect(get(labState).getDraft).toMatchObject({
       rpID: "example.com",
       allowList: [
-        { credentialIDHex: "beef", transports: [] },
-        { credentialIDHex: "CAFE", transports: [AuthenticatorTransport.AuthenticatorTransportUSB] },
+        { credentialIDHex: "beef" },
+        { credentialIDHex: "CAFE" },
       ],
     });
     expect(get(labState).pendingHandoff).toBeNull();
@@ -588,15 +584,15 @@ describe("WebAuthn Lab credential handoff", () => {
     seedSuccessfulMake("created.example", "cafe");
     expect(updateLabGetAssertionDraft({
       rpID: "",
-      allowList: [{ credentialIDHex: "beef", transports: [] }],
+      allowList: [{ credentialIDHex: "beef" }],
     })).toBe(true);
 
     expect(handoffLabCredential()).toBe(true);
     expect(get(labState).getDraft).toMatchObject({
       rpID: "created.example",
       allowList: [
-        { credentialIDHex: "beef", transports: [] },
-        { credentialIDHex: "cafe", transports: [] },
+        { credentialIDHex: "beef" },
+        { credentialIDHex: "cafe" },
       ],
     });
     expect(get(labState).getStep.phase).toBe("editing");
@@ -606,7 +602,7 @@ describe("WebAuthn Lab credential handoff", () => {
     seedSuccessfulMake("created.example", "cafe");
     expect(updateLabGetAssertionDraft({
       rpID: "other.example",
-      allowList: [{ credentialIDHex: "beef", transports: [] }],
+      allowList: [{ credentialIDHex: "beef" }],
     })).toBe(true);
 
     expect(handoffLabCredential()).toBe(false);
@@ -626,7 +622,7 @@ describe("WebAuthn Lab credential handoff", () => {
     expect(confirmLabHandoff()).toBe(true);
     expect(get(labState).getDraft).toMatchObject({
       rpID: "created.example",
-      allowList: [{ credentialIDHex: "cafe", transports: [] }],
+      allowList: [{ credentialIDHex: "cafe" }],
     });
     expect(get(labState).getStep.phase).toBe("editing");
   });
@@ -634,7 +630,7 @@ describe("WebAuthn Lab credential handoff", () => {
   it("requires confirmation when GetAssertion has a fixed result even for the same RP", () => {
     seedSuccessfulMake("example.com", "cafe");
     expect(updateLabGetAssertionDraft({
-      allowList: [{ credentialIDHex: "beef", transports: [] }],
+      allowList: [{ credentialIDHex: "beef" }],
     })).toBe(true);
     const current = get(labState);
     const request: GetAssertionRequest = buildGetAssertionRequest("session-1", current.getDraft);
@@ -656,7 +652,7 @@ describe("WebAuthn Lab credential handoff", () => {
     });
     expect(confirmLabHandoff()).toBe(true);
     expect(get(labState).getDraft.allowList).toEqual([
-      { credentialIDHex: "cafe", transports: [] },
+      { credentialIDHex: "cafe" },
     ]);
     expect(get(labState).getStep.phase).toBe("editing");
   });

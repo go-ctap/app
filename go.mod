@@ -13,7 +13,7 @@ require (
 	github.com/coder/websocket v1.8.15 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.2 // indirect
-	github.com/go-ctap/ctap v0.25.0 // indirect
+	github.com/go-ctap/ctap v0.27.0 // indirect
 	github.com/go-ctap/hid v0.9.1 // indirect
 	github.com/go-ctap/pcsc v0.4.0 // indirect
 	github.com/go-ctap/token2 v0.4.5 // indirect
@@ -22,7 +22,6 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jchv/go-winloader v0.0.0-20250406163304-c1995be93bd1 // indirect
-	github.com/ldclabs/cose v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
 	github.com/samber/lo v1.53.0 // indirect

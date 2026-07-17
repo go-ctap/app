@@ -468,7 +468,7 @@ function completeHandoff(rpID: string, credentialIDHex: string, replace: boolean
   const duplicate = current.getDraft.allowList.some(
     (entry) => entry.credentialIDHex.trim().toLowerCase() === credentialIDHex.toLowerCase(),
   );
-  const created = { credentialIDHex, transports: [] };
+  const created = { credentialIDHex };
   const allowList = replace
     ? [created]
     : duplicate ? current.getDraft.allowList : [...current.getDraft.allowList, created];

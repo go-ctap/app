@@ -528,6 +528,7 @@ export class InteractionRequest {
     "permission"?: string;
     "destructive"?: boolean;
     "preview"?: any;
+    "pinState"?: PINInteractionState | null;
 
     /** Creates a new InteractionRequest instance. */
     constructor($$source: Partial<InteractionRequest> = {}) {
@@ -542,7 +543,11 @@ export class InteractionRequest {
      * Creates a new InteractionRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): InteractionRequest {
+        const $$createField5_0 = $$createType37;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("pinState" in $$parsedSource) {
+            $$parsedSource["pinState"] = $$createField5_0($$parsedSource["pinState"]);
+        }
         return new InteractionRequest($$parsedSource as Partial<InteractionRequest>);
     }
 }
@@ -563,7 +568,7 @@ export class LargeBlobListOutput {
      * Creates a new LargeBlobListOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): LargeBlobListOutput {
-        const $$createField0_0 = $$createType36;
+        const $$createField0_0 = $$createType38;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("report" in $$parsedSource) {
             $$parsedSource["report"] = $$createField0_0($$parsedSource["report"]);
@@ -592,8 +597,8 @@ export class LargeBlobMutationOutput {
      * Creates a new LargeBlobMutationOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): LargeBlobMutationOutput {
-        const $$createField0_0 = $$createType37;
-        const $$createField1_0 = $$createType39;
+        const $$createField0_0 = $$createType39;
+        const $$createField1_0 = $$createType41;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("preview" in $$parsedSource) {
             $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
@@ -621,7 +626,7 @@ export class LargeBlobReadOutput {
      * Creates a new LargeBlobReadOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): LargeBlobReadOutput {
-        const $$createField0_0 = $$createType40;
+        const $$createField0_0 = $$createType42;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("report" in $$parsedSource) {
             $$parsedSource["report"] = $$createField0_0($$parsedSource["report"]);
@@ -695,10 +700,10 @@ export class LogEntry {
      * Creates a new LogEntry instance from a string or object.
      */
     static createFrom($$source: any = {}): LogEntry {
-        const $$createField6_0 = $$createType41;
-        const $$createField13_0 = $$createType43;
-        const $$createField14_0 = $$createType43;
-        const $$createField15_0 = $$createType45;
+        const $$createField6_0 = $$createType43;
+        const $$createField13_0 = $$createType45;
+        const $$createField14_0 = $$createType45;
+        const $$createField15_0 = $$createType47;
         const $$createField17_0 = $$createType27;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("params" in $$parsedSource) {
@@ -741,7 +746,7 @@ export class LogJournalBatch {
      * Creates a new LogJournalBatch instance from a string or object.
      */
     static createFrom($$source: any = {}): LogJournalBatch {
-        const $$createField0_0 = $$createType47;
+        const $$createField0_0 = $$createType49;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("entries" in $$parsedSource) {
             $$parsedSource["entries"] = $$createField0_0($$parsedSource["entries"]);
@@ -770,7 +775,7 @@ export class LogJournalRecord {
      * Creates a new LogJournalRecord instance from a string or object.
      */
     static createFrom($$source: any = {}): LogJournalRecord {
-        const $$createField1_0 = $$createType48;
+        const $$createField1_0 = $$createType50;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("entry" in $$parsedSource) {
             $$parsedSource["entry"] = $$createField1_0($$parsedSource["entry"]);
@@ -869,8 +874,8 @@ export class MakeCredentialOutput {
      * Creates a new MakeCredentialOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): MakeCredentialOutput {
-        const $$createField0_0 = $$createType49;
-        const $$createField1_0 = $$createType51;
+        const $$createField0_0 = $$createType51;
+        const $$createField1_0 = $$createType53;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("preview" in $$parsedSource) {
             $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
@@ -950,6 +955,30 @@ export enum OperationStage {
     OperationStageCapturingBioSample = "capturing-bio-sample",
 };
 
+export class PINInteractionState {
+    "failure"?: failure$0.Failure | null;
+    "retriesRemaining"?: number | null;
+    "powerCycleState"?: boolean | null;
+
+    /** Creates a new PINInteractionState instance. */
+    constructor($$source: Partial<PINInteractionState> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new PINInteractionState instance from a string or object.
+     */
+    static createFrom($$source: any = {}): PINInteractionState {
+        const $$createField0_0 = $$createType47;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("failure" in $$parsedSource) {
+            $$parsedSource["failure"] = $$createField0_0($$parsedSource["failure"]);
+        }
+        return new PINInteractionState($$parsedSource as Partial<PINInteractionState>);
+    }
+}
+
 export class PINOutput {
     "preview": config$0.PINMutationPreview;
     "result": config$0.PINMutationResult | null;
@@ -970,8 +999,8 @@ export class PINOutput {
      * Creates a new PINOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): PINOutput {
-        const $$createField0_0 = $$createType52;
-        const $$createField1_0 = $$createType54;
+        const $$createField0_0 = $$createType54;
+        const $$createField1_0 = $$createType56;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("preview" in $$parsedSource) {
             $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
@@ -1003,8 +1032,8 @@ export class ResetFactoryOutput {
      * Creates a new ResetFactoryOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): ResetFactoryOutput {
-        const $$createField0_0 = $$createType55;
-        const $$createField1_0 = $$createType57;
+        const $$createField0_0 = $$createType57;
+        const $$createField1_0 = $$createType59;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("preview" in $$parsedSource) {
             $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
@@ -1097,25 +1126,27 @@ const $$createType32 = conformance$0.Report.createFrom;
 const $$createType33 = InspectResult.createFrom;
 const $$createType34 = report$0.DeviceReport.createFrom;
 const $$createType35 = InspectInfo.createFrom;
-const $$createType36 = largeblobs$0.ListReport.createFrom;
-const $$createType37 = largeblobs$0.MutationPreview.createFrom;
-const $$createType38 = largeblobs$0.MutationResult.createFrom;
-const $$createType39 = $Create.Nullable($$createType38);
-const $$createType40 = largeblobs$0.ReadReport.createFrom;
-const $$createType41 = $Create.Map($Create.Any, $Create.Any);
-const $$createType42 = LogPayload.createFrom;
-const $$createType43 = $Create.Nullable($$createType42);
-const $$createType44 = failure$0.Failure.createFrom;
+const $$createType36 = PINInteractionState.createFrom;
+const $$createType37 = $Create.Nullable($$createType36);
+const $$createType38 = largeblobs$0.ListReport.createFrom;
+const $$createType39 = largeblobs$0.MutationPreview.createFrom;
+const $$createType40 = largeblobs$0.MutationResult.createFrom;
+const $$createType41 = $Create.Nullable($$createType40);
+const $$createType42 = largeblobs$0.ReadReport.createFrom;
+const $$createType43 = $Create.Map($Create.Any, $Create.Any);
+const $$createType44 = LogPayload.createFrom;
 const $$createType45 = $Create.Nullable($$createType44);
-const $$createType46 = LogJournalRecord.createFrom;
-const $$createType47 = $Create.Array($$createType46);
-const $$createType48 = LogEntry.createFrom;
-const $$createType49 = webauthn$0.MakeCredentialPreview.createFrom;
-const $$createType50 = webauthn$0.MakeCredentialResult.createFrom;
-const $$createType51 = $Create.Nullable($$createType50);
-const $$createType52 = config$0.PINMutationPreview.createFrom;
-const $$createType53 = config$0.PINMutationResult.createFrom;
-const $$createType54 = $Create.Nullable($$createType53);
-const $$createType55 = config$0.ResetPreview.createFrom;
-const $$createType56 = config$0.ResetResult.createFrom;
-const $$createType57 = $Create.Nullable($$createType56);
+const $$createType46 = failure$0.Failure.createFrom;
+const $$createType47 = $Create.Nullable($$createType46);
+const $$createType48 = LogJournalRecord.createFrom;
+const $$createType49 = $Create.Array($$createType48);
+const $$createType50 = LogEntry.createFrom;
+const $$createType51 = webauthn$0.MakeCredentialPreview.createFrom;
+const $$createType52 = webauthn$0.MakeCredentialResult.createFrom;
+const $$createType53 = $Create.Nullable($$createType52);
+const $$createType54 = config$0.PINMutationPreview.createFrom;
+const $$createType55 = config$0.PINMutationResult.createFrom;
+const $$createType56 = $Create.Nullable($$createType55);
+const $$createType57 = config$0.ResetPreview.createFrom;
+const $$createType58 = config$0.ResetResult.createFrom;
+const $$createType59 = $Create.Nullable($$createType58);

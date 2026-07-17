@@ -226,8 +226,16 @@ describe("passkeys mutation requests", () => {
 
     expect(await confirmCredentialUpdate()).toBe(true);
     expect(update).toHaveBeenCalledTimes(3);
-    expect(update.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
-    expect(update.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(update.mock.calls[1][0]).toMatchObject({
+      dryRun: false,
+      prepareInventoryRefresh: true,
+      confirmed: true,
+    });
+    expect(update.mock.calls[2][0]).toMatchObject({
+      dryRun: false,
+      prepareInventoryRefresh: true,
+      confirmed: true,
+    });
     expect(list).toHaveBeenCalledTimes(1);
   });
 
@@ -245,7 +253,15 @@ describe("passkeys mutation requests", () => {
     expect(await confirmCredentialDelete()).toBe(true);
 
     expect(remove).toHaveBeenCalledTimes(3);
-    expect(remove.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
-    expect(remove.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(remove.mock.calls[1][0]).toMatchObject({
+      dryRun: false,
+      prepareInventoryRefresh: true,
+      confirmed: true,
+    });
+    expect(remove.mock.calls[2][0]).toMatchObject({
+      dryRun: false,
+      prepareInventoryRefresh: true,
+      confirmed: true,
+    });
   });
 });

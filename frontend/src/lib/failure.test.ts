@@ -73,5 +73,10 @@ describe("runtimeFailureFrom", () => {
       code: Code.CodeOperationTimeout,
       category: Category.CategoryTimeout,
     }))).toBe("The operation timed out.");
+
+    expect(failureMessage(new Failure({
+      code: Code.CodeCTAPSpecViolation,
+      category: Category.CategoryTransportFailure,
+    }))).toBe("The authenticator returned data that violates the CTAP specification.");
   });
 });
