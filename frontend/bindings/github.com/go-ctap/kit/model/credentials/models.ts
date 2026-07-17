@@ -49,7 +49,7 @@ export class CredentialRecord {
     "displayName"?: string;
     "credProtect"?: number;
     "largeBlobKeyState"?: string;
-    "thirdPartyPayment"?: boolean;
+    "thirdPartyPayment"?: boolean | null;
 
     /** Creates a new CredentialRecord instance. */
     constructor($$source: Partial<CredentialRecord> = {}) {
@@ -242,6 +242,31 @@ export class RelyingParty {
     static createFrom($$source: any = {}): RelyingParty {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new RelyingParty($$parsedSource as Partial<RelyingParty>);
+    }
+}
+
+export class StoreStateResult {
+    "authenticatorIdentifierHex": string;
+    "credentialStoreStateHex": string;
+
+    /** Creates a new StoreStateResult instance. */
+    constructor($$source: Partial<StoreStateResult> = {}) {
+        if (!("authenticatorIdentifierHex" in $$source)) {
+            this["authenticatorIdentifierHex"] = "";
+        }
+        if (!("credentialStoreStateHex" in $$source)) {
+            this["credentialStoreStateHex"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new StoreStateResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): StoreStateResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new StoreStateResult($$parsedSource as Partial<StoreStateResult>);
     }
 }
 

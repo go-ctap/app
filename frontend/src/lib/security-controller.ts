@@ -14,6 +14,7 @@ import {
   type BioMutationEnvelope,
   type BioRemoveRequest,
   type BioRenameRequest,
+  type EnableLongTouchForResetRequest,
   type MinPINLengthRequest,
   type PINChangeRequest,
   type PINEnvelope,
@@ -67,7 +68,6 @@ import { selectedSelector, sessionStatus } from "./features/session/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { failureMessage, internalFailure, runtimeFailureFrom } from "./failure.js";
 import { invalidateOverviewCache } from "./overview-controller.js";
-import { effectiveClientPINMaxLength } from "./pin-policy.js";
 import { applyInvalidSessionError, applyOperationSessionBoundary, selectedSessionId } from "./session-boundary.js";
 import { rediscoverAfterFactoryReset } from "./session-controller.js";
 import {
@@ -311,7 +311,7 @@ function normalizedPINPolicyDraft(draft: SecurityPINPolicyDraft) {
       return true;
     });
   return {
-    minPINLength: Number(draft.minPINLength.trim()),
+    minPINLength: draft.minPINLength.trim() ? Number(draft.minPINLength.trim()) : null,
     rpIDs,
     forceChangePin: draft.forceChangePin,
     pinComplexityPolicy: draft.pinComplexityPolicy,
@@ -322,25 +322,28 @@ export function validatePINPolicyDraft(
   draft: SecurityPINPolicyDraft,
   report = currentStatusReport(),
 ): SecurityMutationValidationError | null {
-  if (!draft.minPINLength.trim()) return "min-pin-length-required";
   const normalized = normalizedPINPolicyDraft(draft);
-  if (!Number.isInteger(normalized.minPINLength) || normalized.minPINLength <= 0) {
+  if (normalized.minPINLength !== null && (
+    !Number.isInteger(normalized.minPINLength) || normalized.minPINLength <= 0
+  )) {
     return "min-pin-length-invalid";
   }
   const current = report?.pin.minPINLength;
-  if (current !== null && current !== undefined && normalized.minPINLength < current) {
+  if (normalized.minPINLength !== null && current !== undefined && normalized.minPINLength < current) {
     return "min-pin-length-decrease";
   }
-  const maximum = report ? effectiveClientPINMaxLength(report.pin) : undefined;
-  if (maximum !== null && maximum !== undefined && normalized.minPINLength > maximum) {
+  const maximum = report?.pin.maxPINLength;
+  if (normalized.minPINLength !== null && maximum !== undefined && normalized.minPINLength > maximum) {
     return "min-pin-length-too-large";
   }
   const maxRPIDs = report?.limits.maxRPIDsForSetMinPINLength;
   if (maxRPIDs !== null && maxRPIDs !== undefined && normalized.rpIDs.length > maxRPIDs) {
     return "too-many-rp-ids";
   }
+  const minimumUnchanged = normalized.minPINLength === null
+    || (current !== undefined && normalized.minPINLength === current);
   if (
-    current === normalized.minPINLength
+    minimumUnchanged
     && normalized.rpIDs.length === 0
     && !normalized.forceChangePin
     && !normalized.pinComplexityPolicy
@@ -449,6 +452,55 @@ export async function beginAlwaysUVChange(target: AlwaysUVTarget): Promise<boole
   }
 }
 
+export async function beginLongTouchForReset(): Promise<boolean> {
+  const capability = currentStatusReport()?.authenticatorConfig.longTouchForReset;
+  if (!capability?.supported || capability.configured !== false) return false;
+
+  const label = m.security_long_touch_preview_operation();
+  const sessionId = sessionIdForMutation();
+  if (!sessionId) return false;
+  const request: EnableLongTouchForResetRequest = { sessionId, dryRun: true };
+  securityMutation.set({ kind: "longTouch", phase: "previewing", previewRequest: request });
+  try {
+    beginOperation(label);
+    const envelope = await api.enableLongTouchForReset(request);
+    const preview = authenticatorConfigPreview(envelope);
+    if (envelope.error || !preview) {
+      securityMutation.set({
+        kind: "longTouch",
+        phase: "error",
+        failedPhase: "previewing",
+        previewRequest: request,
+        previewEnvelope: null,
+        responseEnvelope: envelope,
+        runtimeError: null,
+        failureReason: envelope.error ? "response-error" : "missing-preview",
+        validationError: null,
+      });
+    } else {
+      securityMutation.set({ kind: "longTouch", phase: "review", previewRequest: request, previewEnvelope: envelope });
+    }
+    summarizePreviewEnvelope(label, envelope, Boolean(preview));
+    return !envelope.error && Boolean(preview);
+  } catch (error) {
+    const runtimeError = runtimeFailureFrom(error);
+    securityMutation.set({
+      kind: "longTouch",
+      phase: "error",
+      failedPhase: "previewing",
+      previewRequest: request,
+      previewEnvelope: null,
+      responseEnvelope: null,
+      runtimeError,
+      failureReason: "runtime-error",
+      validationError: null,
+    });
+    summarizeOperationFailure(label, runtimeError);
+    applyInvalidSessionError(runtimeError);
+    return false;
+  }
+}
+
 export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promise<boolean> {
   const validationError = validatePINPolicyDraft(draft);
   if (validationError) {
@@ -462,7 +514,7 @@ export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promi
   if (!sessionId) return false;
   const request: MinPINLengthRequest = {
     sessionId,
-    newMinPINLength: normalized.minPINLength,
+    ...(normalized.minPINLength === null ? {} : { newMinPINLength: normalized.minPINLength }),
     minPinLengthRPIDs: normalized.rpIDs,
     forceChangePin: normalized.forceChangePin,
     pinComplexityPolicy: normalized.pinComplexityPolicy,
@@ -760,6 +812,7 @@ function beginSecurityPreview(current: NonIdleSecurityMutation): Promise<boolean
   switch (current.kind) {
     case "alwaysUv": return beginAlwaysUVChange(current.target);
     case "pinPolicy": return beginPINPolicyChange(current.draft);
+    case "longTouch": return beginLongTouchForReset();
     case "bioEnroll": return beginBioEnrollment();
     case "bioRename": return beginBioRename(current.templateIDHex, current.friendlyName);
     case "bioRemove": return beginBioRemove(current.templateIDHex);
@@ -779,6 +832,7 @@ async function finishSuccessfulSecurityMutation(kind: NonIdleSecurityMutation["k
   switch (kind) {
     case "alwaysUv":
     case "pinPolicy":
+    case "longTouch":
       toast.success(m.security_configuration_updated());
       await refreshSecurityAfterConfigurationChange();
       return;
@@ -809,6 +863,7 @@ function operationLabel(kind: NonIdleSecurityMutation["kind"], preview = false) 
   switch (kind) {
     case "alwaysUv": return preview ? m.security_always_uv_preview_operation() : m.security_always_uv_operation();
     case "pinPolicy": return preview ? m.security_pin_policy_preview_operation() : m.security_pin_policy_operation();
+    case "longTouch": return preview ? m.security_long_touch_preview_operation() : m.security_long_touch_operation();
     case "bioEnroll": return preview ? m.security_bio_enroll_preview_operation() : m.security_bio_enroll_operation();
     case "bioRename": return preview ? m.security_bio_rename_preview_operation() : m.security_bio_rename_operation();
     case "bioRemove": return preview ? m.security_bio_remove_preview_operation() : m.security_bio_remove_operation();
@@ -857,6 +912,11 @@ export async function confirmSecurityMutation(): Promise<boolean> {
       }
       case "pinPolicy": {
         envelope = await api.setMinPINLength(executeRequest(current.previewRequest, label));
+        hasResult = Boolean(authenticatorConfigResult(envelope));
+        break;
+      }
+      case "longTouch": {
+        envelope = await api.enableLongTouchForReset(executeRequest(current.previewRequest, label));
         hasResult = Boolean(authenticatorConfigResult(envelope));
         break;
       }

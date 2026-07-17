@@ -316,7 +316,7 @@ export class MutationPreview {
     "proposedByteCount": number;
     "serializedLargeBlobArraySizeBefore": number;
     "serializedLargeBlobArraySizeAfter": number;
-    "serializedLargeBlobArrayLimit"?: number | null;
+    "serializedLargeBlobArrayLimit"?: number;
     "blobCountBefore": number;
     "blobCountAfter": number;
     "matchedBlobCount"?: number;
@@ -406,7 +406,7 @@ export class MutationResult {
     "proposedByteCount": number;
     "serializedLargeBlobArraySizeBefore": number;
     "serializedLargeBlobArraySizeAfter": number;
-    "serializedLargeBlobArrayLimit"?: number | null;
+    "serializedLargeBlobArrayLimit"?: number;
     "blobCountBefore": number;
     "blobCountAfter": number;
     "matchedBlobCount"?: number;
@@ -536,7 +536,7 @@ export class ReadReport {
 export class SupportReport {
     "largeBlobs": boolean;
     "largeBlobKeyExtension": boolean;
-    "maxSerializedLargeBlobArray"?: number | null;
+    "maxSerializedLargeBlobArray"?: number;
 
     /** Creates a new SupportReport instance. */
     constructor($$source: Partial<SupportReport> = {}) {

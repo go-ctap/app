@@ -2,6 +2,7 @@ import { api } from "./api.js";
 import { logController } from "./features/logs/state.svelte.js";
 import {
   beginCredentialDelete as beginCredentialDeleteOperation,
+  loadCredentialStoreState as loadCredentialStoreStateOperation,
   loadPasskeys as loadPasskeysOperation,
   previewCredentialUpdate as previewCredentialUpdateOperation,
 } from "./passkeys-controller.js";
@@ -41,6 +42,11 @@ export async function clearLogJournal(): Promise<boolean> {
 export async function reloadPasskeys(): Promise<boolean> {
   if (!await ensureSelectedSessionReady()) return false;
   return loadPasskeysOperation({ refresh: true });
+}
+
+export async function readCredentialStoreState(): Promise<boolean> {
+  if (!await ensureSelectedSessionReady()) return false;
+  return loadCredentialStoreStateOperation();
 }
 
 export async function reloadLargeBlobs(): Promise<boolean> {
@@ -155,6 +161,7 @@ export {
   confirmCredentialUpdate,
   editCredentialUpdate,
   loadPasskeys,
+  loadCredentialStoreState,
   selectPasskeyCredential,
   setPasskeysQuery,
   setPasskeysStatusFilter,
@@ -176,6 +183,7 @@ export {
   beginBioRemove,
   beginBioRename,
   beginFactoryReset,
+  beginLongTouchForReset,
   beginPINPolicyChange,
   changeAuthenticatorPIN,
   closeSecurityMutation,

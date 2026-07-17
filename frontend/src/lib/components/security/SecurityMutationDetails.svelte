@@ -31,7 +31,7 @@
   } = $props();
 
   let configPreview = $derived.by(() => {
-    if (mutation.kind !== "alwaysUv" && mutation.kind !== "pinPolicy") return null;
+    if (mutation.kind !== "alwaysUv" && mutation.kind !== "pinPolicy" && mutation.kind !== "longTouch") return null;
     const previewEnvelope = "previewEnvelope" in mutation ? mutation.previewEnvelope : null;
     const responseEnvelope = "responseEnvelope" in mutation ? mutation.responseEnvelope : null;
     return authenticatorConfigPreview(previewEnvelope ?? responseEnvelope);
@@ -99,9 +99,12 @@
       {#if mutation.kind === "alwaysUv"}
         <div><dt>{m.current_value()}</dt><dd>{booleanState(configPreview.currentAlwaysUv)}</dd></div>
         <div><dt>{m.proposed_value()}</dt><dd>{booleanState(configPreview.requestedAlwaysUv)}</dd></div>
+      {:else if mutation.kind === "longTouch"}
+        <div><dt>{m.current_value()}</dt><dd>{booleanState(configPreview.currentLongTouchForReset)}</dd></div>
+        <div><dt>{m.proposed_value()}</dt><dd>{booleanState(configPreview.requestedLongTouchForReset)}</dd></div>
       {:else}
         <div><dt>{m.current_value()}</dt><dd>{reportedNumber(configPreview.currentMinPINLength)}</dd></div>
-        <div><dt>{m.proposed_value()}</dt><dd>{reportedNumber(configPreview.requestedMinPINLength)}</dd></div>
+        <div><dt>{m.proposed_value()}</dt><dd>{reportedNumber(configPreview.newMinPINLength)}</dd></div>
         <div><dt>{m.security_maximum_pin_length()}</dt><dd>{reportedNumber(configPreview.maxPINLength)}</dd></div>
         <div><dt>{m.security_rp_ids()}</dt><dd>{configPreview.minPinLengthRPIDs?.join(", ") || m.not_reported()}</dd></div>
         <div><dt>{m.security_force_pin_change()}</dt><dd>{booleanState(configPreview.forceChangePin)}</dd></div>

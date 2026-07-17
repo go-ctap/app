@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { LargeBlobSupport } from "../../bindings/github.com/go-ctap/ctap/extension";
 import {
+  AuthenticationExtensionsLargeBlobInputs,
+  AuthenticationExtensionsPaymentInputs,
   AuthenticationExtensionsPRFInputs,
   AuthenticationExtensionsPRFValues,
   CreateAuthenticationExtensionsClientInputs,
@@ -355,9 +358,51 @@ describe("WebAuthn Lab request builders", () => {
     expect(getPRF?.eval).toBeUndefined();
     expect(getPRF?.evalByCredential).toBeUndefined();
   });
+
+  it("builds direct largeBlob and payment inputs without losing empty writes", () => {
+    const state = createLabState(sequentialRandom());
+    state.makeDraft.extensions.largeBlob = {
+      included: true,
+      support: LargeBlobSupport.LargeBlobSupportRequired,
+    };
+    state.makeDraft.extensions.payment.included = true;
+    state.getDraft.extensions.largeBlob = {
+      included: true,
+      mode: "write",
+      payload: { mode: "hex", value: "" },
+    };
+    state.getDraft.extensions.payment.included = true;
+
+    const makeExtensions = buildMakeCredentialRequest("session-1", state.makeDraft).extensions;
+    const getExtensions = buildGetAssertionRequest("session-1", state.getDraft).extensions;
+
+    expect(makeExtensions?.largeBlob).toBeInstanceOf(AuthenticationExtensionsLargeBlobInputs);
+    expect(makeExtensions?.largeBlob?.support).toBe(LargeBlobSupport.LargeBlobSupportRequired);
+    expect(makeExtensions?.payment).toBeInstanceOf(AuthenticationExtensionsPaymentInputs);
+    expect(makeExtensions?.payment?.payment).toBe(true);
+    expect(getExtensions?.largeBlob).toBeInstanceOf(AuthenticationExtensionsLargeBlobInputs);
+    expect(getExtensions?.largeBlob?.read).toBeUndefined();
+    expect(getExtensions?.largeBlob?.write).toBe("");
+    expect(getExtensions?.payment).toBeInstanceOf(AuthenticationExtensionsPaymentInputs);
+    expect(getExtensions?.payment?.payment).toBe(true);
+  });
 });
 
 describe("WebAuthn Lab extension validation", () => {
+  it("rejects malformed direct largeBlob write input", () => {
+    const state = createLabState(sequentialRandom());
+    state.getDraft.extensions.largeBlob = {
+      included: true,
+      mode: "write",
+      payload: { mode: "hex", value: "abc" },
+    };
+
+    expect(validateGetAssertionDraft(state.getDraft).errors).toContainEqual({
+      field: "get.extensions.largeBlob.payload",
+      code: "invalid-hex",
+    });
+  });
+
   it.each([31, 33])("rejects a %i-byte HMAC salt", (byteLength) => {
     const state = createLabState(sequentialRandom());
     state.makeDraft.extensions.hmacSecretMC.included = true;

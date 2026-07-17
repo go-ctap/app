@@ -10,8 +10,8 @@ github.com/ebitengine/purego v0.10.1 h1:dewVBCBT2GaMu1SrNTYxQhgQBethzfhiwvZiLGP/
 github.com/ebitengine/purego v0.10.1/go.mod h1:iIjxzd6CiRiOG0UyXP+V1+jWqUXVjPKLAI0mRfJZTmQ=
 github.com/fxamacker/cbor/v2 v2.9.2 h1:X4Ksno9+x3cz0TZv69ec1hxP/+tymuR8PXQJyDwfh78=
 github.com/fxamacker/cbor/v2 v2.9.2/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
-github.com/go-ctap/ctap v0.27.0 h1:+ohiA/WILC+aE8DhRKyWIXmuMDLKJ0TDUmA3BYjgkLM=
-github.com/go-ctap/ctap v0.27.0/go.mod h1:isntKCkQpBQm6KjGDfPL1Xy+fNKuWsLrtxlNXjFJXTw=
+github.com/go-ctap/ctap v0.30.0 h1:fGmsn5y1G+4cNfPtqw2ogle8sRjw/DSP+9OG/aknhC8=
+github.com/go-ctap/ctap v0.30.0/go.mod h1:isntKCkQpBQm6KjGDfPL1Xy+fNKuWsLrtxlNXjFJXTw=
 github.com/go-ctap/hid v0.9.1 h1:gSw9vtVqsOxBdkeHnYj7bGC6hALLSQOPS1tJwVDfQGc=
 github.com/go-ctap/hid v0.9.1/go.mod h1:JDxD3E+4ixQRyLWk6aG0sa+lr0CFs3tiSB9LGFHS50E=
 github.com/go-ctap/pcsc v0.4.0 h1:nyLeWsFgaN1/Ob6fs9R5aOVBPb7p+/g0RsVMqib9DqU=

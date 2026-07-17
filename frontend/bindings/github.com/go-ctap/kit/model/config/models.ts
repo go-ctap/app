@@ -33,6 +33,7 @@ export enum AuthenticatorConfigOperation {
 
     AuthenticatorConfigAlwaysUV = "alwaysUv",
     AuthenticatorConfigMinPINLength = "setMinPINLength",
+    AuthenticatorConfigLongTouch = "enableLongTouchForReset",
 };
 
 export class AuthenticatorConfigPreview {
@@ -42,12 +43,14 @@ export class AuthenticatorConfigPreview {
     "target"?: AlwaysUVTarget;
     "currentAlwaysUv"?: boolean | null;
     "requestedAlwaysUv"?: boolean;
-    "currentMinPINLength"?: number | null;
-    "requestedMinPINLength"?: number | null;
-    "maxPINLength"?: number | null;
+    "currentMinPINLength": number;
+    "newMinPINLength"?: number | null;
+    "maxPINLength": number;
     "minPinLengthRPIDs"?: string[];
     "forceChangePin"?: boolean;
     "pinComplexityPolicy"?: boolean;
+    "currentLongTouchForReset"?: boolean | null;
+    "requestedLongTouchForReset"?: boolean;
     "mode": safety$0.PreviewMode;
     "warnings"?: safety$0.Warning[];
 
@@ -61,6 +64,12 @@ export class AuthenticatorConfigPreview {
         }
         if (!("authenticatorConfig" in $$source)) {
             this["authenticatorConfig"] = (new AuthenticatorConfigStatus());
+        }
+        if (!("currentMinPINLength" in $$source)) {
+            this["currentMinPINLength"] = 0;
+        }
+        if (!("maxPINLength" in $$source)) {
+            this["maxPINLength"] = 0;
         }
         if (!("mode" in $$source)) {
             this["mode"] = safety$0.PreviewMode.$zero;
@@ -76,7 +85,7 @@ export class AuthenticatorConfigPreview {
         const $$createField1_0 = $$createType0;
         const $$createField2_0 = $$createType1;
         const $$createField9_0 = $$createType2;
-        const $$createField13_0 = $$createType4;
+        const $$createField15_0 = $$createType4;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField1_0($$parsedSource["device"]);
@@ -88,7 +97,7 @@ export class AuthenticatorConfigPreview {
             $$parsedSource["minPinLengthRPIDs"] = $$createField9_0($$parsedSource["minPinLengthRPIDs"]);
         }
         if ("warnings" in $$parsedSource) {
-            $$parsedSource["warnings"] = $$createField13_0($$parsedSource["warnings"]);
+            $$parsedSource["warnings"] = $$createField15_0($$parsedSource["warnings"]);
         }
         return new AuthenticatorConfigPreview($$parsedSource as Partial<AuthenticatorConfigPreview>);
     }
@@ -98,7 +107,10 @@ export class AuthenticatorConfigResult {
     "operation": AuthenticatorConfigOperation;
     "deviceFingerprint": string;
     "target"?: AlwaysUVTarget;
-    "newMinPINLength"?: number;
+    "newMinPINLength"?: number | null;
+    "minPinLengthRPIDs"?: string[];
+    "forceChangePin"?: boolean;
+    "pinComplexityPolicy"?: boolean;
     "state": StateValue;
 
     /** Creates a new AuthenticatorConfigResult instance. */
@@ -120,7 +132,11 @@ export class AuthenticatorConfigResult {
      * Creates a new AuthenticatorConfigResult instance from a string or object.
      */
     static createFrom($$source: any = {}): AuthenticatorConfigResult {
+        const $$createField4_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("minPinLengthRPIDs" in $$parsedSource) {
+            $$parsedSource["minPinLengthRPIDs"] = $$createField4_0($$parsedSource["minPinLengthRPIDs"]);
+        }
         return new AuthenticatorConfigResult($$parsedSource as Partial<AuthenticatorConfigResult>);
     }
 }
@@ -133,6 +149,7 @@ export class AuthenticatorConfigStatus {
     "uvAcfg": CapabilityState;
     "alwaysUv": CapabilityState;
     "setMinPINLength": CapabilityState;
+    "longTouchForReset": CapabilityState;
 
     /** Creates a new AuthenticatorConfigStatus instance. */
     constructor($$source: Partial<AuthenticatorConfigStatus> = {}) {
@@ -151,6 +168,9 @@ export class AuthenticatorConfigStatus {
         if (!("setMinPINLength" in $$source)) {
             this["setMinPINLength"] = (new CapabilityState());
         }
+        if (!("longTouchForReset" in $$source)) {
+            this["longTouchForReset"] = (new CapabilityState());
+        }
 
         Object.assign(this, $$source);
     }
@@ -162,6 +182,7 @@ export class AuthenticatorConfigStatus {
         const $$createField4_0 = $$createType5;
         const $$createField5_0 = $$createType5;
         const $$createField6_0 = $$createType5;
+        const $$createField7_0 = $$createType5;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("uvAcfg" in $$parsedSource) {
             $$parsedSource["uvAcfg"] = $$createField4_0($$parsedSource["uvAcfg"]);
@@ -171,6 +192,9 @@ export class AuthenticatorConfigStatus {
         }
         if ("setMinPINLength" in $$parsedSource) {
             $$parsedSource["setMinPINLength"] = $$createField6_0($$parsedSource["setMinPINLength"]);
+        }
+        if ("longTouchForReset" in $$parsedSource) {
+            $$parsedSource["longTouchForReset"] = $$createField7_0($$parsedSource["longTouchForReset"]);
         }
         return new AuthenticatorConfigStatus($$parsedSource as Partial<AuthenticatorConfigStatus>);
     }
@@ -451,8 +475,8 @@ export class BioSensorReport {
     "device": report$0.DeviceReport;
     "supported": boolean;
     "previewOnly": boolean;
-    "modality"?: BioModality | null;
-    "fingerprintKind"?: FingerprintKind | null;
+    "modality"?: BioModality;
+    "fingerprintKind"?: FingerprintKind;
     "maxCaptureSamplesRequiredForEnroll"?: number | null;
     "maxTemplateFriendlyName"?: number | null;
 
@@ -559,14 +583,20 @@ export enum FingerprintKind {
 };
 
 export class LimitsStatus {
-    "minPINLength"?: number | null;
-    "maxPINLength"?: number | null;
+    "minPINLength": number;
+    "maxPINLength": number;
     "maxRPIDsForSetMinPINLength"?: number | null;
-    "preferredPlatformUvAttempts"?: number | null;
+    "preferredPlatformUvAttempts"?: number;
     "uvCountSinceLastPinEntry"?: number | null;
 
     /** Creates a new LimitsStatus instance. */
     constructor($$source: Partial<LimitsStatus> = {}) {
+        if (!("minPINLength" in $$source)) {
+            this["minPINLength"] = 0;
+        }
+        if (!("maxPINLength" in $$source)) {
+            this["maxPINLength"] = 0;
+        }
 
         Object.assign(this, $$source);
     }
@@ -670,11 +700,11 @@ export class PINStatus {
     "supported": boolean;
     "configured"?: boolean | null;
     "protocolSupported": boolean;
-    "minPINLength"?: number | null;
-    "maxPINLength"?: number | null;
-    "forcePINChange"?: boolean | null;
+    "minPINLength": number;
+    "maxPINLength": number;
+    "forcePINChange"?: boolean;
     "pinComplexityPolicy"?: boolean | null;
-    "pinComplexityPolicyURL"?: string | null;
+    "pinComplexityPolicyURL"?: string;
     "retries": RetryState;
 
     /** Creates a new PINStatus instance. */
@@ -687,6 +717,12 @@ export class PINStatus {
         }
         if (!("protocolSupported" in $$source)) {
             this["protocolSupported"] = false;
+        }
+        if (!("minPINLength" in $$source)) {
+            this["minPINLength"] = 0;
+        }
+        if (!("maxPINLength" in $$source)) {
+            this["maxPINLength"] = 0;
         }
         if (!("retries" in $$source)) {
             this["retries"] = (new RetryState());

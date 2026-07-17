@@ -159,7 +159,7 @@
             autocomplete="off"
             autocapitalize="none"
             spellcheck={false}
-            minlength={pin.minPINLength ?? undefined}
+            minlength={pin.minPINLength}
             value={newPIN}
             aria-invalid={validationError === "new-required" || validationError === "mismatch"}
             oninput={(event) => (newPIN = event.currentTarget.value)}
@@ -179,7 +179,7 @@
             autocomplete="off"
             autocapitalize="none"
             spellcheck={false}
-            minlength={pin.minPINLength ?? undefined}
+            minlength={pin.minPINLength}
             value={confirmation}
             aria-invalid={validationError === "confirmation-required" || validationError === "mismatch"}
             oninput={(event) => (confirmation = event.currentTarget.value)}

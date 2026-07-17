@@ -7,6 +7,9 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as attestation$0 from "../attestation/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as credential$0 from "../credential/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -23,33 +26,33 @@ export class AuthenticatorGetInfoResponse {
     "extensions"?: extension$0.ExtensionIdentifier[];
     "aaguid": uuid$0.UUID;
     "options"?: { [_ in Option]?: boolean };
-    "maxMsgSize"?: number | null;
+    "maxMsgSize"?: number;
     "pinUvAuthProtocols"?: PinUvAuthProtocol[];
-    "maxCredentialCountInList"?: number | null;
-    "maxCredentialIdLength"?: number | null;
-    "transports"?: string[];
+    "maxCredentialCountInList"?: number;
+    "maxCredentialIdLength"?: number;
+    "transports"?: credential$0.AuthenticatorTransport[];
     "algorithms"?: credential$0.PublicKeyCredentialParameters[];
-    "maxSerializedLargeBlobArray"?: number | null;
-    "forcePINChange"?: boolean | null;
-    "minPINLength"?: number | null;
+    "maxSerializedLargeBlobArray"?: number;
+    "forcePINChange"?: boolean;
+    "minPINLength"?: number;
     "firmwareVersion"?: number | null;
-    "maxCredBlobLength"?: number | null;
+    "maxCredBlobLength"?: number;
     "maxRPIDsForSetMinPINLength"?: number | null;
-    "preferredPlatformUvAttempts"?: number | null;
+    "preferredPlatformUvAttempts"?: number;
     "uvModality"?: UserVerify | null;
     "certifications"?: { [_ in string]?: number };
     "remainingDiscoverableCredentials"?: number | null;
-    "vendorPrototypeConfigCommands"?: number[];
-    "attestationFormats"?: string[];
+    "vendorPrototypeConfigCommands"?: VendorCommandID[];
+    "attestationFormats"?: attestation$0.AttestationStatementFormatIdentifier[];
     "uvCountSinceLastPinEntry"?: number | null;
     "longTouchForReset"?: boolean | null;
     "encIdentifier"?: string;
-    "transportsForReset"?: string[];
+    "transportsForReset"?: credential$0.AuthenticatorTransport[];
     "pinComplexityPolicy"?: boolean | null;
-    "pinComplexityPolicyURL"?: string | null;
-    "maxPINLength"?: number | null;
+    "pinComplexityPolicyURL"?: string;
+    "maxPINLength"?: number;
     "encCredStoreState"?: string;
-    "authenticatorConfigCommands"?: number[];
+    "authenticatorConfigCommands"?: ConfigSubCommand[];
 
     /** Creates a new AuthenticatorGetInfoResponse instance. */
     constructor($$source: Partial<AuthenticatorGetInfoResponse> = {}) {
@@ -75,11 +78,12 @@ export class AuthenticatorGetInfoResponse {
         const $$createField9_0 = $$createType7;
         const $$createField18_0 = $$createType8;
         const $$createField20_0 = $$createType9;
-        const $$createField21_0 = $$createType5;
+        const $$createField21_0 = $$createType10;
         const $$createField24_0 = $Create.ByteSlice;
         const $$createField25_0 = $$createType5;
+        const $$createField27_0 = $Create.ByteSlice;
         const $$createField29_0 = $Create.ByteSlice;
-        const $$createField30_0 = $$createType9;
+        const $$createField30_0 = $$createType11;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("versions" in $$parsedSource) {
             $$parsedSource["versions"] = $$createField0_0($$parsedSource["versions"]);
@@ -114,6 +118,9 @@ export class AuthenticatorGetInfoResponse {
         if ("transportsForReset" in $$parsedSource) {
             $$parsedSource["transportsForReset"] = $$createField25_0($$parsedSource["transportsForReset"]);
         }
+        if ("pinComplexityPolicyURL" in $$parsedSource) {
+            $$parsedSource["pinComplexityPolicyURL"] = $$createField27_0($$parsedSource["pinComplexityPolicyURL"]);
+        }
         if ("encCredStoreState" in $$parsedSource) {
             $$parsedSource["encCredStoreState"] = $$createField29_0($$parsedSource["encCredStoreState"]);
         }
@@ -123,6 +130,18 @@ export class AuthenticatorGetInfoResponse {
         return new AuthenticatorGetInfoResponse($$parsedSource as Partial<AuthenticatorGetInfoResponse>);
     }
 }
+
+export enum ConfigSubCommand {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = 0,
+
+    ConfigSubCommandEnableEnterpriseAttestation = 1,
+    ConfigSubCommandToggleAlwaysUv = 2,
+    ConfigSubCommandSetMinPINLength = 3,
+    ConfigSubCommandEnableLongTouchForReset = 4,
+};
 
 export enum Option {
     /**
@@ -183,6 +202,12 @@ export enum UserVerify {
     UserVerifyAll = 4096,
 };
 
+/**
+ * VendorCommandID identifies a vendor-defined authenticatorConfig command.
+ * CTAP assigns the complete unsigned 64-bit range to these identifiers.
+ */
+export type VendorCommandID = number;
+
 export enum Version {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -214,3 +239,5 @@ const $$createType6 = credential$0.PublicKeyCredentialParameters.createFrom;
 const $$createType7 = $Create.Array($$createType6);
 const $$createType8 = $Create.Map($Create.Any, $Create.Any);
 const $$createType9 = $Create.Array($Create.Any);
+const $$createType10 = $Create.Array($Create.Any);
+const $$createType11 = $Create.Array($Create.Any);

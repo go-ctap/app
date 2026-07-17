@@ -9,6 +9,7 @@ export {
     InventoryReport,
     InventorySummary,
     RelyingParty,
+    StoreStateResult,
     SupportReport,
     UpdateUserPreview,
     UpdateUserResult,

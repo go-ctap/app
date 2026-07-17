@@ -138,8 +138,8 @@ describe("WebAuthn Lab screen", () => {
     expect(within(make).getByRole("switch", { name: "Include hmac-secret" })).toBeEnabled();
     expect(within(make).getByRole("switch", { name: "Include hmac-secret-mc" })).toBeEnabled();
     expect(within(make).queryByText("hmacCreateSecret")).toBeNull();
-    expect(within(make).queryByRole("switch", { name: "Include largeBlob" })).not.toBeInTheDocument();
-    expect(within(make).queryByRole("switch", { name: "Include payment" })).not.toBeInTheDocument();
+    expect(within(make).getByRole("switch", { name: "Include largeBlob" })).toBeEnabled();
+    expect(within(make).getByRole("switch", { name: "Include payment" })).toBeEnabled();
 
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
     const assertion = stepCard("GetAssertion");
@@ -153,8 +153,8 @@ describe("WebAuthn Lab screen", () => {
     expect(within(assertion).getByRole("button", { name: /prf.*client-side/i })).toBeInTheDocument();
     expect(within(assertion).getByRole("switch", { name: "Include credBlob" })).toBeEnabled();
     expect(within(assertion).getByRole("switch", { name: "Include hmac-secret" })).toBeEnabled();
-    expect(within(assertion).queryByRole("switch", { name: "Include largeBlob" })).not.toBeInTheDocument();
-    expect(within(assertion).queryByRole("switch", { name: "Include payment" })).not.toBeInTheDocument();
+    expect(within(assertion).getByRole("switch", { name: "Include largeBlob" })).toBeEnabled();
+    expect(within(assertion).getByRole("switch", { name: "Include payment" })).toBeEnabled();
 
     await user.click(includePRF);
     const addOverride = within(assertion).getByRole("button", { name: "Add credential override" });

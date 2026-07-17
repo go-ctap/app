@@ -15,6 +15,8 @@ const SECRET_FIELD_NAMES = new Set([
   "resetPhrase",
   "encIdentifier",
   "encCredStoreState",
+  "authenticatorIdentifierHex",
+  "credentialStoreStateHex",
   "output1Hex",
   "output2Hex",
   "first",

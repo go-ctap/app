@@ -18,6 +18,7 @@
     beginBioRemove,
     beginBioRename,
     beginFactoryReset,
+    beginLongTouchForReset,
     beginPINPolicyChange,
     cancelActiveOperation,
     changeAuthenticatorPIN,
@@ -136,7 +137,9 @@
 
       <SecurityFactoryReset
         resetHints={report.resetHints}
+        authenticatorConfig={report.authenticatorConfig}
         disabled={controlsDisabled}
+        onEnableLongTouch={beginLongTouchForReset}
         onReset={beginFactoryReset}
       />
     </div>

@@ -8,6 +8,7 @@ import {
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   CredentialDeleteEnvelope,
+  CredentialStoreStateEnvelope,
   CredentialUpdateEnvelope,
   CredentialsEnvelope,
 } from "../../bindings/github.com/go-ctap/kit/service";
@@ -16,6 +17,7 @@ import { api } from "./api";
 import { failureForCode } from "./test-failure";
 import {
   completePasskeysInventoryLoad,
+  credentialStoreStateState,
   failPasskeysInventoryLoadAtRuntime,
   resetPasskeysStateForTest,
 } from "./features/passkeys/state";
@@ -29,6 +31,7 @@ import {
   confirmCredentialDelete,
   confirmCredentialUpdate,
   normalizeCredentialUpdateForm,
+  loadCredentialStoreState,
   previewCredentialUpdate,
   updateCredentialDraft,
   validateCredentialUpdate,
@@ -78,6 +81,20 @@ function updatePreviewEnvelope(): CredentialUpdateEnvelope {
       result: null,
     },
   } as CredentialUpdateEnvelope;
+}
+
+function storeStateEnvelope(): CredentialStoreStateEnvelope {
+  return {
+    operationId: "store-state-1",
+    sessionId: "session-1",
+    kind: OperationKind.OperationCredentialStoreState,
+    result: {
+      result: {
+        authenticatorIdentifierHex: "000102030405060708090a0b0c0d0e0f",
+        credentialStoreStateHex: "101112131415161718191a1b1c1d1e1f",
+      },
+    },
+  } as CredentialStoreStateEnvelope;
 }
 
 function updateResultEnvelope(): CredentialUpdateEnvelope {
@@ -135,6 +152,22 @@ afterEach(() => {
 });
 
 describe("passkeys mutation requests", () => {
+  it("loads persistent credential-store state with the selected verification flow", async () => {
+    const envelope = storeStateEnvelope();
+    const read = vi.spyOn(api, "credentialStoreState").mockResolvedValue(envelope);
+
+    expect(await loadCredentialStoreState()).toBe(true);
+    expect(read).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      verificationFlow: VerificationFlow.VerificationFlowDefault,
+    });
+    expect(get(credentialStoreStateState)).toEqual({
+      phase: "ready",
+      responseEnvelope: envelope,
+      runtimeError: null,
+    });
+  });
+
   it("allows update and delete from last-known-good rows after refresh fails", async () => {
     failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeTransportFailure));
 

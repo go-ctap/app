@@ -9,6 +9,7 @@ export {
     BioSensorOutput,
     ConfigStatusOutput,
     CredentialDeleteOutput,
+    CredentialStoreStateOutput,
     CredentialUpdateOutput,
     CredentialsOutput,
     GetAssertionOutput,

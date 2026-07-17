@@ -22,7 +22,9 @@
   let selectedDetail = $state<ProtocolDetailRow | null>(null);
   let clientExtensions = $derived(result.extensionResults?.client);
   let authenticatorExtensions = $derived(result.extensionResults?.authenticator);
-  let hasWebAuthnOutputs = $derived(Boolean(clientExtensions?.credProps || clientExtensions?.prf));
+  let hasWebAuthnOutputs = $derived(Boolean(
+    clientExtensions?.credProps || clientExtensions?.prf || clientExtensions?.largeBlob,
+  ));
   let hasCTAPOutputs = $derived(Boolean(
     clientExtensions?.credBlob
     || clientExtensions?.["hmac-secret"]
@@ -114,6 +116,9 @@
           <dl class="lab-extension-result-list">
             {#if clientExtensions?.credProps}
               <div><dt>credProps · rk</dt><dd>{nullableBooleanLabel(clientExtensions.credProps.rk)}</dd></div>
+            {/if}
+            {#if clientExtensions?.largeBlob}
+              <div><dt>largeBlob · supported</dt><dd>{booleanLabel(clientExtensions.largeBlob.supported)}</dd></div>
             {/if}
             {#if clientExtensions?.prf}
               <div><dt>prf · enabled</dt><dd>{booleanLabel(clientExtensions.prf.enabled)}</dd></div>

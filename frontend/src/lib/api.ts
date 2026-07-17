@@ -16,10 +16,12 @@ import {
   type CredentialDeleteEnvelope,
   type CredentialDeleteRequest,
   type CredentialListRequest,
+  type CredentialStoreStateEnvelope,
   type CredentialUpdateEnvelope,
   type CredentialUpdateRequest,
   type CredentialsEnvelope,
   type DiscoverRequest,
+  type EnableLongTouchForResetRequest,
   type GetAssertionEnvelope,
   type GetAssertionRequest,
   type InspectEnvelope,
@@ -53,6 +55,7 @@ import { runtimeCall } from "./features/logs/state.svelte.js";
 export type OperationEnvelope =
   | InspectEnvelope
   | CredentialsEnvelope
+  | CredentialStoreStateEnvelope
   | CredentialDeleteEnvelope
   | CredentialUpdateEnvelope
   | LargeBlobReadEnvelope
@@ -122,6 +125,10 @@ export const api = {
     return runtimeCall("ctapkit.operation.listCredentials", () => service.ListCredentials(request));
   },
 
+  credentialStoreState(request: OperationRequest): Promise<CredentialStoreStateEnvelope> {
+    return runtimeCall("ctapkit.operation.credentialStoreState", () => service.CredentialStoreState(request));
+  },
+
   deleteCredential(request: CredentialDeleteRequest): Promise<CredentialDeleteEnvelope> {
     return runtimeCall("ctapkit.operation.deleteCredential", () => service.DeleteCredential(request));
   },
@@ -168,6 +175,10 @@ export const api = {
 
   setMinPINLength(request: MinPINLengthRequest): Promise<AuthenticatorConfigEnvelope> {
     return runtimeCall("ctapkit.operation.setMinPINLength", () => service.SetMinPINLength(request));
+  },
+
+  enableLongTouchForReset(request: EnableLongTouchForResetRequest): Promise<AuthenticatorConfigEnvelope> {
+    return runtimeCall("ctapkit.operation.enableLongTouchForReset", () => service.EnableLongTouchForReset(request));
   },
 
   bioList(request: OperationRequest): Promise<BioListEnvelope> {

@@ -2,7 +2,6 @@
   import { ListChecks } from "@lucide/svelte";
 
   import type { StatusReport } from "../../../../bindings/github.com/go-ctap/kit/model/config";
-  import { untrack } from "svelte";
 
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -15,7 +14,6 @@
     SecurityMutationValidationError,
     SecurityPINPolicyDraft,
   } from "$lib/features/security/state";
-  import { effectiveClientPINMaxLength } from "$lib/pin-policy.js";
 
   import { m } from "../../../paraglide/messages.js";
   import { reportedNumber } from "./security-ui.js";
@@ -30,14 +28,14 @@
 
   let { report, disabled, validationError, onChange, onEdit }: Props = $props();
 
-  let minPINLength = $state(untrack(() => report.pin.minPINLength == null ? "" : String(report.pin.minPINLength)));
+  let minPINLength = $state("");
   let rpIDs = $state("");
   let forceChangePin = $state(false);
   let pinComplexityPolicy = $state(false);
 
   let supported = $derived(report.authenticatorConfig.setMinPINLength.supported);
   let formDisabled = $derived(disabled || !supported);
-  let maxPINLength = $derived(effectiveClientPINMaxLength(report.pin));
+  let maxPINLength = $derived(report.pin.maxPINLength);
   let minPINInvalid = $derived([
     "min-pin-length-required",
     "min-pin-length-invalid",
@@ -89,7 +87,7 @@
               id="security-min-pin-length"
               type="number"
               inputmode="numeric"
-              min={report.pin.minPINLength ?? 1}
+              min={report.pin.minPINLength}
               max={maxPINLength}
               step="1"
               value={minPINLength}
@@ -101,6 +99,7 @@
               }}
             />
             <Field.Description>
+              {m.security_minimum_pin_length_optional()} ·
               {m.security_minimum_pin_length()}: {reportedNumber(report.pin.minPINLength)} ·
               {m.security_maximum_pin_length()}: {maxPINLength}
             </Field.Description>

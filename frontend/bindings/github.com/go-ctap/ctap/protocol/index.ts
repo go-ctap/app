@@ -3,6 +3,7 @@
 
 export {
     AuthenticatorGetInfoResponse,
+    ConfigSubCommand,
     Option,
     PinUvAuthProtocol,
     UserVerify,
@@ -10,5 +11,6 @@ export {
 } from "./models.js";
 
 export type {
+    VendorCommandID,
     Versions
 } from "./models.js";

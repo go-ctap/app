@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { RotateCcw, TriangleAlert } from "@lucide/svelte";
+  import { Hand, RotateCcw, TriangleAlert } from "@lucide/svelte";
 
-  import type { ResetHints } from "../../../../bindings/github.com/go-ctap/kit/model/config";
+  import type {
+    AuthenticatorConfigStatus,
+    ResetHints,
+  } from "../../../../bindings/github.com/go-ctap/kit/model/config";
 
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -12,13 +15,20 @@
 
   let {
     resetHints,
+    authenticatorConfig,
     disabled,
+    onEnableLongTouch,
     onReset,
   }: {
     resetHints: ResetHints;
+    authenticatorConfig: AuthenticatorConfigStatus;
     disabled: boolean;
+    onEnableLongTouch: () => void | Promise<boolean>;
     onReset: () => void | Promise<boolean>;
   } = $props();
+
+  let longTouch = $derived(authenticatorConfig.longTouchForReset);
+  let longTouchCanBeEnabled = $derived(longTouch.supported && longTouch.configured === false);
 </script>
 
 <Card.Root id="security-factory-reset" aria-labelledby="security-factory-reset-title" data-state="destructive">
@@ -41,6 +51,15 @@
     </dl>
   </Card.Content>
   <Card.Footer>
+    <Button
+      variant="outline"
+      type="button"
+      disabled={disabled || !longTouchCanBeEnabled}
+      onclick={() => void onEnableLongTouch()}
+    >
+      <Hand data-icon="inline-start" aria-hidden="true" />
+      {longTouch.configured ? m.security_long_touch_enabled() : m.security_long_touch_enable()}
+    </Button>
     <Button variant="destructive" type="button" disabled={disabled} onclick={() => void onReset()}>
       <RotateCcw data-icon="inline-start" aria-hidden="true" />
       {m.preview_change()}
@@ -83,6 +102,10 @@
   .reset-hints dd {
     font-weight: 650;
     text-align: end;
+  }
+
+  :global(#security-factory-reset [data-slot="card-footer"]) {
+    justify-content: space-between;
   }
 }
 </style>

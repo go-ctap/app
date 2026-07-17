@@ -14,6 +14,10 @@ func (s *CtapkitService) ListCredentials(ctx context.Context, req kitservice.Cre
 	return s.core.ListCredentials(ctx, req)
 }
 
+func (s *CtapkitService) CredentialStoreState(ctx context.Context, req kitservice.OperationRequest) (kitservice.CredentialStoreStateEnvelope, error) {
+	return s.core.CredentialStoreState(ctx, req)
+}
+
 func (s *CtapkitService) DeleteCredential(ctx context.Context, req kitservice.CredentialDeleteRequest) (kitservice.CredentialDeleteEnvelope, error) {
 	return s.core.DeleteCredential(ctx, req)
 }
@@ -60,6 +64,10 @@ func (s *CtapkitService) SetAlwaysUV(ctx context.Context, req kitservice.AlwaysU
 
 func (s *CtapkitService) SetMinPINLength(ctx context.Context, req kitservice.MinPINLengthRequest) (kitservice.AuthenticatorConfigEnvelope, error) {
 	return s.core.SetMinPINLength(ctx, req)
+}
+
+func (s *CtapkitService) EnableLongTouchForReset(ctx context.Context, req kitservice.EnableLongTouchForResetRequest) (kitservice.AuthenticatorConfigEnvelope, error) {
+	return s.core.EnableLongTouchForReset(ctx, req)
 }
 
 func (s *CtapkitService) BioSensorInfo(ctx context.Context, req kitservice.OperationRequest) (kitservice.BioSensorEnvelope, error) {

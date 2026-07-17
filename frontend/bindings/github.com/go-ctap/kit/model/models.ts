@@ -7,6 +7,9 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as attestation$0 from "../../ctap/attestation/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as credential$0 from "../../ctap/credential/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -246,6 +249,31 @@ export class CredentialDeleteOutput {
     }
 }
 
+export class CredentialStoreStateOutput {
+    "result": credentials$0.StoreStateResult;
+
+    /** Creates a new CredentialStoreStateOutput instance. */
+    constructor($$source: Partial<CredentialStoreStateOutput> = {}) {
+        if (!("result" in $$source)) {
+            this["result"] = (new credentials$0.StoreStateResult());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CredentialStoreStateOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CredentialStoreStateOutput {
+        const $$createField0_0 = $$createType15;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField0_0($$parsedSource["result"]);
+        }
+        return new CredentialStoreStateOutput($$parsedSource as Partial<CredentialStoreStateOutput>);
+    }
+}
+
 export class CredentialUpdateOutput {
     "preview": credentials$0.UpdateUserPreview;
     "result": credentials$0.UpdateUserResult | null;
@@ -266,8 +294,8 @@ export class CredentialUpdateOutput {
      * Creates a new CredentialUpdateOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): CredentialUpdateOutput {
-        const $$createField0_0 = $$createType15;
-        const $$createField1_0 = $$createType17;
+        const $$createField0_0 = $$createType16;
+        const $$createField1_0 = $$createType18;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("preview" in $$parsedSource) {
             $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
@@ -295,7 +323,7 @@ export class CredentialsOutput {
      * Creates a new CredentialsOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): CredentialsOutput {
-        const $$createField0_0 = $$createType18;
+        const $$createField0_0 = $$createType19;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("report" in $$parsedSource) {
             $$parsedSource["report"] = $$createField0_0($$parsedSource["report"]);
@@ -324,8 +352,8 @@ export class GetAssertionOutput {
      * Creates a new GetAssertionOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): GetAssertionOutput {
-        const $$createField0_0 = $$createType19;
-        const $$createField1_0 = $$createType21;
+        const $$createField0_0 = $$createType20;
+        const $$createField1_0 = $$createType22;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("preview" in $$parsedSource) {
             $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
@@ -342,33 +370,33 @@ export class InspectInfo {
     "extensions"?: extension$0.ExtensionIdentifier[];
     "aaguid": uuid$0.UUID;
     "options"?: { [_ in protocol$0.Option]?: boolean };
-    "maxMsgSize"?: number | null;
+    "maxMsgSize"?: number;
     "pinUvAuthProtocols"?: protocol$0.PinUvAuthProtocol[];
-    "maxCredentialCountInList"?: number | null;
-    "maxCredentialIdLength"?: number | null;
-    "transports"?: string[];
+    "maxCredentialCountInList"?: number;
+    "maxCredentialIdLength"?: number;
+    "transports"?: credential$0.AuthenticatorTransport[];
     "algorithms"?: credential$0.PublicKeyCredentialParameters[];
-    "maxSerializedLargeBlobArray"?: number | null;
-    "forcePINChange"?: boolean | null;
-    "minPINLength"?: number | null;
+    "maxSerializedLargeBlobArray"?: number;
+    "forcePINChange"?: boolean;
+    "minPINLength"?: number;
     "firmwareVersion"?: number | null;
-    "maxCredBlobLength"?: number | null;
+    "maxCredBlobLength"?: number;
     "maxRPIDsForSetMinPINLength"?: number | null;
-    "preferredPlatformUvAttempts"?: number | null;
+    "preferredPlatformUvAttempts"?: number;
     "uvModality"?: protocol$0.UserVerify | null;
     "certifications"?: { [_ in string]?: number };
     "remainingDiscoverableCredentials"?: number | null;
-    "vendorPrototypeConfigCommands"?: number[];
-    "attestationFormats"?: string[];
+    "vendorPrototypeConfigCommands"?: protocol$0.VendorCommandID[];
+    "attestationFormats"?: attestation$0.AttestationStatementFormatIdentifier[];
     "uvCountSinceLastPinEntry"?: number | null;
     "longTouchForReset"?: boolean | null;
     "encIdentifier"?: string;
-    "transportsForReset"?: string[];
+    "transportsForReset"?: credential$0.AuthenticatorTransport[];
     "pinComplexityPolicy"?: boolean | null;
-    "pinComplexityPolicyURL"?: string | null;
-    "maxPINLength"?: number | null;
+    "pinComplexityPolicyURL"?: string;
+    "maxPINLength"?: number;
     "encCredStoreState"?: string;
-    "authenticatorConfigCommands"?: number[];
+    "authenticatorConfigCommands"?: protocol$0.ConfigSubCommand[];
     "uvModalityLabel"?: string;
     "conformance": conformance$0.Report;
 
@@ -391,20 +419,21 @@ export class InspectInfo {
      * Creates a new InspectInfo instance from a string or object.
      */
     static createFrom($$source: any = {}): InspectInfo {
-        const $$createField0_0 = $$createType22;
-        const $$createField1_0 = $$createType24;
-        const $$createField3_0 = $$createType25;
-        const $$createField5_0 = $$createType26;
-        const $$createField8_0 = $$createType27;
-        const $$createField9_0 = $$createType29;
-        const $$createField18_0 = $$createType30;
-        const $$createField20_0 = $$createType31;
-        const $$createField21_0 = $$createType27;
+        const $$createField0_0 = $$createType23;
+        const $$createField1_0 = $$createType25;
+        const $$createField3_0 = $$createType26;
+        const $$createField5_0 = $$createType27;
+        const $$createField8_0 = $$createType28;
+        const $$createField9_0 = $$createType30;
+        const $$createField18_0 = $$createType31;
+        const $$createField20_0 = $$createType32;
+        const $$createField21_0 = $$createType33;
         const $$createField24_0 = $Create.ByteSlice;
-        const $$createField25_0 = $$createType27;
+        const $$createField25_0 = $$createType28;
+        const $$createField27_0 = $Create.ByteSlice;
         const $$createField29_0 = $Create.ByteSlice;
-        const $$createField30_0 = $$createType31;
-        const $$createField32_0 = $$createType32;
+        const $$createField30_0 = $$createType34;
+        const $$createField32_0 = $$createType35;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("versions" in $$parsedSource) {
             $$parsedSource["versions"] = $$createField0_0($$parsedSource["versions"]);
@@ -439,6 +468,9 @@ export class InspectInfo {
         if ("transportsForReset" in $$parsedSource) {
             $$parsedSource["transportsForReset"] = $$createField25_0($$parsedSource["transportsForReset"]);
         }
+        if ("pinComplexityPolicyURL" in $$parsedSource) {
+            $$parsedSource["pinComplexityPolicyURL"] = $$createField27_0($$parsedSource["pinComplexityPolicyURL"]);
+        }
         if ("encCredStoreState" in $$parsedSource) {
             $$parsedSource["encCredStoreState"] = $$createField29_0($$parsedSource["encCredStoreState"]);
         }
@@ -468,7 +500,7 @@ export class InspectOutput {
      * Creates a new InspectOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): InspectOutput {
-        const $$createField0_0 = $$createType33;
+        const $$createField0_0 = $$createType36;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("result" in $$parsedSource) {
             $$parsedSource["result"] = $$createField0_0($$parsedSource["result"]);
@@ -497,8 +529,8 @@ export class InspectResult {
      * Creates a new InspectResult instance from a string or object.
      */
     static createFrom($$source: any = {}): InspectResult {
-        const $$createField0_0 = $$createType34;
-        const $$createField1_0 = $$createType35;
+        const $$createField0_0 = $$createType37;
+        const $$createField1_0 = $$createType38;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
@@ -543,7 +575,7 @@ export class InteractionRequest {
      * Creates a new InteractionRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): InteractionRequest {
-        const $$createField5_0 = $$createType37;
+        const $$createField5_0 = $$createType40;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("pinState" in $$parsedSource) {
             $$parsedSource["pinState"] = $$createField5_0($$parsedSource["pinState"]);
@@ -568,7 +600,7 @@ export class LargeBlobListOutput {
      * Creates a new LargeBlobListOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): LargeBlobListOutput {
-        const $$createField0_0 = $$createType38;
+        const $$createField0_0 = $$createType41;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("report" in $$parsedSource) {
             $$parsedSource["report"] = $$createField0_0($$parsedSource["report"]);
@@ -597,8 +629,8 @@ export class LargeBlobMutationOutput {
      * Creates a new LargeBlobMutationOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): LargeBlobMutationOutput {
-        const $$createField0_0 = $$createType39;
-        const $$createField1_0 = $$createType41;
+        const $$createField0_0 = $$createType42;
+        const $$createField1_0 = $$createType44;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("preview" in $$parsedSource) {
             $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
@@ -626,7 +658,7 @@ export class LargeBlobReadOutput {
      * Creates a new LargeBlobReadOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): LargeBlobReadOutput {
-        const $$createField0_0 = $$createType42;
+        const $$createField0_0 = $$createType45;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("report" in $$parsedSource) {
             $$parsedSource["report"] = $$createField0_0($$parsedSource["report"]);
@@ -700,11 +732,11 @@ export class LogEntry {
      * Creates a new LogEntry instance from a string or object.
      */
     static createFrom($$source: any = {}): LogEntry {
-        const $$createField6_0 = $$createType43;
-        const $$createField13_0 = $$createType45;
-        const $$createField14_0 = $$createType45;
-        const $$createField15_0 = $$createType47;
-        const $$createField17_0 = $$createType27;
+        const $$createField6_0 = $$createType46;
+        const $$createField13_0 = $$createType48;
+        const $$createField14_0 = $$createType48;
+        const $$createField15_0 = $$createType50;
+        const $$createField17_0 = $$createType51;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("params" in $$parsedSource) {
             $$parsedSource["params"] = $$createField6_0($$parsedSource["params"]);
@@ -746,7 +778,7 @@ export class LogJournalBatch {
      * Creates a new LogJournalBatch instance from a string or object.
      */
     static createFrom($$source: any = {}): LogJournalBatch {
-        const $$createField0_0 = $$createType49;
+        const $$createField0_0 = $$createType53;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("entries" in $$parsedSource) {
             $$parsedSource["entries"] = $$createField0_0($$parsedSource["entries"]);
@@ -775,7 +807,7 @@ export class LogJournalRecord {
      * Creates a new LogJournalRecord instance from a string or object.
      */
     static createFrom($$source: any = {}): LogJournalRecord {
-        const $$createField1_0 = $$createType50;
+        const $$createField1_0 = $$createType54;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("entry" in $$parsedSource) {
             $$parsedSource["entry"] = $$createField1_0($$parsedSource["entry"]);
@@ -874,8 +906,8 @@ export class MakeCredentialOutput {
      * Creates a new MakeCredentialOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): MakeCredentialOutput {
-        const $$createField0_0 = $$createType51;
-        const $$createField1_0 = $$createType53;
+        const $$createField0_0 = $$createType55;
+        const $$createField1_0 = $$createType57;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("preview" in $$parsedSource) {
             $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
@@ -921,6 +953,7 @@ export enum OperationKind {
 
     OperationInspect = "inspect",
     OperationListCredentials = "credentials.list",
+    OperationCredentialStoreState = "credentials.storeState",
     OperationDeleteCredential = "credentials.delete",
     OperationUpdateCredentialUser = "credentials.updateUser",
     OperationReadLargeBlob = "largeBlobs.read",
@@ -939,6 +972,7 @@ export enum OperationKind {
     OperationChangePIN = "config.pin.change",
     OperationSetAlwaysUV = "config.alwaysUv.set",
     OperationSetMinPINLength = "config.minPinLength.set",
+    OperationEnableLongTouchForReset = "config.longTouchForReset.enable",
     OperationMakeCredential = "webauthn.makeCredential",
     OperationGetAssertion = "webauthn.getAssertion",
 };
@@ -970,7 +1004,7 @@ export class PINInteractionState {
      * Creates a new PINInteractionState instance from a string or object.
      */
     static createFrom($$source: any = {}): PINInteractionState {
-        const $$createField0_0 = $$createType47;
+        const $$createField0_0 = $$createType50;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("failure" in $$parsedSource) {
             $$parsedSource["failure"] = $$createField0_0($$parsedSource["failure"]);
@@ -999,8 +1033,8 @@ export class PINOutput {
      * Creates a new PINOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): PINOutput {
-        const $$createField0_0 = $$createType54;
-        const $$createField1_0 = $$createType56;
+        const $$createField0_0 = $$createType58;
+        const $$createField1_0 = $$createType60;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("preview" in $$parsedSource) {
             $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
@@ -1032,8 +1066,8 @@ export class ResetFactoryOutput {
      * Creates a new ResetFactoryOutput instance from a string or object.
      */
     static createFrom($$source: any = {}): ResetFactoryOutput {
-        const $$createField0_0 = $$createType57;
-        const $$createField1_0 = $$createType59;
+        const $$createField0_0 = $$createType61;
+        const $$createField1_0 = $$createType63;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("preview" in $$parsedSource) {
             $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
@@ -1065,7 +1099,7 @@ export class SessionInfo {
      * Creates a new SessionInfo instance from a string or object.
      */
     static createFrom($$source: any = {}): SessionInfo {
-        const $$createField0_0 = $$createType34;
+        const $$createField0_0 = $$createType37;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
@@ -1100,53 +1134,57 @@ const $$createType11 = config$0.StatusReport.createFrom;
 const $$createType12 = credentials$0.DeletePreview.createFrom;
 const $$createType13 = credentials$0.DeleteResult.createFrom;
 const $$createType14 = $Create.Nullable($$createType13);
-const $$createType15 = credentials$0.UpdateUserPreview.createFrom;
-const $$createType16 = credentials$0.UpdateUserResult.createFrom;
-const $$createType17 = $Create.Nullable($$createType16);
-const $$createType18 = credentials$0.InventoryReport.createFrom;
-const $$createType19 = webauthn$0.GetAssertionPreview.createFrom;
-const $$createType20 = webauthn$0.GetAssertionResult.createFrom;
-const $$createType21 = $Create.Nullable($$createType20);
-var $$createType22 = (function $$initCreateType22(...args: any[]): any {
-    if ($$createType22 === $$initCreateType22) {
-        $$createType22 = $$createType23;
+const $$createType15 = credentials$0.StoreStateResult.createFrom;
+const $$createType16 = credentials$0.UpdateUserPreview.createFrom;
+const $$createType17 = credentials$0.UpdateUserResult.createFrom;
+const $$createType18 = $Create.Nullable($$createType17);
+const $$createType19 = credentials$0.InventoryReport.createFrom;
+const $$createType20 = webauthn$0.GetAssertionPreview.createFrom;
+const $$createType21 = webauthn$0.GetAssertionResult.createFrom;
+const $$createType22 = $Create.Nullable($$createType21);
+var $$createType23 = (function $$initCreateType23(...args: any[]): any {
+    if ($$createType23 === $$initCreateType23) {
+        $$createType23 = $$createType24;
     }
-    return $$createType22(...args);
+    return $$createType23(...args);
 });
-const $$createType23 = $Create.Array($Create.Any);
 const $$createType24 = $Create.Array($Create.Any);
-const $$createType25 = $Create.Map($Create.Any, $Create.Any);
-const $$createType26 = $Create.Array($Create.Any);
+const $$createType25 = $Create.Array($Create.Any);
+const $$createType26 = $Create.Map($Create.Any, $Create.Any);
 const $$createType27 = $Create.Array($Create.Any);
-const $$createType28 = credential$0.PublicKeyCredentialParameters.createFrom;
-const $$createType29 = $Create.Array($$createType28);
-const $$createType30 = $Create.Map($Create.Any, $Create.Any);
-const $$createType31 = $Create.Array($Create.Any);
-const $$createType32 = conformance$0.Report.createFrom;
-const $$createType33 = InspectResult.createFrom;
-const $$createType34 = report$0.DeviceReport.createFrom;
-const $$createType35 = InspectInfo.createFrom;
-const $$createType36 = PINInteractionState.createFrom;
-const $$createType37 = $Create.Nullable($$createType36);
-const $$createType38 = largeblobs$0.ListReport.createFrom;
-const $$createType39 = largeblobs$0.MutationPreview.createFrom;
-const $$createType40 = largeblobs$0.MutationResult.createFrom;
-const $$createType41 = $Create.Nullable($$createType40);
-const $$createType42 = largeblobs$0.ReadReport.createFrom;
-const $$createType43 = $Create.Map($Create.Any, $Create.Any);
-const $$createType44 = LogPayload.createFrom;
-const $$createType45 = $Create.Nullable($$createType44);
-const $$createType46 = failure$0.Failure.createFrom;
-const $$createType47 = $Create.Nullable($$createType46);
-const $$createType48 = LogJournalRecord.createFrom;
-const $$createType49 = $Create.Array($$createType48);
-const $$createType50 = LogEntry.createFrom;
-const $$createType51 = webauthn$0.MakeCredentialPreview.createFrom;
-const $$createType52 = webauthn$0.MakeCredentialResult.createFrom;
-const $$createType53 = $Create.Nullable($$createType52);
-const $$createType54 = config$0.PINMutationPreview.createFrom;
-const $$createType55 = config$0.PINMutationResult.createFrom;
-const $$createType56 = $Create.Nullable($$createType55);
-const $$createType57 = config$0.ResetPreview.createFrom;
-const $$createType58 = config$0.ResetResult.createFrom;
-const $$createType59 = $Create.Nullable($$createType58);
+const $$createType28 = $Create.Array($Create.Any);
+const $$createType29 = credential$0.PublicKeyCredentialParameters.createFrom;
+const $$createType30 = $Create.Array($$createType29);
+const $$createType31 = $Create.Map($Create.Any, $Create.Any);
+const $$createType32 = $Create.Array($Create.Any);
+const $$createType33 = $Create.Array($Create.Any);
+const $$createType34 = $Create.Array($Create.Any);
+const $$createType35 = conformance$0.Report.createFrom;
+const $$createType36 = InspectResult.createFrom;
+const $$createType37 = report$0.DeviceReport.createFrom;
+const $$createType38 = InspectInfo.createFrom;
+const $$createType39 = PINInteractionState.createFrom;
+const $$createType40 = $Create.Nullable($$createType39);
+const $$createType41 = largeblobs$0.ListReport.createFrom;
+const $$createType42 = largeblobs$0.MutationPreview.createFrom;
+const $$createType43 = largeblobs$0.MutationResult.createFrom;
+const $$createType44 = $Create.Nullable($$createType43);
+const $$createType45 = largeblobs$0.ReadReport.createFrom;
+const $$createType46 = $Create.Map($Create.Any, $Create.Any);
+const $$createType47 = LogPayload.createFrom;
+const $$createType48 = $Create.Nullable($$createType47);
+const $$createType49 = failure$0.Failure.createFrom;
+const $$createType50 = $Create.Nullable($$createType49);
+const $$createType51 = $Create.Array($Create.Any);
+const $$createType52 = LogJournalRecord.createFrom;
+const $$createType53 = $Create.Array($$createType52);
+const $$createType54 = LogEntry.createFrom;
+const $$createType55 = webauthn$0.MakeCredentialPreview.createFrom;
+const $$createType56 = webauthn$0.MakeCredentialResult.createFrom;
+const $$createType57 = $Create.Nullable($$createType56);
+const $$createType58 = config$0.PINMutationPreview.createFrom;
+const $$createType59 = config$0.PINMutationResult.createFrom;
+const $$createType60 = $Create.Nullable($$createType59);
+const $$createType61 = config$0.ResetPreview.createFrom;
+const $$createType62 = config$0.ResetResult.createFrom;
+const $$createType63 = $Create.Nullable($$createType62);

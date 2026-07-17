@@ -41,7 +41,7 @@ const token = new DeviceReport({
   product: "Test authenticator",
 });
 
-function statusEnvelope(maxPINLength: number | null = 63): ConfigStatusEnvelope {
+function statusEnvelope(maxPINLength = 63): ConfigStatusEnvelope {
   const unsupported = new CapabilityState({
     state: StateValue.StateUnsupported,
     supported: false,
@@ -115,8 +115,8 @@ describe("Security screen", () => {
     expect(screen.queryByRole("button", { name: "Reload overview" })).not.toBeInTheDocument();
   });
 
-  it("shows and enforces the CTAP default maximum PIN length when it is not reported", () => {
-    completeSecurityStatusLoad(statusEnvelope(null));
+  it("shows and enforces the effective CTAP maximum PIN length", () => {
+    completeSecurityStatusLoad(statusEnvelope());
     render(Security);
 
     expect(screen.getByRole("spinbutton", { name: "Minimum PIN length" })).toHaveAttribute("max", "63");

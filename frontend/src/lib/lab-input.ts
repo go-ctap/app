@@ -8,6 +8,8 @@ import {
 } from "../../bindings/github.com/go-ctap/ctap/credential";
 import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
 import {
+  AuthenticationExtensionsLargeBlobInputs,
+  AuthenticationExtensionsPaymentInputs,
   AuthenticationExtensionsPRFInputs,
   AuthenticationExtensionsPRFValues,
   CreateAuthenticationExtensionsClientInputs,
@@ -449,6 +451,9 @@ function validateGetExtensions(draft: GetAssertionDraft, errors: LabValidationIs
     errors.push(issue("get.extensions.hmac-prf", "extension-conflict"));
   }
   validateHMACSecret("get.extensions.hmacSecret", extensions.hmacSecret, errors);
+  if (extensions.largeBlob.included && extensions.largeBlob.mode === "write") {
+    validatePRFBinaryDraft("get.extensions.largeBlob.payload", extensions.largeBlob.payload, errors);
+  }
   if (!extensions.prf.included) return;
 
   if (extensions.prf.useGlobalEval) validatePRFValues("get.extensions.prf.eval", extensions.prf.eval, errors);
@@ -542,6 +547,9 @@ function buildMakeCredentialExtensions(draft: MakeCredentialDraft) {
         ...(source.hmacSecretMC.salt2Enabled ? { salt2: hexToBase64(source.hmacSecretMC.salt2Hex) } : {}),
       }),
     } : {}),
+    ...(source.largeBlob.included ? {
+      largeBlob: new AuthenticationExtensionsLargeBlobInputs({ support: source.largeBlob.support }),
+    } : {}),
     ...(source.minPINLength.included ? {
       minPinLength: source.minPINLength.value,
     } : {}),
@@ -553,12 +561,21 @@ function buildMakeCredentialExtensions(draft: MakeCredentialDraft) {
         ...(source.prf.useEval ? { eval: buildPRFValues(source.prf.eval) } : {}),
       }),
     } : {}),
+    ...(source.payment.included ? {
+      payment: new AuthenticationExtensionsPaymentInputs({ payment: true }),
+    } : {}),
   });
 }
 
 function buildGetAssertionExtensions(draft: GetAssertionDraft) {
   const source = draft.extensions;
-  if (!source.getCredentialBlob.included && !source.hmacSecret.included && !source.prf.included) {
+  if (
+    !source.getCredentialBlob.included
+    && !source.hmacSecret.included
+    && !source.largeBlob.included
+    && !source.prf.included
+    && !source.payment.included
+  ) {
     return undefined;
   }
 
@@ -572,6 +589,13 @@ function buildGetAssertionExtensions(draft: GetAssertionDraft) {
         ...(source.hmacSecret.salt2Enabled ? { salt2: hexToBase64(source.hmacSecret.salt2Hex) } : {}),
       }),
     } : {}),
+    ...(source.largeBlob.included ? {
+      largeBlob: new AuthenticationExtensionsLargeBlobInputs(
+        source.largeBlob.mode === "read"
+          ? { read: true }
+          : { write: binaryDraftToBase64(source.largeBlob.payload) },
+      ),
+    } : {}),
     ...(source.prf.included ? {
       prf: new AuthenticationExtensionsPRFInputs({
         ...(source.prf.useGlobalEval ? { eval: buildPRFValues(source.prf.eval) } : {}),
@@ -582,6 +606,9 @@ function buildGetAssertionExtensions(draft: GetAssertionDraft) {
           ])),
         } : {}),
       }),
+    } : {}),
+    ...(source.payment.included ? {
+      payment: new AuthenticationExtensionsPaymentInputs({ payment: true }),
     } : {}),
   });
 }

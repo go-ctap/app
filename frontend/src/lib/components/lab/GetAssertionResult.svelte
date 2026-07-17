@@ -27,8 +27,13 @@
   );
   let selectedDetail = $state<ProtocolDetailRow | null>(null);
   let clientExtensions = $derived(selectedAssertion?.extensionResults?.client);
-  let hasWebAuthnOutputs = $derived(Boolean(clientExtensions?.prf));
-  let hasCTAPOutputs = $derived(Boolean(clientExtensions?.getCredBlob || clientExtensions?.["hmac-secret"]));
+  let authenticatorExtensions = $derived(selectedAssertion?.extensionResults?.authenticator);
+  let hasWebAuthnOutputs = $derived(Boolean(clientExtensions?.prf || clientExtensions?.largeBlob));
+  let hasCTAPOutputs = $derived(Boolean(
+    clientExtensions?.getCredBlob
+    || clientExtensions?.["hmac-secret"]
+    || authenticatorExtensions?.thirdPartyPayment !== undefined,
+  ));
   let hasExtensionOutputs = $derived(hasWebAuthnOutputs || hasCTAPOutputs);
   let technicalDetails = $derived.by((): ProtocolDetailRow[] => {
     if (!selectedAssertion) return [];
@@ -148,6 +153,17 @@
               {:else}
                 <div><dt>prf · results</dt><dd>{m.lab_not_reported()}</dd></div>
               {/if}
+              {#if clientExtensions?.largeBlob}
+                {#if clientExtensions.largeBlob.blobHex !== undefined && clientExtensions.largeBlob.blobHex !== null}
+                  <div>
+                    <dt>largeBlob · blob</dt>
+                    <dd><LabHexValue label="largeBlob" value={clientExtensions.largeBlob.blobHex} /></dd>
+                  </div>
+                {/if}
+                {#if clientExtensions.largeBlob.written !== undefined && clientExtensions.largeBlob.written !== null}
+                  <div><dt>largeBlob · written</dt><dd>{booleanLabel(clientExtensions.largeBlob.written)}</dd></div>
+                {/if}
+              {/if}
             </dl>
           </section>
         {/if}
@@ -173,6 +189,12 @@
                     <dd>{#key clientExtensions["hmac-secret"].output2Hex}<LabSecretValue valueHex={clientExtensions["hmac-secret"].output2Hex} />{/key}</dd>
                   </div>
                 {/if}
+              {/if}
+              {#if authenticatorExtensions?.thirdPartyPayment !== undefined && authenticatorExtensions.thirdPartyPayment !== null}
+                <div>
+                  <dt>thirdPartyPayment</dt>
+                  <dd>{booleanLabel(authenticatorExtensions.thirdPartyPayment)}</dd>
+                </div>
               {/if}
             </dl>
           </section>

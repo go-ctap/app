@@ -325,6 +325,7 @@ async function executeGetAssertion(
         ...state,
         getStep: { phase: "success", previewRequest, previewEnvelope, request, responseEnvelope: envelope },
       }));
+      if (request.extensions?.largeBlob?.write !== undefined) invalidateLargeBlobsInventory();
     }
     summarizeEnvelope(m.lab_get_assertion(), envelope);
     applyOperationSessionBoundary(envelope);
@@ -421,7 +422,12 @@ export async function confirmLabGetAssertion(): Promise<boolean> {
 
   const request = step.phase === "error" && step.request
     ? step.request
-    : new GetAssertionRequest({ ...step.previewRequest, dryRun: false });
+    : new GetAssertionRequest({
+        ...step.previewRequest,
+        dryRun: false,
+        confirmed: true,
+        confirmationMessage: m.lab_confirm_get_assertion(),
+      });
   return executeGetAssertion(step.previewRequest, step.previewEnvelope, request);
 }
 

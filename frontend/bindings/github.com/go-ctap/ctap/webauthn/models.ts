@@ -14,7 +14,7 @@ import * as extension$0 from "../extension/models.js";
 
 export class AuthenticationExtensionsLargeBlobInputs {
     "support"?: extension$0.LargeBlobSupport;
-    "read"?: boolean;
+    "read"?: boolean | null;
     "write"?: string;
 
     /** Creates a new AuthenticationExtensionsLargeBlobInputs instance. */
@@ -232,6 +232,7 @@ export class GetAuthenticationExtensionsClientInputs {
     "getCredBlob"?: boolean;
     "hmacGetSecret"?: HMACGetSecretInput;
     "largeBlob"?: AuthenticationExtensionsLargeBlobInputs;
+    "payment"?: AuthenticationExtensionsPaymentInputs;
     "prf"?: AuthenticationExtensionsPRFInputs;
 
     /** Creates a new GetAuthenticationExtensionsClientInputs instance. */
@@ -246,7 +247,8 @@ export class GetAuthenticationExtensionsClientInputs {
     static createFrom($$source: any = {}): GetAuthenticationExtensionsClientInputs {
         const $$createField1_0 = $$createType10;
         const $$createField2_0 = $$createType11;
-        const $$createField3_0 = $$createType13;
+        const $$createField3_0 = $$createType12;
+        const $$createField4_0 = $$createType13;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("hmacGetSecret" in $$parsedSource) {
             $$parsedSource["hmacGetSecret"] = $$createField1_0($$parsedSource["hmacGetSecret"]);
@@ -254,8 +256,11 @@ export class GetAuthenticationExtensionsClientInputs {
         if ("largeBlob" in $$parsedSource) {
             $$parsedSource["largeBlob"] = $$createField2_0($$parsedSource["largeBlob"]);
         }
+        if ("payment" in $$parsedSource) {
+            $$parsedSource["payment"] = $$createField3_0($$parsedSource["payment"]);
+        }
         if ("prf" in $$parsedSource) {
-            $$parsedSource["prf"] = $$createField3_0($$parsedSource["prf"]);
+            $$parsedSource["prf"] = $$createField4_0($$parsedSource["prf"]);
         }
         return new GetAuthenticationExtensionsClientInputs($$parsedSource as Partial<GetAuthenticationExtensionsClientInputs>);
     }

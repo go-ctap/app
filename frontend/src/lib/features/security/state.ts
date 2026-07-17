@@ -13,6 +13,7 @@ import type {
   BioRenameRequest,
   BioSensorEnvelope,
   ConfigStatusEnvelope,
+  EnableLongTouchForResetRequest,
   MinPINLengthRequest,
   ResetFactoryEnvelope,
   ResetFactoryRequest,
@@ -78,6 +79,10 @@ type PINPolicyMutationBase = {
   draft: SecurityPINPolicyDraft;
 };
 
+type LongTouchMutationBase = {
+  kind: "longTouch";
+};
+
 type BioEnrollMutationBase = {
   kind: "bioEnroll";
   timeoutMilliseconds: number;
@@ -137,6 +142,7 @@ export type SecurityMutationState =
   | { kind: "idle"; phase: "idle" }
   | SecurityMutationLifecycle<AlwaysUVMutationBase, AlwaysUVRequest, AuthenticatorConfigEnvelope>
   | SecurityMutationLifecycle<PINPolicyMutationBase, MinPINLengthRequest, AuthenticatorConfigEnvelope>
+  | SecurityMutationLifecycle<LongTouchMutationBase, EnableLongTouchForResetRequest, AuthenticatorConfigEnvelope>
   | SecurityMutationLifecycle<BioEnrollMutationBase, BioEnrollRequest, BioEnrollEnvelope>
   | SecurityMutationLifecycle<BioRenameMutationBase, BioRenameRequest, BioMutationEnvelope>
   | SecurityMutationLifecycle<BioRemoveMutationBase, BioRemoveRequest, BioMutationEnvelope>

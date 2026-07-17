@@ -62,6 +62,8 @@ export function operationKindLabel(kind: OperationKind | undefined) {
       return m.overview();
     case OperationKind.OperationListCredentials:
       return m.credential_inventory();
+    case OperationKind.OperationCredentialStoreState:
+      return m.credential_store_state_operation();
     case OperationKind.OperationDeleteCredential:
       return m.credential_delete();
     case OperationKind.OperationUpdateCredentialUser:
@@ -98,6 +100,8 @@ export function operationKindLabel(kind: OperationKind | undefined) {
       return m.security_always_uv_operation();
     case OperationKind.OperationSetMinPINLength:
       return m.security_pin_policy_operation();
+    case OperationKind.OperationEnableLongTouchForReset:
+      return m.security_long_touch_operation();
     case OperationKind.OperationMakeCredential:
       return m.lab_make_credential();
     case OperationKind.OperationGetAssertion:

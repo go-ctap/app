@@ -389,7 +389,11 @@ describe("WebAuthn Lab request lifecycle", () => {
     expect(get(labState).getStep.phase).toBe("review");
     expect(await confirmLabGetAssertion()).toBe(true);
     expect(getAssertion).toHaveBeenCalledTimes(3);
-    expect(getAssertion.mock.calls[2][0]).toMatchObject({ dryRun: false });
+    expect(getAssertion.mock.calls[2][0]).toMatchObject({
+      dryRun: false,
+      confirmed: true,
+      confirmationMessage: "Run this WebAuthn assertion request?",
+    });
     expect(getAssertion.mock.calls[2][0].clientDataJSON).toBe(frozenRequest.clientDataJSON);
     expect(get(labState).getStep.phase).toBe("success");
   });

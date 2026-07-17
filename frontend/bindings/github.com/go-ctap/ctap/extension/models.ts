@@ -45,6 +45,7 @@ export enum ExtensionIdentifier {
     ExtensionIdentifierCredentialProperties = "credProps",
     ExtensionIdentifierLargeBlob = "largeBlob",
     ExtensionIdentifierPayment = "payment",
+    ExtensionIdentifierThirdPartyPayment = "thirdPartyPayment",
 };
 
 export enum LargeBlobSupport {

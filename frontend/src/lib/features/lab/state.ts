@@ -1,6 +1,9 @@
 import { writable } from "svelte/store";
 
-import { CredentialProtectionPolicy } from "../../../../bindings/github.com/go-ctap/ctap/extension";
+import {
+  CredentialProtectionPolicy,
+  LargeBlobSupport,
+} from "../../../../bindings/github.com/go-ctap/ctap/extension";
 import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
 import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
@@ -51,6 +54,8 @@ export type LabPRFCredentialEvaluationDraft = {
   values: LabPRFValuesDraft;
 };
 
+export type LabLargeBlobGetMode = "read" | "write";
+
 export type MakeCredentialExtensionsDraft = {
   credentialProperties: { included: boolean };
   credentialProtection: {
@@ -64,6 +69,10 @@ export type MakeCredentialExtensionsDraft = {
   };
   hmacSecret: LabBooleanExtensionDraft;
   hmacSecretMC: LabHMACSecretDraft;
+  largeBlob: {
+    included: boolean;
+    support: LargeBlobSupport;
+  };
   minPINLength: LabBooleanExtensionDraft;
   pinComplexityPolicy: LabBooleanExtensionDraft;
   prf: {
@@ -71,17 +80,24 @@ export type MakeCredentialExtensionsDraft = {
     useEval: boolean;
     eval: LabPRFValuesDraft;
   };
+  payment: { included: boolean };
 };
 
 export type GetAssertionExtensionsDraft = {
   getCredentialBlob: LabBooleanExtensionDraft;
   hmacSecret: LabHMACSecretDraft;
+  largeBlob: {
+    included: boolean;
+    mode: LabLargeBlobGetMode;
+    payload: LabBinaryDraft;
+  };
   prf: {
     included: boolean;
     useGlobalEval: boolean;
     eval: LabPRFValuesDraft;
     evalByCredential: LabPRFCredentialEvaluationDraft[];
   };
+  payment: { included: boolean };
 };
 
 export type LabDescriptorDraft = {
@@ -229,9 +245,11 @@ function makeExtensionDefaults(randomSource?: LabRandomSource): MakeCredentialEx
       salt2Enabled: false,
       salt2Hex: "",
     },
+    largeBlob: { included: false, support: LargeBlobSupport.LargeBlobSupportPreferred },
     minPINLength: { included: false, value: true },
     pinComplexityPolicy: { included: false, value: true },
     prf: { included: false, useEval: false, eval: prfValues("registration-prf") },
+    payment: { included: false },
   };
 }
 
@@ -244,12 +262,18 @@ function getExtensionDefaults(randomSource?: LabRandomSource): GetAssertionExten
       salt2Enabled: false,
       salt2Hex: "",
     },
+    largeBlob: {
+      included: false,
+      mode: "read",
+      payload: { mode: "utf8", value: "" },
+    },
     prf: {
       included: false,
       useGlobalEval: false,
       eval: prfValues("authentication-prf"),
       evalByCredential: [],
     },
+    payment: { included: false },
   };
 }
 

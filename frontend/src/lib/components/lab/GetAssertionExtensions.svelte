@@ -8,6 +8,7 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Field from "$lib/components/ui/field/index.js";
   import { Switch } from "$lib/components/ui/switch/index.js";
+  import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
   import { inspectResult } from "$lib/ctapkit-results";
   import type { GetAssertionExtensionsDraft, LabDescriptorDraft, LabPRFValuesDraft } from "$lib/features/lab/state";
   import type { LabValidationIssue } from "$lib/lab-input";
@@ -16,6 +17,7 @@
   import { m } from "../../../paraglide/messages.js";
 
   import LabExtensionItem, { type ExtensionStatus } from "./LabExtensionItem.svelte";
+  import LabBinaryEditor from "./LabBinaryEditor.svelte";
   import LabFieldLabel from "./LabFieldLabel.svelte";
   import LabHMACEditor from "./LabHMACEditor.svelte";
   import LabPRFValuesEditor from "./LabPRFValuesEditor.svelte";
@@ -109,6 +111,11 @@
       evalByCredential: value.prf.evalByCredential.filter((_, itemIndex) => itemIndex !== index),
     });
   }
+
+  function changeLargeBlobMode(next: string | string[]) {
+    if (Array.isArray(next) || (next !== "read" && next !== "write")) return;
+    update("largeBlob", { ...value.largeBlob, mode: next });
+  }
 </script>
 
 {#if inspection.state === "error"}
@@ -129,6 +136,57 @@
       <h3 id="lab-get-webauthn-extensions-title">{m.lab_webauthn_client_extensions()}</h3>
       <p>{m.lab_webauthn_client_extensions_description()}</p>
     </header>
+
+    <LabExtensionItem
+      value="largeBlob"
+      title="largeBlob"
+      description={m.lab_extension_large_blob_get_description()}
+      included={value.largeBlob.included}
+      {disabled}
+      status={status(ExtensionIdentifier.ExtensionIdentifierLargeBlob)}
+      onInclude={(included) => include("largeBlob", included, value.largeBlob)}
+    >
+      <Field.Field>
+        <LabFieldLabel
+          forId="lab-ext-get-large-blob-mode"
+          label={m.lab_large_blob_mode()}
+          helpText={m.lab_large_blob_mode_tooltip()}
+          helpLabel={m.lab_option_help({ label: `largeBlob: ${m.lab_large_blob_mode()}` })}
+        />
+        <ToggleGroup.Root
+          id="lab-ext-get-large-blob-mode"
+          type="single"
+          value={value.largeBlob.mode}
+          onValueChange={changeLargeBlobMode}
+          variant="outline"
+          size="sm"
+          {disabled}
+        >
+          <ToggleGroup.Item value="read">{m.lab_large_blob_read()}</ToggleGroup.Item>
+          <ToggleGroup.Item value="write">{m.lab_large_blob_write()}</ToggleGroup.Item>
+        </ToggleGroup.Root>
+      </Field.Field>
+      {#if value.largeBlob.mode === "write"}
+        <LabBinaryEditor
+          id="lab-ext-get-large-blob-payload"
+          label={m.lab_binary_value()}
+          draft={value.largeBlob.payload}
+          {disabled}
+          invalid={hasError("get.extensions.largeBlob.payload")}
+          onChange={(payload) => update("largeBlob", { ...value.largeBlob, payload })}
+        />
+      {/if}
+    </LabExtensionItem>
+
+    <LabExtensionItem
+      value="payment"
+      title="payment"
+      description={m.lab_extension_payment_description()}
+      included={value.payment.included}
+      {disabled}
+      status={status(ExtensionIdentifier.ExtensionIdentifierThirdPartyPayment)}
+      onInclude={(included) => include("payment", included, value.payment)}
+    />
 
     <LabExtensionItem
       value="prf"

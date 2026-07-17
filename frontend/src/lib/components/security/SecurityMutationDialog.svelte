@@ -39,6 +39,7 @@
   function title() {
     if (mutation.kind === "alwaysUv") return m.security_always_uv();
     if (mutation.kind === "pinPolicy") return m.security_pin_policy();
+    if (mutation.kind === "longTouch") return m.security_long_touch_for_reset();
     if (mutation.kind === "bioEnroll") return m.security_enroll_biometric();
     if (mutation.kind === "bioRename") return m.security_rename_enrollment();
     if (mutation.kind === "bioRemove") return m.security_remove_enrollment();
@@ -59,6 +60,7 @@
     if (mutation.kind === "bioRename") return m.security_bio_rename_operation();
     if (mutation.kind === "alwaysUv") return m.security_always_uv_operation();
     if (mutation.kind === "pinPolicy") return m.security_pin_policy_operation();
+    if (mutation.kind === "longTouch") return m.security_long_touch_operation();
     return m.continue_action();
   }
 

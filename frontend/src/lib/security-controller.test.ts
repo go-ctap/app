@@ -54,6 +54,7 @@ import {
   beginBioEnrollment,
   beginBioRename,
   beginFactoryReset,
+  beginLongTouchForReset,
   beginPINPolicyChange,
   changeAuthenticatorPIN,
   confirmSecurityMutation,
@@ -103,13 +104,14 @@ function statusEnvelope(options: {
   bioConfigured?: boolean | null;
   alwaysUVConfigured?: boolean | null;
   minPINLength?: number;
-  maxPINLength?: number | null;
+  maxPINLength?: number;
   maxRPIDs?: number;
+  longTouchConfigured?: boolean | null;
 } = {}): ConfigStatusEnvelope {
   const item = options.item ?? TOKEN;
   const bioSupported = options.bioSupported ?? false;
   const minPINLength = options.minPINLength ?? 4;
-  const maxPINLength = options.maxPINLength === undefined ? 63 : options.maxPINLength;
+  const maxPINLength = options.maxPINLength ?? 63;
   return {
     operationId: "status-1",
     sessionId: options.sessionId ?? "session-1",
@@ -152,6 +154,13 @@ function statusEnvelope(options: {
             configured: options.alwaysUVConfigured ?? false,
           },
           setMinPINLength: { state: StateValue.StateSupported, supported: true },
+          longTouchForReset: {
+            state: options.longTouchConfigured === true
+              ? StateValue.StateConfigured
+              : StateValue.StateNotConfigured,
+            supported: options.longTouchConfigured !== null,
+            configured: options.longTouchConfigured ?? false,
+          },
         },
         resetHints: { longTouchForReset: StateValue.StateUnknown },
         limits: {
@@ -213,7 +222,9 @@ function authenticatorConfigEnvelope(
 ): AuthenticatorConfigEnvelope {
   const kind = operation === AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV
     ? OperationKind.OperationSetAlwaysUV
-    : OperationKind.OperationSetMinPINLength;
+    : operation === AuthenticatorConfigOperation.AuthenticatorConfigLongTouch
+      ? OperationKind.OperationEnableLongTouchForReset
+      : OperationKind.OperationSetMinPINLength;
   return {
     operationId: `${phase}-${operation}`,
     sessionId: "session-1",
@@ -578,8 +589,73 @@ describe("security controller mutations", () => {
     });
   });
 
-  it("uses the CTAP default maximum when maxPINLength is not reported", async () => {
-    seedReadyStatus(statusEnvelope({ maxPINLength: null }));
+  it("omits the optional minimum when changing only RP and boolean PIN policy fields", async () => {
+    seedReadyStatus(statusEnvelope({ minPINLength: 4, maxPINLength: 63 }));
+    const setMinPINLength = vi.spyOn(api, "setMinPINLength").mockResolvedValue(
+      authenticatorConfigEnvelope(
+        AuthenticatorConfigOperation.AuthenticatorConfigMinPINLength,
+        "preview",
+      ),
+    );
+
+    expect(await beginPINPolicyChange({
+      minPINLength: "",
+      rpIDs: "example.test",
+      forceChangePin: true,
+      pinComplexityPolicy: false,
+    })).toBe(true);
+    expect(setMinPINLength).toHaveBeenCalledWith({
+      sessionId: "session-1",
+      minPinLengthRPIDs: ["example.test"],
+      forceChangePin: true,
+      pinComplexityPolicy: false,
+      dryRun: true,
+    });
+  });
+
+  it("treats both an omitted and unchanged minimum-only request as no change", async () => {
+    seedReadyStatus(statusEnvelope({ minPINLength: 4, maxPINLength: 63 }));
+    const setMinPINLength = vi.spyOn(api, "setMinPINLength");
+    const baseDraft = {
+      rpIDs: "",
+      forceChangePin: false,
+      pinComplexityPolicy: false,
+    };
+
+    expect(await beginPINPolicyChange({ ...baseDraft, minPINLength: "" })).toBe(false);
+    expect(get(securityMutation)).toMatchObject({ validationError: "no-change" });
+    expect(await beginPINPolicyChange({ ...baseDraft, minPINLength: "4" })).toBe(false);
+    expect(get(securityMutation)).toMatchObject({ validationError: "no-change" });
+    expect(setMinPINLength).not.toHaveBeenCalled();
+  });
+
+  it("previews and executes enabling long touch for reset", async () => {
+    seedReadyStatus(statusEnvelope({ longTouchConfigured: false }));
+    const enableLongTouch = vi.spyOn(api, "enableLongTouchForReset")
+      .mockResolvedValueOnce(authenticatorConfigEnvelope(
+        AuthenticatorConfigOperation.AuthenticatorConfigLongTouch,
+        "preview",
+      ))
+      .mockResolvedValueOnce(authenticatorConfigEnvelope(
+        AuthenticatorConfigOperation.AuthenticatorConfigLongTouch,
+        "result",
+      ));
+    vi.spyOn(api, "configStatus").mockResolvedValue(statusEnvelope({ longTouchConfigured: true }));
+
+    expect(await beginLongTouchForReset()).toBe(true);
+    expect(enableLongTouch.mock.calls[0][0]).toEqual({ sessionId: "session-1", dryRun: true });
+
+    expect(await confirmSecurityMutation()).toBe(true);
+    expect(enableLongTouch.mock.calls[1][0]).toEqual({
+      sessionId: "session-1",
+      dryRun: false,
+      confirmed: true,
+      confirmationMessage: "Enable long touch for reset",
+    });
+  });
+
+  it("rejects a minimum above the effective maximum", async () => {
+    seedReadyStatus(statusEnvelope({ maxPINLength: 63 }));
     const setMinPINLength = vi.spyOn(api, "setMinPINLength");
 
     expect(await beginPINPolicyChange({

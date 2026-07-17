@@ -5,6 +5,7 @@ import type {
   CredentialDeleteEnvelope,
   CredentialDeleteRequest,
   CredentialListRequest,
+  CredentialStoreStateEnvelope,
   CredentialUpdateEnvelope,
   CredentialUpdateRequest,
 } from "../../bindings/github.com/go-ctap/kit/service";
@@ -13,13 +14,19 @@ import { api } from "./api.js";
 import {
   credentialDeletePreview,
   credentialDeleteResult,
+  credentialStoreStateResult,
   credentialsReport,
   credentialUpdatePreview,
   credentialUpdateResult,
 } from "./ctapkit-results.js";
 import {
   beginPasskeysInventoryLoad,
+  beginCredentialStoreStateLoad,
   completePasskeysInventoryLoad,
+  completeCredentialStoreStateLoad,
+  failCredentialStoreStateLoadAtRuntime,
+  failCredentialStoreStateLoadWithContractError,
+  failCredentialStoreStateLoadWithResponse,
   failPasskeysInventoryLoadAtRuntime,
   failPasskeysInventoryLoadWithResponse,
   passkeysInventoryState,
@@ -113,6 +120,42 @@ export async function loadPasskeys(options: LoadPasskeysOptions = {}) {
     const runtimeError = runtimeFailureFrom(error);
     failPasskeysInventoryLoadAtRuntime(runtimeError);
     summarizeOperationFailure(m.credential_inventory(), runtimeError);
+    applyInvalidSessionError(runtimeError);
+    return false;
+  }
+}
+
+export async function loadCredentialStoreState(): Promise<boolean> {
+  if (!get(selectedSelector).trim()) return false;
+
+  beginCredentialStoreStateLoad();
+  const label = m.credential_store_state_operation();
+  try {
+    beginOperation(label);
+    const envelope: CredentialStoreStateEnvelope = await api.credentialStoreState({
+      sessionId: selectedSessionId(),
+      verificationFlow: get(passkeysVerificationFlow),
+    });
+    const result = credentialStoreStateResult(envelope);
+    if (envelope.error) {
+      failCredentialStoreStateLoadWithResponse(envelope);
+    } else if (!result) {
+      const missing = internalFailure();
+      failCredentialStoreStateLoadWithContractError(envelope, missing);
+      summarizeOperationContractFailure(label, missing);
+      applyOperationSessionBoundary(envelope);
+      return false;
+    } else {
+      completeCredentialStoreStateLoad(envelope);
+    }
+
+    summarizeEnvelope(label, envelope);
+    applyOperationSessionBoundary(envelope);
+    return !envelope.error && Boolean(result);
+  } catch (error) {
+    const runtimeError = runtimeFailureFrom(error);
+    failCredentialStoreStateLoadAtRuntime(runtimeError);
+    summarizeOperationFailure(label, runtimeError);
     applyInvalidSessionError(runtimeError);
     return false;
   }

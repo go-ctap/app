@@ -5,12 +5,14 @@ import { Code, type Failure } from "../../../../bindings/github.com/go-ctap/kit/
 import type {
   CredentialDeleteEnvelope,
   CredentialDeleteRequest,
+  CredentialStoreStateEnvelope,
   CredentialUpdateEnvelope,
   CredentialUpdateRequest,
   CredentialsEnvelope,
 } from "../../../../bindings/github.com/go-ctap/kit/service";
 
 export type PasskeysInventoryPhase = "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";
+export type CredentialStoreStatePhase = "idle" | "loading" | "ready" | "error" | "unsupported";
 
 /**
  * Passkeys keeps the last-known-good inventory separate from the response to the
@@ -23,6 +25,12 @@ export type PasskeysInventoryState = {
   responseEnvelope: CredentialsEnvelope | null;
   runtimeError: Failure | null;
   lastSuccessfulAt: string | null;
+};
+
+export type CredentialStoreStateState = {
+  phase: CredentialStoreStatePhase;
+  responseEnvelope: CredentialStoreStateEnvelope | null;
+  runtimeError: Failure | null;
 };
 
 export function passkeysInventoryIsStale(state: PasskeysInventoryState) {
@@ -125,7 +133,16 @@ export function emptyPasskeysInventoryState(): PasskeysInventoryState {
   };
 }
 
+export function emptyCredentialStoreStateState(): CredentialStoreStateState {
+  return {
+    phase: "idle",
+    responseEnvelope: null,
+    runtimeError: null,
+  };
+}
+
 export const passkeysInventoryState = writable<PasskeysInventoryState>(emptyPasskeysInventoryState());
+export const credentialStoreStateState = writable<CredentialStoreStateState>(emptyCredentialStoreStateState());
 
 export const passkeysQuery = writable("");
 export const passkeysStatusFilter = writable<PasskeysStatusFilter>("all");
@@ -170,9 +187,53 @@ export function failPasskeysInventoryLoadAtRuntime(error: Failure) {
   }));
 }
 
+export function beginCredentialStoreStateLoad() {
+  credentialStoreStateState.set({
+    phase: "loading",
+    responseEnvelope: null,
+    runtimeError: null,
+  });
+}
+
+export function completeCredentialStoreStateLoad(envelope: CredentialStoreStateEnvelope) {
+  credentialStoreStateState.set({
+    phase: "ready",
+    responseEnvelope: envelope,
+    runtimeError: null,
+  });
+}
+
+export function failCredentialStoreStateLoadWithResponse(envelope: CredentialStoreStateEnvelope) {
+  credentialStoreStateState.set({
+    phase: envelope.error?.category === "unsupported" ? "unsupported" : "error",
+    responseEnvelope: envelope,
+    runtimeError: null,
+  });
+}
+
+export function failCredentialStoreStateLoadAtRuntime(error: Failure) {
+  credentialStoreStateState.set({
+    phase: "error",
+    responseEnvelope: null,
+    runtimeError: error,
+  });
+}
+
+export function failCredentialStoreStateLoadWithContractError(
+  envelope: CredentialStoreStateEnvelope,
+  error: Failure,
+) {
+  credentialStoreStateState.set({
+    phase: "error",
+    responseEnvelope: envelope,
+    runtimeError: error,
+  });
+}
+
 /** Clears state owned by one selected authenticator but keeps the in-memory UV preference. */
 export function resetPasskeysDeviceState() {
   passkeysInventoryState.set(emptyPasskeysInventoryState());
+  credentialStoreStateState.set(emptyCredentialStoreStateState());
   passkeysQuery.set("");
   passkeysStatusFilter.set("all");
   passkeysSelectedCredentialID.set("");
@@ -182,6 +243,7 @@ export function resetPasskeysDeviceState() {
 /** Invalidates authenticator-backed inventory while retaining every UI preference. */
 export function invalidatePasskeysInventory() {
   passkeysInventoryState.set(emptyPasskeysInventoryState());
+  credentialStoreStateState.set(emptyCredentialStoreStateState());
   passkeysSelectedCredentialID.set("");
   passkeysMutation.set({ kind: "idle", phase: "idle" });
 }

@@ -3,6 +3,7 @@ import {
   type BioEnrollOutput,
   type BioMutationOutput,
   type CredentialDeleteOutput,
+  type CredentialStoreStateOutput,
   type CredentialUpdateOutput,
   type LargeBlobMutationOutput,
   type PINOutput,
@@ -30,6 +31,7 @@ import type {
   DeletePreview,
   DeleteResult,
   InventoryReport,
+  StoreStateResult,
   UpdateUserPreview,
   UpdateUserResult,
 } from "../../bindings/github.com/go-ctap/kit/model/credentials";
@@ -49,6 +51,7 @@ import type {
   BioSensorEnvelope,
   ConfigStatusEnvelope,
   CredentialDeleteEnvelope,
+  CredentialStoreStateEnvelope,
   CredentialUpdateEnvelope,
   CredentialsEnvelope,
   InspectEnvelope,
@@ -172,6 +175,19 @@ export function resetFactoryResult(envelope: ResetFactoryEnvelope | null | undef
 export function credentialsReport(envelope: CredentialsEnvelope | null | undefined): InventoryReport | null {
   if (!envelope || envelope.error || !envelope.result) return null;
   return envelope.result.report;
+}
+
+export function credentialStoreStateOutput(
+  envelope: CredentialStoreStateEnvelope | null | undefined,
+): CredentialStoreStateOutput | null {
+  if (!envelope || envelope.error || !envelope.result) return null;
+  return envelope.result;
+}
+
+export function credentialStoreStateResult(
+  envelope: CredentialStoreStateEnvelope | null | undefined,
+): StoreStateResult | null {
+  return credentialStoreStateOutput(envelope)?.result ?? null;
 }
 
 export function credentialDeleteOutput(envelope: CredentialDeleteEnvelope | null | undefined): CredentialDeleteOutput | null {

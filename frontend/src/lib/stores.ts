@@ -35,6 +35,8 @@ export type { LargeBlobPayloadEncoding } from "./largeblobs-payload.js";
 export type {
   CredentialUpdateForm,
   CredentialUpdateValidationError,
+  CredentialStoreStatePhase,
+  CredentialStoreStateState,
   PasskeysInventoryPhase,
   PasskeysInventoryState,
   PasskeysMutationState,
@@ -62,6 +64,7 @@ export const overviewBioSensor = readonly(overview.overviewBioSensor);
 export const overviewMDS = readonly(overview.overviewMDS);
 
 export const passkeysInventoryState = readonly(passkeys.passkeysInventoryState);
+export const credentialStoreStateState = readonly(passkeys.credentialStoreStateState);
 export const passkeysQuery = readonly(passkeys.passkeysQuery);
 export const passkeysStatusFilter = readonly(passkeys.passkeysStatusFilter);
 export const passkeysSelectedCredentialID = readonly(passkeys.passkeysSelectedCredentialID);

@@ -61,6 +61,7 @@ const CODE_MESSAGES: Record<Exclude<Code, Code.$zero>, Message> = {
   [Code.CodePINUVAuthInvalid]: m.failure_pin_uv_auth_invalid,
   [Code.CodePINUVAuthBlocked]: m.failure_pin_uv_auth_blocked,
   [Code.CodePINPolicyViolation]: m.failure_pin_policy_violation,
+  [Code.CodePINChangeRequired]: m.failure_pin_change_required,
   [Code.CodePINUVAuthTokenRequired]: m.failure_pin_uv_auth_token_required,
   [Code.CodePINUVPermissionUnauthorized]: m.failure_pin_uv_permission_unauthorized,
   [Code.CodeUserPresenceRequired]: m.failure_user_presence_required,

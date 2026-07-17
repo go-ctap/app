@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { ExtensionIdentifier, CredentialProtectionPolicy } from "../../../../bindings/github.com/go-ctap/ctap/extension";
+  import {
+    CredentialProtectionPolicy,
+    ExtensionIdentifier,
+    LargeBlobSupport,
+  } from "../../../../bindings/github.com/go-ctap/ctap/extension";
   import type { InspectEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
 
   import * as Accordion from "$lib/components/ui/accordion/index.js";
@@ -8,6 +12,7 @@
   import * as Field from "$lib/components/ui/field/index.js";
   import * as Select from "$lib/components/ui/select/index.js";
   import { Switch } from "$lib/components/ui/switch/index.js";
+  import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
   import { inspectResult } from "$lib/ctapkit-results";
   import type { MakeCredentialExtensionsDraft } from "$lib/features/lab/state";
   import type { LabValidationIssue } from "$lib/lab-input";
@@ -85,6 +90,11 @@
       policy: next as CredentialProtectionPolicy,
     });
   }
+
+  function changeLargeBlobSupport(next: string | string[]) {
+    if (Array.isArray(next) || !Object.values(LargeBlobSupport).includes(next as LargeBlobSupport)) return;
+    update("largeBlob", { ...value.largeBlob, support: next as LargeBlobSupport });
+  }
 </script>
 
 {#if inspection.state === "error"}
@@ -105,6 +115,51 @@
       <h3 id="lab-make-webauthn-extensions-title">{m.lab_webauthn_client_extensions()}</h3>
       <p>{m.lab_webauthn_client_extensions_description()}</p>
     </header>
+
+    <LabExtensionItem
+      value="largeBlob"
+      title="largeBlob"
+      description={m.lab_extension_large_blob_create_description()}
+      included={value.largeBlob.included}
+      {disabled}
+      status={status(ExtensionIdentifier.ExtensionIdentifierLargeBlob)}
+      onInclude={(included) => include("largeBlob", included, value.largeBlob)}
+    >
+      <Field.Field>
+        <LabFieldLabel
+          forId="lab-ext-large-blob-support"
+          label={m.support_mode()}
+          helpText={m.lab_large_blob_support_tooltip()}
+          helpLabel={m.lab_option_help({ label: `largeBlob: ${m.support_mode()}` })}
+        />
+        <ToggleGroup.Root
+          id="lab-ext-large-blob-support"
+          type="single"
+          value={value.largeBlob.support}
+          onValueChange={changeLargeBlobSupport}
+          variant="outline"
+          size="sm"
+          {disabled}
+        >
+          <ToggleGroup.Item value={LargeBlobSupport.LargeBlobSupportPreferred}>
+            {m.lab_large_blob_preferred()}
+          </ToggleGroup.Item>
+          <ToggleGroup.Item value={LargeBlobSupport.LargeBlobSupportRequired}>
+            {m.lab_large_blob_required()}
+          </ToggleGroup.Item>
+        </ToggleGroup.Root>
+      </Field.Field>
+    </LabExtensionItem>
+
+    <LabExtensionItem
+      value="payment"
+      title="payment"
+      description={m.lab_extension_payment_description()}
+      included={value.payment.included}
+      {disabled}
+      status={status(ExtensionIdentifier.ExtensionIdentifierThirdPartyPayment)}
+      onInclude={(included) => include("payment", included, value.payment)}
+    />
 
     <LabExtensionItem
       value="credentialProperties"

@@ -122,6 +122,7 @@ export enum Code {
     CodePINUVAuthInvalid = "PIN_UV_AUTH_INVALID",
     CodePINUVAuthBlocked = "PIN_UV_AUTH_BLOCKED",
     CodePINPolicyViolation = "PIN_POLICY_VIOLATION",
+    CodePINChangeRequired = "PIN_CHANGE_REQUIRED",
     CodePINUVAuthTokenRequired = "PIN_UV_AUTH_TOKEN_REQUIRED",
     CodePINUVPermissionUnauthorized = "PIN_UV_PERMISSION_UNAUTHORIZED",
     CodeUserPresenceRequired = "USER_PRESENCE_REQUIRED",
