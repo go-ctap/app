@@ -83,6 +83,7 @@
 
     <CredentialStoreState
       state={$credentialStoreStateState}
+      supported={passkeys.report?.support.readOnlyPermission ?? null}
       disabled={$sessionBusy || $sessionStatus.state !== "ready"}
       onLoad={readCredentialStoreState}
     />

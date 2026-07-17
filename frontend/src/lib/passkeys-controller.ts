@@ -126,7 +126,8 @@ export async function loadPasskeys(options: LoadPasskeysOptions = {}) {
 }
 
 export async function loadCredentialStoreState(): Promise<boolean> {
-  if (!get(selectedSelector).trim()) return false;
+  const inventory = credentialsReport(get(passkeysInventoryState).lastSuccessfulEnvelope);
+  if (!get(selectedSelector).trim() || !inventory?.support.readOnlyPermission) return false;
 
   beginCredentialStoreStateLoad();
   const label = m.credential_store_state_operation();

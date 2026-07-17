@@ -37,7 +37,7 @@ import {
   validateCredentialUpdate,
 } from "./passkeys-controller";
 
-function inventoryEnvelope(): CredentialsEnvelope {
+function inventoryEnvelope(readOnlyPermission = true): CredentialsEnvelope {
   return {
     operationId: "list-1",
     sessionId: "session-1",
@@ -45,7 +45,7 @@ function inventoryEnvelope(): CredentialsEnvelope {
     result: {
       report: {
         device: { fingerprint: "token-1" },
-        support: { credentialManagement: true, previewOnly: false, readOnlyPermission: false },
+        support: { credentialManagement: true, previewOnly: false, readOnlyPermission },
         summary: {
           existingResidentCredentialsCount: 1,
           maxPossibleRemainingResidentCredentialsCount: 0,
@@ -166,6 +166,15 @@ describe("passkeys mutation requests", () => {
       responseEnvelope: envelope,
       runtimeError: null,
     });
+  });
+
+  it("does not request persistent state without perCredMgmtRO", async () => {
+    completePasskeysInventoryLoad(inventoryEnvelope(false), "2026-07-12T00:00:00.000Z");
+    const read = vi.spyOn(api, "credentialStoreState");
+
+    expect(await loadCredentialStoreState()).toBe(false);
+    expect(read).not.toHaveBeenCalled();
+    expect(get(credentialStoreStateState).phase).toBe("idle");
   });
 
   it("allows update and delete from last-known-good rows after refresh fails", async () => {

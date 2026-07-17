@@ -144,6 +144,21 @@ describe("Passkeys", () => {
     render(Passkeys);
 
     expect(screen.getByText("Passkeys not loaded")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Read state" })).toBeDisabled();
+    expect(screen.queryByText("This authenticator does not support persistent credential-management read-only state.")).not.toBeInTheDocument();
+  });
+
+  it("disables credential-store state without perCredMgmtRO", () => {
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      sessionId: "session-1",
+    });
+    seedPasskeysEnvelopeForTest(credentialsEnvelope());
+
+    render(Passkeys);
+
+    expect(screen.getByRole("button", { name: "Read state" })).toBeDisabled();
+    expect(screen.getByText("This authenticator does not support persistent credential-management read-only state.")).toBeInTheDocument();
   });
 
   it("keeps a typed inventory error out of the empty state", () => {
