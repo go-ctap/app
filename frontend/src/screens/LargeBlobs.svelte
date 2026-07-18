@@ -41,8 +41,8 @@
     largeBlobsVerificationFlow,
     selectedDevice,
     selectedSelector,
-    sessionBusy,
-    sessionStatus,
+    authenticatorBusy,
+    authenticatorStatus,
   } from "$lib/stores";
 
   import { m } from "../paraglide/messages.js";
@@ -50,8 +50,8 @@
   let largeBlobs = $derived(buildLargeBlobsPresentation({
     selectedSelector: $selectedSelector,
     selectedDevice: $selectedDevice,
-    sessionBusy: $sessionBusy,
-    sessionReady: $sessionStatus.state === "ready" && Boolean($sessionStatus.sessionId),
+    authenticatorBusy: $authenticatorBusy,
+    authenticatorReady: $authenticatorStatus.state === "ready" && Boolean($authenticatorStatus.selectionId),
     inventoryState: $largeBlobsInventoryState,
     query: $largeBlobsQuery,
     statusFilter: $largeBlobsStatusFilter,

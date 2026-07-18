@@ -44,13 +44,13 @@ import {
   resetLargeBlobsDeviceState,
   resetLargeBlobsStateForTest,
 } from "./features/largeblobs/state";
-import { resetSessionStateForTest, selectedSelector, sessionStatus } from "./features/session/state";
+import { resetAuthenticatorStateForTest, selectedSelector, authenticatorStatus } from "./features/authenticator/state";
 import { resetWorkbenchStateForTest, statusBar } from "./features/workbench/state";
 
 function listEnvelope(keyState = "available", blobPresent = false): LargeBlobListEnvelope {
   return {
     operationId: "list-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationListLargeBlobs,
     result: {
       report: {
@@ -87,7 +87,7 @@ function previewEnvelope(
 ): LargeBlobMutationEnvelope {
   return {
     operationId: `preview-${kind}`,
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind,
     result: {
       preview: {
@@ -133,7 +133,7 @@ function resultEnvelope(kind: OperationKind, operation: MutationOperation): Larg
 function readEnvelope(mode: DecodeMode): LargeBlobReadEnvelope {
   return {
     operationId: "read-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationReadLargeBlob,
     result: {
       report: {
@@ -152,13 +152,13 @@ function readEnvelope(mode: DecodeMode): LargeBlobReadEnvelope {
 
 beforeEach(() => {
   setAppLocale("en");
-  resetSessionStateForTest();
+  resetAuthenticatorStateForTest();
   resetWorkbenchStateForTest();
   resetLargeBlobsStateForTest();
   selectedSelector.set("token-1");
-  sessionStatus.set({
+  authenticatorStatus.set({
     state: "ready",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
   });
   completeLargeBlobsInventoryLoad(listEnvelope(), "2026-07-11T00:00:00.000Z");
 });
@@ -170,12 +170,12 @@ afterEach(() => {
 describe("large blob controller", () => {
   it("builds an exact typed read request with the selected decode mode", () => {
     expect(buildLargeBlobReadRequest(
-      "session-1",
+      "authenticator-1",
       VerificationFlow.VerificationFlowPIN,
       "cafe",
       DecodeMode.DecodeModeCBOR,
     )).toEqual({
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowPIN,
       credentialIdHex: "cafe",
       decodeMode: DecodeMode.DecodeModeCBOR,
@@ -191,7 +191,7 @@ describe("large blob controller", () => {
 
     expect(await selectLargeBlobCredential("cafe")).toBe(true);
     expect(read).toHaveBeenNthCalledWith(1, {
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowDefault,
       credentialIdHex: "cafe",
       decodeMode: DecodeMode.DecodeModeJSON,
@@ -201,7 +201,7 @@ describe("large blob controller", () => {
 
     expect(get(largeBlobsDecodeMode)).toBe(DecodeMode.DecodeModeCBOR);
     expect(read).toHaveBeenNthCalledWith(2, {
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowDefault,
       credentialIdHex: "cafe",
       decodeMode: DecodeMode.DecodeModeCBOR,
@@ -230,7 +230,7 @@ describe("large blob controller", () => {
     largeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "cafe",
-      request: { sessionId: "session-1", credentialIdHex: "cafe" },
+      request: { selectionId: "authenticator-1", credentialIdHex: "cafe" },
       responseEnvelope: envelope,
     });
 
@@ -251,7 +251,7 @@ describe("large blob controller", () => {
     largeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "cafe",
-      request: { sessionId: "session-1", credentialIdHex: "cafe" },
+      request: { selectionId: "authenticator-1", credentialIdHex: "cafe" },
       responseEnvelope: envelope,
     });
 
@@ -312,8 +312,8 @@ describe("large blob controller", () => {
 
     expect(await confirmLargeBlobDelete()).toBe(true);
     expect(remove).toHaveBeenCalledTimes(3);
-    expect(remove.mock.calls[1][0]).toMatchObject({ dryRun: false, prepareInventoryRefresh: true, confirmed: true });
-    expect(remove.mock.calls[2][0]).toMatchObject({ dryRun: false, prepareInventoryRefresh: true, confirmed: true });
+    expect(remove.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(remove.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
     expect(list).toHaveBeenCalledTimes(1);
   });
 
@@ -342,8 +342,8 @@ describe("large blob controller", () => {
     expect(await confirmLargeBlobWrite()).toBe(true);
 
     expect(write).toHaveBeenCalledTimes(3);
-    expect(write.mock.calls[1][0]).toMatchObject({ dryRun: false, prepareInventoryRefresh: true, confirmed: true });
-    expect(write.mock.calls[2][0]).toMatchObject({ dryRun: false, prepareInventoryRefresh: true, confirmed: true });
+    expect(write.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(write.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
   });
 
   it("reconfirms cleanup after any execution failure", async () => {
@@ -369,8 +369,8 @@ describe("large blob controller", () => {
     expect(await confirmLargeBlobCleanup()).toBe(true);
 
     expect(cleanup).toHaveBeenCalledTimes(3);
-    expect(cleanup.mock.calls[1][0]).toMatchObject({ dryRun: false, prepareInventoryRefresh: true, confirmed: true });
-    expect(cleanup.mock.calls[2][0]).toMatchObject({ dryRun: false, prepareInventoryRefresh: true, confirmed: true });
+    expect(cleanup.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(cleanup.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
   });
 
   it("executes the exact previewed write request with only confirmation fields changed", async () => {
@@ -388,7 +388,6 @@ describe("large blob controller", () => {
     expect(write.mock.calls[1][0]).toEqual({
       ...previewRequest,
       dryRun: false,
-      prepareInventoryRefresh: true,
       confirmed: true,
       confirmationMessage: "Confirm write",
     });
@@ -400,7 +399,7 @@ describe("large blob controller", () => {
       .mockResolvedValueOnce(resultEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace));
     vi.spyOn(api, "listLargeBlobs").mockResolvedValue({
       operationId: "refresh-failed",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationListLargeBlobs,
       error: failureForCode(Code.CodeTransportFailure),
     } as LargeBlobListEnvelope);
@@ -451,7 +450,7 @@ describe("large blob controller", () => {
     completeLargeBlobsInventoryLoad(listEnvelope("missing"), "2026-07-11T00:00:00.000Z");
     const read = {
       operationId: "read-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationReadLargeBlob,
       result: {
         report: {
@@ -476,7 +475,7 @@ describe("large blob controller", () => {
     setLargeBlobsDecodeMode(DecodeMode.DecodeModeCBOR);
     expect(await readLargeBlob("cafe")).toBe(true);
     expect(readOperation).toHaveBeenCalledWith({
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowDefault,
       credentialIdHex: "cafe",
       decodeMode: DecodeMode.DecodeModeCBOR,
@@ -491,10 +490,10 @@ describe("large blob controller", () => {
     const read = vi.spyOn(api, "readLargeBlob").mockResolvedValue(refreshedRead);
 
     const { loadLargeBlobs } = await import("./largeblobs-controller");
-    expect(await loadLargeBlobs({ refresh: true })).toBe(true);
+    expect(await loadLargeBlobs()).toBe(true);
 
     expect(read).toHaveBeenCalledWith({
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowDefault,
       credentialIdHex: "cafe",
       decodeMode: DecodeMode.DecodeModeJSON,
@@ -505,7 +504,7 @@ describe("large blob controller", () => {
   it("keeps last-known-good inventory action-capable after a forced refresh failure", async () => {
     const failed = {
       operationId: "list-failed",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationListLargeBlobs,
       error: failureForCode(Code.CodeTransportFailure),
     } as LargeBlobListEnvelope;
@@ -514,18 +513,18 @@ describe("large blob controller", () => {
       phase: "ready",
       credentialIDHex: "cafe",
       request: {
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         credentialIdHex: "cafe",
       },
       responseEnvelope: {
         operationId: "old-read",
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         kind: OperationKind.OperationReadLargeBlob,
       } as LargeBlobReadEnvelope,
     });
 
     const { loadLargeBlobs } = await import("./largeblobs-controller");
-    expect(await loadLargeBlobs({ refresh: true })).toBe(false);
+    expect(await loadLargeBlobs()).toBe(false);
     expect(get(largeBlobsInventoryState)).toMatchObject({ phase: "error" });
     expect(largeBlobsInventoryIsStale(get(largeBlobsInventoryState))).toBe(true);
     expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).not.toBeNull();

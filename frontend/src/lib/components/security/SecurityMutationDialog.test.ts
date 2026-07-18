@@ -21,13 +21,13 @@ import { failureForCode } from "$lib/test-failure";
 import SecurityMutationDialog from "./SecurityMutationDialog.svelte";
 
 const request = new AlwaysUVRequest({
-  sessionId: "session-1",
+  selectionId: "authenticator-1",
   target: AlwaysUVTarget.AlwaysUVTargetEnable,
   dryRun: true,
 });
 const previewEnvelope = new AuthenticatorConfigEnvelope({
   operationId: "preview-1",
-  sessionId: "session-1",
+  selectionId: "authenticator-1",
   kind: OperationKind.OperationSetAlwaysUV,
 });
 
@@ -41,7 +41,7 @@ function errorMutation(failedPhase: "previewing" | "executing", code: Code): Sec
     previewEnvelope: failedPhase === "executing" ? previewEnvelope : null,
     responseEnvelope: new AuthenticatorConfigEnvelope({
       operationId: "response-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationSetAlwaysUV,
       error: failureForCode(code),
     }),
@@ -101,10 +101,10 @@ describe("SecurityMutationDialog", () => {
   });
 
   it("keeps the destructive action after any execution failure", async () => {
-    const request = new ResetFactoryRequest({ sessionId: "session-1", dryRun: true });
+    const request = new ResetFactoryRequest({ selectionId: "authenticator-1", dryRun: true });
     const previewEnvelope = new ResetFactoryEnvelope({
       operationId: "reset-preview-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationResetFactory,
     });
     const callbacks = renderDialog({
@@ -115,7 +115,7 @@ describe("SecurityMutationDialog", () => {
       previewEnvelope,
       responseEnvelope: new ResetFactoryEnvelope({
         operationId: "reset-response-1",
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         kind: OperationKind.OperationResetFactory,
         error: failureForCode(Code.CodeTransportFailure),
       }),
@@ -161,13 +161,13 @@ describe("SecurityMutationDialog", () => {
       timeoutMilliseconds: 60_000,
       phase: "executing",
       previewRequest: new BioEnrollRequest({
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         timeoutMilliseconds: 60_000,
         dryRun: true,
       }),
       previewEnvelope: new BioEnrollEnvelope({
         operationId: "bio-preview-1",
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         kind: OperationKind.OperationBioEnroll,
       }),
     });

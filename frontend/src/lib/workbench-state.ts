@@ -18,15 +18,15 @@ import {
   devices,
   selectedDevice,
   selectedSelector,
-  sessionStatus,
-} from "./features/session/state.js";
+  authenticatorStatus,
+} from "./features/authenticator/state.js";
 import {
   statusBar,
   type ActiveOperation,
   type StatusBarOutcome,
 } from "./features/workbench/state.js";
-import { currentSessionId } from "./session-boundary.js";
-import type { Discovery } from "./session-model.js";
+import { activeSelectionID } from "./authenticator-boundary.js";
+import type { Discovery } from "./authenticator-model.js";
 import { failureMessage, isCanceledFailure } from "./failure.js";
 
 export function applyDiscovery(response: Discovery): boolean {
@@ -39,7 +39,7 @@ export function applyDiscovery(response: Discovery): boolean {
   if (changed) {
     clearWorkbenchScreenCaches();
   }
-  sessionStatus.set(response.session);
+  authenticatorStatus.set(response.authenticator);
   return changed;
 }
 
@@ -49,16 +49,16 @@ export function setStatusOperation(operation: ActiveOperation | null) {
 
 export function beginOperation(label: string) {
   setStatusOperation({
-    sessionId: currentSessionId() || undefined,
+    selectionId: activeSelectionID() || undefined,
     label,
   });
-  sessionStatus.update((state) => state.sessionId ? { ...state, state: "running" } : state);
+  authenticatorStatus.update((state) => state.selectionId ? { ...state, state: "running" } : state);
 }
 
 export function finishOperation() {
   setStatusOperation(null);
   pendingInteraction.set(null);
-  sessionStatus.update((state) => {
+  authenticatorStatus.update((state) => {
     if (state.state !== "running") return state;
     return { ...state, state: "ready" };
   });

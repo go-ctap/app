@@ -34,13 +34,13 @@
     authenticatorInspection,
     selectedDevice,
     selectedSelector,
-    sessionBusy,
+    authenticatorBusy,
   } from "$lib/stores";
 
   import { m } from "../paraglide/messages.js";
 
   let handoffDialogOpen = $derived(Boolean($labState.pendingHandoff));
-  let controlsDisabled = $derived($sessionBusy);
+  let controlsDisabled = $derived($authenticatorBusy);
   let demoValuesDisabled = $derived.by(() => {
     const step = $labState.activeOperation === "make" ? $labState.makeStep : $labState.getStep;
     const editable = step.phase === "editing" || (step.phase === "error" && step.request === null);

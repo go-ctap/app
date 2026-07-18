@@ -22,7 +22,7 @@ pnpm --dir frontend test
 pnpm --dir frontend build
 ```
 
-For changes to session, locking, interaction, or cancellation behavior, also run:
+For changes to authenticator lifecycle, locking, interaction, or cancellation behavior, also run:
 
 ```sh
 go test -race ./... -count=1

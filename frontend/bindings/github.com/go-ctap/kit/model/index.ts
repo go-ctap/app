@@ -36,6 +36,5 @@ export {
     PINInteractionState,
     PINOutput,
     ResetFactoryOutput,
-    SessionInfo,
     VerificationFlow
 } from "./models.js";

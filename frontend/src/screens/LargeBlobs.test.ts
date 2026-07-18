@@ -66,7 +66,7 @@ vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
 function listEnvelope(): LargeBlobListEnvelope {
   return {
     operationId: "large-blob-list-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationListLargeBlobs,
     result: {
       report: {
@@ -125,7 +125,7 @@ function readEnvelope(options: {
   const rawHex = options.rawHex ?? "";
   return {
     operationId: "large-blob-read-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationReadLargeBlob,
     result: {
       report: {
@@ -200,7 +200,7 @@ function mutationPreview(operation: MutationOperation, overrides: Partial<Mutati
 function mutationEnvelope(preview: MutationPreview): LargeBlobMutationEnvelope {
   return {
     operationId: "large-blob-preview-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: preview.operation === MutationOperation.MutationGC
       ? OperationKind.OperationGarbageCollectLargeBlobs
       : preview.operation === MutationOperation.MutationDelete
@@ -222,7 +222,7 @@ describe("LargeBlobs", () => {
     resetAppStateForTest();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
   });
 
@@ -262,7 +262,7 @@ describe("LargeBlobs", () => {
   it("keeps a typed inventory error out of the empty state", () => {
     failLargeBlobsInventoryLoadWithResponse({
       operationId: "large-blob-list-error",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationListLargeBlobs,
       error: failureForCode(Code.CodePINInvalid),
     } as LargeBlobListEnvelope);
@@ -276,7 +276,7 @@ describe("LargeBlobs", () => {
   it("does not turn an unsupported verification flow into unsupported large blobs", () => {
     failLargeBlobsInventoryLoadWithResponse({
       operationId: "verification-flow-error",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationListLargeBlobs,
       error: failureForCode(Code.CodeVerificationFlowUnsupported),
     } as LargeBlobListEnvelope);
@@ -346,7 +346,7 @@ describe("LargeBlobs", () => {
       phase: "ready",
       credentialIDHex: "cafe",
       request: {
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         credentialIdHex: "cafe",
       },
       responseEnvelope: readEnvelope(),
@@ -369,7 +369,7 @@ describe("LargeBlobs", () => {
       phase: "ready",
       credentialIDHex: "beef",
       request: {
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         credentialIdHex: "beef",
       },
       responseEnvelope: readEnvelope({ missingKey: true }),
@@ -391,10 +391,10 @@ describe("LargeBlobs", () => {
       mutableLargeBlobsReadState.set({
         phase: "error",
         credentialIDHex: "cafe",
-        request: { sessionId: "session-1", credentialIdHex: "cafe" },
+        request: { selectionId: "authenticator-1", credentialIdHex: "cafe" },
         responseEnvelope: {
           operationId: "large-blob-read-error",
-          sessionId: "session-1",
+          selectionId: "authenticator-1",
           kind: OperationKind.OperationReadLargeBlob,
           error: failureForCode(code),
         } as LargeBlobReadEnvelope,
@@ -416,7 +416,7 @@ describe("LargeBlobs", () => {
       phase: "ready",
       credentialIDHex: "feed",
       request: {
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         credentialIdHex: "feed",
       },
       responseEnvelope: missingBlobReadEnvelope(),
@@ -448,7 +448,7 @@ describe("LargeBlobs", () => {
       phase: "ready",
       credentialIDHex: "cafe",
       request: {
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         credentialIdHex: "cafe",
       },
       responseEnvelope: envelope,
@@ -481,7 +481,7 @@ describe("LargeBlobs", () => {
       phase: "ready",
       credentialIDHex: "cafe",
       request: {
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         credentialIdHex: "cafe",
       },
       responseEnvelope: envelope,
@@ -512,7 +512,7 @@ describe("LargeBlobs", () => {
     mutableLargeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "cafe",
-      request: { sessionId: "session-1", credentialIdHex: "cafe" },
+      request: { selectionId: "authenticator-1", credentialIdHex: "cafe" },
       responseEnvelope: envelope,
     });
     render(LargeBlobs);
@@ -530,7 +530,7 @@ describe("LargeBlobs", () => {
       credentialIDHex: "cafe",
       draft: { payload: "text view", encoding: "utf8" },
       previewRequest: {
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         credentialIdHex: "cafe",
         payload: "dGV4dCB2aWV3",
         dryRun: true,
@@ -557,7 +557,7 @@ describe("LargeBlobs", () => {
     mutableLargeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "cafe",
-      request: { sessionId: "session-1", credentialIdHex: "cafe" },
+      request: { selectionId: "authenticator-1", credentialIdHex: "cafe" },
       responseEnvelope: envelope,
     });
 
@@ -580,7 +580,7 @@ describe("LargeBlobs", () => {
       kind: "delete",
       phase: "review",
       credentialIDHex: "cafe",
-      previewRequest: { sessionId: "session-1", credentialIdHex: "cafe", dryRun: true },
+      previewRequest: { selectionId: "authenticator-1", credentialIdHex: "cafe", dryRun: true },
       previewEnvelope: envelope,
     });
 
@@ -595,7 +595,7 @@ describe("LargeBlobs", () => {
       kind: "delete",
       phase: "executing",
       credentialIDHex: "cafe",
-      previewRequest: { sessionId: "session-1", credentialIdHex: "cafe", dryRun: true },
+      previewRequest: { selectionId: "authenticator-1", credentialIdHex: "cafe", dryRun: true },
       previewEnvelope: envelope,
     });
     await tick();
@@ -610,7 +610,7 @@ describe("LargeBlobs", () => {
     });
     const envelope = mutationEnvelope(preview);
     const previewRequest = {
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       credentialIdHex: "cafe",
       payload: "aGVsbG8=",
       dryRun: true,
@@ -652,7 +652,7 @@ describe("LargeBlobs", () => {
       failedPhase: "executing",
       responseEnvelope: {
         operationId: "write-error-1",
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         kind: OperationKind.OperationWriteLargeBlob,
         error: failureForCode(Code.CodeTransportFailure),
       } as LargeBlobMutationEnvelope,
@@ -677,7 +677,7 @@ describe("LargeBlobs", () => {
       noop: false,
     });
     const envelope = mutationEnvelope(preview);
-    const previewRequest = { sessionId: "session-1", dryRun: true };
+    const previewRequest = { selectionId: "authenticator-1", dryRun: true };
     const mutation = {
       kind: "cleanup",
       previewRequest,
@@ -702,7 +702,7 @@ describe("LargeBlobs", () => {
       failedPhase: "executing",
       responseEnvelope: {
         operationId: "cleanup-error-1",
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         kind: OperationKind.OperationGarbageCollectLargeBlobs,
         error: failureForCode(Code.CodeTransportFailure),
       } as LargeBlobMutationEnvelope,
@@ -721,7 +721,7 @@ describe("LargeBlobs", () => {
     const previewEnvelope = mutationEnvelope(mutationPreview(MutationOperation.MutationDelete));
     const errorEnvelope = {
       operationId: "large-blob-delete-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationDeleteLargeBlob,
       error: failureForCode(Code.CodeTransportFailure),
     } as LargeBlobMutationEnvelope;
@@ -730,7 +730,7 @@ describe("LargeBlobs", () => {
       phase: "error",
       credentialIDHex: "cafe",
       failedPhase: "executing",
-      previewRequest: { sessionId: "session-1", credentialIdHex: "cafe", dryRun: true },
+      previewRequest: { selectionId: "authenticator-1", credentialIdHex: "cafe", dryRun: true },
       previewEnvelope,
       responseEnvelope: errorEnvelope,
       runtimeError: null,
@@ -764,7 +764,7 @@ describe("LargeBlobs", () => {
       draft: { payload: "hello", encoding: "utf8" },
       failedPhase: "previewing",
       previewRequest: {
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         credentialIdHex: "cafe",
         payload: "aGVsbG8=",
         dryRun: true,

@@ -40,7 +40,7 @@ const token = new DeviceReport({
 });
 
 function selectToken() {
-  seedSelectionForTest(token.fingerprint, token, { state: "ready", sessionId: "session-1" });
+  seedSelectionForTest(token.fingerprint, token, { state: "ready", selectionId: "authenticator-1" });
 }
 
 function stepCard(name: string) {
@@ -347,9 +347,9 @@ describe("WebAuthn Lab screen", () => {
     expect(controllerMocks.previewMakeCredential).not.toHaveBeenCalled();
   });
 
-  it("locks action controls in both operation tabs while the session is running", async () => {
+  it("locks action controls in both operation tabs while the authenticator is running", async () => {
     const user = userEvent.setup();
-    seedSelectionForTest(token.fingerprint, token, { state: "running", sessionId: "session-1" });
+    seedSelectionForTest(token.fingerprint, token, { state: "running", selectionId: "authenticator-1" });
     render(Lab);
 
     const make = stepCard("MakeCredential");
@@ -365,7 +365,7 @@ describe("WebAuthn Lab screen", () => {
     selectToken();
     const current = get(mutableLabState);
     const previewRequest = new MakeCredentialRequest({
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       rp: { id: "example.com", name: "Example" },
       user: { id: "AA==", name: "alice@example.com", displayName: "Alice" },
       clientDataJSON: "e30=",
@@ -374,7 +374,7 @@ describe("WebAuthn Lab screen", () => {
     });
     const previewEnvelope = new MakeCredentialEnvelope({
       operationId: "make-preview-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationMakeCredential,
       result: {
         preview: new MakeCredentialPreview({
@@ -427,7 +427,7 @@ describe("WebAuthn Lab screen", () => {
     selectToken();
     const current = get(mutableLabState);
     const previewRequest = new MakeCredentialRequest({
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       rp: { id: "example.com", name: "Example" },
       user: { id: "AA==", name: "alice@example.com", displayName: "Alice" },
       clientDataJSON: "e30=",
@@ -436,7 +436,7 @@ describe("WebAuthn Lab screen", () => {
     });
     const previewEnvelope = new MakeCredentialEnvelope({
       operationId: "make-preview-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationMakeCredential,
       result: {
         preview: new MakeCredentialPreview({
@@ -465,7 +465,7 @@ describe("WebAuthn Lab screen", () => {
         request: null,
         responseEnvelope: new MakeCredentialEnvelope({
           operationId: "make-preview-error",
-          sessionId: "session-1",
+          selectionId: "authenticator-1",
           kind: OperationKind.OperationMakeCredential,
           error: failureForCode(Code.CodeTransportFailure),
         }),
@@ -492,7 +492,7 @@ describe("WebAuthn Lab screen", () => {
         request: executionRequest,
         responseEnvelope: new MakeCredentialEnvelope({
           operationId: "make-execution-error",
-          sessionId: "session-1",
+          selectionId: "authenticator-1",
           kind: OperationKind.OperationMakeCredential,
           error: failureForCode(Code.CodeTransportFailure),
         }),

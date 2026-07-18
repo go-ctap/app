@@ -20,7 +20,7 @@ function pinPrompt(interactionId = "interaction-1", pinState?: PINInteractionSta
   return new InteractionPrompt({
     interactionId,
     operationId: "operation-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     request: new InteractionRequest({
       kind: InteractionKind.InteractionKindPIN,
       message: "Enter PIN",

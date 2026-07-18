@@ -17,7 +17,7 @@ import {
 } from "./features/lab/state.js";
 import { invalidateLargeBlobsInventory } from "./features/largeblobs/state.js";
 import { invalidatePasskeysInventory } from "./features/passkeys/state.js";
-import { authenticatorInspection } from "./features/session/state.js";
+import { authenticatorInspection } from "./features/authenticator/state.js";
 import {
   buildClientDataJSON,
   buildGetAssertionRequest,
@@ -28,8 +28,8 @@ import {
   validateMakeCredentialDraft,
 } from "./lab-input.js";
 import { runtimeFailureFrom } from "./failure.js";
-import { applyInvalidSessionError, applyOperationSessionBoundary, selectedSessionId } from "./session-boundary.js";
-import { ensureSelectedSessionReady } from "./session-controller.js";
+import { applyInvalidSelectionError, applyOperationAuthenticatorBoundary, currentSelectionID } from "./authenticator-boundary.js";
+import { ensureActiveSelectionReady } from "./authenticator-controller.js";
 import {
   beginOperation,
   setStatusOutcome,
@@ -133,10 +133,10 @@ export async function previewLabMakeCredential(): Promise<boolean> {
   const maxCredBlobLength = inspectResult(get(authenticatorInspection).data)?.info.maxCredBlobLength;
   const validation = validateMakeCredentialDraft(current.makeDraft, maxCredBlobLength);
   if (!validation.valid) return false;
-  if (!await ensureSelectedSessionReady()) return false;
+  if (!await ensureActiveSelectionReady()) return false;
 
   const previewRequest = new MakeCredentialRequest({
-    ...buildMakeCredentialRequest(selectedSessionId(), current.makeDraft),
+    ...buildMakeCredentialRequest(currentSelectionID(), current.makeDraft),
     dryRun: true,
   });
 
@@ -166,7 +166,7 @@ export async function previewLabMakeCredential(): Promise<boolean> {
       }));
     }
     summarizeEnvelope(m.lab_make_credential_preview(), envelope);
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     return !envelope.error;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -182,7 +182,7 @@ export async function previewLabMakeCredential(): Promise<boolean> {
       },
     }));
     summarizeOperationFailure(m.lab_make_credential_preview(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -247,7 +247,7 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
       invalidateLargeBlobsInventory();
     }
     summarizeEnvelope(m.lab_make_credential(), envelope);
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     return !envelope.error;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -263,7 +263,7 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
       },
     }));
     summarizeOperationFailure(m.lab_make_credential(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -328,7 +328,7 @@ async function executeGetAssertion(
       if (request.extensions?.largeBlob?.write !== undefined) invalidateLargeBlobsInventory();
     }
     summarizeEnvelope(m.lab_get_assertion(), envelope);
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     return !envelope.error;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -344,7 +344,7 @@ async function executeGetAssertion(
       },
     }));
     summarizeOperationFailure(m.lab_get_assertion(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -357,10 +357,10 @@ export async function runLabGetAssertion(): Promise<boolean> {
   ) return false;
   const validation = validateGetAssertionDraft(current.getDraft);
   if (!validation.valid) return false;
-  if (!await ensureSelectedSessionReady()) return false;
+  if (!await ensureActiveSelectionReady()) return false;
 
   const previewRequest = new GetAssertionRequest({
-    ...buildGetAssertionRequest(selectedSessionId(), current.getDraft),
+    ...buildGetAssertionRequest(currentSelectionID(), current.getDraft),
     dryRun: true,
   });
   labState.update((state) => ({
@@ -389,7 +389,7 @@ export async function runLabGetAssertion(): Promise<boolean> {
       }));
     }
     summarizeEnvelope(m.lab_get_assertion(), envelope);
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     return !envelope.error;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
@@ -405,7 +405,7 @@ export async function runLabGetAssertion(): Promise<boolean> {
       },
     }));
     summarizeOperationFailure(m.lab_get_assertion(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -418,7 +418,7 @@ export async function confirmLabGetAssertion(): Promise<boolean> {
     && step.previewEnvelope
     && step.request
   )) return false;
-  if (!step.previewEnvelope || !await ensureSelectedSessionReady()) return false;
+  if (!step.previewEnvelope || !await ensureActiveSelectionReady()) return false;
 
   const request = step.phase === "error" && step.request
     ? step.request

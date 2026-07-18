@@ -39,8 +39,29 @@ import * as webauthn$0 from "../model/webauthn/models.js";
 // @ts-ignore: Unused imports
 import * as transport$0 from "../transport/models.js";
 
+export class ActiveSelection {
+    "id": SelectionID;
+
+    /** Creates a new ActiveSelection instance. */
+    constructor($$source: Partial<ActiveSelection> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ActiveSelection instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ActiveSelection {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ActiveSelection($$parsedSource as Partial<ActiveSelection>);
+    }
+}
+
 export class AlwaysUVRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "target": config$0.AlwaysUVTarget;
     "confirmed"?: boolean;
@@ -49,8 +70,8 @@ export class AlwaysUVRequest {
 
     /** Creates a new AlwaysUVRequest instance. */
     constructor($$source: Partial<AlwaysUVRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("target" in $$source)) {
             this["target"] = config$0.AlwaysUVTarget.$zero;
@@ -70,9 +91,9 @@ export class AlwaysUVRequest {
 
 export class AuthenticatorConfigEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.AuthenticatorConfigOutput | null;
 
@@ -81,14 +102,14 @@ export class AuthenticatorConfigEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -113,9 +134,9 @@ export class AuthenticatorConfigEnvelope {
 
 export class BioEnrollEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.BioEnrollOutput | null;
 
@@ -124,14 +145,14 @@ export class BioEnrollEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -155,7 +176,7 @@ export class BioEnrollEnvelope {
 }
 
 export class BioEnrollRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "timeoutMilliseconds"?: number;
     "confirmed"?: boolean;
@@ -164,8 +185,8 @@ export class BioEnrollRequest {
 
     /** Creates a new BioEnrollRequest instance. */
     constructor($$source: Partial<BioEnrollRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
 
         Object.assign(this, $$source);
@@ -182,9 +203,9 @@ export class BioEnrollRequest {
 
 export class BioListEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.BioListOutput | null;
 
@@ -193,14 +214,14 @@ export class BioListEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -225,9 +246,9 @@ export class BioListEnvelope {
 
 export class BioMutationEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.BioMutationOutput | null;
 
@@ -236,14 +257,14 @@ export class BioMutationEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -267,7 +288,7 @@ export class BioMutationEnvelope {
 }
 
 export class BioRemoveRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "templateIdHex": string;
     "confirmed"?: boolean;
@@ -276,8 +297,8 @@ export class BioRemoveRequest {
 
     /** Creates a new BioRemoveRequest instance. */
     constructor($$source: Partial<BioRemoveRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("templateIdHex" in $$source)) {
             this["templateIdHex"] = "";
@@ -296,7 +317,7 @@ export class BioRemoveRequest {
 }
 
 export class BioRenameRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "templateIdHex": string;
     "friendlyName": string;
@@ -306,8 +327,8 @@ export class BioRenameRequest {
 
     /** Creates a new BioRenameRequest instance. */
     constructor($$source: Partial<BioRenameRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("templateIdHex" in $$source)) {
             this["templateIdHex"] = "";
@@ -330,9 +351,9 @@ export class BioRenameRequest {
 
 export class BioSensorEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.BioSensorOutput | null;
 
@@ -341,14 +362,14 @@ export class BioSensorEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -394,9 +415,9 @@ export class CancelOperationRequest {
 
 export class ConfigStatusEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.ConfigStatusOutput | null;
 
@@ -405,14 +426,14 @@ export class ConfigStatusEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -437,9 +458,9 @@ export class ConfigStatusEnvelope {
 
 export class CredentialDeleteEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.CredentialDeleteOutput | null;
 
@@ -448,14 +469,14 @@ export class CredentialDeleteEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -479,22 +500,17 @@ export class CredentialDeleteEnvelope {
 }
 
 export class CredentialDeleteRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "credentialIdHex": string;
-
-    /**
-     * PrepareInventoryRefresh broadens the token plan only enough for a subsequent inventory refresh.
-     */
-    "prepareInventoryRefresh"?: boolean;
     "confirmed"?: boolean;
     "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new CredentialDeleteRequest instance. */
     constructor($$source: Partial<CredentialDeleteRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("credentialIdHex" in $$source)) {
             this["credentialIdHex"] = "";
@@ -513,14 +529,13 @@ export class CredentialDeleteRequest {
 }
 
 export class CredentialListRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
-    "refresh"?: boolean;
 
     /** Creates a new CredentialListRequest instance. */
     constructor($$source: Partial<CredentialListRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
 
         Object.assign(this, $$source);
@@ -537,9 +552,9 @@ export class CredentialListRequest {
 
 export class CredentialStoreStateEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.CredentialStoreStateOutput | null;
 
@@ -548,14 +563,14 @@ export class CredentialStoreStateEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -580,9 +595,9 @@ export class CredentialStoreStateEnvelope {
 
 export class CredentialUpdateEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.CredentialUpdateOutput | null;
 
@@ -591,14 +606,14 @@ export class CredentialUpdateEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -622,14 +637,9 @@ export class CredentialUpdateEnvelope {
 }
 
 export class CredentialUpdateRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "credentialIdHex": string;
-
-    /**
-     * PrepareInventoryRefresh broadens the token plan only enough for a subsequent inventory refresh.
-     */
-    "prepareInventoryRefresh"?: boolean;
     "userIdHex"?: string;
     "name"?: string;
     "displayName"?: string;
@@ -642,8 +652,8 @@ export class CredentialUpdateRequest {
 
     /** Creates a new CredentialUpdateRequest instance. */
     constructor($$source: Partial<CredentialUpdateRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("credentialIdHex" in $$source)) {
             this["credentialIdHex"] = "";
@@ -663,9 +673,9 @@ export class CredentialUpdateRequest {
 
 export class CredentialsEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.CredentialsOutput | null;
 
@@ -674,14 +684,14 @@ export class CredentialsEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -791,7 +801,7 @@ export enum DiscoveryTrigger {
 };
 
 export class EnableLongTouchForResetRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "confirmed"?: boolean;
     "confirmationMessage"?: string;
@@ -799,8 +809,8 @@ export class EnableLongTouchForResetRequest {
 
     /** Creates a new EnableLongTouchForResetRequest instance. */
     constructor($$source: Partial<EnableLongTouchForResetRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
 
         Object.assign(this, $$source);
@@ -817,9 +827,9 @@ export class EnableLongTouchForResetRequest {
 
 export class GetAssertionEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.GetAssertionOutput | null;
 
@@ -828,14 +838,14 @@ export class GetAssertionEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -859,7 +869,7 @@ export class GetAssertionEnvelope {
 }
 
 export class GetAssertionRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "rpID": string;
     "clientDataJSON": string;
@@ -872,8 +882,8 @@ export class GetAssertionRequest {
 
     /** Creates a new GetAssertionRequest instance. */
     constructor($$source: Partial<GetAssertionRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("rpID" in $$source)) {
             this["rpID"] = "";
@@ -912,9 +922,9 @@ export class GetAssertionRequest {
 
 export class InspectEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.InspectOutput | null;
 
@@ -923,14 +933,14 @@ export class InspectEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -982,7 +992,7 @@ export type InteractionID = string;
 export class InteractionPrompt {
     "interactionId": InteractionID;
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "request": model$0.InteractionRequest;
 
     /** Creates a new InteractionPrompt instance. */
@@ -993,8 +1003,8 @@ export class InteractionPrompt {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("request" in $$source)) {
             this["request"] = (new model$0.InteractionRequest());
@@ -1017,21 +1027,16 @@ export class InteractionPrompt {
 }
 
 export class LargeBlobGarbageCollectRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
-
-    /**
-     * PrepareInventoryRefresh broadens the token plan only enough for a subsequent inventory refresh.
-     */
-    "prepareInventoryRefresh"?: boolean;
     "confirmed"?: boolean;
     "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new LargeBlobGarbageCollectRequest instance. */
     constructor($$source: Partial<LargeBlobGarbageCollectRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
 
         Object.assign(this, $$source);
@@ -1048,9 +1053,9 @@ export class LargeBlobGarbageCollectRequest {
 
 export class LargeBlobListEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.LargeBlobListOutput | null;
 
@@ -1059,14 +1064,14 @@ export class LargeBlobListEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -1090,14 +1095,13 @@ export class LargeBlobListEnvelope {
 }
 
 export class LargeBlobListRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
-    "refresh"?: boolean;
 
     /** Creates a new LargeBlobListRequest instance. */
     constructor($$source: Partial<LargeBlobListRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
 
         Object.assign(this, $$source);
@@ -1114,9 +1118,9 @@ export class LargeBlobListRequest {
 
 export class LargeBlobMutationEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.LargeBlobMutationOutput | null;
 
@@ -1125,14 +1129,14 @@ export class LargeBlobMutationEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -1156,23 +1160,18 @@ export class LargeBlobMutationEnvelope {
 }
 
 export class LargeBlobMutationRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "credentialIdHex": string;
     "payload"?: string;
-
-    /**
-     * PrepareInventoryRefresh broadens the token plan only enough for a subsequent inventory refresh.
-     */
-    "prepareInventoryRefresh"?: boolean;
     "confirmed"?: boolean;
     "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new LargeBlobMutationRequest instance. */
     constructor($$source: Partial<LargeBlobMutationRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("credentialIdHex" in $$source)) {
             this["credentialIdHex"] = "";
@@ -1196,9 +1195,9 @@ export class LargeBlobMutationRequest {
 
 export class LargeBlobReadEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.LargeBlobReadOutput | null;
 
@@ -1207,14 +1206,14 @@ export class LargeBlobReadEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -1238,15 +1237,15 @@ export class LargeBlobReadEnvelope {
 }
 
 export class LargeBlobReadRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "credentialIdHex": string;
     "decodeMode"?: largeblobs$0.DecodeMode;
 
     /** Creates a new LargeBlobReadRequest instance. */
     constructor($$source: Partial<LargeBlobReadRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("credentialIdHex" in $$source)) {
             this["credentialIdHex"] = "";
@@ -1336,9 +1335,9 @@ export class MDSLookupRequest {
 
 export class MakeCredentialEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.MakeCredentialOutput | null;
 
@@ -1347,14 +1346,14 @@ export class MakeCredentialEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -1378,7 +1377,7 @@ export class MakeCredentialEnvelope {
 }
 
 export class MakeCredentialRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "rp": credential$0.PublicKeyCredentialRpEntity;
     "user": credential$0.PublicKeyCredentialUserEntity;
@@ -1395,8 +1394,8 @@ export class MakeCredentialRequest {
 
     /** Creates a new MakeCredentialRequest instance. */
     constructor($$source: Partial<MakeCredentialRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("rp" in $$source)) {
             this["rp"] = (new credential$0.PublicKeyCredentialRpEntity());
@@ -1456,7 +1455,7 @@ export class MakeCredentialRequest {
 }
 
 export class MinPINLengthRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "newMinPINLength"?: number | null;
     "minPinLengthRPIDs"?: string[];
@@ -1468,8 +1467,8 @@ export class MinPINLengthRequest {
 
     /** Creates a new MinPINLengthRequest instance. */
     constructor($$source: Partial<MinPINLengthRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
 
         Object.assign(this, $$source);
@@ -1488,33 +1487,15 @@ export class MinPINLengthRequest {
     }
 }
 
-export class OpenSessionRequest {
-    "selector"?: string;
-
-    /** Creates a new OpenSessionRequest instance. */
-    constructor($$source: Partial<OpenSessionRequest> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new OpenSessionRequest instance from a string or object.
-     */
-    static createFrom($$source: any = {}): OpenSessionRequest {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new OpenSessionRequest($$parsedSource as Partial<OpenSessionRequest>);
-    }
-}
-
 export class OperationEventEnvelope {
     "operationId"?: OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "event": model$0.OperationEvent;
 
     /** Creates a new OperationEventEnvelope instance. */
     constructor($$source: Partial<OperationEventEnvelope> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("event" in $$source)) {
             this["event"] = (new model$0.OperationEvent());
@@ -1539,13 +1520,13 @@ export class OperationEventEnvelope {
 export type OperationID = string;
 
 export class OperationRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
 
     /** Creates a new OperationRequest instance. */
     constructor($$source: Partial<OperationRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
 
         Object.assign(this, $$source);
@@ -1561,7 +1542,7 @@ export class OperationRequest {
 }
 
 export class PINChangeRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
 
     /**
@@ -1576,8 +1557,8 @@ export class PINChangeRequest {
 
     /** Creates a new PINChangeRequest instance. */
     constructor($$source: Partial<PINChangeRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("currentPIN" in $$source)) {
             this["currentPIN"] = "";
@@ -1600,9 +1581,9 @@ export class PINChangeRequest {
 
 export class PINEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.PINOutput | null;
 
@@ -1611,14 +1592,14 @@ export class PINEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -1642,7 +1623,7 @@ export class PINEnvelope {
 }
 
 export class PINSetRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
 
     /**
@@ -1656,8 +1637,8 @@ export class PINSetRequest {
 
     /** Creates a new PINSetRequest instance. */
     constructor($$source: Partial<PINSetRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("newPIN" in $$source)) {
             this["newPIN"] = "";
@@ -1695,9 +1676,9 @@ export class ReadLogsRequest {
 
 export class ResetFactoryEnvelope {
     "operationId": OperationID;
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "kind": model$0.OperationKind;
-    "sessionClosed": boolean;
+    "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: model$0.ResetFactoryOutput | null;
 
@@ -1706,14 +1687,14 @@ export class ResetFactoryEnvelope {
         if (!("operationId" in $$source)) {
             this["operationId"] = "";
         }
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
             this["kind"] = model$0.OperationKind.$zero;
         }
-        if (!("sessionClosed" in $$source)) {
-            this["sessionClosed"] = false;
+        if (!("authenticatorClosed" in $$source)) {
+            this["authenticatorClosed"] = false;
         }
 
         Object.assign(this, $$source);
@@ -1737,7 +1718,7 @@ export class ResetFactoryEnvelope {
 }
 
 export class ResetFactoryRequest {
-    "sessionId": SessionID;
+    "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "confirmed"?: boolean;
     "confirmationMessage"?: string;
@@ -1745,8 +1726,8 @@ export class ResetFactoryRequest {
 
     /** Creates a new ResetFactoryRequest instance. */
     constructor($$source: Partial<ResetFactoryRequest> = {}) {
-        if (!("sessionId" in $$source)) {
-            this["sessionId"] = "";
+        if (!("selectionId" in $$source)) {
+            this["selectionId"] = "";
         }
 
         Object.assign(this, $$source);
@@ -1761,43 +1742,45 @@ export class ResetFactoryRequest {
     }
 }
 
-export type SessionID = string;
+export type SelectionID = string;
 
-export class SessionSnapshot {
-    "id": SessionID;
-    "info": model$0.SessionInfo;
-    "running"?: boolean;
-    "openedAt": string;
-    "updatedAt": string;
+export class SelectionRequest {
+    "selector"?: string;
 
-    /** Creates a new SessionSnapshot instance. */
-    constructor($$source: Partial<SessionSnapshot> = {}) {
-        if (!("id" in $$source)) {
-            this["id"] = "";
-        }
-        if (!("info" in $$source)) {
-            this["info"] = (new model$0.SessionInfo());
-        }
-        if (!("openedAt" in $$source)) {
-            this["openedAt"] = "0001-01-01T00:00:00.000Z";
-        }
-        if (!("updatedAt" in $$source)) {
-            this["updatedAt"] = "0001-01-01T00:00:00.000Z";
-        }
+    /** Creates a new SelectionRequest instance. */
+    constructor($$source: Partial<SelectionRequest> = {}) {
 
         Object.assign(this, $$source);
     }
 
     /**
-     * Creates a new SessionSnapshot instance from a string or object.
+     * Creates a new SelectionRequest instance from a string or object.
      */
-    static createFrom($$source: any = {}): SessionSnapshot {
-        const $$createField1_0 = $$createType58;
+    static createFrom($$source: any = {}): SelectionRequest {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("info" in $$parsedSource) {
-            $$parsedSource["info"] = $$createField1_0($$parsedSource["info"]);
+        return new SelectionRequest($$parsedSource as Partial<SelectionRequest>);
+    }
+}
+
+export class SelectionSnapshot {
+    "selection"?: ActiveSelection | null;
+
+    /** Creates a new SelectionSnapshot instance. */
+    constructor($$source: Partial<SelectionSnapshot> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SelectionSnapshot instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SelectionSnapshot {
+        const $$createField0_0 = $$createType59;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("selection" in $$parsedSource) {
+            $$parsedSource["selection"] = $$createField0_0($$parsedSource["selection"]);
         }
-        return new SessionSnapshot($$parsedSource as Partial<SessionSnapshot>);
+        return new SelectionSnapshot($$parsedSource as Partial<SelectionSnapshot>);
     }
 }
 
@@ -1860,4 +1843,5 @@ const $$createType54 = model$0.PINOutput.createFrom;
 const $$createType55 = $Create.Nullable($$createType54);
 const $$createType56 = model$0.ResetFactoryOutput.createFrom;
 const $$createType57 = $Create.Nullable($$createType56);
-const $$createType58 = model$0.SessionInfo.createFrom;
+const $$createType58 = ActiveSelection.createFrom;
+const $$createType59 = $Create.Nullable($$createType58);

@@ -20,8 +20,8 @@ const CODE_MESSAGES: Record<Exclude<Code, Code.$zero>, Message> = {
   [Code.CodeInteractionKindRequired]: m.failure_interaction_kind_required,
   [Code.CodeInteractionHandlerRequired]: m.failure_interaction_handler_required,
   [Code.CodeInteractionCanceled]: m.failure_interaction_canceled,
-  [Code.CodeSessionInvalid]: m.failure_session_invalid,
-  [Code.CodeSessionClosed]: m.failure_session_closed,
+  [Code.CodeSelectionInvalid]: m.failure_selection_invalid,
+  [Code.CodeAuthenticatorClosed]: m.failure_authenticator_closed,
   [Code.CodeServiceClosed]: m.failure_service_closed,
   [Code.CodeDeviceHandleInvalid]: m.failure_device_handle_invalid,
   [Code.CodeDeviceNotFound]: m.failure_device_not_found,
@@ -158,8 +158,8 @@ export function isCanceledFailure(failure: Failure | null | undefined): boolean 
   return failure?.category === Category.CategoryCanceled;
 }
 
-export function isInvalidSessionFailure(failure: Failure | null | undefined): boolean {
-  return failure?.category === Category.CategoryInvalidSession;
+export function isInvalidSelectionFailure(failure: Failure | null | undefined): boolean {
+  return failure?.category === Category.CategoryInvalidSelection;
 }
 
 export function isUnsupportedFailure(failure: Failure | null | undefined): boolean {

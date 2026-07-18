@@ -2,7 +2,7 @@ import { get } from "svelte/store";
 
 import type { OperationEventEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
 
-import { sessionStatus } from "./features/session/state.js";
+import { authenticatorStatus } from "./features/authenticator/state.js";
 import { statusBar } from "./features/workbench/state.js";
 import { setStatusOperation } from "./workbench-state.js";
 
@@ -17,15 +17,15 @@ export function handleOperationProgress(data: OperationEventEnvelope) {
   setStatusOperation({
     ...(canMerge ? currentOperation : {}),
     operationId: data.operationId,
-    sessionId: data.sessionId,
+    selectionId: data.selectionId,
     stage: data.event.stage,
     completed: data.event.completed,
     total: data.event.total,
     sampleStatus: data.event.sampleStatus,
   });
-  sessionStatus.update((session) => (
-    session.sessionId === data.sessionId && session.state !== "error"
-      ? { ...session, state: "running" }
-      : session
+  authenticatorStatus.update((authenticator) => (
+    authenticator.selectionId === data.selectionId && authenticator.state !== "error"
+      ? { ...authenticator, state: "running" }
+      : authenticator
   ));
 }

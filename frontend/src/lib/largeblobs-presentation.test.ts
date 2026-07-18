@@ -21,9 +21,9 @@ import {
 function envelope(): LargeBlobListEnvelope {
   return {
     operationId: "list-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationListLargeBlobs,
-    sessionClosed: false,
+    authenticatorClosed: false,
     result: {
       report: {
         device: {
@@ -106,8 +106,8 @@ describe("large blob presentation", () => {
       ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionBusy: false,
-      sessionReady: true,
+      authenticatorBusy: false,
+      authenticatorReady: true,
       inventoryState: state(envelope()),
       selectedCredentialID: "zero",
     });
@@ -134,8 +134,8 @@ describe("large blob presentation", () => {
       ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionBusy: false,
-      sessionReady: true,
+      authenticatorBusy: false,
+      authenticatorReady: true,
       inventoryState: state(envelope()),
       selectedCredentialID: "no-key",
     });
@@ -149,8 +149,8 @@ describe("large blob presentation", () => {
       ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionBusy: false,
-      sessionReady: true,
+      authenticatorBusy: false,
+      authenticatorReady: true,
       inventoryState: state(envelope()),
       selectedCredentialID: "missing",
     });
@@ -166,7 +166,7 @@ describe("large blob presentation", () => {
       phase: "error",
       responseEnvelope: {
         operationId: "failed-list",
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         kind: OperationKind.OperationListLargeBlobs,
         error: failureForCode(Code.CodeTransportFailure),
       } as LargeBlobListEnvelope,
@@ -175,8 +175,8 @@ describe("large blob presentation", () => {
       ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionBusy: false,
-      sessionReady: true,
+      authenticatorBusy: false,
+      authenticatorReady: true,
       inventoryState: stale,
       selectedCredentialID: "zero",
     });

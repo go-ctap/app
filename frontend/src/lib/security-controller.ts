@@ -64,12 +64,12 @@ import {
   type SecurityMutationValidationError,
   type SecurityPINPolicyDraft,
 } from "./features/security/state.js";
-import { selectedSelector, sessionStatus } from "./features/session/state.js";
+import { selectedSelector, authenticatorStatus } from "./features/authenticator/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { failureMessage, internalFailure, runtimeFailureFrom } from "./failure.js";
 import { invalidateOverviewCache } from "./overview-controller.js";
-import { applyInvalidSessionError, applyOperationSessionBoundary, selectedSessionId } from "./session-boundary.js";
-import { rediscoverAfterFactoryReset } from "./session-controller.js";
+import { applyInvalidSelectionError, applyOperationAuthenticatorBoundary, currentSelectionID } from "./authenticator-boundary.js";
+import { rediscoverAfterFactoryReset } from "./authenticator-controller.js";
 import {
   beginOperation,
   setStatusOutcome,
@@ -90,15 +90,15 @@ function currentStatusReport(): StatusReport | null {
   return configStatusReport(get(securityStatus).lastSuccessfulEnvelope);
 }
 
-function sessionIdForMutation(): string | null {
-  return get(sessionStatus).sessionId ?? null;
+function selectionIdForMutation(): string | null {
+  return get(authenticatorStatus).selectionId ?? null;
 }
 
 function canAutoLoadSecurity() {
-  const session = get(sessionStatus);
+  const authenticator = get(authenticatorStatus);
   return get(activeScreen) === "security"
-    && Boolean(get(selectedSelector).trim() && session.sessionId)
-    && session.state === "ready"
+    && Boolean(get(selectedSelector).trim() && authenticator.selectionId)
+    && authenticator.state === "ready"
     && get(securityStatus).phase === "idle";
 }
 
@@ -113,8 +113,8 @@ export async function loadSecurityStatus(): Promise<boolean> {
   beginSecurityStatusLoad();
   try {
     beginOperation(m.security_status_operation());
-    const sessionId = selectedSessionId();
-    const envelope = await api.configStatus({ sessionId });
+    const selectionId = currentSelectionID();
+    const envelope = await api.configStatus({ selectionId });
     const report = configStatusReport(envelope);
 
     if (envelope.error) {
@@ -129,11 +129,11 @@ export async function loadSecurityStatus(): Promise<boolean> {
     }
 
     summarizeEnvelope(m.security_status_operation(), envelope);
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     if (envelope.error || !report) return false;
 
     if (report.bio.supported) {
-      await loadSecurityBioSensor(sessionId);
+      await loadSecurityBioSensor(selectionId);
     } else {
       securitySensor.set(emptySecurityResourceState());
     }
@@ -142,12 +142,12 @@ export async function loadSecurityStatus(): Promise<boolean> {
     const runtimeError = runtimeFailureFrom(error);
     failSecurityStatusLoadAtRuntime(runtimeError);
     summarizeOperationFailure(m.security_status_operation(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
 
-export async function loadSecurityBioSensor(sessionId = ""): Promise<boolean> {
+export async function loadSecurityBioSensor(selectionId = ""): Promise<boolean> {
   const report = currentStatusReport();
   if (!report?.bio.supported) {
     securitySensor.set(emptySecurityResourceState());
@@ -157,7 +157,7 @@ export async function loadSecurityBioSensor(sessionId = ""): Promise<boolean> {
   beginSecurityBioSensorLoad();
   try {
     beginOperation(m.security_bio_sensor_operation());
-    const envelope = await api.bioSensorInfo({ sessionId: sessionId || selectedSessionId() });
+    const envelope = await api.bioSensorInfo({ selectionId: selectionId || currentSelectionID() });
     const sensor = bioSensorReport(envelope);
     if (envelope.error) {
       failSecurityBioSensorLoadWithResponse(envelope);
@@ -171,13 +171,13 @@ export async function loadSecurityBioSensor(sessionId = ""): Promise<boolean> {
     }
 
     summarizeEnvelope(m.security_bio_sensor_operation(), envelope);
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     return !envelope.error && Boolean(sensor);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     failSecurityBioSensorLoadAtRuntime(runtimeError);
     summarizeOperationFailure(m.security_bio_sensor_operation(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -193,7 +193,7 @@ export async function loadSecurityEnrollments(): Promise<boolean> {
   beginSecurityBioListLoad();
   try {
     beginOperation(m.security_bio_list_operation());
-    const envelope = await api.bioList({ sessionId: selectedSessionId() });
+    const envelope = await api.bioList({ selectionId: currentSelectionID() });
     const list = bioListReport(envelope);
     if (envelope.error) {
       failSecurityBioListLoadWithResponse(envelope);
@@ -207,13 +207,13 @@ export async function loadSecurityEnrollments(): Promise<boolean> {
     }
 
     summarizeEnvelope(m.security_bio_list_operation(), envelope);
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     return !envelope.error && Boolean(list);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     failSecurityBioListLoadAtRuntime(runtimeError);
     summarizeOperationFailure(m.security_bio_list_operation(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -231,7 +231,7 @@ async function runPINOperation(
     } else {
       summarizeOperationContractFailure(label, internalFailure());
     }
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     if (envelope.error || !result) return false;
 
     toast.success(m.security_configuration_updated());
@@ -240,7 +240,7 @@ async function runPINOperation(
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     summarizeOperationFailure(label, runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -256,7 +256,7 @@ export async function setAuthenticatorPIN(input: PINSetInput): Promise<boolean> 
   try {
     return await runPINOperation(label, () => {
       const request: PINSetRequest = {
-        sessionId: selectedSessionId(),
+        selectionId: currentSelectionID(),
         newPIN: input.newPIN,
         confirmed: false,
         confirmationMessage: label,
@@ -279,7 +279,7 @@ export async function changeAuthenticatorPIN(input: PINChangeInput): Promise<boo
   try {
     return await runPINOperation(label, () => {
       const request: PINChangeRequest = {
-        sessionId: selectedSessionId(),
+        selectionId: currentSelectionID(),
         currentPIN: input.currentPIN,
         newPIN: input.newPIN,
         confirmed: false,
@@ -363,7 +363,7 @@ function summarizePreviewEnvelope(
   } else {
     summarizeOperationContractFailure(label, internalFailure());
   }
-  applyOperationSessionBoundary(envelope);
+  applyOperationAuthenticatorBoundary(envelope);
 }
 
 function summarizeExecuteEnvelope(
@@ -376,7 +376,7 @@ function summarizeExecuteEnvelope(
   } else {
     summarizeOperationContractFailure(label, internalFailure());
   }
-  applyOperationSessionBoundary(envelope);
+  applyOperationAuthenticatorBoundary(envelope);
 }
 
 function friendlyNameTooLong(value: string) {
@@ -402,9 +402,9 @@ export async function beginAlwaysUVChange(target: AlwaysUVTarget): Promise<boole
   }
 
   const label = m.security_always_uv_preview_operation();
-  const sessionId = sessionIdForMutation();
-  if (!sessionId) return false;
-  const request: AlwaysUVRequest = { sessionId, target, dryRun: true };
+  const selectionId = selectionIdForMutation();
+  if (!selectionId) return false;
+  const request: AlwaysUVRequest = { selectionId, target, dryRun: true };
   securityMutation.set({ kind: "alwaysUv", phase: "previewing", target, previewRequest: request });
   try {
     beginOperation(label);
@@ -447,7 +447,7 @@ export async function beginAlwaysUVChange(target: AlwaysUVTarget): Promise<boole
       validationError: null,
     });
     summarizeOperationFailure(label, runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -457,9 +457,9 @@ export async function beginLongTouchForReset(): Promise<boolean> {
   if (!capability?.supported || capability.configured !== false) return false;
 
   const label = m.security_long_touch_preview_operation();
-  const sessionId = sessionIdForMutation();
-  if (!sessionId) return false;
-  const request: EnableLongTouchForResetRequest = { sessionId, dryRun: true };
+  const selectionId = selectionIdForMutation();
+  if (!selectionId) return false;
+  const request: EnableLongTouchForResetRequest = { selectionId, dryRun: true };
   securityMutation.set({ kind: "longTouch", phase: "previewing", previewRequest: request });
   try {
     beginOperation(label);
@@ -496,7 +496,7 @@ export async function beginLongTouchForReset(): Promise<boolean> {
       validationError: null,
     });
     summarizeOperationFailure(label, runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -510,10 +510,10 @@ export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promi
 
   const normalized = normalizedPINPolicyDraft(draft);
   const label = m.security_pin_policy_preview_operation();
-  const sessionId = sessionIdForMutation();
-  if (!sessionId) return false;
+  const selectionId = selectionIdForMutation();
+  if (!selectionId) return false;
   const request: MinPINLengthRequest = {
-    sessionId,
+    selectionId,
     ...(normalized.minPINLength === null ? {} : { newMinPINLength: normalized.minPINLength }),
     minPinLengthRPIDs: normalized.rpIDs,
     forceChangePin: normalized.forceChangePin,
@@ -562,7 +562,7 @@ export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promi
       validationError: null,
     });
     summarizeOperationFailure(label, runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -570,10 +570,10 @@ export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promi
 export async function beginBioEnrollment(): Promise<boolean> {
   if (!currentStatusReport()?.bio.supported) return false;
   const label = m.security_bio_enroll_preview_operation();
-  const sessionId = sessionIdForMutation();
-  if (!sessionId) return false;
+  const selectionId = selectionIdForMutation();
+  if (!selectionId) return false;
   const request: BioEnrollRequest = {
-    sessionId,
+    selectionId,
     timeoutMilliseconds: BIO_ENROLL_TIMEOUT_MILLISECONDS,
     dryRun: true,
   };
@@ -630,7 +630,7 @@ export async function beginBioEnrollment(): Promise<boolean> {
       validationError: null,
     });
     summarizeOperationFailure(label, runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -647,10 +647,10 @@ export async function beginBioRename(templateIDHex: string, friendlyName: string
     return false;
   }
   const label = m.security_bio_rename_preview_operation();
-  const sessionId = sessionIdForMutation();
-  if (!sessionId) return false;
+  const selectionId = selectionIdForMutation();
+  if (!selectionId) return false;
   const request: BioRenameRequest = {
-    sessionId,
+    selectionId,
     templateIdHex: templateIDHex,
     friendlyName,
     dryRun: true,
@@ -699,16 +699,16 @@ export async function beginBioRename(templateIDHex: string, friendlyName: string
       validationError: null,
     });
     summarizeOperationFailure(label, runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
 
 export async function beginBioRemove(templateIDHex: string): Promise<boolean> {
   const label = m.security_bio_remove_preview_operation();
-  const sessionId = sessionIdForMutation();
-  if (!sessionId) return false;
-  const request: BioRemoveRequest = { sessionId, templateIdHex: templateIDHex, dryRun: true };
+  const selectionId = selectionIdForMutation();
+  if (!selectionId) return false;
+  const request: BioRemoveRequest = { selectionId, templateIdHex: templateIDHex, dryRun: true };
   securityMutation.set({ kind: "bioRemove", phase: "previewing", templateIDHex, previewRequest: request });
   try {
     beginOperation(label);
@@ -751,16 +751,16 @@ export async function beginBioRemove(templateIDHex: string): Promise<boolean> {
       validationError: null,
     });
     summarizeOperationFailure(label, runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
 
 export async function beginFactoryReset(): Promise<boolean> {
   const label = m.security_reset_preview_operation();
-  const sessionId = sessionIdForMutation();
-  if (!sessionId) return false;
-  const request: ResetFactoryRequest = { sessionId, dryRun: true };
+  const selectionId = selectionIdForMutation();
+  if (!selectionId) return false;
+  const request: ResetFactoryRequest = { selectionId, dryRun: true };
   securityMutation.set({ kind: "reset", phase: "previewing", previewRequest: request });
   try {
     beginOperation(label);
@@ -801,7 +801,7 @@ export async function beginFactoryReset(): Promise<boolean> {
       validationError: null,
     });
     summarizeOperationFailure(label, runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -959,7 +959,7 @@ export async function confirmSecurityMutation(): Promise<boolean> {
     const runtimeError = runtimeFailureFrom(error);
     securityMutation.set(failedExecutingMutation(current, null, runtimeError, "runtime-error"));
     summarizeOperationFailure(label, runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }

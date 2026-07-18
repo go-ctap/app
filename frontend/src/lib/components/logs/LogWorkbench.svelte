@@ -45,7 +45,7 @@
   const layerOptions = [
     { value: "all", label: m.logs_all_layers() },
     { value: LogLayer.LogLayerService, label: m.logs_layer_service() },
-    { value: LogLayer.LogLayerSession, label: m.logs_layer_session() },
+    { value: LogLayer.LogLayerSelection, label: m.logs_layer_selection() },
     { value: LogLayer.LogLayerOperation, label: m.logs_layer_operation() },
     { value: LogLayer.LogLayerInteraction, label: m.logs_layer_interaction() },
     { value: LogLayer.LogLayerCTAP, label: m.logs_layer_ctap() },

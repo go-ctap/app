@@ -13,10 +13,10 @@ import {
   overviewMDS,
   readyLoadState,
 } from "./features/overview/state.js";
-import { authenticatorInspection, selectedSelector, sessionStatus } from "./features/session/state.js";
+import { authenticatorInspection, selectedSelector, authenticatorStatus } from "./features/authenticator/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { failureMessage, runtimeFailureFrom } from "./failure.js";
-import { applyInvalidSessionError, applyOperationSessionBoundary, selectedSessionId } from "./session-boundary.js";
+import { applyInvalidSelectionError, applyOperationAuthenticatorBoundary, currentSelectionID } from "./authenticator-boundary.js";
 import { beginOperation, setStatusOutcome, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
 
 function reportDegradedOverviewLoad(label: string, error: Failure) {
@@ -43,7 +43,7 @@ function canAutoLoadOverview() {
   const screen = get(activeScreen);
   const inspectionState = get(authenticatorInspection).state;
   const overviewDetailsIdle = get(overviewBioSensor).state === "idle" && get(overviewMDS).state === "idle";
-  return Boolean(selector && get(sessionStatus).sessionId) && (
+  return Boolean(selector && get(authenticatorStatus).selectionId) && (
     screen === "lab" && inspectionState === "idle"
     || screen === "overview" && (
       inspectionState === "idle"
@@ -56,17 +56,17 @@ export async function maybeLoadOverview() {
   if (!canAutoLoadOverview()) return;
   const inspection = get(authenticatorInspection);
   if (get(activeScreen) === "overview" && inspection.state === "ready" && inspection.data) {
-    const biometricFailure = await loadOverviewDetails(inspection.data, selectedSessionId());
+    const biometricFailure = await loadOverviewDetails(inspection.data, currentSelectionID());
     if (biometricFailure) {
       reportDegradedOverviewLoad(m.biometrics(), biometricFailure);
-      applyInvalidSessionError(biometricFailure);
+      applyInvalidSelectionError(biometricFailure);
     }
     return;
   }
   await loadOverview();
 }
 
-async function loadOverviewDetails(envelope: InspectEnvelope, sessionId: string) {
+async function loadOverviewDetails(envelope: InspectEnvelope, selectionId: string) {
   const aaguid = envelope.result!.result.info.aaguid.trim();
   if (aaguid) {
     void loadOverviewMDS(aaguid);
@@ -75,7 +75,7 @@ async function loadOverviewDetails(envelope: InspectEnvelope, sessionId: string)
 
   overviewBioSensor.set(loadingLoadState());
   try {
-    const bioEnvelope = await api.bioSensorInfo({ sessionId });
+    const bioEnvelope = await api.bioSensorInfo({ selectionId });
     if (bioEnvelope.error) {
       overviewBioSensor.set(errorLoadState(bioEnvelope.error, bioEnvelope));
       return bioEnvelope.error;
@@ -103,8 +103,8 @@ export async function loadOverview() {
   overviewMDS.set(idleLoadState());
   try {
     beginOperation(m.overview_inspection());
-    const sessionId = selectedSessionId();
-    const envelope = await api.inspect({ sessionId });
+    const selectionId = currentSelectionID();
+    const envelope = await api.inspect({ selectionId });
     authenticatorInspection.set(
       envelope.error
         ? errorLoadState(envelope.error, envelope)
@@ -112,20 +112,20 @@ export async function loadOverview() {
     );
     let biometricFailure: Failure | null = null;
     if (!envelope.error && get(activeScreen) === "overview") {
-      biometricFailure = await loadOverviewDetails(envelope, sessionId);
+      biometricFailure = await loadOverviewDetails(envelope, selectionId);
     }
     summarizeEnvelope(m.overview_inspection(), envelope);
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     if (biometricFailure) {
       reportDegradedOverviewLoad(m.biometrics(), biometricFailure);
-      applyInvalidSessionError(biometricFailure);
+      applyInvalidSelectionError(biometricFailure);
     }
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     authenticatorInspection.set(errorLoadState(runtimeError));
     overviewBioSensor.set(idleLoadState());
     summarizeOperationFailure(m.overview_inspection(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
   }
 }
 

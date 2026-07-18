@@ -8,7 +8,7 @@ import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import { setAppLocale } from "./i18n.js";
 import { failureForCode } from "./test-failure.js";
 import { buildShellStatusPresentation, buildSidebarPresentation } from "./shell-presentation.js";
-import type { SessionStatus } from "./session-model.js";
+import type { AuthenticatorStatus } from "./authenticator-model.js";
 import type { StatusBarState } from "./stores.js";
 
 const token: DeviceReport = {
@@ -22,10 +22,10 @@ const token: DeviceReport = {
   product: "Test key",
 };
 
-function session(state: SessionStatus["state"]): SessionStatus {
+function authenticator(state: AuthenticatorStatus["state"]): AuthenticatorStatus {
   return {
     state,
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
   };
 }
 
@@ -39,7 +39,7 @@ describe("shell status presentation", () => {
   it("prioritizes active operation progress and exposes cancel after an operation id arrives", () => {
     const presentation = buildShellStatusPresentation({
       selectedDevice: token,
-      sessionStatus: session("error"),
+      authenticatorStatus: authenticator("error"),
       statusBar: statusBar({
         activeOperation: {
           operationId: "operation-1",
@@ -65,7 +65,7 @@ describe("shell status presentation", () => {
   it("keeps known zero progress determinate and shows its count", () => {
     const presentation = buildShellStatusPresentation({
       selectedDevice: token,
-      sessionStatus: session("running"),
+      authenticatorStatus: authenticator("running"),
       statusBar: statusBar({
         activeOperation: { stage: OperationStage.OperationStageEnumeratingRPs, completed: 0, total: 0 },
       }),
@@ -77,7 +77,7 @@ describe("shell status presentation", () => {
   it("uses indeterminate operation state until both progress values are known", () => {
     const presentation = buildShellStatusPresentation({
       selectedDevice: token,
-      sessionStatus: session("running"),
+      authenticatorStatus: authenticator("running"),
       statusBar: statusBar({
         activeOperation: { stage: OperationStage.OperationStageEnumeratingRPs },
       }),
@@ -89,20 +89,20 @@ describe("shell status presentation", () => {
     expect(presentation.cancel).toBeNull();
   });
 
-  it("prioritizes opening and error sessions over the last outcome", () => {
+  it("prioritizes opening and authenticator errors over the last outcome", () => {
     const outcome = statusBar({ lastOutcome: { tone: "success", title: "Old success" } });
-    const opening = buildShellStatusPresentation({ selectedDevice: token, sessionStatus: session("opening"), statusBar: outcome });
+    const opening = buildShellStatusPresentation({ selectedDevice: token, authenticatorStatus: authenticator("opening"), statusBar: outcome });
     const errored = buildShellStatusPresentation({
       selectedDevice: token,
-      sessionStatus: { ...session("error"), error: failureForCode(Code.CodeSessionInvalid) },
+      authenticatorStatus: { ...authenticator("error"), error: failureForCode(Code.CodeSelectionInvalid) },
       statusBar: outcome,
     });
 
-    expect(opening).toMatchObject({ source: "session", title: "Opening", busy: true });
+    expect(opening).toMatchObject({ source: "authenticator", title: "Opening", busy: true });
     expect(errored).toMatchObject({
-      source: "session",
+      source: "authenticator",
       title: "Error",
-      detail: "The authenticator session is invalid.",
+    detail: "The authenticator selection is invalid.",
       busy: false,
       tone: "error",
     });

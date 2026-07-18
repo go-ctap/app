@@ -33,7 +33,7 @@
 		pendingInteraction,
 		selectedDevice,
 		selectedSelector,
-		sessionStatus,
+		authenticatorStatus,
 		statusBar,
 		type ActiveScreen
 	} from "$lib/stores";
@@ -58,10 +58,10 @@
 		activeScreen: $activeScreen,
 		devices: $devices,
 		selectedSelector: $selectedSelector,
-		busy: refreshing || $sessionStatus.state === "opening",
+		busy: refreshing || $authenticatorStatus.state === "opening",
 	}));
 	let shellStatusPresentation = $derived(buildShellStatusPresentation({
-		sessionStatus: $sessionStatus,
+		authenticatorStatus: $authenticatorStatus,
 		selectedDevice: $selectedDevice,
 		statusBar: $statusBar,
 	}));

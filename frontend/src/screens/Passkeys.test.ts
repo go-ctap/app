@@ -40,7 +40,7 @@ vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
 function credentialsEnvelope(): CredentialsEnvelope {
   return {
     operationId: "operation-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationListCredentials,
     result: {
       report: {
@@ -138,7 +138,7 @@ describe("Passkeys", () => {
   it("shows the not-loaded state before inventory is available", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
 
     render(Passkeys);
@@ -151,7 +151,7 @@ describe("Passkeys", () => {
   it("disables credential-store state without perCredMgmtRO", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
@@ -164,11 +164,11 @@ describe("Passkeys", () => {
   it("keeps a typed inventory error out of the empty state", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     failPasskeysInventoryLoadWithResponse({
       operationId: "operation-error",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationListCredentials,
       error: failureForCode(Code.CodePINInvalid),
     } as CredentialsEnvelope);
@@ -182,11 +182,11 @@ describe("Passkeys", () => {
   it("does not turn an unsupported verification flow into unsupported credential management", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     failPasskeysInventoryLoadWithResponse({
       operationId: "verification-flow-error",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationListCredentials,
       error: failureForCode(Code.CodeVerificationFlowUnsupported),
     } as CredentialsEnvelope);
@@ -202,7 +202,7 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
@@ -234,7 +234,7 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
@@ -257,7 +257,7 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
@@ -273,7 +273,7 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
@@ -295,7 +295,7 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
@@ -311,7 +311,7 @@ describe("Passkeys", () => {
   it("presents inventory as one fact and capacity as remaining space", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
@@ -330,7 +330,7 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(mixedRelyingPartyEnvelope());
 
@@ -370,7 +370,7 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
@@ -385,7 +385,7 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
@@ -403,7 +403,7 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
@@ -430,7 +430,7 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
     failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeTransportFailure));
@@ -454,7 +454,7 @@ describe("Passkeys", () => {
     unsupported.result!.report.support.credentialManagement = false;
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(unsupported);
 
@@ -472,7 +472,7 @@ describe("Passkeys", () => {
     empty.result!.report.summary.totalCredentials = 0;
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(empty);
 
@@ -486,12 +486,12 @@ describe("Passkeys", () => {
     const envelope = credentialsEnvelope();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(envelope);
     const previewEnvelope = {
       operationId: "update-preview-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationUpdateCredentialUser,
       result: {
         preview: {
@@ -509,7 +509,7 @@ describe("Passkeys", () => {
       },
     } as CredentialUpdateEnvelope;
     const previewRequest = {
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       credentialIdHex: "cafe",
       name: "updated@example.com",
       nameProvided: true,
@@ -558,7 +558,7 @@ describe("Passkeys", () => {
       failedPhase: "executing",
       responseEnvelope: {
         operationId: "update-error-1",
-        sessionId: "session-1",
+        selectionId: "authenticator-1",
         kind: OperationKind.OperationUpdateCredentialUser,
         error: failureForCode(Code.CodeTransportFailure),
       } as CredentialUpdateEnvelope,
@@ -576,14 +576,14 @@ describe("Passkeys", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
     const previewEnvelope = {
       operationId: "delete-preview-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationDeleteCredential,
-      sessionClosed: false,
+      authenticatorClosed: false,
       result: {
         preview: {
           credentialIDHex: "cafe",
@@ -605,7 +605,7 @@ describe("Passkeys", () => {
       kind: "delete",
       phase: "review",
       credentialIDHex: "cafe",
-      previewRequest: { sessionId: "session-1", credentialIdHex: "cafe", dryRun: true },
+      previewRequest: { selectionId: "authenticator-1", credentialIdHex: "cafe", dryRun: true },
       previewEnvelope,
     });
 
@@ -623,14 +623,14 @@ describe("Passkeys", () => {
   it("closes delete confirmation during execution and restores it after any error", async () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
     const previewEnvelope = {
       operationId: "delete-preview-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationDeleteCredential,
-      sessionClosed: false,
+      authenticatorClosed: false,
       result: {
         preview: {
           credentialIDHex: "cafe",
@@ -646,15 +646,15 @@ describe("Passkeys", () => {
     } as CredentialDeleteEnvelope;
     const errorEnvelope = {
       operationId: "delete-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationDeleteCredential,
-      sessionClosed: false,
+      authenticatorClosed: false,
       error: failureForCode(Code.CodeTransportFailure),
     } as CredentialDeleteEnvelope;
     const mutation = {
       kind: "delete",
       credentialIDHex: "cafe",
-      previewRequest: { sessionId: "session-1", credentialIdHex: "cafe", dryRun: true },
+      previewRequest: { selectionId: "authenticator-1", credentialIdHex: "cafe", dryRun: true },
       previewEnvelope,
     } as const;
     mutablePasskeysMutation.set({ ...mutation, phase: "review" });
@@ -687,14 +687,14 @@ describe("Passkeys", () => {
   it("shows a regular error dialog instead of delete confirmation when dry-run fails without a preview", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
     const errorEnvelope = {
       operationId: "delete-preview-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationDeleteCredential,
-      sessionClosed: false,
+      authenticatorClosed: false,
       error: failureForCode(Code.CodeTransportFailure),
     } as CredentialDeleteEnvelope;
     mutablePasskeysMutation.set({
@@ -702,7 +702,7 @@ describe("Passkeys", () => {
       phase: "error",
       credentialIDHex: "cafe",
       failedPhase: "previewing",
-      previewRequest: { sessionId: "session-1", credentialIdHex: "cafe", dryRun: true },
+      previewRequest: { selectionId: "authenticator-1", credentialIdHex: "cafe", dryRun: true },
       previewEnvelope: null,
       responseEnvelope: errorEnvelope,
       runtimeError: null,

@@ -12,7 +12,7 @@ import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
 import { errorLoadState } from "$lib/features/overview/state";
-import { authenticatorInspection } from "$lib/features/session/state";
+import { authenticatorInspection } from "$lib/features/authenticator/state";
 import { failureForCode } from "$lib/test-failure";
 import {
   resetAppStateForTest,
@@ -48,7 +48,7 @@ const device = new DeviceReport({
 function inspectEnvelope(operationId: string, aaguid: string, withFinding = false) {
   return new InspectEnvelope({
     operationId,
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationInspect,
     result: new InspectOutput({
       result: new InspectResult({
@@ -92,11 +92,11 @@ describe("Overview", () => {
   it("keeps a typed Inspect error out of the empty state", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedOverviewEnvelopeForTest(new InspectEnvelope({
       operationId: "inspect-error",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationInspect,
       error: failureForCode(Code.CodePINInvalid),
     }));
@@ -111,7 +111,7 @@ describe("Overview", () => {
   it("keeps a thrown Wails failure out of the empty state", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     authenticatorInspection.set(errorLoadState(failureForCode(Code.CodeTransportFailure)));
 
@@ -126,7 +126,7 @@ describe("Overview", () => {
     const aaguid = "00000000-0000-0000-0000-000000000001";
     seedSelectionForTest("token-1", device, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedOverviewEnvelopeForTest(inspectEnvelope("inspect-1", aaguid));
 
@@ -144,7 +144,7 @@ describe("Overview", () => {
   it("keeps degraded Overview errors out of the page", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedOverviewMDSForTest(null, failureForCode(Code.CodeMDSFetchFailed));
 
@@ -158,7 +158,7 @@ describe("Overview", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", device, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedOverviewEnvelopeForTest(inspectEnvelope("inspect-1", "00000000-0000-0000-0000-000000000001"));
 
@@ -186,7 +186,7 @@ describe("Overview", () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", device, {
       state: "ready",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
     });
     seedOverviewEnvelopeForTest(inspectEnvelope("inspect-1", "00000000-0000-0000-0000-000000000001", true));
 

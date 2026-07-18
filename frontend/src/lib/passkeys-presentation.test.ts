@@ -14,7 +14,7 @@ function envelope(groups: NonNullable<CredentialsEnvelope["result"]>["report"]["
   const totalCredentials = groups.reduce((count, group) => count + (group.credentials?.length ?? 0), 0);
   return {
     operationId: "operation-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationListCredentials,
     result: {
       report: {
@@ -65,8 +65,8 @@ describe("buildPasskeysPresentation", () => {
       ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionBusy: false,
-      sessionReady: true,
+      authenticatorBusy: false,
+      authenticatorReady: true,
       inventoryState: inventoryState(credentials),
     });
 
@@ -96,8 +96,8 @@ describe("buildPasskeysPresentation", () => {
       ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionBusy: false,
-      sessionReady: true,
+      authenticatorBusy: false,
+      authenticatorReady: true,
       inventoryState: inventoryState(credentials),
       selectedCredentialID: "cafe",
     });
@@ -145,8 +145,8 @@ describe("buildPasskeysPresentation", () => {
         ...defaultView,
         selectedSelector: "token-1",
         selectedDevice: null,
-        sessionBusy: false,
-        sessionReady: true,
+        authenticatorBusy: false,
+        authenticatorReady: true,
         inventoryState: inventoryState(credentials),
         query,
         statusFilter: "cred-protect-3",
@@ -158,8 +158,8 @@ describe("buildPasskeysPresentation", () => {
       ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionBusy: false,
-      sessionReady: true,
+      authenticatorBusy: false,
+      authenticatorReady: true,
       inventoryState: inventoryState(credentials),
       statusFilter: "large-blob-missing",
     });
@@ -174,8 +174,8 @@ describe("buildPasskeysPresentation", () => {
       ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionBusy: false,
-      sessionReady: true,
+      authenticatorBusy: false,
+      authenticatorReady: true,
       inventoryState: inventoryState(credentials),
     });
     expect(presentation.capacity).toEqual({
@@ -219,8 +219,8 @@ describe("buildPasskeysPresentation", () => {
       ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionBusy: false,
-      sessionReady: true,
+      authenticatorBusy: false,
+      authenticatorReady: true,
       inventoryState: inventoryState(credentials),
       query: "no match",
       selectedCredentialID: "one",
@@ -233,8 +233,8 @@ describe("buildPasskeysPresentation", () => {
       ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionBusy: false,
-      sessionReady: true,
+      authenticatorBusy: false,
+      authenticatorReady: true,
       inventoryState: inventoryState(credentials),
       selectedCredentialID: filtered.selectedCredentialID,
     });
@@ -251,8 +251,8 @@ describe("buildPasskeysPresentation", () => {
       ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionBusy: false,
-      sessionReady: true,
+      authenticatorBusy: false,
+      authenticatorReady: true,
       inventoryState: inventoryState(credentials),
     });
 
@@ -265,15 +265,15 @@ describe("buildPasskeysPresentation", () => {
       ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionBusy: false,
-      sessionReady: true,
+      authenticatorBusy: false,
+      authenticatorReady: true,
       inventoryState: inventoryState(credentials),
     });
     expect(readOnlyListing.updateDisabled).toBe(false);
     expect(readOnlyListing.deleteDisabled).toBe(false);
   });
 
-  it("keeps reload available for session recovery while blocking mutations", () => {
+  it("keeps reload available for authenticator recovery while blocking mutations", () => {
     const credentials = envelope([{
       rpID: "example.test",
       credentials: [{ credentialIDHex: "one" }],
@@ -284,8 +284,8 @@ describe("buildPasskeysPresentation", () => {
       ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionBusy: false,
-      sessionReady: false,
+      authenticatorBusy: false,
+      authenticatorReady: false,
       inventoryState: inventoryState(credentials),
       selectedCredentialID: "one",
     });
@@ -311,8 +311,8 @@ describe("buildPasskeysPresentation", () => {
       ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
-      sessionBusy: false,
-      sessionReady: true,
+      authenticatorBusy: false,
+      authenticatorReady: true,
       inventoryState: state,
     });
 

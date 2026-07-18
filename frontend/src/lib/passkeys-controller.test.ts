@@ -21,7 +21,7 @@ import {
   failPasskeysInventoryLoadAtRuntime,
   resetPasskeysStateForTest,
 } from "./features/passkeys/state";
-import { resetSessionStateForTest, selectedSelector, sessionStatus } from "./features/session/state";
+import { resetAuthenticatorStateForTest, selectedSelector, authenticatorStatus } from "./features/authenticator/state";
 import { resetWorkbenchStateForTest } from "./features/workbench/state";
 import {
   beginCredentialDelete,
@@ -40,7 +40,7 @@ import {
 function inventoryEnvelope(readOnlyPermission = true): CredentialsEnvelope {
   return {
     operationId: "list-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationListCredentials,
     result: {
       report: {
@@ -69,7 +69,7 @@ function inventoryEnvelope(readOnlyPermission = true): CredentialsEnvelope {
 function updatePreviewEnvelope(): CredentialUpdateEnvelope {
   return {
     operationId: "preview-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationUpdateCredentialUser,
     result: {
       preview: {
@@ -86,7 +86,7 @@ function updatePreviewEnvelope(): CredentialUpdateEnvelope {
 function storeStateEnvelope(): CredentialStoreStateEnvelope {
   return {
     operationId: "store-state-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationCredentialStoreState,
     result: {
       result: {
@@ -113,7 +113,7 @@ function updateResultEnvelope(): CredentialUpdateEnvelope {
 function deletePreviewEnvelope(): CredentialDeleteEnvelope {
   return {
     operationId: "delete-preview-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationDeleteCredential,
     result: {
       preview: {
@@ -139,11 +139,11 @@ function deleteResultEnvelope(): CredentialDeleteEnvelope {
 }
 
 beforeEach(() => {
-  resetSessionStateForTest();
+  resetAuthenticatorStateForTest();
   resetWorkbenchStateForTest();
   resetPasskeysStateForTest();
   selectedSelector.set("token-1");
-  sessionStatus.set({ state: "ready", sessionId: "session-1" });
+  authenticatorStatus.set({ state: "ready", selectionId: "authenticator-1" });
   completePasskeysInventoryLoad(inventoryEnvelope(), "2026-07-12T00:00:00.000Z");
 });
 
@@ -158,7 +158,7 @@ describe("passkeys mutation requests", () => {
 
     expect(await loadCredentialStoreState()).toBe(true);
     expect(read).toHaveBeenCalledWith({
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowDefault,
     });
     expect(get(credentialStoreStateState)).toEqual({
@@ -190,7 +190,7 @@ describe("passkeys mutation requests", () => {
 
   it("marks only normalized fields that actually changed", () => {
     const request = buildCredentialUpdatePreviewRequest(
-      "session-1",
+      "authenticator-1",
       VerificationFlow.VerificationFlowPIN,
       "cafe",
       { userIDHex: "AABB", name: "old", displayName: "Visible" },
@@ -198,7 +198,7 @@ describe("passkeys mutation requests", () => {
     );
 
     expect(request).toEqual({
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowPIN,
       credentialIdHex: "cafe",
       name: "",
@@ -213,7 +213,7 @@ describe("passkeys mutation requests", () => {
 
   it("marks a genuinely changed normalized user ID exactly", () => {
     const request = buildCredentialUpdatePreviewRequest(
-      "session-1",
+      "authenticator-1",
       VerificationFlow.VerificationFlowPIN,
       "cafe",
       { userIDHex: "AABB", name: "user", displayName: "Visible" },
@@ -221,7 +221,7 @@ describe("passkeys mutation requests", () => {
     );
 
     expect(request).toEqual({
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowPIN,
       credentialIdHex: "cafe",
       userIdHex: "ccdd",
@@ -270,12 +270,10 @@ describe("passkeys mutation requests", () => {
     expect(update).toHaveBeenCalledTimes(3);
     expect(update.mock.calls[1][0]).toMatchObject({
       dryRun: false,
-      prepareInventoryRefresh: true,
       confirmed: true,
     });
     expect(update.mock.calls[2][0]).toMatchObject({
       dryRun: false,
-      prepareInventoryRefresh: true,
       confirmed: true,
     });
     expect(list).toHaveBeenCalledTimes(1);
@@ -297,12 +295,10 @@ describe("passkeys mutation requests", () => {
     expect(remove).toHaveBeenCalledTimes(3);
     expect(remove.mock.calls[1][0]).toMatchObject({
       dryRun: false,
-      prepareInventoryRefresh: true,
       confirmed: true,
     });
     expect(remove.mock.calls[2][0]).toMatchObject({
       dryRun: false,
-      prepareInventoryRefresh: true,
       confirmed: true,
     });
   });

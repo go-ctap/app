@@ -18,7 +18,7 @@ import {
   loadSecurityStatus as loadSecurityStatusOperation,
   restartSecurityPreview as restartSecurityPreviewOperation,
 } from "./security-controller.js";
-import { ensureSelectedSessionReady } from "./session-controller.js";
+import { ensureActiveSelectionReady } from "./authenticator-controller.js";
 
 export async function syncLogJournal(): Promise<void> {
   try {
@@ -40,62 +40,62 @@ export async function clearLogJournal(): Promise<boolean> {
 }
 
 export async function reloadPasskeys(): Promise<boolean> {
-  if (!await ensureSelectedSessionReady()) return false;
-  return loadPasskeysOperation({ refresh: true });
+  if (!await ensureActiveSelectionReady()) return false;
+	return loadPasskeysOperation();
 }
 
 export async function readCredentialStoreState(): Promise<boolean> {
-  if (!await ensureSelectedSessionReady()) return false;
+  if (!await ensureActiveSelectionReady()) return false;
   return loadCredentialStoreStateOperation();
 }
 
 export async function reloadLargeBlobs(): Promise<boolean> {
-  if (!await ensureSelectedSessionReady()) return false;
-  return loadLargeBlobsOperation({ refresh: true });
+  if (!await ensureActiveSelectionReady()) return false;
+	return loadLargeBlobsOperation();
 }
 
 export async function reloadOverview(): Promise<void> {
-  if (!await ensureSelectedSessionReady()) return;
+  if (!await ensureActiveSelectionReady()) return;
   await loadOverviewOperation();
 }
 
 export async function reloadSecurity(): Promise<boolean> {
-  if (!await ensureSelectedSessionReady()) return false;
+  if (!await ensureActiveSelectionReady()) return false;
   return loadSecurityStatusOperation();
 }
 
 export async function reloadSecurityEnrollments(): Promise<boolean> {
-  if (!await ensureSelectedSessionReady()) return false;
+  if (!await ensureActiveSelectionReady()) return false;
   return loadSecurityEnrollmentsOperation();
 }
 
 export async function restartSecurityPreview(): Promise<boolean> {
-  if (!await ensureSelectedSessionReady()) return false;
+  if (!await ensureActiveSelectionReady()) return false;
   return restartSecurityPreviewOperation();
 }
 
 export async function previewCredentialUpdate(): Promise<boolean> {
-  if (!await ensureSelectedSessionReady()) return false;
+  if (!await ensureActiveSelectionReady()) return false;
   return previewCredentialUpdateOperation();
 }
 
 export async function beginCredentialDelete(credentialIDHex?: string): Promise<boolean> {
-  if (!await ensureSelectedSessionReady()) return false;
+  if (!await ensureActiveSelectionReady()) return false;
   return beginCredentialDeleteOperation(credentialIDHex);
 }
 
 export async function previewLargeBlobWrite(): Promise<boolean> {
-  if (!await ensureSelectedSessionReady()) return false;
+  if (!await ensureActiveSelectionReady()) return false;
   return previewLargeBlobWriteOperation();
 }
 
 export async function beginLargeBlobDelete(credentialIDHex?: string): Promise<boolean> {
-  if (!await ensureSelectedSessionReady()) return false;
+  if (!await ensureActiveSelectionReady()) return false;
   return beginLargeBlobDeleteOperation(credentialIDHex);
 }
 
 export async function beginLargeBlobCleanup(): Promise<boolean> {
-  if (!await ensureSelectedSessionReady()) return false;
+  if (!await ensureActiveSelectionReady()) return false;
   return beginLargeBlobCleanupOperation();
 }
 
@@ -170,12 +170,12 @@ export {
 } from "./passkeys-controller.js";
 export {
   bootstrap,
-  ensureSelectedSessionReady,
+  ensureActiveSelectionReady,
   navigateToScreen,
   rediscoverAfterFactoryReset,
   selectToken,
   shutdownWorkbench,
-} from "./session-controller.js";
+} from "./authenticator-controller.js";
 export {
   AlwaysUVTarget,
   beginAlwaysUVChange,

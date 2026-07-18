@@ -34,12 +34,12 @@ export function deviceDetail(device: DeviceReport | null | undefined) {
   return device.metadata?.serial || device.serial || device.fingerprint || "";
 }
 
-export function sessionStateLabel(value: unknown) {
+export function authenticatorStateLabel(value: unknown) {
   const raw = String(value || "");
   if (["idle", "opening", "ready", "running", "error"].includes(raw)) {
-    return sessionStateText(raw);
+    return authenticatorStateText(raw);
   }
-  return raw ? m.unknown_session_state({ state: raw.replaceAll("_", " ") }) : m.state_unknown();
+  return raw ? m.unknown_authenticator_state({ state: raw.replaceAll("_", " ") }) : m.state_unknown();
 }
 
 export function operationStageLabel(value: unknown) {
@@ -114,13 +114,13 @@ function humanizeIdentifier(value: string, prefix: string) {
     .trim();
 }
 
-function sessionStateText(raw: string) {
+function authenticatorStateText(raw: string) {
   const labels: Record<string, string> = {
-    idle: m.session_idle(),
-    opening: m.session_opening(),
-    ready: m.session_ready(),
-    running: m.session_running(),
-    error: m.session_error(),
+    idle: m.authenticator_idle(),
+    opening: m.authenticator_opening(),
+    ready: m.authenticator_ready(),
+    running: m.authenticator_running(),
+    error: m.authenticator_error(),
   };
   return labels[raw] || raw;
 }

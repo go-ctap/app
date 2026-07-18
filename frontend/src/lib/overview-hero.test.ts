@@ -58,7 +58,7 @@ describe("buildOverviewHero", () => {
     expect(buildOverviewHero({ device }).title).toBe("YubiKey 5C NFC");
   });
 
-  it("shows vendor firmware instead of a generic session-ready badge", () => {
+  it("shows vendor firmware instead of a generic authenticator-ready badge", () => {
     const yubico = new DeviceReport({
       vendor: Vendor.VendorYubico,
       metadata: new DeviceMetadata({ firmware: "5.7.1" }),

@@ -36,8 +36,8 @@ export type LargeBlobCredentialRow = {
 export type LargeBlobsPresentationInput = {
   selectedSelector: string;
   selectedDevice: DeviceReport | null;
-  sessionBusy: boolean;
-  sessionReady: boolean;
+  authenticatorBusy: boolean;
+  authenticatorReady: boolean;
   inventoryState: LargeBlobsInventoryState;
   query: string;
   statusFilter: LargeBlobsStatusFilter;
@@ -123,7 +123,7 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
   const selectedRow = allRows.find((row) => row.id === selectedCredentialID) ?? null;
   const loading = input.inventoryState.phase === "loading" || input.inventoryState.phase === "refreshing";
   const stale = largeBlobsInventoryIsStale(input.inventoryState);
-  const actionsBlocked = loading || input.sessionBusy || !input.sessionReady;
+  const actionsBlocked = loading || input.authenticatorBusy || !input.authenticatorReady;
   const supported = Boolean(report?.support.largeBlobs);
   const selectedKeyAvailable = Boolean(selectedRow?.largeBlobKeyAvailable);
   const selectedBlobPresent = Boolean(selectedRow?.blobPresent);
@@ -135,7 +135,7 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
     stale,
     lastSuccessfulAt: input.inventoryState.lastSuccessfulAt,
     unsupported: report ? !report.support.largeBlobs : input.inventoryState.phase === "unsupported",
-    reloadDisabled: loading || input.sessionBusy,
+    reloadDisabled: loading || input.authenticatorBusy,
     actionsBlocked,
     writeDisabled: actionsBlocked || !supported || !selectedKeyAvailable,
     deleteDisabled: actionsBlocked || !supported || !selectedKeyAvailable || !selectedBlobPresent,

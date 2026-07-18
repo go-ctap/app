@@ -37,8 +37,8 @@
     passkeysVerificationFlow,
     selectedDevice,
     selectedSelector,
-    sessionBusy,
-    sessionStatus,
+    authenticatorBusy,
+    authenticatorStatus,
   } from "$lib/stores";
 
   import { m } from "../paraglide/messages.js";
@@ -46,8 +46,8 @@
   let passkeys = $derived(buildPasskeysPresentation({
     selectedSelector: $selectedSelector,
     selectedDevice: $selectedDevice,
-    sessionBusy: $sessionBusy,
-    sessionReady: $sessionStatus.state === "ready" && Boolean($sessionStatus.sessionId),
+    authenticatorBusy: $authenticatorBusy,
+    authenticatorReady: $authenticatorStatus.state === "ready" && Boolean($authenticatorStatus.selectionId),
     inventoryState: $passkeysInventoryState,
     query: $passkeysQuery,
     statusFilter: $passkeysStatusFilter,
@@ -84,7 +84,7 @@
     <CredentialStoreState
       state={$credentialStoreStateState}
       supported={passkeys.report?.support.readOnlyPermission ?? null}
-      disabled={$sessionBusy || $sessionStatus.state !== "ready"}
+      disabled={$authenticatorBusy || $authenticatorStatus.state !== "ready"}
       onLoad={readCredentialStoreState}
     />
 

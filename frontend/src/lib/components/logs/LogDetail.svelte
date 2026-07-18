@@ -58,7 +58,7 @@
     return [
       { label: m.logs_source(), value: m.logs_source_kit() },
       { label: m.logs_sequence(), value: String(value.sequence) },
-      { label: m.logs_session_id(), value: entry.sessionId ?? "" },
+      { label: m.logs_selection_id(), value: entry.selectionId ?? "" },
       { label: m.logs_operation_id(), value: entry.operationId ?? "" },
       { label: m.logs_duration(), value: entry.durationMilliseconds === undefined ? "" : m.logs_duration_ms({ duration: entry.durationMilliseconds }) },
       { label: m.logs_operation(), value: entry.operationKind ? operationKindLabel(entry.operationKind) : "" },

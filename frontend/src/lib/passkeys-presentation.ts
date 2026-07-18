@@ -45,8 +45,8 @@ export type PasskeysCapacity = {
 export type PasskeysPresentationInput = {
   selectedSelector: string;
   selectedDevice: DeviceReport | null;
-  sessionBusy: boolean;
-  sessionReady: boolean;
+  authenticatorBusy: boolean;
+  authenticatorReady: boolean;
   inventoryState: PasskeysInventoryState;
   query: string;
   statusFilter: PasskeysStatusFilter;
@@ -189,7 +189,7 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
   const support = report?.support;
   const loading = input.inventoryState.phase === "loading" || input.inventoryState.phase === "refreshing";
   const stale = passkeysInventoryIsStale(input.inventoryState);
-  const mutationsBlocked = loading || input.sessionBusy || !input.sessionReady;
+  const mutationsBlocked = loading || input.authenticatorBusy || !input.authenticatorReady;
 
   return {
     selector: input.selectedSelector,
@@ -199,7 +199,7 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
     unsupported: report
       ? !report.support.credentialManagement
       : input.inventoryState.phase === "unsupported",
-    reloadDisabled: loading || input.sessionBusy,
+    reloadDisabled: loading || input.authenticatorBusy,
     updateDisabled: mutationsBlocked || !support?.credentialManagement || Boolean(support?.previewOnly),
     deleteDisabled: mutationsBlocked || !support?.credentialManagement,
     hasReport: Boolean(report),

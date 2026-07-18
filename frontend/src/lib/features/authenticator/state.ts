@@ -4,20 +4,20 @@ import type { DeviceReport } from "../../../../bindings/github.com/go-ctap/kit/m
 import type { InspectEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
 
 import { idleLoadState, type LoadState } from "$lib/load-state";
-import type { SessionStatus } from "$lib/session-model";
+import type { AuthenticatorStatus } from "$lib/authenticator-model";
 
 export const devices = writable<DeviceReport[]>([]);
 export const selectedSelector = writable("");
 export const selectedDevice = writable<DeviceReport | null>(null);
-export const sessionStatus = writable<SessionStatus>({ state: "idle" });
+export const authenticatorStatus = writable<AuthenticatorStatus>({ state: "idle" });
 export const authenticatorInspection = writable<LoadState<InspectEnvelope>>(idleLoadState());
 
-export const sessionBusy = derived(sessionStatus, ($sessionStatus) => $sessionStatus.state === "opening" || $sessionStatus.state === "running");
+export const authenticatorBusy = derived(authenticatorStatus, ($authenticatorStatus) => $authenticatorStatus.state === "opening" || $authenticatorStatus.state === "running");
 
-export function resetSessionStateForTest() {
+export function resetAuthenticatorStateForTest() {
   devices.set([]);
   selectedSelector.set("");
   selectedDevice.set(null);
-  sessionStatus.set({ state: "idle" });
+  authenticatorStatus.set({ state: "idle" });
   authenticatorInspection.set(idleLoadState());
 }

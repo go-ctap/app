@@ -16,7 +16,7 @@ import SecurityMutationDetails from "./SecurityMutationDetails.svelte";
 function erroredPreviewMutation(longTouchForReset = StateValue.StateSupported): SecurityMutationState {
   const responseEnvelope = {
     operationId: "reset-preview-error",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationResetFactory,
     error: failureForCode(Code.CodeResetWindowExpired),
     result: {
@@ -41,7 +41,7 @@ function erroredPreviewMutation(longTouchForReset = StateValue.StateSupported): 
     kind: "reset",
     phase: "error",
     failedPhase: "previewing",
-    previewRequest: { sessionId: "session-1", dryRun: true },
+    previewRequest: { selectionId: "authenticator-1", dryRun: true },
     previewEnvelope: null,
     responseEnvelope,
     runtimeError: null,

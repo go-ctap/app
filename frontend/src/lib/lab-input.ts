@@ -20,7 +20,7 @@ import { AuthenticatorOptions } from "../../bindings/github.com/go-ctap/kit/mode
 import {
   GetAssertionRequest,
   MakeCredentialRequest,
-  type SessionID,
+  type SelectionID,
 } from "../../bindings/github.com/go-ctap/kit/service";
 import { getDomain } from "tldts";
 
@@ -614,7 +614,7 @@ function buildGetAssertionExtensions(draft: GetAssertionDraft) {
 }
 
 export function buildMakeCredentialRequest(
-  sessionId: SessionID,
+  selectionId: SelectionID,
   draft: MakeCredentialDraft,
 ) {
   const excludeList = buildDescriptors(draft.excludeList);
@@ -625,7 +625,7 @@ export function buildMakeCredentialRequest(
     : draft.verificationFlow;
 
   return new MakeCredentialRequest({
-    sessionId,
+    selectionId,
     ...(verificationFlow === undefined ? {} : { verificationFlow }),
     rp: new PublicKeyCredentialRpEntity({ id: draft.rpID, name: draft.rpName }),
     user: new PublicKeyCredentialUserEntity({
@@ -653,7 +653,7 @@ export function buildMakeCredentialRequest(
 }
 
 export function buildGetAssertionRequest(
-  sessionId: SessionID,
+  selectionId: SelectionID,
   draft: GetAssertionDraft,
 ) {
   const allowList = buildDescriptors(draft.allowList);
@@ -664,7 +664,7 @@ export function buildGetAssertionRequest(
     : draft.verificationFlow;
 
   return new GetAssertionRequest({
-    sessionId,
+    selectionId,
     ...(verificationFlow === undefined ? {} : { verificationFlow }),
     rpID: draft.rpID,
     clientDataJSON: clientDataJSONBase64("get", draft.clientData),

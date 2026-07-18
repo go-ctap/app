@@ -135,7 +135,7 @@ export type OverviewContext = {
 export type OverviewHeroContext = OverviewContext & {
   mdsLoading?: boolean;
   mdsError?: string | null;
-  sessionLabel?: string;
+  authenticatorLabel?: string;
 };
 
 export type MessageText = string | (() => string);

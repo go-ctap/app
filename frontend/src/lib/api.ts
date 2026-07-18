@@ -39,7 +39,6 @@ import {
   type MakeCredentialEnvelope,
   type MakeCredentialRequest,
   type MinPINLengthRequest,
-  type OpenSessionRequest,
   type OperationRequest,
   type PINEnvelope,
   type PINChangeRequest,
@@ -47,7 +46,8 @@ import {
   type ResetFactoryEnvelope,
   type ResetFactoryRequest,
   type ReadLogsRequest,
-  type SessionSnapshot,
+  type SelectionRequest,
+  type SelectionSnapshot,
 } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { runtimeCall } from "./features/logs/state.svelte.js";
@@ -93,16 +93,8 @@ export const api = {
     return runtimeCall("ctapkit.discovery.refresh", () => service.RefreshDiscovery(request));
   },
 
-  openSession(request: OpenSessionRequest): Promise<SessionSnapshot> {
-    return runtimeCall("ctapkit.session.open", () => service.OpenSession(request));
-  },
-
-  sessions(): Promise<SessionSnapshot[]> {
-    return runtimeCall("ctapkit.session.list", () => service.Sessions());
-  },
-
-  closeAllSessions(): Promise<SessionSnapshot[]> {
-    return runtimeCall("ctapkit.session.closeAll", () => service.CloseAllSessions());
+  setSelection(request: SelectionRequest): Promise<SelectionSnapshot> {
+    return runtimeCall("ctapkit.selection.set", () => service.SetSelection(request));
   },
 
   cancelOperation(request: CancelOperationRequest): Promise<boolean> {

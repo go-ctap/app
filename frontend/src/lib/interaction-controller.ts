@@ -7,9 +7,9 @@ import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
 import { runtimeFailureFrom } from "./failure.js";
 import { pendingInteraction } from "./features/interaction/state.js";
-import { sessionStatus } from "./features/session/state.js";
+import { authenticatorStatus } from "./features/authenticator/state.js";
 import { statusBar } from "./features/workbench/state.js";
-import { applyInvalidSessionError } from "./session-boundary.js";
+import { applyInvalidSelectionError } from "./authenticator-boundary.js";
 import { setStatusOperation, summarizeOperationFailure } from "./workbench-state.js";
 
 export async function answerPendingInteraction(answer: InteractionAnswer) {
@@ -24,7 +24,7 @@ export async function answerPendingInteraction(answer: InteractionAnswer) {
   } catch (error) {
     const failure = runtimeFailureFrom(error);
     summarizeOperationFailure(label, failure);
-    applyInvalidSessionError(failure);
+    applyInvalidSelectionError(failure);
     return false;
   } finally {
     if (answer.pin) answer.pin = "";
@@ -40,12 +40,12 @@ export function handleInteractionRequested(data: InteractionPrompt) {
   setStatusOperation({
     ...operation,
     operationId: data.operationId,
-    sessionId: data.sessionId,
+    selectionId: data.selectionId,
     stage: OperationStage.OperationStageInteractionRequired,
   });
-  sessionStatus.update((session) => (
-    session.sessionId === data.sessionId && session.state !== "error"
-      ? { ...session, state: "running" }
-      : session
+  authenticatorStatus.update((authenticator) => (
+    authenticator.selectionId === data.selectionId && authenticator.state !== "error"
+      ? { ...authenticator, state: "running" }
+      : authenticator
   ));
 }

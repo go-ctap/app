@@ -36,7 +36,7 @@
     securitySensor,
     securityStatus,
     selectedSelector,
-    sessionStatus,
+    authenticatorStatus,
     statusBar,
   } from "$lib/stores";
 
@@ -49,14 +49,14 @@
   let mutationBusy = $derived(
     $securityMutation.phase === "previewing" || $securityMutation.phase === "executing",
   );
-  let sessionReady = $derived($sessionStatus.state === "ready" && Boolean($sessionStatus.sessionId));
-  let sessionRecovering = $derived(
-    $sessionStatus.state === "opening" || $sessionStatus.state === "running",
+  let authenticatorReady = $derived($authenticatorStatus.state === "ready" && Boolean($authenticatorStatus.selectionId));
+  let authenticatorRecovering = $derived(
+    $authenticatorStatus.state === "opening" || $authenticatorStatus.state === "running",
   );
-  let reloadDisabled = $derived(sessionRecovering || mutationBusy);
-  let controlsDisabled = $derived(!sessionReady || mutationBusy);
+  let reloadDisabled = $derived(authenticatorRecovering || mutationBusy);
+  let controlsDisabled = $derived(!authenticatorReady || mutationBusy);
   let mutationActionDisabled = $derived(
-    $securityMutation.phase === "error" ? reloadDisabled : !sessionReady,
+    $securityMutation.phase === "error" ? reloadDisabled : !authenticatorReady,
   );
   let pinPolicyValidation = $derived(
     $securityMutation.kind === "pinPolicy" && $securityMutation.phase === "editing"
@@ -66,7 +66,7 @@
 
 </script>
 
-{#if $selectedSelector && (statusLoading || $sessionStatus.state === "opening") && !report}
+{#if $selectedSelector && (statusLoading || $authenticatorStatus.state === "opening") && !report}
   <section class="security-loading" aria-busy="true" aria-label={m.security_state_loading()}>
     <div class="security-loading-header">
       <Skeleton class="loading-title" />
@@ -86,7 +86,7 @@
   <EmptyState title={m.security_state_load_failed()} message={m.security_unsupported_message()}>
     {#snippet icon()}<TriangleAlert aria-hidden="true" />{/snippet}
     {#snippet actions()}
-      <Button type="button" disabled={statusLoading || sessionRecovering} onclick={() => void reloadSecurity()}>
+      <Button type="button" disabled={statusLoading || authenticatorRecovering} onclick={() => void reloadSecurity()}>
         <RefreshCw data-icon="inline-start" aria-hidden="true" />
         {m.reload_overview()}
       </Button>

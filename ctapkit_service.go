@@ -64,16 +64,8 @@ func (s *CtapkitService) RefreshDiscovery(ctx context.Context, req kitservice.Di
 	return s.core.RefreshDiscovery(ctx, req)
 }
 
-func (s *CtapkitService) OpenSession(ctx context.Context, req kitservice.OpenSessionRequest) (kitservice.SessionSnapshot, error) {
-	return s.core.OpenSession(ctx, req)
-}
-
-func (s *CtapkitService) Sessions(_ context.Context) []kitservice.SessionSnapshot {
-	return s.core.Sessions()
-}
-
-func (s *CtapkitService) CloseAllSessions(_ context.Context) ([]kitservice.SessionSnapshot, error) {
-	return s.core.CloseAllSessions()
+func (s *CtapkitService) SetSelection(ctx context.Context, req kitservice.SelectionRequest) (kitservice.SelectionSnapshot, error) {
+	return s.core.SetSelection(ctx, req)
 }
 
 func (s *CtapkitService) CancelOperation(_ context.Context, req kitservice.CancelOperationRequest) bool {

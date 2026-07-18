@@ -10,8 +10,8 @@ import {
   devices as deviceStore,
   selectedDevice as selectedDeviceStore,
   selectedSelector,
-  sessionStatus,
-} from "./features/session/state.js";
+  authenticatorStatus,
+} from "./features/authenticator/state.js";
 import { activeScreen, type ActiveScreen } from "./features/workbench/state.js";
 import { deviceName } from "./format.js";
 import { maybeLoadLargeBlobs } from "./largeblobs-controller.js";
@@ -20,15 +20,12 @@ import { maybeLoadPasskeys } from "./passkeys-controller.js";
 import { maybeLoadSecurity } from "./security-controller.js";
 import { failureMessage, runtimeFailureFrom } from "./failure.js";
 import {
-  idleSessionStatus,
+  idleAuthenticatorStatus,
   reportForSelector,
   selectorFromDevice,
-  sessionIsOpen,
-  sessionMatches,
-  statusFromSession,
   type Discovery,
-  type SessionStatus,
-} from "./session-model.js";
+  type AuthenticatorStatus,
+} from "./authenticator-model.js";
 import {
   applyDiscovery,
   clearWorkbenchScreenCaches,
@@ -44,65 +41,41 @@ function deviceSelection(devices: DeviceReport[], requestedSelector: string) {
   };
 }
 
-function initialSelectorForDevices(devices: DeviceReport[]) {
-  return selectorFromDevice(devices[0]);
-}
-
 function discoverySnapshot(
   devices: DeviceReport[],
   selectedSelector: string,
   selectedDevice: DeviceReport | null,
-  session: SessionStatus,
+  authenticator: AuthenticatorStatus,
   error?: Failure | null,
 ): Discovery {
   const discovery: Discovery = {
     devices,
     selectedSelector,
     selectedDevice,
-    session,
+    authenticator,
   };
   if (error) discovery.error = error;
   return discovery;
 }
 
-async function closeOpenSessions(options: { continueAfterTransportCloseFailure?: boolean } = {}) {
-  try {
-    await api.closeAllSessions();
-  } catch (error) {
-    const closeFailure = runtimeFailureFrom(error);
-    if (!options.continueAfterTransportCloseFailure || closeFailure.code !== Code.CodeTransportFailure) {
-      throw error;
-    }
-  } finally {
-    finishOperation();
-  }
-}
-
-async function openSessionForDevice(devices: DeviceReport[], selector: string): Promise<Discovery> {
+async function setSelection(devices: DeviceReport[], selector: string): Promise<Discovery> {
   const { selectedSelector: canonicalSelector, selectedDevice } = deviceSelection(devices, selector);
   if (!canonicalSelector || !selectedDevice) {
-    await closeOpenSessions();
-    return discoverySnapshot(devices, "", null, idleSessionStatus());
+    await api.setSelection({ selector: "" });
+    return discoverySnapshot(devices, "", null, idleAuthenticatorStatus());
   }
 
-  const snapshots = await api.sessions();
-  const openSessions = snapshots.filter(sessionIsOpen);
-  const current = openSessions.find((snapshot) => sessionMatches(snapshot, canonicalSelector));
-  if (current && openSessions.length === 1) {
-    return discoverySnapshot(devices, canonicalSelector, current.info.device, statusFromSession(current));
-  }
-
-  // CloseAllSessions detaches every managed session before closing the
-  // underlying handles. A transport error from that final physical close is
-  // still logged, but must not prevent opening the newly selected device.
-  await closeOpenSessions({ continueAfterTransportCloseFailure: true });
-  const snapshot = await api.openSession({ selector: canonicalSelector });
-  return discoverySnapshot(devices, canonicalSelector, snapshot.info.device, statusFromSession(snapshot));
+  const selection = await api.setSelection({ selector: canonicalSelector });
+  const snapshot = selection.selection!;
+  return discoverySnapshot(devices, canonicalSelector, selectedDevice, {
+    selectionId: snapshot.id,
+    state: "ready",
+  });
 }
 
 async function closeSelection(devices: DeviceReport[] = get(deviceStore)): Promise<Discovery> {
-  await closeOpenSessions();
-  return discoverySnapshot(devices, "", null, idleSessionStatus());
+  await api.setSelection({ selector: "" });
+  return discoverySnapshot(devices, "", null, idleAuthenticatorStatus());
 }
 
 function selectionMessage(discovery: Discovery, fallback: string) {
@@ -118,65 +91,60 @@ async function selectFromDevices(devices: DeviceReport[], selector: string): Pro
   if (!canonicalSelector || !selectedDevice) return closeSelection(devices);
 
   try {
-    return await openSessionForDevice(devices, canonicalSelector);
+    return await setSelection(devices, canonicalSelector);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     return discoverySnapshot(
       devices,
       canonicalSelector,
       selectedDevice,
-      idleSessionStatus("error", runtimeError),
+      idleAuthenticatorStatus("error", runtimeError),
       runtimeError,
     );
   }
 }
 
-function recoverySelection(devices: DeviceReport[], selector: string) {
-  return { devices, device: reportForSelector(devices, selector) };
-}
-
 /**
- * Restores the selected authenticator session without crossing the per-device
+ * Restores the selected authenticator without crossing the per-device
  * screen-state boundary. Callers can then rerun their own forced operation
  * while last-known-good presentation data remains intact.
  */
-export async function ensureSelectedSessionReady(): Promise<boolean> {
-  const current = get(sessionStatus);
-  if (current.state === "ready" && current.sessionId) return true;
+export async function ensureActiveSelectionReady(): Promise<boolean> {
+  const current = get(authenticatorStatus);
+  if (current.state === "ready" && current.selectionId) return true;
   if (current.state === "opening" || current.state === "running") return false;
 
   const selector = get(selectedSelector).trim();
   if (!selector) return false;
 
-  const recovery = recoverySelection(get(deviceStore), selector);
-  if (!recovery.device) {
+  const devices = get(deviceStore);
+  if (!reportForSelector(devices, selector)) {
     const error = new Failure({
       code: Code.CodeDeviceUnavailable,
       category: Category.CategoryInvalidState,
     });
     applyDiscovery(discoverySnapshot(
-      recovery.devices,
+      devices,
       selector,
       get(selectedDeviceStore),
-      idleSessionStatus("error", error),
+      idleAuthenticatorStatus("error", error),
       error,
     ));
     return false;
   }
 
   pendingInteraction.set(null);
-  sessionStatus.set(idleSessionStatus("opening"));
-  const discovery = await selectFromDevices(recovery.devices, selector);
+  authenticatorStatus.set(idleAuthenticatorStatus("opening"));
+  const discovery = await selectFromDevices(devices, selector);
   applyDiscovery(discovery);
 
-  const recovered = get(sessionStatus);
-  return recovered.state === "ready" && Boolean(recovered.sessionId);
+  const recovered = get(authenticatorStatus);
+  return recovered.state === "ready" && Boolean(recovered.selectionId);
 }
 
 async function discoverAndSelect(): Promise<Discovery> {
   const discoveredDevices = await api.discover();
-  const selector = initialSelectorForDevices(discoveredDevices);
-  return selectFromDevices(discoveredDevices, selector);
+  return selectFromDevices(discoveredDevices, selectorFromDevice(discoveredDevices[0]));
 }
 
 export async function bootstrap() {
@@ -189,25 +157,18 @@ export async function bootstrap() {
     await maybeLoadSecurity();
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
-    sessionStatus.set(idleSessionStatus("error", runtimeError));
+    authenticatorStatus.set(idleAuthenticatorStatus("error", runtimeError));
     setStatusOutcome({ tone: "error", title: m.discovery_issue(), message: failureMessage(runtimeError) });
   }
 }
 
 export async function selectToken(selector: string) {
   const requestedSelector = selector.trim();
-  const currentSession = get(sessionStatus);
-  if (
-    requestedSelector
-    && requestedSelector === get(selectedSelector).trim()
-    && (currentSession.state === "ready" || currentSession.state === "running")
-    && currentSession.sessionId
-  ) return;
-
   clearWorkbenchScreenCaches();
+  pendingInteraction.set(null);
   try {
     if (requestedSelector) {
-      sessionStatus.set(idleSessionStatus("opening"));
+      authenticatorStatus.set(idleAuthenticatorStatus("opening"));
     }
     const discovery = await selectFromDevices(get(deviceStore), selector);
     applyDiscovery(discovery);
@@ -224,7 +185,7 @@ export async function selectToken(selector: string) {
     await maybeLoadSecurity();
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
-    sessionStatus.set(idleSessionStatus("error", runtimeError));
+    authenticatorStatus.set(idleAuthenticatorStatus("error", runtimeError));
     setStatusOutcome({ tone: "error", title: m.token_selection_issue(), message: failureMessage(runtimeError) });
   }
 }
@@ -240,15 +201,13 @@ export async function navigateToScreen(screen: ActiveScreen) {
 
 /**
  * Factory reset invalidates the selected authenticator as an application
- * session boundary. Close the old session, clear selection-owned state, then
+ * boundary. Close the old authenticator, clear selection-owned state, then
  * apply the normal startup rule: auto-open the first discovered authenticator.
  */
 export async function rediscoverAfterFactoryReset(): Promise<Failure | null> {
   let closeError: Failure | null = null;
   try {
-    // Reset invalidates the old handle. Close service ownership without first
-    // reading session snapshots, and never reuse a pre-reset open snapshot.
-    await api.closeAllSessions();
+    await api.setSelection({ selector: "" });
   } catch (error) {
     closeError = runtimeFailureFrom(error);
   }
@@ -256,35 +215,11 @@ export async function rediscoverAfterFactoryReset(): Promise<Failure | null> {
   clearWorkbenchScreenCaches();
   pendingInteraction.set(null);
   finishOperation();
-  applyDiscovery(discoverySnapshot([], "", null, idleSessionStatus()));
+  applyDiscovery(discoverySnapshot([], "", null, idleAuthenticatorStatus()));
 
   try {
     const discoveredDevices = await api.discover();
-    let discovery = discoverySnapshot(discoveredDevices, "", null, idleSessionStatus());
-
-    if (discoveredDevices.length > 0) {
-      const selection = deviceSelection(discoveredDevices, selectorFromDevice(discoveredDevices[0]));
-      if (selection.selectedSelector && selection.selectedDevice) {
-        try {
-          const snapshot = await api.openSession({ selector: selection.selectedSelector });
-          discovery = discoverySnapshot(
-            discoveredDevices,
-            selection.selectedSelector,
-            snapshot.info.device,
-            statusFromSession(snapshot),
-          );
-        } catch (error) {
-          const runtimeError = runtimeFailureFrom(error);
-          discovery = discoverySnapshot(
-            discoveredDevices,
-            selection.selectedSelector,
-            selection.selectedDevice,
-            idleSessionStatus("error", runtimeError),
-            runtimeError,
-          );
-        }
-      }
-    }
+    const discovery = await selectFromDevices(discoveredDevices, selectorFromDevice(discoveredDevices[0]));
 
     applyDiscovery(discovery);
     return discovery.error ?? closeError;
@@ -294,7 +229,7 @@ export async function rediscoverAfterFactoryReset(): Promise<Failure | null> {
       [],
       "",
       null,
-      idleSessionStatus("error", runtimeError),
+      idleAuthenticatorStatus("error", runtimeError),
       runtimeError,
     ));
     return runtimeError;
@@ -303,10 +238,10 @@ export async function rediscoverAfterFactoryReset(): Promise<Failure | null> {
 
 export async function shutdownWorkbench() {
   try {
-    await closeOpenSessions();
+    await api.setSelection({ selector: "" });
   } finally {
     clearWorkbenchScreenCaches();
-    sessionStatus.set(idleSessionStatus());
+    authenticatorStatus.set(idleAuthenticatorStatus());
     pendingInteraction.set(null);
     finishOperation();
   }

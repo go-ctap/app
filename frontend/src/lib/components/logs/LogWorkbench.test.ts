@@ -31,7 +31,7 @@ function appendOperation(sequence = 1, errorMessage?: string) {
       outcome: LogOutcome.LogOutcomeSucceeded,
       code: LogCode.LogCodeOperationRun,
       operationKind: OperationKind.OperationInspect,
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       operationId: `operation-${sequence}`,
       errorMessage,
       request: new LogPayload({

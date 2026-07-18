@@ -41,11 +41,11 @@ import {
   type PasskeysMutationState,
   type PasskeysStatusFilter,
 } from "./features/passkeys/state.js";
-import { selectedSelector, sessionStatus } from "./features/session/state.js";
+import { selectedSelector, authenticatorStatus } from "./features/authenticator/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { findPasskeyCredential } from "./passkeys-presentation.js";
 import { internalFailure, runtimeFailureFrom } from "./failure.js";
-import { applyInvalidSessionError, applyOperationSessionBoundary, selectedSessionId } from "./session-boundary.js";
+import { applyInvalidSelectionError, applyOperationAuthenticatorBoundary, currentSelectionID } from "./authenticator-boundary.js";
 import {
   beginOperation,
   summarizeEnvelope,
@@ -53,12 +53,10 @@ import {
   summarizeOperationFailure,
 } from "./workbench-state.js";
 
-export type LoadPasskeysOptions = { refresh?: boolean };
-
 function passkeysAutoLoadKey() {
   const selector = get(selectedSelector).trim();
-  const sessionId = get(sessionStatus).sessionId || "";
-  return selector && sessionId ? `${selector}:${sessionId}` : "";
+  const selectionId = get(authenticatorStatus).selectionId || "";
+  return selector && selectionId ? `${selector}:${selectionId}` : "";
 }
 
 function shouldAutoLoadPasskeys() {
@@ -85,21 +83,19 @@ export async function maybeLoadPasskeys() {
   await loadPasskeys();
 }
 
-export async function loadPasskeys(options: LoadPasskeysOptions = {}) {
+export async function loadPasskeys() {
   const selector = get(selectedSelector).trim();
   if (!selector) {
     resetPasskeysDeviceState();
     return false;
   }
 
-  const refresh = Boolean(options.refresh);
   beginPasskeysInventoryLoad();
   try {
     beginOperation(m.credential_inventory());
     const request: CredentialListRequest = {
-      sessionId: selectedSessionId(),
+      selectionId: currentSelectionID(),
       verificationFlow: get(passkeysVerificationFlow),
-      refresh,
     };
     const envelope = await api.listCredentials(request);
     const report = credentialsReport(envelope);
@@ -114,13 +110,13 @@ export async function loadPasskeys(options: LoadPasskeysOptions = {}) {
     } else {
       summarizeOperationContractFailure(m.credential_inventory(), internalFailure());
     }
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     return !envelope.error && Boolean(report);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     failPasskeysInventoryLoadAtRuntime(runtimeError);
     summarizeOperationFailure(m.credential_inventory(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -134,7 +130,7 @@ export async function loadCredentialStoreState(): Promise<boolean> {
   try {
     beginOperation(label);
     const envelope: CredentialStoreStateEnvelope = await api.credentialStoreState({
-      sessionId: selectedSessionId(),
+      selectionId: currentSelectionID(),
       verificationFlow: get(passkeysVerificationFlow),
     });
     const result = credentialStoreStateResult(envelope);
@@ -144,20 +140,20 @@ export async function loadCredentialStoreState(): Promise<boolean> {
       const missing = internalFailure();
       failCredentialStoreStateLoadWithContractError(envelope, missing);
       summarizeOperationContractFailure(label, missing);
-      applyOperationSessionBoundary(envelope);
+      applyOperationAuthenticatorBoundary(envelope);
       return false;
     } else {
       completeCredentialStoreStateLoad(envelope);
     }
 
     summarizeEnvelope(label, envelope);
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     return !envelope.error && Boolean(result);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     failCredentialStoreStateLoadAtRuntime(runtimeError);
     summarizeOperationFailure(label, runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -181,8 +177,8 @@ export function setPasskeysVerificationFlow(value: VerificationFlow) {
 function mutationsAvailable(kind: "update" | "delete") {
   const inventory = get(passkeysInventoryState);
   if (inventory.phase === "loading" || inventory.phase === "refreshing") return false;
-  const session = get(sessionStatus);
-  if (session.state !== "ready" || !session.sessionId) return false;
+  const authenticator = get(authenticatorStatus);
+  if (authenticator.state !== "ready" || !authenticator.selectionId) return false;
   const report = credentialsReport(inventory.lastSuccessfulEnvelope);
   if (!report?.support.credentialManagement) return false;
   return kind === "delete" || !report.support.previewOnly;
@@ -264,7 +260,7 @@ export function validateCredentialUpdate(
 }
 
 export function buildCredentialUpdatePreviewRequest(
-  sessionId: string,
+  selectionId: string,
   verificationFlow: VerificationFlow,
   credentialIDHex: string,
   original: CredentialUpdateForm,
@@ -276,7 +272,7 @@ export function buildCredentialUpdatePreviewRequest(
   const nameChanged = proposed.name !== current.name;
   const displayNameChanged = proposed.displayName !== current.displayName;
   return {
-    sessionId,
+    selectionId,
     verificationFlow,
     credentialIdHex: credentialIDHex,
     ...(userIDChanged ? { userIdHex: proposed.userIDHex, userIdProvided: true } : {}),
@@ -329,7 +325,7 @@ export async function previewCredentialUpdate(): Promise<boolean> {
   }
 
   const request = buildCredentialUpdatePreviewRequest(
-    selectedSessionId(),
+    currentSelectionID(),
     get(passkeysVerificationFlow),
     current.credentialIDHex,
     current.original,
@@ -353,13 +349,13 @@ export async function previewCredentialUpdate(): Promise<boolean> {
     } else {
       summarizeOperationContractFailure(m.credential_update_preview(), internalFailure());
     }
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     return !envelope.error && Boolean(preview);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     updateError(current, "previewing", request, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.credential_update_preview(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -373,7 +369,6 @@ export async function confirmCredentialUpdate(): Promise<boolean> {
   const request: CredentialUpdateRequest = {
     ...previewRequest,
     dryRun: false,
-    prepareInventoryRefresh: true,
     confirmed: true,
     confirmationMessage: m.confirm_update(),
   };
@@ -403,15 +398,15 @@ export async function confirmCredentialUpdate(): Promise<boolean> {
     } else {
       summarizeOperationContractFailure(m.credential_update(), internalFailure());
     }
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     if (envelope.error || !result) return false;
-    await loadPasskeys({ refresh: true });
+    await loadPasskeys();
     return true;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     updateError(current, "executing", previewRequest, previewEnvelope, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.credential_update(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -441,7 +436,7 @@ function deleteError(
 async function previewCredentialDelete(credentialIDHex: string): Promise<boolean> {
   if (!mutationsAvailable("delete") || !findPasskeyCredential(credentialsReport(get(passkeysInventoryState).lastSuccessfulEnvelope), credentialIDHex)) return false;
   const request: CredentialDeleteRequest = {
-    sessionId: selectedSessionId(),
+    selectionId: currentSelectionID(),
     verificationFlow: get(passkeysVerificationFlow),
     credentialIdHex: credentialIDHex,
     dryRun: true,
@@ -465,13 +460,13 @@ async function previewCredentialDelete(credentialIDHex: string): Promise<boolean
     } else {
       summarizeOperationContractFailure(m.credential_delete_preview(), internalFailure());
     }
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     return !envelope.error && Boolean(preview);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     deleteError(credentialIDHex, "previewing", request, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.credential_delete_preview(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -489,7 +484,6 @@ export async function confirmCredentialDelete(): Promise<boolean> {
   const request: CredentialDeleteRequest = {
     ...previewRequest,
     dryRun: false,
-    prepareInventoryRefresh: true,
     confirmed: true,
     confirmationMessage: m.confirm_delete(),
   };
@@ -517,15 +511,15 @@ export async function confirmCredentialDelete(): Promise<boolean> {
     } else {
       summarizeOperationContractFailure(m.credential_delete(), internalFailure());
     }
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     if (envelope.error || !result) return false;
-    await loadPasskeys({ refresh: true });
+    await loadPasskeys();
     return true;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.credential_delete(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }

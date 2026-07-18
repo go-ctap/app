@@ -12,7 +12,7 @@ import { failureForCode } from "./test-failure.js";
 import { statusBar as mutableStatusBar } from "./features/workbench/state.js";
 import { setAppLocale } from "./i18n.js";
 import { resetAppStateForTest, seedPendingInteractionForTest, seedSelectionForTest } from "./store-test-utils.js";
-import { pendingInteraction as readonlyPendingInteraction, sessionStatus, statusBar } from "./stores.js";
+import { pendingInteraction as readonlyPendingInteraction, authenticatorStatus, statusBar } from "./stores.js";
 import { setStatusOperation, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
 
 const serviceMocks = vi.hoisted(() => ({
@@ -33,18 +33,18 @@ const token: DeviceReport = {
   product: "Test key",
 };
 
-function seedSession(state: "ready" | "running" = "running") {
+function seedAuthenticator(state: "ready" | "running" = "running") {
   seedSelectionForTest("token-1", token, {
     state,
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
   });
 }
 
 function seedOperation() {
-  setStatusOperation({ operationId: "operation-1", sessionId: "session-1", label: "Inventory" });
+  setStatusOperation({ operationId: "operation-1", selectionId: "authenticator-1", label: "Inventory" });
   seedPendingInteractionForTest({
     operationId: "operation-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     interactionId: "interaction-1",
     request: { kind: "confirm" },
   } as InteractionPrompt);
@@ -58,7 +58,7 @@ describe("operation controller", () => {
   });
 
   it("keeps an accepted cancellation active until the terminal envelope", async () => {
-    seedSession();
+    seedAuthenticator();
     seedOperation();
     serviceMocks.CancelOperation.mockResolvedValue(true);
     const { cancelActiveOperation } = await import("./operation-controller.js");
@@ -71,12 +71,12 @@ describe("operation controller", () => {
       cancelPending: false,
       cancelRequested: true,
     });
-    expect(get(sessionStatus).state).toBe("running");
+    expect(get(authenticatorStatus).state).toBe("running");
     expect(get(readonlyPendingInteraction)).toBeNull();
   });
 
   it("finishes stale UI activity and reports when the operation already ended", async () => {
-    seedSession();
+    seedAuthenticator();
     seedOperation();
     serviceMocks.CancelOperation.mockResolvedValue(false);
     const { cancelActiveOperation } = await import("./operation-controller.js");
@@ -84,12 +84,12 @@ describe("operation controller", () => {
     await expect(cancelActiveOperation()).resolves.toBe("already-finished");
 
     expect(get(statusBar).activeOperation).toBeNull();
-    expect(get(sessionStatus).state).toBe("ready");
+    expect(get(authenticatorStatus).state).toBe("ready");
     expect(get(statusBar).lastOutcome).toMatchObject({ tone: "info", title: "Operation already finished" });
   });
 
   it("preserves the operation and interaction after a thrown cancel failure", async () => {
-    seedSession();
+    seedAuthenticator();
     seedOperation();
     serviceMocks.CancelOperation.mockRejectedValue(new Error("bridge offline"));
     const { cancelActiveOperation } = await import("./operation-controller.js");
@@ -106,7 +106,7 @@ describe("operation controller", () => {
   });
 
   it("presents canceled operation errors as informational", () => {
-    seedSession();
+    seedAuthenticator();
     seedOperation();
 
     summarizeOperationFailure("Credential inventory", failureForCode(Code.CodeOperationCanceled));
@@ -119,14 +119,14 @@ describe("operation controller", () => {
   });
 
   it("presents a canceled generated envelope as informational", () => {
-    seedSession();
+    seedAuthenticator();
     seedOperation();
 
     summarizeEnvelope("Credential inventory", {
       operationId: "operation-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationListCredentials,
-      sessionClosed: false,
+      authenticatorClosed: false,
       error: failureForCode(Code.CodeOperationCanceled),
     } as CredentialsEnvelope);
 
@@ -137,7 +137,7 @@ describe("operation controller", () => {
   });
 
   it("presents an uncategorized runtime failure in the status bar", () => {
-    seedSession();
+    seedAuthenticator();
     seedOperation();
 
     summarizeOperationFailure("Credential inventory", failureForCode(Code.CodeInternalError));
@@ -150,7 +150,7 @@ describe("operation controller", () => {
   });
 
   it("reports a timed-out operation in the status bar", () => {
-    seedSession();
+    seedAuthenticator();
     seedOperation();
 
     summarizeOperationFailure("Credential inventory", failureForCode(Code.CodeOperationTimeout));
@@ -166,14 +166,14 @@ describe("runtime operation events", () => {
   beforeEach(() => {
     setAppLocale("en");
     resetAppStateForTest();
-    seedSession("ready");
+    seedAuthenticator("ready");
   });
 
   it("captures operation ids and determinate progress from progress events", async () => {
     const { handleOperationProgress } = await import("./event-controller.js");
     handleOperationProgress({
       operationId: "operation-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       event: {
         stage: "capturing-bio-sample",
         completed: 1,
@@ -188,14 +188,14 @@ describe("runtime operation events", () => {
       total: 3,
       sampleStatus: "good",
     });
-    expect(get(sessionStatus)).toMatchObject({ state: "running" });
+    expect(get(authenticatorStatus)).toMatchObject({ state: "running" });
   });
 
   it("captures an operation id from an interaction before any progress event", async () => {
     const { handleInteractionRequested } = await import("./interaction-controller.js");
     handleInteractionRequested({
       operationId: "operation-2",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       interactionId: "interaction-2",
       request: { kind: "confirm", message: "Touch the key" },
     } as InteractionPrompt);

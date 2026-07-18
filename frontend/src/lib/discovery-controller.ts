@@ -12,15 +12,15 @@ import {
   devices,
   selectedDevice,
   selectedSelector,
-  sessionStatus,
-} from "./features/session/state.js";
+  authenticatorStatus,
+} from "./features/authenticator/state.js";
 import { failureMessage, runtimeFailureFrom } from "./failure.js";
 import {
-  idleSessionStatus,
+  idleAuthenticatorStatus,
   reportForSelector,
   selectorFromDevice,
-} from "./session-model.js";
-import { selectToken } from "./session-controller.js";
+} from "./authenticator-model.js";
+import { selectToken } from "./authenticator-controller.js";
 import {
   clearWorkbenchScreenCaches,
   finishOperation,
@@ -29,12 +29,12 @@ import {
 
 type DiscoveryTone = "error" | "info" | "warning";
 
-function invalidateSelectedSession() {
+function invalidateActiveSelection() {
   clearWorkbenchScreenCaches();
   finishOperation();
   selectedSelector.set("");
   selectedDevice.set(null);
-  sessionStatus.set(idleSessionStatus());
+  authenticatorStatus.set(idleAuthenticatorStatus());
 }
 
 function applyTopology(envelope: DiscoveryChangedEnvelope) {
@@ -61,7 +61,7 @@ function applyTopology(envelope: DiscoveryChangedEnvelope) {
   }
 
   if (selectedDeviceMissing) {
-    invalidateSelectedSession();
+    invalidateActiveSelection();
     return {
       deviceCount: nextDevices.length,
       selectedDisconnected,

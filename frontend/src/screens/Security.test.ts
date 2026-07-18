@@ -90,7 +90,7 @@ function statusEnvelope(maxPINLength = 63): ConfigStatusEnvelope {
 
   return {
     operationId: "security-status-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationConfigStatus,
     result: { report },
   } as ConfigStatusEnvelope;
@@ -100,7 +100,7 @@ describe("Security screen", () => {
   beforeEach(() => {
     setAppLocale("en");
     resetAppStateForTest();
-    seedSelectionForTest(token.fingerprint, token, { state: "ready", sessionId: "session-1" });
+    seedSelectionForTest(token.fingerprint, token, { state: "ready", selectionId: "authenticator-1" });
     completeSecurityStatusLoad(statusEnvelope());
   });
 

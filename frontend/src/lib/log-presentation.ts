@@ -37,10 +37,10 @@ export function logSummary(record: LogRecord) {
       return m.logs_summary_discovery_changed();
     case LogCode.LogCodeMDSLookup:
       return m.logs_summary_mds_lookup();
-    case LogCode.LogCodeSessionOpen:
-      return m.logs_summary_session_open();
-    case LogCode.LogCodeSessionClose:
-      return m.logs_summary_session_close();
+    case LogCode.LogCodeSelectionOpen:
+      return m.logs_summary_selection_open();
+    case LogCode.LogCodeSelectionClose:
+      return m.logs_summary_selection_close();
     case LogCode.LogCodeOperationRun:
       return m.logs_summary_operation_run({ operation: operationKindLabel(entry.operationKind) });
     case LogCode.LogCodeOperationProgress:
@@ -139,7 +139,7 @@ export function logLayerLabel(layer: LogLayer) {
   const labels: Record<LogLayer, string> = {
     [LogLayer.$zero]: "—",
     [LogLayer.LogLayerService]: m.logs_layer_service(),
-    [LogLayer.LogLayerSession]: m.logs_layer_session(),
+    [LogLayer.LogLayerSelection]: m.logs_layer_selection(),
     [LogLayer.LogLayerOperation]: m.logs_layer_operation(),
     [LogLayer.LogLayerInteraction]: m.logs_layer_interaction(),
     [LogLayer.LogLayerCTAP]: m.logs_layer_ctap(),
@@ -196,7 +196,7 @@ function searchableText(record: LogRecord) {
   return [
     logSummary(record),
     record.sequence,
-    entry.sessionId,
+    entry.selectionId,
     entry.operationId,
     entry.operationKind,
     entry.command,

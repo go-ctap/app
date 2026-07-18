@@ -17,7 +17,7 @@ import type {
   LargeBlobListEnvelope,
   MakeCredentialEnvelope,
   MakeCredentialRequest,
-  SessionSnapshot,
+  ActiveSelection,
 } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { api } from "./api";
@@ -41,11 +41,11 @@ import {
 } from "./features/passkeys/state";
 import {
   devices,
-  resetSessionStateForTest,
+  resetAuthenticatorStateForTest,
   selectedDevice,
   selectedSelector,
-  sessionStatus,
-} from "./features/session/state";
+  authenticatorStatus,
+} from "./features/authenticator/state";
 import { resetWorkbenchStateForTest, statusBar } from "./features/workbench/state";
 import { setAppLocale } from "./i18n";
 import {
@@ -78,7 +78,7 @@ vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
 function makePreviewEnvelope(): MakeCredentialEnvelope {
   return {
     operationId: "make-preview-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationMakeCredential,
     result: {
       preview: {
@@ -122,9 +122,9 @@ function makeResultEnvelope(
 function getResultEnvelope(rpID = "example.com"): GetAssertionEnvelope {
   return {
     operationId: "get-result-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationGetAssertion,
-    sessionClosed: false,
+    authenticatorClosed: false,
     result: {
       preview: {
         device: new DeviceReport({ fingerprint: "token-1" }),
@@ -148,7 +148,7 @@ function getResultEnvelope(rpID = "example.com"): GetAssertionEnvelope {
 function seedSuccessfulMake(rpID = "example.com", credentialIDHex = "cafe") {
   const current = get(labState);
   const previewRequest: MakeCredentialRequest = {
-    ...buildMakeCredentialRequest("session-1", current.makeDraft),
+    ...buildMakeCredentialRequest("authenticator-1", current.makeDraft),
     dryRun: true,
   };
   const previewEnvelope = makePreviewEnvelope();
@@ -172,10 +172,10 @@ function seedSuccessfulMake(rpID = "example.com", credentialIDHex = "cafe") {
 
 beforeEach(() => {
   setAppLocale("en");
-  resetSessionStateForTest();
+  resetAuthenticatorStateForTest();
   resetWorkbenchStateForTest();
   resetLabStateForTest((target) => target.fill(0x11));
-  sessionStatus.set({ state: "ready", sessionId: "session-1" });
+  authenticatorStatus.set({ state: "ready", selectionId: "authenticator-1" });
   toastMocks.error.mockClear();
   toastMocks.info.mockClear();
   toastMocks.success.mockClear();
@@ -282,7 +282,7 @@ describe("WebAuthn Lab request lifecycle", () => {
 
     expect(await previewLabMakeCredential()).toBe(true);
     expect(makeCredential.mock.calls[0][0]).toEqual({
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowPIN,
       rp: { id: "lab.example", name: "Lab" },
       user: { id: "AAECAw==", name: "alice", displayName: "Alice" },
@@ -370,7 +370,7 @@ describe("WebAuthn Lab request lifecycle", () => {
     expect(await runLabGetAssertion()).toBe(false);
     const frozenRequest = getAssertion.mock.calls[0][0];
     expect(frozenRequest).toMatchObject({
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       rpID: "example.com",
       clientDataJSON: "e25vdC1qc29uCg==",
       dryRun: true,
@@ -424,37 +424,33 @@ describe("WebAuthn Lab request lifecycle", () => {
     });
   });
 
-  it("reopens an invalid session before starting a fresh MakeCredential preview", async () => {
+  it("reopens an invalid authenticator before starting a fresh MakeCredential preview", async () => {
     const token = new DeviceReport({ fingerprint: "token-1", product: "Test authenticator" });
     devices.set([token]);
     selectedSelector.set("token-1");
     selectedDevice.set(token);
-    const invalidSession = makePreviewEnvelope();
-    invalidSession.error = failureForCode(Code.CodeSessionInvalid);
+    const invalidSelection = makePreviewEnvelope();
+    invalidSelection.error = failureForCode(Code.CodeSelectionInvalid);
     const makeCredential = vi.spyOn(api, "makeCredential")
-      .mockResolvedValueOnce(invalidSession)
+      .mockResolvedValueOnce(invalidSelection)
       .mockResolvedValueOnce(makePreviewEnvelope());
-    vi.spyOn(api, "sessions").mockResolvedValue([]);
-    vi.spyOn(api, "closeAllSessions").mockResolvedValue([]);
-    vi.spyOn(api, "openSession").mockResolvedValue({
-      id: "session-2",
-      info: { device: token, closed: false },
-      running: false,
-      openedAt: "2026-07-13T00:00:00Z",
-      updatedAt: "2026-07-13T00:00:00Z",
-    } as SessionSnapshot);
+    vi.spyOn(api, "setSelection").mockResolvedValue({
+      selection: {
+        id: "authenticator-2",
+      } as ActiveSelection,
+    });
 
     expect(await previewLabMakeCredential()).toBe(false);
     expect(get(labState).makeStep.phase).toBe("error");
-    expect(get(sessionStatus)).toMatchObject({ state: "error" });
+    expect(get(authenticatorStatus)).toMatchObject({ state: "error" });
 
     expect(await previewLabMakeCredential()).toBe(true);
     expect(makeCredential).toHaveBeenCalledTimes(2);
-    expect(makeCredential.mock.calls[1][0].sessionId).toBe("session-2");
+    expect(makeCredential.mock.calls[1][0].selectionId).toBe("authenticator-2");
     expect(get(labState).makeStep.phase).toBe("review");
   });
 
-  it("reopens an invalid session and reruns GetAssertion with the same client-data bytes", async () => {
+  it("reopens an invalid authenticator and reruns GetAssertion with the same client-data bytes", async () => {
     const initial = get(labState);
     expect(updateLabGetAssertionDraft({
       clientData: {
@@ -467,47 +463,43 @@ describe("WebAuthn Lab request lifecycle", () => {
     devices.set([token]);
     selectedSelector.set("token-1");
     selectedDevice.set(token);
-    const invalidSession = getResultEnvelope();
-    invalidSession.error = failureForCode(Code.CodeSessionInvalid);
+    const invalidSelection = getResultEnvelope();
+    invalidSelection.error = failureForCode(Code.CodeSelectionInvalid);
     const success = getResultEnvelope();
-    success.sessionId = "session-2";
+    success.selectionId = "authenticator-2";
     const getAssertion = vi.spyOn(api, "getAssertion")
-      .mockResolvedValueOnce(invalidSession)
+      .mockResolvedValueOnce(invalidSelection)
       .mockResolvedValueOnce(success)
       .mockResolvedValueOnce(success);
-    vi.spyOn(api, "sessions").mockResolvedValue([]);
-    vi.spyOn(api, "closeAllSessions").mockResolvedValue([]);
-    vi.spyOn(api, "openSession").mockResolvedValue({
-      id: "session-2",
-      info: { device: token, closed: false },
-      running: false,
-      openedAt: "2026-07-13T00:00:00Z",
-      updatedAt: "2026-07-13T00:00:00Z",
-    } as SessionSnapshot);
+    vi.spyOn(api, "setSelection").mockResolvedValue({
+      selection: {
+        id: "authenticator-2",
+      } as ActiveSelection,
+    });
 
     expect(await runLabGetAssertion()).toBe(false);
     const firstRequest = getAssertion.mock.calls[0][0];
     expect(get(labState).getStep).toMatchObject({
       phase: "error",
-      responseEnvelope: invalidSession,
+      responseEnvelope: invalidSelection,
       runtimeError: null,
     });
-    expect(get(sessionStatus)).toEqual({
+    expect(get(authenticatorStatus)).toEqual({
       state: "error",
-      error: failureForCode(Code.CodeSessionInvalid),
+      error: failureForCode(Code.CodeSelectionInvalid),
     });
 
     expect(await rerunLabGetAssertion()).toBe(true);
     expect(getAssertion).toHaveBeenCalledTimes(2);
     expect(getAssertion.mock.calls[1][0]).toEqual({
       ...firstRequest,
-      sessionId: "session-2",
+      selectionId: "authenticator-2",
     });
     expect(getAssertion.mock.calls[1][0].clientDataJSON).toBe(firstRequest.clientDataJSON);
     expect(get(labState).getStep.phase).toBe("review");
     expect(await confirmLabGetAssertion()).toBe(true);
     expect(getAssertion).toHaveBeenCalledTimes(3);
-    expect(getAssertion.mock.calls[2][0]).toMatchObject({ sessionId: "session-2", dryRun: false });
+    expect(getAssertion.mock.calls[2][0]).toMatchObject({ selectionId: "authenticator-2", dryRun: false });
     expect(getAssertion.mock.calls[2][0].clientDataJSON).toBe(firstRequest.clientDataJSON);
     expect(get(labState).getStep.phase).toBe("success");
   });
@@ -637,7 +629,7 @@ describe("WebAuthn Lab credential handoff", () => {
       allowList: [{ credentialIDHex: "beef" }],
     })).toBe(true);
     const current = get(labState);
-    const request: GetAssertionRequest = buildGetAssertionRequest("session-1", current.getDraft);
+    const request: GetAssertionRequest = buildGetAssertionRequest("authenticator-1", current.getDraft);
     labState.set({
       ...current,
       getStep: {

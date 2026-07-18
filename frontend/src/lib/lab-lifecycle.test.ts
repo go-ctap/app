@@ -11,7 +11,7 @@ import { applyDiscovery, clearWorkbenchScreenCaches } from "./workbench-state";
 const first = new DeviceReport({ fingerprint: "token-1", product: "First" });
 const second = new DeviceReport({ fingerprint: "token-2", product: "Second" });
 
-describe("WebAuthn Lab session lifecycle", () => {
+describe("WebAuthn Lab authenticator lifecycle", () => {
   beforeEach(() => resetAppStateForTest());
 
   it("retains drafts and results while navigating on the same authenticator", () => {
@@ -45,7 +45,7 @@ describe("WebAuthn Lab session lifecycle", () => {
   });
 
   it("preserves state for the same selector and clears it when selection changes", () => {
-    seedSelectionForTest("token-1", first, { state: "ready", sessionId: "session-1" });
+    seedSelectionForTest("token-1", first, { state: "ready", selectionId: "authenticator-1" });
     labState.update((state) => ({
       ...state,
       getDraft: { ...state.getDraft, rpID: "kept.example" },
@@ -55,7 +55,7 @@ describe("WebAuthn Lab session lifecycle", () => {
       devices: [first],
       selectedSelector: "token-1",
       selectedDevice: first,
-      session: { state: "ready", sessionId: "session-1" },
+      authenticator: { state: "ready", selectionId: "authenticator-1" },
     })).toBe(false);
     expect(get(labState).getDraft.rpID).toBe("kept.example");
 
@@ -63,7 +63,7 @@ describe("WebAuthn Lab session lifecycle", () => {
       devices: [first, second],
       selectedSelector: "token-2",
       selectedDevice: second,
-      session: { state: "ready", sessionId: "session-2" },
+      authenticator: { state: "ready", selectionId: "authenticator-2" },
     })).toBe(true);
     expect(get(labState).getDraft.rpID).toBe("example.com");
   });

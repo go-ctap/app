@@ -50,7 +50,7 @@ const clipboardSetText = vi.spyOn(Clipboard, "SetText");
 function getAssertionEnvelope(result: GetAssertionResultDTO) {
   return new GetAssertionEnvelope({
     operationId: "get-assertion-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationGetAssertion,
     result: new GetAssertionOutput({ result }),
   });
@@ -59,7 +59,7 @@ function getAssertionEnvelope(result: GetAssertionResultDTO) {
 function makeCredentialEnvelope(result: MakeCredentialResultDTO) {
   return new MakeCredentialEnvelope({
     operationId: "make-credential-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationMakeCredential,
     result: new MakeCredentialOutput({ result }),
   });

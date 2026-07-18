@@ -24,7 +24,7 @@ const TEST_CATEGORY_BY_CODE: Partial<Record<Code, Category>> = {
   [Code.CodePINPolicyViolation]: Category.CategoryInvalidState,
   [Code.CodeResetTouchTimeout]: Category.CategoryTimeout,
   [Code.CodeResetWindowExpired]: Category.CategoryInvalidState,
-  [Code.CodeSessionInvalid]: Category.CategoryInvalidSession,
+  [Code.CodeSelectionInvalid]: Category.CategoryInvalidSelection,
   [Code.CodeTransportFailure]: Category.CategoryTransportFailure,
   [Code.CodeVerificationFlowUnsupported]: Category.CategoryUnsupported,
 };

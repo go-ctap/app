@@ -36,19 +36,19 @@ import {
   devices,
   selectedDevice,
   selectedSelector,
-  sessionStatus,
-  resetSessionStateForTest,
-} from "./features/session/state.js";
+  authenticatorStatus,
+  resetAuthenticatorStateForTest,
+} from "./features/authenticator/state.js";
 import { resetSecurityStateForTest } from "./features/security/state.js";
 import {
   activeScreen,
   resetWorkbenchStateForTest,
 } from "./features/workbench/state.js";
-import type { SessionStatus } from "./session-model.js";
+import type { AuthenticatorStatus } from "./authenticator-model.js";
 import type { ActiveScreen } from "./stores.js";
 
 export function resetAppStateForTest() {
-  resetSessionStateForTest();
+  resetAuthenticatorStateForTest();
   resetWorkbenchStateForTest();
   resetInteractionStateForTest();
   resetLabStateForTest();
@@ -66,10 +66,10 @@ export function seedDevicesForTest(items: DeviceReport[]) {
   devices.set(items);
 }
 
-export function seedSelectionForTest(selector: string, device: DeviceReport | null, session: SessionStatus) {
+export function seedSelectionForTest(selector: string, device: DeviceReport | null, authenticator: AuthenticatorStatus) {
   selectedSelector.set(selector);
   selectedDevice.set(device);
-  sessionStatus.set(session);
+  authenticatorStatus.set(authenticator);
 }
 
 export function seedPendingInteractionForTest(prompt: InteractionPrompt | null) {

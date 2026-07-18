@@ -5,7 +5,7 @@ import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/
 
 export type ActiveOperation = {
   operationId?: string;
-  sessionId?: string;
+  selectionId?: string;
   label?: string;
   stage?: OperationStage;
   completed?: number | null;

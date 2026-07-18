@@ -6,44 +6,44 @@ import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { CredentialsEnvelope, InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { pendingInteraction } from "./features/interaction/state.js";
-import { sessionStatus } from "./features/session/state.js";
-import { applyOperationSessionBoundary } from "./session-boundary.js";
+import { authenticatorStatus } from "./features/authenticator/state.js";
+import { applyOperationAuthenticatorBoundary } from "./authenticator-boundary.js";
 import { failureForCode } from "./test-failure.js";
 
-function envelope(sessionClosed: boolean, code: Code): CredentialsEnvelope {
+function envelope(authenticatorClosed: boolean, code: Code): CredentialsEnvelope {
   return {
     operationId: "operation-1",
-    sessionId: "session-1",
+    selectionId: "authenticator-1",
     kind: OperationKind.OperationListCredentials,
-    sessionClosed,
+    authenticatorClosed,
     error: failureForCode(code),
   } as CredentialsEnvelope;
 }
 
-describe("operation session boundary", () => {
+describe("operation authenticator boundary", () => {
   beforeEach(() => {
-    sessionStatus.set({ state: "running", sessionId: "session-1" });
+    authenticatorStatus.set({ state: "running", selectionId: "authenticator-1" });
     pendingInteraction.set({
       operationId: "operation-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       interactionId: "interaction-1",
       request: { kind: "confirm" },
     } as InteractionPrompt);
   });
 
-  it("clears a closed session independently of the failure category", () => {
+  it("clears a closed authenticator independently of the failure category", () => {
     const response = envelope(true, Code.CodeOperationCanceled);
 
-    applyOperationSessionBoundary(response);
+    applyOperationAuthenticatorBoundary(response);
 
-    expect(get(sessionStatus)).toEqual({ state: "error", error: response.error });
+    expect(get(authenticatorStatus)).toEqual({ state: "error", error: response.error });
     expect(get(pendingInteraction)).toBeNull();
   });
 
-  it("keeps the session after a non-closing transport failure", () => {
-    applyOperationSessionBoundary(envelope(false, Code.CodeTransportFailure));
+  it("keeps the authenticator after a non-closing transport failure", () => {
+    applyOperationAuthenticatorBoundary(envelope(false, Code.CodeTransportFailure));
 
-    expect(get(sessionStatus)).toEqual({ state: "running", sessionId: "session-1" });
+    expect(get(authenticatorStatus)).toEqual({ state: "running", selectionId: "authenticator-1" });
     expect(get(pendingInteraction)?.interactionId).toBe("interaction-1");
   });
 });

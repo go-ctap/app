@@ -676,8 +676,8 @@ export enum LogCode {
     LogCodeDiscoveryRun = "discovery.run",
     LogCodeDiscoveryChanged = "discovery.changed",
     LogCodeMDSLookup = "mds.lookup",
-    LogCodeSessionOpen = "session.open",
-    LogCodeSessionClose = "session.close",
+    LogCodeSelectionOpen = "selection.open",
+    LogCodeSelectionClose = "selection.close",
     LogCodeOperationRun = "operation.run",
     LogCodeOperationProgress = "operation.progress",
     LogCodeInteractionRequest = "interaction.request",
@@ -704,7 +704,7 @@ export class LogEntry {
     "error"?: failure$0.Failure | null;
     "errorMessage"?: string;
     "redactedFields"?: string[];
-    "sessionId"?: string;
+    "selectionId"?: string;
     "operationId"?: string;
 
     /** Creates a new LogEntry instance. */
@@ -823,7 +823,7 @@ export enum LogLayer {
     $zero = "",
 
     LogLayerService = "service",
-    LogLayerSession = "session",
+    LogLayerSelection = "selection",
     LogLayerOperation = "operation",
     LogLayerInteraction = "interaction",
     LogLayerCTAP = "ctap",
@@ -1076,35 +1076,6 @@ export class ResetFactoryOutput {
             $$parsedSource["result"] = $$createField1_0($$parsedSource["result"]);
         }
         return new ResetFactoryOutput($$parsedSource as Partial<ResetFactoryOutput>);
-    }
-}
-
-export class SessionInfo {
-    "device": report$0.DeviceReport;
-    "closed": boolean;
-
-    /** Creates a new SessionInfo instance. */
-    constructor($$source: Partial<SessionInfo> = {}) {
-        if (!("device" in $$source)) {
-            this["device"] = (new report$0.DeviceReport());
-        }
-        if (!("closed" in $$source)) {
-            this["closed"] = false;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new SessionInfo instance from a string or object.
-     */
-    static createFrom($$source: any = {}): SessionInfo {
-        const $$createField0_0 = $$createType37;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("device" in $$parsedSource) {
-            $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
-        }
-        return new SessionInfo($$parsedSource as Partial<SessionInfo>);
     }
 }
 

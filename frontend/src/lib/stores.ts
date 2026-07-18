@@ -5,7 +5,7 @@ import * as lab from "./features/lab/state.js";
 import * as largeBlobs from "./features/largeblobs/state.js";
 import * as overview from "./features/overview/state.js";
 import * as passkeys from "./features/passkeys/state.js";
-import * as session from "./features/session/state.js";
+import * as authenticator from "./features/authenticator/state.js";
 import * as security from "./features/security/state.js";
 import * as workbench from "./features/workbench/state.js";
 
@@ -50,16 +50,16 @@ export type {
   SecurityResourceState,
 } from "./features/security/state.js";
 
-export const devices = readonly(session.devices);
-export const selectedSelector = readonly(session.selectedSelector);
-export const selectedDevice = readonly(session.selectedDevice);
-export const sessionStatus = readonly(session.sessionStatus);
-export const sessionBusy = readonly(session.sessionBusy);
+export const devices = readonly(authenticator.devices);
+export const selectedSelector = readonly(authenticator.selectedSelector);
+export const selectedDevice = readonly(authenticator.selectedDevice);
+export const authenticatorStatus = readonly(authenticator.authenticatorStatus);
+export const authenticatorBusy = readonly(authenticator.authenticatorBusy);
 
 export const activeScreen = readonly(workbench.activeScreen);
 export const statusBar = readonly(workbench.statusBar);
 
-export const authenticatorInspection = readonly(session.authenticatorInspection);
+export const authenticatorInspection = readonly(authenticator.authenticatorInspection);
 export const overviewBioSensor = readonly(overview.overviewBioSensor);
 export const overviewMDS = readonly(overview.overviewMDS);
 

@@ -316,7 +316,7 @@ describe("ctapkit result extractors", () => {
   it("preserves a meaningful mutation preview on error but rejects the generated zero preview", () => {
     const capacity = {
       operationId: "op-capacity",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationWriteLargeBlob,
       error: failureForCode(Code.CodeLargeBlobArrayTooLarge),
       result: {
@@ -410,7 +410,7 @@ describe("ctapkit result extractors", () => {
     });
     const envelope = new MakeCredentialEnvelope({
       operationId: "make-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationMakeCredential,
       result: new MakeCredentialOutput({ preview, result }),
     });
@@ -436,7 +436,7 @@ describe("ctapkit result extractors", () => {
     });
     const envelope = new GetAssertionEnvelope({
       operationId: "get-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationGetAssertion,
       result: new GetAssertionOutput({ result }),
     });

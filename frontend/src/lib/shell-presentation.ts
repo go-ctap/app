@@ -3,9 +3,9 @@ import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/r
 import type { InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
 
 import { m } from "../paraglide/messages.js";
-import { bioSampleStatusLabel, deviceDetail, deviceName, labelDevice, operationStageLabel, permissionLabel, sessionStateLabel } from "./format.js";
+import { bioSampleStatusLabel, deviceDetail, deviceName, labelDevice, operationStageLabel, permissionLabel, authenticatorStateLabel } from "./format.js";
 import { failureMessage } from "./failure.js";
-import { selectorFromDevice, type SessionStatus } from "./session-model.js";
+import { selectorFromDevice, type AuthenticatorStatus } from "./authenticator-model.js";
 import type { ActiveScreen, StatusBarState } from "./stores.js";
 
 export type SidebarTokenItem = {
@@ -39,7 +39,7 @@ export type ShellStatusAction = {
 };
 
 export type ShellStatusPresentation = {
-  source: "operation" | "session" | "outcome" | "idle";
+  source: "operation" | "authenticator" | "outcome" | "idle";
   tone: ShellStatusTone;
   title: string;
   detail: string;
@@ -134,7 +134,7 @@ function activeProgress(statusBar: StatusBarState): ShellStatusProgress | null {
 }
 
 export function buildShellStatusPresentation(input: {
-  sessionStatus: SessionStatus;
+  authenticatorStatus: AuthenticatorStatus;
   selectedDevice: DeviceReport | null;
   statusBar: StatusBarState;
 }): ShellStatusPresentation {
@@ -160,13 +160,13 @@ export function buildShellStatusPresentation(input: {
     };
   }
 
-  if (["opening", "running", "error"].includes(input.sessionStatus.state)) {
-    const error = input.sessionStatus.state === "error";
+  if (["opening", "running", "error"].includes(input.authenticatorStatus.state)) {
+    const error = input.authenticatorStatus.state === "error";
     return {
-      source: "session",
+      source: "authenticator",
       tone: error ? "error" : "info",
-      title: sessionStateLabel(input.sessionStatus.state),
-      detail: failureMessage(input.sessionStatus.error)
+      title: authenticatorStateLabel(input.authenticatorStatus.state),
+      detail: failureMessage(input.authenticatorStatus.error)
         || (input.selectedDevice ? deviceName(input.selectedDevice) : m.no_token_selected()),
       busy: !error,
       progress: null,
@@ -189,7 +189,7 @@ export function buildShellStatusPresentation(input: {
   return {
     source: "idle",
     tone: "neutral",
-    title: sessionStateLabel(input.sessionStatus.state),
+    title: authenticatorStateLabel(input.authenticatorStatus.state),
     detail: input.selectedDevice ? deviceName(input.selectedDevice) : m.no_token_selected(),
     busy: false,
     progress: null,

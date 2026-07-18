@@ -22,7 +22,7 @@ function journalRecord(sequence: number, outcome = LogOutcome.LogOutcomeSucceede
       level: LogLevel.LogLevelInfo,
       outcome,
       code: LogCode.LogCodeOperationRun,
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       operationId: "operation-1",
       request: new LogPayload({ json, originalBytes: json.length, storedBytes: json.length, truncated: false }),
     }),

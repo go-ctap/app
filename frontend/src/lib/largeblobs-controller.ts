@@ -44,12 +44,12 @@ import {
   type LargeBlobWriteDraft,
   type LargeBlobsStatusFilter,
 } from "./features/largeblobs/state.js";
-import { selectedSelector, sessionStatus } from "./features/session/state.js";
+import { selectedSelector, authenticatorStatus } from "./features/authenticator/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { parseLargeBlobPayload, type LargeBlobPayloadEncoding } from "./largeblobs-payload.js";
 import { findLargeBlobCredential } from "./largeblobs-presentation.js";
 import { internalFailure, runtimeFailureFrom } from "./failure.js";
-import { applyInvalidSessionError, applyOperationSessionBoundary, selectedSessionId } from "./session-boundary.js";
+import { applyInvalidSelectionError, applyOperationAuthenticatorBoundary, currentSelectionID } from "./authenticator-boundary.js";
 import {
   beginOperation,
   finishOperation,
@@ -59,12 +59,10 @@ import {
   summarizeOperationFailure,
 } from "./workbench-state.js";
 
-export type LoadLargeBlobsOptions = { refresh?: boolean };
-
 function largeBlobsAutoLoadKey() {
   const selector = get(selectedSelector).trim();
-  const sessionId = get(sessionStatus).sessionId || "";
-  return selector && sessionId ? `${selector}:${sessionId}` : "";
+  const selectionId = get(authenticatorStatus).selectionId || "";
+  return selector && selectionId ? `${selector}:${selectionId}` : "";
 }
 
 function shouldAutoLoadLargeBlobs() {
@@ -92,21 +90,19 @@ export async function maybeLoadLargeBlobs() {
   await loadLargeBlobs();
 }
 
-export async function loadLargeBlobs(options: LoadLargeBlobsOptions = {}) {
+export async function loadLargeBlobs() {
   const selector = get(selectedSelector).trim();
   if (!selector) {
     resetLargeBlobsDeviceState();
     return false;
   }
 
-  const refresh = Boolean(options.refresh);
   beginLargeBlobsInventoryLoad();
   try {
     beginOperation(m.large_blob_list());
     const request: LargeBlobListRequest = {
-      sessionId: selectedSessionId(),
+      selectionId: currentSelectionID(),
       verificationFlow: get(largeBlobsVerificationFlow),
-      refresh,
     };
     const envelope = await api.listLargeBlobs(request);
     const report = largeBlobListReport(envelope);
@@ -122,7 +118,7 @@ export async function loadLargeBlobs(options: LoadLargeBlobsOptions = {}) {
     } else {
       summarizeOperationContractFailure(m.large_blob_list(), internalFailure());
     }
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     const selectedCredentialID = get(largeBlobsSelectedCredentialID);
     if (!envelope.error && report && selectedCredentialID) {
       await readLargeBlob(selectedCredentialID);
@@ -132,7 +128,7 @@ export async function loadLargeBlobs(options: LoadLargeBlobsOptions = {}) {
     const runtimeError = runtimeFailureFrom(error);
     failLargeBlobsInventoryLoadAtRuntime(runtimeError);
     summarizeOperationFailure(m.large_blob_list(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -183,8 +179,8 @@ export function setLargeBlobsPayloadEncoding(value: LargeBlobPayloadEncoding) {
 function reportForActions() {
   const inventory = get(largeBlobsInventoryState);
   if (inventory.phase === "loading" || inventory.phase === "refreshing") return null;
-  const session = get(sessionStatus);
-  if (session.state !== "ready" || !session.sessionId) return null;
+  const authenticator = get(authenticatorStatus);
+  if (authenticator.state !== "ready" || !authenticator.selectionId) return null;
   const report = largeBlobListReport(inventory.lastSuccessfulEnvelope);
   return report?.support.largeBlobs ? report : null;
 }
@@ -195,13 +191,13 @@ function targetForMutation(credentialIDHex: string) {
 }
 
 export function buildLargeBlobReadRequest(
-  sessionId: string,
+  selectionId: string,
   verificationFlow: VerificationFlow,
   credentialIDHex: string,
   decodeMode: DecodeMode,
 ): LargeBlobReadRequest {
   return {
-    sessionId,
+    selectionId,
     verificationFlow,
     credentialIdHex: credentialIDHex,
     decodeMode,
@@ -230,7 +226,7 @@ export async function readLargeBlob(credentialIDHex = get(largeBlobsSelectedCred
   if (!report || !findLargeBlobCredential(report, credentialIDHex)) return false;
 
   const request = buildLargeBlobReadRequest(
-    selectedSessionId(),
+    currentSelectionID(),
     get(largeBlobsVerificationFlow),
     credentialIDHex,
     get(largeBlobsDecodeMode),
@@ -254,24 +250,24 @@ export async function readLargeBlob(credentialIDHex = get(largeBlobsSelectedCred
     } else {
       summarizeOperationContractFailure(m.large_blob_read(), internalFailure());
     }
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     return !envelope.error && Boolean(report);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     readError(credentialIDHex, request, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_read(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
 
 export function buildLargeBlobDeletePreviewRequest(
-  sessionId: string,
+  selectionId: string,
   verificationFlow: VerificationFlow,
   credentialIDHex: string,
 ): LargeBlobMutationRequest {
   return {
-    sessionId,
+    selectionId,
     verificationFlow,
     credentialIdHex: credentialIDHex,
     dryRun: true,
@@ -279,11 +275,11 @@ export function buildLargeBlobDeletePreviewRequest(
 }
 
 export function buildLargeBlobCleanupPreviewRequest(
-  sessionId: string,
+  selectionId: string,
   verificationFlow: VerificationFlow,
 ): LargeBlobGarbageCollectRequest {
   return {
-    sessionId,
+    selectionId,
     verificationFlow,
     dryRun: true,
   };
@@ -396,7 +392,7 @@ export async function previewLargeBlobWrite(): Promise<boolean> {
   }
 
   const request: LargeBlobMutationRequest = {
-    sessionId: selectedSessionId(),
+    selectionId: currentSelectionID(),
     verificationFlow: get(largeBlobsVerificationFlow),
     credentialIdHex: current.credentialIDHex,
     payload: payload.base64,
@@ -425,13 +421,13 @@ export async function previewLargeBlobWrite(): Promise<boolean> {
     } else {
       summarizeOperationContractFailure(m.large_blob_write(), internalFailure());
     }
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     return !envelope.error && Boolean(preview);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     writeError(current, "previewing", request, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_write(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -461,7 +457,7 @@ function deleteError(
 export async function beginLargeBlobDelete(credentialIDHex = get(largeBlobsSelectedCredentialID)): Promise<boolean> {
   if (!targetForMutation(credentialIDHex)) return false;
   const request = buildLargeBlobDeletePreviewRequest(
-    selectedSessionId(),
+    currentSelectionID(),
     get(largeBlobsVerificationFlow),
     credentialIDHex,
   );
@@ -499,13 +495,13 @@ export async function beginLargeBlobDelete(credentialIDHex = get(largeBlobsSelec
         summarizeEnvelope(m.large_blob_delete(), envelope);
       }
     }
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     return !envelope.error && Boolean(preview);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     deleteError(credentialIDHex, "previewing", request, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_delete(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -532,7 +528,7 @@ function cleanupError(
 
 export async function beginLargeBlobCleanup(): Promise<boolean> {
   if (!reportForActions()) return false;
-  const request = buildLargeBlobCleanupPreviewRequest(selectedSessionId(), get(largeBlobsVerificationFlow));
+  const request = buildLargeBlobCleanupPreviewRequest(currentSelectionID(), get(largeBlobsVerificationFlow));
 
   largeBlobsMutation.set({ kind: "cleanup", phase: "previewing", previewRequest: request });
   try {
@@ -562,20 +558,20 @@ export async function beginLargeBlobCleanup(): Promise<boolean> {
       });
       summarizeEnvelope(m.large_blob_cleanup_preview(), envelope);
     }
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     return !envelope.error && Boolean(preview);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     cleanupError("previewing", request, null, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_cleanup_preview(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
 
 async function refreshAfterMutation() {
   largeBlobsMutation.set({ kind: "idle", phase: "idle" });
-  await loadLargeBlobs({ refresh: true });
+  await loadLargeBlobs();
 }
 
 export async function confirmLargeBlobWrite(): Promise<boolean> {
@@ -587,7 +583,6 @@ export async function confirmLargeBlobWrite(): Promise<boolean> {
   const request: LargeBlobMutationRequest = {
     ...previewRequest,
     dryRun: false,
-    prepareInventoryRefresh: true,
     confirmed: true,
     confirmationMessage: m.confirm_write(),
   };
@@ -613,7 +608,7 @@ export async function confirmLargeBlobWrite(): Promise<boolean> {
     } else {
       summarizeOperationContractFailure(m.large_blob_write(), internalFailure());
     }
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     if (envelope.error || !result) return false;
     await refreshAfterMutation();
     return true;
@@ -621,7 +616,7 @@ export async function confirmLargeBlobWrite(): Promise<boolean> {
     const runtimeError = runtimeFailureFrom(error);
     writeError(current, "executing", previewRequest, previewEnvelope, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_write(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -635,7 +630,6 @@ export async function confirmLargeBlobDelete(): Promise<boolean> {
   const request: LargeBlobMutationRequest = {
     ...previewRequest,
     dryRun: false,
-    prepareInventoryRefresh: true,
     confirmed: true,
     confirmationMessage: m.confirm_delete(),
   };
@@ -660,7 +654,7 @@ export async function confirmLargeBlobDelete(): Promise<boolean> {
     } else {
       summarizeOperationContractFailure(m.large_blob_delete(), internalFailure());
     }
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     if (envelope.error || !result) return false;
     await refreshAfterMutation();
     return true;
@@ -668,7 +662,7 @@ export async function confirmLargeBlobDelete(): Promise<boolean> {
     const runtimeError = runtimeFailureFrom(error);
     deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_delete(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }
@@ -682,7 +676,6 @@ export async function confirmLargeBlobCleanup(): Promise<boolean> {
   const request: LargeBlobGarbageCollectRequest = {
     ...previewRequest,
     dryRun: false,
-    prepareInventoryRefresh: true,
     confirmed: true,
     confirmationMessage: m.confirm_cleanup(),
   };
@@ -706,7 +699,7 @@ export async function confirmLargeBlobCleanup(): Promise<boolean> {
     } else {
       summarizeOperationContractFailure(m.large_blob_cleanup(), internalFailure());
     }
-    applyOperationSessionBoundary(envelope);
+    applyOperationAuthenticatorBoundary(envelope);
     if (envelope.error || !result) return false;
     await refreshAfterMutation();
     return true;
@@ -714,7 +707,7 @@ export async function confirmLargeBlobCleanup(): Promise<boolean> {
     const runtimeError = runtimeFailureFrom(error);
     cleanupError("executing", previewRequest, previewEnvelope, null, runtimeError, "runtime-error");
     summarizeOperationFailure(m.large_blob_cleanup(), runtimeError);
-    applyInvalidSessionError(runtimeError);
+    applyInvalidSelectionError(runtimeError);
     return false;
   }
 }

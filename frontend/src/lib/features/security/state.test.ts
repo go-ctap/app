@@ -26,13 +26,13 @@ describe("security state", () => {
   it("retains last-known-good status separately from a failed service response", () => {
     const successful = {
       operationId: "status-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationConfigStatus,
       result: { report: {} },
     } as ConfigStatusEnvelope;
     const failed = {
       operationId: "status-2",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationConfigStatus,
       error: failureForCode(Code.CodeOperationUnsupported),
     } as ConfigStatusEnvelope;
@@ -69,7 +69,7 @@ describe("security state", () => {
   it("types biometric sensor state with the generated envelope contract", () => {
     const envelope = {
       operationId: "sensor-1",
-      sessionId: "session-1",
+      selectionId: "authenticator-1",
       kind: OperationKind.OperationBioSensorInfo,
     } as BioSensorEnvelope;
 

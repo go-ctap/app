@@ -26,7 +26,7 @@ function operationRecord() {
       outcome: LogOutcome.LogOutcomeSucceeded,
       code: LogCode.LogCodeOperationRun,
       operationKind: OperationKind.OperationListCredentials,
-      sessionId: "session-searchable",
+      selectionId: "authenticator-searchable",
       operationId: "operation-searchable",
       request: new LogPayload({ json: "{\"rpId\":\"example.test\"}", originalBytes: 27, storedBytes: 27, truncated: false }),
     }),
@@ -76,7 +76,7 @@ describe("log presentation", () => {
     const records = [record];
     const all = { level: "all", layer: "all", outcome: "all" } as const;
 
-    expect(filterLogs(records, "session-searchable", all)).toEqual(records);
+    expect(filterLogs(records, "authenticator-searchable", all)).toEqual(records);
     expect(filterLogs(records, "credentials.list", all)).toEqual(records);
     expect(filterLogs(records, "example.test", all)).toEqual(records);
     expect(filterLogs(records, "does-not-exist", all)).toEqual([]);

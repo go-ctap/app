@@ -4,22 +4,22 @@
 - `fidoapp` is a Wails 3 desktop workbench for local FIDO2/CTAP authenticators.
 - The Go app is a product boundary over `github.com/go-ctap/kit`, replaced locally by `../ctapkit`.
 - `ctapkit` is a runtime/toolkit for UI applications, not an abstract remote backend; generated Wails and `ctapkit` DTOs are UI-facing first-party model contracts.
-- Keep reusable authenticator, CTAP, device, transport, interaction, token, and session semantics in `ctapkit`.
+- Keep reusable authenticator, CTAP, device, transport, interaction, token, and selection semantics in `ctapkit`.
 - Keep product UX, Wails wiring, app state, screens, status/log presentation, and app-specific envelopes in this repo.
 - The project is greenfield. Prefer clean architecture over preserving early shapes.
 
 ## Hard Rules
 - Never log, persist, dump, or render PINs, `pinUvAuthToken`, reset confirmations, or authentication-token material.
-- HMAC-secret and PRF output bytes are allowed only as transient Lab result data: keep them hidden by default, reveal one value only after an explicit eye action, never expose them through clipboard actions, status/log/toast output, general JSON, or diagnostic dumps, and clear them on the Lab result/session boundaries defined by the product. Request salts and PRF inputs are not covered by this output-only exception.
+- HMAC-secret and PRF output bytes are allowed only as transient Lab result data: keep them hidden by default, reveal one value only after an explicit eye action, never expose them through clipboard actions, status/log/toast output, general JSON, or diagnostic dumps, and clear them on the Lab result/authenticator boundaries defined by the product. Request salts and PRF inputs are not covered by this output-only exception.
 - Treat generated Wails bindings and `ctapkit/service` DTOs as first-party contracts. Do not add defensive optional chaining, fallback object construction, or "unknown JSON" normalization around fields that are required by those Go types; open `../ctapkit` and the generated bindings when in doubt.
 - Operation responses use typed generated envelopes from `ctapkit/service`. Screens must not call raw generated Wails service methods directly. Centralize operation envelope/result traversal in named typed extractors/controllers under `frontend/src/lib/`; after extraction, UI builders and components may accept generated DTO types directly. Do not add `resultOf()`, `objectValue()`, defensive `Partial<>`, or `Record<string, unknown>` normalization around required generated DTO fields. `MDSLookupEnvelope.result` is a typed `LookupResult`; use it directly.
 - Do not fabricate generated `ctapkit/service` operation envelopes or model DTOs to represent frontend, bridge, transport, or thrown runtime failures. If a service call returns a real generated envelope with `error`, pass that envelope through. If a call throws or fails before returning a generated envelope, keep the generated DTO `data` empty/null, store a `failure.Failure` as the error, and report status/log entries through an explicit runtime-failure path rather than constructing fake `CredentialsEnvelope`, `InspectEnvelope`, or similar objects.
 - When selection is empty, discovery must automatically select and open the first available authenticator.
-- The selected device is the session boundary: changing selection must close any existing open session, clear pending interaction UI state, clear per-device screen state, and open one session for the newly selected device. The app should not expose manual session management controls.
-- Clearing selection or app shutdown must close open sessions and clear pending interaction UI state; `ctapkit` owns operation and interaction cancellation when sessions close.
-- Close/cancel paths must release sessions and resolve pending interactions without holding service locks while closing handles.
+- The selected device is the authenticator boundary: changing selection must close the currently open authenticator, clear pending interaction UI state, clear per-device screen state, and open the newly selected device. The app should not expose manual authenticator lifecycle controls.
+- Clearing selection or app shutdown must close the open authenticator and clear pending interaction UI state; `ctapkit` owns operation and interaction cancellation when the authenticator closes.
+- Close/cancel paths must release the authenticator and resolve pending interactions without holding service locks while closing handles.
 - Mutating or destructive authenticator actions need preview/confirmation semantics matching `ctapkit`.
-- Do not add frontend epoch counters, stale-response filters, duplicate in-flight interaction guards, or current-session revalidation layers for ordinary authenticator operations. `ctapkit` is the runtime boundary, local authenticators are single-operation devices, and frontend code should trust generated operation/session/interaction contracts instead of modelling imagined concurrency.
+- Do not add frontend epoch counters, stale-response filters, duplicate in-flight interaction guards, or current-selection revalidation layers for ordinary authenticator operations. `ctapkit` is the runtime boundary, local authenticators are single-operation devices, and frontend code should trust generated operation/selection/interaction contracts instead of modelling imagined concurrency.
 - Do not hand-edit `frontend/bindings/` unless intentionally updating generated Wails artifacts.
 - Treat Taskfile files as Wails integration-critical. Small targeted edits such as package-manager or lockfile updates are allowed, but never remove or broadly restructure tasks without an explicit user request.
 
@@ -47,7 +47,7 @@
 
 ## Verify
 - Backend: `go test ./... -count=1`.
-- Session, locking, interaction, or cancellation changes: also consider `go test -race ./... -count=1`.
+- Authenticator lifecycle, locking, interaction, or cancellation changes: also consider `go test -race ./... -count=1`.
 - Frontend: `cd frontend; pnpm run build`.
 - Frontend type checking: `cd frontend; pnpm run check`.
 - UI smoke tests must use the real Wails window. Wails 3 dev runtime is not reliable through browser automation; ask the user to run `wails3 dev` or `task dev`.
