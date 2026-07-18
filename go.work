@@ -6,4 +6,5 @@ use (
 	../hid
 	../kit
 	../token2
+	../wails/v3
 )
