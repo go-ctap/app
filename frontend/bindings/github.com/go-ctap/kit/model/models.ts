@@ -696,7 +696,6 @@ export class LogEntry {
     "operationKind"?: OperationKind;
     "command"?: string;
     "commandCode"?: number;
-    "subCommandFamily"?: string;
     "subCommand"?: string;
     "subCommandCode"?: number | null;
     "request"?: LogPayload | null;
@@ -854,16 +853,15 @@ export enum LogOutcome {
 };
 
 export class LogPayload {
-    "json": string;
+    "json"?: string;
+    "cborDiagnostic"?: string;
+    "diagnosticError"?: string;
     "originalBytes": number;
     "storedBytes": number;
     "truncated": boolean;
 
     /** Creates a new LogPayload instance. */
     constructor($$source: Partial<LogPayload> = {}) {
-        if (!("json" in $$source)) {
-            this["json"] = "";
-        }
         if (!("originalBytes" in $$source)) {
             this["originalBytes"] = 0;
         }

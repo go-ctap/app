@@ -34,6 +34,37 @@ function operationRecord() {
   return controller.records[0];
 }
 
+function ctapRecord() {
+  const controller = new LogController();
+  controller.append(new LogJournalRecord({
+    sequence: 18,
+    entry: new LogEntry({
+      timestamp: "2026-07-15T10:00:01.000Z",
+      layer: LogLayer.LogLayerCTAP,
+      level: LogLevel.LogLevelWarning,
+      outcome: LogOutcome.LogOutcomeFailed,
+      code: LogCode.LogCodeCTAPCommand,
+      command: "authenticatorClientPIN",
+      commandCode: 6,
+      subCommand: "getPinUvAuthTokenUsingPinWithPermissions",
+      subCommandCode: 9,
+      request: new LogPayload({
+        cborDiagnostic: `{10: "engineers.example"}`,
+        originalBytes: 24,
+        storedBytes: 25,
+        truncated: false,
+      }),
+      response: new LogPayload({
+        diagnosticError: "diagnostic schema unavailable",
+        originalBytes: 2,
+        storedBytes: 0,
+        truncated: false,
+      }),
+    }),
+  }));
+  return controller.records[0];
+}
+
 describe("log presentation", () => {
   beforeEach(() => setAppLocale("en"));
 
@@ -81,5 +112,17 @@ describe("log presentation", () => {
     expect(filterLogs(records, "example.test", all)).toEqual(records);
     expect(filterLogs(records, "does-not-exist", all)).toEqual([]);
     expect(filterLogs(records, "", { ...all, level: LogLevel.LogLevelError })).toEqual([]);
+  });
+
+  it("searches normalized CBOR notation, diagnostic failures, and numeric command metadata", () => {
+    const record = ctapRecord();
+    const records = [record];
+    const all = { level: "all", layer: "all", outcome: "all" } as const;
+
+    expect(filterLogs(records, "engineers.example", all)).toEqual(records);
+    expect(filterLogs(records, "diagnostic schema unavailable", all)).toEqual(records);
+    expect(filterLogs(records, "getPinUvAuthTokenUsingPinWithPermissions", all)).toEqual(records);
+    expect(filterLogs(records, "0x06", all)).toEqual(records);
+    expect(filterLogs(records, "does-not-exist", all)).toEqual([]);
   });
 });

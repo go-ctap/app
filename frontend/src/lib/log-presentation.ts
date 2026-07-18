@@ -176,6 +176,10 @@ export function commandLabel(record: KitLogRecord) {
   return record.entry.subCommand ? `${command} · ${record.entry.subCommand}` : command;
 }
 
+export function formatCTAPCode(value: number) {
+  return `0x${value.toString(16).toUpperCase().padStart(2, "0")}`;
+}
+
 export function filterLogs(records: readonly LogRecord[], query: string, filters: LogFilters) {
   const normalizedQuery = query.trim().toLocaleLowerCase();
   return records.filter((record) => {
@@ -200,11 +204,16 @@ function searchableText(record: LogRecord) {
     entry.operationId,
     entry.operationKind,
     entry.command,
-    entry.subCommandFamily,
+    entry.commandCode === undefined ? "" : formatCTAPCode(entry.commandCode),
     entry.subCommand,
+    entry.subCommandCode == null ? "" : formatCTAPCode(entry.subCommandCode),
     JSON.stringify(entry.params),
     entry.request?.json,
+    entry.request?.cborDiagnostic,
+    entry.request?.diagnosticError,
     entry.response?.json,
+    entry.response?.cborDiagnostic,
+    entry.response?.diagnosticError,
     entry.error ? failureMessage(entry.error) : "",
     entry.error ? JSON.stringify(entry.error) : "",
   ].filter(Boolean).join("\n");

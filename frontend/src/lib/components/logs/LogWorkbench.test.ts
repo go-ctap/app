@@ -13,6 +13,12 @@ import {
   LogPayload,
   OperationKind,
 } from "../../../../bindings/github.com/go-ctap/kit/model";
+import {
+  Category,
+  Code,
+  CTAPDetail,
+  Failure,
+} from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import { LogCursor } from "../../../../bindings/github.com/go-ctap/kit/service";
 import { api } from "$lib/api.js";
 import { logController } from "$lib/features/logs/state.svelte.js";
@@ -115,7 +121,7 @@ describe("LogWorkbench", () => {
     render(LogWorkbench);
 
     expect(screen.getAllByText("Operation: Overview").length).toBeGreaterThan(0);
-    expect(screen.getByText("Private fields were removed: request.pin")).toBeInTheDocument();
+    expect(screen.getByText("Sensitive fields were redacted: request.pin")).toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Request" }));
     expect(screen.getByText("This JSON payload was safely truncated from 70000 to 52 bytes.")).toBeInTheDocument();
@@ -146,6 +152,94 @@ describe("LogWorkbench", () => {
 
     await user.click(screen.getByRole("tab", { name: "Response / Error" }));
     expect(screen.getByText("transport read: io: read/write on closed pipe")).toBeInTheDocument();
+  });
+
+  it("renders normalized CTAP CBOR diagnostics with wire metadata", async () => {
+    const user = userEvent.setup();
+    appendEntry(1, {
+      command: "authenticatorClientPIN",
+      commandCode: 0x06,
+      subCommand: "getPinUvAuthTokenUsingPinWithPermissions",
+      subCommandCode: 0x09,
+      request: new LogPayload({
+        cborDiagnostic: `{1: 1, 2: 9, 9: 3, 10: "engineers.example", 6: "[REDACTED]"}`,
+        originalBytes: 48,
+        storedBytes: 70,
+        truncated: false,
+      }),
+      response: new LogPayload({
+        cborDiagnostic: `{2: 8, 5: "[REDACTED]"}`,
+        originalBytes: 35,
+        storedBytes: 26,
+        truncated: false,
+      }),
+      redactedFields: ["request.PinHashEnc", "response.PinUvAuthToken"],
+    });
+    render(LogWorkbench);
+
+    expect(screen.getByText("0x06 · 0x09")).toBeInTheDocument();
+    expect(screen.getByText("48 bytes")).toBeInTheDocument();
+    expect(screen.getByText("35 bytes")).toBeInTheDocument();
+    expect(screen.getByText("Sensitive fields were redacted: request.PinHashEnc, response.PinUvAuthToken"))
+      .toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Request" }));
+    const request = screen.getByRole("region", { name: "Request" });
+    expect(within(request).getByText("CBOR diagnostic")).toBeInTheDocument();
+    expect(request.querySelector("pre")?.textContent)
+      .toBe(`{1: 1, 2: 9, 9: 3, 10: "engineers.example", 6: "[REDACTED]"}`);
+
+    await user.click(screen.getByRole("tab", { name: "Response / Error" }));
+    const response = screen.getByRole("tabpanel", { name: "Response / Error" });
+    expect(response.querySelector("pre")?.textContent).toBe(`{2: 8, 5: "[REDACTED]"}`);
+  });
+
+  it("shows CBOR diagnostic failures and keeps the typed CTAP failure visible", async () => {
+    const user = userEvent.setup();
+    appendEntry(1, {
+      layer: LogLayer.LogLayerCTAP,
+      level: LogLevel.LogLevelError,
+      outcome: LogOutcome.LogOutcomeFailed,
+      command: "authenticatorGetInfo",
+      commandCode: 0x04,
+      request: new LogPayload({
+        diagnosticError: "diagnostic schema unavailable",
+        originalBytes: 4,
+        storedBytes: 0,
+        truncated: false,
+      }),
+      response: new LogPayload({
+        originalBytes: 0,
+        storedBytes: 0,
+        truncated: false,
+      }),
+      error: new Failure({
+        code: Code.CodeCTAPCBORInvalid,
+        category: Category.CategoryTransportFailure,
+        ctap: new CTAPDetail({
+          command: "authenticatorGetInfo",
+          commandCode: 0x04,
+          subCommandFamily: "clientPIN",
+          subCommand: "getPinUvAuthTokenUsingPinWithPermissions",
+          subCommandCode: 0x09,
+          status: "CTAP2_ERR_INVALID_CBOR",
+          statusCode: 0x12,
+        }),
+      }),
+    });
+    render(LogWorkbench);
+
+    await user.click(screen.getByRole("tab", { name: "Request" }));
+    expect(screen.getByText("CBOR diagnostic unavailable")).toBeInTheDocument();
+    expect(screen.getByText("diagnostic schema unavailable")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "Response / Error" }));
+    const response = screen.getByRole("tabpanel", { name: "Response / Error" });
+    expect(within(response).getByText("CTAP_CBOR_INVALID · CTAP2_ERR_INVALID_CBOR (0x12)"))
+      .toBeInTheDocument();
+    expect(response.querySelector("pre")).not.toBeInTheDocument();
+    expect(within(response).queryByText("clientPIN")).not.toBeInTheDocument();
+    expect(screen.queryByText("This CTAP command has no response body.")).not.toBeInTheDocument();
   });
 
   it("opens a log entry in a sheet and navigates the filtered journal when the workbench is narrow", async () => {
