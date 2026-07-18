@@ -55,19 +55,15 @@ describe("LogController", () => {
     expect(byteLimited.records.map(recordID)).toEqual(["kit:2"]);
   });
 
-  it("disables follow-live when an older entry is selected and restores it at the tail", () => {
+  it("keeps an explicit selection stable when new records arrive", () => {
     const controller = new LogController();
     controller.append(journalRecord(1));
     controller.append(journalRecord(2));
     expect(controller.selectedId).toBe("kit:2");
 
     controller.select("kit:1");
-    expect(controller.followLive).toBe(false);
     controller.append(journalRecord(3));
     expect(controller.selectedId).toBe("kit:1");
-
-    controller.setFollowLive(true);
-    expect(controller.selectedId).toBe("kit:3");
   });
 
   it("clears only on an explicit clear action", () => {
@@ -78,7 +74,6 @@ describe("LogController", () => {
 
     expect(controller.records).toEqual([]);
     expect(controller.selectedId).toBeNull();
-    expect(controller.followLive).toBe(true);
   });
 
   it("advances the cursor, ignores overlap, and rejects batches from before clear", () => {

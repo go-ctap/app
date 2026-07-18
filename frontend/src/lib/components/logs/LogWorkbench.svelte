@@ -3,7 +3,7 @@
   import type { Attachment } from "svelte/attachments";
   import { get } from "svelte/store";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
-  import { Eraser, Radio, Search, TriangleAlert } from "@lucide/svelte";
+  import { Eraser, Search, TriangleAlert } from "@lucide/svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -120,10 +120,8 @@
 
   $effect(() => {
     const newest = logController.records.at(-1);
-    const tailKey = newest ? recordID(newest) : null;
-    const followLive = logController.followLive;
     const viewport = listViewport;
-    if (!tailKey || !followLive || !viewport) return;
+    if (!newest || !viewport) return;
 
     void tick().then(() => get(rowVirtualizer).scrollToEnd({ behavior: "auto" }));
   });
@@ -430,15 +428,6 @@
         </Select.Content>
       </Select.Root>
 
-      <Button
-        type="button"
-        variant={logController.followLive ? "secondary" : "outline"}
-        aria-pressed={logController.followLive}
-        onclick={() => logController.setFollowLive(!logController.followLive)}
-      >
-        <Radio data-icon="inline-start" aria-hidden="true" />
-        {m.logs_follow_live()}
-      </Button>
       <Button type="button" variant="outline" disabled={logController.records.length === 0} onclick={() => clearOpen = true}>
         <Eraser data-icon="inline-start" aria-hidden="true" />
         {m.logs_clear()}

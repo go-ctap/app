@@ -13,7 +13,7 @@
 
 <div
 	data-slot="table-container"
-	class="relative w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain overscroll-y-auto"
+	class="relative w-full min-w-0 max-w-full overflow-x-auto"
 >
 	<table bind:this={ref} data-slot="table" class={cn("w-full caption-bottom text-xs", className)} {...restProps}>
 		{@render children?.()}

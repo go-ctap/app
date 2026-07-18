@@ -159,8 +159,6 @@
       min-width: 0;
       min-height: 0;
       overflow-y: auto;
-      overscroll-behavior: contain;
-      scrollbar-gutter: stable;
       padding: var(--space-4);
       background: var(--sidebar-background, var(--sidebar));
     }
@@ -193,7 +191,6 @@
       min-width: 0;
       max-height: 13rem;
       overflow-y: auto;
-      overscroll-behavior: contain;
     }
 
     .sidebar-token-list :global(.sidebar-token-button) {

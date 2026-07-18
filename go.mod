@@ -3,7 +3,7 @@ module fidobench
 go 1.26.3
 
 require (
-	github.com/go-ctap/kit v0.5.0
+	github.com/go-ctap/kit v0.7.1
 	github.com/wailsapp/wails/v3 v3.0.0-alpha2.117
 )
 
@@ -31,5 +31,3 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 )
-
-replace github.com/go-ctap/kit => ../kit

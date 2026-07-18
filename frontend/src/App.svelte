@@ -307,7 +307,6 @@
 			min-height: 0;
 			overflow-x: hidden;
 			overflow-y: auto;
-			scrollbar-gutter: stable;
 			padding: var(--space-4);
 			background: var(--workspace-surface);
 		}

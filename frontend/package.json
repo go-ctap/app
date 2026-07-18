@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@tanstack/svelte-virtual": "^3.13.32",
-    "@wailsio/runtime": "3.0.0-alpha.97",
+    "@wailsio/runtime": "file:../../wails/v3/internal/runtime/desktop/@wailsio/runtime",
     "tldts": "^7.4.3"
   },
   "devDependencies": {

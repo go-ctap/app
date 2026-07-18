@@ -396,8 +396,6 @@
     min-inline-size: 0;
     overflow-x: auto;
     overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
     border: 1px solid var(--border);
     background: var(--muted);
   }
@@ -427,8 +425,6 @@
     max-block-size: min(14rem, 30dvh);
     min-inline-size: 0;
     overflow: auto;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
     border: 1px solid var(--border);
     background: var(--muted);
   }

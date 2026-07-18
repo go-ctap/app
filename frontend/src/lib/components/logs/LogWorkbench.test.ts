@@ -407,7 +407,6 @@ describe("LogWorkbench", () => {
 
   it("renders only the visible window for a large journal", async () => {
     for (let sequence = 1; sequence <= 200; sequence += 1) appendOperation(sequence);
-    logController.setFollowLive(false);
 
     const { container } = render(LogWorkbench);
 
@@ -418,18 +417,15 @@ describe("LogWorkbench", () => {
     });
   });
 
-  it("scrolls the virtual journal to the end when Follow live is enabled", async () => {
-    const user = userEvent.setup();
+  it("always scrolls the virtual journal to the newest record", async () => {
     appendOperation(1);
-    appendOperation(2);
-    logController.setFollowLive(false);
 
     const { container } = render(LogWorkbench);
     const viewport = container.querySelector<HTMLElement>("[data-slot='scroll-area-viewport']")!;
     const scrollTo = vi.fn();
     viewport.scrollTo = scrollTo;
 
-    await user.click(screen.getByRole("button", { name: "Follow live" }));
+    appendOperation(2);
 
     await waitFor(() => {
       expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: "auto" }));

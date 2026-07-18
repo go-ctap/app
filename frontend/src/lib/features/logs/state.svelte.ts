@@ -98,11 +98,6 @@ export class LogController {
     this.followLive = newest !== undefined && recordID(newest) === id;
   }
 
-  setFollowLive(enabled: boolean) {
-    this.followLive = enabled;
-    if (enabled) this.selectedId = this.records.length > 0 ? recordID(this.records.at(-1)!) : null;
-  }
-
   setQuery(query: string) {
     this.query = query;
   }
