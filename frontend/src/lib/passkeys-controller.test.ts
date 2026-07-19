@@ -2,9 +2,9 @@ import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  OperationKind,
-  VerificationFlow,
+	VerificationFlow,
 } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   CredentialDeleteEnvelope,
@@ -41,7 +41,7 @@ function inventoryEnvelope(readOnlyPermission = true): CredentialsEnvelope {
   return {
     operationId: "list-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationListCredentials,
+    kind: OperationKind.ListCredentials,
     result: {
       device: { fingerprint: "token-1" },
       support: { credentialManagement: true, previewOnly: false, readOnlyPermission },
@@ -85,7 +85,7 @@ function updatePreviewEnvelope(): CredentialUpdateEnvelope {
   return {
     operationId: "preview-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationUpdateCredentialUser,
+    kind: OperationKind.UpdateCredentialUser,
     result: {
       preview: {
         credentialIDHex: "cafe",
@@ -102,7 +102,7 @@ function storeStateEnvelope(): CredentialStoreStateEnvelope {
   return {
     operationId: "store-state-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationCredentialStoreState,
+    kind: OperationKind.CredentialStoreState,
     result: {
       authenticatorIdentifierHex: "000102030405060708090a0b0c0d0e0f",
       credentialStoreStateHex: "101112131415161718191a1b1c1d1e1f",
@@ -127,7 +127,7 @@ function deletePreviewEnvelope(): CredentialDeleteEnvelope {
   return {
     operationId: "delete-preview-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationDeleteCredential,
+    kind: OperationKind.DeleteCredential,
     result: {
       preview: {
         credentialIDHex: "cafe",

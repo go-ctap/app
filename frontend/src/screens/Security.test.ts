@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import {
   AuthenticatorConfigStatus,
@@ -91,7 +91,7 @@ function statusEnvelope(maxPINLength = 63): ConfigStatusEnvelope {
   return {
     operationId: "security-status-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationConfigStatus,
+    kind: OperationKind.ConfigStatus,
     result: report,
   } as ConfigStatusEnvelope;
 }

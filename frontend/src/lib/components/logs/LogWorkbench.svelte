@@ -12,47 +12,23 @@
   import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
   import * as Select from "$lib/components/ui/select/index.js";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
-  import { clearLogJournal } from "$lib/controller.js";
+  import { clearLogJournal } from "$lib/logs-controller.js";
   import { logController, recordID } from "$lib/features/logs/state.svelte.js";
-  import {
-    buildLogListItems,
-    buildVisibleLogListRows,
-    type OperationLogGroup,
-    type VisibleLogListRow,
-  } from "$lib/log-grouping.js";
-  import { filterLogs, logOutcome } from "$lib/log-presentation.js";
-  import { LogLayer, LogLevel, LogOutcome } from "../../../../bindings/github.com/go-ctap/kit/model/index.js";
+  import { filterLogs } from "$lib/log-presentation.js";
+  import { LogOutcome } from "../../../../bindings/github.com/go-ctap/kit/model/index.js";
 
   import { m } from "../../../paraglide/messages.js";
   import LogDetail from "./LogDetail.svelte";
   import LogDetailNavigation from "./LogDetailNavigation.svelte";
   import LogDetailSheet from "./LogDetailSheet.svelte";
-  import LogOperationChild from "./LogOperationChild.svelte";
-  import LogOperationGroup from "./LogOperationGroup.svelte";
   import LogRecordRow from "./LogRecordRow.svelte";
 
   const DETAIL_SHEET_BREAKPOINT_PX = 62 * 16;
   const LOG_ROW_ESTIMATE_PX = 64;
   const LOG_ROW_OVERSCAN = 8;
 
-  const levelOptions = [
-    { value: "all", label: m.logs_all_levels() },
-    { value: LogLevel.LogLevelDebug, label: m.logs_level_debug() },
-    { value: LogLevel.LogLevelInfo, label: m.logs_level_info() },
-    { value: LogLevel.LogLevelWarning, label: m.logs_level_warning() },
-    { value: LogLevel.LogLevelError, label: m.logs_level_error() },
-  ];
-  const layerOptions = [
-    { value: "all", label: m.logs_all_layers() },
-    { value: LogLayer.LogLayerService, label: m.logs_layer_service() },
-    { value: LogLayer.LogLayerSelection, label: m.logs_layer_selection() },
-    { value: LogLayer.LogLayerOperation, label: m.logs_layer_operation() },
-    { value: LogLayer.LogLayerInteraction, label: m.logs_layer_interaction() },
-    { value: LogLayer.LogLayerCTAP, label: m.logs_layer_ctap() },
-  ];
   const outcomeOptions = [
     { value: "all", label: m.logs_all_outcomes() },
-    { value: LogOutcome.LogOutcomeEvent, label: m.logs_outcome_event() },
     { value: LogOutcome.LogOutcomeSucceeded, label: m.logs_outcome_succeeded() },
     { value: LogOutcome.LogOutcomeFailed, label: m.logs_outcome_failed() },
     { value: LogOutcome.LogOutcomeCanceled, label: m.logs_outcome_canceled() },
@@ -63,18 +39,9 @@
   let keyboardNavigation = $state(false);
   let workbenchWidth = $state(0);
   let listViewport: HTMLElement | null = $state(null);
-  let operationOpenOverrides = $state<Record<string, boolean>>({});
   let pointerX: number | null = null;
   let pointerY: number | null = null;
   let filteredRecords = $derived(filterLogs(logController.records, logController.query, logController.filters));
-  let logItems = $derived(buildLogListItems(logController.records, filteredRecords));
-  let filtersActive = $derived(
-    logController.query.trim().length > 0
-      || logController.filters.level !== "all"
-      || logController.filters.layer !== "all"
-      || logController.filters.outcome !== "all",
-  );
-  let visibleRows = $derived.by(() => buildVisibleLogListRows(logItems, operationOpen));
   let selectedRecord = $derived(
     filteredRecords.find((record) => recordID(record) === logController.selectedId)
       ?? filteredRecords.at(-1)
@@ -86,9 +53,10 @@
     if (!selected) return -1;
     return filteredRecords.findIndex((record) => recordID(record) === recordID(selected));
   });
-  let currentLevelLabel = $derived(levelOptions.find((option) => option.value === logController.filters.level)?.label ?? m.logs_all_levels());
-  let currentLayerLabel = $derived(layerOptions.find((option) => option.value === logController.filters.layer)?.label ?? m.logs_all_layers());
-  let currentOutcomeLabel = $derived(outcomeOptions.find((option) => option.value === logController.filters.outcome)?.label ?? m.logs_all_outcomes());
+  let currentOutcomeLabel = $derived(
+    outcomeOptions.find((option) => option.value === logController.filters.outcome)?.label
+      ?? m.logs_all_outcomes(),
+  );
   let useDetailSheet = $derived(workbenchWidth > 0 && workbenchWidth <= DETAIL_SHEET_BREAKPOINT_PX);
 
   function getScrollElement() {
@@ -96,7 +64,8 @@
   }
 
   function getItemKey(index: number) {
-    return visibleRows[index]?.key ?? index;
+    const record = filteredRecords[index];
+    return record ? recordID(record) : index;
   }
 
   const rowVirtualizer = createVirtualizer<HTMLElement, HTMLElement>({
@@ -115,7 +84,7 @@
   };
 
   $effect(() => {
-    get(rowVirtualizer).setOptions({ count: visibleRows.length });
+    get(rowVirtualizer).setOptions({ count: filteredRecords.length });
   });
 
   $effect(() => {
@@ -130,16 +99,8 @@
     logController.setQuery((event.currentTarget as HTMLInputElement).value);
   }
 
-  function handleLevel(value: string) {
-    logController.setFilters({ ...logController.filters, level: value as LogLevel | "all" });
-  }
-
-  function handleLayer(value: string) {
-    logController.setFilters({ ...logController.filters, layer: value as LogLayer | "all" });
-  }
-
   function handleOutcome(value: string) {
-    logController.setFilters({ ...logController.filters, outcome: value as LogOutcome | "all" });
+    logController.setFilters({ outcome: value as LogOutcome | "all" });
   }
 
   function selectRecord(id: string) {
@@ -153,90 +114,16 @@
 
   function selectRecordAt(index: number) {
     const record = filteredRecords[index];
-    if (record) logController.select(recordID(record));
+    if (!record) return false;
+
+    logController.select(recordID(record));
+    get(rowVirtualizer).scrollToIndex(index, { align: "auto" });
+    return true;
   }
 
   function isEditableTarget(target: EventTarget | null) {
     return target instanceof Element
       && Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
-  }
-
-  function operationDefaultOpen(group: OperationLogGroup) {
-    return group.operation === null
-      || logOutcome(group.representative) !== LogOutcome.LogOutcomeSucceeded;
-  }
-
-  function operationOpen(group: OperationLogGroup) {
-    return filtersActive
-      || (operationOpenOverrides[group.operationId] ?? operationDefaultOpen(group));
-  }
-
-  function toggleOperation(group: OperationLogGroup) {
-    operationOpenOverrides = {
-      ...operationOpenOverrides,
-      [group.operationId]: !operationOpen(group),
-    };
-  }
-
-  function visibleRowRecordID(row: VisibleLogListRow) {
-    return row.kind === "operation"
-      ? recordID(row.group.representative)
-      : recordID(row.record);
-  }
-
-  function selectedVisibleRowIndex() {
-    const exactIndex = visibleRows.findIndex((row) => visibleRowRecordID(row) === selectedId);
-    if (exactIndex >= 0) return exactIndex;
-
-    return visibleRows.findIndex((row) => row.kind === "operation"
-      && row.group.allRecords.some((record) => recordID(record) === selectedId));
-  }
-
-  function adjacentVisibleRowIndex(offset: -1 | 1) {
-    const currentIndex = selectedVisibleRowIndex();
-    const targetIndex = currentIndex < 0
-      ? (offset < 0 ? visibleRows.length - 1 : 0)
-      : currentIndex + offset;
-    return visibleRows[targetIndex] ? targetIndex : -1;
-  }
-
-  function selectVisibleRowAt(index: number) {
-    const row = visibleRows[index];
-    if (!row) return false;
-
-    selectRecord(visibleRowRecordID(row));
-    get(rowVirtualizer).scrollToIndex(index, { align: "auto" });
-    return true;
-  }
-
-  function selectVisibleRecord(offset: -1 | 1) {
-    return selectVisibleRowAt(adjacentVisibleRowIndex(offset));
-  }
-
-  function navigateVisibleTree(key: "ArrowLeft" | "ArrowRight") {
-    const selectedIndex = selectedVisibleRowIndex();
-    const row = visibleRows[selectedIndex];
-    if (!row) return false;
-
-    if (key === "ArrowRight" && row.kind === "operation" && !operationOpen(row.group)) {
-      toggleOperation(row.group);
-      void tick().then(() => selectVisibleRowAt(selectedIndex + 1));
-      return true;
-    }
-
-    if (key === "ArrowLeft") {
-      if (row.kind === "operation-child") {
-        const parentIndex = visibleRows.findIndex((candidate) => candidate.kind === "operation"
-          && candidate.group.operationId === row.operationId);
-        return selectVisibleRowAt(parentIndex);
-      }
-      if (row.kind === "operation" && operationOpen(row.group)) {
-        toggleOperation(row.group);
-        return true;
-      }
-    }
-
-    return selectVisibleRecord(key === "ArrowLeft" ? -1 : 1);
   }
 
   function handleWindowKeydown(event: KeyboardEvent) {
@@ -248,28 +135,14 @@
       || event.metaKey
       || event.shiftKey
       || isEditableTarget(event.target)
+      || !["ArrowUp", "ArrowDown"].includes(event.key)
     ) {
       return;
     }
 
-    if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) return;
     keyboardNavigation = true;
-
-    if (event.key === "ArrowUp") {
-      event.preventDefault();
-      selectVisibleRecord(-1);
-      return;
-    }
-
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      selectVisibleRecord(1);
-      return;
-    }
-
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-      if (navigateVisibleTree(event.key)) event.preventDefault();
-    }
+    const offset = event.key === "ArrowUp" ? -1 : 1;
+    if (selectRecordAt(selectedRecordIndex + offset)) event.preventDefault();
   }
 
   function handleWindowPointerMove(event: PointerEvent) {
@@ -290,7 +163,6 @@
     if (await clearLogJournal()) {
       clearOpen = false;
       detailOpen = false;
-      operationOpenOverrides = {};
     }
   }
 </script>
@@ -304,47 +176,28 @@
 {#snippet logMaster()}
   <section class="log-master" aria-label={m.logs()}>
     {#if filteredRecords.length === 0}
-      <EmptyState title={m.logs_no_match_title()} message={m.logs_no_match_message()} variant="compact" />
+      <div class="log-master-empty">
+        <EmptyState title={m.logs_no_match_title()} message={m.logs_no_match_message()} variant="compact" />
+      </div>
     {:else}
-      <div
-        class="log-list-scroll-frame"
-      >
+      <div class="log-list-scroll-frame">
         <ScrollArea class="log-list-scroll" bind:viewportRef={listViewport}>
           <div class="log-list" style:height={`${$rowVirtualizer.getTotalSize()}px`}>
             {#each $rowVirtualizer.getVirtualItems() as virtualRow (virtualRow.key)}
-              {@const row = visibleRows[virtualRow.index]}
-              {#if row}
+              {@const record = filteredRecords[virtualRow.index]}
+              {#if record}
                 <div
                   class="log-virtual-row"
                   data-index={virtualRow.index}
                   style:transform={`translateY(${virtualRow.start}px)`}
                   {@attach measureVirtualRow}
                 >
-                  {#if row.kind === "operation"}
-                    <LogOperationGroup
-                      group={row.group}
-                      {selectedId}
-                      open={operationOpen(row.group)}
-                      onSelect={selectRecord}
-                      onOpen={openRecord}
-                      onToggle={() => toggleOperation(row.group)}
-                    />
-                  {:else if row.kind === "operation-child"}
-                    <LogOperationChild
-                      record={row.record}
-                      selected={recordID(row.record) === selectedId}
-                      last={row.last}
-                      onSelect={selectRecord}
-                      onOpen={openRecord}
-                    />
-                  {:else}
-                    <LogRecordRow
-                      record={row.record}
-                      selected={recordID(row.record) === selectedId}
-                      onSelect={selectRecord}
-                      onOpen={openRecord}
-                    />
-                  {/if}
+                  <LogRecordRow
+                    {record}
+                    selected={recordID(record) === selectedId}
+                    onSelect={selectRecord}
+                    onOpen={openRecord}
+                  />
                 </div>
               {/if}
             {/each}
@@ -395,28 +248,6 @@
         />
       </InputGroup.Root>
 
-      <Select.Root type="single" value={logController.filters.level} onValueChange={handleLevel} items={levelOptions}>
-        <Select.Trigger aria-label={m.logs_level()}>{currentLevelLabel}</Select.Trigger>
-        <Select.Content side="bottom" align="end" sideOffset={6}>
-          <Select.Group>
-            {#each levelOptions as option (option.value)}
-              <Select.Item value={option.value} label={option.label}>{option.label}</Select.Item>
-            {/each}
-          </Select.Group>
-        </Select.Content>
-      </Select.Root>
-
-      <Select.Root type="single" value={logController.filters.layer} onValueChange={handleLayer} items={layerOptions}>
-        <Select.Trigger aria-label={m.logs_layer()}>{currentLayerLabel}</Select.Trigger>
-        <Select.Content side="bottom" align="end" sideOffset={6}>
-          <Select.Group>
-            {#each layerOptions as option (option.value)}
-              <Select.Item value={option.value} label={option.label}>{option.label}</Select.Item>
-            {/each}
-          </Select.Group>
-        </Select.Content>
-      </Select.Root>
-
       <Select.Root type="single" value={logController.filters.outcome} onValueChange={handleOutcome} items={outcomeOptions}>
         <Select.Trigger aria-label={m.logs_outcome()}>{currentOutcomeLabel}</Select.Trigger>
         <Select.Content side="bottom" align="end" sideOffset={6}>
@@ -451,11 +282,11 @@
     </div>
   {:else}
     <Resizable.PaneGroup direction="horizontal" keyboardResizeBy={5} class="log-master-detail">
-      <Resizable.Pane defaultSize={65} minSize={35} maxSize={70}>
+      <Resizable.Pane defaultSize={65} minSize={35} maxSize={70} class="log-pane">
         {@render logMaster()}
       </Resizable.Pane>
       <Resizable.Handle withHandle />
-      <Resizable.Pane defaultSize={35} minSize={30} maxSize={65}>
+      <Resizable.Pane defaultSize={35} minSize={30} maxSize={65} class="log-pane">
         {@render logDetail()}
       </Resizable.Pane>
     </Resizable.PaneGroup>
@@ -541,6 +372,13 @@
       background: var(--card);
     }
 
+    :global(.log-pane) {
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
     .log-master-detail-compact {
       display: grid;
       grid-template-columns: minmax(0, 1fr);
@@ -551,10 +389,17 @@
       min-width: 0;
       min-height: 0;
       height: 100%;
+      overflow: hidden;
     }
 
     .log-master {
       background: var(--background);
+    }
+
+    .log-master-empty {
+      height: 100%;
+      min-height: 0;
+      padding: var(--space-3);
     }
 
     .log-detail-frame {
@@ -564,7 +409,9 @@
 
     .log-list-scroll-frame,
     :global(.log-list-scroll) {
+      min-height: 0;
       height: 100%;
+      overflow: hidden;
     }
 
     .log-list {
@@ -580,13 +427,11 @@
       width: 100%;
       min-width: 0;
     }
-
   }
 
   @layer exceptions {
     .log-workbench[data-keyboard-navigation="true"] {
       --log-row-hover-surface: transparent;
-      --log-toggle-hover-border: var(--border);
     }
   }
 </style>

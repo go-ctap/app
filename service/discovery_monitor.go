@@ -5,8 +5,6 @@ import (
 	"time"
 
 	ctapdiscover "github.com/go-ctap/ctap/discover"
-	ctapkit "github.com/go-ctap/kit"
-	"github.com/go-ctap/kit/model"
 	"github.com/go-ctap/kit/model/failure"
 )
 
@@ -171,15 +169,4 @@ func (s *Service) emitDiscoveryMonitorFailure(err error) {
 		Error:   failure.Snapshot(monitorErr),
 	}
 	s.emit(EventDiscoveryChanged, envelope)
-
-	s.logs.Append(model.LogEntry{
-		Timestamp:    time.Now().UTC(),
-		Layer:        model.LogLayerService,
-		Level:        model.LogLevelError,
-		Outcome:      model.LogOutcomeFailed,
-		Code:         model.LogCodeDiscoveryChanged,
-		Params:       map[string]string{"trigger": string(DiscoveryTriggerHotplug)},
-		Error:        envelope.Error,
-		ErrorMessage: ctapkit.TransportErrorMessage(monitorErr),
-	})
 }

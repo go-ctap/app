@@ -3,9 +3,7 @@ import { describe, expect, it } from "vitest";
 import { AttestationStatementFormatIdentifier } from "../../bindings/github.com/go-ctap/ctap/attestation";
 import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/credential";
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
-import {
-  OperationKind,
-} from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import type { Result as InspectResult } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import {
   AuthenticatorConfigOperation,
@@ -98,7 +96,7 @@ describe("ctapkit result extractors", () => {
       },
     };
 
-    const envelope = { kind: OperationKind.OperationInspect, result } as unknown as InspectEnvelope;
+    const envelope = { kind: OperationKind.Inspect, result } as unknown as InspectEnvelope;
 
     expect(inspectResult(envelope)).toBe(result);
   });
@@ -111,14 +109,14 @@ describe("ctapkit result extractors", () => {
       modality: BioModality.BioModalityFingerprint,
     };
 
-    const envelope = { kind: OperationKind.OperationBioSensorInfo, result: report } as unknown as BioSensorEnvelope;
+    const envelope = { kind: OperationKind.BioSensorInfo, result: report } as unknown as BioSensorEnvelope;
 
     expect(bioSensorReport(envelope)).toBe(report);
   });
 
   it("extracts config status and biometric inventory only from successful envelopes", () => {
     const status = {
-      kind: OperationKind.OperationConfigStatus,
+      kind: OperationKind.ConfigStatus,
       result: {
         device,
         pin: { state: StateValue.StateConfigured },
@@ -126,7 +124,7 @@ describe("ctapkit result extractors", () => {
       },
     } as unknown as ConfigStatusEnvelope;
     const list = {
-      kind: OperationKind.OperationBioList,
+      kind: OperationKind.BioList,
       result: {
         device,
         supported: true,
@@ -146,40 +144,40 @@ describe("ctapkit result extractors", () => {
 
   it("uses generated operation and mode fields to recognize meaningful security previews", () => {
     const pin = {
-      kind: OperationKind.OperationChangePIN,
-      error: failureForCode(Code.CodeConfirmationRequired),
+      kind: OperationKind.ChangePIN,
+      error: failureForCode(Code.CodeInternalError),
       result: {
         preview: { operation: PINMutationOperation.PINMutationChange },
         result: null,
       },
     } as unknown as PINEnvelope;
     const authenticatorConfig = {
-      kind: OperationKind.OperationSetAlwaysUV,
-      error: failureForCode(Code.CodeConfirmationRequired),
+      kind: OperationKind.SetAlwaysUV,
+      error: failureForCode(Code.CodeInternalError),
       result: {
         preview: { operation: AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV },
         result: null,
       },
     } as unknown as AuthenticatorConfigEnvelope;
     const enroll = {
-      kind: OperationKind.OperationBioEnroll,
-      error: failureForCode(Code.CodeConfirmationRequired),
+      kind: OperationKind.BioEnroll,
+      error: failureForCode(Code.CodeInternalError),
       result: {
         preview: { mode: PreviewMode.PreviewModeDryRun },
         result: null,
       },
     } as unknown as BioEnrollEnvelope;
     const bioMutation = {
-      kind: OperationKind.OperationBioRename,
-      error: failureForCode(Code.CodeConfirmationRequired),
+      kind: OperationKind.BioRename,
+      error: failureForCode(Code.CodeInternalError),
       result: {
         preview: { operation: BioMutationOperation.BioMutationRename },
         result: null,
       },
     } as unknown as BioMutationEnvelope;
     const reset = {
-      kind: OperationKind.OperationResetFactory,
-      error: failureForCode(Code.CodeConfirmationRequired),
+      kind: OperationKind.ResetFactory,
+      error: failureForCode(Code.CodeInternalError),
       result: {
         preview: { mode: PreviewMode.PreviewModeDryRun },
         result: null,
@@ -207,14 +205,14 @@ describe("ctapkit result extractors", () => {
 
   it("keeps partial biometric enrollment progress on error but rejects other errored results", () => {
     const pin = {
-      kind: OperationKind.OperationSetPIN,
+      kind: OperationKind.SetPIN,
       result: {
         preview: { operation: PINMutationOperation.PINMutationSet },
         result: { operation: PINMutationOperation.PINMutationSet, deviceFingerprint: "dev-1" },
       },
     } as unknown as PINEnvelope;
     const authenticatorConfig = {
-      kind: OperationKind.OperationSetMinPINLength,
+      kind: OperationKind.SetMinPINLength,
       result: {
         preview: { operation: AuthenticatorConfigOperation.AuthenticatorConfigMinPINLength },
         result: {
@@ -224,7 +222,7 @@ describe("ctapkit result extractors", () => {
       },
     } as unknown as AuthenticatorConfigEnvelope;
     const enroll = {
-      kind: OperationKind.OperationBioEnroll,
+      kind: OperationKind.BioEnroll,
       result: {
         preview: { mode: PreviewMode.PreviewModeExecute },
         result: {
@@ -236,7 +234,7 @@ describe("ctapkit result extractors", () => {
       },
     } as unknown as BioEnrollEnvelope;
     const bioMutation = {
-      kind: OperationKind.OperationBioRemove,
+      kind: OperationKind.BioRemove,
       result: {
         preview: { operation: BioMutationOperation.BioMutationRemove },
         result: {
@@ -247,7 +245,7 @@ describe("ctapkit result extractors", () => {
       },
     } as unknown as BioMutationEnvelope;
     const reset = {
-      kind: OperationKind.OperationResetFactory,
+      kind: OperationKind.ResetFactory,
       result: {
         preview: { mode: PreviewMode.PreviewModeExecute },
         result: { deviceFingerprint: "dev-1", reset: true },
@@ -275,7 +273,7 @@ describe("ctapkit result extractors", () => {
 
   it("extracts typed large blob list and read reports only from successful envelopes", () => {
     const list = {
-      kind: OperationKind.OperationListLargeBlobs,
+      kind: OperationKind.ListLargeBlobs,
       result: {
         device,
         support: { largeBlobs: true, largeBlobKeyExtension: true },
@@ -284,7 +282,7 @@ describe("ctapkit result extractors", () => {
       },
     } as unknown as LargeBlobListEnvelope;
     const read = {
-      kind: OperationKind.OperationReadLargeBlob,
+      kind: OperationKind.ReadLargeBlob,
       result: {
         device,
         support: { largeBlobs: true, largeBlobKeyExtension: true },
@@ -309,7 +307,7 @@ describe("ctapkit result extractors", () => {
     const capacity = {
       operationId: "op-capacity",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationWriteLargeBlob,
+      kind: OperationKind.WriteLargeBlob,
       error: failureForCode(Code.CodeLargeBlobArrayTooLarge),
       result: {
         preview: {
@@ -332,7 +330,7 @@ describe("ctapkit result extractors", () => {
 
   it("extracts a completed large blob result only when the envelope itself succeeded", () => {
     const envelope = {
-      kind: OperationKind.OperationDeleteLargeBlob,
+      kind: OperationKind.DeleteLargeBlob,
       result: {
         preview: { operation: MutationOperation.MutationDelete },
         result: { operation: MutationOperation.MutationDelete, credentialIDHex: "cafe", noBlob: false },
@@ -346,7 +344,7 @@ describe("ctapkit result extractors", () => {
 
   it("extracts credential mutation previews and completed results without generic traversal", () => {
     const update = {
-      kind: OperationKind.OperationUpdateCredentialUser,
+      kind: OperationKind.UpdateCredentialUser,
       result: {
         preview: {
           credentialIDHex: "cafe",
@@ -364,7 +362,7 @@ describe("ctapkit result extractors", () => {
       },
     } as CredentialUpdateEnvelope;
     const deletion = {
-      kind: OperationKind.OperationDeleteCredential,
+      kind: OperationKind.DeleteCredential,
       result: {
         preview: { credentialIDHex: "cafe", rpID: "example.test" },
         result: { deviceFingerprint: "dev-1", credentialIDHex: "cafe", rpID: "example.test" },
@@ -403,7 +401,7 @@ describe("ctapkit result extractors", () => {
     const envelope = new MakeCredentialEnvelope({
       operationId: "make-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationMakeCredential,
+      kind: OperationKind.MakeCredential,
       result: new MakeCredentialOutput({ preview, result }),
     });
 
@@ -429,7 +427,7 @@ describe("ctapkit result extractors", () => {
     const envelope = new GetAssertionEnvelope({
       operationId: "get-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationGetAssertion,
+      kind: OperationKind.GetAssertion,
       result: new GetAssertionOutput({ result }),
     });
 

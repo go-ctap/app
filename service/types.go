@@ -10,6 +10,7 @@ import (
 	"github.com/go-ctap/kit/model/inspect"
 	"github.com/go-ctap/kit/model/largeblobs"
 	appmds "github.com/go-ctap/kit/model/mds"
+	"github.com/go-ctap/kit/model/operation"
 	"github.com/go-ctap/kit/model/report"
 	"github.com/go-ctap/kit/model/webauthn"
 	"github.com/go-ctap/kit/transport"
@@ -72,11 +73,11 @@ type ActiveSelection struct {
 }
 
 type OperationEnvelopeMeta struct {
-	OperationID         OperationID         `json:"operationId"`
-	SelectionID         SelectionID         `json:"selectionId"`
-	Kind                model.OperationKind `json:"kind"`
-	AuthenticatorClosed bool                `json:"authenticatorClosed"`
-	Error               *failure.Failure    `json:"error,omitempty"`
+	OperationID         OperationID      `json:"operationId"`
+	SelectionID         SelectionID      `json:"selectionId"`
+	Kind                operation.Kind   `json:"kind"`
+	AuthenticatorClosed bool             `json:"authenticatorClosed"`
+	Error               *failure.Failure `json:"error,omitempty"`
 }
 
 type InspectEnvelope struct {

@@ -66,8 +66,8 @@ func TestSetSelectionSerializesAndReuses(t *testing.T) {
 	stale, err := service.ListCredentials(t.Context(), CredentialListRequest{
 		OperationRequest: OperationRequest{SelectionID: first.Selection.ID},
 	})
-	if err != nil || stale.Error == nil || stale.Error.Code != failure.CodeSelectionInvalid {
-		t.Fatalf("stale operation = (%#v, %v), want %s", stale, err, failure.CodeSelectionInvalid)
+	if err != nil || stale.Error == nil || stale.Error.Code != failure.CodeAuthenticatorClosed {
+		t.Fatalf("stale operation = (%#v, %v), want %s", stale, err, failure.CodeAuthenticatorClosed)
 	}
 }
 

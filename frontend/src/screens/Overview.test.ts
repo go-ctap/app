@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
-import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Info as InspectInfo, Result as InspectResult } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import { Finding, Profile, Report, RuleID, SpecificationID, Target } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
@@ -50,7 +50,7 @@ function inspectEnvelope(operationId: string, aaguid: string, withFinding = fals
   return new InspectEnvelope({
     operationId,
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationInspect,
+    kind: OperationKind.Inspect,
     result: new InspectResult({
       device,
       info: new InspectInfo({
@@ -96,7 +96,7 @@ describe("Overview", () => {
     seedOverviewEnvelopeForTest(new InspectEnvelope({
       operationId: "inspect-error",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationInspect,
+      kind: OperationKind.Inspect,
       error: failureForCode(Code.CodePINInvalid),
     }));
 

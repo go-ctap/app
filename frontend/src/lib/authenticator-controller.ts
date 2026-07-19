@@ -12,12 +12,7 @@ import {
   selectedSelector,
   authenticatorStatus,
 } from "./features/authenticator/state.js";
-import { activeScreen, type ActiveScreen } from "./features/workbench/state.js";
 import { deviceName } from "./format.js";
-import { maybeLoadLargeBlobs } from "./largeblobs-controller.js";
-import { maybeLoadOverview } from "./overview-controller.js";
-import { maybeLoadPasskeys } from "./passkeys-controller.js";
-import { maybeLoadSecurity } from "./security-controller.js";
 import { failureMessage, runtimeFailureFrom } from "./failure.js";
 import {
   idleAuthenticatorStatus,
@@ -147,14 +142,10 @@ async function discoverAndSelect(): Promise<Discovery> {
   return selectFromDevices(discoveredDevices, selectorFromDevice(discoveredDevices[0]));
 }
 
-export async function bootstrap() {
+export async function bootstrapAuthenticatorSession() {
   try {
     const discovery = await discoverAndSelect();
     applyDiscovery(discovery);
-    await maybeLoadOverview();
-    await maybeLoadPasskeys();
-    await maybeLoadLargeBlobs();
-    await maybeLoadSecurity();
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     authenticatorStatus.set(idleAuthenticatorStatus("error", runtimeError));
@@ -162,7 +153,7 @@ export async function bootstrap() {
   }
 }
 
-export async function selectToken(selector: string) {
+export async function selectAuthenticatorSession(selector: string) {
   const requestedSelector = selector.trim();
   clearWorkbenchScreenCaches();
   pendingInteraction.set(null);
@@ -179,24 +170,11 @@ export async function selectToken(selector: string) {
         ? failureMessage(discovery.error)
         : selectionMessage(discovery, selector),
     });
-    await maybeLoadOverview();
-    await maybeLoadPasskeys();
-    await maybeLoadLargeBlobs();
-    await maybeLoadSecurity();
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
     authenticatorStatus.set(idleAuthenticatorStatus("error", runtimeError));
     setStatusOutcome({ tone: "error", title: m.token_selection_issue(), message: failureMessage(runtimeError) });
   }
-}
-
-export async function navigateToScreen(screen: ActiveScreen) {
-  if (get(activeScreen) === screen) return;
-  activeScreen.set(screen);
-  await maybeLoadOverview();
-  await maybeLoadPasskeys();
-  await maybeLoadLargeBlobs();
-  await maybeLoadSecurity();
 }
 
 /**

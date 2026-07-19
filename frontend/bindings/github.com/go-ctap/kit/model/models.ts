@@ -8,6 +8,9 @@ import { Create as $Create } from "@wailsio/runtime";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as failure$0 from "./failure/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as operation$0 from "./operation/models.js";
 
 export enum InteractionKind {
     /**
@@ -50,34 +53,11 @@ export class InteractionRequest {
     }
 }
 
-export enum LogCode {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    LogCodeDiscoveryRun = "discovery.run",
-    LogCodeDiscoveryChanged = "discovery.changed",
-    LogCodeMDSLookup = "mds.lookup",
-    LogCodeSelectionOpen = "selection.open",
-    LogCodeSelectionClose = "selection.close",
-    LogCodeOperationRun = "operation.run",
-    LogCodeOperationProgress = "operation.progress",
-    LogCodeInteractionRequest = "interaction.request",
-    LogCodeInteractionResolve = "interaction.resolve",
-    LogCodeCTAPCommand = "ctap.command",
-};
-
 export class LogEntry {
     "timestamp": string;
     "durationMilliseconds"?: number;
-    "layer": LogLayer;
-    "level": LogLevel;
     "outcome": LogOutcome;
-    "code": LogCode;
-    "params"?: { [_ in string]?: string };
-    "dryRun"?: boolean;
-    "operationKind"?: OperationKind;
+    "operationKind"?: operation$0.Kind;
     "command"?: string;
     "commandCode"?: number;
     "subCommand"?: string;
@@ -87,25 +67,14 @@ export class LogEntry {
     "error"?: failure$0.Failure | null;
     "errorMessage"?: string;
     "redactedFields"?: string[];
-    "selectionId"?: string;
-    "operationId"?: string;
 
     /** Creates a new LogEntry instance. */
     constructor($$source: Partial<LogEntry> = {}) {
         if (!("timestamp" in $$source)) {
             this["timestamp"] = "0001-01-01T00:00:00.000Z";
         }
-        if (!("layer" in $$source)) {
-            this["layer"] = LogLayer.$zero;
-        }
-        if (!("level" in $$source)) {
-            this["level"] = LogLevel.$zero;
-        }
         if (!("outcome" in $$source)) {
             this["outcome"] = LogOutcome.$zero;
-        }
-        if (!("code" in $$source)) {
-            this["code"] = LogCode.$zero;
         }
 
         Object.assign(this, $$source);
@@ -115,26 +84,22 @@ export class LogEntry {
      * Creates a new LogEntry instance from a string or object.
      */
     static createFrom($$source: any = {}): LogEntry {
-        const $$createField6_0 = $$createType2;
-        const $$createField13_0 = $$createType4;
-        const $$createField14_0 = $$createType4;
-        const $$createField15_0 = $$createType6;
-        const $$createField17_0 = $$createType7;
+        const $$createField8_0 = $$createType3;
+        const $$createField9_0 = $$createType3;
+        const $$createField10_0 = $$createType5;
+        const $$createField12_0 = $$createType6;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("params" in $$parsedSource) {
-            $$parsedSource["params"] = $$createField6_0($$parsedSource["params"]);
-        }
         if ("request" in $$parsedSource) {
-            $$parsedSource["request"] = $$createField13_0($$parsedSource["request"]);
+            $$parsedSource["request"] = $$createField8_0($$parsedSource["request"]);
         }
         if ("response" in $$parsedSource) {
-            $$parsedSource["response"] = $$createField14_0($$parsedSource["response"]);
+            $$parsedSource["response"] = $$createField9_0($$parsedSource["response"]);
         }
         if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField15_0($$parsedSource["error"]);
+            $$parsedSource["error"] = $$createField10_0($$parsedSource["error"]);
         }
         if ("redactedFields" in $$parsedSource) {
-            $$parsedSource["redactedFields"] = $$createField17_0($$parsedSource["redactedFields"]);
+            $$parsedSource["redactedFields"] = $$createField12_0($$parsedSource["redactedFields"]);
         }
         return new LogEntry($$parsedSource as Partial<LogEntry>);
     }
@@ -161,7 +126,7 @@ export class LogJournalBatch {
      * Creates a new LogJournalBatch instance from a string or object.
      */
     static createFrom($$source: any = {}): LogJournalBatch {
-        const $$createField0_0 = $$createType9;
+        const $$createField0_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("entries" in $$parsedSource) {
             $$parsedSource["entries"] = $$createField0_0($$parsedSource["entries"]);
@@ -190,7 +155,7 @@ export class LogJournalRecord {
      * Creates a new LogJournalRecord instance from a string or object.
      */
     static createFrom($$source: any = {}): LogJournalRecord {
-        const $$createField1_0 = $$createType10;
+        const $$createField1_0 = $$createType9;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("entry" in $$parsedSource) {
             $$parsedSource["entry"] = $$createField1_0($$parsedSource["entry"]);
@@ -199,45 +164,18 @@ export class LogJournalRecord {
     }
 }
 
-export enum LogLayer {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    LogLayerService = "service",
-    LogLayerSelection = "selection",
-    LogLayerOperation = "operation",
-    LogLayerInteraction = "interaction",
-    LogLayerCTAP = "ctap",
-};
-
-export enum LogLevel {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    LogLevelDebug = "debug",
-    LogLevelInfo = "info",
-    LogLevelWarning = "warning",
-    LogLevelError = "error",
-};
-
 export enum LogOutcome {
     /**
      * The Go zero value for the underlying type of the enum.
      */
     $zero = "",
 
-    LogOutcomeEvent = "event",
     LogOutcomeSucceeded = "succeeded",
     LogOutcomeFailed = "failed",
     LogOutcomeCanceled = "canceled",
 };
 
 export class LogPayload {
-    "json"?: string;
     "cborDiagnostic"?: string;
     "diagnosticError"?: string;
     "originalBytes": number;
@@ -294,38 +232,6 @@ export class OperationEvent {
     }
 }
 
-export enum OperationKind {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    OperationInspect = "inspect",
-    OperationListCredentials = "credentials.list",
-    OperationCredentialStoreState = "credentials.storeState",
-    OperationDeleteCredential = "credentials.delete",
-    OperationUpdateCredentialUser = "credentials.updateUser",
-    OperationReadLargeBlob = "largeBlobs.read",
-    OperationListLargeBlobs = "largeBlobs.list",
-    OperationWriteLargeBlob = "largeBlobs.write",
-    OperationDeleteLargeBlob = "largeBlobs.delete",
-    OperationGarbageCollectLargeBlobs = "largeBlobs.garbageCollect",
-    OperationConfigStatus = "config.status",
-    OperationBioSensorInfo = "config.bio.sensorInfo",
-    OperationBioList = "config.bio.list",
-    OperationBioEnroll = "config.bio.enroll",
-    OperationBioRename = "config.bio.rename",
-    OperationBioRemove = "config.bio.remove",
-    OperationResetFactory = "config.reset.factory",
-    OperationSetPIN = "config.pin.set",
-    OperationChangePIN = "config.pin.change",
-    OperationSetAlwaysUV = "config.alwaysUv.set",
-    OperationSetMinPINLength = "config.minPinLength.set",
-    OperationEnableLongTouchForReset = "config.longTouchForReset.enable",
-    OperationMakeCredential = "webauthn.makeCredential",
-    OperationGetAssertion = "webauthn.getAssertion",
-};
-
 export enum OperationStage {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -353,7 +259,7 @@ export class PINInteractionState {
      * Creates a new PINInteractionState instance from a string or object.
      */
     static createFrom($$source: any = {}): PINInteractionState {
-        const $$createField0_0 = $$createType6;
+        const $$createField0_0 = $$createType5;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("failure" in $$parsedSource) {
             $$parsedSource["failure"] = $$createField0_0($$parsedSource["failure"]);
@@ -375,12 +281,11 @@ export enum VerificationFlow {
 // Private type creation functions
 const $$createType0 = PINInteractionState.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = $Create.Map($Create.Any, $Create.Any);
-const $$createType3 = LogPayload.createFrom;
-const $$createType4 = $Create.Nullable($$createType3);
-const $$createType5 = failure$0.Failure.createFrom;
-const $$createType6 = $Create.Nullable($$createType5);
-const $$createType7 = $Create.Array($Create.Any);
-const $$createType8 = LogJournalRecord.createFrom;
-const $$createType9 = $Create.Array($$createType8);
-const $$createType10 = LogEntry.createFrom;
+const $$createType2 = LogPayload.createFrom;
+const $$createType3 = $Create.Nullable($$createType2);
+const $$createType4 = failure$0.Failure.createFrom;
+const $$createType5 = $Create.Nullable($$createType4);
+const $$createType6 = $Create.Array($Create.Any);
+const $$createType7 = LogJournalRecord.createFrom;
+const $$createType8 = $Create.Array($$createType7);
+const $$createType9 = LogEntry.createFrom;

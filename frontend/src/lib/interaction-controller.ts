@@ -9,7 +9,7 @@ import { runtimeFailureFrom } from "./failure.js";
 import { pendingInteraction } from "./features/interaction/state.js";
 import { authenticatorStatus } from "./features/authenticator/state.js";
 import { statusBar } from "./features/workbench/state.js";
-import { applyInvalidSelectionError } from "./authenticator-boundary.js";
+import { applyAuthenticatorClosedError } from "./authenticator-boundary.js";
 import { setStatusOperation, summarizeOperationFailure } from "./workbench-state.js";
 
 export async function answerPendingInteraction(answer: InteractionAnswer) {
@@ -24,7 +24,7 @@ export async function answerPendingInteraction(answer: InteractionAnswer) {
   } catch (error) {
     const failure = runtimeFailureFrom(error);
     summarizeOperationFailure(label, failure);
-    applyInvalidSelectionError(failure);
+		applyAuthenticatorClosedError(failure);
     return false;
   } finally {
     if (answer.pin) answer.pin = "";

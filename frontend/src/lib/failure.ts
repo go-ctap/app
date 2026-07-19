@@ -9,20 +9,15 @@ import { m } from "../paraglide/messages.js";
 type Message = () => string;
 
 const CODE_MESSAGES: Record<Exclude<Code, Code.$zero>, Message> = {
-  [Code.CodeInternalError]: m.failure_internal_error,
-  [Code.CodeOperationRequired]: m.failure_operation_required,
-  [Code.CodeOperationUnsupported]: m.failure_operation_unsupported,
+	[Code.CodeInternalError]: m.failure_internal_error,
+	[Code.CodeOperationUnsupported]: m.failure_operation_unsupported,
   [Code.CodeOperationCanceled]: m.failure_operation_canceled,
   [Code.CodeOperationTimeout]: m.failure_operation_timeout,
-  [Code.CodeRequestJSONInvalid]: m.failure_request_json_invalid,
-  [Code.CodeConfirmationRequired]: m.failure_confirmation_required,
   [Code.CodeVerificationFlowUnsupported]: m.failure_verification_flow_unsupported,
   [Code.CodeInteractionKindRequired]: m.failure_interaction_kind_required,
   [Code.CodeInteractionHandlerRequired]: m.failure_interaction_handler_required,
   [Code.CodeInteractionCanceled]: m.failure_interaction_canceled,
-  [Code.CodeSelectionInvalid]: m.failure_selection_invalid,
-  [Code.CodeAuthenticatorClosed]: m.failure_authenticator_closed,
-  [Code.CodeServiceClosed]: m.failure_service_closed,
+	[Code.CodeAuthenticatorClosed]: m.failure_authenticator_closed,
   [Code.CodeDeviceHandleInvalid]: m.failure_device_handle_invalid,
   [Code.CodeDeviceNotFound]: m.failure_device_not_found,
   [Code.CodeDeviceSelectionRequired]: m.failure_device_selection_required,
@@ -158,8 +153,8 @@ export function isCanceledFailure(failure: Failure | null | undefined): boolean 
   return failure?.category === Category.CategoryCanceled;
 }
 
-export function isInvalidSelectionFailure(failure: Failure | null | undefined): boolean {
-  return failure?.category === Category.CategoryInvalidSelection;
+export function isAuthenticatorClosedFailure(failure: Failure | null | undefined): boolean {
+	return failure?.code === Code.CodeAuthenticatorClosed;
 }
 
 export function isUnsupportedFailure(failure: Failure | null | undefined): boolean {

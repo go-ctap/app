@@ -1,38 +1,16 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import {
-  LogCode,
   LogEntry,
   LogJournalRecord,
-  LogLayer,
-  LogLevel,
   LogOutcome,
   LogPayload,
-  OperationKind,
 } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 
 import { LogController } from "./features/logs/state.svelte.js";
 import { setAppLocale } from "./i18n.js";
-import { compactLogJSON, filterLogs, logSummary } from "./log-presentation.js";
-
-function operationRecord() {
-  const controller = new LogController();
-  controller.append(new LogJournalRecord({
-    sequence: 17,
-    entry: new LogEntry({
-      timestamp: "2026-07-15T10:00:00.000Z",
-      layer: LogLayer.LogLayerOperation,
-      level: LogLevel.LogLevelInfo,
-      outcome: LogOutcome.LogOutcomeSucceeded,
-      code: LogCode.LogCodeOperationRun,
-      operationKind: OperationKind.OperationListCredentials,
-      selectionId: "authenticator-searchable",
-      operationId: "operation-searchable",
-      request: new LogPayload({ json: "{\"rpId\":\"example.test\"}", originalBytes: 27, storedBytes: 27, truncated: false }),
-    }),
-  }));
-  return controller.records[0];
-}
+import { filterLogs, logSummary, operationKindLabel } from "./log-presentation.js";
 
 function ctapRecord() {
   const controller = new LogController();
@@ -40,10 +18,8 @@ function ctapRecord() {
     sequence: 18,
     entry: new LogEntry({
       timestamp: "2026-07-15T10:00:01.000Z",
-      layer: LogLayer.LogLayerCTAP,
-      level: LogLevel.LogLevelWarning,
       outcome: LogOutcome.LogOutcomeFailed,
-      code: LogCode.LogCodeCTAPCommand,
+      operationKind: OperationKind.ListCredentials,
       command: "authenticatorClientPIN",
       commandCode: 6,
       subCommand: "getPinUvAuthTokenUsingPinWithPermissions",
@@ -68,61 +44,26 @@ function ctapRecord() {
 describe("log presentation", () => {
   beforeEach(() => setAppLocale("en"));
 
-  it("omits empty object fields without changing meaningful booleans or array positions", () => {
-    expect(compactLogJSON(JSON.stringify({
-      nullValue: null,
-      emptyValue: "",
-      zeroValue: 0,
-      enabled: false,
-      nested: { zeroValue: 0, value: "kept" },
-      values: [null, "", 0, false],
-    }))).toBe(`{
-  "enabled": false,
-  "nested": {
-    "value": "kept"
-  },
-  "values": [
-    null,
-    "",
-    0,
-    false
-  ]
-}`);
-  });
-
-  it("keeps the original source when a payload is not valid JSON", () => {
-    expect(compactLogJSON("truncated payload")).toBe("truncated payload");
-  });
-
-  it("localizes semantic codes and operation kinds in English and Russian", () => {
-    const record = operationRecord();
-    expect(logSummary(record)).toBe("Operation: Credential inventory");
+  it("localizes CTAP summaries and operation kinds", () => {
+    const record = ctapRecord();
+    expect(logSummary(record)).toBe("CTAP command: authenticatorClientPIN · getPinUvAuthTokenUsingPinWithPermissions");
+    expect(operationKindLabel(OperationKind.ListCredentials)).toBe("Credential inventory");
 
     setAppLocale("ru");
-    expect(logSummary(record)).toBe("Операция: Инвентарь учетных данных");
+    expect(logSummary(record)).toBe("CTAP-команда: authenticatorClientPIN · getPinUvAuthTokenUsingPinWithPermissions");
+    expect(operationKindLabel(OperationKind.ListCredentials)).toBe("Инвентарь учетных данных");
   });
 
-  it("searches summaries, correlation IDs, operation metadata, and literal JSON", () => {
-    const record = operationRecord();
-    const records = [record];
-    const all = { level: "all", layer: "all", outcome: "all" } as const;
-
-    expect(filterLogs(records, "authenticator-searchable", all)).toEqual(records);
-    expect(filterLogs(records, "credentials.list", all)).toEqual(records);
-    expect(filterLogs(records, "example.test", all)).toEqual(records);
-    expect(filterLogs(records, "does-not-exist", all)).toEqual([]);
-    expect(filterLogs(records, "", { ...all, level: LogLevel.LogLevelError })).toEqual([]);
-  });
-
-  it("searches normalized CBOR notation, diagnostic failures, and numeric command metadata", () => {
+  it("searches operation metadata, normalized CBOR, diagnostics, and wire codes", () => {
     const record = ctapRecord();
     const records = [record];
-    const all = { level: "all", layer: "all", outcome: "all" } as const;
+    const all = { outcome: "all" } as const;
 
+    expect(filterLogs(records, "credentials.list", all)).toEqual(records);
     expect(filterLogs(records, "engineers.example", all)).toEqual(records);
     expect(filterLogs(records, "diagnostic schema unavailable", all)).toEqual(records);
-    expect(filterLogs(records, "getPinUvAuthTokenUsingPinWithPermissions", all)).toEqual(records);
     expect(filterLogs(records, "0x06", all)).toEqual(records);
     expect(filterLogs(records, "does-not-exist", all)).toEqual([]);
+    expect(filterLogs(records, "", { outcome: LogOutcome.LogOutcomeSucceeded })).toEqual([]);
   });
 });

@@ -1,7 +1,8 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { InteractionKind, OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { InteractionKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { CredentialsEnvelope, InteractionPrompt, OperationEventEnvelope } from "../../bindings/fidobench/service";
@@ -125,7 +126,7 @@ describe("operation controller", () => {
     summarizeEnvelope("Credential inventory", {
       operationId: "operation-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationListCredentials,
+      kind: OperationKind.ListCredentials,
       authenticatorClosed: false,
       error: failureForCode(Code.CodeOperationCanceled),
     } as CredentialsEnvelope);

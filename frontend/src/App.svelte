@@ -13,19 +13,13 @@
 	import { Toaster } from "$lib/components/ui/sonner/index.js";
 	import { WindowControls, WindowTitlebar } from "$lib/components/window-controls";
 	import { toggleMaximizeWindow } from "$lib/components/window-controls/window";
-	import {
-		bootstrap,
-		answerPendingInteraction,
-		cancelActiveOperation,
-		handleDiscoveryChanged,
-		handleInteractionRequested,
-		handleOperationProgress,
-		navigateToScreen,
-		selectToken,
-		startDiscoveryMonitoring,
-		syncLogJournal,
-		shutdownWorkbench
-	} from "$lib/controller";
+	import { shutdownWorkbench } from "$lib/authenticator-controller.js";
+	import { handleDiscoveryChanged, startDiscoveryMonitoring } from "$lib/discovery-controller.js";
+	import { handleOperationProgress } from "$lib/event-controller.js";
+	import { answerPendingInteraction, handleInteractionRequested } from "$lib/interaction-controller.js";
+	import { syncLogJournal } from "$lib/logs-controller.js";
+	import { cancelActiveOperation } from "$lib/operation-controller.js";
+	import { bootstrap, navigateToScreen, selectToken } from "$lib/workbench-controller.js";
 	import { currentLocale } from "$lib/i18n";
 	import { buildInteractionModalPresentation, buildShellStatusPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
 	import {
@@ -41,14 +35,6 @@
 	import { detectWindowPlatform, resolveWindowPlatform } from "$lib/window-platform";
 
 	import { m } from "./paraglide/messages.js";
-	import Lab from "./screens/Lab.svelte";
-	import Logs from "./screens/Logs.svelte";
-	import Overview from "./screens/Overview.svelte";
-	import LargeBlobs from "./screens/LargeBlobs.svelte";
-	import Passkeys from "./screens/Passkeys.svelte";
-	import Security from "./screens/Security.svelte";
-	import Settings from "./screens/Settings.svelte";
-
 	let refreshing = $state(false);
 	let initialized = $state(false);
 	let windowPlatform = $state(detectWindowPlatform());
@@ -189,34 +175,52 @@
 			</header>
 
 			<main class="main-view">
-				<ScrollArea class="main-view-scroll">
-					<div class="main-view-content" data-fill={$activeScreen === "logs" ? "true" : undefined}>
-						{#if $activeScreen === "settings"}
-							<Settings />
-						{:else if $activeScreen === "logs"}
+				{#if $activeScreen === "logs"}
+					<div class="main-view-content" data-fill="true">
+						{#await import("./screens/Logs.svelte") then { default: Logs }}
 							<Logs />
-						{:else if noDevices}
-							<EmptyState
-								title={m.insert_token()}
-								variant="workspace"
-							>
-								{#snippet icon()}
-									<ShieldCheck size={34} strokeWidth={1.8} />
-								{/snippet}
-							</EmptyState>
-						{:else if $activeScreen === "large-blobs"}
-							<LargeBlobs />
-						{:else if $activeScreen === "passkeys"}
-							<Passkeys />
-						{:else if $activeScreen === "lab"}
-							<Lab />
-						{:else if $activeScreen === "security"}
-							<Security />
-						{:else}
-							<Overview />
-						{/if}
+						{/await}
 					</div>
-				</ScrollArea>
+				{:else}
+					<ScrollArea class="main-view-scroll">
+						<div class="main-view-content">
+							{#if $activeScreen === "settings"}
+								{#await import("./screens/Settings.svelte") then { default: Settings }}
+									<Settings />
+								{/await}
+							{:else if noDevices}
+								<EmptyState
+									title={m.insert_token()}
+									variant="workspace"
+								>
+									{#snippet icon()}
+										<ShieldCheck size={34} strokeWidth={1.8} />
+									{/snippet}
+								</EmptyState>
+							{:else if $activeScreen === "large-blobs"}
+								{#await import("./screens/LargeBlobs.svelte") then { default: LargeBlobs }}
+									<LargeBlobs />
+								{/await}
+							{:else if $activeScreen === "passkeys"}
+								{#await import("./screens/Passkeys.svelte") then { default: Passkeys }}
+									<Passkeys />
+								{/await}
+							{:else if $activeScreen === "lab"}
+								{#await import("./screens/Lab.svelte") then { default: Lab }}
+									<Lab />
+								{/await}
+							{:else if $activeScreen === "security"}
+								{#await import("./screens/Security.svelte") then { default: Security }}
+									<Security />
+								{/await}
+							{:else}
+								{#await import("./screens/Overview.svelte") then { default: Overview }}
+									<Overview />
+								{/await}
+							{/if}
+						</div>
+					</ScrollArea>
+				{/if}
 			</main>
 
 			<ShellStatusBar
@@ -353,6 +357,7 @@
 
 		.main-view-content[data-fill="true"] {
 			height: 100%;
+			overflow: hidden;
 		}
 
 		@container workspace-shell (max-width: 48rem) {

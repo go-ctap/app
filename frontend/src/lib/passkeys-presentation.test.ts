@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from "vitest";
 
-import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { CredentialsEnvelope } from "../../bindings/fidobench/service";
 
@@ -15,7 +15,7 @@ function envelope(groups: NonNullable<CredentialsEnvelope["result"]>["groups"] =
   return {
     operationId: "operation-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationListCredentials,
+    kind: OperationKind.ListCredentials,
     result: {
       device: {
         fingerprint: "token-1",

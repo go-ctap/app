@@ -4,9 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AttestationStatementFormatIdentifier } from "../../bindings/github.com/go-ctap/ctap/attestation";
 import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/credential";
 import {
-  OperationKind,
-  VerificationFlow,
+	VerificationFlow,
 } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { DecodeMode } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
@@ -79,7 +79,7 @@ function makePreviewEnvelope(): MakeCredentialEnvelope {
   return {
     operationId: "make-preview-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationMakeCredential,
+    kind: OperationKind.MakeCredential,
     result: {
       preview: {
         device: new DeviceReport({ fingerprint: "token-1" }),
@@ -123,7 +123,7 @@ function getResultEnvelope(rpID = "example.com"): GetAssertionEnvelope {
   return {
     operationId: "get-result-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationGetAssertion,
+    kind: OperationKind.GetAssertion,
     authenticatorClosed: false,
     result: {
       preview: {
@@ -422,7 +422,7 @@ describe("WebAuthn Lab request lifecycle", () => {
     selectedSelector.set("token-1");
     selectedDevice.set(token);
     const invalidSelection = makePreviewEnvelope();
-    invalidSelection.error = failureForCode(Code.CodeSelectionInvalid);
+    invalidSelection.error = failureForCode(Code.CodeAuthenticatorClosed);
     const makeCredential = vi.spyOn(api, "makeCredential")
       .mockResolvedValueOnce(invalidSelection)
       .mockResolvedValueOnce(makePreviewEnvelope());
@@ -456,7 +456,7 @@ describe("WebAuthn Lab request lifecycle", () => {
     selectedSelector.set("token-1");
     selectedDevice.set(token);
     const invalidSelection = getResultEnvelope();
-    invalidSelection.error = failureForCode(Code.CodeSelectionInvalid);
+    invalidSelection.error = failureForCode(Code.CodeAuthenticatorClosed);
     const success = getResultEnvelope();
     success.selectionId = "authenticator-2";
     const getAssertion = vi.spyOn(api, "getAssertion")
@@ -478,7 +478,7 @@ describe("WebAuthn Lab request lifecycle", () => {
     });
     expect(get(authenticatorStatus)).toEqual({
       state: "error",
-      error: failureForCode(Code.CodeSelectionInvalid),
+      error: failureForCode(Code.CodeAuthenticatorClosed),
     });
 
     expect(await rerunLabGetAssertion()).toBe(true);

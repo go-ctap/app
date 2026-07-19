@@ -1,30 +1,33 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  LogCode,
   LogEntry,
   LogJournalBatch,
   LogJournalRecord,
-  LogLayer,
-  LogLevel,
   LogOutcome,
   LogPayload,
 } from "../../../../bindings/github.com/go-ctap/kit/model";
 
 import { LogController, logController, recordID, runtimeCall } from "./state.svelte.js";
 
-function journalRecord(sequence: number, outcome = LogOutcome.LogOutcomeSucceeded, json = "{}") {
+function journalRecord(
+  sequence: number,
+  outcome = LogOutcome.LogOutcomeSucceeded,
+  diagnostic = "{}",
+) {
   return new LogJournalRecord({
     sequence,
     entry: new LogEntry({
       timestamp: "2026-07-15T10:00:00.000Z",
-      layer: LogLayer.LogLayerOperation,
-      level: LogLevel.LogLevelInfo,
       outcome,
-      code: LogCode.LogCodeOperationRun,
-      selectionId: "authenticator-1",
-      operationId: "operation-1",
-      request: new LogPayload({ json, originalBytes: json.length, storedBytes: json.length, truncated: false }),
+      command: "authenticatorGetInfo",
+      commandCode: 0x04,
+      request: new LogPayload({
+        cborDiagnostic: diagnostic,
+        originalBytes: diagnostic.length,
+        storedBytes: diagnostic.length,
+        truncated: false,
+      }),
     }),
   });
 }
@@ -47,11 +50,11 @@ describe("LogController", () => {
     expect(countLimited.records.map(recordID)).toEqual(["kit:2", "kit:3"]);
 
     const probe = new LogController();
-    probe.append(journalRecord(1, LogOutcome.LogOutcomeSucceeded, "{\"value\":\"payload\"}"));
+    probe.append(journalRecord(1, LogOutcome.LogOutcomeSucceeded, "{1: \"payload\"}"));
     const byteSize = probe.records[0].byteSize;
     const byteLimited = new LogController({ byteLimit: byteSize * 2 - 1 });
-    byteLimited.append(journalRecord(1, LogOutcome.LogOutcomeSucceeded, "{\"value\":\"payload\"}"));
-    byteLimited.append(journalRecord(2, LogOutcome.LogOutcomeSucceeded, "{\"value\":\"payload\"}"));
+    byteLimited.append(journalRecord(1, LogOutcome.LogOutcomeSucceeded, "{1: \"payload\"}"));
+    byteLimited.append(journalRecord(2, LogOutcome.LogOutcomeSucceeded, "{1: \"payload\"}"));
     expect(byteLimited.records.map(recordID)).toEqual(["kit:2"]);
   });
 
@@ -69,7 +72,7 @@ describe("LogController", () => {
   it("clears only on an explicit clear action", () => {
     const controller = new LogController();
     controller.append(journalRecord(1));
-    controller.setQuery("operation");
+    controller.setQuery("authenticatorGetInfo");
     controller.clear();
 
     expect(controller.records).toEqual([]);

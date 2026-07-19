@@ -1,7 +1,8 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { InteractionKind, OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { InteractionKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { CredentialsEnvelope, InteractionPrompt } from "../../bindings/fidobench/service";
 
@@ -14,7 +15,7 @@ function envelope(authenticatorClosed: boolean, code: Code): CredentialsEnvelope
   return {
     operationId: "operation-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationListCredentials,
+    kind: OperationKind.ListCredentials,
     authenticatorClosed,
     error: failureForCode(code),
   } as CredentialsEnvelope;

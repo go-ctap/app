@@ -5,10 +5,10 @@ import {
 } from "../../bindings/github.com/go-ctap/kit/model/failure";
 
 const TEST_CATEGORY_BY_CODE: Partial<Record<Code, Category>> = {
-  [Code.CodeAssertionDenied]: Category.CategoryInvalidState,
+	[Code.CodeAssertionDenied]: Category.CategoryInvalidState,
+	[Code.CodeAuthenticatorClosed]: Category.CategoryInvalidState,
   [Code.CodeAuthenticatorBusy]: Category.CategoryBusy,
   [Code.CodeBioInteractionTimeout]: Category.CategoryTimeout,
-  [Code.CodeConfirmationRequired]: Category.CategoryInvalidOperation,
   [Code.CodeCredentialCreationDenied]: Category.CategoryInvalidState,
   [Code.CodeCredentialManagementUnsupported]: Category.CategoryUnsupported,
   [Code.CodeDeviceUnavailable]: Category.CategoryInvalidState,
@@ -24,7 +24,6 @@ const TEST_CATEGORY_BY_CODE: Partial<Record<Code, Category>> = {
   [Code.CodePINPolicyViolation]: Category.CategoryInvalidState,
   [Code.CodeResetTouchTimeout]: Category.CategoryTimeout,
   [Code.CodeResetWindowExpired]: Category.CategoryInvalidState,
-  [Code.CodeSelectionInvalid]: Category.CategoryInvalidSelection,
   [Code.CodeTransportFailure]: Category.CategoryTransportFailure,
   [Code.CodeVerificationFlowUnsupported]: Category.CategoryUnsupported,
 };

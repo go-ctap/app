@@ -2,11 +2,10 @@ package service
 
 import (
 	"context"
-	"time"
 
 	ctapkit "github.com/go-ctap/kit"
-	"github.com/go-ctap/kit/model"
 	"github.com/go-ctap/kit/model/failure"
+	"github.com/go-ctap/kit/model/operation"
 	"github.com/google/uuid"
 )
 
@@ -56,26 +55,11 @@ func runOperation[T any](
 	service *Service,
 	ctx context.Context,
 	req OperationRequest,
-	kind model.OperationKind,
-	dryRun bool,
+	kind operation.Kind,
 	execute operationExecutor[T],
-) (meta OperationEnvelopeMeta, result *T, returnErr error) {
+) (OperationEnvelopeMeta, *T, error) {
 	operationID := OperationID(uuid.NewString())
-	started := time.Now()
-	var operationErr error
-	defer func() {
-		service.logs.Append(ctapkit.FinishLogEntry(model.LogEntry{
-			Timestamp:     started.UTC(),
-			Layer:         model.LogLayerOperation,
-			Code:          model.LogCodeOperationRun,
-			DryRun:        dryRun,
-			OperationKind: kind,
-			SelectionID:   string(req.SelectionID),
-			OperationID:   string(operationID),
-		}, started, operationErr))
-	}()
-
-	meta = OperationEnvelopeMeta{
+	meta := OperationEnvelopeMeta{
 		OperationID: operationID,
 		SelectionID: req.SelectionID,
 		Kind:        kind,
@@ -83,7 +67,7 @@ func runOperation[T any](
 
 	selected, ok := service.selectionFor(req.SelectionID)
 	if !ok {
-		operationErr = invalidSelectionError()
+		operationErr := authenticatorClosedError()
 		meta.Error = failure.Snapshot(operationErr)
 
 		return meta, nil, nil
@@ -93,7 +77,6 @@ func runOperation[T any](
 	state := &operationState{
 		id:          operationID,
 		selectionID: req.SelectionID,
-		kind:        kind,
 		cancel:      cancel,
 		done:        make(chan struct{}),
 	}
@@ -101,7 +84,7 @@ func runOperation[T any](
 	if !service.registerOperation(selected, state) {
 		cancel()
 
-		operationErr = invalidSelectionError()
+		operationErr := authenticatorClosedError()
 		meta.Error = failure.Snapshot(operationErr)
 
 		return meta, nil, nil
@@ -116,10 +99,8 @@ func runOperation[T any](
 		done:        state.done,
 		selectionID: req.SelectionID,
 		operationID: operationID,
-		kind:        kind,
 	}))
-	ctx = ctapkit.WithLogCorrelation(ctx, string(req.SelectionID), string(operationID), kind)
-	result, operationErr = execute(ctx, selected.runtime.client, opts...)
+	result, operationErr := execute(ctx, selected.runtime.client, opts...)
 
 	meta.AuthenticatorClosed = selected.runtime.Closed()
 	meta.Error = failure.Snapshot(operationErr)

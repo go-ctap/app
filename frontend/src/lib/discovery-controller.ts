@@ -20,7 +20,7 @@ import {
   reportForSelector,
   selectorFromDevice,
 } from "./authenticator-model.js";
-import { selectToken } from "./authenticator-controller.js";
+import { selectToken } from "./workbench-controller.js";
 import {
   clearWorkbenchScreenCaches,
   finishOperation,

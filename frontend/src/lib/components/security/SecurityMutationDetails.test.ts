@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model/operation";
 import { StateValue } from "../../../../bindings/github.com/go-ctap/kit/model/config";
 import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import { PreviewMode, Severity } from "../../../../bindings/github.com/go-ctap/kit/model/safety";
@@ -17,7 +17,7 @@ function erroredPreviewMutation(longTouchForReset = StateValue.StateSupported): 
   const responseEnvelope = {
     operationId: "reset-preview-error",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationResetFactory,
+    kind: OperationKind.ResetFactory,
     error: failureForCode(Code.CodeResetWindowExpired),
     result: {
       preview: {

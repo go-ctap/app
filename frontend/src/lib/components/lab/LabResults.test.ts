@@ -14,7 +14,7 @@ import {
   AuthenticationExtensionsPRFValues,
   CredentialPropertiesOutput,
 } from "../../../../bindings/github.com/go-ctap/ctap/webauthn";
-import { OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model/operation";
 import {
   Assertion,
   CredentialBlobCreateOutput,
@@ -49,7 +49,7 @@ function getAssertionEnvelope(result: GetAssertionResultDTO) {
   return new GetAssertionEnvelope({
     operationId: "get-assertion-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationGetAssertion,
+    kind: OperationKind.GetAssertion,
     result: new GetAssertionOutput({ result }),
   });
 }
@@ -58,7 +58,7 @@ function makeCredentialEnvelope(result: MakeCredentialResultDTO) {
   return new MakeCredentialEnvelope({
     operationId: "make-credential-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationMakeCredential,
+    kind: OperationKind.MakeCredential,
     result: new MakeCredentialOutput({ result }),
   });
 }

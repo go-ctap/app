@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model/operation";
 import { AlwaysUVTarget } from "../../../../bindings/github.com/go-ctap/kit/model/config";
 import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import {
@@ -28,7 +28,7 @@ const request = new AlwaysUVRequest({
 const previewEnvelope = new AuthenticatorConfigEnvelope({
   operationId: "preview-1",
   selectionId: "authenticator-1",
-  kind: OperationKind.OperationSetAlwaysUV,
+  kind: OperationKind.SetAlwaysUV,
 });
 
 function errorMutation(failedPhase: "previewing" | "executing", code: Code): SecurityMutationState {
@@ -42,7 +42,7 @@ function errorMutation(failedPhase: "previewing" | "executing", code: Code): Sec
     responseEnvelope: new AuthenticatorConfigEnvelope({
       operationId: "response-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationSetAlwaysUV,
+      kind: OperationKind.SetAlwaysUV,
       error: failureForCode(code),
     }),
     runtimeError: null,
@@ -105,7 +105,7 @@ describe("SecurityMutationDialog", () => {
     const previewEnvelope = new ResetFactoryEnvelope({
       operationId: "reset-preview-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationResetFactory,
+      kind: OperationKind.ResetFactory,
     });
     const callbacks = renderDialog({
       kind: "reset",
@@ -116,7 +116,7 @@ describe("SecurityMutationDialog", () => {
       responseEnvelope: new ResetFactoryEnvelope({
         operationId: "reset-response-1",
         selectionId: "authenticator-1",
-        kind: OperationKind.OperationResetFactory,
+        kind: OperationKind.ResetFactory,
         error: failureForCode(Code.CodeTransportFailure),
       }),
       runtimeError: null,
@@ -168,7 +168,7 @@ describe("SecurityMutationDialog", () => {
       previewEnvelope: new BioEnrollEnvelope({
         operationId: "bio-preview-1",
         selectionId: "authenticator-1",
-        kind: OperationKind.OperationBioEnroll,
+        kind: OperationKind.BioEnroll,
       }),
     });
 

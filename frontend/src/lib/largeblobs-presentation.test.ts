@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { BlobState, LargeBlobKeyState } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import { Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
@@ -22,7 +22,7 @@ function envelope(): LargeBlobListEnvelope {
   return {
     operationId: "list-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationListLargeBlobs,
+    kind: OperationKind.ListLargeBlobs,
     authenticatorClosed: false,
     result: {
       device: {
@@ -165,7 +165,7 @@ describe("large blob presentation", () => {
       responseEnvelope: {
         operationId: "failed-list",
         selectionId: "authenticator-1",
-        kind: OperationKind.OperationListLargeBlobs,
+        kind: OperationKind.ListLargeBlobs,
         error: failureForCode(Code.CodeTransportFailure),
       } as LargeBlobListEnvelope,
     };

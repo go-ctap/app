@@ -5,7 +5,8 @@ import { get } from "svelte/store";
 import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { OperationKind, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import type { CredentialTarget } from "../../bindings/github.com/go-ctap/kit/model/credentials";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
@@ -42,7 +43,7 @@ function credentialsEnvelope(): CredentialsEnvelope {
   return {
     operationId: "operation-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationListCredentials,
+    kind: OperationKind.ListCredentials,
     result: {
       device: {
         fingerprint: "token-1",
@@ -183,7 +184,7 @@ describe("Passkeys", () => {
     failPasskeysInventoryLoadWithResponse({
       operationId: "operation-error",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationListCredentials,
+      kind: OperationKind.ListCredentials,
       error: failureForCode(Code.CodePINInvalid),
     } as CredentialsEnvelope);
 
@@ -201,7 +202,7 @@ describe("Passkeys", () => {
     failPasskeysInventoryLoadWithResponse({
       operationId: "verification-flow-error",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationListCredentials,
+      kind: OperationKind.ListCredentials,
       error: failureForCode(Code.CodeVerificationFlowUnsupported),
     } as CredentialsEnvelope);
 
@@ -506,7 +507,7 @@ describe("Passkeys", () => {
     const previewEnvelope = {
       operationId: "update-preview-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationUpdateCredentialUser,
+      kind: OperationKind.UpdateCredentialUser,
       result: {
         preview: {
           credentialIDHex: "cafe",
@@ -573,7 +574,7 @@ describe("Passkeys", () => {
       responseEnvelope: {
         operationId: "update-error-1",
         selectionId: "authenticator-1",
-        kind: OperationKind.OperationUpdateCredentialUser,
+        kind: OperationKind.UpdateCredentialUser,
         error: failureForCode(Code.CodeTransportFailure),
       } as CredentialUpdateEnvelope,
       runtimeError: null,
@@ -596,7 +597,7 @@ describe("Passkeys", () => {
     const previewEnvelope = {
       operationId: "delete-preview-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationDeleteCredential,
+      kind: OperationKind.DeleteCredential,
       authenticatorClosed: false,
       result: {
         preview: {
@@ -643,7 +644,7 @@ describe("Passkeys", () => {
     const previewEnvelope = {
       operationId: "delete-preview-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationDeleteCredential,
+      kind: OperationKind.DeleteCredential,
       authenticatorClosed: false,
       result: {
         preview: {
@@ -661,7 +662,7 @@ describe("Passkeys", () => {
     const errorEnvelope = {
       operationId: "delete-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationDeleteCredential,
+      kind: OperationKind.DeleteCredential,
       authenticatorClosed: false,
       error: failureForCode(Code.CodeTransportFailure),
     } as CredentialDeleteEnvelope;
@@ -707,7 +708,7 @@ describe("Passkeys", () => {
     const errorEnvelope = {
       operationId: "delete-preview-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationDeleteCredential,
+      kind: OperationKind.DeleteCredential,
       authenticatorClosed: false,
       error: failureForCode(Code.CodeTransportFailure),
     } as CredentialDeleteEnvelope;

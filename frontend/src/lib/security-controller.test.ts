@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import {
   AlwaysUVTarget,
   AuthenticatorConfigOperation,
@@ -111,7 +111,7 @@ function statusEnvelope(options: {
   return {
     operationId: "status-1",
     selectionId: options.selectionId ?? "authenticator-1",
-    kind: OperationKind.OperationConfigStatus,
+    kind: OperationKind.ConfigStatus,
     result: {
       device: item,
       pin: {
@@ -171,7 +171,7 @@ function bioSensorEnvelope(item = TOKEN, selectionId = "authenticator-1"): BioSe
   return {
     operationId: "sensor-1",
     selectionId,
-    kind: OperationKind.OperationBioSensorInfo,
+    kind: OperationKind.BioSensorInfo,
     result: {
       device: item,
       supported: true,
@@ -186,7 +186,7 @@ function bioListEnvelope(item = TOKEN, selectionId = "authenticator-1"): BioList
   return {
     operationId: "bio-list-1",
     selectionId,
-    kind: OperationKind.OperationBioList,
+    kind: OperationKind.BioList,
     result: {
       device: item,
       supported: true,
@@ -211,10 +211,10 @@ function authenticatorConfigEnvelope(
   error = false,
 ): AuthenticatorConfigEnvelope {
   const kind = operation === AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV
-    ? OperationKind.OperationSetAlwaysUV
+    ? OperationKind.SetAlwaysUV
     : operation === AuthenticatorConfigOperation.AuthenticatorConfigLongTouch
-      ? OperationKind.OperationEnableLongTouchForReset
-      : OperationKind.OperationSetMinPINLength;
+      ? OperationKind.EnableLongTouchForReset
+      : OperationKind.SetMinPINLength;
   return {
     operationId: `${phase}-${operation}`,
     selectionId: "authenticator-1",
@@ -242,7 +242,7 @@ function bioEnrollPreviewEnvelope(): BioEnrollEnvelope {
   return {
     operationId: "bio-preview-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationBioEnroll,
+    kind: OperationKind.BioEnroll,
     result: {
       preview: {
         device: TOKEN,
@@ -259,7 +259,7 @@ function partialBioEnrollErrorEnvelope(): BioEnrollEnvelope {
   return {
     operationId: "bio-partial-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationBioEnroll,
+    kind: OperationKind.BioEnroll,
     error: failureForCode(Code.CodeBioInteractionTimeout),
     result: {
       preview: {
@@ -289,7 +289,7 @@ function bioRenamePreviewEnvelope(friendlyName: string): BioMutationEnvelope {
   return {
     operationId: "bio-rename-preview-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationBioRename,
+    kind: OperationKind.BioRename,
     result: {
       preview: {
         operation: BioMutationOperation.BioMutationRename,
@@ -308,9 +308,9 @@ function invalidAuthenticatorStatusEnvelope(): ConfigStatusEnvelope {
   return {
     operationId: "status-invalid-authenticator",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationConfigStatus,
+    kind: OperationKind.ConfigStatus,
     authenticatorClosed: false,
-    error: failureForCode(Code.CodeSelectionInvalid),
+    error: failureForCode(Code.CodeAuthenticatorClosed),
   } as ConfigStatusEnvelope;
 }
 
@@ -318,7 +318,7 @@ function resetEnvelope(phase: "preview" | "result"): ResetFactoryEnvelope {
   return {
     operationId: `reset-${phase}-1`,
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationResetFactory,
+    kind: OperationKind.ResetFactory,
     result: {
       preview: {
         device: TOKEN,
@@ -436,7 +436,7 @@ describe("security controller loading", () => {
     expect(get(securityStatus).responseEnvelope).toBe(invalidEnvelope);
     expect(get(authenticatorStatus)).toMatchObject({
       state: "error",
-      error: failureForCode(Code.CodeSelectionInvalid),
+      error: failureForCode(Code.CodeAuthenticatorClosed),
     });
     expect(get(authenticatorStatus).selectionId).toBeUndefined();
 
@@ -454,11 +454,11 @@ describe("security controller mutations", () => {
     let sentChangePINRequest: PINChangeRequest | null = null;
     const setPIN = vi.spyOn(api, "setPIN").mockImplementation((request) => {
       sentSetPINRequest = { ...request };
-      return Promise.resolve(pinErrorEnvelope(OperationKind.OperationSetPIN));
+      return Promise.resolve(pinErrorEnvelope(OperationKind.SetPIN));
     });
     const changePIN = vi.spyOn(api, "changePIN").mockImplementation((request) => {
       sentChangePINRequest = { ...request };
-      return Promise.resolve(pinErrorEnvelope(OperationKind.OperationChangePIN));
+      return Promise.resolve(pinErrorEnvelope(OperationKind.ChangePIN));
     });
 
     expect(await setAuthenticatorPIN({ newPIN: "set-secret-123" })).toBe(false);
@@ -771,7 +771,7 @@ describe("security controller mutations", () => {
       "preview",
       true,
     );
-    invalidPreview.error = failureForCode(Code.CodeSelectionInvalid);
+    invalidPreview.error = failureForCode(Code.CodeAuthenticatorClosed);
     const setAlwaysUV = vi.spyOn(api, "setAlwaysUV")
       .mockResolvedValueOnce(invalidPreview)
       .mockResolvedValueOnce(authenticatorConfigEnvelope(

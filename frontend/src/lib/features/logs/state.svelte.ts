@@ -1,4 +1,4 @@
-import type { LogEntry, LogJournalBatch, LogJournalRecord, LogLayer, LogLevel, LogOutcome } from "../../../../bindings/github.com/go-ctap/kit/model";
+import type { LogEntry, LogJournalBatch, LogJournalRecord, LogOutcome } from "../../../../bindings/github.com/go-ctap/kit/model";
 import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import { SvelteDate } from "svelte/reactivity";
 
@@ -26,8 +26,6 @@ export type AppRuntimeLogRecord = {
 export type LogRecord = KitLogRecord | AppRuntimeLogRecord;
 
 export type LogFilters = {
-  level: LogLevel | "all";
-  layer: LogLayer | "all";
   outcome: LogOutcome | "all";
 };
 
@@ -53,7 +51,7 @@ export class LogController {
   cursor = $state(0);
   historyTruncated = $state(false);
   query = $state("");
-  filters = $state<LogFilters>({ level: "all", layer: "all", outcome: "all" });
+  filters = $state<LogFilters>({ outcome: "all" });
 
   readonly entryLimit: number;
   readonly byteLimit: number;

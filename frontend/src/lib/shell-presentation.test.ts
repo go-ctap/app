@@ -94,7 +94,7 @@ describe("shell status presentation", () => {
     const opening = buildShellStatusPresentation({ selectedDevice: token, authenticatorStatus: authenticator("opening"), statusBar: outcome });
     const errored = buildShellStatusPresentation({
       selectedDevice: token,
-      authenticatorStatus: { ...authenticator("error"), error: failureForCode(Code.CodeSelectionInvalid) },
+      authenticatorStatus: { ...authenticator("error"), error: failureForCode(Code.CodeAuthenticatorClosed) },
       statusBar: outcome,
     });
 
@@ -102,7 +102,7 @@ describe("shell status presentation", () => {
     expect(errored).toMatchObject({
       source: "authenticator",
       title: "Error",
-    detail: "The authenticator selection is invalid.",
+      detail: "The authenticator is closed.",
       busy: false,
       tone: "error",
     });

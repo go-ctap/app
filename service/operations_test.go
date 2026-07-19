@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	ctapkit "github.com/go-ctap/kit"
-	"github.com/go-ctap/kit/model"
 	"github.com/go-ctap/kit/model/credentials"
 	"github.com/go-ctap/kit/model/failure"
+	"github.com/go-ctap/kit/model/operation"
 	"github.com/go-ctap/kit/model/report"
 )
 
@@ -26,16 +26,16 @@ func TestListCredentialsInvalidSelectionReturnsTypedErrorEnvelope(t *testing.T) 
 		t.Fatalf("envelope selection ID = %q, want missing-selection", envelope.SelectionID)
 	}
 
-	if envelope.Kind != model.OperationListCredentials {
-		t.Fatalf("envelope kind = %q, want %q", envelope.Kind, model.OperationListCredentials)
+	if envelope.Kind != operation.ListCredentials {
+		t.Fatalf("envelope kind = %q, want %q", envelope.Kind, operation.ListCredentials)
 	}
 
-	if envelope.Error == nil || envelope.Error.Code != failure.CodeSelectionInvalid {
-		t.Fatalf("envelope error = %#v, want %s", envelope.Error, failure.CodeSelectionInvalid)
+	if envelope.Error == nil || envelope.Error.Code != failure.CodeAuthenticatorClosed {
+		t.Fatalf("envelope error = %#v, want %s", envelope.Error, failure.CodeAuthenticatorClosed)
 	}
 
-	if envelope.Error.Category != failure.CategoryInvalidSelection || envelope.Error.Phase != failure.PhaseSelection {
-		t.Fatalf("envelope error = %#v, want invalid-selection/selection", envelope.Error)
+	if envelope.Error.Category != failure.CategoryInvalidState || envelope.Error.Phase != failure.PhaseAuthenticator {
+		t.Fatalf("envelope error = %#v, want invalid-state/authenticator", envelope.Error)
 	}
 }
 
@@ -53,8 +53,7 @@ func TestListCredentialsFailureUsesOnlyTheTypedEnvelopeError(t *testing.T) {
 		service,
 		context.Background(),
 		OperationRequest{SelectionID: "selection-1"},
-		model.OperationListCredentials,
-		false,
+		operation.ListCredentials,
 		staticOperationExecutor[credentials.InventoryReport](nil, runErr),
 	)
 	if err != nil {
@@ -99,8 +98,7 @@ func TestOperationEnvelopeReportsAndRetiresClosedSelection(t *testing.T) {
 		service,
 		context.Background(),
 		OperationRequest{SelectionID: "selection-1"},
-		model.OperationListCredentials,
-		false,
+		operation.ListCredentials,
 		staticOperationExecutor[credentials.InventoryReport](nil, runErr),
 	)
 	if err != nil {

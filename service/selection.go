@@ -3,10 +3,8 @@ package service
 import (
 	"context"
 	"strings"
-	"time"
 
 	ctapkit "github.com/go-ctap/kit"
-	"github.com/go-ctap/kit/model"
 	"github.com/go-ctap/kit/model/failure"
 	"github.com/go-ctap/kit/model/report"
 	"github.com/google/uuid"
@@ -69,7 +67,7 @@ func (s *Service) SetSelection(ctx context.Context, req SelectionRequest) (Selec
 	defer unlock()
 
 	if s.isClosed() {
-		return SelectionSnapshot{}, closedServiceError(failure.PhaseSelection)
+		return SelectionSnapshot{}, closedServiceError(failure.PhaseAuthenticator)
 	}
 
 	selector := strings.TrimSpace(req.Selector)
@@ -100,7 +98,7 @@ func (s *Service) SetSelection(ctx context.Context, req SelectionRequest) (Selec
 		_ = s.closeSelection(previous)
 	}
 
-	selected, err := s.openSelection(ctx, req, device)
+	selected, err := s.openSelection(ctx, device)
 	if err != nil {
 		return SelectionSnapshot{}, err
 	}
@@ -183,27 +181,16 @@ func (s *Service) takeSelection() *selection {
 
 func (s *Service) openSelection(
 	ctx context.Context,
-	req SelectionRequest,
 	device selectedDevice,
-) (selected *selection, returnErr error) {
+) (*selection, error) {
 	selectionID := SelectionID(uuid.NewString())
-	started := time.Now()
-	defer func() {
-		entry := model.LogEntry{
-			Timestamp:   started.UTC(),
-			Layer:       model.LogLayerSelection,
-			Code:        model.LogCodeSelectionOpen,
-			SelectionID: string(selectionID),
-		}
-		s.logs.Append(ctapkit.FinishLogEntry(entry, started, returnErr))
-	}()
 
 	opts := []ctapkit.AuthenticatorOption{
 		ctapkit.WithLogJournal(s.logs),
 	}
 
 	runtime, err := s.openAuthenticator(
-		ctapkit.WithLogCorrelation(ctx, string(selectionID), "", ""),
+		ctx,
 		device.handle,
 		opts...,
 	)
@@ -214,17 +201,7 @@ func (s *Service) openSelection(
 	return newSelection(selectionID, s.reportWithMetadata(device.report), runtime), nil
 }
 
-func (s *Service) closeSelection(selected *selection) (returnErr error) {
-	started := time.Now()
-	defer func() {
-		s.logs.Append(ctapkit.FinishLogEntry(model.LogEntry{
-			Timestamp:   started.UTC(),
-			Layer:       model.LogLayerSelection,
-			Code:        model.LogCodeSelectionClose,
-			SelectionID: string(selected.id),
-		}, started, returnErr))
-	}()
-
+func (s *Service) closeSelection(selected *selection) error {
 	s.cancelAndWait(selected)
 
 	return selected.runtime.Close()
@@ -235,7 +212,7 @@ func (s *Service) lockSelection(ctx context.Context) (func(), error) {
 	case s.selectionGate <- struct{}{}:
 		return func() { <-s.selectionGate }, nil
 	case <-ctx.Done():
-		return nil, normalizeServicePhaseError(ctx.Err(), failure.PhaseSelection)
+		return nil, normalizeServicePhaseError(ctx.Err(), failure.PhaseAuthenticator)
 	}
 }
 

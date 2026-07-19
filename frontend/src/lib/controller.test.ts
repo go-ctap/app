@@ -2,10 +2,10 @@ import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  InteractionKind,
-  OperationKind,
-  VerificationFlow,
+	InteractionKind,
+	VerificationFlow,
 } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import {
@@ -107,7 +107,7 @@ function inspectEnvelope(item: DeviceReport) {
   return {
     operationId: `inspect-${item.fingerprint}`,
     selectionId: `authenticator-${item.fingerprint}`,
-    kind: OperationKind.OperationInspect,
+    kind: OperationKind.Inspect,
     authenticatorClosed: false,
     result: {
       device: item,
@@ -125,7 +125,7 @@ function bioSensorEnvelope(item: DeviceReport): BioSensorEnvelope {
   return {
     operationId: `bio-${item.fingerprint}`,
     selectionId: `authenticator-${item.fingerprint}`,
-    kind: OperationKind.OperationBioSensorInfo,
+    kind: OperationKind.BioSensorInfo,
     result: {
       device: item,
       supported: false,
@@ -138,7 +138,7 @@ function credentialsEnvelope(item: DeviceReport, selectionId = `authenticator-${
   return {
     operationId: `credentials-${item.fingerprint}`,
     selectionId,
-    kind: OperationKind.OperationListCredentials,
+    kind: OperationKind.ListCredentials,
     result: {
       device: item,
       support: {
@@ -186,7 +186,7 @@ function largeBlobListEnvelope(item: DeviceReport, selectionId = `authenticator-
   return {
     operationId: `large-blobs-${item.fingerprint}`,
     selectionId,
-    kind: OperationKind.OperationListLargeBlobs,
+    kind: OperationKind.ListLargeBlobs,
     result: {
       device: item,
       support: {
@@ -368,10 +368,10 @@ describe("controller lifecycle", () => {
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
-      error: failureForCode(Code.CodeSelectionInvalid),
+      error: failureForCode(Code.CodeAuthenticatorClosed),
     });
     seedPasskeysEnvelopeForTest(previous);
-    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeSelectionInvalid));
+    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeAuthenticatorClosed));
     serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token, "authenticator-reopened") });
 
     let resolveRefresh!: (envelope: CredentialsEnvelope) => void;
@@ -413,10 +413,10 @@ describe("controller lifecycle", () => {
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
-      error: failureForCode(Code.CodeSelectionInvalid),
+      error: failureForCode(Code.CodeAuthenticatorClosed),
     });
     seedPasskeysEnvelopeForTest(previous);
-    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeSelectionInvalid));
+    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeAuthenticatorClosed));
     serviceMocks.SetSelection.mockRejectedValueOnce(new Error("authenticator bridge offline"));
 
     await expect(reloadPasskeys()).resolves.toBe(false);
@@ -443,16 +443,16 @@ describe("controller lifecycle", () => {
     const refreshError = {
       operationId: "refresh-1",
       selectionId: "authenticator-reopened",
-      kind: OperationKind.OperationListCredentials,
+      kind: OperationKind.ListCredentials,
       error: failureForCode(Code.CodeTransportFailure),
     } as CredentialsEnvelope;
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
-      error: failureForCode(Code.CodeSelectionInvalid),
+      error: failureForCode(Code.CodeAuthenticatorClosed),
     });
     seedPasskeysEnvelopeForTest(previous);
-    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeSelectionInvalid));
+    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeAuthenticatorClosed));
     serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token, "authenticator-reopened") });
     serviceMocks.ListCredentials.mockResolvedValue(refreshError);
 
@@ -494,7 +494,7 @@ describe("controller lifecycle", () => {
     serviceMocks.DeleteCredential.mockResolvedValue({
       operationId: "delete-preview-1",
       selectionId: "authenticator-token-1",
-      kind: OperationKind.OperationDeleteCredential,
+      kind: OperationKind.DeleteCredential,
       result: {
         preview: { credentialIDHex: "cafe", rpID: "example.com" },
         result: null,
@@ -517,14 +517,14 @@ describe("controller lifecycle", () => {
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
-      error: failureForCode(Code.CodeSelectionInvalid),
+      error: failureForCode(Code.CodeAuthenticatorClosed),
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token, "authenticator-expired"));
     serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token, "authenticator-reopened") });
     serviceMocks.DeleteCredential.mockResolvedValue({
       operationId: "delete-preview-1",
       selectionId: "authenticator-reopened",
-      kind: OperationKind.OperationDeleteCredential,
+      kind: OperationKind.DeleteCredential,
       result: {
         preview: { credentialIDHex: "cafe", rpID: "example.com" },
         result: null,
@@ -547,14 +547,14 @@ describe("controller lifecycle", () => {
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
-      error: failureForCode(Code.CodeSelectionInvalid),
+      error: failureForCode(Code.CodeAuthenticatorClosed),
     });
     seedLargeBlobsEnvelopeForTest(largeBlobListEnvelope(token, "authenticator-expired"));
     serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token, "authenticator-reopened") });
     serviceMocks.DeleteLargeBlob.mockResolvedValue(new LargeBlobMutationEnvelope({
       operationId: "large-blob-delete-preview-1",
       selectionId: "authenticator-reopened",
-      kind: OperationKind.OperationDeleteLargeBlob,
+      kind: OperationKind.DeleteLargeBlob,
       result: new LargeBlobMutationOutput({
         preview: new MutationPreview({
           operation: MutationOperation.MutationDelete,
@@ -594,13 +594,13 @@ describe("controller lifecycle", () => {
       .mockResolvedValueOnce({
         operationId: "update-preview-1",
         selectionId: "authenticator-token-1",
-        kind: OperationKind.OperationUpdateCredentialUser,
+        kind: OperationKind.UpdateCredentialUser,
         result: { preview, result: null },
       })
       .mockResolvedValueOnce({
         operationId: "update-1",
         selectionId: "authenticator-token-1",
-        kind: OperationKind.OperationUpdateCredentialUser,
+        kind: OperationKind.UpdateCredentialUser,
         result: {
           preview,
           result: {
@@ -661,13 +661,13 @@ describe("controller lifecycle", () => {
       .mockResolvedValueOnce({
         operationId: "update-preview-1",
         selectionId: "authenticator-token-1",
-        kind: OperationKind.OperationUpdateCredentialUser,
+        kind: OperationKind.UpdateCredentialUser,
         result: { preview, result: null },
       })
       .mockResolvedValueOnce({
         operationId: "update-1",
         selectionId: "authenticator-token-1",
-        kind: OperationKind.OperationUpdateCredentialUser,
+        kind: OperationKind.UpdateCredentialUser,
         result: {
           preview,
           result: {
@@ -725,13 +725,13 @@ describe("controller lifecycle", () => {
       .mockResolvedValueOnce({
         operationId: "delete-preview-1",
         selectionId: "authenticator-token-1",
-        kind: OperationKind.OperationDeleteCredential,
+        kind: OperationKind.DeleteCredential,
         result: { preview, result: null },
       })
       .mockResolvedValueOnce({
         operationId: "delete-1",
         selectionId: "authenticator-token-1",
-        kind: OperationKind.OperationDeleteCredential,
+        kind: OperationKind.DeleteCredential,
         result: {
           preview,
           result: {
@@ -795,14 +795,14 @@ describe("controller lifecycle", () => {
     const errorEnvelope = {
       operationId: "update-1",
       selectionId: "authenticator-token-1",
-      kind: OperationKind.OperationUpdateCredentialUser,
+      kind: OperationKind.UpdateCredentialUser,
       error: failureForCode(Code.CodeTransportFailure),
     };
     serviceMocks.UpdateCredentialUser
       .mockResolvedValueOnce({
         operationId: "update-preview-1",
         selectionId: "authenticator-token-1",
-        kind: OperationKind.OperationUpdateCredentialUser,
+        kind: OperationKind.UpdateCredentialUser,
         result: { preview, result: null },
       })
       .mockResolvedValueOnce(errorEnvelope);
@@ -843,14 +843,14 @@ describe("controller lifecycle", () => {
     const invalidSelectionEnvelope = {
       operationId: "update-1",
       selectionId: "authenticator-token-1",
-      kind: OperationKind.OperationUpdateCredentialUser,
-      error: failureForCode(Code.CodeSelectionInvalid),
+      kind: OperationKind.UpdateCredentialUser,
+      error: failureForCode(Code.CodeAuthenticatorClosed),
     };
     serviceMocks.UpdateCredentialUser
       .mockResolvedValueOnce({
         operationId: "update-preview-1",
         selectionId: "authenticator-token-1",
-        kind: OperationKind.OperationUpdateCredentialUser,
+        kind: OperationKind.UpdateCredentialUser,
         result: { preview, result: null },
       })
       .mockResolvedValueOnce(invalidSelectionEnvelope);
@@ -862,7 +862,7 @@ describe("controller lifecycle", () => {
 
     expect(get(authenticatorStatus)).toMatchObject({
       state: "error",
-      error: failureForCode(Code.CodeSelectionInvalid),
+      error: failureForCode(Code.CodeAuthenticatorClosed),
     });
     expect(get(authenticatorStatus).selectionId).toBeUndefined();
     expect(get(passkeysMutation)).toMatchObject({
@@ -917,14 +917,14 @@ describe("controller lifecycle", () => {
     const noResultEnvelope = {
       operationId: "update-1",
       selectionId: "authenticator-token-1",
-      kind: OperationKind.OperationUpdateCredentialUser,
+      kind: OperationKind.UpdateCredentialUser,
       result: { preview, result: null },
     };
     serviceMocks.UpdateCredentialUser
       .mockResolvedValueOnce({
         operationId: "update-preview-1",
         selectionId: "authenticator-token-1",
-        kind: OperationKind.OperationUpdateCredentialUser,
+        kind: OperationKind.UpdateCredentialUser,
         result: { preview, result: null },
       })
       .mockResolvedValueOnce(noResultEnvelope);
@@ -974,7 +974,7 @@ describe("controller lifecycle", () => {
     const envelope = {
       operationId: "credentials-token-1",
       selectionId: "authenticator-token-1",
-      kind: OperationKind.OperationListCredentials,
+      kind: OperationKind.ListCredentials,
     } as CredentialsEnvelope;
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     serviceMocks.ListCredentials.mockResolvedValue(envelope);
@@ -1008,16 +1008,16 @@ describe("controller lifecycle", () => {
     serviceMocks.ListCredentials.mockResolvedValue({
       operationId: "credentials-token-1",
       selectionId: "authenticator-token-1",
-      kind: OperationKind.OperationListCredentials,
+      kind: OperationKind.ListCredentials,
       authenticatorClosed: false,
-      error: failureForCode(Code.CodeSelectionInvalid),
+      error: failureForCode(Code.CodeAuthenticatorClosed),
     } as CredentialsEnvelope);
 
     await loadPasskeys();
 
     expect(get(authenticatorStatus)).toMatchObject({
       state: "error",
-      error: failureForCode(Code.CodeSelectionInvalid),
+      error: failureForCode(Code.CodeAuthenticatorClosed),
     });
     expect(get(authenticatorStatus).selectionId).toBeUndefined();
     expect(get(pendingInteraction)).toBeNull();
@@ -1039,7 +1039,7 @@ describe("controller lifecycle", () => {
     serviceMocks.ListCredentials.mockResolvedValue({
       operationId: "credentials-token-1",
       selectionId: "authenticator-token-1",
-      kind: OperationKind.OperationListCredentials,
+      kind: OperationKind.ListCredentials,
       authenticatorClosed: true,
       error: transportFailure,
     } as CredentialsEnvelope);
@@ -1286,7 +1286,7 @@ describe("controller lifecycle", () => {
     seedActiveScreenForTest("overview");
     seedSelectionForTest("token-1", token, {
       state: "error",
-      error: failureForCode(Code.CodeSelectionInvalid),
+      error: failureForCode(Code.CodeAuthenticatorClosed),
     });
     serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token, "authenticator-reopened") });
     serviceMocks.Inspect.mockResolvedValue(inspectEnvelope(token));
@@ -1304,7 +1304,7 @@ describe("controller lifecycle", () => {
     const envelope = {
       operationId: "inspect-error",
       selectionId: "authenticator-token-1",
-      kind: OperationKind.OperationInspect,
+      kind: OperationKind.Inspect,
       error: failureForCode(Code.CodeAuthenticatorBusy),
     };
     seedDevicesForTest([token]);

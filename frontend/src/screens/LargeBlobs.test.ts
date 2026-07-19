@@ -4,7 +4,7 @@ import { tick } from "svelte";
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import {
   BlobState,
@@ -67,7 +67,7 @@ function listEnvelope(): LargeBlobListEnvelope {
   return {
     operationId: "large-blob-list-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationListLargeBlobs,
+    kind: OperationKind.ListLargeBlobs,
     result: {
       device: { fingerprint: "token-1" },
       support: {
@@ -124,7 +124,7 @@ function readEnvelope(options: {
   return {
     operationId: "large-blob-read-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationReadLargeBlob,
+    kind: OperationKind.ReadLargeBlob,
     result: {
       device: { fingerprint: "token-1" },
         support: { largeBlobs: true, largeBlobKeyExtension: true, maxSerializedLargeBlobArray: 0 },
@@ -198,10 +198,10 @@ function mutationEnvelope(preview: MutationPreview): LargeBlobMutationEnvelope {
     operationId: "large-blob-preview-1",
     selectionId: "authenticator-1",
     kind: preview.operation === MutationOperation.MutationGC
-      ? OperationKind.OperationGarbageCollectLargeBlobs
+      ? OperationKind.GarbageCollectLargeBlobs
       : preview.operation === MutationOperation.MutationDelete
-        ? OperationKind.OperationDeleteLargeBlob
-        : OperationKind.OperationWriteLargeBlob,
+        ? OperationKind.DeleteLargeBlob
+        : OperationKind.WriteLargeBlob,
     result: { preview, result: null },
   } as LargeBlobMutationEnvelope;
 }
@@ -259,7 +259,7 @@ describe("LargeBlobs", () => {
     failLargeBlobsInventoryLoadWithResponse({
       operationId: "large-blob-list-error",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationListLargeBlobs,
+      kind: OperationKind.ListLargeBlobs,
       error: failureForCode(Code.CodePINInvalid),
     } as LargeBlobListEnvelope);
 
@@ -273,7 +273,7 @@ describe("LargeBlobs", () => {
     failLargeBlobsInventoryLoadWithResponse({
       operationId: "verification-flow-error",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationListLargeBlobs,
+      kind: OperationKind.ListLargeBlobs,
       error: failureForCode(Code.CodeVerificationFlowUnsupported),
     } as LargeBlobListEnvelope);
 
@@ -391,7 +391,7 @@ describe("LargeBlobs", () => {
         responseEnvelope: {
           operationId: "large-blob-read-error",
           selectionId: "authenticator-1",
-          kind: OperationKind.OperationReadLargeBlob,
+          kind: OperationKind.ReadLargeBlob,
           error: failureForCode(code),
         } as LargeBlobReadEnvelope,
         runtimeError: null,
@@ -649,7 +649,7 @@ describe("LargeBlobs", () => {
       responseEnvelope: {
         operationId: "write-error-1",
         selectionId: "authenticator-1",
-        kind: OperationKind.OperationWriteLargeBlob,
+        kind: OperationKind.WriteLargeBlob,
         error: failureForCode(Code.CodeTransportFailure),
       } as LargeBlobMutationEnvelope,
       runtimeError: null,
@@ -699,7 +699,7 @@ describe("LargeBlobs", () => {
       responseEnvelope: {
         operationId: "cleanup-error-1",
         selectionId: "authenticator-1",
-        kind: OperationKind.OperationGarbageCollectLargeBlobs,
+        kind: OperationKind.GarbageCollectLargeBlobs,
         error: failureForCode(Code.CodeTransportFailure),
       } as LargeBlobMutationEnvelope,
       runtimeError: null,
@@ -718,7 +718,7 @@ describe("LargeBlobs", () => {
     const errorEnvelope = {
       operationId: "large-blob-delete-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationDeleteLargeBlob,
+      kind: OperationKind.DeleteLargeBlob,
       error: failureForCode(Code.CodeTransportFailure),
     } as LargeBlobMutationEnvelope;
     mutableLargeBlobsMutation.set({

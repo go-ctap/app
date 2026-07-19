@@ -2,10 +2,7 @@ package service
 
 import (
 	"context"
-	"time"
 
-	ctapkit "github.com/go-ctap/kit"
-	"github.com/go-ctap/kit/model"
 	"github.com/go-ctap/kit/model/failure"
 	"github.com/go-ctap/kit/model/report"
 	"github.com/go-ctap/kit/transport"
@@ -26,16 +23,8 @@ func (s *Service) discoverSnapshot(ctx context.Context, req DiscoverRequest) (Di
 
 func (s *Service) RefreshDiscovery(ctx context.Context, req DiscoverRequest) error {
 	effective := s.effectiveDiscoverRequest(req)
-	started := time.Now()
-	err := s.reconcileTopology(ctx, effective, DiscoveryTriggerManual, true)
-	s.logs.Append(ctapkit.FinishLogEntry(model.LogEntry{
-		Timestamp: started.UTC(),
-		Layer:     model.LogLayerService,
-		Code:      model.LogCodeDiscoveryRun,
-		Params:    map[string]string{"trigger": string(DiscoveryTriggerManual)},
-	}, started, err))
 
-	return err
+	return s.reconcileTopology(ctx, effective, DiscoveryTriggerManual, true)
 }
 
 func (s *Service) reconcileTopology(
@@ -57,24 +46,6 @@ func (s *Service) reconcileTopology(
 
 	if force || result.changed || envelope.Error != nil {
 		s.emit(EventDiscoveryChanged, envelope)
-
-		entry := model.LogEntry{
-			Timestamp:    time.Now().UTC(),
-			Layer:        model.LogLayerService,
-			Level:        model.LogLevelInfo,
-			Outcome:      model.LogOutcomeEvent,
-			Code:         model.LogCodeDiscoveryChanged,
-			Params:       map[string]string{"trigger": string(trigger)},
-			Error:        envelope.Error,
-			ErrorMessage: ctapkit.TransportErrorMessage(result.err),
-		}
-
-		if envelope.Error != nil {
-			entry.Level = model.LogLevelError
-			entry.Outcome = model.LogOutcomeFailed
-		}
-
-		s.logs.Append(entry)
 	}
 
 	if result.snapshot != nil {
@@ -210,7 +181,7 @@ func deviceReportPresent(devices []report.DeviceReport, selected report.DeviceRe
 }
 
 func closedServiceError(phase failure.Phase) error {
-	return failure.New(failure.CodeServiceClosed,
+	return failure.New(failure.CodeOperationCanceled,
 		failure.WithPhase(phase),
 	)
 }

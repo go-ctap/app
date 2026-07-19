@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code, type Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   BioSensorEnvelope,
@@ -27,13 +27,13 @@ describe("security state", () => {
     const successful = {
       operationId: "status-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationConfigStatus,
+      kind: OperationKind.ConfigStatus,
       result: {},
     } as ConfigStatusEnvelope;
     const failed = {
       operationId: "status-2",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationConfigStatus,
+      kind: OperationKind.ConfigStatus,
       error: failureForCode(Code.CodeOperationUnsupported),
     } as ConfigStatusEnvelope;
 
@@ -70,7 +70,7 @@ describe("security state", () => {
     const envelope = {
       operationId: "sensor-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationBioSensorInfo,
+      kind: OperationKind.BioSensorInfo,
     } as BioSensorEnvelope;
 
     securitySensor.update((current) => ({ ...current, responseEnvelope: envelope }));

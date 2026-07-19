@@ -4,16 +4,12 @@
 export {
     InteractionKind,
     InteractionRequest,
-    LogCode,
     LogEntry,
     LogJournalBatch,
     LogJournalRecord,
-    LogLayer,
-    LogLevel,
     LogOutcome,
     LogPayload,
     OperationEvent,
-    OperationKind,
     OperationStage,
     PINInteractionState,
     VerificationFlow

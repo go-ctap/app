@@ -4,7 +4,7 @@ import { get } from "svelte/store";
 import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { Severity, Warning } from "../../bindings/github.com/go-ctap/kit/model/safety";
 import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/credential";
@@ -375,7 +375,7 @@ describe("WebAuthn Lab screen", () => {
     const previewEnvelope = new MakeCredentialEnvelope({
       operationId: "make-preview-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationMakeCredential,
+      kind: OperationKind.MakeCredential,
       result: {
         preview: new MakeCredentialPreview({
           device: token,
@@ -437,7 +437,7 @@ describe("WebAuthn Lab screen", () => {
     const previewEnvelope = new MakeCredentialEnvelope({
       operationId: "make-preview-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationMakeCredential,
+      kind: OperationKind.MakeCredential,
       result: {
         preview: new MakeCredentialPreview({
           device: token,
@@ -465,7 +465,7 @@ describe("WebAuthn Lab screen", () => {
         responseEnvelope: new MakeCredentialEnvelope({
           operationId: "make-preview-error",
           selectionId: "authenticator-1",
-          kind: OperationKind.OperationMakeCredential,
+          kind: OperationKind.MakeCredential,
           error: failureForCode(Code.CodeTransportFailure),
         }),
         runtimeError: null,
@@ -492,7 +492,7 @@ describe("WebAuthn Lab screen", () => {
         responseEnvelope: new MakeCredentialEnvelope({
           operationId: "make-execution-error",
           selectionId: "authenticator-1",
-          kind: OperationKind.OperationMakeCredential,
+          kind: OperationKind.MakeCredential,
           error: failureForCode(Code.CodeTransportFailure),
         }),
         runtimeError: null,

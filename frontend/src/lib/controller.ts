@@ -1,5 +1,3 @@
-import { api } from "./api.js";
-import { logController } from "./features/logs/state.svelte.js";
 import {
   beginCredentialDelete as beginCredentialDeleteOperation,
   loadCredentialStoreState as loadCredentialStoreStateOperation,
@@ -19,25 +17,6 @@ import {
   restartSecurityPreview as restartSecurityPreviewOperation,
 } from "./security-controller.js";
 import { ensureActiveSelectionReady } from "./authenticator-controller.js";
-
-export async function syncLogJournal(): Promise<void> {
-  try {
-    logController.applyBatch(await api.readLogs({ after: logController.cursor }));
-  } catch {
-    // runtimeCall records bridge failures in the local journal.
-  }
-}
-
-export async function clearLogJournal(): Promise<boolean> {
-  try {
-    const cursor = await api.clearLogs();
-    logController.clear(cursor.sequence);
-    await syncLogJournal();
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export async function reloadPasskeys(): Promise<boolean> {
   if (!await ensureActiveSelectionReady()) return false;
@@ -108,6 +87,10 @@ export {
   cancelActiveOperation,
 } from "./operation-controller.js";
 export {
+  clearLogJournal,
+  syncLogJournal,
+} from "./logs-controller.js";
+export {
   handleDiscoveryChanged,
   refreshDiscovery,
   startDiscoveryMonitoring,
@@ -169,13 +152,15 @@ export {
   updateCredentialDraft,
 } from "./passkeys-controller.js";
 export {
-  bootstrap,
   ensureActiveSelectionReady,
-  navigateToScreen,
   rediscoverAfterFactoryReset,
-  selectToken,
   shutdownWorkbench,
 } from "./authenticator-controller.js";
+export {
+  bootstrap,
+  navigateToScreen,
+  selectToken,
+} from "./workbench-controller.js";
 export {
   AlwaysUVTarget,
   beginAlwaysUVChange,

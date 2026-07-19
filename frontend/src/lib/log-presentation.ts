@@ -1,110 +1,64 @@
-import {
-  LogCode,
-  LogLayer,
-  LogLevel,
-  LogOutcome,
-  OperationKind,
-} from "../../bindings/github.com/go-ctap/kit/model";
+import { LogOutcome } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 
 import { m } from "../paraglide/messages.js";
 import { failureMessage } from "./failure.js";
-import { operationStageLabel } from "./format.js";
 import type { KitLogRecord, LogFilters, LogRecord } from "./features/logs/state.svelte.js";
-
-export function compactLogJSON(source: string) {
-  try {
-    return JSON.stringify(
-      JSON.parse(source),
-      function omitEmptyField(key, value) {
-        if (!key || Array.isArray(this)) return value;
-        return value === null || value === "" || value === 0 ? undefined : value;
-      },
-      2,
-    ) ?? source;
-  } catch {
-    return source;
-  }
-}
 
 export function logSummary(record: LogRecord) {
   if (record.source === "app/runtime") return m.logs_summary_runtime({ context: record.context });
-
-  const entry = record.entry;
-  switch (entry.code) {
-    case LogCode.LogCodeDiscoveryRun:
-      return m.logs_summary_discovery_run();
-    case LogCode.LogCodeDiscoveryChanged:
-      return m.logs_summary_discovery_changed();
-    case LogCode.LogCodeMDSLookup:
-      return m.logs_summary_mds_lookup();
-    case LogCode.LogCodeSelectionOpen:
-      return m.logs_summary_selection_open();
-    case LogCode.LogCodeSelectionClose:
-      return m.logs_summary_selection_close();
-    case LogCode.LogCodeOperationRun:
-      return m.logs_summary_operation_run({ operation: operationKindLabel(entry.operationKind) });
-    case LogCode.LogCodeOperationProgress:
-      return m.logs_summary_operation_progress({ stage: operationStageLabel(entry.params?.stage) });
-    case LogCode.LogCodeInteractionRequest:
-      return m.logs_summary_interaction_request();
-    case LogCode.LogCodeInteractionResolve:
-      return m.logs_summary_interaction_resolve();
-    case LogCode.LogCodeCTAPCommand:
-      return m.logs_summary_ctap_command({ command: commandLabel(record) });
-    case LogCode.$zero:
-      return entry.code;
-  }
+  return m.logs_summary_ctap_command({ command: commandLabel(record) });
 }
 
 export function operationKindLabel(kind: OperationKind | undefined) {
   switch (kind) {
-    case OperationKind.OperationInspect:
+    case OperationKind.Inspect:
       return m.overview();
-    case OperationKind.OperationListCredentials:
+    case OperationKind.ListCredentials:
       return m.credential_inventory();
-    case OperationKind.OperationCredentialStoreState:
+    case OperationKind.CredentialStoreState:
       return m.credential_store_state_operation();
-    case OperationKind.OperationDeleteCredential:
+    case OperationKind.DeleteCredential:
       return m.credential_delete();
-    case OperationKind.OperationUpdateCredentialUser:
+    case OperationKind.UpdateCredentialUser:
       return m.credential_update();
-    case OperationKind.OperationReadLargeBlob:
+    case OperationKind.ReadLargeBlob:
       return m.large_blob_read();
-    case OperationKind.OperationListLargeBlobs:
+    case OperationKind.ListLargeBlobs:
       return m.large_blob_list();
-    case OperationKind.OperationWriteLargeBlob:
+    case OperationKind.WriteLargeBlob:
       return m.large_blob_write();
-    case OperationKind.OperationDeleteLargeBlob:
+    case OperationKind.DeleteLargeBlob:
       return m.large_blob_delete();
-    case OperationKind.OperationGarbageCollectLargeBlobs:
+    case OperationKind.GarbageCollectLargeBlobs:
       return m.large_blob_cleanup();
-    case OperationKind.OperationConfigStatus:
+    case OperationKind.ConfigStatus:
       return m.security_status_operation();
-    case OperationKind.OperationBioSensorInfo:
+    case OperationKind.BioSensorInfo:
       return m.security_bio_sensor_operation();
-    case OperationKind.OperationBioList:
+    case OperationKind.BioList:
       return m.security_bio_list_operation();
-    case OperationKind.OperationBioEnroll:
+    case OperationKind.BioEnroll:
       return m.security_bio_enroll_operation();
-    case OperationKind.OperationBioRename:
+    case OperationKind.BioRename:
       return m.security_bio_rename_operation();
-    case OperationKind.OperationBioRemove:
+    case OperationKind.BioRemove:
       return m.security_bio_remove_operation();
-    case OperationKind.OperationResetFactory:
+    case OperationKind.ResetFactory:
       return m.security_reset_operation();
-    case OperationKind.OperationSetPIN:
+    case OperationKind.SetPIN:
       return m.security_pin_set_operation();
-    case OperationKind.OperationChangePIN:
+    case OperationKind.ChangePIN:
       return m.security_pin_change_operation();
-    case OperationKind.OperationSetAlwaysUV:
+    case OperationKind.SetAlwaysUV:
       return m.security_always_uv_operation();
-    case OperationKind.OperationSetMinPINLength:
+    case OperationKind.SetMinPINLength:
       return m.security_pin_policy_operation();
-    case OperationKind.OperationEnableLongTouchForReset:
+    case OperationKind.EnableLongTouchForReset:
       return m.security_long_touch_operation();
-    case OperationKind.OperationMakeCredential:
+    case OperationKind.MakeCredential:
       return m.lab_make_credential();
-    case OperationKind.OperationGetAssertion:
+    case OperationKind.GetAssertion:
       return m.lab_get_assertion();
     case OperationKind.$zero:
     case undefined:
@@ -112,49 +66,13 @@ export function operationKindLabel(kind: OperationKind | undefined) {
   }
 }
 
-export function logLevel(record: LogRecord) {
-  return record.source === "kit" ? record.entry.level : LogLevel.LogLevelError;
-}
-
-export function logLayer(record: LogRecord) {
-  return record.source === "kit" ? record.entry.layer : LogLayer.LogLayerService;
-}
-
 export function logOutcome(record: LogRecord) {
   return record.source === "kit" ? record.entry.outcome : LogOutcome.LogOutcomeFailed;
-}
-
-export function isDryRunLog(record: LogRecord) {
-  return record.source === "kit" && record.entry.dryRun === true;
-}
-
-export function logLevelLabel(level: LogLevel) {
-  const labels: Record<LogLevel, string> = {
-    [LogLevel.$zero]: "—",
-    [LogLevel.LogLevelDebug]: m.logs_level_debug(),
-    [LogLevel.LogLevelInfo]: m.logs_level_info(),
-    [LogLevel.LogLevelWarning]: m.logs_level_warning(),
-    [LogLevel.LogLevelError]: m.logs_level_error(),
-  };
-  return labels[level];
-}
-
-export function logLayerLabel(layer: LogLayer) {
-  const labels: Record<LogLayer, string> = {
-    [LogLayer.$zero]: "—",
-    [LogLayer.LogLayerService]: m.logs_layer_service(),
-    [LogLayer.LogLayerSelection]: m.logs_layer_selection(),
-    [LogLayer.LogLayerOperation]: m.logs_layer_operation(),
-    [LogLayer.LogLayerInteraction]: m.logs_layer_interaction(),
-    [LogLayer.LogLayerCTAP]: m.logs_layer_ctap(),
-  };
-  return labels[layer];
 }
 
 export function logOutcomeLabel(outcome: LogOutcome) {
   const labels: Record<LogOutcome, string> = {
     [LogOutcome.$zero]: "—",
-    [LogOutcome.LogOutcomeEvent]: m.logs_outcome_event(),
     [LogOutcome.LogOutcomeSucceeded]: m.logs_outcome_succeeded(),
     [LogOutcome.LogOutcomeFailed]: m.logs_outcome_failed(),
     [LogOutcome.LogOutcomeCanceled]: m.logs_outcome_canceled(),
@@ -187,8 +105,6 @@ export function formatCTAPCode(value: number) {
 export function filterLogs(records: readonly LogRecord[], query: string, filters: LogFilters) {
   const normalizedQuery = query.trim().toLocaleLowerCase();
   return records.filter((record) => {
-    if (filters.level !== "all" && logLevel(record) !== filters.level) return false;
-    if (filters.layer !== "all" && logLayer(record) !== filters.layer) return false;
     if (filters.outcome !== "all" && logOutcome(record) !== filters.outcome) return false;
     if (!normalizedQuery) return true;
     return searchableText(record).toLocaleLowerCase().includes(normalizedQuery);
@@ -204,21 +120,17 @@ function searchableText(record: LogRecord) {
   return [
     logSummary(record),
     record.sequence,
-    entry.selectionId,
-    entry.operationId,
     entry.operationKind,
     entry.command,
     entry.commandCode === undefined ? "" : formatCTAPCode(entry.commandCode),
     entry.subCommand,
     entry.subCommandCode == null ? "" : formatCTAPCode(entry.subCommandCode),
-    JSON.stringify(entry.params),
-    entry.request?.json,
     entry.request?.cborDiagnostic,
     entry.request?.diagnosticError,
-    entry.response?.json,
     entry.response?.cborDiagnostic,
     entry.response?.diagnosticError,
     entry.error ? failureMessage(entry.error) : "",
     entry.error ? JSON.stringify(entry.error) : "",
+    entry.errorMessage,
   ].filter(Boolean).join("\n");
 }

@@ -27,14 +27,11 @@ import {
   validateGetAssertionDraft,
   validateMakeCredentialDraft,
 } from "./lab-input.js";
-import { runtimeFailureFrom } from "./failure.js";
-import { applyInvalidSelectionError, applyOperationAuthenticatorBoundary, currentSelectionID } from "./authenticator-boundary.js";
+import { currentSelectionID } from "./authenticator-boundary.js";
 import { ensureActiveSelectionReady } from "./authenticator-controller.js";
+import { completeOperation, runOperation } from "./operation-lifecycle.js";
 import {
-  beginOperation,
   setStatusOutcome,
-  summarizeEnvelope,
-  summarizeOperationFailure,
 } from "./workbench-state.js";
 
 export function selectLabOperation(activeOperation: LabState["activeOperation"]) {
@@ -144,33 +141,11 @@ export async function previewLabMakeCredential(): Promise<boolean> {
     ...state,
     makeStep: { phase: "previewing", previewRequest },
   }));
-  try {
-    beginOperation(m.lab_make_credential_preview());
-    const envelope = await api.makeCredential(previewRequest);
-    if (envelope.error) {
-      labState.update((state) => ({
-        ...state,
-        makeStep: {
-          phase: "error",
-          previewRequest,
-          previewEnvelope: null,
-          request: null,
-          responseEnvelope: envelope,
-          runtimeError: null,
-        },
-      }));
-    } else {
-      labState.update((state) => ({
-        ...state,
-        makeStep: { phase: "review", previewRequest, previewEnvelope: envelope },
-      }));
-    }
-    summarizeEnvelope(m.lab_make_credential_preview(), envelope);
-    applyOperationAuthenticatorBoundary(envelope);
-    return !envelope.error;
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    labState.update((state) => ({
+  const label = m.lab_make_credential_preview();
+  const attempt = await runOperation({
+    label,
+    call: () => api.makeCredential(previewRequest),
+    onRuntimeFailure: (error) => labState.update((state) => ({
       ...state,
       makeStep: {
         phase: "error",
@@ -178,13 +153,33 @@ export async function previewLabMakeCredential(): Promise<boolean> {
         previewEnvelope: null,
         request: null,
         responseEnvelope: null,
-        runtimeError,
+        runtimeError: error,
+      },
+    })),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  if (envelope.error) {
+    labState.update((state) => ({
+      ...state,
+      makeStep: {
+        phase: "error",
+        previewRequest,
+        previewEnvelope: null,
+        request: null,
+        responseEnvelope: envelope,
+        runtimeError: null,
       },
     }));
-    summarizeOperationFailure(m.lab_make_credential_preview(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  } else {
+    labState.update((state) => ({
+      ...state,
+      makeStep: { phase: "review", previewRequest, previewEnvelope: envelope },
+    }));
   }
+  completeOperation(label, envelope);
+  return !envelope.error;
 }
 
 export async function confirmLabMakeCredential(): Promise<boolean> {
@@ -215,41 +210,11 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
     },
   }));
 
-  try {
-    beginOperation(m.lab_make_credential());
-    const envelope = await api.makeCredential(request);
-    if (envelope.error) {
-      labState.update((state) => ({
-        ...state,
-        makeStep: {
-          phase: "error",
-          previewRequest,
-          previewEnvelope,
-          request,
-          responseEnvelope: envelope,
-          runtimeError: null,
-        },
-      }));
-    } else {
-      labState.update((state) => ({
-        ...state,
-        makeStep: {
-          phase: "success",
-          previewRequest,
-          previewEnvelope,
-          request,
-          responseEnvelope: envelope,
-        },
-      }));
-      invalidatePasskeysInventory();
-      invalidateLargeBlobsInventory();
-    }
-    summarizeEnvelope(m.lab_make_credential(), envelope);
-    applyOperationAuthenticatorBoundary(envelope);
-    return !envelope.error;
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    labState.update((state) => ({
+  const label = m.lab_make_credential();
+  const attempt = await runOperation({
+    label,
+    call: () => api.makeCredential(request),
+    onRuntimeFailure: (error) => labState.update((state) => ({
       ...state,
       makeStep: {
         phase: "error",
@@ -257,13 +222,41 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
         previewEnvelope,
         request,
         responseEnvelope: null,
-        runtimeError,
+        runtimeError: error,
+      },
+    })),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  if (envelope.error) {
+    labState.update((state) => ({
+      ...state,
+      makeStep: {
+        phase: "error",
+        previewRequest,
+        previewEnvelope,
+        request,
+        responseEnvelope: envelope,
+        runtimeError: null,
       },
     }));
-    summarizeOperationFailure(m.lab_make_credential(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  } else {
+    labState.update((state) => ({
+      ...state,
+      makeStep: {
+        phase: "success",
+        previewRequest,
+        previewEnvelope,
+        request,
+        responseEnvelope: envelope,
+      },
+    }));
+    invalidatePasskeysInventory();
+    invalidateLargeBlobsInventory();
   }
+  completeOperation(label, envelope);
+  return !envelope.error;
 }
 
 export function editLabMakeCredential() {
@@ -303,34 +296,11 @@ async function executeGetAssertion(
     ...state,
     getStep: { phase: "executing", previewRequest, previewEnvelope, request },
   }));
-  try {
-    beginOperation(m.lab_get_assertion());
-    const envelope = await api.getAssertion(request);
-    if (envelope.error) {
-      labState.update((state) => ({
-        ...state,
-        getStep: {
-          phase: "error",
-          previewRequest,
-          previewEnvelope,
-          request,
-          responseEnvelope: envelope,
-          runtimeError: null,
-        },
-      }));
-    } else {
-      labState.update((state) => ({
-        ...state,
-        getStep: { phase: "success", previewRequest, previewEnvelope, request, responseEnvelope: envelope },
-      }));
-      if (request.extensions?.largeBlob?.write !== undefined) invalidateLargeBlobsInventory();
-    }
-    summarizeEnvelope(m.lab_get_assertion(), envelope);
-    applyOperationAuthenticatorBoundary(envelope);
-    return !envelope.error;
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    labState.update((state) => ({
+  const label = m.lab_get_assertion();
+  const attempt = await runOperation({
+    label,
+    call: () => api.getAssertion(request),
+    onRuntimeFailure: (error) => labState.update((state) => ({
       ...state,
       getStep: {
         phase: "error",
@@ -338,13 +308,34 @@ async function executeGetAssertion(
         previewEnvelope,
         request,
         responseEnvelope: null,
-        runtimeError,
+        runtimeError: error,
+      },
+    })),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  if (envelope.error) {
+    labState.update((state) => ({
+      ...state,
+      getStep: {
+        phase: "error",
+        previewRequest,
+        previewEnvelope,
+        request,
+        responseEnvelope: envelope,
+        runtimeError: null,
       },
     }));
-    summarizeOperationFailure(m.lab_get_assertion(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  } else {
+    labState.update((state) => ({
+      ...state,
+      getStep: { phase: "success", previewRequest, previewEnvelope, request, responseEnvelope: envelope },
+    }));
+    if (request.extensions?.largeBlob?.write !== undefined) invalidateLargeBlobsInventory();
   }
+  completeOperation(label, envelope);
+  return !envelope.error;
 }
 
 export async function runLabGetAssertion(): Promise<boolean> {
@@ -365,33 +356,11 @@ export async function runLabGetAssertion(): Promise<boolean> {
     ...state,
     getStep: { phase: "previewing", previewRequest },
   }));
-  try {
-    beginOperation(m.lab_get_assertion());
-    const envelope = await api.getAssertion(previewRequest);
-    if (envelope.error) {
-      labState.update((state) => ({
-        ...state,
-        getStep: {
-          phase: "error",
-          previewRequest,
-          previewEnvelope: null,
-          request: null,
-          responseEnvelope: envelope,
-          runtimeError: null,
-        },
-      }));
-    } else {
-      labState.update((state) => ({
-        ...state,
-        getStep: { phase: "review", previewRequest, previewEnvelope: envelope },
-      }));
-    }
-    summarizeEnvelope(m.lab_get_assertion(), envelope);
-    applyOperationAuthenticatorBoundary(envelope);
-    return !envelope.error;
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    labState.update((state) => ({
+  const label = m.lab_get_assertion();
+  const attempt = await runOperation({
+    label,
+    call: () => api.getAssertion(previewRequest),
+    onRuntimeFailure: (error) => labState.update((state) => ({
       ...state,
       getStep: {
         phase: "error",
@@ -399,13 +368,33 @@ export async function runLabGetAssertion(): Promise<boolean> {
         previewEnvelope: null,
         request: null,
         responseEnvelope: null,
-        runtimeError,
+        runtimeError: error,
+      },
+    })),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  if (envelope.error) {
+    labState.update((state) => ({
+      ...state,
+      getStep: {
+        phase: "error",
+        previewRequest,
+        previewEnvelope: null,
+        request: null,
+        responseEnvelope: envelope,
+        runtimeError: null,
       },
     }));
-    summarizeOperationFailure(m.lab_get_assertion(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  } else {
+    labState.update((state) => ({
+      ...state,
+      getStep: { phase: "review", previewRequest, previewEnvelope: envelope },
+    }));
   }
+  completeOperation(label, envelope);
+  return !envelope.error;
 }
 
 export async function confirmLabGetAssertion(): Promise<boolean> {

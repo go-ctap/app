@@ -5,27 +5,18 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
   import { copyToClipboard } from "$lib/clipboard.js";
-  import JsonCode from "$lib/components/shared/JsonCode.svelte";
-  import { compactLogJSON } from "$lib/log-presentation.js";
 
   import { m } from "../../../paraglide/messages.js";
-
-  export type LogPayloadFormat = "json" | "cbor-diagnostic";
 
   type Props = {
     source: string;
     title: string;
-    format: LogPayloadFormat;
   };
 
-  let { source, title, format }: Props = $props();
-  let displaySource = $derived(format === "json" ? compactLogJSON(source) : source);
-  let formatLabel = $derived(
-    format === "json" ? m.logs_format_json() : m.logs_format_cbor_diagnostic(),
-  );
+  let { source, title }: Props = $props();
 
   function copyPayload() {
-    void copyToClipboard(displaySource, m.logs_payload_copied());
+    void copyToClipboard(source, m.logs_payload_copied());
   }
 </script>
 
@@ -33,7 +24,7 @@
   <header class="preformatted-payload-header">
     <div class="preformatted-payload-heading">
       <h3>{title}</h3>
-      <Badge variant="outline">{formatLabel}</Badge>
+      <Badge variant="outline">{m.logs_format_cbor_diagnostic()}</Badge>
     </div>
     <Button
       type="button"
@@ -47,11 +38,7 @@
     </Button>
   </header>
   <ScrollArea class="preformatted-payload-scroll">
-    {#if format === "json"}
-      <JsonCode source={displaySource} wrap />
-    {:else}
-      <pre class="cbor-diagnostic"><code>{displaySource}</code></pre>
-    {/if}
+    <pre class="cbor-diagnostic"><code>{source}</code></pre>
   </ScrollArea>
 </section>
 

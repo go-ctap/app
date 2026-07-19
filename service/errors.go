@@ -5,8 +5,8 @@ import (
 	"github.com/go-ctap/kit/model/failure"
 )
 
-func invalidSelectionError() error {
-	return failure.New(failure.CodeSelectionInvalid, failure.WithPhase(failure.PhaseSelection))
+func authenticatorClosedError() error {
+	return failure.New(failure.CodeAuthenticatorClosed, failure.WithPhase(failure.PhaseAuthenticator))
 }
 
 func normalizeServicePhaseError(err error, phase failure.Phase) error {

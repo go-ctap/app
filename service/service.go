@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"sync"
-	"time"
 
 	ctapdiscover "github.com/go-ctap/ctap/discover"
 	ctapkit "github.com/go-ctap/kit"
@@ -45,7 +44,6 @@ type Service struct {
 type operationState struct {
 	id          OperationID
 	selectionID SelectionID
-	kind        model.OperationKind
 	cancel      context.CancelFunc
 	done        chan struct{}
 }
@@ -104,15 +102,7 @@ func WithEventEmitter(emitter EventEmitter) Option {
 }
 
 func (s *Service) Discover(ctx context.Context, req DiscoverRequest) (DiscoverySnapshot, error) {
-	started := time.Now()
-	snapshot, err := s.discoverSnapshot(ctx, req)
-	s.logs.Append(ctapkit.FinishLogEntry(model.LogEntry{
-		Timestamp: started.UTC(),
-		Layer:     model.LogLayerService,
-		Code:      model.LogCodeDiscoveryRun,
-	}, started, err))
-
-	return snapshot, err
+	return s.discoverSnapshot(ctx, req)
 }
 
 func (s *Service) CancelOperation(req CancelOperationRequest) bool {
@@ -168,17 +158,7 @@ func (s *Service) ResolveInteraction(ctx context.Context, answer InteractionAnsw
 	}
 }
 
-func (s *Service) LookupMDS(ctx context.Context, req MDSLookupRequest) (envelope MDSLookupEnvelope, returnErr error) {
-	started := time.Now()
-	defer func() {
-		s.logs.Append(ctapkit.FinishLogEntry(model.LogEntry{
-			Timestamp: started.UTC(),
-			Layer:     model.LogLayerService,
-			Code:      model.LogCodeMDSLookup,
-			Params:    map[string]string{"aaguid": req.AAGUID},
-		}, started, returnErr))
-	}()
-
+func (s *Service) LookupMDS(ctx context.Context, req MDSLookupRequest) (MDSLookupEnvelope, error) {
 	aaguid, err := uuid.Parse(req.AAGUID)
 	if err != nil {
 		return MDSLookupEnvelope{}, failure.Wrap(
@@ -206,9 +186,7 @@ func (s *Service) LookupMDS(ctx context.Context, req MDSLookupRequest) (envelope
 		return MDSLookupEnvelope{}, err
 	}
 
-	envelope = MDSLookupEnvelope{Result: result}
-
-	return envelope, nil
+	return MDSLookupEnvelope{Result: result}, nil
 }
 
 func (s *Service) selectionFor(id SelectionID) (*selection, bool) {
@@ -306,8 +284,6 @@ func (s *Service) emitOperationEvent(operation *operationState, event model.Oper
 		return
 	}
 
-	s.logs.Append(operationEventLogEntry(operation, event))
-
 	s.emit(EventOperationEvent, OperationEventEnvelope{
 		OperationID: operation.id,
 		SelectionID: operation.selectionID,
@@ -320,11 +296,9 @@ type interactionHandler struct {
 	done        <-chan struct{}
 	selectionID SelectionID
 	operationID OperationID
-	kind        model.OperationKind
 }
 
-func (h interactionHandler) RequestInteraction(ctx context.Context, req model.InteractionRequest) (answer model.InteractionResponse, returnErr error) {
-	requestStarted := time.Now()
+func (h interactionHandler) RequestInteraction(ctx context.Context, req model.InteractionRequest) (model.InteractionResponse, error) {
 	prompt := InteractionPrompt{
 		InteractionID: InteractionID(uuid.NewString()),
 		OperationID:   h.operationID,
@@ -334,35 +308,10 @@ func (h interactionHandler) RequestInteraction(ctx context.Context, req model.In
 	response := make(chan model.InteractionResponse)
 	h.service.registerInteraction(prompt, response, h.done)
 	h.service.emit(EventInteractionRequested, prompt)
-	h.service.logs.Append(ctapkit.FinishLogEntry(model.LogEntry{
-		Timestamp: requestStarted.UTC(),
-		Layer:     model.LogLayerInteraction,
-		Code:      model.LogCodeInteractionRequest,
-		Params: map[string]string{
-			"interactionId":   string(prompt.InteractionID),
-			"interactionKind": string(req.Kind),
-		},
-		OperationKind: h.kind,
-		SelectionID:   string(h.selectionID),
-		OperationID:   string(h.operationID),
-	}, requestStarted, nil))
 	defer h.service.unregisterInteraction(prompt.InteractionID)
 
-	resolveStarted := time.Now()
-	defer func() {
-		h.service.logs.Append(ctapkit.FinishLogEntry(model.LogEntry{
-			Timestamp:     resolveStarted.UTC(),
-			Layer:         model.LogLayerInteraction,
-			Code:          model.LogCodeInteractionResolve,
-			Params:        map[string]string{"interactionId": string(prompt.InteractionID)},
-			OperationKind: h.kind,
-			SelectionID:   string(h.selectionID),
-			OperationID:   string(h.operationID),
-		}, resolveStarted, returnErr))
-	}()
-
 	select {
-	case answer = <-response:
+	case answer := <-response:
 		return answer, nil
 	case <-ctx.Done():
 	case <-h.done:

@@ -48,15 +48,11 @@ import { selectedSelector, authenticatorStatus } from "./features/authenticator/
 import { activeScreen } from "./features/workbench/state.js";
 import { parseLargeBlobPayload, type LargeBlobPayloadEncoding } from "./largeblobs-payload.js";
 import { findLargeBlobCredential } from "./largeblobs-presentation.js";
-import { internalFailure, runtimeFailureFrom } from "./failure.js";
-import { applyInvalidSelectionError, applyOperationAuthenticatorBoundary, currentSelectionID } from "./authenticator-boundary.js";
+import { runtimeFailureFrom } from "./failure.js";
+import { currentSelectionID } from "./authenticator-boundary.js";
+import { completeOperation, runOperation } from "./operation-lifecycle.js";
 import {
-  beginOperation,
-  finishOperation,
   setStatusOutcome,
-  summarizeEnvelope,
-  summarizeOperationContractFailure,
-  summarizeOperationFailure,
 } from "./workbench-state.js";
 
 function largeBlobsAutoLoadKey() {
@@ -98,39 +94,33 @@ export async function loadLargeBlobs() {
   }
 
   beginLargeBlobsInventoryLoad();
-  try {
-    beginOperation(m.large_blob_list());
-    const request: LargeBlobListRequest = {
-      selectionId: currentSelectionID(),
-      verificationFlow: get(largeBlobsVerificationFlow),
-    };
-    const envelope = await api.listLargeBlobs(request);
-    const report = largeBlobListReport(envelope);
-    if (envelope.error || !report) {
-      failLargeBlobsInventoryLoadWithResponse(envelope);
-    } else {
-      completeLargeBlobsInventoryLoad(envelope, new Date().toISOString());
-      resetLargeBlobReadState();
-      reconcileSelectedCredential();
-    }
-    if (envelope.error || report) {
-      summarizeEnvelope(m.large_blob_list(), envelope);
-    } else {
-      summarizeOperationContractFailure(m.large_blob_list(), internalFailure());
-    }
-    applyOperationAuthenticatorBoundary(envelope);
-    const selectedCredentialID = get(largeBlobsSelectedCredentialID);
-    if (!envelope.error && report && selectedCredentialID) {
-      await readLargeBlob(selectedCredentialID);
-    }
-    return !envelope.error && Boolean(report);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    failLargeBlobsInventoryLoadAtRuntime(runtimeError);
-    summarizeOperationFailure(m.large_blob_list(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  const label = m.large_blob_list();
+  const request: LargeBlobListRequest = {
+    selectionId: currentSelectionID(),
+    verificationFlow: get(largeBlobsVerificationFlow),
+  };
+  const attempt = await runOperation({
+    label,
+    call: () => api.listLargeBlobs(request),
+    onRuntimeFailure: failLargeBlobsInventoryLoadAtRuntime,
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const report = largeBlobListReport(envelope);
+  if (envelope.error || !report) {
+    failLargeBlobsInventoryLoadWithResponse(envelope);
+  } else {
+    completeLargeBlobsInventoryLoad(envelope, new Date().toISOString());
+    resetLargeBlobReadState();
+    reconcileSelectedCredential();
   }
+  completeOperation(label, envelope, { contractValid: Boolean(report) });
+  const selectedCredentialID = get(largeBlobsSelectedCredentialID);
+  if (!envelope.error && report && selectedCredentialID) {
+    await readLargeBlob(selectedCredentialID);
+  }
+  return !envelope.error && Boolean(report);
 }
 
 export function setLargeBlobsQuery(value: string) {
@@ -222,8 +212,8 @@ function readError(
 }
 
 export async function readLargeBlob(credentialIDHex = get(largeBlobsSelectedCredentialID)): Promise<boolean> {
-  const report = reportForActions();
-  if (!report || !findLargeBlobCredential(report, credentialIDHex)) return false;
+  const inventory = reportForActions();
+  if (!inventory || !findLargeBlobCredential(inventory, credentialIDHex)) return false;
 
   const request = buildLargeBlobReadRequest(
     currentSelectionID(),
@@ -234,31 +224,25 @@ export async function readLargeBlob(credentialIDHex = get(largeBlobsSelectedCred
 
   largeBlobsSelectedCredentialID.set(credentialIDHex);
   largeBlobsReadState.set({ phase: "loading", credentialIDHex, request });
-  try {
-    beginOperation(m.large_blob_read());
-    const envelope = await api.readLargeBlob(request);
-    const report = largeBlobReadReport(envelope);
-    if (envelope.error) {
-      readError(credentialIDHex, request, envelope, null, "response-error");
-    } else if (!report) {
-      readError(credentialIDHex, request, envelope, null, "missing-result");
-    } else {
-      largeBlobsReadState.set({ phase: "ready", credentialIDHex, request, responseEnvelope: envelope });
-    }
-    if (envelope.error || report) {
-      summarizeEnvelope(m.large_blob_read(), envelope);
-    } else {
-      summarizeOperationContractFailure(m.large_blob_read(), internalFailure());
-    }
-    applyOperationAuthenticatorBoundary(envelope);
-    return !envelope.error && Boolean(report);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    readError(credentialIDHex, request, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.large_blob_read(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  const label = m.large_blob_read();
+  const attempt = await runOperation({
+    label,
+    call: () => api.readLargeBlob(request),
+    onRuntimeFailure: (error) => readError(credentialIDHex, request, null, error, "runtime-error"),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const report = largeBlobReadReport(envelope);
+  if (envelope.error) {
+    readError(credentialIDHex, request, envelope, null, "response-error");
+  } else if (!report) {
+    readError(credentialIDHex, request, envelope, null, "missing-result");
+  } else {
+    largeBlobsReadState.set({ phase: "ready", credentialIDHex, request, responseEnvelope: envelope });
   }
+  completeOperation(label, envelope, { contractValid: Boolean(report) });
+  return !envelope.error && Boolean(report);
 }
 
 export function buildLargeBlobDeletePreviewRequest(
@@ -400,36 +384,30 @@ export async function previewLargeBlobWrite(): Promise<boolean> {
   };
 
   largeBlobsMutation.set({ ...current, phase: "previewing", previewRequest: request });
-  try {
-    beginOperation(m.large_blob_write());
-    const envelope = await api.writeLargeBlob(request);
-    const preview = largeBlobMutationPreview(envelope);
-    if (envelope.error) {
-      writeError(current, "previewing", request, null, envelope, null, "response-error");
-    } else if (!preview) {
-      writeError(current, "previewing", request, null, envelope, null, "missing-preview");
-    } else {
-      largeBlobsMutation.set({
-        ...current,
-        phase: "review",
-        previewRequest: request,
-        previewEnvelope: envelope,
-      });
-    }
-    if (envelope.error || preview) {
-      summarizeEnvelope(m.large_blob_write(), envelope);
-    } else {
-      summarizeOperationContractFailure(m.large_blob_write(), internalFailure());
-    }
-    applyOperationAuthenticatorBoundary(envelope);
-    return !envelope.error && Boolean(preview);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    writeError(current, "previewing", request, null, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.large_blob_write(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  const label = m.large_blob_write();
+  const attempt = await runOperation({
+    label,
+    call: () => api.writeLargeBlob(request),
+    onRuntimeFailure: (error) => writeError(current, "previewing", request, null, null, error, "runtime-error"),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const preview = largeBlobMutationPreview(envelope);
+  if (envelope.error) {
+    writeError(current, "previewing", request, null, envelope, null, "response-error");
+  } else if (!preview) {
+    writeError(current, "previewing", request, null, envelope, null, "missing-preview");
+  } else {
+    largeBlobsMutation.set({
+      ...current,
+      phase: "review",
+      previewRequest: request,
+      previewEnvelope: envelope,
+    });
   }
+  completeOperation(label, envelope, { contractValid: Boolean(preview) });
+  return !envelope.error && Boolean(preview);
 }
 
 function deleteError(
@@ -464,46 +442,48 @@ export async function beginLargeBlobDelete(credentialIDHex = get(largeBlobsSelec
 
   largeBlobsSelectedCredentialID.set(credentialIDHex);
   largeBlobsMutation.set({ kind: "delete", phase: "previewing", credentialIDHex, previewRequest: request });
-  try {
-    beginOperation(m.large_blob_delete());
-    const envelope = await api.deleteLargeBlob(request);
-    const preview = largeBlobMutationPreview(envelope);
-    if (envelope.error) {
-      deleteError(credentialIDHex, "previewing", request, null, envelope, null, "response-error");
-      summarizeEnvelope(m.large_blob_delete(), envelope);
-    } else if (!preview) {
-      deleteError(credentialIDHex, "previewing", request, null, envelope, null, "missing-preview");
-      summarizeOperationContractFailure(m.large_blob_delete(), internalFailure());
-    } else {
-      const noop = preview.operation === MutationOperation.MutationNoBlob || preview.noBlob || preview.noop === true;
-      if (noop) {
-        largeBlobsMutation.set({ kind: "idle", phase: "idle" });
-        finishOperation();
-        setStatusOutcome({
-          tone: "info",
-          title: m.large_blob_delete(),
-          message: m.large_blob_delete_noop(),
-        });
-      } else {
-        largeBlobsMutation.set({
-          kind: "delete",
-          phase: "review",
-          credentialIDHex,
-          previewRequest: request,
-          previewEnvelope: envelope,
-        });
-        summarizeEnvelope(m.large_blob_delete(), envelope);
-      }
-    }
-    applyOperationAuthenticatorBoundary(envelope);
-    return !envelope.error && Boolean(preview);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    deleteError(credentialIDHex, "previewing", request, null, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.large_blob_delete(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  const label = m.large_blob_delete();
+  const attempt = await runOperation({
+    label,
+    call: () => api.deleteLargeBlob(request),
+    onRuntimeFailure: (error) => deleteError(credentialIDHex, "previewing", request, null, null, error, "runtime-error"),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const preview = largeBlobMutationPreview(envelope);
+  const noop = Boolean(preview && (
+    preview.operation === MutationOperation.MutationNoBlob
+    || preview.noBlob
+    || preview.noop === true
+  ));
+  if (envelope.error) {
+    deleteError(credentialIDHex, "previewing", request, null, envelope, null, "response-error");
+  } else if (!preview) {
+    deleteError(credentialIDHex, "previewing", request, null, envelope, null, "missing-preview");
+  } else if (noop) {
+    largeBlobsMutation.set({ kind: "idle", phase: "idle" });
+  } else {
+    largeBlobsMutation.set({
+      kind: "delete",
+      phase: "review",
+      credentialIDHex,
+      previewRequest: request,
+      previewEnvelope: envelope,
+    });
   }
+  completeOperation(label, envelope, {
+    contractValid: Boolean(preview),
+    summarize: !noop,
+  });
+  if (noop) {
+    setStatusOutcome({
+      tone: "info",
+      title: m.large_blob_delete(),
+      message: m.large_blob_delete_noop(),
+    });
+  }
+  return !envelope.error && Boolean(preview);
 }
 
 function cleanupError(
@@ -531,42 +511,43 @@ export async function beginLargeBlobCleanup(): Promise<boolean> {
   const request = buildLargeBlobCleanupPreviewRequest(currentSelectionID(), get(largeBlobsVerificationFlow));
 
   largeBlobsMutation.set({ kind: "cleanup", phase: "previewing", previewRequest: request });
-  try {
-    beginOperation(m.large_blob_cleanup_preview());
-    const envelope = await api.garbageCollectLargeBlobs(request);
-    const preview = largeBlobMutationPreview(envelope);
-    if (envelope.error) {
-      cleanupError("previewing", request, null, envelope, null, "response-error");
-      summarizeEnvelope(m.large_blob_cleanup_preview(), envelope);
-    } else if (!preview) {
-      cleanupError("previewing", request, null, envelope, null, "missing-preview");
-      summarizeOperationContractFailure(m.large_blob_cleanup_preview(), internalFailure());
-    } else if (preview.noop === true) {
-      largeBlobsMutation.set({ kind: "idle", phase: "idle" });
-      finishOperation();
-      setStatusOutcome({
-        tone: "info",
-        title: m.large_blob_cleanup(),
-        message: m.large_blob_cleanup_noop(),
-      });
-    } else {
-      largeBlobsMutation.set({
-        kind: "cleanup",
-        phase: "review",
-        previewRequest: request,
-        previewEnvelope: envelope,
-      });
-      summarizeEnvelope(m.large_blob_cleanup_preview(), envelope);
-    }
-    applyOperationAuthenticatorBoundary(envelope);
-    return !envelope.error && Boolean(preview);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    cleanupError("previewing", request, null, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.large_blob_cleanup_preview(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  const label = m.large_blob_cleanup_preview();
+  const attempt = await runOperation({
+    label,
+    call: () => api.garbageCollectLargeBlobs(request),
+    onRuntimeFailure: (error) => cleanupError("previewing", request, null, null, error, "runtime-error"),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const preview = largeBlobMutationPreview(envelope);
+  const noop = preview?.noop === true;
+  if (envelope.error) {
+    cleanupError("previewing", request, null, envelope, null, "response-error");
+  } else if (!preview) {
+    cleanupError("previewing", request, null, envelope, null, "missing-preview");
+  } else if (noop) {
+    largeBlobsMutation.set({ kind: "idle", phase: "idle" });
+  } else {
+    largeBlobsMutation.set({
+      kind: "cleanup",
+      phase: "review",
+      previewRequest: request,
+      previewEnvelope: envelope,
+    });
   }
+  completeOperation(label, envelope, {
+    contractValid: Boolean(preview),
+    summarize: !noop,
+  });
+  if (noop) {
+    setStatusOutcome({
+      tone: "info",
+      title: m.large_blob_cleanup(),
+      message: m.large_blob_cleanup_noop(),
+    });
+  }
+  return !envelope.error && Boolean(preview);
 }
 
 async function refreshAfterMutation() {
@@ -592,31 +573,25 @@ export async function confirmLargeBlobWrite(): Promise<boolean> {
     previewRequest,
     previewEnvelope,
   });
-  try {
-    beginOperation(m.large_blob_write());
-    const envelope = await api.writeLargeBlob(request);
-    const result = largeBlobMutationResult(envelope);
-    if (envelope.error) {
-      writeError(current, "executing", previewRequest, previewEnvelope, envelope, null, "response-error");
-    } else if (!result) {
-      writeError(current, "executing", previewRequest, previewEnvelope, envelope, null, "missing-result");
-    }
-    if (envelope.error || result) {
-      summarizeEnvelope(m.large_blob_write(), envelope);
-    } else {
-      summarizeOperationContractFailure(m.large_blob_write(), internalFailure());
-    }
-    applyOperationAuthenticatorBoundary(envelope);
-    if (envelope.error || !result) return false;
-    await refreshAfterMutation();
-    return true;
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    writeError(current, "executing", previewRequest, previewEnvelope, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.large_blob_write(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  const label = m.large_blob_write();
+  const attempt = await runOperation({
+    label,
+    call: () => api.writeLargeBlob(request),
+    onRuntimeFailure: (error) => writeError(current, "executing", previewRequest, previewEnvelope, null, error, "runtime-error"),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const result = largeBlobMutationResult(envelope);
+  if (envelope.error) {
+    writeError(current, "executing", previewRequest, previewEnvelope, envelope, null, "response-error");
+  } else if (!result) {
+    writeError(current, "executing", previewRequest, previewEnvelope, envelope, null, "missing-result");
   }
+  completeOperation(label, envelope, { contractValid: Boolean(result) });
+  if (envelope.error || !result) return false;
+  await refreshAfterMutation();
+  return true;
 }
 
 export async function confirmLargeBlobDelete(): Promise<boolean> {
@@ -636,31 +611,25 @@ export async function confirmLargeBlobDelete(): Promise<boolean> {
     previewRequest,
     previewEnvelope,
   });
-  try {
-    beginOperation(m.large_blob_delete());
-    const envelope = await api.deleteLargeBlob(request);
-    const result = largeBlobMutationResult(envelope);
-    if (envelope.error) {
-      deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, envelope, null, "response-error");
-    } else if (!result) {
-      deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, envelope, null, "missing-result");
-    }
-    if (envelope.error || result) {
-      summarizeEnvelope(m.large_blob_delete(), envelope);
-    } else {
-      summarizeOperationContractFailure(m.large_blob_delete(), internalFailure());
-    }
-    applyOperationAuthenticatorBoundary(envelope);
-    if (envelope.error || !result) return false;
-    await refreshAfterMutation();
-    return true;
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.large_blob_delete(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  const label = m.large_blob_delete();
+  const attempt = await runOperation({
+    label,
+    call: () => api.deleteLargeBlob(request),
+    onRuntimeFailure: (error) => deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, null, error, "runtime-error"),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const result = largeBlobMutationResult(envelope);
+  if (envelope.error) {
+    deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, envelope, null, "response-error");
+  } else if (!result) {
+    deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, envelope, null, "missing-result");
   }
+  completeOperation(label, envelope, { contractValid: Boolean(result) });
+  if (envelope.error || !result) return false;
+  await refreshAfterMutation();
+  return true;
 }
 
 export async function confirmLargeBlobCleanup(): Promise<boolean> {
@@ -679,31 +648,25 @@ export async function confirmLargeBlobCleanup(): Promise<boolean> {
     previewRequest,
     previewEnvelope,
   });
-  try {
-    beginOperation(m.large_blob_cleanup());
-    const envelope = await api.garbageCollectLargeBlobs(request);
-    const result = largeBlobMutationResult(envelope);
-    if (envelope.error) {
-      cleanupError("executing", previewRequest, previewEnvelope, envelope, null, "response-error");
-    } else if (!result) {
-      cleanupError("executing", previewRequest, previewEnvelope, envelope, null, "missing-result");
-    }
-    if (envelope.error || result) {
-      summarizeEnvelope(m.large_blob_cleanup(), envelope);
-    } else {
-      summarizeOperationContractFailure(m.large_blob_cleanup(), internalFailure());
-    }
-    applyOperationAuthenticatorBoundary(envelope);
-    if (envelope.error || !result) return false;
-    await refreshAfterMutation();
-    return true;
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    cleanupError("executing", previewRequest, previewEnvelope, null, runtimeError, "runtime-error");
-    summarizeOperationFailure(m.large_blob_cleanup(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  const label = m.large_blob_cleanup();
+  const attempt = await runOperation({
+    label,
+    call: () => api.garbageCollectLargeBlobs(request),
+    onRuntimeFailure: (error) => cleanupError("executing", previewRequest, previewEnvelope, null, error, "runtime-error"),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const result = largeBlobMutationResult(envelope);
+  if (envelope.error) {
+    cleanupError("executing", previewRequest, previewEnvelope, envelope, null, "response-error");
+  } else if (!result) {
+    cleanupError("executing", previewRequest, previewEnvelope, envelope, null, "missing-result");
   }
+  completeOperation(label, envelope, { contractValid: Boolean(result) });
+  if (envelope.error || !result) return false;
+  await refreshAfterMutation();
+  return true;
 }
 
 export function closeLargeBlobMutation() {

@@ -24,7 +24,7 @@ import {
 } from "../../bindings/fidobench/service";
 
 import { m } from "../paraglide/messages.js";
-import { api, type OperationEnvelope } from "./api.js";
+import { api } from "./api.js";
 import {
   authenticatorConfigPreview,
   authenticatorConfigResult,
@@ -66,16 +66,13 @@ import {
 } from "./features/security/state.js";
 import { selectedSelector, authenticatorStatus } from "./features/authenticator/state.js";
 import { activeScreen } from "./features/workbench/state.js";
-import { failureMessage, internalFailure, runtimeFailureFrom } from "./failure.js";
+import { failureMessage, internalFailure } from "./failure.js";
 import { invalidateOverviewCache } from "./overview-controller.js";
-import { applyInvalidSelectionError, applyOperationAuthenticatorBoundary, currentSelectionID } from "./authenticator-boundary.js";
+import { currentSelectionID } from "./authenticator-boundary.js";
 import { rediscoverAfterFactoryReset } from "./authenticator-controller.js";
+import { completeOperation, runOperation } from "./operation-lifecycle.js";
 import {
-  beginOperation,
   setStatusOutcome,
-  summarizeEnvelope,
-  summarizeOperationContractFailure,
-  summarizeOperationFailure,
 } from "./workbench-state.js";
 
 const BIO_ENROLL_TIMEOUT_MILLISECONDS = 60_000;
@@ -111,40 +108,33 @@ export async function loadSecurityStatus(): Promise<boolean> {
   if (!get(selectedSelector).trim()) return false;
 
   beginSecurityStatusLoad();
-  try {
-    beginOperation(m.security_status_operation());
-    const selectionId = currentSelectionID();
-    const envelope = await api.configStatus({ selectionId });
-    const report = configStatusReport(envelope);
+  const label = m.security_status_operation();
+  const selectionId = currentSelectionID();
+  const attempt = await runOperation({
+    label,
+    call: () => api.configStatus({ selectionId }),
+    onRuntimeFailure: failSecurityStatusLoadAtRuntime,
+  });
+  if (!attempt.ok) return false;
 
-    if (envelope.error) {
-      failSecurityStatusLoadWithResponse(envelope);
-    } else if (!report) {
-      const missing = internalFailure();
-      failSecurityStatusLoadWithContractError(envelope, missing);
-      summarizeOperationContractFailure(m.security_status_operation(), missing);
-      return false;
-    } else {
-      completeSecurityStatusLoad(envelope);
-    }
-
-    summarizeEnvelope(m.security_status_operation(), envelope);
-    applyOperationAuthenticatorBoundary(envelope);
-    if (envelope.error || !report) return false;
-
-    if (report.bio.supported) {
-      await loadSecurityBioSensor(selectionId);
-    } else {
-      securitySensor.set(emptySecurityResourceState());
-    }
-    return true;
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    failSecurityStatusLoadAtRuntime(runtimeError);
-    summarizeOperationFailure(m.security_status_operation(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  const envelope = attempt.envelope;
+  const report = configStatusReport(envelope);
+  if (envelope.error) {
+    failSecurityStatusLoadWithResponse(envelope);
+  } else if (!report) {
+    failSecurityStatusLoadWithContractError(envelope, internalFailure());
+  } else {
+    completeSecurityStatusLoad(envelope);
   }
+  completeOperation(label, envelope, { contractValid: Boolean(report) });
+  if (envelope.error || !report) return false;
+
+  if (report.bio.supported) {
+    await loadSecurityBioSensor(selectionId);
+  } else {
+    securitySensor.set(emptySecurityResourceState());
+  }
+  return true;
 }
 
 export async function loadSecurityBioSensor(selectionId = ""): Promise<boolean> {
@@ -155,31 +145,25 @@ export async function loadSecurityBioSensor(selectionId = ""): Promise<boolean> 
   }
 
   beginSecurityBioSensorLoad();
-  try {
-    beginOperation(m.security_bio_sensor_operation());
-    const envelope = await api.bioSensorInfo({ selectionId: selectionId || currentSelectionID() });
-    const sensor = bioSensorReport(envelope);
-    if (envelope.error) {
-      failSecurityBioSensorLoadWithResponse(envelope);
-    } else if (!sensor) {
-      const missing = internalFailure();
-      failSecurityBioSensorLoadWithContractError(envelope, missing);
-      summarizeOperationContractFailure(m.security_bio_sensor_operation(), missing);
-      return false;
-    } else {
-      completeSecurityBioSensorLoad(envelope);
-    }
+  const label = m.security_bio_sensor_operation();
+  const attempt = await runOperation({
+    label,
+    call: () => api.bioSensorInfo({ selectionId: selectionId || currentSelectionID() }),
+    onRuntimeFailure: failSecurityBioSensorLoadAtRuntime,
+  });
+  if (!attempt.ok) return false;
 
-    summarizeEnvelope(m.security_bio_sensor_operation(), envelope);
-    applyOperationAuthenticatorBoundary(envelope);
-    return !envelope.error && Boolean(sensor);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    failSecurityBioSensorLoadAtRuntime(runtimeError);
-    summarizeOperationFailure(m.security_bio_sensor_operation(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  const envelope = attempt.envelope;
+  const sensor = bioSensorReport(envelope);
+  if (envelope.error) {
+    failSecurityBioSensorLoadWithResponse(envelope);
+  } else if (!sensor) {
+    failSecurityBioSensorLoadWithContractError(envelope, internalFailure());
+  } else {
+    completeSecurityBioSensorLoad(envelope);
   }
+  completeOperation(label, envelope, { contractValid: Boolean(sensor) });
+  return !envelope.error && Boolean(sensor);
 }
 
 export async function loadSecurityEnrollments(): Promise<boolean> {
@@ -191,58 +175,42 @@ export async function loadSecurityEnrollments(): Promise<boolean> {
   }
 
   beginSecurityBioListLoad();
-  try {
-    beginOperation(m.security_bio_list_operation());
-    const envelope = await api.bioList({ selectionId: currentSelectionID() });
-    const list = bioListReport(envelope);
-    if (envelope.error) {
-      failSecurityBioListLoadWithResponse(envelope);
-    } else if (!list) {
-      const missing = internalFailure();
-      failSecurityBioListLoadWithContractError(envelope, missing);
-      summarizeOperationContractFailure(m.security_bio_list_operation(), missing);
-      return false;
-    } else {
-      completeSecurityBioListLoad(envelope);
-    }
+  const label = m.security_bio_list_operation();
+  const attempt = await runOperation({
+    label,
+    call: () => api.bioList({ selectionId: currentSelectionID() }),
+    onRuntimeFailure: failSecurityBioListLoadAtRuntime,
+  });
+  if (!attempt.ok) return false;
 
-    summarizeEnvelope(m.security_bio_list_operation(), envelope);
-    applyOperationAuthenticatorBoundary(envelope);
-    return !envelope.error && Boolean(list);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    failSecurityBioListLoadAtRuntime(runtimeError);
-    summarizeOperationFailure(m.security_bio_list_operation(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  const envelope = attempt.envelope;
+  const list = bioListReport(envelope);
+  if (envelope.error) {
+    failSecurityBioListLoadWithResponse(envelope);
+  } else if (!list) {
+    failSecurityBioListLoadWithContractError(envelope, internalFailure());
+  } else {
+    completeSecurityBioListLoad(envelope);
   }
+  completeOperation(label, envelope, { contractValid: Boolean(list) });
+  return !envelope.error && Boolean(list);
 }
 
 async function runPINOperation(
   label: string,
   call: () => Promise<PINEnvelope>,
 ): Promise<boolean> {
-  try {
-    beginOperation(label);
-    const envelope = await call();
-    const result = pinMutationResult(envelope);
-    if (envelope.error || result) {
-      summarizeEnvelope(label, envelope);
-    } else {
-      summarizeOperationContractFailure(label, internalFailure());
-    }
-    applyOperationAuthenticatorBoundary(envelope);
-    if (envelope.error || !result) return false;
+  const attempt = await runOperation({ label, call });
+  if (!attempt.ok) return false;
 
-    toast.success(m.security_configuration_updated());
-    await refreshSecurityAfterConfigurationChange();
-    return true;
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    summarizeOperationFailure(label, runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
-  }
+  const envelope = attempt.envelope;
+  const result = pinMutationResult(envelope);
+  completeOperation(label, envelope, { contractValid: Boolean(result) });
+  if (envelope.error || !result) return false;
+
+  toast.success(m.security_configuration_updated());
+  await refreshSecurityAfterConfigurationChange();
+  return true;
 }
 
 async function refreshSecurityAfterConfigurationChange() {
@@ -349,32 +317,6 @@ export function validatePINPolicyDraft(
   return null;
 }
 
-function summarizePreviewEnvelope(
-  label: string,
-  envelope: OperationEnvelope,
-  hasPreview: boolean,
-) {
-  if (envelope.error || hasPreview) {
-    summarizeEnvelope(label, envelope);
-  } else {
-    summarizeOperationContractFailure(label, internalFailure());
-  }
-  applyOperationAuthenticatorBoundary(envelope);
-}
-
-function summarizeExecuteEnvelope(
-  label: string,
-  envelope: OperationEnvelope,
-  hasResult: boolean,
-) {
-  if (envelope.error || hasResult) {
-    summarizeEnvelope(label, envelope);
-  } else {
-    summarizeOperationContractFailure(label, internalFailure());
-  }
-  applyOperationAuthenticatorBoundary(envelope);
-}
-
 function friendlyNameTooLong(value: string) {
   const sensor = bioSensorReport(get(securitySensor).lastSuccessfulEnvelope);
   const maximum = sensor?.maxTemplateFriendlyName;
@@ -402,35 +344,10 @@ export async function beginAlwaysUVChange(target: AlwaysUVTarget): Promise<boole
   if (!selectionId) return false;
   const request: AlwaysUVRequest = { selectionId, target, dryRun: true };
   securityMutation.set({ kind: "alwaysUv", phase: "previewing", target, previewRequest: request });
-  try {
-    beginOperation(label);
-    const envelope = await api.setAlwaysUV(request);
-    const preview = authenticatorConfigPreview(envelope);
-    if (envelope.error || !preview) {
-      securityMutation.set({
-        kind: "alwaysUv",
-        phase: "error",
-        target,
-        failedPhase: "previewing",
-        previewRequest: request,
-        previewEnvelope: null,
-        responseEnvelope: envelope,
-        runtimeError: null,
-        failureReason: envelope.error ? "response-error" : "missing-preview",
-        validationError: null,
-      });
-    } else {
-      securityMutation.set({ kind: "alwaysUv", phase: "review", target, previewRequest: request, previewEnvelope: envelope });
-    }
-    summarizePreviewEnvelope(
-      label,
-      envelope,
-      Boolean(preview),
-    );
-    return !envelope.error && Boolean(preview);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    securityMutation.set({
+  const attempt = await runOperation({
+    label,
+    call: () => api.setAlwaysUV(request),
+    onRuntimeFailure: (error) => securityMutation.set({
       kind: "alwaysUv",
       phase: "error",
       target,
@@ -438,14 +355,33 @@ export async function beginAlwaysUVChange(target: AlwaysUVTarget): Promise<boole
       previewRequest: request,
       previewEnvelope: null,
       responseEnvelope: null,
-      runtimeError,
+      runtimeError: error,
       failureReason: "runtime-error",
       validationError: null,
+    }),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const preview = authenticatorConfigPreview(envelope);
+  if (envelope.error || !preview) {
+    securityMutation.set({
+      kind: "alwaysUv",
+      phase: "error",
+      target,
+      failedPhase: "previewing",
+      previewRequest: request,
+      previewEnvelope: null,
+      responseEnvelope: envelope,
+      runtimeError: null,
+      failureReason: envelope.error ? "response-error" : "missing-preview",
+      validationError: null,
     });
-    summarizeOperationFailure(label, runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  } else {
+    securityMutation.set({ kind: "alwaysUv", phase: "review", target, previewRequest: request, previewEnvelope: envelope });
   }
+  completeOperation(label, envelope, { contractValid: Boolean(preview) });
+  return !envelope.error && Boolean(preview);
 }
 
 export async function beginLongTouchForReset(): Promise<boolean> {
@@ -457,44 +393,42 @@ export async function beginLongTouchForReset(): Promise<boolean> {
   if (!selectionId) return false;
   const request: EnableLongTouchForResetRequest = { selectionId, dryRun: true };
   securityMutation.set({ kind: "longTouch", phase: "previewing", previewRequest: request });
-  try {
-    beginOperation(label);
-    const envelope = await api.enableLongTouchForReset(request);
-    const preview = authenticatorConfigPreview(envelope);
-    if (envelope.error || !preview) {
-      securityMutation.set({
-        kind: "longTouch",
-        phase: "error",
-        failedPhase: "previewing",
-        previewRequest: request,
-        previewEnvelope: null,
-        responseEnvelope: envelope,
-        runtimeError: null,
-        failureReason: envelope.error ? "response-error" : "missing-preview",
-        validationError: null,
-      });
-    } else {
-      securityMutation.set({ kind: "longTouch", phase: "review", previewRequest: request, previewEnvelope: envelope });
-    }
-    summarizePreviewEnvelope(label, envelope, Boolean(preview));
-    return !envelope.error && Boolean(preview);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    securityMutation.set({
+  const attempt = await runOperation({
+    label,
+    call: () => api.enableLongTouchForReset(request),
+    onRuntimeFailure: (error) => securityMutation.set({
       kind: "longTouch",
       phase: "error",
       failedPhase: "previewing",
       previewRequest: request,
       previewEnvelope: null,
       responseEnvelope: null,
-      runtimeError,
+      runtimeError: error,
       failureReason: "runtime-error",
       validationError: null,
+    }),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const preview = authenticatorConfigPreview(envelope);
+  if (envelope.error || !preview) {
+    securityMutation.set({
+      kind: "longTouch",
+      phase: "error",
+      failedPhase: "previewing",
+      previewRequest: request,
+      previewEnvelope: null,
+      responseEnvelope: envelope,
+      runtimeError: null,
+      failureReason: envelope.error ? "response-error" : "missing-preview",
+      validationError: null,
     });
-    summarizeOperationFailure(label, runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  } else {
+    securityMutation.set({ kind: "longTouch", phase: "review", previewRequest: request, previewEnvelope: envelope });
   }
+  completeOperation(label, envelope, { contractValid: Boolean(preview) });
+  return !envelope.error && Boolean(preview);
 }
 
 export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promise<boolean> {
@@ -517,35 +451,10 @@ export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promi
     dryRun: true,
   };
   securityMutation.set({ kind: "pinPolicy", phase: "previewing", draft, previewRequest: request });
-  try {
-    beginOperation(label);
-    const envelope = await api.setMinPINLength(request);
-    const preview = authenticatorConfigPreview(envelope);
-    if (envelope.error || !preview) {
-      securityMutation.set({
-        kind: "pinPolicy",
-        phase: "error",
-        draft,
-        failedPhase: "previewing",
-        previewRequest: request,
-        previewEnvelope: null,
-        responseEnvelope: envelope,
-        runtimeError: null,
-        failureReason: envelope.error ? "response-error" : "missing-preview",
-        validationError: null,
-      });
-    } else {
-      securityMutation.set({ kind: "pinPolicy", phase: "review", draft, previewRequest: request, previewEnvelope: envelope });
-    }
-    summarizePreviewEnvelope(
-      label,
-      envelope,
-      Boolean(preview),
-    );
-    return !envelope.error && Boolean(preview);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    securityMutation.set({
+  const attempt = await runOperation({
+    label,
+    call: () => api.setMinPINLength(request),
+    onRuntimeFailure: (error) => securityMutation.set({
       kind: "pinPolicy",
       phase: "error",
       draft,
@@ -553,14 +462,33 @@ export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promi
       previewRequest: request,
       previewEnvelope: null,
       responseEnvelope: null,
-      runtimeError,
+      runtimeError: error,
       failureReason: "runtime-error",
       validationError: null,
+    }),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const preview = authenticatorConfigPreview(envelope);
+  if (envelope.error || !preview) {
+    securityMutation.set({
+      kind: "pinPolicy",
+      phase: "error",
+      draft,
+      failedPhase: "previewing",
+      previewRequest: request,
+      previewEnvelope: null,
+      responseEnvelope: envelope,
+      runtimeError: null,
+      failureReason: envelope.error ? "response-error" : "missing-preview",
+      validationError: null,
     });
-    summarizeOperationFailure(label, runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  } else {
+    securityMutation.set({ kind: "pinPolicy", phase: "review", draft, previewRequest: request, previewEnvelope: envelope });
   }
+  completeOperation(label, envelope, { contractValid: Boolean(preview) });
+  return !envelope.error && Boolean(preview);
 }
 
 export async function beginBioEnrollment(): Promise<boolean> {
@@ -579,41 +507,10 @@ export async function beginBioEnrollment(): Promise<boolean> {
     timeoutMilliseconds: BIO_ENROLL_TIMEOUT_MILLISECONDS,
     previewRequest: request,
   });
-  try {
-    beginOperation(label);
-    const envelope = await api.bioEnroll(request);
-    const preview = bioEnrollPreview(envelope);
-    if (envelope.error || !preview) {
-      securityMutation.set({
-        kind: "bioEnroll",
-        phase: "error",
-        timeoutMilliseconds: BIO_ENROLL_TIMEOUT_MILLISECONDS,
-        failedPhase: "previewing",
-        previewRequest: request,
-        previewEnvelope: null,
-        responseEnvelope: envelope,
-        runtimeError: null,
-        failureReason: envelope.error ? "response-error" : "missing-preview",
-        validationError: null,
-      });
-    } else {
-      securityMutation.set({
-        kind: "bioEnroll",
-        phase: "review",
-        timeoutMilliseconds: BIO_ENROLL_TIMEOUT_MILLISECONDS,
-        previewRequest: request,
-        previewEnvelope: envelope,
-      });
-    }
-    summarizePreviewEnvelope(
-      label,
-      envelope,
-      Boolean(preview),
-    );
-    return !envelope.error && Boolean(preview);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    securityMutation.set({
+  const attempt = await runOperation({
+    label,
+    call: () => api.bioEnroll(request),
+    onRuntimeFailure: (error) => securityMutation.set({
       kind: "bioEnroll",
       phase: "error",
       timeoutMilliseconds: BIO_ENROLL_TIMEOUT_MILLISECONDS,
@@ -621,14 +518,39 @@ export async function beginBioEnrollment(): Promise<boolean> {
       previewRequest: request,
       previewEnvelope: null,
       responseEnvelope: null,
-      runtimeError,
+      runtimeError: error,
       failureReason: "runtime-error",
       validationError: null,
+    }),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const preview = bioEnrollPreview(envelope);
+  if (envelope.error || !preview) {
+    securityMutation.set({
+      kind: "bioEnroll",
+      phase: "error",
+      timeoutMilliseconds: BIO_ENROLL_TIMEOUT_MILLISECONDS,
+      failedPhase: "previewing",
+      previewRequest: request,
+      previewEnvelope: null,
+      responseEnvelope: envelope,
+      runtimeError: null,
+      failureReason: envelope.error ? "response-error" : "missing-preview",
+      validationError: null,
     });
-    summarizeOperationFailure(label, runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  } else {
+    securityMutation.set({
+      kind: "bioEnroll",
+      phase: "review",
+      timeoutMilliseconds: BIO_ENROLL_TIMEOUT_MILLISECONDS,
+      previewRequest: request,
+      previewEnvelope: envelope,
+    });
   }
+  completeOperation(label, envelope, { contractValid: Boolean(preview) });
+  return !envelope.error && Boolean(preview);
 }
 
 export async function beginBioRename(templateIDHex: string, friendlyName: string): Promise<boolean> {
@@ -652,36 +574,10 @@ export async function beginBioRename(templateIDHex: string, friendlyName: string
     dryRun: true,
   };
   securityMutation.set({ kind: "bioRename", phase: "previewing", templateIDHex, friendlyName, previewRequest: request });
-  try {
-    beginOperation(label);
-    const envelope = await api.bioRename(request);
-    const preview = bioMutationPreview(envelope);
-    if (envelope.error || !preview) {
-      securityMutation.set({
-        kind: "bioRename",
-        phase: "error",
-        templateIDHex,
-        friendlyName,
-        failedPhase: "previewing",
-        previewRequest: request,
-        previewEnvelope: null,
-        responseEnvelope: envelope,
-        runtimeError: null,
-        failureReason: envelope.error ? "response-error" : "missing-preview",
-        validationError: null,
-      });
-    } else {
-      securityMutation.set({ kind: "bioRename", phase: "review", templateIDHex, friendlyName, previewRequest: request, previewEnvelope: envelope });
-    }
-    summarizePreviewEnvelope(
-      label,
-      envelope,
-      Boolean(preview),
-    );
-    return !envelope.error && Boolean(preview);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    securityMutation.set({
+  const attempt = await runOperation({
+    label,
+    call: () => api.bioRename(request),
+    onRuntimeFailure: (error) => securityMutation.set({
       kind: "bioRename",
       phase: "error",
       templateIDHex,
@@ -690,14 +586,34 @@ export async function beginBioRename(templateIDHex: string, friendlyName: string
       previewRequest: request,
       previewEnvelope: null,
       responseEnvelope: null,
-      runtimeError,
+      runtimeError: error,
       failureReason: "runtime-error",
       validationError: null,
+    }),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const preview = bioMutationPreview(envelope);
+  if (envelope.error || !preview) {
+    securityMutation.set({
+      kind: "bioRename",
+      phase: "error",
+      templateIDHex,
+      friendlyName,
+      failedPhase: "previewing",
+      previewRequest: request,
+      previewEnvelope: null,
+      responseEnvelope: envelope,
+      runtimeError: null,
+      failureReason: envelope.error ? "response-error" : "missing-preview",
+      validationError: null,
     });
-    summarizeOperationFailure(label, runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  } else {
+    securityMutation.set({ kind: "bioRename", phase: "review", templateIDHex, friendlyName, previewRequest: request, previewEnvelope: envelope });
   }
+  completeOperation(label, envelope, { contractValid: Boolean(preview) });
+  return !envelope.error && Boolean(preview);
 }
 
 export async function beginBioRemove(templateIDHex: string): Promise<boolean> {
@@ -706,35 +622,10 @@ export async function beginBioRemove(templateIDHex: string): Promise<boolean> {
   if (!selectionId) return false;
   const request: BioRemoveRequest = { selectionId, templateIdHex: templateIDHex, dryRun: true };
   securityMutation.set({ kind: "bioRemove", phase: "previewing", templateIDHex, previewRequest: request });
-  try {
-    beginOperation(label);
-    const envelope = await api.bioRemove(request);
-    const preview = bioMutationPreview(envelope);
-    if (envelope.error || !preview) {
-      securityMutation.set({
-        kind: "bioRemove",
-        phase: "error",
-        templateIDHex,
-        failedPhase: "previewing",
-        previewRequest: request,
-        previewEnvelope: null,
-        responseEnvelope: envelope,
-        runtimeError: null,
-        failureReason: envelope.error ? "response-error" : "missing-preview",
-        validationError: null,
-      });
-    } else {
-      securityMutation.set({ kind: "bioRemove", phase: "review", templateIDHex, previewRequest: request, previewEnvelope: envelope });
-    }
-    summarizePreviewEnvelope(
-      label,
-      envelope,
-      Boolean(preview),
-    );
-    return !envelope.error && Boolean(preview);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    securityMutation.set({
+  const attempt = await runOperation({
+    label,
+    call: () => api.bioRemove(request),
+    onRuntimeFailure: (error) => securityMutation.set({
       kind: "bioRemove",
       phase: "error",
       templateIDHex,
@@ -742,14 +633,33 @@ export async function beginBioRemove(templateIDHex: string): Promise<boolean> {
       previewRequest: request,
       previewEnvelope: null,
       responseEnvelope: null,
-      runtimeError,
+      runtimeError: error,
       failureReason: "runtime-error",
       validationError: null,
+    }),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const preview = bioMutationPreview(envelope);
+  if (envelope.error || !preview) {
+    securityMutation.set({
+      kind: "bioRemove",
+      phase: "error",
+      templateIDHex,
+      failedPhase: "previewing",
+      previewRequest: request,
+      previewEnvelope: null,
+      responseEnvelope: envelope,
+      runtimeError: null,
+      failureReason: envelope.error ? "response-error" : "missing-preview",
+      validationError: null,
     });
-    summarizeOperationFailure(label, runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  } else {
+    securityMutation.set({ kind: "bioRemove", phase: "review", templateIDHex, previewRequest: request, previewEnvelope: envelope });
   }
+  completeOperation(label, envelope, { contractValid: Boolean(preview) });
+  return !envelope.error && Boolean(preview);
 }
 
 export async function beginFactoryReset(): Promise<boolean> {
@@ -758,48 +668,42 @@ export async function beginFactoryReset(): Promise<boolean> {
   if (!selectionId) return false;
   const request: ResetFactoryRequest = { selectionId, dryRun: true };
   securityMutation.set({ kind: "reset", phase: "previewing", previewRequest: request });
-  try {
-    beginOperation(label);
-    const envelope = await api.resetFactory(request);
-    const preview = resetFactoryPreview(envelope);
-    if (envelope.error || !preview) {
-      securityMutation.set({
-        kind: "reset",
-        phase: "error",
-        failedPhase: "previewing",
-        previewRequest: request,
-        previewEnvelope: null,
-        responseEnvelope: envelope,
-        runtimeError: null,
-        failureReason: envelope.error ? "response-error" : "missing-preview",
-        validationError: null,
-      });
-    } else {
-      securityMutation.set({ kind: "reset", phase: "review", previewRequest: request, previewEnvelope: envelope });
-    }
-    summarizePreviewEnvelope(
-      label,
-      envelope,
-      Boolean(preview),
-    );
-    return !envelope.error && Boolean(preview);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    securityMutation.set({
+  const attempt = await runOperation({
+    label,
+    call: () => api.resetFactory(request),
+    onRuntimeFailure: (error) => securityMutation.set({
       kind: "reset",
       phase: "error",
       failedPhase: "previewing",
       previewRequest: request,
       previewEnvelope: null,
       responseEnvelope: null,
-      runtimeError,
+      runtimeError: error,
       failureReason: "runtime-error",
       validationError: null,
+    }),
+  });
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+  const preview = resetFactoryPreview(envelope);
+  if (envelope.error || !preview) {
+    securityMutation.set({
+      kind: "reset",
+      phase: "error",
+      failedPhase: "previewing",
+      previewRequest: request,
+      previewEnvelope: null,
+      responseEnvelope: envelope,
+      runtimeError: null,
+      failureReason: envelope.error ? "response-error" : "missing-preview",
+      validationError: null,
     });
-    summarizeOperationFailure(label, runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  } else {
+    securityMutation.set({ kind: "reset", phase: "review", previewRequest: request, previewEnvelope: envelope });
   }
+  completeOperation(label, envelope, { contractValid: Boolean(preview) });
+  return !envelope.error && Boolean(preview);
 }
 
 type NonIdleSecurityMutation = Exclude<SecurityMutationState, { kind: "idle" }>;
@@ -893,68 +797,68 @@ export async function confirmSecurityMutation(): Promise<boolean> {
   const label = operationLabel(current.kind);
   securityMutation.set(executingMutation(current));
 
-  try {
-    beginOperation(label);
-    let envelope: AuthenticatorConfigEnvelope | BioEnrollEnvelope | BioMutationEnvelope | ResetFactoryEnvelope;
-    let hasResult: boolean;
-    switch (current.kind) {
-      case "alwaysUv": {
-        envelope = await api.setAlwaysUV(executeRequest(current.previewRequest));
-        hasResult = Boolean(authenticatorConfigResult(envelope));
-        break;
+  let hasResult = false;
+  const attempt = await runOperation({
+    label,
+    call: async () => {
+      switch (current.kind) {
+        case "alwaysUv": {
+          const envelope = await api.setAlwaysUV(executeRequest(current.previewRequest!));
+          hasResult = Boolean(authenticatorConfigResult(envelope));
+          return envelope;
+        }
+        case "pinPolicy": {
+          const envelope = await api.setMinPINLength(executeRequest(current.previewRequest!));
+          hasResult = Boolean(authenticatorConfigResult(envelope));
+          return envelope;
+        }
+        case "longTouch": {
+          const envelope = await api.enableLongTouchForReset(executeRequest(current.previewRequest!));
+          hasResult = Boolean(authenticatorConfigResult(envelope));
+          return envelope;
+        }
+        case "bioEnroll": {
+          const envelope = await api.bioEnroll(executeRequest(current.previewRequest!));
+          hasResult = !envelope.error && Boolean(bioEnrollResult(envelope));
+          return envelope;
+        }
+        case "bioRename": {
+          const envelope = await api.bioRename(executeRequest(current.previewRequest!));
+          hasResult = Boolean(bioMutationResult(envelope));
+          return envelope;
+        }
+        case "bioRemove": {
+          const envelope = await api.bioRemove(executeRequest(current.previewRequest!));
+          hasResult = Boolean(bioMutationResult(envelope));
+          return envelope;
+        }
+        case "reset": {
+          const envelope = await api.resetFactory(executeRequest(current.previewRequest!));
+          hasResult = Boolean(resetFactoryResult(envelope));
+          return envelope;
+        }
       }
-      case "pinPolicy": {
-        envelope = await api.setMinPINLength(executeRequest(current.previewRequest));
-        hasResult = Boolean(authenticatorConfigResult(envelope));
-        break;
-      }
-      case "longTouch": {
-        envelope = await api.enableLongTouchForReset(executeRequest(current.previewRequest));
-        hasResult = Boolean(authenticatorConfigResult(envelope));
-        break;
-      }
-      case "bioEnroll": {
-        envelope = await api.bioEnroll(executeRequest(current.previewRequest));
-        hasResult = !envelope.error && Boolean(bioEnrollResult(envelope));
-        break;
-      }
-      case "bioRename": {
-        envelope = await api.bioRename(executeRequest(current.previewRequest));
-        hasResult = Boolean(bioMutationResult(envelope));
-        break;
-      }
-      case "bioRemove": {
-        envelope = await api.bioRemove(executeRequest(current.previewRequest));
-        hasResult = Boolean(bioMutationResult(envelope));
-        break;
-      }
-      case "reset": {
-        envelope = await api.resetFactory(executeRequest(current.previewRequest));
-        hasResult = Boolean(resetFactoryResult(envelope));
-        break;
-      }
-    }
+    },
+    onRuntimeFailure: (error) => securityMutation.set(
+      failedExecutingMutation(current, null, error, "runtime-error"),
+    ),
+  });
+  if (!attempt.ok) return false;
 
-    if (envelope.error || !hasResult) {
-      securityMutation.set(failedExecutingMutation(
-        current,
-        envelope,
-        null,
-        envelope.error ? "response-error" : "missing-result",
-      ));
-    }
-    summarizeExecuteEnvelope(label, envelope, hasResult);
-    if (envelope.error || !hasResult) return false;
-
-    await finishSuccessfulSecurityMutation(current.kind);
-    return true;
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    securityMutation.set(failedExecutingMutation(current, null, runtimeError, "runtime-error"));
-    summarizeOperationFailure(label, runtimeError);
-    applyInvalidSelectionError(runtimeError);
-    return false;
+  const envelope = attempt.envelope;
+  if (envelope.error || !hasResult) {
+    securityMutation.set(failedExecutingMutation(
+      current,
+      envelope,
+      null,
+      envelope.error ? "response-error" : "missing-result",
+    ));
   }
+  completeOperation(label, envelope, { contractValid: hasResult });
+  if (envelope.error || !hasResult) return false;
+
+  await finishSuccessfulSecurityMutation(current.kind);
+  return true;
 }
 
 export async function restartSecurityPreview(): Promise<boolean> {

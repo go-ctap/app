@@ -13,10 +13,10 @@ import { failureMessage, internalFailure, runtimeFailureFrom } from "./failure.j
 describe("runtimeFailureFrom", () => {
   it("returns an existing generated Failure without rebuilding it", () => {
     const failure = new Failure({
-      code: Code.CodeSelectionInvalid,
-      category: Category.CategoryInvalidSelection,
+		code: Code.CodeAuthenticatorClosed,
+		category: Category.CategoryInvalidState,
       operation: "inspect",
-      phase: Phase.PhaseSelection,
+		phase: Phase.PhaseAuthenticator,
     });
 
     expect(runtimeFailureFrom(failure)).toBe(failure);

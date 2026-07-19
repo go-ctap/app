@@ -37,6 +37,9 @@ import * as largeblobs$0 from "../../github.com/go-ctap/kit/model/largeblobs/mod
 import * as mds$0 from "../../github.com/go-ctap/kit/model/mds/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as operation$0 from "../../github.com/go-ctap/kit/model/operation/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as report$0 from "../../github.com/go-ctap/kit/model/report/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -96,7 +99,7 @@ export class AlwaysUVRequest {
 export class AuthenticatorConfigEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: config$0.AuthenticatorConfigOutput | null;
@@ -110,7 +113,7 @@ export class AuthenticatorConfigEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -139,7 +142,7 @@ export class AuthenticatorConfigEnvelope {
 export class BioEnrollEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: config$0.BioEnrollOutput | null;
@@ -153,7 +156,7 @@ export class BioEnrollEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -206,7 +209,7 @@ export class BioEnrollRequest {
 export class BioListEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: config$0.BioListReport | null;
@@ -220,7 +223,7 @@ export class BioListEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -249,7 +252,7 @@ export class BioListEnvelope {
 export class BioMutationEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: config$0.BioMutationOutput | null;
@@ -263,7 +266,7 @@ export class BioMutationEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -350,7 +353,7 @@ export class BioRenameRequest {
 export class BioSensorEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: config$0.BioSensorReport | null;
@@ -364,7 +367,7 @@ export class BioSensorEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -414,7 +417,7 @@ export class CancelOperationRequest {
 export class ConfigStatusEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: config$0.StatusReport | null;
@@ -428,7 +431,7 @@ export class ConfigStatusEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -457,7 +460,7 @@ export class ConfigStatusEnvelope {
 export class CredentialDeleteEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: credentials$0.DeleteOutput | null;
@@ -471,7 +474,7 @@ export class CredentialDeleteEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -549,7 +552,7 @@ export class CredentialListRequest {
 export class CredentialStoreStateEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: credentials$0.StoreStateResult | null;
@@ -563,7 +566,7 @@ export class CredentialStoreStateEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -592,7 +595,7 @@ export class CredentialStoreStateEnvelope {
 export class CredentialUpdateEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: credentials$0.UpdateUserOutput | null;
@@ -606,7 +609,7 @@ export class CredentialUpdateEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -672,7 +675,7 @@ export class CredentialUpdateRequest {
 export class CredentialsEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: credentials$0.InventoryReport | null;
@@ -686,7 +689,7 @@ export class CredentialsEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -824,7 +827,7 @@ export class EnableLongTouchForResetRequest {
 export class GetAssertionEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: webauthn$0.GetAssertionOutput | null;
@@ -838,7 +841,7 @@ export class GetAssertionEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -917,7 +920,7 @@ export class GetAssertionRequest {
 export class InspectEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: inspect$0.Result | null;
@@ -931,7 +934,7 @@ export class InspectEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -1045,7 +1048,7 @@ export class LargeBlobGarbageCollectRequest {
 export class LargeBlobListEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: largeblobs$0.ListReport | null;
@@ -1059,7 +1062,7 @@ export class LargeBlobListEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -1110,7 +1113,7 @@ export class LargeBlobListRequest {
 export class LargeBlobMutationEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: largeblobs$0.MutationOutput | null;
@@ -1124,7 +1127,7 @@ export class LargeBlobMutationEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -1185,7 +1188,7 @@ export class LargeBlobMutationRequest {
 export class LargeBlobReadEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: largeblobs$0.ReadReport | null;
@@ -1199,7 +1202,7 @@ export class LargeBlobReadEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -1325,7 +1328,7 @@ export class MDSLookupRequest {
 export class MakeCredentialEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: webauthn$0.MakeCredentialOutput | null;
@@ -1339,7 +1342,7 @@ export class MakeCredentialEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -1565,7 +1568,7 @@ export class PINChangeRequest {
 export class PINEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: config$0.PINOutput | null;
@@ -1579,7 +1582,7 @@ export class PINEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;
@@ -1658,7 +1661,7 @@ export class ReadLogsRequest {
 export class ResetFactoryEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
-    "kind": model$0.OperationKind;
+    "kind": operation$0.Kind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
     "result"?: config$0.ResetFactoryOutput | null;
@@ -1672,7 +1675,7 @@ export class ResetFactoryEnvelope {
             this["selectionId"] = "";
         }
         if (!("kind" in $$source)) {
-            this["kind"] = model$0.OperationKind.$zero;
+            this["kind"] = operation$0.Kind.$zero;
         }
         if (!("authenticatorClosed" in $$source)) {
             this["authenticatorClosed"] = false;

@@ -1,7 +1,8 @@
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { OperationKind, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import {
   DecodeMode,
@@ -51,7 +52,7 @@ function listEnvelope(keyState = "available", blobPresent = false): LargeBlobLis
   return {
     operationId: "list-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationListLargeBlobs,
+    kind: OperationKind.ListLargeBlobs,
     result: {
       device: { fingerprint: "token-1" },
       support: {
@@ -132,7 +133,7 @@ function readEnvelope(mode: DecodeMode): LargeBlobReadEnvelope {
   return {
     operationId: "read-1",
     selectionId: "authenticator-1",
-    kind: OperationKind.OperationReadLargeBlob,
+    kind: OperationKind.ReadLargeBlob,
     result: {
       device: { fingerprint: "token-1" },
       support: { largeBlobs: true, largeBlobKeyExtension: true },
@@ -261,7 +262,7 @@ describe("large blob controller", () => {
 
   it("retains a capacity response on error and lets the user edit the draft", async () => {
     const capacity = previewEnvelope(
-      OperationKind.OperationWriteLargeBlob,
+      OperationKind.WriteLargeBlob,
       MutationOperation.MutationCreate,
       {
         serializedLargeBlobArraySizeAfter: 2049,
@@ -294,13 +295,13 @@ describe("large blob controller", () => {
   });
 
   it("reconfirms after any execution failure without rebuilding the delete preview", async () => {
-    const preview = previewEnvelope(OperationKind.OperationDeleteLargeBlob, MutationOperation.MutationDelete);
-    const executionFailure = previewEnvelope(OperationKind.OperationDeleteLargeBlob, MutationOperation.MutationDelete);
+    const preview = previewEnvelope(OperationKind.DeleteLargeBlob, MutationOperation.MutationDelete);
+    const executionFailure = previewEnvelope(OperationKind.DeleteLargeBlob, MutationOperation.MutationDelete);
     executionFailure.error = failureForCode(Code.CodeTransportFailure);
     const remove = vi.spyOn(api, "deleteLargeBlob")
       .mockResolvedValueOnce(preview)
       .mockResolvedValueOnce(executionFailure)
-      .mockResolvedValueOnce(resultEnvelope(OperationKind.OperationDeleteLargeBlob, MutationOperation.MutationDelete));
+      .mockResolvedValueOnce(resultEnvelope(OperationKind.DeleteLargeBlob, MutationOperation.MutationDelete));
     const list = vi.spyOn(api, "listLargeBlobs").mockResolvedValue(listEnvelope());
 
     expect(await beginLargeBlobDelete("cafe")).toBe(true);
@@ -315,18 +316,18 @@ describe("large blob controller", () => {
 
   it("reconfirms a write after any execution failure", async () => {
     const executionFailure = previewEnvelope(
-      OperationKind.OperationWriteLargeBlob,
+      OperationKind.WriteLargeBlob,
       MutationOperation.MutationReplace,
     );
     executionFailure.error = failureForCode(Code.CodeTransportFailure);
     const write = vi.spyOn(api, "writeLargeBlob")
       .mockResolvedValueOnce(previewEnvelope(
-        OperationKind.OperationWriteLargeBlob,
+        OperationKind.WriteLargeBlob,
         MutationOperation.MutationReplace,
       ))
       .mockResolvedValueOnce(executionFailure)
       .mockResolvedValueOnce(resultEnvelope(
-        OperationKind.OperationWriteLargeBlob,
+        OperationKind.WriteLargeBlob,
         MutationOperation.MutationReplace,
       ));
     vi.spyOn(api, "listLargeBlobs").mockResolvedValue(listEnvelope());
@@ -344,18 +345,18 @@ describe("large blob controller", () => {
 
   it("reconfirms cleanup after any execution failure", async () => {
     const executionFailure = previewEnvelope(
-      OperationKind.OperationGarbageCollectLargeBlobs,
+      OperationKind.GarbageCollectLargeBlobs,
       MutationOperation.MutationGC,
     );
     executionFailure.error = failureForCode(Code.CodeTransportFailure);
     const cleanup = vi.spyOn(api, "garbageCollectLargeBlobs")
       .mockResolvedValueOnce(previewEnvelope(
-        OperationKind.OperationGarbageCollectLargeBlobs,
+        OperationKind.GarbageCollectLargeBlobs,
         MutationOperation.MutationGC,
       ))
       .mockResolvedValueOnce(executionFailure)
       .mockResolvedValueOnce(resultEnvelope(
-        OperationKind.OperationGarbageCollectLargeBlobs,
+        OperationKind.GarbageCollectLargeBlobs,
         MutationOperation.MutationGC,
       ));
     vi.spyOn(api, "listLargeBlobs").mockResolvedValue(listEnvelope());
@@ -371,8 +372,8 @@ describe("large blob controller", () => {
 
   it("executes the exact previewed write request with dry-run disabled", async () => {
     const write = vi.spyOn(api, "writeLargeBlob")
-      .mockResolvedValueOnce(previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationCreate))
-      .mockResolvedValueOnce(resultEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationCreate));
+      .mockResolvedValueOnce(previewEnvelope(OperationKind.WriteLargeBlob, MutationOperation.MutationCreate))
+      .mockResolvedValueOnce(resultEnvelope(OperationKind.WriteLargeBlob, MutationOperation.MutationCreate));
     vi.spyOn(api, "listLargeBlobs").mockResolvedValue(listEnvelope());
 
     beginLargeBlobWrite("cafe");
@@ -389,12 +390,12 @@ describe("large blob controller", () => {
 
   it("keeps mutation success successful when its follow-up forced refresh fails", async () => {
     vi.spyOn(api, "writeLargeBlob")
-      .mockResolvedValueOnce(previewEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace))
-      .mockResolvedValueOnce(resultEnvelope(OperationKind.OperationWriteLargeBlob, MutationOperation.MutationReplace));
+      .mockResolvedValueOnce(previewEnvelope(OperationKind.WriteLargeBlob, MutationOperation.MutationReplace))
+      .mockResolvedValueOnce(resultEnvelope(OperationKind.WriteLargeBlob, MutationOperation.MutationReplace));
     vi.spyOn(api, "listLargeBlobs").mockResolvedValue({
       operationId: "refresh-failed",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationListLargeBlobs,
+      kind: OperationKind.ListLargeBlobs,
       error: failureForCode(Code.CodeTransportFailure),
     } as LargeBlobListEnvelope);
 
@@ -412,12 +413,12 @@ describe("large blob controller", () => {
 
   it("treats delete and cleanup no-op previews as informational without confirmation", async () => {
     vi.spyOn(api, "deleteLargeBlob").mockResolvedValue(previewEnvelope(
-      OperationKind.OperationDeleteLargeBlob,
+      OperationKind.DeleteLargeBlob,
       MutationOperation.MutationNoBlob,
       { noBlob: true },
     ));
     vi.spyOn(api, "garbageCollectLargeBlobs").mockResolvedValue(previewEnvelope(
-      OperationKind.OperationGarbageCollectLargeBlobs,
+      OperationKind.GarbageCollectLargeBlobs,
       MutationOperation.MutationGC,
       { noop: true },
     ));
@@ -445,7 +446,7 @@ describe("large blob controller", () => {
     const read = {
       operationId: "read-1",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationReadLargeBlob,
+      kind: OperationKind.ReadLargeBlob,
       result: {
         report: {
           device: { fingerprint: "token-1" },
@@ -499,7 +500,7 @@ describe("large blob controller", () => {
     const failed = {
       operationId: "list-failed",
       selectionId: "authenticator-1",
-      kind: OperationKind.OperationListLargeBlobs,
+      kind: OperationKind.ListLargeBlobs,
       error: failureForCode(Code.CodeTransportFailure),
     } as LargeBlobListEnvelope;
     vi.spyOn(api, "listLargeBlobs").mockResolvedValue(failed);
@@ -513,7 +514,7 @@ describe("large blob controller", () => {
       responseEnvelope: {
         operationId: "old-read",
         selectionId: "authenticator-1",
-        kind: OperationKind.OperationReadLargeBlob,
+        kind: OperationKind.ReadLargeBlob,
       } as LargeBlobReadEnvelope,
     });
 
@@ -527,8 +528,8 @@ describe("large blob controller", () => {
   });
 
   it("accepts a typed no-op execution result as successful", async () => {
-    const preview = previewEnvelope(OperationKind.OperationDeleteLargeBlob, MutationOperation.MutationDelete);
-    const result = resultEnvelope(OperationKind.OperationDeleteLargeBlob, MutationOperation.MutationNoBlob);
+    const preview = previewEnvelope(OperationKind.DeleteLargeBlob, MutationOperation.MutationDelete);
+    const result = resultEnvelope(OperationKind.DeleteLargeBlob, MutationOperation.MutationNoBlob);
     result.result!.result!.noBlob = true;
     vi.spyOn(api, "deleteLargeBlob")
       .mockResolvedValueOnce(preview)

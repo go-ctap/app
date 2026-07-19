@@ -17,8 +17,9 @@ import { authenticatorInspection, selectedSelector, authenticatorStatus } from "
 import { activeScreen } from "./features/workbench/state.js";
 import { failureMessage, runtimeFailureFrom } from "./failure.js";
 import { inspectResult } from "./ctapkit-results.js";
-import { applyInvalidSelectionError, applyOperationAuthenticatorBoundary, currentSelectionID } from "./authenticator-boundary.js";
-import { beginOperation, setStatusOutcome, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
+import { currentSelectionID } from "./authenticator-boundary.js";
+import { completeOperation, runOperation } from "./operation-lifecycle.js";
+import { setStatusOutcome } from "./workbench-state.js";
 
 function reportDegradedOverviewLoad(label: string, error: Failure) {
   setStatusOutcome({
@@ -60,7 +61,6 @@ export async function maybeLoadOverview() {
     const biometricFailure = await loadOverviewDetails(inspection.data, currentSelectionID());
     if (biometricFailure) {
       reportDegradedOverviewLoad(m.biometrics(), biometricFailure);
-      applyInvalidSelectionError(biometricFailure);
     }
     return;
   }
@@ -75,19 +75,21 @@ async function loadOverviewDetails(envelope: InspectEnvelope, selectionId: strin
   if (!shouldLoadBioSensor(envelope)) return null;
 
   overviewBioSensor.set(loadingLoadState());
-  try {
-    const bioEnvelope = await api.bioSensorInfo({ selectionId });
-    if (bioEnvelope.error) {
-      overviewBioSensor.set(errorLoadState(bioEnvelope.error, bioEnvelope));
-      return bioEnvelope.error;
-    }
+  const attempt = await runOperation({
+    label: m.security_bio_sensor_operation(),
+    call: () => api.bioSensorInfo({ selectionId }),
+    onRuntimeFailure: (error) => overviewBioSensor.set(errorLoadState(error)),
+  });
+  if (!attempt.ok) return attempt.error;
+
+  const bioEnvelope = attempt.envelope;
+  if (bioEnvelope.error) {
+    overviewBioSensor.set(errorLoadState(bioEnvelope.error, bioEnvelope));
+  } else {
     overviewBioSensor.set(readyLoadState(bioEnvelope));
-    return null;
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    overviewBioSensor.set(errorLoadState(runtimeError));
-    return runtimeError;
   }
+  completeOperation(m.security_bio_sensor_operation(), bioEnvelope, { summarize: false });
+  return bioEnvelope.error ?? null;
 }
 
 export async function loadOverview() {
@@ -102,31 +104,30 @@ export async function loadOverview() {
   authenticatorInspection.set(loadingLoadState());
   overviewBioSensor.set(idleLoadState());
   overviewMDS.set(idleLoadState());
-  try {
-    beginOperation(m.overview_inspection());
-    const selectionId = currentSelectionID();
-    const envelope = await api.inspect({ selectionId });
-    authenticatorInspection.set(
-      envelope.error
-        ? errorLoadState(envelope.error, envelope)
-        : readyLoadState(envelope),
-    );
-    let biometricFailure: Failure | null = null;
-    if (!envelope.error && get(activeScreen) === "overview") {
-      biometricFailure = await loadOverviewDetails(envelope, selectionId);
-    }
-    summarizeEnvelope(m.overview_inspection(), envelope);
-    applyOperationAuthenticatorBoundary(envelope);
-    if (biometricFailure) {
-      reportDegradedOverviewLoad(m.biometrics(), biometricFailure);
-      applyInvalidSelectionError(biometricFailure);
-    }
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    authenticatorInspection.set(errorLoadState(runtimeError));
-    overviewBioSensor.set(idleLoadState());
-    summarizeOperationFailure(m.overview_inspection(), runtimeError);
-    applyInvalidSelectionError(runtimeError);
+  const selectionId = currentSelectionID();
+  const attempt = await runOperation({
+    label: m.overview_inspection(),
+    call: () => api.inspect({ selectionId }),
+    onRuntimeFailure: (error) => {
+      authenticatorInspection.set(errorLoadState(error));
+      overviewBioSensor.set(idleLoadState());
+    },
+  });
+  if (!attempt.ok) return;
+
+  const envelope = attempt.envelope;
+  authenticatorInspection.set(
+    envelope.error
+      ? errorLoadState(envelope.error, envelope)
+      : readyLoadState(envelope),
+  );
+  let biometricFailure: Failure | null = null;
+  if (!envelope.error && get(activeScreen) === "overview") {
+    biometricFailure = await loadOverviewDetails(envelope, selectionId);
+  }
+  completeOperation(m.overview_inspection(), envelope);
+  if (biometricFailure) {
+    reportDegradedOverviewLoad(m.biometrics(), biometricFailure);
   }
 }
 

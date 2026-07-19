@@ -3,7 +3,7 @@ import { get } from "svelte/store";
 import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 
 import type { OperationEnvelope } from "./api.js";
-import { isInvalidSelectionFailure } from "./failure.js";
+import { isAuthenticatorClosedFailure } from "./failure.js";
 import { pendingInteraction } from "./features/interaction/state.js";
 import { authenticatorStatus } from "./features/authenticator/state.js";
 
@@ -17,8 +17,8 @@ export function currentSelectionID() {
   return selectionId;
 }
 
-export function applyInvalidSelectionError(error: Failure | null | undefined) {
-  if (!isInvalidSelectionFailure(error)) return;
+export function applyAuthenticatorClosedError(error: Failure | null | undefined) {
+	if (!isAuthenticatorClosedFailure(error)) return;
   clearAuthenticator(error);
 }
 
@@ -27,7 +27,7 @@ export function applyOperationAuthenticatorBoundary(envelope: OperationEnvelope)
     clearAuthenticator(envelope.error);
     return;
   }
-  applyInvalidSelectionError(envelope.error);
+	applyAuthenticatorClosedError(envelope.error);
 }
 
 function clearAuthenticator(error: Failure | null | undefined) {

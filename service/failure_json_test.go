@@ -6,9 +6,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/go-ctap/kit/model"
 	"github.com/go-ctap/kit/model/config"
 	"github.com/go-ctap/kit/model/failure"
+	"github.com/go-ctap/kit/model/operation"
 	"github.com/go-ctap/kit/model/report"
 )
 
@@ -16,7 +16,7 @@ func TestGetAssertionFailureEnvelopeExactJSON(t *testing.T) {
 	err := failure.Wrap(
 		failure.CodeAssertionNotAllowed,
 		errors.New("authenticator rejected the CTAP operation in its current state"),
-		failure.WithOperation(string(model.OperationGetAssertion)),
+		failure.WithOperation(string(operation.GetAssertion)),
 		failure.WithPhase(failure.PhaseAuthenticatorCommand),
 		failure.WithCTAP(&failure.CTAPDetail{
 			Command:     "authenticatorGetAssertion",
@@ -29,7 +29,7 @@ func TestGetAssertionFailureEnvelopeExactJSON(t *testing.T) {
 		OperationEnvelopeMeta: OperationEnvelopeMeta{
 			OperationID: "operation-1",
 			SelectionID: "selection-1",
-			Kind:        model.OperationGetAssertion,
+			Kind:        operation.GetAssertion,
 			Error:       failure.Snapshot(err),
 		},
 	}
@@ -71,7 +71,7 @@ func TestBioEnrollEnvelopeKeepsPartialResultWithFailure(t *testing.T) {
 	runErr := failure.Wrap(
 		failure.CodeBioInteractionTimeout,
 		errors.New("capture timeout after touching sensor"),
-		failure.WithOperation(string(model.OperationBioEnroll)),
+		failure.WithOperation(string(operation.BioEnroll)),
 		failure.WithPhase(failure.PhaseInteraction),
 	)
 	runtime := &recordingAuthenticator{}
@@ -86,8 +86,7 @@ func TestBioEnrollEnvelopeKeepsPartialResultWithFailure(t *testing.T) {
 		service,
 		t.Context(),
 		OperationRequest{SelectionID: "selection-1"},
-		model.OperationBioEnroll,
-		false,
+		operation.BioEnroll,
 		staticOperationExecutor(&output, runErr),
 	)
 	if err != nil {
