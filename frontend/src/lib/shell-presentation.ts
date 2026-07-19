@@ -1,5 +1,20 @@
-import type { InteractionKind, PINInteractionState } from "../../bindings/github.com/go-ctap/kit/model";
+import {
+  FingerprintPattern,
+  Grid3X3,
+  Hand,
+  KeyRound,
+  MapPin,
+  Mic,
+  ScanEye,
+  ScanFace,
+  ShieldCheck,
+  TriangleAlert,
+} from "@lucide/svelte";
+import type { Component } from "svelte";
+
+import { InteractionKind, type PINInteractionState } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { UserVerify } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import type { InteractionPrompt } from "../../bindings/fidobench/service";
 
 import { m } from "../paraglide/messages.js";
@@ -60,6 +75,7 @@ export type InteractionModalPresentation = {
   preview: unknown;
   kind: InteractionKind;
   pinState: PINInteractionState | null;
+  icon: Component;
 };
 
 const deviceIdentityCollator = new Intl.Collator("en", {
@@ -200,17 +216,59 @@ export function buildShellStatusPresentation(input: {
   };
 }
 
+function userVerificationIcon(modality: UserVerify | null): Component {
+  if (modality == null) return ShieldCheck;
+  if (modality & UserVerify.UserVerifyFingerprintInternal) return FingerprintPattern;
+  if (modality & UserVerify.UserVerifyFaceprintInternal) return ScanFace;
+  if (modality & UserVerify.UserVerifyEyeprintInternal) return ScanEye;
+  if (modality & UserVerify.UserVerifyVoiceprintInternal) return Mic;
+  if (modality & UserVerify.UserVerifyHandprintInternal) return Hand;
+  if (modality & (UserVerify.UserVerifyPasscodeInternal | UserVerify.UserVerifyPasscodeExternal)) return KeyRound;
+  if (modality & (UserVerify.UserVerifyPatternInternal | UserVerify.UserVerifyPatternExternal)) return Grid3X3;
+  if (modality & UserVerify.UserVerifyLocationInternal) return MapPin;
+  if (modality & UserVerify.UserVerifyPresenceInternal) return Hand;
+  return ShieldCheck;
+}
+
+function interactionTitle(kind: InteractionKind, destructive: boolean) {
+  if (destructive) return m.confirm_destructive_operation();
+  if (kind === InteractionKind.InteractionKindPIN) return m.interaction_pin_title();
+  if (kind === InteractionKind.InteractionKindTouch) return m.interaction_touch_title();
+  if (kind === InteractionKind.InteractionKindUserVerification) return m.interaction_user_verification_title();
+  return m.authenticator_needs_you();
+}
+
+function interactionMessage(kind: InteractionKind) {
+  if (kind === InteractionKind.InteractionKindPIN) return m.interaction_pin_description();
+  if (kind === InteractionKind.InteractionKindTouch) return m.interaction_touch_description();
+  if (kind === InteractionKind.InteractionKindUserVerification) return m.interaction_user_verification_description();
+  return m.continue_on_authenticator();
+}
+
+function interactionIcon(
+  kind: InteractionKind,
+  destructive: boolean,
+  uvModality: UserVerify | null,
+): Component {
+  if (destructive) return TriangleAlert;
+  if (kind === InteractionKind.InteractionKindPIN) return KeyRound;
+  if (kind === InteractionKind.InteractionKindTouch) return Hand;
+  if (kind === InteractionKind.InteractionKindUserVerification) return userVerificationIcon(uvModality);
+  return ShieldCheck;
+}
+
 export function buildInteractionModalPresentation(prompt: InteractionPrompt): InteractionModalPresentation {
   const request = prompt.request;
   const destructive = request.destructive === true;
   return {
     interactionId: prompt.interactionId,
-    title: destructive ? m.confirm_destructive_operation() : m.authenticator_needs_you(),
+    title: interactionTitle(request.kind, destructive),
     destructive,
-    message: request.message ?? m.continue_on_authenticator(),
+    message: request.message ?? interactionMessage(request.kind),
     permission: permissionLabel(request.permission),
     preview: request.preview ?? null,
     kind: request.kind,
     pinState: request.pinState ?? null,
+    icon: interactionIcon(request.kind, destructive, request.uvModality ?? null),
   };
 }

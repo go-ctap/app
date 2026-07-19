@@ -16,6 +16,14 @@ import type {
   LargeBlobPayloadEncoding,
   LargeBlobPayloadValidationError,
 } from "$lib/largeblobs-payload";
+import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
+import {
+  idleMutation,
+  type EditableMutationLifecycle,
+  type MutationFailureReason,
+  type MutationIdleState,
+  type MutationLifecycle,
+} from "$lib/mutation-lifecycle";
 
 export type {
   LargeBlobPayloadEncoding,
@@ -69,7 +77,7 @@ export type LargeBlobWriteDraft = {
   encoding: LargeBlobPayloadEncoding;
 };
 
-export type LargeBlobMutationFailureReason = "response-error" | "runtime-error" | "missing-preview" | "missing-result";
+export type LargeBlobMutationFailureReason = MutationFailureReason;
 
 type WriteMutationBase = {
   kind: "write";
@@ -86,88 +94,24 @@ type CleanupMutationBase = {
   kind: "cleanup";
 };
 
-type WriteMutationError = WriteMutationBase & {
-  phase: "error";
-  failedPhase: "previewing" | "executing";
-  previewRequest: LargeBlobMutationRequest | null;
-  previewEnvelope: LargeBlobMutationEnvelope | null;
-  responseEnvelope: LargeBlobMutationEnvelope | null;
-  runtimeError: Failure | null;
-  failureReason: LargeBlobMutationFailureReason;
-  validationError: LargeBlobPayloadValidationError | null;
-};
-
-type DeleteMutationError = DeleteMutationBase & {
-  phase: "error";
-  failedPhase: "previewing" | "executing";
-  previewRequest: LargeBlobMutationRequest | null;
-  previewEnvelope: LargeBlobMutationEnvelope | null;
-  responseEnvelope: LargeBlobMutationEnvelope | null;
-  runtimeError: Failure | null;
-  failureReason: LargeBlobMutationFailureReason;
-};
-
-type CleanupMutationError = CleanupMutationBase & {
-  phase: "error";
-  failedPhase: "previewing" | "executing";
-  previewRequest: LargeBlobGarbageCollectRequest | null;
-  previewEnvelope: LargeBlobMutationEnvelope | null;
-  responseEnvelope: LargeBlobMutationEnvelope | null;
-  runtimeError: Failure | null;
-  failureReason: LargeBlobMutationFailureReason;
-};
-
 export type LargeBlobMutationState =
-  | { kind: "idle"; phase: "idle" }
-  | (WriteMutationBase & {
-      phase: "editing";
-      validationError: LargeBlobPayloadValidationError | null;
-    })
-  | (WriteMutationBase & {
-      phase: "previewing";
-      previewRequest: LargeBlobMutationRequest;
-    })
-  | (WriteMutationBase & {
-      phase: "review";
-      previewRequest: LargeBlobMutationRequest;
-      previewEnvelope: LargeBlobMutationEnvelope;
-    })
-  | (WriteMutationBase & {
-      phase: "executing";
-      previewRequest: LargeBlobMutationRequest;
-      previewEnvelope: LargeBlobMutationEnvelope;
-    })
-  | WriteMutationError
-  | (DeleteMutationBase & {
-      phase: "previewing";
-      previewRequest: LargeBlobMutationRequest;
-    })
-  | (DeleteMutationBase & {
-      phase: "review";
-      previewRequest: LargeBlobMutationRequest;
-      previewEnvelope: LargeBlobMutationEnvelope;
-    })
-  | (DeleteMutationBase & {
-      phase: "executing";
-      previewRequest: LargeBlobMutationRequest;
-      previewEnvelope: LargeBlobMutationEnvelope;
-    })
-  | DeleteMutationError
-  | (CleanupMutationBase & {
-      phase: "previewing";
-      previewRequest: LargeBlobGarbageCollectRequest;
-    })
-  | (CleanupMutationBase & {
-      phase: "review";
-      previewRequest: LargeBlobGarbageCollectRequest;
-      previewEnvelope: LargeBlobMutationEnvelope;
-    })
-  | (CleanupMutationBase & {
-      phase: "executing";
-      previewRequest: LargeBlobGarbageCollectRequest;
-      previewEnvelope: LargeBlobMutationEnvelope;
-    })
-  | CleanupMutationError;
+  | MutationIdleState
+  | EditableMutationLifecycle<
+      WriteMutationBase,
+      LargeBlobMutationRequest,
+      LargeBlobMutationEnvelope,
+      LargeBlobPayloadValidationError
+    >
+  | MutationLifecycle<
+      DeleteMutationBase,
+      LargeBlobMutationRequest,
+      LargeBlobMutationEnvelope
+    >
+  | MutationLifecycle<
+      CleanupMutationBase,
+      LargeBlobGarbageCollectRequest,
+      LargeBlobMutationEnvelope
+    >;
 
 export function emptyLargeBlobsInventoryState(): LargeBlobsInventoryState {
   return {
@@ -181,7 +125,7 @@ export function emptyLargeBlobsInventoryState(): LargeBlobsInventoryState {
 
 export const largeBlobsInventoryState = writable<LargeBlobsInventoryState>(emptyLargeBlobsInventoryState());
 export const largeBlobsReadState = writable<LargeBlobReadState>({ phase: "idle" });
-export const largeBlobsMutation = writable<LargeBlobMutationState>({ kind: "idle", phase: "idle" });
+export const largeBlobsMutation = writable<LargeBlobMutationState>(idleMutation());
 export const largeBlobsQuery = writable("");
 export const largeBlobsStatusFilter = writable<LargeBlobsStatusFilter>("all");
 export const largeBlobsSelectedCredentialID = writable("");
@@ -234,7 +178,7 @@ export function resetLargeBlobReadState() {
 export function resetLargeBlobsDeviceState() {
   largeBlobsInventoryState.set(emptyLargeBlobsInventoryState());
   resetLargeBlobReadState();
-  largeBlobsMutation.set({ kind: "idle", phase: "idle" });
+  largeBlobsMutation.set(idleMutation());
   largeBlobsQuery.set("");
   largeBlobsStatusFilter.set("all");
   largeBlobsSelectedCredentialID.set("");
@@ -244,7 +188,7 @@ export function resetLargeBlobsDeviceState() {
 export function invalidateLargeBlobsInventory() {
   largeBlobsInventoryState.set(emptyLargeBlobsInventoryState());
   resetLargeBlobReadState();
-  largeBlobsMutation.set({ kind: "idle", phase: "idle" });
+  largeBlobsMutation.set(idleMutation());
   largeBlobsSelectedCredentialID.set("");
 }
 
@@ -254,3 +198,8 @@ export function resetLargeBlobsStateForTest() {
   largeBlobsPayloadEncoding.set("utf8");
   largeBlobsDecodeMode.set(DecodeMode.DecodeModeJSON);
 }
+
+deviceFeatureLifecycles.register("large-blobs", {
+  resetForAuthenticatorChange: resetLargeBlobsDeviceState,
+  resetForTest: resetLargeBlobsStateForTest,
+});

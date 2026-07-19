@@ -11,6 +11,15 @@ import type {
   CredentialsEnvelope,
 } from "../../../../bindings/fidobench/service";
 
+import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
+import {
+  idleMutation,
+  type EditableMutationLifecycle,
+  type MutationFailureReason,
+  type MutationIdleState,
+  type MutationLifecycle,
+} from "$lib/mutation-lifecycle";
+
 export type PasskeysInventoryPhase = "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";
 export type CredentialStoreStatePhase = "idle" | "loading" | "ready" | "error" | "unsupported";
 
@@ -55,7 +64,7 @@ export type CredentialUpdateForm = {
 };
 
 export type CredentialUpdateValidationError = "user-id-required" | "user-id-invalid-hex" | "no-changes";
-export type PasskeysMutationFailureReason = "response-error" | "runtime-error" | "missing-preview" | "missing-result";
+export type PasskeysMutationFailureReason = MutationFailureReason;
 
 type UpdateMutationBase = {
   kind: "update";
@@ -70,58 +79,18 @@ type DeleteMutationBase = {
 };
 
 export type PasskeysMutationState =
-  | { kind: "idle"; phase: "idle" }
-  | (UpdateMutationBase & {
-      phase: "editing";
-      validationError: CredentialUpdateValidationError | null;
-    })
-  | (UpdateMutationBase & {
-      phase: "previewing";
-      previewRequest: CredentialUpdateRequest;
-    })
-  | (UpdateMutationBase & {
-      phase: "review";
-      previewRequest: CredentialUpdateRequest;
-      previewEnvelope: CredentialUpdateEnvelope;
-    })
-  | (UpdateMutationBase & {
-      phase: "executing";
-      previewRequest: CredentialUpdateRequest;
-      previewEnvelope: CredentialUpdateEnvelope;
-    })
-  | (UpdateMutationBase & {
-      phase: "error";
-      failedPhase: "previewing" | "executing";
-      previewRequest: CredentialUpdateRequest | null;
-      previewEnvelope: CredentialUpdateEnvelope | null;
-      responseEnvelope: CredentialUpdateEnvelope | null;
-      runtimeError: Failure | null;
-      failureReason: PasskeysMutationFailureReason;
-      validationError: CredentialUpdateValidationError | null;
-    })
-  | (DeleteMutationBase & {
-      phase: "previewing";
-      previewRequest: CredentialDeleteRequest;
-    })
-  | (DeleteMutationBase & {
-      phase: "review";
-      previewRequest: CredentialDeleteRequest;
-      previewEnvelope: CredentialDeleteEnvelope;
-    })
-  | (DeleteMutationBase & {
-      phase: "executing";
-      previewRequest: CredentialDeleteRequest;
-      previewEnvelope: CredentialDeleteEnvelope;
-    })
-  | (DeleteMutationBase & {
-      phase: "error";
-      failedPhase: "previewing" | "executing";
-      previewRequest: CredentialDeleteRequest | null;
-      previewEnvelope: CredentialDeleteEnvelope | null;
-      responseEnvelope: CredentialDeleteEnvelope | null;
-      runtimeError: Failure | null;
-      failureReason: PasskeysMutationFailureReason;
-    });
+  | MutationIdleState
+  | EditableMutationLifecycle<
+      UpdateMutationBase,
+      CredentialUpdateRequest,
+      CredentialUpdateEnvelope,
+      CredentialUpdateValidationError
+    >
+  | MutationLifecycle<
+      DeleteMutationBase,
+      CredentialDeleteRequest,
+      CredentialDeleteEnvelope
+    >;
 
 export function emptyPasskeysInventoryState(): PasskeysInventoryState {
   return {
@@ -148,7 +117,7 @@ export const passkeysQuery = writable("");
 export const passkeysStatusFilter = writable<PasskeysStatusFilter>("all");
 export const passkeysSelectedCredentialID = writable("");
 export const passkeysVerificationFlow = writable<VerificationFlow>(VerificationFlow.VerificationFlowDefault);
-export const passkeysMutation = writable<PasskeysMutationState>({ kind: "idle", phase: "idle" });
+export const passkeysMutation = writable<PasskeysMutationState>(idleMutation());
 
 export function beginPasskeysInventoryLoad() {
   passkeysInventoryState.update((current) => ({
@@ -237,7 +206,7 @@ export function resetPasskeysDeviceState() {
   passkeysQuery.set("");
   passkeysStatusFilter.set("all");
   passkeysSelectedCredentialID.set("");
-  passkeysMutation.set({ kind: "idle", phase: "idle" });
+  passkeysMutation.set(idleMutation());
 }
 
 /** Invalidates authenticator-backed inventory while retaining every UI preference. */
@@ -245,10 +214,15 @@ export function invalidatePasskeysInventory() {
   passkeysInventoryState.set(emptyPasskeysInventoryState());
   credentialStoreStateState.set(emptyCredentialStoreStateState());
   passkeysSelectedCredentialID.set("");
-  passkeysMutation.set({ kind: "idle", phase: "idle" });
+  passkeysMutation.set(idleMutation());
 }
 
 export function resetPasskeysStateForTest() {
   resetPasskeysDeviceState();
   passkeysVerificationFlow.set(VerificationFlow.VerificationFlowDefault);
 }
+
+deviceFeatureLifecycles.register("passkeys", {
+  resetForAuthenticatorChange: resetPasskeysDeviceState,
+  resetForTest: resetPasskeysStateForTest,
+});

@@ -15,6 +15,7 @@ import {
 } from "../../../../bindings/fidobench/service";
 
 import type { SecurityMutationState } from "$lib/features/security/state";
+import type { ActiveOperation } from "$lib/features/workbench/state";
 import { setAppLocale } from "$lib/i18n";
 import { failureForCode } from "$lib/test-failure";
 
@@ -51,7 +52,28 @@ function errorMutation(failedPhase: "previewing" | "executing", code: Code): Sec
   };
 }
 
-function renderDialog(mutation: SecurityMutationState) {
+function executingBioEnrollment(): SecurityMutationState {
+  return {
+    kind: "bioEnroll",
+    timeoutMilliseconds: 60_000,
+    phase: "executing",
+    previewRequest: new BioEnrollRequest({
+      selectionId: "authenticator-1",
+      timeoutMilliseconds: 60_000,
+      dryRun: true,
+    }),
+    previewEnvelope: new BioEnrollEnvelope({
+      operationId: "bio-preview-1",
+      selectionId: "authenticator-1",
+      kind: OperationKind.BioEnroll,
+    }),
+  };
+}
+
+function renderDialog(
+  mutation: SecurityMutationState,
+  activeOperation: ActiveOperation | null = null,
+) {
   const callbacks = {
     onConfirm: vi.fn(async () => true),
     onPreview: vi.fn(async () => true),
@@ -61,7 +83,7 @@ function renderDialog(mutation: SecurityMutationState) {
   render(SecurityMutationDialog, {
     props: {
       mutation,
-      activeOperation: null,
+      activeOperation,
       disabled: false,
       ...callbacks,
     },
@@ -156,21 +178,7 @@ describe("SecurityMutationDialog", () => {
 
   it("keeps biometric enrollment open so it can be canceled", async () => {
     const user = userEvent.setup();
-    const callbacks = renderDialog({
-      kind: "bioEnroll",
-      timeoutMilliseconds: 60_000,
-      phase: "executing",
-      previewRequest: new BioEnrollRequest({
-        selectionId: "authenticator-1",
-        timeoutMilliseconds: 60_000,
-        dryRun: true,
-      }),
-      previewEnvelope: new BioEnrollEnvelope({
-        operationId: "bio-preview-1",
-        selectionId: "authenticator-1",
-        kind: OperationKind.BioEnroll,
-      }),
-    });
+    const callbacks = renderDialog(executingBioEnrollment());
 
     await user.keyboard("{Escape}");
     expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -179,5 +187,17 @@ describe("SecurityMutationDialog", () => {
     await user.click(screen.getByRole("button", { name: "Cancel enrollment" }));
 
     expect(callbacks.onCancelOperation).toHaveBeenCalledOnce();
+  });
+
+  it("marks biometric enrollment with concise capture guidance", () => {
+    renderDialog(
+      executingBioEnrollment(),
+      { completed: 1, total: 4, sampleStatus: "good" },
+    );
+
+    expect(screen.getByRole("heading", { name: "Enroll biometric" })).toBeInTheDocument();
+    expect(screen.getByText("Complete each capture requested by the authenticator.")).toBeInTheDocument();
+    expect(screen.getByText("Latest sample: Good fingerprint sample")).toBeInTheDocument();
+    expect(screen.getByRole("dialog").querySelector("[data-prompt-visual] .lucide-fingerprint-pattern")).toBeInTheDocument();
   });
 });

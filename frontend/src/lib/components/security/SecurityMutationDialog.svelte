@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Fingerprint, RotateCcw, Trash2 } from "@lucide/svelte";
+  import { Fingerprint, FingerprintPattern, RotateCcw, Trash2 } from "@lucide/svelte";
 
   import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";
   import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
@@ -36,8 +36,7 @@
   let executionFailed = $derived(
     mutation.phase === "error" && mutation.failedPhase === "executing",
   );
-
-  function title() {
+  function dialogTitle() {
     if (mutation.kind === "alwaysUv") return m.security_always_uv();
     if (mutation.kind === "pinPolicy") return m.security_pin_policy();
     if (mutation.kind === "longTouch") return m.security_long_touch_for_reset();
@@ -48,9 +47,14 @@
     return m.security_mutation_preview();
   }
 
-  function description(): string | undefined {
+  function dialogDescription(): string | undefined {
     if (mutation.kind === "reset") return m.security_factory_reset_description();
     if (mutation.kind === "bioRemove") return m.security_remove_enrollment_description();
+    if (mutation.kind === "bioEnroll") {
+      return enrollmentRunning
+        ? m.security_capture_biometric_description()
+        : m.security_bio_enroll_description();
+    }
     return undefined;
   }
 
@@ -99,9 +103,9 @@
           <AlertDialog.Media>
             {#if mutation.kind === "reset"}<RotateCcw aria-hidden="true" />{:else}<Trash2 aria-hidden="true" />{/if}
           </AlertDialog.Media>
-          <AlertDialog.Title>{title()}</AlertDialog.Title>
-          {#if description()}
-            <AlertDialog.Description>{description()}</AlertDialog.Description>
+          <AlertDialog.Title>{dialogTitle()}</AlertDialog.Title>
+          {#if dialogDescription()}
+            <AlertDialog.Description>{dialogDescription()}</AlertDialog.Description>
           {/if}
         </AlertDialog.Header>
 
@@ -126,9 +130,21 @@
     >
       <ModalScrollArea>
         <Dialog.Header>
-          <Dialog.Title>{title()}</Dialog.Title>
-          {#if description()}
-            <Dialog.Description>{description()}</Dialog.Description>
+          {#if mutation.kind === "bioEnroll"}
+            <div class="enrollment-dialog-heading">
+              <div class="enrollment-dialog-icon" data-prompt-visual aria-hidden="true">
+                <FingerprintPattern />
+              </div>
+              <div class="enrollment-dialog-copy">
+                <Dialog.Title>{dialogTitle()}</Dialog.Title>
+                <Dialog.Description>{dialogDescription()}</Dialog.Description>
+              </div>
+            </div>
+          {:else}
+            <Dialog.Title>{dialogTitle()}</Dialog.Title>
+            {#if dialogDescription()}
+              <Dialog.Description>{dialogDescription()}</Dialog.Description>
+            {/if}
           {/if}
         </Dialog.Header>
 
@@ -160,6 +176,36 @@
     max-width: none;
     max-height: calc(100vh - 2rem);
     overflow: hidden;
+  }
+
+  .enrollment-dialog-heading {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: start;
+    width: 100%;
+    text-align: left;
+  }
+
+  .enrollment-dialog-copy {
+    display: grid;
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .enrollment-dialog-icon {
+    display: grid;
+    width: 3rem;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid var(--border);
+    background: var(--muted);
+    color: var(--foreground);
+  }
+
+  .enrollment-dialog-icon :global(svg) {
+    width: 1.5rem;
+    height: 1.5rem;
   }
 }
 </style>

@@ -8,6 +8,7 @@ import {
   PINInteractionState,
 } from "../../../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+import { UserVerify } from "../../../../bindings/github.com/go-ctap/ctap/protocol";
 import { InteractionAnswer, InteractionPrompt } from "../../../../bindings/fidobench/service";
 
 import { buildInteractionModalPresentation } from "$lib/shell-presentation";
@@ -33,6 +34,19 @@ function pinPrompt(interactionId = "interaction-1", pinState?: PINInteractionSta
   });
 }
 
+function userVerificationPrompt(modality: UserVerify) {
+  return new InteractionPrompt({
+    interactionId: "interaction-uv",
+    operationId: "credentials-list",
+    selectionId: "authenticator-1",
+    request: new InteractionRequest({
+      kind: InteractionKind.InteractionKindUserVerification,
+      permission: "credentialManagement",
+      uvModality: modality,
+    }),
+  });
+}
+
 describe("InteractionModal", () => {
   let onAnswer = vi.fn(async () => {});
 
@@ -52,6 +66,27 @@ describe("InteractionModal", () => {
 
     const input = await screen.findByLabelText("PIN");
     await waitFor(() => expect(input).toHaveFocus());
+  });
+
+  it.each([
+    {
+      modality: UserVerify.UserVerifyFingerprintInternal,
+      iconClass: "lucide-fingerprint-pattern",
+    },
+    {
+      modality: UserVerify.UserVerifyFaceprintInternal,
+      iconClass: "lucide-scan-face",
+    },
+  ])("shows the authenticator's modality icon in a UV prompt", ({ modality, iconClass }) => {
+    render(InteractionModal, {
+      props: {
+        presentation: buildInteractionModalPresentation(userVerificationPrompt(modality)),
+        onAnswer,
+      },
+    });
+
+    expect(screen.getByRole("heading", { name: "Verify on the authenticator" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog").querySelector(`[data-prompt-visual] .${iconClass}`)).toBeInTheDocument();
   });
 
   it("submits the PIN prompt from Enter without rendering preview secrets", async () => {

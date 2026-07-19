@@ -3,6 +3,7 @@ import { writable } from "svelte/store";
 import type { LookupResult } from "../../../../bindings/github.com/go-ctap/kit/model/mds";
 import type { BioSensorEnvelope } from "../../../../bindings/fidobench/service";
 
+import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import { idleLoadState, type LoadState } from "$lib/load-state";
 export { errorLoadState, idleLoadState, loadingLoadState, readyLoadState, type LoadState } from "$lib/load-state";
 
@@ -13,3 +14,8 @@ export function resetOverviewStateForTest() {
   overviewBioSensor.set(idleLoadState());
   overviewMDS.set(idleLoadState());
 }
+
+deviceFeatureLifecycles.register("overview", {
+  resetForAuthenticatorChange: resetOverviewStateForTest,
+  resetForTest: resetOverviewStateForTest,
+});

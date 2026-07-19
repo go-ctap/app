@@ -49,10 +49,22 @@
     <Dialog.Content class="interaction-dialog" showCloseButton={false}>
       <ModalScrollArea>
         <form class="interaction-dialog-form" onsubmit={submit}>
-        <Dialog.Header>
-          <Dialog.Title>{presentation.title}</Dialog.Title>
-          <Dialog.Description>{presentation.message}</Dialog.Description>
-        </Dialog.Header>
+          <Dialog.Header>
+            <div class="interaction-heading">
+              <div
+                class="interaction-icon"
+                data-prompt-visual
+                data-destructive={presentation.destructive ? "true" : undefined}
+                aria-hidden="true"
+              >
+                <presentation.icon />
+              </div>
+              <div class="interaction-heading-copy">
+                <Dialog.Title>{presentation.title}</Dialog.Title>
+                <Dialog.Description>{presentation.message}</Dialog.Description>
+              </div>
+            </div>
+          </Dialog.Header>
 
         {#if presentation.permission}
           <p class="muted">{m.permission({ permission: presentation.permission })}</p>
@@ -118,6 +130,40 @@
       display: grid;
       gap: var(--space-4);
       min-width: 0;
+    }
+
+    .interaction-heading {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: var(--space-3);
+      align-items: start;
+    }
+
+    .interaction-heading-copy {
+      display: grid;
+      gap: var(--space-1);
+      min-width: 0;
+    }
+
+    .interaction-icon {
+      display: grid;
+      width: 3rem;
+      aspect-ratio: 1;
+      place-items: center;
+      border: 1px solid var(--border);
+      background: var(--muted);
+      color: var(--foreground);
+    }
+
+    .interaction-icon :global(svg) {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    .interaction-icon[data-destructive="true"] {
+      border-color: color-mix(in srgb, var(--destructive) 35%, var(--border));
+      background: color-mix(in srgb, var(--destructive) 10%, var(--background));
+      color: var(--destructive);
     }
 
     .muted {

@@ -9,13 +9,13 @@ import type {
   LargeBlobListEnvelope,
 } from "../../bindings/fidobench/service";
 
+import { deviceFeatureLifecycles } from "./feature-lifecycle.js";
 import { resetInteractionStateForTest, pendingInteraction } from "./features/interaction/state.js";
-import { resetLabStateForTest } from "./features/lab/state.js";
+import "./features/lab/state.js";
 import {
   completeLargeBlobsInventoryLoad,
   emptyLargeBlobsInventoryState,
   largeBlobsInventoryState,
-  resetLargeBlobsStateForTest,
 } from "./features/largeblobs/state.js";
 import {
   errorLoadState,
@@ -23,13 +23,11 @@ import {
   overviewBioSensor,
   overviewMDS,
   readyLoadState,
-  resetOverviewStateForTest,
 } from "./features/overview/state.js";
 import {
   completePasskeysInventoryLoad,
   emptyPasskeysInventoryState,
   passkeysInventoryState,
-  resetPasskeysStateForTest,
 } from "./features/passkeys/state.js";
 import {
   authenticatorInspection,
@@ -39,7 +37,7 @@ import {
   authenticatorStatus,
   resetAuthenticatorStateForTest,
 } from "./features/authenticator/state.js";
-import { resetSecurityStateForTest } from "./features/security/state.js";
+import "./features/security/state.js";
 import {
   activeScreen,
   resetWorkbenchStateForTest,
@@ -51,11 +49,7 @@ export function resetAppStateForTest() {
   resetAuthenticatorStateForTest();
   resetWorkbenchStateForTest();
   resetInteractionStateForTest();
-  resetLabStateForTest();
-  resetOverviewStateForTest();
-  resetPasskeysStateForTest();
-  resetLargeBlobsStateForTest();
-  resetSecurityStateForTest();
+  deviceFeatureLifecycles.resetForTest();
 }
 
 export function seedActiveScreenForTest(screen: ActiveScreen) {

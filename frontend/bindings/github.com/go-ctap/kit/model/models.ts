@@ -7,6 +7,9 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as protocol$0 from "../../ctap/protocol/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as failure$0 from "./failure/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -30,6 +33,7 @@ export class InteractionRequest {
     "destructive"?: boolean;
     "preview"?: any;
     "pinState"?: PINInteractionState | null;
+    "uvModality"?: protocol$0.UserVerify | null;
 
     /** Creates a new InteractionRequest instance. */
     constructor($$source: Partial<InteractionRequest> = {}) {

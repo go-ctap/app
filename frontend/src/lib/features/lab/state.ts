@@ -13,6 +13,7 @@ import type {
   MakeCredentialRequest,
 } from "../../../../bindings/fidobench/service";
 
+import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import {
   buildClientDataJSON,
   randomBase64URL,
@@ -343,3 +344,8 @@ export function resetLabDeviceState() {
 export function resetLabStateForTest(randomSource?: LabRandomSource) {
   labState.set(createLabState(randomSource));
 }
+
+deviceFeatureLifecycles.register("lab", {
+  resetForAuthenticatorChange: resetLabDeviceState,
+  resetForTest: resetLabStateForTest,
+});

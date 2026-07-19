@@ -47,6 +47,17 @@ import { findPasskeyCredential, type PasskeyCredentialTarget } from "./passkeys-
 import { internalFailure, runtimeFailureFrom } from "./failure.js";
 import { currentSelectionID } from "./authenticator-boundary.js";
 import {
+  editingMutation,
+  executingMutation,
+  failedEditableMutation,
+  failedMutation,
+  idleMutation,
+  mutationExecutionContext,
+  previewingMutation,
+  reviewedMutation,
+  type MutationFailedPhase,
+} from "./mutation-lifecycle.js";
+import {
   completeOperation,
   operationStageFailureDetails,
   runOperation,
@@ -75,7 +86,7 @@ function reconcileSelectedCredential() {
   const report = credentialsReport(get(passkeysInventoryState).lastSuccessfulEnvelope);
   if (findPasskeyCredential(report, selectedID)) return;
   passkeysSelectedCredentialID.set("");
-  passkeysMutation.set({ kind: "idle", phase: "idle" });
+  passkeysMutation.set(idleMutation());
 }
 
 export async function maybeLoadPasskeys() {
@@ -181,47 +192,54 @@ function updateFormFor(credentialIDHex: string): CredentialUpdateForm | null {
   };
 }
 
+function updateMutationBase(current: Extract<PasskeysMutationState, { kind: "update" }>) {
+  return {
+    kind: "update" as const,
+    credentialIDHex: current.credentialIDHex,
+    original: current.original,
+    form: current.form,
+  };
+}
+
+function deleteMutationBase(credentialIDHex: string) {
+  return { kind: "delete" as const, credentialIDHex };
+}
+
+function editingCredentialUpdate(
+  base: ReturnType<typeof updateMutationBase>,
+  validationError: CredentialUpdateValidationError | null,
+) {
+  return editingMutation(base, validationError);
+}
+
 export function beginCredentialUpdate(credentialIDHex = get(passkeysSelectedCredentialID)) {
   if (!mutationsAvailable("update")) return false;
   const original = updateFormFor(credentialIDHex);
   if (!original) return false;
   passkeysSelectedCredentialID.set(credentialIDHex);
-  passkeysMutation.set({
-    kind: "update",
-    phase: "editing",
+  passkeysMutation.set(editingCredentialUpdate({
+    kind: "update" as const,
     credentialIDHex,
     original,
     form: { ...original },
-    validationError: null,
-  });
+  }, null));
   return true;
 }
 
 export function updateCredentialDraft(patch: Partial<CredentialUpdateForm>) {
   const current = get(passkeysMutation);
   if (current.kind !== "update") return false;
-  passkeysMutation.set({
-    kind: "update",
-    phase: "editing",
-    credentialIDHex: current.credentialIDHex,
-    original: current.original,
+  passkeysMutation.set(editingCredentialUpdate({
+    ...updateMutationBase(current),
     form: { ...current.form, ...patch },
-    validationError: null,
-  });
+  }, null));
   return true;
 }
 
 export function editCredentialUpdate() {
   const current = get(passkeysMutation);
   if (current.kind !== "update" || (current.phase !== "review" && current.phase !== "error")) return false;
-  passkeysMutation.set({
-    kind: "update",
-    phase: "editing",
-    credentialIDHex: current.credentialIDHex,
-    original: current.original,
-    form: current.form,
-    validationError: null,
-  });
+  passkeysMutation.set(editingCredentialUpdate(updateMutationBase(current), null));
   return true;
 }
 
@@ -282,27 +300,21 @@ export function buildCredentialUpdatePreviewRequest(
 
 function updateError(
   current: Extract<PasskeysMutationState, { kind: "update" }>,
-  failedPhase: "previewing" | "executing",
+  failedPhase: MutationFailedPhase,
   previewRequest: CredentialUpdateRequest | null,
   previewEnvelope: CredentialUpdateEnvelope | null,
   responseEnvelope: CredentialUpdateEnvelope | null,
   runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
   failureReason: "response-error" | "runtime-error" | "missing-preview" | "missing-result",
 ) {
-  passkeysMutation.set({
-    kind: "update",
-    phase: "error",
-    credentialIDHex: current.credentialIDHex,
-    original: current.original,
-    form: current.form,
+  passkeysMutation.set(failedEditableMutation(updateMutationBase(current), {
     failedPhase,
     previewRequest,
     previewEnvelope,
     responseEnvelope,
     runtimeError,
     failureReason,
-    validationError: null,
-  });
+  }));
 }
 
 export async function previewCredentialUpdate(): Promise<boolean> {
@@ -311,14 +323,7 @@ export async function previewCredentialUpdate(): Promise<boolean> {
   if (!mutationsAvailable("update")) return false;
   const validationError = validateCredentialUpdate(current.original, current.form);
   if (validationError) {
-    passkeysMutation.set({
-      kind: "update",
-      phase: "editing",
-      credentialIDHex: current.credentialIDHex,
-      original: current.original,
-      form: current.form,
-      validationError,
-    });
+    passkeysMutation.set(editingCredentialUpdate(updateMutationBase(current), validationError));
     return false;
   }
 
@@ -333,7 +338,7 @@ export async function previewCredentialUpdate(): Promise<boolean> {
     current.form,
   );
 
-  passkeysMutation.set({ ...current, phase: "previewing", previewRequest: request });
+  passkeysMutation.set(previewingMutation(updateMutationBase(current), request));
   const label = m.credential_update_preview();
   const outcome = await runTypedOperationStage({
     label,
@@ -343,12 +348,9 @@ export async function previewCredentialUpdate(): Promise<boolean> {
       const details = operationStageFailureDetails(failure, "missing-preview");
       updateError(current, "previewing", request, null, details.responseEnvelope, details.runtimeError, details.failureReason);
     },
-    onSuccess: (_preview, envelope) => passkeysMutation.set({
-      ...current,
-      phase: "review",
-      previewRequest: request,
-      previewEnvelope: envelope,
-    }),
+    onSuccess: (_preview, envelope) => passkeysMutation.set(
+      reviewedMutation(updateMutationBase(current), request, envelope),
+    ),
   });
   return outcome.ok;
 }
@@ -356,22 +358,18 @@ export async function previewCredentialUpdate(): Promise<boolean> {
 export async function confirmCredentialUpdate(): Promise<boolean> {
   const current = get(passkeysMutation);
   if (current.kind !== "update" || (current.phase !== "review" && current.phase !== "error")) return false;
-  const { previewRequest, previewEnvelope } = current;
-  if (!previewRequest || !previewEnvelope) return false;
-  if (current.phase === "error" && current.failedPhase !== "executing") return false;
+  const execution = mutationExecutionContext(current);
+  if (!execution) return false;
+  const { previewRequest, previewEnvelope } = execution;
   const request: CredentialUpdateRequest = {
     ...previewRequest,
     dryRun: false,
   };
-  passkeysMutation.set({
-    kind: "update",
-    phase: "executing",
-    credentialIDHex: current.credentialIDHex,
-    original: current.original,
-    form: current.form,
+  passkeysMutation.set(executingMutation(
+    updateMutationBase(current),
     previewRequest,
     previewEnvelope,
-  });
+  ));
   const label = m.credential_update();
   const outcome = await runTypedOperationStage({
     label,
@@ -383,7 +381,7 @@ export async function confirmCredentialUpdate(): Promise<boolean> {
     },
     onSuccess: () => {
       passkeysSelectedCredentialID.set(current.credentialIDHex);
-      passkeysMutation.set({ kind: "idle", phase: "idle" });
+      passkeysMutation.set(idleMutation());
     },
   });
   if (!outcome.ok) return false;
@@ -393,24 +391,21 @@ export async function confirmCredentialUpdate(): Promise<boolean> {
 
 function deleteError(
   credentialIDHex: string,
-  failedPhase: "previewing" | "executing",
+  failedPhase: MutationFailedPhase,
   previewRequest: CredentialDeleteRequest | null,
   previewEnvelope: CredentialDeleteEnvelope | null,
   responseEnvelope: CredentialDeleteEnvelope | null,
   runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
   failureReason: "response-error" | "runtime-error" | "missing-preview" | "missing-result",
 ) {
-  passkeysMutation.set({
-    kind: "delete",
-    phase: "error",
-    credentialIDHex,
+  passkeysMutation.set(failedMutation(deleteMutationBase(credentialIDHex), {
     failedPhase,
     previewRequest,
     previewEnvelope,
     responseEnvelope,
     runtimeError,
     failureReason,
-  });
+  }));
 }
 
 async function previewCredentialDelete(credentialIDHex: string): Promise<boolean> {
@@ -423,7 +418,7 @@ async function previewCredentialDelete(credentialIDHex: string): Promise<boolean
   };
 
   passkeysSelectedCredentialID.set(credentialIDHex);
-  passkeysMutation.set({ kind: "delete", phase: "previewing", credentialIDHex, previewRequest: request });
+  passkeysMutation.set(previewingMutation(deleteMutationBase(credentialIDHex), request));
   const label = m.credential_delete_preview();
   const outcome = await runTypedOperationStage({
     label,
@@ -433,13 +428,9 @@ async function previewCredentialDelete(credentialIDHex: string): Promise<boolean
       const details = operationStageFailureDetails(failure, "missing-preview");
       deleteError(credentialIDHex, "previewing", request, null, details.responseEnvelope, details.runtimeError, details.failureReason);
     },
-    onSuccess: (_preview, envelope) => passkeysMutation.set({
-      kind: "delete",
-      phase: "review",
-      credentialIDHex,
-      previewRequest: request,
-      previewEnvelope: envelope,
-    }),
+    onSuccess: (_preview, envelope) => passkeysMutation.set(
+      reviewedMutation(deleteMutationBase(credentialIDHex), request, envelope),
+    ),
   });
   return outcome.ok;
 }
@@ -451,20 +442,18 @@ export function beginCredentialDelete(credentialIDHex = get(passkeysSelectedCred
 export async function confirmCredentialDelete(): Promise<boolean> {
   const current = get(passkeysMutation);
   if (current.kind !== "delete" || (current.phase !== "review" && current.phase !== "error")) return false;
-  const { previewRequest, previewEnvelope } = current;
-  if (!previewRequest || !previewEnvelope) return false;
-  if (current.phase === "error" && current.failedPhase !== "executing") return false;
+  const execution = mutationExecutionContext(current);
+  if (!execution) return false;
+  const { previewRequest, previewEnvelope } = execution;
   const request: CredentialDeleteRequest = {
     ...previewRequest,
     dryRun: false,
   };
-  passkeysMutation.set({
-    kind: "delete",
-    phase: "executing",
-    credentialIDHex: current.credentialIDHex,
+  passkeysMutation.set(executingMutation(
+    deleteMutationBase(current.credentialIDHex),
     previewRequest,
     previewEnvelope,
-  });
+  ));
   const label = m.credential_delete();
   const outcome = await runTypedOperationStage({
     label,
@@ -476,7 +465,7 @@ export async function confirmCredentialDelete(): Promise<boolean> {
     },
     onSuccess: () => {
       passkeysSelectedCredentialID.set("");
-      passkeysMutation.set({ kind: "idle", phase: "idle" });
+      passkeysMutation.set(idleMutation());
     },
   });
   if (!outcome.ok) return false;
@@ -485,5 +474,5 @@ export async function confirmCredentialDelete(): Promise<boolean> {
 }
 
 export function closePasskeysMutation() {
-  passkeysMutation.set({ kind: "idle", phase: "idle" });
+  passkeysMutation.set(idleMutation());
 }

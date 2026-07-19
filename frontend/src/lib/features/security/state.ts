@@ -19,6 +19,13 @@ import type {
   ResetFactoryRequest,
 } from "../../../../bindings/fidobench/service";
 import { isUnsupportedFailure } from "../../failure.js";
+import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
+import {
+  idleMutation,
+  type EditableMutationLifecycle,
+  type MutationFailureReason,
+  type MutationIdleState,
+} from "$lib/mutation-lifecycle";
 
 export type SecurityResourcePhase = "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";
 
@@ -63,11 +70,7 @@ export type SecurityMutationValidationError =
   | "too-many-rp-ids"
   | "friendly-name-too-long";
 
-export type SecurityMutationFailureReason =
-  | "response-error"
-  | "runtime-error"
-  | "missing-preview"
-  | "missing-result";
+export type SecurityMutationFailureReason = MutationFailureReason;
 
 type AlwaysUVMutationBase = {
   kind: "alwaysUv";
@@ -103,55 +106,60 @@ type ResetMutationBase = {
   kind: "reset";
 };
 
-type SecurityMutationLifecycle<TBase, TRequest, TEnvelope> =
-  | (TBase & {
-      phase: "editing";
-      validationError: SecurityMutationValidationError | null;
-    })
-  | (TBase & {
-      phase: "previewing";
-      previewRequest: TRequest;
-    })
-  | (TBase & {
-      phase: "review";
-      previewRequest: TRequest;
-      previewEnvelope: TEnvelope;
-    })
-  | (TBase & {
-      phase: "executing";
-      previewRequest: TRequest;
-      previewEnvelope: TEnvelope;
-    })
-  | (TBase & {
-      phase: "error";
-      failedPhase: "previewing" | "executing";
-      previewRequest: TRequest | null;
-      previewEnvelope: TEnvelope | null;
-      responseEnvelope: TEnvelope | null;
-      runtimeError: Failure | null;
-      failureReason: SecurityMutationFailureReason;
-      validationError: SecurityMutationValidationError | null;
-    });
-
 /**
  * Requests are retained only for non-secret operations. PIN set/change is
  * deliberately absent: PIN strings must remain local to their dialog and be
  * discarded as soon as the service call starts.
  */
 export type SecurityMutationState =
-  | { kind: "idle"; phase: "idle" }
-  | SecurityMutationLifecycle<AlwaysUVMutationBase, AlwaysUVRequest, AuthenticatorConfigEnvelope>
-  | SecurityMutationLifecycle<PINPolicyMutationBase, MinPINLengthRequest, AuthenticatorConfigEnvelope>
-  | SecurityMutationLifecycle<LongTouchMutationBase, EnableLongTouchForResetRequest, AuthenticatorConfigEnvelope>
-  | SecurityMutationLifecycle<BioEnrollMutationBase, BioEnrollRequest, BioEnrollEnvelope>
-  | SecurityMutationLifecycle<BioRenameMutationBase, BioRenameRequest, BioMutationEnvelope>
-  | SecurityMutationLifecycle<BioRemoveMutationBase, BioRemoveRequest, BioMutationEnvelope>
-  | SecurityMutationLifecycle<ResetMutationBase, ResetFactoryRequest, ResetFactoryEnvelope>;
+  | MutationIdleState
+  | EditableMutationLifecycle<
+      AlwaysUVMutationBase,
+      AlwaysUVRequest,
+      AuthenticatorConfigEnvelope,
+      SecurityMutationValidationError
+    >
+  | EditableMutationLifecycle<
+      PINPolicyMutationBase,
+      MinPINLengthRequest,
+      AuthenticatorConfigEnvelope,
+      SecurityMutationValidationError
+    >
+  | EditableMutationLifecycle<
+      LongTouchMutationBase,
+      EnableLongTouchForResetRequest,
+      AuthenticatorConfigEnvelope,
+      SecurityMutationValidationError
+    >
+  | EditableMutationLifecycle<
+      BioEnrollMutationBase,
+      BioEnrollRequest,
+      BioEnrollEnvelope,
+      SecurityMutationValidationError
+    >
+  | EditableMutationLifecycle<
+      BioRenameMutationBase,
+      BioRenameRequest,
+      BioMutationEnvelope,
+      SecurityMutationValidationError
+    >
+  | EditableMutationLifecycle<
+      BioRemoveMutationBase,
+      BioRemoveRequest,
+      BioMutationEnvelope,
+      SecurityMutationValidationError
+    >
+  | EditableMutationLifecycle<
+      ResetMutationBase,
+      ResetFactoryRequest,
+      ResetFactoryEnvelope,
+      SecurityMutationValidationError
+    >;
 
 export const securityStatusState = writable<SecurityStatusState>(emptySecurityResourceState());
 export const securityBioSensorState = writable<SecurityBioSensorState>(emptySecurityResourceState());
 export const securityBioListState = writable<SecurityBioListState>(emptySecurityResourceState());
-export const securityMutation = writable<SecurityMutationState>({ kind: "idle", phase: "idle" });
+export const securityMutation = writable<SecurityMutationState>(idleMutation());
 
 // Public feature names used by controllers and readonly app-store exports.
 export const securityStatus = securityStatusState;
@@ -291,9 +299,14 @@ export function resetSecurityDeviceState() {
   securityStatusState.set(emptySecurityResourceState());
   securityBioSensorState.set(emptySecurityResourceState());
   securityBioListState.set(emptySecurityResourceState());
-  securityMutation.set({ kind: "idle", phase: "idle" });
+  securityMutation.set(idleMutation());
 }
 
 export function resetSecurityStateForTest() {
   resetSecurityDeviceState();
 }
+
+deviceFeatureLifecycles.register("security", {
+  resetForAuthenticatorChange: resetSecurityDeviceState,
+  resetForTest: resetSecurityStateForTest,
+});

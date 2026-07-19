@@ -71,6 +71,15 @@ import { invalidateOverviewCache } from "./overview-controller.js";
 import { currentSelectionID } from "./authenticator-boundary.js";
 import { rediscoverAfterFactoryReset } from "./authenticator-controller.js";
 import {
+  editingMutation,
+  executingMutation,
+  failedEditableMutation,
+  idleMutation,
+  mutationExecutionContext,
+  previewingMutation,
+  reviewedMutation,
+} from "./mutation-lifecycle.js";
+import {
   completeOperation,
   operationStageFailureDetails,
   runOperation,
@@ -89,11 +98,48 @@ type PreviewFailureReason = "response-error" | "runtime-error" | "missing-previe
 type ExecuteFailureReason = "response-error" | "runtime-error" | "missing-result";
 type NonIdleSecurityMutation = Exclude<SecurityMutationState, { kind: "idle" }>;
 type PreviewingSecurityMutation = Extract<SecurityMutationState, { phase: "previewing" }>;
+type ExecutableSecurityMutation =
+  | Extract<SecurityMutationState, { phase: "review" }>
+  | Extract<SecurityMutationState, { phase: "error" }>;
 type SecurityOperationEnvelope =
   | AuthenticatorConfigEnvelope
   | BioEnrollEnvelope
   | BioMutationEnvelope
   | ResetFactoryEnvelope;
+type SecurityOperationRequest =
+  | AlwaysUVRequest
+  | MinPINLengthRequest
+  | EnableLongTouchForResetRequest
+  | BioEnrollRequest
+  | BioRenameRequest
+  | BioRemoveRequest
+  | ResetFactoryRequest;
+type SecurityExecutionContext = {
+  previewRequest: SecurityOperationRequest;
+  previewEnvelope: SecurityOperationEnvelope;
+};
+
+function securityMutationBase(current: NonIdleSecurityMutation) {
+  switch (current.kind) {
+    case "alwaysUv": return { kind: "alwaysUv" as const, target: current.target };
+    case "pinPolicy": return { kind: "pinPolicy" as const, draft: current.draft };
+    case "longTouch": return { kind: "longTouch" as const };
+    case "bioEnroll": return {
+      kind: "bioEnroll" as const,
+      timeoutMilliseconds: current.timeoutMilliseconds,
+    };
+    case "bioRename": return {
+      kind: "bioRename" as const,
+      templateIDHex: current.templateIDHex,
+      friendlyName: current.friendlyName,
+    };
+    case "bioRemove": return {
+      kind: "bioRemove" as const,
+      templateIDHex: current.templateIDHex,
+    };
+    case "reset": return { kind: "reset" as const };
+  }
+}
 
 function failedPreviewingMutation(
   current: PreviewingSecurityMutation,
@@ -101,27 +147,25 @@ function failedPreviewingMutation(
   runtimeError: Failure | null,
   failureReason: PreviewFailureReason,
 ): SecurityMutationState {
-  return {
-    ...current,
-    phase: "error",
+  return failedEditableMutation(securityMutationBase(current), {
     failedPhase: "previewing",
+    previewRequest: current.previewRequest,
     previewEnvelope: null,
     responseEnvelope,
     runtimeError,
     failureReason,
-    validationError: null,
-  } as SecurityMutationState;
+  }) as SecurityMutationState;
 }
 
-function reviewedMutation(
+function reviewedSecurityMutation(
   current: PreviewingSecurityMutation,
   previewEnvelope: SecurityOperationEnvelope,
 ): SecurityMutationState {
-  return {
-    ...current,
-    phase: "review",
+  return reviewedMutation(
+    securityMutationBase(current),
+    current.previewRequest,
     previewEnvelope,
-  } as SecurityMutationState;
+  ) as SecurityMutationState;
 }
 
 async function runSecurityPreviewStage<
@@ -152,7 +196,7 @@ async function runSecurityPreviewStage<
       ));
     },
     onSuccess: (_preview, envelope) => securityMutation.set(
-      reviewedMutation(current, envelope),
+      reviewedSecurityMutation(current, envelope),
     ),
   });
   return outcome.ok;
@@ -410,7 +454,10 @@ export async function beginAlwaysUVChange(target: AlwaysUVTarget): Promise<boole
     || current === undefined
   ) return false;
   if ((target === AlwaysUVTarget.AlwaysUVTargetEnable) === current) {
-    securityMutation.set({ kind: "alwaysUv", phase: "editing", target, validationError: "no-change" });
+    securityMutation.set(editingMutation(
+      { kind: "alwaysUv" as const, target },
+      "no-change" as const,
+    ));
     return false;
   }
 
@@ -418,12 +465,10 @@ export async function beginAlwaysUVChange(target: AlwaysUVTarget): Promise<boole
   const selectionId = selectionIdForMutation();
   if (!selectionId) return false;
   const request: AlwaysUVRequest = { selectionId, target, dryRun: true };
-  const mutation = {
-    kind: "alwaysUv",
-    phase: "previewing",
-    target,
-    previewRequest: request,
-  } satisfies PreviewingSecurityMutation;
+  const mutation = previewingMutation(
+    { kind: "alwaysUv" as const, target },
+    request,
+  ) satisfies PreviewingSecurityMutation;
   securityMutation.set(mutation);
   return runSecurityPreviewStage({
     label,
@@ -441,11 +486,10 @@ export async function beginLongTouchForReset(): Promise<boolean> {
   const selectionId = selectionIdForMutation();
   if (!selectionId) return false;
   const request: EnableLongTouchForResetRequest = { selectionId, dryRun: true };
-  const mutation = {
-    kind: "longTouch",
-    phase: "previewing",
-    previewRequest: request,
-  } satisfies PreviewingSecurityMutation;
+  const mutation = previewingMutation(
+    { kind: "longTouch" as const },
+    request,
+  ) satisfies PreviewingSecurityMutation;
   securityMutation.set(mutation);
   return runSecurityPreviewStage({
     label,
@@ -458,7 +502,10 @@ export async function beginLongTouchForReset(): Promise<boolean> {
 export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promise<boolean> {
   const validationError = validatePINPolicyDraft(draft);
   if (validationError) {
-    securityMutation.set({ kind: "pinPolicy", phase: "editing", draft, validationError });
+    securityMutation.set(editingMutation(
+      { kind: "pinPolicy" as const, draft },
+      validationError,
+    ));
     return false;
   }
 
@@ -474,12 +521,10 @@ export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promi
     pinComplexityPolicy: normalized.pinComplexityPolicy,
     dryRun: true,
   };
-  const mutation = {
-    kind: "pinPolicy",
-    phase: "previewing",
-    draft,
-    previewRequest: request,
-  } satisfies PreviewingSecurityMutation;
+  const mutation = previewingMutation(
+    { kind: "pinPolicy" as const, draft },
+    request,
+  ) satisfies PreviewingSecurityMutation;
   securityMutation.set(mutation);
   return runSecurityPreviewStage({
     label,
@@ -499,12 +544,10 @@ export async function beginBioEnrollment(): Promise<boolean> {
     timeoutMilliseconds: BIO_ENROLL_TIMEOUT_MILLISECONDS,
     dryRun: true,
   };
-  const mutation = {
-    kind: "bioEnroll",
-    phase: "previewing",
+  const mutation = previewingMutation({
+    kind: "bioEnroll" as const,
     timeoutMilliseconds: BIO_ENROLL_TIMEOUT_MILLISECONDS,
-    previewRequest: request,
-  } satisfies PreviewingSecurityMutation;
+  }, request) satisfies PreviewingSecurityMutation;
   securityMutation.set(mutation);
   return runSecurityPreviewStage({
     label,
@@ -516,13 +559,11 @@ export async function beginBioEnrollment(): Promise<boolean> {
 
 export async function beginBioRename(templateIDHex: string, friendlyName: string): Promise<boolean> {
   if (friendlyNameTooLong(friendlyName)) {
-    securityMutation.set({
-      kind: "bioRename",
-      phase: "editing",
+    securityMutation.set(editingMutation({
+      kind: "bioRename" as const,
       templateIDHex,
       friendlyName,
-      validationError: "friendly-name-too-long",
-    });
+    }, "friendly-name-too-long" as const));
     return false;
   }
   const label = m.security_bio_rename_preview_operation();
@@ -534,13 +575,11 @@ export async function beginBioRename(templateIDHex: string, friendlyName: string
     friendlyName,
     dryRun: true,
   };
-  const mutation = {
-    kind: "bioRename",
-    phase: "previewing",
+  const mutation = previewingMutation({
+    kind: "bioRename" as const,
     templateIDHex,
     friendlyName,
-    previewRequest: request,
-  } satisfies PreviewingSecurityMutation;
+  }, request) satisfies PreviewingSecurityMutation;
   securityMutation.set(mutation);
   return runSecurityPreviewStage({
     label,
@@ -555,12 +594,10 @@ export async function beginBioRemove(templateIDHex: string): Promise<boolean> {
   const selectionId = selectionIdForMutation();
   if (!selectionId) return false;
   const request: BioRemoveRequest = { selectionId, templateIdHex: templateIDHex, dryRun: true };
-  const mutation = {
-    kind: "bioRemove",
-    phase: "previewing",
+  const mutation = previewingMutation({
+    kind: "bioRemove" as const,
     templateIDHex,
-    previewRequest: request,
-  } satisfies PreviewingSecurityMutation;
+  }, request) satisfies PreviewingSecurityMutation;
   securityMutation.set(mutation);
   return runSecurityPreviewStage({
     label,
@@ -575,11 +612,10 @@ export async function beginFactoryReset(): Promise<boolean> {
   const selectionId = selectionIdForMutation();
   if (!selectionId) return false;
   const request: ResetFactoryRequest = { selectionId, dryRun: true };
-  const mutation = {
-    kind: "reset",
-    phase: "previewing",
-    previewRequest: request,
-  } satisfies PreviewingSecurityMutation;
+  const mutation = previewingMutation(
+    { kind: "reset" as const },
+    request,
+  ) satisfies PreviewingSecurityMutation;
   securityMutation.set(mutation);
   return runSecurityPreviewStage({
     label,
@@ -606,7 +642,7 @@ function executeRequest<T extends { dryRun?: boolean }>(request: T): T {
 }
 
 async function finishSuccessfulSecurityMutation(kind: NonIdleSecurityMutation["kind"]) {
-  securityMutation.set({ kind: "idle", phase: "idle" });
+  securityMutation.set(idleMutation());
   switch (kind) {
     case "alwaysUv":
     case "pinPolicy":
@@ -649,25 +685,32 @@ function operationLabel(kind: NonIdleSecurityMutation["kind"], preview = false) 
   }
 }
 
-function executingMutation(current: NonIdleSecurityMutation): SecurityMutationState {
-  return { ...current, phase: "executing" } as SecurityMutationState;
+function executingSecurityMutation(
+  current: ExecutableSecurityMutation,
+  execution: SecurityExecutionContext,
+): SecurityMutationState {
+  return executingMutation(
+    securityMutationBase(current),
+    execution.previewRequest,
+    execution.previewEnvelope,
+  ) as SecurityMutationState;
 }
 
 function failedExecutingMutation(
-  current: NonIdleSecurityMutation,
+  current: ExecutableSecurityMutation,
+  execution: SecurityExecutionContext,
   responseEnvelope: SecurityOperationEnvelope | null,
   runtimeError: Failure | null,
   failureReason: ExecuteFailureReason,
 ): SecurityMutationState {
-  return {
-    ...current,
-    phase: "error",
+  return failedEditableMutation(securityMutationBase(current), {
     failedPhase: "executing",
+    previewRequest: execution.previewRequest,
+    previewEnvelope: execution.previewEnvelope,
     responseEnvelope,
     runtimeError,
     failureReason,
-    validationError: null,
-  } as SecurityMutationState;
+  }) as SecurityMutationState;
 }
 
 async function runSecurityExecutionStage<
@@ -675,7 +718,8 @@ async function runSecurityExecutionStage<
   TValue,
 >(
   label: string,
-  current: NonIdleSecurityMutation,
+  current: ExecutableSecurityMutation,
+  execution: SecurityExecutionContext,
   call: () => Promise<E>,
   extract: (envelope: E) => TValue | null,
 ): Promise<boolean> {
@@ -687,6 +731,7 @@ async function runSecurityExecutionStage<
       const details = operationStageFailureDetails(failure, "missing-result");
       securityMutation.set(failedExecutingMutation(
         current,
+        execution,
         details.responseEnvelope,
         details.runtimeError,
         details.failureReason,
@@ -699,10 +744,13 @@ async function runSecurityExecutionStage<
 export async function confirmSecurityMutation(): Promise<boolean> {
   const current = get(securityMutation);
   if (current.kind === "idle" || (current.phase !== "review" && current.phase !== "error")) return false;
-  if (!current.previewRequest || !current.previewEnvelope) return false;
-  if (current.phase === "error" && current.failedPhase !== "executing") return false;
+  const execution = mutationExecutionContext<
+    SecurityOperationRequest,
+    SecurityOperationEnvelope
+  >(current);
+  if (!execution) return false;
   const label = operationLabel(current.kind);
-  securityMutation.set(executingMutation(current));
+  securityMutation.set(executingSecurityMutation(current, execution));
 
   let succeeded = false;
   switch (current.kind) {
@@ -710,6 +758,7 @@ export async function confirmSecurityMutation(): Promise<boolean> {
       succeeded = await runSecurityExecutionStage(
         label,
         current,
+        execution,
         () => api.setAlwaysUV(executeRequest(current.previewRequest!)),
         authenticatorConfigResult,
       );
@@ -718,6 +767,7 @@ export async function confirmSecurityMutation(): Promise<boolean> {
       succeeded = await runSecurityExecutionStage(
         label,
         current,
+        execution,
         () => api.setMinPINLength(executeRequest(current.previewRequest!)),
         authenticatorConfigResult,
       );
@@ -726,6 +776,7 @@ export async function confirmSecurityMutation(): Promise<boolean> {
       succeeded = await runSecurityExecutionStage(
         label,
         current,
+        execution,
         () => api.enableLongTouchForReset(executeRequest(current.previewRequest!)),
         authenticatorConfigResult,
       );
@@ -734,6 +785,7 @@ export async function confirmSecurityMutation(): Promise<boolean> {
       succeeded = await runSecurityExecutionStage(
         label,
         current,
+        execution,
         () => api.bioEnroll(executeRequest(current.previewRequest!)),
         bioEnrollResult,
       );
@@ -742,6 +794,7 @@ export async function confirmSecurityMutation(): Promise<boolean> {
       succeeded = await runSecurityExecutionStage(
         label,
         current,
+        execution,
         () => api.bioRename(executeRequest(current.previewRequest!)),
         bioMutationResult,
       );
@@ -750,6 +803,7 @@ export async function confirmSecurityMutation(): Promise<boolean> {
       succeeded = await runSecurityExecutionStage(
         label,
         current,
+        execution,
         () => api.bioRemove(executeRequest(current.previewRequest!)),
         bioMutationResult,
       );
@@ -758,6 +812,7 @@ export async function confirmSecurityMutation(): Promise<boolean> {
       succeeded = await runSecurityExecutionStage(
         label,
         current,
+        execution,
         () => api.resetFactory(executeRequest(current.previewRequest!)),
         resetFactoryResult,
       );
@@ -776,7 +831,7 @@ export async function restartSecurityPreview(): Promise<boolean> {
 }
 
 export function closeSecurityMutation() {
-  securityMutation.set({ kind: "idle", phase: "idle" });
+  securityMutation.set(idleMutation());
 }
 
 export type { SecurityPINPolicyDraft } from "./features/security/state.js";
