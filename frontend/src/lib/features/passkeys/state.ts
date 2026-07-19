@@ -1,6 +1,6 @@
 import { writable } from "svelte/store";
 
-import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit";
 import { Code, type Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   CredentialDeleteEnvelope,

@@ -16,6 +16,9 @@ import * as credential$0 from "../../github.com/go-ctap/ctap/credential/models.j
 import * as webauthn$1 from "../../github.com/go-ctap/ctap/webauthn/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as ctapkit$0 from "../../github.com/go-ctap/kit/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as model$0 from "../../github.com/go-ctap/kit/model/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -71,7 +74,7 @@ export class ActiveSelection {
 
 export class AlwaysUVRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
     "target": config$0.AlwaysUVTarget;
     "dryRun"?: boolean;
 
@@ -184,7 +187,7 @@ export class BioEnrollEnvelope {
 
 export class BioEnrollRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
     "timeoutMilliseconds"?: number;
     "dryRun"?: boolean;
 
@@ -294,7 +297,7 @@ export class BioMutationEnvelope {
 
 export class BioRemoveRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
     "templateIdHex": string;
     "dryRun"?: boolean;
 
@@ -321,7 +324,7 @@ export class BioRemoveRequest {
 
 export class BioRenameRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
     "templateIdHex": string;
     "friendlyName": string;
     "dryRun"?: boolean;
@@ -502,7 +505,7 @@ export class CredentialDeleteEnvelope {
 
 export class CredentialDeleteRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
     "credentialIdHex": string;
     "dryRun"?: boolean;
 
@@ -529,7 +532,7 @@ export class CredentialDeleteRequest {
 
 export class CredentialListRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
 
     /** Creates a new CredentialListRequest instance. */
     constructor($$source: Partial<CredentialListRequest> = {}) {
@@ -637,7 +640,7 @@ export class CredentialUpdateEnvelope {
 
 export class CredentialUpdateRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
     "target": credentials$0.CredentialTarget;
     "userIdHex"?: string;
     "name"?: string;
@@ -803,7 +806,7 @@ export enum DiscoveryTrigger {
 
 export class EnableLongTouchForResetRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
     "dryRun"?: boolean;
 
     /** Creates a new EnableLongTouchForResetRequest instance. */
@@ -869,7 +872,7 @@ export class GetAssertionEnvelope {
 
 export class GetAssertionRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
     "rpID": string;
     "clientDataJSON": string;
     "allowList"?: credential$0.PublicKeyCredentialDescriptor[];
@@ -1024,7 +1027,7 @@ export class InteractionPrompt {
 
 export class LargeBlobGarbageCollectRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
     "dryRun"?: boolean;
 
     /** Creates a new LargeBlobGarbageCollectRequest instance. */
@@ -1090,7 +1093,7 @@ export class LargeBlobListEnvelope {
 
 export class LargeBlobListRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
 
     /** Creates a new LargeBlobListRequest instance. */
     constructor($$source: Partial<LargeBlobListRequest> = {}) {
@@ -1155,7 +1158,7 @@ export class LargeBlobMutationEnvelope {
 
 export class LargeBlobMutationRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
     "credentialIdHex": string;
     "payload"?: string;
     "dryRun"?: boolean;
@@ -1230,7 +1233,7 @@ export class LargeBlobReadEnvelope {
 
 export class LargeBlobReadRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
     "credentialIdHex": string;
     "decodeMode"?: largeblobs$0.DecodeMode;
 
@@ -1370,7 +1373,7 @@ export class MakeCredentialEnvelope {
 
 export class MakeCredentialRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
     "rp": credential$0.PublicKeyCredentialRpEntity;
     "user": credential$0.PublicKeyCredentialUserEntity;
     "clientDataJSON": string;
@@ -1446,7 +1449,7 @@ export class MakeCredentialRequest {
 
 export class MinPINLengthRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
     "newMinPINLength"?: number | null;
     "minPinLengthRPIDs"?: string[];
     "forceChangePin"?: boolean;
@@ -1509,7 +1512,7 @@ export type OperationID = string;
 
 export class OperationRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
 
     /** Creates a new OperationRequest instance. */
     constructor($$source: Partial<OperationRequest> = {}) {
@@ -1531,7 +1534,7 @@ export class OperationRequest {
 
 export class PINChangeRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
 
     /**
      * CurrentPIN and NewPIN participate in JSON transport. Consumers own
@@ -1610,7 +1613,7 @@ export class PINEnvelope {
 
 export class PINSetRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
 
     /**
      * NewPIN participates in JSON transport. Consumers own redaction at the
@@ -1703,7 +1706,7 @@ export class ResetFactoryEnvelope {
 
 export class ResetFactoryRequest {
     "selectionId": SelectionID;
-    "verificationFlow"?: model$0.VerificationFlow;
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
     "dryRun"?: boolean;
 
     /** Creates a new ResetFactoryRequest instance. */

@@ -13,25 +13,32 @@
 	import { Toaster } from "$lib/components/ui/sonner/index.js";
 	import { WindowControls, WindowTitlebar } from "$lib/components/window-controls";
 	import { toggleMaximizeWindow } from "$lib/components/window-controls/window";
-	import { shutdownWorkbench } from "$lib/authenticator-controller.js";
 	import { handleDiscoveryChanged, startDiscoveryMonitoring } from "$lib/discovery-controller.js";
 	import { handleOperationProgress } from "$lib/event-controller.js";
-	import { answerPendingInteraction, handleInteractionRequested } from "$lib/interaction-controller.js";
-	import { syncLogJournal } from "$lib/logs-controller.js";
-	import { cancelActiveOperation } from "$lib/operation-controller.js";
-	import { bootstrap, navigateToScreen, selectToken } from "$lib/workbench-controller.js";
-	import { currentLocale } from "$lib/i18n";
-	import { buildInteractionModalPresentation, buildShellStatusPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
 	import {
-		activeScreen,
+		authenticatorStatus,
 		devices,
-		pendingInteraction,
 		selectedDevice,
 		selectedSelector,
-		authenticatorStatus,
+		shutdownWorkbench,
+	} from "$lib/features/authenticator";
+	import {
+		answerPendingInteraction,
+		handleInteractionRequested,
+		pendingInteraction,
+	} from "$lib/features/interaction";
+	import {
+		activeScreen,
+		bootstrap,
+		navigateToScreen,
+		selectToken,
 		statusBar,
-		type ActiveScreen
-	} from "$lib/stores";
+		type ActiveScreen,
+	} from "$lib/features/workbench";
+	import { syncLogJournal } from "$lib/logs-controller.js";
+	import { cancelActiveOperation } from "$lib/operation-controller.js";
+	import { currentLocale } from "$lib/i18n";
+	import { buildInteractionModalPresentation, buildShellStatusPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
 	import { detectWindowPlatform, resolveWindowPlatform } from "$lib/window-platform";
 
 	import { m } from "./paraglide/messages.js";

@@ -1,6 +1,6 @@
 import { get } from "svelte/store";
 
-import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
 import type {
   CredentialDeleteEnvelope,
   CredentialDeleteRequest,
@@ -46,7 +46,12 @@ import { activeScreen } from "./features/workbench/state.js";
 import { findPasskeyCredential, type PasskeyCredentialTarget } from "./passkeys-presentation.js";
 import { internalFailure, runtimeFailureFrom } from "./failure.js";
 import { currentSelectionID } from "./authenticator-boundary.js";
-import { completeOperation, runOperation } from "./operation-lifecycle.js";
+import {
+  completeOperation,
+  operationStageFailureDetails,
+  runOperation,
+  runTypedOperationStage,
+} from "./operation-lifecycle.js";
 
 function passkeysAutoLoadKey() {
   const selector = get(selectedSelector).trim();
@@ -330,24 +335,22 @@ export async function previewCredentialUpdate(): Promise<boolean> {
 
   passkeysMutation.set({ ...current, phase: "previewing", previewRequest: request });
   const label = m.credential_update_preview();
-  const attempt = await runOperation({
+  const outcome = await runTypedOperationStage({
     label,
     call: () => api.updateCredentialUser(request),
-    onRuntimeFailure: (error) => updateError(current, "previewing", request, null, null, error, "runtime-error"),
+    extract: credentialUpdatePreview,
+    onFailure: (failure) => {
+      const details = operationStageFailureDetails(failure, "missing-preview");
+      updateError(current, "previewing", request, null, details.responseEnvelope, details.runtimeError, details.failureReason);
+    },
+    onSuccess: (_preview, envelope) => passkeysMutation.set({
+      ...current,
+      phase: "review",
+      previewRequest: request,
+      previewEnvelope: envelope,
+    }),
   });
-  if (!attempt.ok) return false;
-
-  const envelope = attempt.envelope;
-  const preview = credentialUpdatePreview(envelope);
-  if (envelope.error) {
-    updateError(current, "previewing", request, null, envelope, null, "response-error");
-  } else if (!preview) {
-    updateError(current, "previewing", request, null, envelope, null, "missing-preview");
-  } else {
-    passkeysMutation.set({ ...current, phase: "review", previewRequest: request, previewEnvelope: envelope });
-  }
-  completeOperation(label, envelope, { contractValid: Boolean(preview) });
-  return !envelope.error && Boolean(preview);
+  return outcome.ok;
 }
 
 export async function confirmCredentialUpdate(): Promise<boolean> {
@@ -370,25 +373,20 @@ export async function confirmCredentialUpdate(): Promise<boolean> {
     previewEnvelope,
   });
   const label = m.credential_update();
-  const attempt = await runOperation({
+  const outcome = await runTypedOperationStage({
     label,
     call: () => api.updateCredentialUser(request),
-    onRuntimeFailure: (error) => updateError(current, "executing", previewRequest, previewEnvelope, null, error, "runtime-error"),
+    extract: credentialUpdateResult,
+    onFailure: (failure) => {
+      const details = operationStageFailureDetails(failure, "missing-result");
+      updateError(current, "executing", previewRequest, previewEnvelope, details.responseEnvelope, details.runtimeError, details.failureReason);
+    },
+    onSuccess: () => {
+      passkeysSelectedCredentialID.set(current.credentialIDHex);
+      passkeysMutation.set({ kind: "idle", phase: "idle" });
+    },
   });
-  if (!attempt.ok) return false;
-
-  const envelope = attempt.envelope;
-  const result = credentialUpdateResult(envelope);
-  if (envelope.error) {
-    updateError(current, "executing", previewRequest, previewEnvelope, envelope, null, "response-error");
-  } else if (!result) {
-    updateError(current, "executing", previewRequest, previewEnvelope, envelope, null, "missing-result");
-  } else {
-    passkeysSelectedCredentialID.set(current.credentialIDHex);
-    passkeysMutation.set({ kind: "idle", phase: "idle" });
-  }
-  completeOperation(label, envelope, { contractValid: Boolean(result) });
-  if (envelope.error || !result) return false;
+  if (!outcome.ok) return false;
   await loadPasskeys();
   return true;
 }
@@ -427,24 +425,23 @@ async function previewCredentialDelete(credentialIDHex: string): Promise<boolean
   passkeysSelectedCredentialID.set(credentialIDHex);
   passkeysMutation.set({ kind: "delete", phase: "previewing", credentialIDHex, previewRequest: request });
   const label = m.credential_delete_preview();
-  const attempt = await runOperation({
+  const outcome = await runTypedOperationStage({
     label,
     call: () => api.deleteCredential(request),
-    onRuntimeFailure: (error) => deleteError(credentialIDHex, "previewing", request, null, null, error, "runtime-error"),
+    extract: credentialDeletePreview,
+    onFailure: (failure) => {
+      const details = operationStageFailureDetails(failure, "missing-preview");
+      deleteError(credentialIDHex, "previewing", request, null, details.responseEnvelope, details.runtimeError, details.failureReason);
+    },
+    onSuccess: (_preview, envelope) => passkeysMutation.set({
+      kind: "delete",
+      phase: "review",
+      credentialIDHex,
+      previewRequest: request,
+      previewEnvelope: envelope,
+    }),
   });
-  if (!attempt.ok) return false;
-
-  const envelope = attempt.envelope;
-  const preview = credentialDeletePreview(envelope);
-  if (envelope.error) {
-    deleteError(credentialIDHex, "previewing", request, null, envelope, null, "response-error");
-  } else if (!preview) {
-    deleteError(credentialIDHex, "previewing", request, null, envelope, null, "missing-preview");
-  } else {
-    passkeysMutation.set({ kind: "delete", phase: "review", credentialIDHex, previewRequest: request, previewEnvelope: envelope });
-  }
-  completeOperation(label, envelope, { contractValid: Boolean(preview) });
-  return !envelope.error && Boolean(preview);
+  return outcome.ok;
 }
 
 export function beginCredentialDelete(credentialIDHex = get(passkeysSelectedCredentialID)) {
@@ -469,25 +466,20 @@ export async function confirmCredentialDelete(): Promise<boolean> {
     previewEnvelope,
   });
   const label = m.credential_delete();
-  const attempt = await runOperation({
+  const outcome = await runTypedOperationStage({
     label,
     call: () => api.deleteCredential(request),
-    onRuntimeFailure: (error) => deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, null, error, "runtime-error"),
+    extract: credentialDeleteResult,
+    onFailure: (failure) => {
+      const details = operationStageFailureDetails(failure, "missing-result");
+      deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, details.responseEnvelope, details.runtimeError, details.failureReason);
+    },
+    onSuccess: () => {
+      passkeysSelectedCredentialID.set("");
+      passkeysMutation.set({ kind: "idle", phase: "idle" });
+    },
   });
-  if (!attempt.ok) return false;
-
-  const envelope = attempt.envelope;
-  const result = credentialDeleteResult(envelope);
-  if (envelope.error) {
-    deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, envelope, null, "response-error");
-  } else if (!result) {
-    deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, envelope, null, "missing-result");
-  } else {
-    passkeysSelectedCredentialID.set("");
-    passkeysMutation.set({ kind: "idle", phase: "idle" });
-  }
-  completeOperation(label, envelope, { contractValid: Boolean(result) });
-  if (envelope.error || !result) return false;
+  if (!outcome.ok) return false;
   await loadPasskeys();
   return true;
 }

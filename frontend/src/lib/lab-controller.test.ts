@@ -3,9 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AttestationStatementFormatIdentifier } from "../../bindings/github.com/go-ctap/ctap/attestation";
 import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/credential";
-import {
-	VerificationFlow,
-} from "../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { DecodeMode } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";

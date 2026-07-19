@@ -5,7 +5,7 @@ import { get } from "svelte/store";
 import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import type { CredentialTarget } from "../../bindings/github.com/go-ctap/kit/model/credentials";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
@@ -33,8 +33,8 @@ const controllerMocks = vi.hoisted(() => ({
 const toastMocks = vi.hoisted(() => ({ success: vi.fn() }));
 const clipboardSetText = vi.spyOn(Clipboard, "SetText");
 
-vi.mock("$lib/controller", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("$lib/controller")>()),
+vi.mock("$lib/features/passkeys", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("$lib/features/passkeys")>()),
   reloadPasskeys: controllerMocks.reloadPasskeys,
 }));
 vi.mock("svelte-sonner", () => ({ toast: toastMocks }));

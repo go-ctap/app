@@ -6,7 +6,7 @@ import {
   PublicKeyCredentialType,
   PublicKeyCredentialUserEntity,
 } from "../../bindings/github.com/go-ctap/ctap/credential";
-import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
 import {
   AuthenticationExtensionsLargeBlobInputs,
   AuthenticationExtensionsPaymentInputs,

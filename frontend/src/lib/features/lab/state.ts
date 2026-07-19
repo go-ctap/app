@@ -4,7 +4,7 @@ import {
   CredentialProtectionPolicy,
   LargeBlobSupport,
 } from "../../../../bindings/github.com/go-ctap/ctap/extension";
-import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit";
 import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   GetAssertionEnvelope,

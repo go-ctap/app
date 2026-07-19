@@ -6,7 +6,7 @@
   import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
   import { Spinner } from "$lib/components/ui/spinner/index.js";
   import type { SidebarPresentation } from "$lib/shell-presentation";
-  import type { ActiveScreen } from "$lib/stores";
+  import type { ActiveScreen } from "$lib/features/workbench";
 
   import { m } from "../../../paraglide/messages.js";
 

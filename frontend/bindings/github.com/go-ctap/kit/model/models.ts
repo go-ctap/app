@@ -268,16 +268,6 @@ export class PINInteractionState {
     }
 }
 
-export enum VerificationFlow {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    VerificationFlowDefault = "",
-    VerificationFlowPIN = "pin",
-};
-
 // Private type creation functions
 const $$createType0 = PINInteractionState.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);

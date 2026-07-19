@@ -8,7 +8,13 @@ import {
 } from "../../bindings/fidobench/service";
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
-import { inspectResult, makeCredentialResult } from "./ctapkit-results.js";
+import {
+  getAssertionPreview,
+  getAssertionResult,
+  inspectResult,
+  makeCredentialPreview,
+  makeCredentialResult,
+} from "./ctapkit-results.js";
 import {
   labState,
   type GetAssertionDraft,
@@ -29,7 +35,10 @@ import {
 } from "./lab-input.js";
 import { currentSelectionID } from "./authenticator-boundary.js";
 import { ensureActiveSelectionReady } from "./authenticator-controller.js";
-import { completeOperation, runOperation } from "./operation-lifecycle.js";
+import {
+  operationStageFailureDetails,
+  runTypedOperationStage,
+} from "./operation-lifecycle.js";
 import {
   setStatusOutcome,
 } from "./workbench-state.js";
@@ -142,44 +151,30 @@ export async function previewLabMakeCredential(): Promise<boolean> {
     makeStep: { phase: "previewing", previewRequest },
   }));
   const label = m.lab_make_credential_preview();
-  const attempt = await runOperation({
+  const outcome = await runTypedOperationStage({
     label,
     call: () => api.makeCredential(previewRequest),
-    onRuntimeFailure: (error) => labState.update((state) => ({
-      ...state,
-      makeStep: {
-        phase: "error",
-        previewRequest,
-        previewEnvelope: null,
-        request: null,
-        responseEnvelope: null,
-        runtimeError: error,
-      },
-    })),
-  });
-  if (!attempt.ok) return false;
-
-  const envelope = attempt.envelope;
-  if (envelope.error) {
-    labState.update((state) => ({
-      ...state,
-      makeStep: {
-        phase: "error",
-        previewRequest,
-        previewEnvelope: null,
-        request: null,
-        responseEnvelope: envelope,
-        runtimeError: null,
-      },
-    }));
-  } else {
-    labState.update((state) => ({
+    extract: makeCredentialPreview,
+    onFailure: (failure) => {
+      const details = operationStageFailureDetails(failure, "missing-preview");
+      labState.update((state) => ({
+        ...state,
+        makeStep: {
+          phase: "error",
+          previewRequest,
+          previewEnvelope: null,
+          request: null,
+          responseEnvelope: details.responseEnvelope,
+          runtimeError: details.runtimeError,
+        },
+      }));
+    },
+    onSuccess: (_preview, envelope) => labState.update((state) => ({
       ...state,
       makeStep: { phase: "review", previewRequest, previewEnvelope: envelope },
-    }));
-  }
-  completeOperation(label, envelope);
-  return !envelope.error;
+    })),
+  });
+  return outcome.ok;
 }
 
 export async function confirmLabMakeCredential(): Promise<boolean> {
@@ -211,52 +206,40 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
   }));
 
   const label = m.lab_make_credential();
-  const attempt = await runOperation({
+  const outcome = await runTypedOperationStage({
     label,
     call: () => api.makeCredential(request),
-    onRuntimeFailure: (error) => labState.update((state) => ({
-      ...state,
-      makeStep: {
-        phase: "error",
-        previewRequest,
-        previewEnvelope,
-        request,
-        responseEnvelope: null,
-        runtimeError: error,
-      },
-    })),
+    extract: makeCredentialResult,
+    onFailure: (failure) => {
+      const details = operationStageFailureDetails(failure, "missing-result");
+      labState.update((state) => ({
+        ...state,
+        makeStep: {
+          phase: "error",
+          previewRequest,
+          previewEnvelope,
+          request,
+          responseEnvelope: details.responseEnvelope,
+          runtimeError: details.runtimeError,
+        },
+      }));
+    },
+    onSuccess: (_result, envelope) => {
+      labState.update((state) => ({
+        ...state,
+        makeStep: {
+          phase: "success",
+          previewRequest,
+          previewEnvelope,
+          request,
+          responseEnvelope: envelope,
+        },
+      }));
+      invalidatePasskeysInventory();
+      invalidateLargeBlobsInventory();
+    },
   });
-  if (!attempt.ok) return false;
-
-  const envelope = attempt.envelope;
-  if (envelope.error) {
-    labState.update((state) => ({
-      ...state,
-      makeStep: {
-        phase: "error",
-        previewRequest,
-        previewEnvelope,
-        request,
-        responseEnvelope: envelope,
-        runtimeError: null,
-      },
-    }));
-  } else {
-    labState.update((state) => ({
-      ...state,
-      makeStep: {
-        phase: "success",
-        previewRequest,
-        previewEnvelope,
-        request,
-        responseEnvelope: envelope,
-      },
-    }));
-    invalidatePasskeysInventory();
-    invalidateLargeBlobsInventory();
-  }
-  completeOperation(label, envelope);
-  return !envelope.error;
+  return outcome.ok;
 }
 
 export function editLabMakeCredential() {
@@ -297,45 +280,33 @@ async function executeGetAssertion(
     getStep: { phase: "executing", previewRequest, previewEnvelope, request },
   }));
   const label = m.lab_get_assertion();
-  const attempt = await runOperation({
+  const outcome = await runTypedOperationStage({
     label,
     call: () => api.getAssertion(request),
-    onRuntimeFailure: (error) => labState.update((state) => ({
-      ...state,
-      getStep: {
-        phase: "error",
-        previewRequest,
-        previewEnvelope,
-        request,
-        responseEnvelope: null,
-        runtimeError: error,
-      },
-    })),
+    extract: getAssertionResult,
+    onFailure: (failure) => {
+      const details = operationStageFailureDetails(failure, "missing-result");
+      labState.update((state) => ({
+        ...state,
+        getStep: {
+          phase: "error",
+          previewRequest,
+          previewEnvelope,
+          request,
+          responseEnvelope: details.responseEnvelope,
+          runtimeError: details.runtimeError,
+        },
+      }));
+    },
+    onSuccess: (_result, envelope) => {
+      labState.update((state) => ({
+        ...state,
+        getStep: { phase: "success", previewRequest, previewEnvelope, request, responseEnvelope: envelope },
+      }));
+      if (request.extensions?.largeBlob?.write !== undefined) invalidateLargeBlobsInventory();
+    },
   });
-  if (!attempt.ok) return false;
-
-  const envelope = attempt.envelope;
-  if (envelope.error) {
-    labState.update((state) => ({
-      ...state,
-      getStep: {
-        phase: "error",
-        previewRequest,
-        previewEnvelope,
-        request,
-        responseEnvelope: envelope,
-        runtimeError: null,
-      },
-    }));
-  } else {
-    labState.update((state) => ({
-      ...state,
-      getStep: { phase: "success", previewRequest, previewEnvelope, request, responseEnvelope: envelope },
-    }));
-    if (request.extensions?.largeBlob?.write !== undefined) invalidateLargeBlobsInventory();
-  }
-  completeOperation(label, envelope);
-  return !envelope.error;
+  return outcome.ok;
 }
 
 export async function runLabGetAssertion(): Promise<boolean> {
@@ -357,44 +328,30 @@ export async function runLabGetAssertion(): Promise<boolean> {
     getStep: { phase: "previewing", previewRequest },
   }));
   const label = m.lab_get_assertion();
-  const attempt = await runOperation({
+  const outcome = await runTypedOperationStage({
     label,
     call: () => api.getAssertion(previewRequest),
-    onRuntimeFailure: (error) => labState.update((state) => ({
-      ...state,
-      getStep: {
-        phase: "error",
-        previewRequest,
-        previewEnvelope: null,
-        request: null,
-        responseEnvelope: null,
-        runtimeError: error,
-      },
-    })),
-  });
-  if (!attempt.ok) return false;
-
-  const envelope = attempt.envelope;
-  if (envelope.error) {
-    labState.update((state) => ({
-      ...state,
-      getStep: {
-        phase: "error",
-        previewRequest,
-        previewEnvelope: null,
-        request: null,
-        responseEnvelope: envelope,
-        runtimeError: null,
-      },
-    }));
-  } else {
-    labState.update((state) => ({
+    extract: getAssertionPreview,
+    onFailure: (failure) => {
+      const details = operationStageFailureDetails(failure, "missing-preview");
+      labState.update((state) => ({
+        ...state,
+        getStep: {
+          phase: "error",
+          previewRequest,
+          previewEnvelope: null,
+          request: null,
+          responseEnvelope: details.responseEnvelope,
+          runtimeError: details.runtimeError,
+        },
+      }));
+    },
+    onSuccess: (_preview, envelope) => labState.update((state) => ({
       ...state,
       getStep: { phase: "review", previewRequest, previewEnvelope: envelope },
-    }));
-  }
-  completeOperation(label, envelope);
-  return !envelope.error;
+    })),
+  });
+  return outcome.ok;
 }
 
 export async function confirmLabGetAssertion(): Promise<boolean> {

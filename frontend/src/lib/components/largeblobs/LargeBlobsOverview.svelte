@@ -1,7 +1,7 @@
 <script lang="ts">
   import { RefreshCw, Sparkles } from "@lucide/svelte";
 
-  import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
+  import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit";
 
   import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";

@@ -22,20 +22,20 @@
     regenerateLabGetChallenge,
     regenerateLabMakeChallenge,
     regenerateLabUserID,
-    reloadOverview,
     rerunLabGetAssertion,
     runLabGetAssertion,
     selectLabOperation,
     updateLabGetAssertionDraft,
     updateLabMakeCredentialDraft,
-  } from "$lib/controller";
+  } from "$lib/features/lab";
+  import { labState } from "$lib/features/lab";
   import {
-    labState,
     authenticatorInspection,
+    authenticatorBusy,
     selectedDevice,
     selectedSelector,
-    authenticatorBusy,
-  } from "$lib/stores";
+  } from "$lib/features/authenticator";
+  import { reloadOverview } from "$lib/features/overview";
 
   import { m } from "../paraglide/messages.js";
 

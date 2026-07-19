@@ -28,7 +28,13 @@
     setLargeBlobsStatusFilter,
     setLargeBlobsVerificationFlow,
     updateLargeBlobWriteDraft,
-  } from "$lib/controller";
+  } from "$lib/features/largeblobs";
+  import {
+    authenticatorBusy,
+    authenticatorStatus,
+    selectedDevice,
+    selectedSelector,
+  } from "$lib/features/authenticator";
   import { buildLargeBlobsPresentation } from "$lib/largeblobs-presentation";
   import {
     largeBlobsInventoryState,
@@ -39,11 +45,7 @@
     largeBlobsSelectedCredentialID,
     largeBlobsStatusFilter,
     largeBlobsVerificationFlow,
-    selectedDevice,
-    selectedSelector,
-    authenticatorBusy,
-    authenticatorStatus,
-  } from "$lib/stores";
+  } from "$lib/features/largeblobs";
 
   import { m } from "../paraglide/messages.js";
 

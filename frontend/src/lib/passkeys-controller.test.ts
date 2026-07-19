@@ -1,9 +1,7 @@
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-	VerificationFlow,
-} from "../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type {

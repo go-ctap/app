@@ -322,8 +322,8 @@ func (h interactionHandler) RequestInteraction(ctx context.Context, req model.In
 	)
 }
 
-func runOptions(verificationFlow model.VerificationFlow) []ctapkit.OperationOption {
-	if verificationFlow == model.VerificationFlowDefault {
+func runOptions(verificationFlow ctapkit.VerificationFlow) []ctapkit.OperationOption {
+	if verificationFlow == ctapkit.VerificationFlowDefault {
 		return nil
 	}
 

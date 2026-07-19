@@ -38,7 +38,7 @@ import {
   selectedSelector,
   authenticatorStatus,
   statusBar,
-} from "./stores.js";
+} from "./test-support/stores.js";
 
 const serviceMocks = vi.hoisted(() => ({
   SetSelection: vi.fn(),
@@ -240,7 +240,7 @@ describe("discovery controller", () => {
     const inspection = { operationId: "inspect-1" } as InspectEnvelope;
     const inventory = { operationId: "credentials-1" } as CredentialsEnvelope;
     const largeBlobs = { operationId: "large-blobs-1" } as LargeBlobListEnvelope;
-    const { handleDiscoveryChanged, handleOperationProgress } = await import("./controller.js");
+    const { handleDiscoveryChanged, handleOperationProgress } = await import("./test-support/controller.js");
     seedSelected(token, "running");
     seedOverviewEnvelopeForTest(inspection);
     seedPasskeysEnvelopeForTest(inventory);

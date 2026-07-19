@@ -54,8 +54,8 @@ const controllerMocks = vi.hoisted(() => ({
 }));
 const toastMocks = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
-vi.mock("$lib/controller", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("$lib/controller")>()),
+vi.mock("$lib/features/largeblobs", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("$lib/features/largeblobs")>()),
   readLargeBlob: controllerMocks.readLargeBlob,
   reloadLargeBlobs: controllerMocks.reloadLargeBlobs,
   selectLargeBlobCredential: controllerMocks.selectLargeBlobCredential,

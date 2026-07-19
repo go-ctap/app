@@ -27,8 +27,8 @@ const controllerMocks = vi.hoisted(() => ({
   runGetAssertion: vi.fn(() => Promise.resolve(true)),
 }));
 
-vi.mock("$lib/controller", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("$lib/controller")>()),
+vi.mock("$lib/features/lab", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("$lib/features/lab")>()),
   previewLabMakeCredential: controllerMocks.previewMakeCredential,
   runLabGetAssertion: controllerMocks.runGetAssertion,
 }));

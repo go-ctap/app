@@ -37,7 +37,6 @@
   onclick={handleClick}
 >
   <span class="log-record-primary">
-    <span class="log-record-gutter" aria-hidden="true"></span>
     <time datetime={record.source === "kit" ? record.entry.timestamp : record.timestamp}>{logTime(record)}</time>
     <span title={logSummary(record)}>{logSummary(record)}</span>
   </span>
@@ -100,12 +99,8 @@
 
     .log-record-primary {
       display: grid;
-      grid-template-columns: 1rem 5.7rem minmax(0, 1fr);
+      grid-template-columns: 5.7rem minmax(0, 1fr);
       column-gap: var(--space-3);
-      min-width: 0;
-    }
-
-    .log-record-gutter {
       min-width: 0;
     }
 
@@ -125,7 +120,7 @@
     }
 
     .log-record-badges {
-      padding-left: calc(1rem + var(--space-3) + 5.7rem + var(--space-3));
+      padding-left: calc(5.7rem + var(--space-3));
     }
 
     .log-record-badges :global([data-log-source]) {

@@ -25,7 +25,13 @@
     setPasskeysStatusFilter,
     setPasskeysVerificationFlow,
     updateCredentialDraft,
-  } from "$lib/controller";
+  } from "$lib/features/passkeys";
+  import {
+    authenticatorBusy,
+    authenticatorStatus,
+    selectedDevice,
+    selectedSelector,
+  } from "$lib/features/authenticator";
   import { buildPasskeysPresentation } from "$lib/passkeys-presentation";
   import {
     passkeysInventoryState,
@@ -35,11 +41,7 @@
     passkeysSelectedCredentialID,
     passkeysStatusFilter,
     passkeysVerificationFlow,
-    selectedDevice,
-    selectedSelector,
-    authenticatorBusy,
-    authenticatorStatus,
-  } from "$lib/stores";
+  } from "$lib/features/passkeys";
 
   import { m } from "../paraglide/messages.js";
 

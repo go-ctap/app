@@ -20,7 +20,6 @@
     beginFactoryReset,
     beginLongTouchForReset,
     beginPINPolicyChange,
-    cancelActiveOperation,
     changeAuthenticatorPIN,
     closeSecurityMutation,
     confirmSecurityMutation,
@@ -28,17 +27,20 @@
     reloadSecurityEnrollments,
     restartSecurityPreview,
     setAuthenticatorPIN,
-  } from "$lib/controller";
+  } from "$lib/features/security";
+  import {
+    authenticatorStatus,
+    selectedSelector,
+  } from "$lib/features/authenticator";
+  import { statusBar } from "$lib/features/workbench";
+  import { cancelActiveOperation } from "$lib/operation-controller.js";
   import { configStatusReport } from "$lib/ctapkit-results";
   import {
     securityEnrollments,
     securityMutation,
     securitySensor,
     securityStatus,
-    selectedSelector,
-    authenticatorStatus,
-    statusBar,
-  } from "$lib/stores";
+  } from "$lib/features/security";
 
   import { m } from "../paraglide/messages.js";
 

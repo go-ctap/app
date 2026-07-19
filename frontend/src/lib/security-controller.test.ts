@@ -64,7 +64,10 @@ import {
   restartSecurityPreview,
   setAuthenticatorPIN,
 } from "./security-controller";
-import { reloadSecurity, restartSecurityPreview as restartSecurityPreviewWithRecovery } from "./controller";
+import {
+  reloadSecurity,
+  restartSecurityPreview as restartSecurityPreviewWithRecovery,
+} from "./features/security/index.js";
 import {
   resetAppStateForTest,
   seedActiveScreenForTest,

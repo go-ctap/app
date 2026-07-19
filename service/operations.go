@@ -4,7 +4,6 @@ import (
 	"context"
 
 	ctapkit "github.com/go-ctap/kit"
-	"github.com/go-ctap/kit/model"
 	"github.com/go-ctap/kit/model/config"
 	"github.com/go-ctap/kit/model/credentials"
 	"github.com/go-ctap/kit/model/largeblobs"
@@ -13,8 +12,8 @@ import (
 )
 
 type OperationRequest struct {
-	SelectionID      SelectionID            `json:"selectionId"`
-	VerificationFlow model.VerificationFlow `json:"verificationFlow,omitempty"`
+	SelectionID      SelectionID              `json:"selectionId"`
+	VerificationFlow ctapkit.VerificationFlow `json:"verificationFlow,omitempty"`
 }
 
 type CredentialListRequest struct {

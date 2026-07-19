@@ -9,7 +9,7 @@ import { setAppLocale } from "./i18n.js";
 import { failureForCode } from "./test-failure.js";
 import { buildShellStatusPresentation, buildSidebarPresentation } from "./shell-presentation.js";
 import type { AuthenticatorStatus } from "./authenticator-model.js";
-import type { StatusBarState } from "./stores.js";
+import type { StatusBarState } from "./features/workbench/index.js";
 
 const token: DeviceReport = {
   fingerprint: "token-1",

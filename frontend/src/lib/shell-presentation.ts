@@ -6,7 +6,10 @@ import { m } from "../paraglide/messages.js";
 import { bioSampleStatusLabel, deviceDetail, deviceName, labelDevice, operationStageLabel, permissionLabel, authenticatorStateLabel } from "./format.js";
 import { failureMessage } from "./failure.js";
 import { selectorFromDevice, type AuthenticatorStatus } from "./authenticator-model.js";
-import type { ActiveScreen, StatusBarState } from "./stores.js";
+import type {
+  ActiveScreen,
+  StatusBarState,
+} from "./features/workbench/index.js";
 
 export type SidebarTokenItem = {
   value: string;

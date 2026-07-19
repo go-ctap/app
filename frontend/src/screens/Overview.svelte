@@ -8,15 +8,18 @@
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import { toast } from "svelte-sonner";
-  import { loadOverviewMDS, reloadOverview } from "$lib/controller";
-  import { buildOverviewPresentation } from "$lib/overview-presentation";
   import {
-    overviewBioSensor,
-    authenticatorInspection,
-    overviewMDS,
     selectedDevice,
     selectedSelector,
-  } from "$lib/stores";
+  } from "$lib/features/authenticator";
+  import {
+    authenticatorInspection,
+    loadOverviewMDS,
+    overviewBioSensor,
+    overviewMDS,
+    reloadOverview,
+  } from "$lib/features/overview";
+  import { buildOverviewPresentation } from "$lib/overview-presentation";
 
   import { m } from "../paraglide/messages.js";
 

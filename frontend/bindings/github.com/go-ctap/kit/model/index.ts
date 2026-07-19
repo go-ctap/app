@@ -11,6 +11,5 @@ export {
     LogPayload,
     OperationEvent,
     OperationStage,
-    PINInteractionState,
-    VerificationFlow
+    PINInteractionState
 } from "./models.js";

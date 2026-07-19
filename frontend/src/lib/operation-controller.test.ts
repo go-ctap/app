@@ -13,7 +13,11 @@ import { failureForCode } from "./test-failure.js";
 import { statusBar as mutableStatusBar } from "./features/workbench/state.js";
 import { setAppLocale } from "./i18n.js";
 import { resetAppStateForTest, seedPendingInteractionForTest, seedSelectionForTest } from "./store-test-utils.js";
-import { pendingInteraction as readonlyPendingInteraction, authenticatorStatus, statusBar } from "./stores.js";
+import {
+  authenticatorStatus,
+  pendingInteraction as readonlyPendingInteraction,
+  statusBar,
+} from "./test-support/stores.js";
 import { setStatusOperation, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
 
 const serviceMocks = vi.hoisted(() => ({

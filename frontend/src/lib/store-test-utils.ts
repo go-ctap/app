@@ -45,7 +45,7 @@ import {
   resetWorkbenchStateForTest,
 } from "./features/workbench/state.js";
 import type { AuthenticatorStatus } from "./authenticator-model.js";
-import type { ActiveScreen } from "./stores.js";
+import type { ActiveScreen } from "./features/workbench/index.js";
 
 export function resetAppStateForTest() {
   resetAuthenticatorStateForTest();

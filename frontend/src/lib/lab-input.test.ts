@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
 import { LargeBlobSupport } from "../../bindings/github.com/go-ctap/ctap/extension";
 import {
   AuthenticationExtensionsLargeBlobInputs,

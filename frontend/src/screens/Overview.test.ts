@@ -30,7 +30,8 @@ const controllerMocks = vi.hoisted(() => ({
 }));
 const toastMocks = vi.hoisted(() => ({ success: vi.fn() }));
 
-vi.mock("$lib/controller", () => ({
+vi.mock("$lib/features/overview", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("$lib/features/overview")>()),
   reloadOverview: controllerMocks.reloadOverview,
   loadOverviewMDS: controllerMocks.loadOverviewMDS,
 }));

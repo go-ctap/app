@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
 	InteractionKind,
-	VerificationFlow,
 } from "../../bindings/github.com/go-ctap/kit/model";
+import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
@@ -66,7 +66,7 @@ import {
   selectedSelector,
   authenticatorStatus,
   statusBar,
-} from "./stores";
+} from "./test-support/stores";
 
 const serviceMocks = vi.hoisted(() => ({
   BioSensorInfo: vi.fn(),
@@ -227,7 +227,7 @@ describe("controller lifecycle", () => {
 
   it("auto-selects one discovered authenticator and loads overview once", async () => {
     const token = device("token-1");
-    const { bootstrap } = await import("./controller");
+    const { bootstrap } = await import("./test-support/controller");
     serviceMocks.Discover.mockResolvedValue({ devices: [token] });
     serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token) });
     serviceMocks.Inspect.mockResolvedValue(inspectEnvelope(token));
@@ -241,7 +241,7 @@ describe("controller lifecycle", () => {
   });
 
   it("auto-selects the first authenticator when discovery returns several", async () => {
-    const { bootstrap } = await import("./controller");
+    const { bootstrap } = await import("./test-support/controller");
     const first = device("token-1");
     serviceMocks.Discover.mockResolvedValue({ devices: [first, device("token-2")] });
     serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(first) });
@@ -256,7 +256,7 @@ describe("controller lifecycle", () => {
 
   it("loads overview once when navigating back to overview with an existing selected authenticator", async () => {
     const token = device("token-1");
-    const { navigateToScreen } = await import("./controller");
+    const { navigateToScreen } = await import("./test-support/controller");
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     seedActiveScreenForTest("settings");
@@ -274,7 +274,7 @@ describe("controller lifecycle", () => {
     const cached = inspectEnvelope(token);
     const refreshed = inspectEnvelope(token);
     refreshed.operationId = "inspect-refreshed";
-    const { navigateToScreen } = await import("./controller");
+    const { navigateToScreen } = await import("./test-support/controller");
     const { invalidateOverviewCache } = await import("./overview-controller");
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
@@ -294,7 +294,7 @@ describe("controller lifecycle", () => {
 
   it("loads passkeys once when navigating to passkeys with an existing selected authenticator", async () => {
     const token = device("token-1");
-    const { navigateToScreen } = await import("./controller");
+    const { navigateToScreen } = await import("./test-support/controller");
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     seedActiveScreenForTest("settings");
@@ -313,7 +313,7 @@ describe("controller lifecycle", () => {
 
   it("loads large blobs once when navigating to the screen with an existing selected authenticator", async () => {
     const token = device("token-1");
-    const { navigateToScreen } = await import("./controller");
+    const { navigateToScreen } = await import("./test-support/controller");
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     seedActiveScreenForTest("settings");
@@ -332,7 +332,7 @@ describe("controller lifecycle", () => {
 
   it("passes forced refresh and PIN verification through large blobs Reload", async () => {
     const token = device("token-1");
-    const { reloadLargeBlobs, setLargeBlobsVerificationFlow } = await import("./controller");
+    const { reloadLargeBlobs, setLargeBlobsVerificationFlow } = await import("./test-support/controller");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     serviceMocks.ListLargeBlobs.mockResolvedValue(largeBlobListEnvelope(token));
     setLargeBlobsVerificationFlow(VerificationFlow.VerificationFlowPIN);
@@ -347,7 +347,7 @@ describe("controller lifecycle", () => {
 
   it("returns success and passes forced refresh plus PIN verification through Reload", async () => {
     const token = device("token-1");
-    const { reloadPasskeys, setPasskeysVerificationFlow } = await import("./controller");
+    const { reloadPasskeys, setPasskeysVerificationFlow } = await import("./test-support/controller");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     serviceMocks.ListCredentials.mockResolvedValue(credentialsEnvelope(token));
     setPasskeysVerificationFlow(VerificationFlow.VerificationFlowPIN);
@@ -362,7 +362,7 @@ describe("controller lifecycle", () => {
 
   it("reopens an errored selected authenticator and preserves stale inventory until forced refresh succeeds", async () => {
     const token = device("token-1");
-    const { reloadPasskeys } = await import("./controller");
+    const { reloadPasskeys } = await import("./test-support/controller");
     const previous = credentialsEnvelope(token, "authenticator-expired", "cafe");
     const refreshed = credentialsEnvelope(token, "authenticator-reopened", "bead");
     seedDevicesForTest([token]);
@@ -408,7 +408,7 @@ describe("controller lifecycle", () => {
 
   it("preserves last-known-good inventory when reopening the selected authenticator fails", async () => {
     const token = device("token-1");
-    const { reloadPasskeys } = await import("./controller");
+    const { reloadPasskeys } = await import("./test-support/controller");
     const previous = credentialsEnvelope(token, "authenticator-expired", "cafe");
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
@@ -438,7 +438,7 @@ describe("controller lifecycle", () => {
 
   it("keeps recovered inventory stale when its forced refresh returns an error envelope", async () => {
     const token = device("token-1");
-    const { reloadPasskeys } = await import("./controller");
+    const { reloadPasskeys } = await import("./test-support/controller");
     const previous = credentialsEnvelope(token, "authenticator-expired", "cafe");
     const refreshError = {
       operationId: "refresh-1",
@@ -474,7 +474,7 @@ describe("controller lifecycle", () => {
 
   it("reconciles credential selection after a successful refresh", async () => {
     const token = device("token-1");
-    const { loadPasskeys, selectPasskeyCredential } = await import("./controller");
+    const { loadPasskeys, selectPasskeyCredential } = await import("./test-support/controller");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token, "authenticator-token-1", "cafe"));
     selectPasskeyCredential("cafe");
@@ -487,7 +487,7 @@ describe("controller lifecycle", () => {
 
   it("passes PIN verification into credential delete dry-runs", async () => {
     const token = device("token-1");
-    const { beginCredentialDelete, setPasskeysVerificationFlow } = await import("./controller");
+    const { beginCredentialDelete, setPasskeysVerificationFlow } = await import("./test-support/controller");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     setPasskeysVerificationFlow(VerificationFlow.VerificationFlowPIN);
@@ -513,7 +513,7 @@ describe("controller lifecycle", () => {
 
   it("reopens an invalid selected authenticator before repeating a credential delete preview", async () => {
     const token = device("token-1");
-    const { beginCredentialDelete } = await import("./controller");
+    const { beginCredentialDelete } = await import("./test-support/controller");
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
@@ -543,7 +543,7 @@ describe("controller lifecycle", () => {
 
   it("reopens an invalid selected authenticator before repeating a large-blob delete preview", async () => {
     const token = device("token-1");
-    const { beginLargeBlobDelete } = await import("./controller");
+    const { beginLargeBlobDelete } = await import("./test-support/controller");
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
@@ -580,7 +580,7 @@ describe("controller lifecycle", () => {
       confirmCredentialUpdate,
       previewCredentialUpdate,
       updateCredentialDraft,
-    } = await import("./controller");
+    } = await import("./test-support/controller");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     const preview = {
@@ -647,7 +647,7 @@ describe("controller lifecycle", () => {
       confirmCredentialUpdate,
       previewCredentialUpdate,
       updateCredentialDraft,
-    } = await import("./controller");
+    } = await import("./test-support/controller");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     const preview = {
@@ -708,7 +708,7 @@ describe("controller lifecycle", () => {
 
   it("executes the exact reviewed delete request and keeps stale rows when its forced refresh fails", async () => {
     const token = device("token-1");
-    const { beginCredentialDelete, confirmCredentialDelete } = await import("./controller");
+    const { beginCredentialDelete, confirmCredentialDelete } = await import("./test-support/controller");
     const inventory = credentialsEnvelope(token);
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     seedPasskeysEnvelopeForTest(inventory);
@@ -782,7 +782,7 @@ describe("controller lifecycle", () => {
       confirmCredentialUpdate,
       previewCredentialUpdate,
       updateCredentialDraft,
-    } = await import("./controller");
+    } = await import("./test-support/controller");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     const preview = {
@@ -830,7 +830,7 @@ describe("controller lifecycle", () => {
       confirmCredentialUpdate,
       previewCredentialUpdate,
       updateCredentialDraft,
-    } = await import("./controller");
+    } = await import("./test-support/controller");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     const preview = {
@@ -878,7 +878,7 @@ describe("controller lifecycle", () => {
 
   it("stores a null response and a separate runtime error when mutation preview throws", async () => {
     const token = device("token-1");
-    const { beginCredentialUpdate, previewCredentialUpdate, updateCredentialDraft } = await import("./controller");
+    const { beginCredentialUpdate, previewCredentialUpdate, updateCredentialDraft } = await import("./test-support/controller");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     serviceMocks.UpdateCredentialUser.mockRejectedValue(new Error("mutation bridge offline"));
@@ -904,7 +904,7 @@ describe("controller lifecycle", () => {
       confirmCredentialUpdate,
       previewCredentialUpdate,
       updateCredentialDraft,
-    } = await import("./controller");
+    } = await import("./test-support/controller");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     const preview = {
@@ -950,7 +950,7 @@ describe("controller lifecycle", () => {
 
   it("keeps passkeys transport failures as load errors without synthetic credentials envelopes", async () => {
     const token = device("token-1");
-    const { loadPasskeys } = await import("./controller");
+    const { loadPasskeys } = await import("./test-support/controller");
     seedDevicesForTest([token]);
     seedActiveScreenForTest("passkeys");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
@@ -970,7 +970,7 @@ describe("controller lifecycle", () => {
 
   it("keeps an exact result-less credential-list envelope and reports the contract failure separately", async () => {
     const token = device("token-1");
-    const { loadPasskeys } = await import("./controller");
+    const { loadPasskeys } = await import("./test-support/controller");
     const envelope = {
       operationId: "credentials-token-1",
       selectionId: "authenticator-token-1",
@@ -995,7 +995,7 @@ describe("controller lifecycle", () => {
 
   it("turns invalid authenticator responses into a authenticator error without retaining the expired authenticator id", async () => {
     const token = device("token-1");
-    const { loadPasskeys } = await import("./controller");
+    const { loadPasskeys } = await import("./test-support/controller");
     seedDevicesForTest([token]);
     seedActiveScreenForTest("passkeys");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
@@ -1025,7 +1025,7 @@ describe("controller lifecycle", () => {
 
   it("honors a closed-authenticator postcondition on the first transport failure", async () => {
     const token = device("token-1");
-    const { loadPasskeys } = await import("./controller");
+    const { loadPasskeys } = await import("./test-support/controller");
     seedDevicesForTest([token]);
     seedActiveScreenForTest("passkeys");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
@@ -1065,7 +1065,7 @@ describe("controller lifecycle", () => {
       setPasskeysQuery,
       setPasskeysStatusFilter,
       setPasskeysVerificationFlow,
-    } = await import("./controller");
+    } = await import("./test-support/controller");
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
     seedOverviewEnvelopeForTest(inspectEnvelope(token));
@@ -1125,7 +1125,7 @@ describe("controller lifecycle", () => {
       selectToken,
       setPasskeysQuery,
       setPasskeysVerificationFlow,
-    } = await import("./controller");
+    } = await import("./test-support/controller");
     seedDevicesForTest([first, second]);
     seedActiveScreenForTest("settings");
     seedSelectionForTest("token-1", first, {
@@ -1153,7 +1153,7 @@ describe("controller lifecycle", () => {
   it("switches authenticators with one atomic selection call", async () => {
     const first = device("token-1");
     const second = device("token-2");
-    const { selectToken } = await import("./controller");
+    const { selectToken } = await import("./test-support/controller");
     seedDevicesForTest([first, second]);
     seedSelectionForTest("token-1", first, {
       state: "ready",
@@ -1174,7 +1174,7 @@ describe("controller lifecycle", () => {
   it("reports an atomic selection failure", async () => {
     const first = device("token-1");
     const second = device("token-2");
-    const { selectToken } = await import("./controller");
+    const { selectToken } = await import("./test-support/controller");
     seedDevicesForTest([first, second]);
     seedSelectionForTest("token-1", first, {
       state: "ready",
@@ -1193,7 +1193,7 @@ describe("controller lifecycle", () => {
 
   it("delegates repeated selection to the runtime singleton", async () => {
     const token = device("token-1");
-    const { selectToken } = await import("./controller");
+    const { selectToken } = await import("./test-support/controller");
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "running",
@@ -1214,7 +1214,7 @@ describe("controller lifecycle", () => {
 
   it("reports the concrete authenticator-open failure when device selection cannot open", async () => {
     const token = device("token-1");
-    const { selectToken } = await import("./controller");
+    const { selectToken } = await import("./test-support/controller");
     seedDevicesForTest([token]);
     serviceMocks.SetSelection.mockRejectedValue(new Error("authenticator open failed", {
       cause: failureForCode(Code.CodeDeviceUnavailable),
@@ -1230,7 +1230,7 @@ describe("controller lifecycle", () => {
 
   it("keeps overview transport failures as load errors without synthetic inspect envelopes", async () => {
     const token = device("token-1");
-    const { loadOverview } = await import("./controller");
+    const { loadOverview } = await import("./test-support/controller");
     seedDevicesForTest([token]);
     seedActiveScreenForTest("overview");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
@@ -1281,7 +1281,7 @@ describe("controller lifecycle", () => {
 
   it("reopens an invalid selected authenticator before reloading overview", async () => {
     const token = device("token-1");
-    const { reloadOverview } = await import("./controller");
+    const { reloadOverview } = await import("./test-support/controller");
     seedDevicesForTest([token]);
     seedActiveScreenForTest("overview");
     seedSelectionForTest("token-1", token, {
@@ -1300,7 +1300,7 @@ describe("controller lifecycle", () => {
 
   it("keeps a failed Inspect response as its typed envelope and exact kit error", async () => {
     const token = device("token-1");
-    const { loadOverview } = await import("./controller");
+    const { loadOverview } = await import("./test-support/controller");
     const envelope = {
       operationId: "inspect-error",
       selectionId: "authenticator-token-1",
@@ -1324,7 +1324,7 @@ describe("controller lifecycle", () => {
 
   it("keeps a biometric sub-load failure visible instead of overwriting it with inspect success", async () => {
     const token = device("token-1");
-    const { loadOverview } = await import("./controller");
+    const { loadOverview } = await import("./test-support/controller");
     const envelope = inspectEnvelope(token);
     envelope.result.info.options = { bioEnroll: true };
     seedDevicesForTest([token]);
@@ -1349,7 +1349,7 @@ describe("controller lifecycle", () => {
 
   it("records operation events from the runtime", async () => {
     const token = device("token-1");
-    const { handleOperationProgress } = await import("./controller");
+    const { handleOperationProgress } = await import("./test-support/controller");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
 
     handleOperationProgress({
@@ -1363,7 +1363,7 @@ describe("controller lifecycle", () => {
 
   it("exposes interaction prompts from the runtime", async () => {
     const token = device("token-1");
-    const { handleInteractionRequested } = await import("./controller");
+    const { handleInteractionRequested } = await import("./test-support/controller");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
 
     handleInteractionRequested({
@@ -1378,7 +1378,7 @@ describe("controller lifecycle", () => {
   });
 
   it("keeps the interaction pending until Wails resolves it and clears the typed PIN DTO", async () => {
-    const { answerPendingInteraction } = await import("./controller");
+    const { answerPendingInteraction } = await import("./test-support/controller");
     seedPendingInteractionForTest({ interactionId: "interaction-current" } as InteractionPrompt);
     let receivedPIN = "";
     let resolveInteraction!: (value: boolean) => void;
@@ -1402,7 +1402,7 @@ describe("controller lifecycle", () => {
   });
 
   it("does not clear a retry prompt emitted while the previous answer resolves", async () => {
-    const { answerPendingInteraction, handleInteractionRequested } = await import("./controller");
+    const { answerPendingInteraction, handleInteractionRequested } = await import("./test-support/controller");
     seedPendingInteractionForTest({ interactionId: "interaction-1" } as InteractionPrompt);
     serviceMocks.ResolveInteraction.mockImplementationOnce(async () => {
       handleInteractionRequested({
@@ -1423,7 +1423,7 @@ describe("controller lifecycle", () => {
   });
 
   it("preserves a typed interaction failure code in the UI outcome", async () => {
-    const { answerPendingInteraction } = await import("./controller");
+    const { answerPendingInteraction } = await import("./test-support/controller");
     seedPendingInteractionForTest({ interactionId: "interaction-current" } as InteractionPrompt);
     serviceMocks.ResolveInteraction.mockRejectedValueOnce(new Error("ResolveInteraction failed", {
       cause: {
