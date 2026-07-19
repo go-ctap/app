@@ -3,13 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   InteractionKind,
-  LargeBlobMutationOutput,
   OperationKind,
   VerificationFlow,
 } from "../../bindings/github.com/go-ctap/kit/model";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import {
+  MutationOutput as LargeBlobMutationOutput,
   MutationOperation,
   MutationPreview,
 } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
@@ -110,14 +110,12 @@ function inspectEnvelope(item: DeviceReport) {
     kind: OperationKind.OperationInspect,
     authenticatorClosed: false,
     result: {
-      result: {
-        device: item,
-        info: {
-          versions: [],
-          aaguid: "",
-          options: {},
-          conformance: new Report(),
-        },
+      device: item,
+      info: {
+        versions: [],
+        aaguid: "",
+        options: {},
+        conformance: new Report(),
       },
     },
   };
@@ -129,11 +127,9 @@ function bioSensorEnvelope(item: DeviceReport): BioSensorEnvelope {
     selectionId: `authenticator-${item.fingerprint}`,
     kind: OperationKind.OperationBioSensorInfo,
     result: {
-      report: {
-        device: item,
-        supported: false,
-        previewOnly: false,
-      },
+      device: item,
+      supported: false,
+      previewOnly: false,
     },
   } as BioSensorEnvelope;
 }
@@ -144,32 +140,30 @@ function credentialsEnvelope(item: DeviceReport, selectionId = `authenticator-${
     selectionId,
     kind: OperationKind.OperationListCredentials,
     result: {
-      report: {
-        device: item,
-        support: {
-          credentialManagement: true,
-          previewOnly: false,
-          readOnlyPermission: false,
-        },
-        summary: {
-          existingResidentCredentialsCount: 1,
-          maxPossibleRemainingResidentCredentialsCount: 8,
-          totalRPs: 1,
-          totalCredentials: 1,
-        },
-        groups: [{
-          rpID: "example.com",
-          rpName: "Example",
-          rpIDHashHex: "abcd",
-          credentials: [{
-            credentialIDHex,
-            credentialType: "public-key",
-            userIDHex: "01",
-            userName: "user@example.com",
-            displayName: "Example User",
-          }],
-        }],
+      device: item,
+      support: {
+        credentialManagement: true,
+        previewOnly: false,
+        readOnlyPermission: false,
       },
+      summary: {
+        existingResidentCredentialsCount: 1,
+        maxPossibleRemainingResidentCredentialsCount: 8,
+        totalRPs: 1,
+        totalCredentials: 1,
+      },
+      groups: [{
+        rpID: "example.com",
+        rpName: "Example",
+        rpIDHashHex: "abcd",
+        credentials: [{
+          credentialIDHex,
+          credentialType: "public-key",
+          userIDHex: "01",
+          userName: "user@example.com",
+          displayName: "Example User",
+        }],
+      }],
     },
   } as CredentialsEnvelope;
 }
@@ -194,28 +188,26 @@ function largeBlobListEnvelope(item: DeviceReport, selectionId = `authenticator-
     selectionId,
     kind: OperationKind.OperationListLargeBlobs,
     result: {
-      report: {
-        device: item,
-        support: {
-          largeBlobs: true,
-          largeBlobKeyExtension: true,
-        },
-        array: {
-          read: true,
-          blobCount: 0,
-          matchedBlobCount: 0,
-          unmatchedBlobCount: 0,
-        },
-        credentials: [{
-          credentialIDHex: "cafe",
-          rp: { id: "example.com", name: "Example" },
-          user: { userIDHex: "01", name: "user@example.com", displayName: "Example User" },
-          largeBlobKeyState: "available",
-          blobPresent: false,
-          blobState: "missing",
-          blobByteCount: 0,
-        }],
+      device: item,
+      support: {
+        largeBlobs: true,
+        largeBlobKeyExtension: true,
       },
+      array: {
+        read: true,
+        blobCount: 0,
+        matchedBlobCount: 0,
+        unmatchedBlobCount: 0,
+      },
+      credentials: [{
+        credentialIDHex: "cafe",
+        rp: { id: "example.com", name: "Example" },
+        user: { userIDHex: "01", name: "user@example.com", displayName: "Example User" },
+        largeBlobKeyState: "available",
+        blobPresent: false,
+        blobState: "missing",
+        blobByteCount: 0,
+      }],
     },
   } as LargeBlobListEnvelope;
 }
@@ -1254,7 +1246,7 @@ describe("controller lifecycle", () => {
   it("loads authenticator inspection on Lab entry without starting Overview-only subloads", async () => {
     const token = device("token-1");
     const envelope = inspectEnvelope(token);
-    envelope.result.result.info.options = { bioEnroll: true };
+    envelope.result.info.options = { bioEnroll: true };
     const { maybeLoadOverview } = await import("./overview-controller");
     seedDevicesForTest([token]);
     seedActiveScreenForTest("lab");
@@ -1272,7 +1264,7 @@ describe("controller lifecycle", () => {
   it("reuses Lab inspection when Overview only needs biometric and MDS details", async () => {
     const token = device("token-1");
     const envelope = inspectEnvelope(token);
-    envelope.result.result.info.options = { bioEnroll: true };
+    envelope.result.info.options = { bioEnroll: true };
     const { maybeLoadOverview } = await import("./overview-controller");
     seedDevicesForTest([token]);
     seedActiveScreenForTest("overview");
@@ -1334,7 +1326,7 @@ describe("controller lifecycle", () => {
     const token = device("token-1");
     const { loadOverview } = await import("./controller");
     const envelope = inspectEnvelope(token);
-    envelope.result.result.info.options = { bioEnroll: true };
+    envelope.result.info.options = { bioEnroll: true };
     seedDevicesForTest([token]);
     seedActiveScreenForTest("overview");
     seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });

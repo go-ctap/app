@@ -1,6 +1,7 @@
 <script lang="ts">
   import { copyToClipboard } from "$lib/clipboard";
   import { Button } from "$lib/components/ui/button/index.js";
+  import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
   import { sanitizedJson } from "$lib/redaction";
 
   import { m } from "../../../paraglide/messages.js";
@@ -26,10 +27,13 @@
     <Button variant="outline" type="button" onclick={copy}>{m.copy()}</Button>
   </div>
 {/if}
-<!-- svelte-ignore a11y_no_noninteractive_tabindex (scrollable code region) -->
-<div class="json-frame" role="region" aria-label={title} tabindex="0">
+<ScrollArea
+  class="json-frame"
+  orientation="both"
+  viewportProps={{ role: "region", "aria-label": title, tabindex: 0 }}
+>
   <JsonCode {source} />
-</div>
+</ScrollArea>
 
 <style>
 @layer blocks {
@@ -45,13 +49,15 @@
     font-size: 0.95rem;
   }
 
-  .json-frame {
+  :global(.json-frame),
+  :global(.json-frame > [data-scroll-area-viewport]) {
     inline-size: 100%;
     max-inline-size: 100%;
     max-block-size: var(--json-view-max-block-size, min(26rem, 44dvh));
     min-inline-size: 0;
-    overflow-x: auto;
-    overflow-y: auto;
+  }
+
+  :global(.json-frame) {
     border: 1px solid var(--border);
     background: var(--muted);
   }

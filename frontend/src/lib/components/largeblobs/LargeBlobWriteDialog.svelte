@@ -2,6 +2,7 @@
   import { Pencil } from "@lucide/svelte";
 
   import LargeBlobMutationPreview from "$lib/components/largeblobs/LargeBlobMutationPreview.svelte";
+  import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
@@ -124,11 +125,12 @@
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
   {#if open && mutation.kind === "write"}
     <Dialog.Content class="large-blob-write-dialog">
-      <Dialog.Header>
-        <Dialog.Title>{editingExisting ? m.large_blob_edit() : m.large_blob_write()}</Dialog.Title>
-      </Dialog.Header>
+      <ModalScrollArea>
+        <Dialog.Header>
+          <Dialog.Title>{editingExisting ? m.large_blob_edit() : m.large_blob_write()}</Dialog.Title>
+        </Dialog.Header>
 
-      <form class="large-blob-write-form" onsubmit={handleSubmit}>
+        <form class="large-blob-write-form" onsubmit={handleSubmit}>
         <Field.FieldGroup>
           <Field.Field data-disabled={fieldsLocked ? "true" : undefined}>
             <Field.FieldTitle id="large-blob-payload-encoding-label">
@@ -215,7 +217,8 @@
           </Button>
           <Button variant="outline" type="button" onclick={onClose}>{m.cancel()}</Button>
         </Dialog.Footer>
-      </form>
+        </form>
+      </ModalScrollArea>
     </Dialog.Content>
   {/if}
 </Dialog.Root>
@@ -226,7 +229,7 @@
     width: min(46rem, calc(100vw - 2rem));
     max-width: none;
     max-height: calc(100vh - 2rem);
-    overflow: auto;
+    overflow: hidden;
   }
 
   .large-blob-write-form {

@@ -1,4 +1,4 @@
-import type { InspectInfo } from "../../bindings/github.com/go-ctap/kit/model";
+import type { Info as InspectInfo } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import type { BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
 import type {
   Profile,

@@ -5,6 +5,7 @@ export {
     CredentialGroup,
     CredentialRecord,
     CredentialTarget,
+    DeleteOutput,
     DeletePreview,
     DeleteResult,
     InventoryReport,
@@ -12,6 +13,7 @@ export {
     RelyingParty,
     StoreStateResult,
     SupportReport,
+    UpdateUserOutput,
     UpdateUserPreview,
     UpdateUserResult,
     UserIdentity

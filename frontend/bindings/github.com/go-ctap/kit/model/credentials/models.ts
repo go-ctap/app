@@ -114,6 +114,39 @@ export class CredentialTarget {
     }
 }
 
+export class DeleteOutput {
+    "preview": DeletePreview;
+    "result": DeleteResult | null;
+
+    /** Creates a new DeleteOutput instance. */
+    constructor($$source: Partial<DeleteOutput> = {}) {
+        if (!("preview" in $$source)) {
+            this["preview"] = (new DeletePreview());
+        }
+        if (!("result" in $$source)) {
+            this["result"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new DeleteOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): DeleteOutput {
+        const $$createField0_0 = $$createType5;
+        const $$createField1_0 = $$createType7;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("preview" in $$parsedSource) {
+            $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
+        }
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField1_0($$parsedSource["result"]);
+        }
+        return new DeleteOutput($$parsedSource as Partial<DeleteOutput>);
+    }
+}
+
 export class DeletePreview {
     "credentialIDHex": string;
     "rpID": string;
@@ -139,7 +172,7 @@ export class DeletePreview {
      * Creates a new DeletePreview instance from a string or object.
      */
     static createFrom($$source: any = {}): DeletePreview {
-        const $$createField6_0 = $$createType6;
+        const $$createField6_0 = $$createType9;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("warnings" in $$parsedSource) {
             $$parsedSource["warnings"] = $$createField6_0($$parsedSource["warnings"]);
@@ -209,10 +242,10 @@ export class InventoryReport {
      * Creates a new InventoryReport instance from a string or object.
      */
     static createFrom($$source: any = {}): InventoryReport {
-        const $$createField0_0 = $$createType7;
-        const $$createField1_0 = $$createType8;
-        const $$createField2_0 = $$createType9;
-        const $$createField3_0 = $$createType11;
+        const $$createField0_0 = $$createType10;
+        const $$createField1_0 = $$createType11;
+        const $$createField2_0 = $$createType12;
+        const $$createField3_0 = $$createType14;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
@@ -340,6 +373,39 @@ export class SupportReport {
     }
 }
 
+export class UpdateUserOutput {
+    "preview": UpdateUserPreview;
+    "result": UpdateUserResult | null;
+
+    /** Creates a new UpdateUserOutput instance. */
+    constructor($$source: Partial<UpdateUserOutput> = {}) {
+        if (!("preview" in $$source)) {
+            this["preview"] = (new UpdateUserPreview());
+        }
+        if (!("result" in $$source)) {
+            this["result"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new UpdateUserOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): UpdateUserOutput {
+        const $$createField0_0 = $$createType15;
+        const $$createField1_0 = $$createType17;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("preview" in $$parsedSource) {
+            $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
+        }
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField1_0($$parsedSource["result"]);
+        }
+        return new UpdateUserOutput($$parsedSource as Partial<UpdateUserOutput>);
+    }
+}
+
 export class UpdateUserPreview {
     "credentialIDHex": string;
     "rpID": string;
@@ -372,7 +438,7 @@ export class UpdateUserPreview {
     static createFrom($$source: any = {}): UpdateUserPreview {
         const $$createField3_0 = $$createType4;
         const $$createField4_0 = $$createType4;
-        const $$createField5_0 = $$createType6;
+        const $$createField5_0 = $$createType9;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("current" in $$parsedSource) {
             $$parsedSource["current"] = $$createField3_0($$parsedSource["current"]);
@@ -459,10 +525,16 @@ const $$createType1 = $Create.Array($$createType0);
 const $$createType2 = $Create.Array($Create.Any);
 const $$createType3 = RelyingParty.createFrom;
 const $$createType4 = UserIdentity.createFrom;
-const $$createType5 = safety$0.Warning.createFrom;
-const $$createType6 = $Create.Array($$createType5);
-const $$createType7 = report$0.DeviceReport.createFrom;
-const $$createType8 = SupportReport.createFrom;
-const $$createType9 = InventorySummary.createFrom;
-const $$createType10 = CredentialGroup.createFrom;
-const $$createType11 = $Create.Array($$createType10);
+const $$createType5 = DeletePreview.createFrom;
+const $$createType6 = DeleteResult.createFrom;
+const $$createType7 = $Create.Nullable($$createType6);
+const $$createType8 = safety$0.Warning.createFrom;
+const $$createType9 = $Create.Array($$createType8);
+const $$createType10 = report$0.DeviceReport.createFrom;
+const $$createType11 = SupportReport.createFrom;
+const $$createType12 = InventorySummary.createFrom;
+const $$createType13 = CredentialGroup.createFrom;
+const $$createType14 = $Create.Array($$createType13);
+const $$createType15 = UpdateUserPreview.createFrom;
+const $$createType16 = UpdateUserResult.createFrom;
+const $$createType17 = $Create.Nullable($$createType16);

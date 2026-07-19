@@ -2,6 +2,7 @@
   import { ArrowRight, Pencil } from "@lucide/svelte";
 
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
+  import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
@@ -114,11 +115,12 @@
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
   {#if open && mutation.kind === "update"}
     <Dialog.Content class="passkey-update-dialog">
-      <Dialog.Header>
-        <Dialog.Title>{m.edit_credential_user()}</Dialog.Title>
-      </Dialog.Header>
+      <ModalScrollArea>
+        <Dialog.Header>
+          <Dialog.Title>{m.edit_credential_user()}</Dialog.Title>
+        </Dialog.Header>
 
-      <form class="passkey-update-form" onsubmit={handleSubmit}>
+        <form class="passkey-update-form" onsubmit={handleSubmit}>
         {#if showForm}
           <Field.FieldGroup>
             <Field.Field
@@ -234,7 +236,8 @@
           </Button>
           <Button variant="outline" type="button" onclick={onClose}>{m.cancel()}</Button>
         </Dialog.Footer>
-      </form>
+        </form>
+      </ModalScrollArea>
     </Dialog.Content>
   {/if}
 </Dialog.Root>
@@ -245,7 +248,7 @@
     width: min(44rem, calc(100vw - 2rem));
     max-width: none;
     max-height: calc(100vh - 2rem);
-    overflow: auto;
+    overflow: hidden;
   }
 
   .passkey-update-form,

@@ -12,6 +12,8 @@ import (
 	ctaptransport "github.com/go-ctap/ctap/transport"
 	ctapkit "github.com/go-ctap/kit"
 	"github.com/go-ctap/kit/model"
+	"github.com/go-ctap/kit/model/config"
+	"github.com/go-ctap/kit/model/credentials"
 	"github.com/go-ctap/kit/model/failure"
 	"github.com/go-ctap/kit/model/report"
 )
@@ -78,7 +80,7 @@ func TestOperationLoggingOmitsPayloadsAndSecrets(t *testing.T) {
 		currentPIN = "sentinel-current-pin-1182"
 		newPIN     = "sentinel-new-pin-9921"
 	)
-	output := model.PINOutput{}
+	output := config.PINOutput{}
 	runtime := &recordingAuthenticator{}
 	service := New()
 	service.selected = newSelection(
@@ -86,13 +88,12 @@ func TestOperationLoggingOmitsPayloadsAndSecrets(t *testing.T) {
 		report.DeviceReport{},
 		openedAuthenticator{lifecycle: runtime},
 	)
-	operation := model.ChangePINOperation{CurrentPIN: currentPIN, NewPIN: newPIN}
+	operation := config.ChangePINOperation{CurrentPIN: currentPIN, NewPIN: newPIN}
 	execute := func(
 		context.Context,
 		*ctapkit.Authenticator,
-		model.InteractionHandler,
 		...ctapkit.OperationOption,
-	) (*model.PINOutput, error) {
+	) (*config.PINOutput, error) {
 		if operation.CurrentPIN != currentPIN || operation.NewPIN != newPIN {
 			t.Fatalf("captured operation = %#v", operation)
 		}
@@ -134,7 +135,7 @@ func TestOperationLoggingOmitsPayloadsAndSecrets(t *testing.T) {
 }
 
 func TestOperationLoggingDoesNotRequireEventEmitter(t *testing.T) {
-	output := model.CredentialsOutput{}
+	output := credentials.InventoryReport{}
 	runtime := &recordingAuthenticator{}
 	service := New()
 	service.selected = newSelection(
@@ -189,7 +190,7 @@ func TestOperationLoggingRetainsTransportDiagnostic(t *testing.T) {
 		OperationRequest{SelectionID: "selection-1"},
 		model.OperationListCredentials,
 		false,
-		staticOperationExecutor[model.CredentialsOutput](nil, runErr),
+		staticOperationExecutor[credentials.InventoryReport](nil, runErr),
 	)
 	if err != nil {
 		t.Fatalf("ListCredentials: %v", err)

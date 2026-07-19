@@ -10,30 +10,28 @@ import { emptyPasskeysInventoryState, type PasskeysInventoryState } from "$lib/f
 
 import { buildPasskeyRows, buildPasskeysPresentation } from "./passkeys-presentation";
 
-function envelope(groups: NonNullable<CredentialsEnvelope["result"]>["report"]["groups"] = []): CredentialsEnvelope {
+function envelope(groups: NonNullable<CredentialsEnvelope["result"]>["groups"] = []): CredentialsEnvelope {
   const totalCredentials = groups.reduce((count, group) => count + (group.credentials?.length ?? 0), 0);
   return {
     operationId: "operation-1",
     selectionId: "authenticator-1",
     kind: OperationKind.OperationListCredentials,
     result: {
-      report: {
-        device: {
-          fingerprint: "token-1",
-        },
-        support: {
-          credentialManagement: true,
-          previewOnly: true,
-          readOnlyPermission: true,
-        },
-        summary: {
-          existingResidentCredentialsCount: totalCredentials,
-          maxPossibleRemainingResidentCredentialsCount: 7,
-          totalRPs: groups.length,
-          totalCredentials,
-        },
-        groups,
+      device: {
+        fingerprint: "token-1",
       },
+      support: {
+        credentialManagement: true,
+        previewOnly: true,
+        readOnlyPermission: true,
+      },
+      summary: {
+        existingResidentCredentialsCount: totalCredentials,
+        maxPossibleRemainingResidentCredentialsCount: 7,
+        totalRPs: groups.length,
+        totalCredentials,
+      },
+      groups,
     },
   } as CredentialsEnvelope;
 }
@@ -168,8 +166,8 @@ describe("buildPasskeysPresentation", () => {
 
   it("calculates capacity as an explicitly estimated upper bound", () => {
     const credentials = envelope([]);
-    credentials.result!.report.summary.existingResidentCredentialsCount = 3;
-    credentials.result!.report.summary.maxPossibleRemainingResidentCredentialsCount = 9;
+    credentials.result!.summary.existingResidentCredentialsCount = 3;
+    credentials.result!.summary.maxPossibleRemainingResidentCredentialsCount = 9;
     const presentation = buildPasskeysPresentation({
       ...defaultView,
       selectedSelector: "token-1",
@@ -196,7 +194,7 @@ describe("buildPasskeysPresentation", () => {
         { credentialIDHex: "none" },
       ],
     }]);
-    const report = credentials.result!.report;
+    const report = credentials.result!;
     const ids = (filter: Parameters<typeof buildPasskeyRows>[2]) => buildPasskeyRows(report, "", filter)
       .map((row) => row.id);
 
@@ -259,8 +257,8 @@ describe("buildPasskeysPresentation", () => {
     expect(previewOnly.updateDisabled).toBe(true);
     expect(previewOnly.deleteDisabled).toBe(false);
 
-    credentials.result!.report.support.previewOnly = false;
-    credentials.result!.report.support.readOnlyPermission = true;
+    credentials.result!.support.previewOnly = false;
+    credentials.result!.support.readOnlyPermission = true;
     const readOnlyListing = buildPasskeysPresentation({
       ...defaultView,
       selectedSelector: "token-1",
@@ -278,7 +276,7 @@ describe("buildPasskeysPresentation", () => {
       rpID: "example.test",
       credentials: [{ credentialIDHex: "one" }],
     }]);
-    credentials.result!.report.support.previewOnly = false;
+    credentials.result!.support.previewOnly = false;
 
     const presentation = buildPasskeysPresentation({
       ...defaultView,
@@ -300,7 +298,7 @@ describe("buildPasskeysPresentation", () => {
       rpID: "example.test",
       credentials: [{ credentialIDHex: "one" }],
     }]);
-    credentials.result!.report.support.previewOnly = false;
+    credentials.result!.support.previewOnly = false;
     const state: PasskeysInventoryState = {
       ...inventoryState(credentials),
       phase: "error",

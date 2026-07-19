@@ -64,7 +64,7 @@ func TestDirectServiceErrorIsTypedAndMachineReadable(t *testing.T) {
 }
 
 func TestBioEnrollEnvelopeKeepsPartialResultWithFailure(t *testing.T) {
-	output := model.BioEnrollOutput{Result: &config.BioEnrollResult{
+	output := config.BioEnrollOutput{Result: &config.BioEnrollResult{
 		TemplateIDHex:   "aabb",
 		CancelAttempted: true,
 	}}

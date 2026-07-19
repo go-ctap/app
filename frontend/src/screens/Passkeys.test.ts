@@ -44,35 +44,33 @@ function credentialsEnvelope(): CredentialsEnvelope {
     selectionId: "authenticator-1",
     kind: OperationKind.OperationListCredentials,
     result: {
-      report: {
-        device: {
-          fingerprint: "token-1",
-        },
-        support: {
-          credentialManagement: true,
-          previewOnly: false,
-          readOnlyPermission: false,
-        },
-        summary: {
-          existingResidentCredentialsCount: 1,
-          maxPossibleRemainingResidentCredentialsCount: 4,
-          totalRPs: 1,
-          totalCredentials: 1,
-        },
-        groups: [{
-          rpID: "example.com",
-          rpName: "Example",
-          rpIDHashHex: "abcd",
-          credentials: [{
-            credentialIDHex: "cafe",
-            credentialType: "public-key",
-            userIDHex: "01",
-            userName: "user@example.com",
-            displayName: "Example User",
-            credProtect: 2,
-          }],
-        }],
+      device: {
+        fingerprint: "token-1",
       },
+      support: {
+        credentialManagement: true,
+        previewOnly: false,
+        readOnlyPermission: false,
+      },
+      summary: {
+        existingResidentCredentialsCount: 1,
+        maxPossibleRemainingResidentCredentialsCount: 4,
+        totalRPs: 1,
+        totalCredentials: 1,
+      },
+      groups: [{
+        rpID: "example.com",
+        rpName: "Example",
+        rpIDHashHex: "abcd",
+        credentials: [{
+          credentialIDHex: "cafe",
+          credentialType: "public-key",
+          userIDHex: "01",
+          userName: "user@example.com",
+          displayName: "Example User",
+          credProtect: 2,
+        }],
+      }],
     },
   } as CredentialsEnvelope;
 }
@@ -94,10 +92,10 @@ function credentialUpdateTarget(): CredentialTarget {
 
 function mixedRelyingPartyEnvelope(): CredentialsEnvelope {
   const envelope = credentialsEnvelope();
-  envelope.result!.report.summary.existingResidentCredentialsCount = 3;
-  envelope.result!.report.summary.totalRPs = 2;
-  envelope.result!.report.summary.totalCredentials = 3;
-  envelope.result!.report.groups = [
+  envelope.result!.summary.existingResidentCredentialsCount = 3;
+  envelope.result!.summary.totalRPs = 2;
+  envelope.result!.summary.totalCredentials = 3;
+  envelope.result!.groups = [
     {
       rpID: "solo.example",
       rpName: "Solo",
@@ -467,7 +465,7 @@ describe("Passkeys", () => {
 
   it("renders unsupported credential management as a non-retry state", () => {
     const unsupported = credentialsEnvelope();
-    unsupported.result!.report.support.credentialManagement = false;
+    unsupported.result!.support.credentialManagement = false;
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -482,10 +480,10 @@ describe("Passkeys", () => {
 
   it("distinguishes an authenticator's real empty inventory", () => {
     const empty = credentialsEnvelope();
-    empty.result!.report.groups = [];
-    empty.result!.report.summary.existingResidentCredentialsCount = 0;
-    empty.result!.report.summary.totalRPs = 0;
-    empty.result!.report.summary.totalCredentials = 0;
+    empty.result!.groups = [];
+    empty.result!.summary.existingResidentCredentialsCount = 0;
+    empty.result!.summary.totalRPs = 0;
+    empty.result!.summary.totalCredentials = 0;
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",

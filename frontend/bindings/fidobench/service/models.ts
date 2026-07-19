@@ -28,6 +28,9 @@ import * as credentials$0 from "../../github.com/go-ctap/kit/model/credentials/m
 import * as failure$0 from "../../github.com/go-ctap/kit/model/failure/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as inspect$0 from "../../github.com/go-ctap/kit/model/inspect/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as largeblobs$0 from "../../github.com/go-ctap/kit/model/largeblobs/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -96,7 +99,7 @@ export class AuthenticatorConfigEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.AuthenticatorConfigOutput | null;
+    "result"?: config$0.AuthenticatorConfigOutput | null;
 
     /** Creates a new AuthenticatorConfigEnvelope instance. */
     constructor($$source: Partial<AuthenticatorConfigEnvelope> = {}) {
@@ -139,7 +142,7 @@ export class BioEnrollEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.BioEnrollOutput | null;
+    "result"?: config$0.BioEnrollOutput | null;
 
     /** Creates a new BioEnrollEnvelope instance. */
     constructor($$source: Partial<BioEnrollEnvelope> = {}) {
@@ -206,7 +209,7 @@ export class BioListEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.BioListOutput | null;
+    "result"?: config$0.BioListReport | null;
 
     /** Creates a new BioListEnvelope instance. */
     constructor($$source: Partial<BioListEnvelope> = {}) {
@@ -249,7 +252,7 @@ export class BioMutationEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.BioMutationOutput | null;
+    "result"?: config$0.BioMutationOutput | null;
 
     /** Creates a new BioMutationEnvelope instance. */
     constructor($$source: Partial<BioMutationEnvelope> = {}) {
@@ -350,7 +353,7 @@ export class BioSensorEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.BioSensorOutput | null;
+    "result"?: config$0.BioSensorReport | null;
 
     /** Creates a new BioSensorEnvelope instance. */
     constructor($$source: Partial<BioSensorEnvelope> = {}) {
@@ -414,7 +417,7 @@ export class ConfigStatusEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.ConfigStatusOutput | null;
+    "result"?: config$0.StatusReport | null;
 
     /** Creates a new ConfigStatusEnvelope instance. */
     constructor($$source: Partial<ConfigStatusEnvelope> = {}) {
@@ -457,7 +460,7 @@ export class CredentialDeleteEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.CredentialDeleteOutput | null;
+    "result"?: credentials$0.DeleteOutput | null;
 
     /** Creates a new CredentialDeleteEnvelope instance. */
     constructor($$source: Partial<CredentialDeleteEnvelope> = {}) {
@@ -549,7 +552,7 @@ export class CredentialStoreStateEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.CredentialStoreStateOutput | null;
+    "result"?: credentials$0.StoreStateResult | null;
 
     /** Creates a new CredentialStoreStateEnvelope instance. */
     constructor($$source: Partial<CredentialStoreStateEnvelope> = {}) {
@@ -592,7 +595,7 @@ export class CredentialUpdateEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.CredentialUpdateOutput | null;
+    "result"?: credentials$0.UpdateUserOutput | null;
 
     /** Creates a new CredentialUpdateEnvelope instance. */
     constructor($$source: Partial<CredentialUpdateEnvelope> = {}) {
@@ -672,7 +675,7 @@ export class CredentialsEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.CredentialsOutput | null;
+    "result"?: credentials$0.InventoryReport | null;
 
     /** Creates a new CredentialsEnvelope instance. */
     constructor($$source: Partial<CredentialsEnvelope> = {}) {
@@ -824,7 +827,7 @@ export class GetAssertionEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.GetAssertionOutput | null;
+    "result"?: webauthn$0.GetAssertionOutput | null;
 
     /** Creates a new GetAssertionEnvelope instance. */
     constructor($$source: Partial<GetAssertionEnvelope> = {}) {
@@ -917,7 +920,7 @@ export class InspectEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.InspectOutput | null;
+    "result"?: inspect$0.Result | null;
 
     /** Creates a new InspectEnvelope instance. */
     constructor($$source: Partial<InspectEnvelope> = {}) {
@@ -1045,7 +1048,7 @@ export class LargeBlobListEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.LargeBlobListOutput | null;
+    "result"?: largeblobs$0.ListReport | null;
 
     /** Creates a new LargeBlobListEnvelope instance. */
     constructor($$source: Partial<LargeBlobListEnvelope> = {}) {
@@ -1110,7 +1113,7 @@ export class LargeBlobMutationEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.LargeBlobMutationOutput | null;
+    "result"?: largeblobs$0.MutationOutput | null;
 
     /** Creates a new LargeBlobMutationEnvelope instance. */
     constructor($$source: Partial<LargeBlobMutationEnvelope> = {}) {
@@ -1185,7 +1188,7 @@ export class LargeBlobReadEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.LargeBlobReadOutput | null;
+    "result"?: largeblobs$0.ReadReport | null;
 
     /** Creates a new LargeBlobReadEnvelope instance. */
     constructor($$source: Partial<LargeBlobReadEnvelope> = {}) {
@@ -1325,7 +1328,7 @@ export class MakeCredentialEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.MakeCredentialOutput | null;
+    "result"?: webauthn$0.MakeCredentialOutput | null;
 
     /** Creates a new MakeCredentialEnvelope instance. */
     constructor($$source: Partial<MakeCredentialEnvelope> = {}) {
@@ -1565,7 +1568,7 @@ export class PINEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.PINOutput | null;
+    "result"?: config$0.PINOutput | null;
 
     /** Creates a new PINEnvelope instance. */
     constructor($$source: Partial<PINEnvelope> = {}) {
@@ -1658,7 +1661,7 @@ export class ResetFactoryEnvelope {
     "kind": model$0.OperationKind;
     "authenticatorClosed": boolean;
     "error"?: failure$0.Failure | null;
-    "result"?: model$0.ResetFactoryOutput | null;
+    "result"?: config$0.ResetFactoryOutput | null;
 
     /** Creates a new ResetFactoryEnvelope instance. */
     constructor($$source: Partial<ResetFactoryEnvelope> = {}) {
@@ -1763,49 +1766,49 @@ export class SelectionSnapshot {
 // Private type creation functions
 const $$createType0 = failure$0.Failure.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = model$0.AuthenticatorConfigOutput.createFrom;
+const $$createType2 = config$0.AuthenticatorConfigOutput.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = model$0.BioEnrollOutput.createFrom;
+const $$createType4 = config$0.BioEnrollOutput.createFrom;
 const $$createType5 = $Create.Nullable($$createType4);
-const $$createType6 = model$0.BioListOutput.createFrom;
+const $$createType6 = config$0.BioListReport.createFrom;
 const $$createType7 = $Create.Nullable($$createType6);
-const $$createType8 = model$0.BioMutationOutput.createFrom;
+const $$createType8 = config$0.BioMutationOutput.createFrom;
 const $$createType9 = $Create.Nullable($$createType8);
-const $$createType10 = model$0.BioSensorOutput.createFrom;
+const $$createType10 = config$0.BioSensorReport.createFrom;
 const $$createType11 = $Create.Nullable($$createType10);
-const $$createType12 = model$0.ConfigStatusOutput.createFrom;
+const $$createType12 = config$0.StatusReport.createFrom;
 const $$createType13 = $Create.Nullable($$createType12);
-const $$createType14 = model$0.CredentialDeleteOutput.createFrom;
+const $$createType14 = credentials$0.DeleteOutput.createFrom;
 const $$createType15 = $Create.Nullable($$createType14);
-const $$createType16 = model$0.CredentialStoreStateOutput.createFrom;
+const $$createType16 = credentials$0.StoreStateResult.createFrom;
 const $$createType17 = $Create.Nullable($$createType16);
-const $$createType18 = model$0.CredentialUpdateOutput.createFrom;
+const $$createType18 = credentials$0.UpdateUserOutput.createFrom;
 const $$createType19 = $Create.Nullable($$createType18);
 const $$createType20 = credentials$0.CredentialTarget.createFrom;
-const $$createType21 = model$0.CredentialsOutput.createFrom;
+const $$createType21 = credentials$0.InventoryReport.createFrom;
 const $$createType22 = $Create.Nullable($$createType21);
 const $$createType23 = DiscoverySnapshot.createFrom;
 const $$createType24 = $Create.Nullable($$createType23);
 const $$createType25 = report$0.DeviceReport.createFrom;
 const $$createType26 = $Create.Array($$createType25);
-const $$createType27 = model$0.GetAssertionOutput.createFrom;
+const $$createType27 = webauthn$0.GetAssertionOutput.createFrom;
 const $$createType28 = $Create.Nullable($$createType27);
 const $$createType29 = credential$0.PublicKeyCredentialDescriptor.createFrom;
 const $$createType30 = $Create.Array($$createType29);
 const $$createType31 = webauthn$0.AuthenticatorOptions.createFrom;
 const $$createType32 = webauthn$1.GetAuthenticationExtensionsClientInputs.createFrom;
 const $$createType33 = $Create.Nullable($$createType32);
-const $$createType34 = model$0.InspectOutput.createFrom;
+const $$createType34 = inspect$0.Result.createFrom;
 const $$createType35 = $Create.Nullable($$createType34);
 const $$createType36 = model$0.InteractionRequest.createFrom;
-const $$createType37 = model$0.LargeBlobListOutput.createFrom;
+const $$createType37 = largeblobs$0.ListReport.createFrom;
 const $$createType38 = $Create.Nullable($$createType37);
-const $$createType39 = model$0.LargeBlobMutationOutput.createFrom;
+const $$createType39 = largeblobs$0.MutationOutput.createFrom;
 const $$createType40 = $Create.Nullable($$createType39);
-const $$createType41 = model$0.LargeBlobReadOutput.createFrom;
+const $$createType41 = largeblobs$0.ReadReport.createFrom;
 const $$createType42 = $Create.Nullable($$createType41);
 const $$createType43 = mds$0.LookupResult.createFrom;
-const $$createType44 = model$0.MakeCredentialOutput.createFrom;
+const $$createType44 = webauthn$0.MakeCredentialOutput.createFrom;
 const $$createType45 = $Create.Nullable($$createType44);
 const $$createType46 = credential$0.PublicKeyCredentialRpEntity.createFrom;
 const $$createType47 = credential$0.PublicKeyCredentialUserEntity.createFrom;
@@ -1816,9 +1819,9 @@ const $$createType51 = $Create.Nullable($$createType50);
 const $$createType52 = $Create.Array($Create.Any);
 const $$createType53 = $Create.Array($Create.Any);
 const $$createType54 = model$0.OperationEvent.createFrom;
-const $$createType55 = model$0.PINOutput.createFrom;
+const $$createType55 = config$0.PINOutput.createFrom;
 const $$createType56 = $Create.Nullable($$createType55);
-const $$createType57 = model$0.ResetFactoryOutput.createFrom;
+const $$createType57 = config$0.ResetFactoryOutput.createFrom;
 const $$createType58 = $Create.Nullable($$createType57);
 const $$createType59 = ActiveSelection.createFrom;
 const $$createType60 = $Create.Nullable($$createType59);

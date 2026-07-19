@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Fingerprint, RotateCcw, Trash2 } from "@lucide/svelte";
 
+  import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";
   import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
@@ -93,24 +94,26 @@
 {#if destructive}
   <AlertDialog.Root {open} onOpenChange={handleOpenChange}>
     <AlertDialog.Content class="security-destructive-dialog">
-      <AlertDialog.Header>
-        <AlertDialog.Media>
-          {#if mutation.kind === "reset"}<RotateCcw aria-hidden="true" />{:else}<Trash2 aria-hidden="true" />{/if}
-        </AlertDialog.Media>
-        <AlertDialog.Title>{title()}</AlertDialog.Title>
-        {#if description()}
-          <AlertDialog.Description>{description()}</AlertDialog.Description>
-        {/if}
-      </AlertDialog.Header>
+      <ModalScrollArea>
+        <AlertDialog.Header>
+          <AlertDialog.Media>
+            {#if mutation.kind === "reset"}<RotateCcw aria-hidden="true" />{:else}<Trash2 aria-hidden="true" />{/if}
+          </AlertDialog.Media>
+          <AlertDialog.Title>{title()}</AlertDialog.Title>
+          {#if description()}
+            <AlertDialog.Description>{description()}</AlertDialog.Description>
+          {/if}
+        </AlertDialog.Header>
 
-      <SecurityMutationDetails {mutation} {activeOperation} />
+        <SecurityMutationDetails {mutation} {activeOperation} />
 
-      <AlertDialog.Footer>
-        <AlertDialog.Cancel onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
-        <AlertDialog.Action variant="destructive" disabled={disabled} onclick={runPrimary}>
-          {primaryLabel()}
-        </AlertDialog.Action>
-      </AlertDialog.Footer>
+        <AlertDialog.Footer>
+          <AlertDialog.Cancel onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
+          <AlertDialog.Action variant="destructive" disabled={disabled} onclick={runPrimary}>
+            {primaryLabel()}
+          </AlertDialog.Action>
+        </AlertDialog.Footer>
+      </ModalScrollArea>
     </AlertDialog.Content>
   </AlertDialog.Root>
 {:else}
@@ -121,28 +124,30 @@
       onEscapeKeydown={preventEnrollmentDismiss}
       onInteractOutside={preventEnrollmentDismiss}
     >
-      <Dialog.Header>
-        <Dialog.Title>{title()}</Dialog.Title>
-        {#if description()}
-          <Dialog.Description>{description()}</Dialog.Description>
-        {/if}
-      </Dialog.Header>
+      <ModalScrollArea>
+        <Dialog.Header>
+          <Dialog.Title>{title()}</Dialog.Title>
+          {#if description()}
+            <Dialog.Description>{description()}</Dialog.Description>
+          {/if}
+        </Dialog.Header>
 
-      <SecurityMutationDetails {mutation} {activeOperation} />
+        <SecurityMutationDetails {mutation} {activeOperation} />
 
-      <Dialog.Footer>
-        {#if enrollmentRunning}
-          <Button variant="outline" type="button" onclick={() => void onCancelOperation()}>
-            <Fingerprint data-icon="inline-start" aria-hidden="true" />
-            {m.security_cancel_enrollment()}
-          </Button>
-        {:else}
-          <Button type="button" disabled={disabled} onclick={runPrimary}>
-            {primaryLabel()}
-          </Button>
-          <Button variant="outline" type="button" onclick={onClose}>{m.cancel()}</Button>
-        {/if}
-      </Dialog.Footer>
+        <Dialog.Footer>
+          {#if enrollmentRunning}
+            <Button variant="outline" type="button" onclick={() => void onCancelOperation()}>
+              <Fingerprint data-icon="inline-start" aria-hidden="true" />
+              {m.security_cancel_enrollment()}
+            </Button>
+          {:else}
+            <Button type="button" disabled={disabled} onclick={runPrimary}>
+              {primaryLabel()}
+            </Button>
+            <Button variant="outline" type="button" onclick={onClose}>{m.cancel()}</Button>
+          {/if}
+        </Dialog.Footer>
+      </ModalScrollArea>
     </Dialog.Content>
   </Dialog.Root>
 {/if}
@@ -154,7 +159,7 @@
     width: min(38rem, calc(100vw - 2rem));
     max-width: none;
     max-height: calc(100vh - 2rem);
-    overflow: auto;
+    overflow: hidden;
   }
 }
 </style>

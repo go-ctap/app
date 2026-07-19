@@ -9,6 +9,7 @@
 	import EmptyState from "$lib/components/shared/EmptyState.svelte";
 	import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
 	import ShellStatusBar from "$lib/components/shell/ShellStatusBar.svelte";
+	import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
 	import { Toaster } from "$lib/components/ui/sonner/index.js";
 	import { WindowControls, WindowTitlebar } from "$lib/components/window-controls";
 	import { toggleMaximizeWindow } from "$lib/components/window-controls/window";
@@ -188,30 +189,34 @@
 			</header>
 
 			<main class="main-view">
-				{#if $activeScreen === "settings"}
-					<Settings />
-				{:else if $activeScreen === "logs"}
-					<Logs />
-				{:else if noDevices}
-					<EmptyState
-						title={m.insert_token()}
-						variant="workspace"
-					>
-						{#snippet icon()}
-							<ShieldCheck size={34} strokeWidth={1.8} />
-						{/snippet}
-					</EmptyState>
-				{:else if $activeScreen === "large-blobs"}
-					<LargeBlobs />
-				{:else if $activeScreen === "passkeys"}
-					<Passkeys />
-				{:else if $activeScreen === "lab"}
-					<Lab />
-				{:else if $activeScreen === "security"}
-					<Security />
-				{:else}
-					<Overview />
-				{/if}
+				<ScrollArea class="main-view-scroll">
+					<div class="main-view-content" data-fill={$activeScreen === "logs" ? "true" : undefined}>
+						{#if $activeScreen === "settings"}
+							<Settings />
+						{:else if $activeScreen === "logs"}
+							<Logs />
+						{:else if noDevices}
+							<EmptyState
+								title={m.insert_token()}
+								variant="workspace"
+							>
+								{#snippet icon()}
+									<ShieldCheck size={34} strokeWidth={1.8} />
+								{/snippet}
+							</EmptyState>
+						{:else if $activeScreen === "large-blobs"}
+							<LargeBlobs />
+						{:else if $activeScreen === "passkeys"}
+							<Passkeys />
+						{:else if $activeScreen === "lab"}
+							<Lab />
+						{:else if $activeScreen === "security"}
+							<Security />
+						{:else}
+							<Overview />
+						{/if}
+					</div>
+				</ScrollArea>
 			</main>
 
 			<ShellStatusBar
@@ -305,10 +310,18 @@
 			grid-template-columns: minmax(0, 1fr);
 			min-width: 0;
 			min-height: 0;
-			overflow-x: hidden;
-			overflow-y: auto;
-			padding: var(--space-4);
+			overflow: hidden;
 			background: var(--workspace-surface);
+		}
+		:global(.main-view-scroll) {
+			height: 100%;
+			min-width: 0;
+			min-height: 0;
+		}
+		.main-view-content {
+			min-width: 0;
+			min-height: 100%;
+			padding: var(--space-4);
 		}
 		@container workspace-shell (max-width: 48rem) {
 			.titlebar-content {
@@ -336,6 +349,10 @@
 		.titlebar-content[data-native-window-controls="true"] {
 			grid-template-columns: minmax(0, 38rem) minmax(2rem, 1fr);
 			padding-right: var(--space-4);
+		}
+
+		.main-view-content[data-fill="true"] {
+			height: 100%;
 		}
 
 		@container workspace-shell (max-width: 48rem) {

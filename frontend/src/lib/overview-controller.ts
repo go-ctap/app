@@ -16,6 +16,7 @@ import {
 import { authenticatorInspection, selectedSelector, authenticatorStatus } from "./features/authenticator/state.js";
 import { activeScreen } from "./features/workbench/state.js";
 import { failureMessage, runtimeFailureFrom } from "./failure.js";
+import { inspectResult } from "./ctapkit-results.js";
 import { applyInvalidSelectionError, applyOperationAuthenticatorBoundary, currentSelectionID } from "./authenticator-boundary.js";
 import { beginOperation, setStatusOutcome, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
 
@@ -28,7 +29,7 @@ function reportDegradedOverviewLoad(label: string, error: Failure) {
 }
 
 function shouldLoadBioSensor(envelope: InspectEnvelope) {
-  const options = envelope.result!.result.info.options ?? {};
+  const options = inspectResult(envelope)?.info.options ?? {};
   return options.bioEnroll === true || options.uvBioEnroll === true;
 }
 
@@ -67,7 +68,7 @@ export async function maybeLoadOverview() {
 }
 
 async function loadOverviewDetails(envelope: InspectEnvelope, selectionId: string) {
-  const aaguid = envelope.result!.result.info.aaguid.trim();
+  const aaguid = inspectResult(envelope)?.info.aaguid.trim() ?? "";
   if (aaguid) {
     void loadOverviewMDS(aaguid);
   }

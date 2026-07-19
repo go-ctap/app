@@ -2,6 +2,7 @@
   import { TriangleAlert } from "@lucide/svelte";
 
   import LargeBlobMutationPreview from "$lib/components/largeblobs/LargeBlobMutationPreview.svelte";
+  import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -64,25 +65,27 @@
 <Dialog.Root open={previewErrorOpen} onOpenChange={handleOpenChange}>
   {#if mutation.kind === "delete" && mutation.phase === "error" && mutation.failedPhase === "previewing"}
     <Dialog.Content class="large-blob-delete-error-dialog">
-      <Dialog.Header>
-        <Dialog.Title>{m.delete_preview()}</Dialog.Title>
-      </Dialog.Header>
+      <ModalScrollArea>
+        <Dialog.Header>
+          <Dialog.Title>{m.delete_preview()}</Dialog.Title>
+        </Dialog.Header>
 
-      <Alert.Root variant={failureCanceled ? "default" : "destructive"} role={failureCanceled ? "status" : "alert"}>
-        <Alert.Title>
-          {failureCanceled
-            ? m.operation_canceled_with_label({ label: m.delete_preview() })
-            : m.operation_failed()}
-        </Alert.Title>
-        <Alert.Description>{failureMessage}</Alert.Description>
-      </Alert.Root>
+        <Alert.Root variant={failureCanceled ? "default" : "destructive"} role={failureCanceled ? "status" : "alert"}>
+          <Alert.Title>
+            {failureCanceled
+              ? m.operation_canceled_with_label({ label: m.delete_preview() })
+              : m.operation_failed()}
+          </Alert.Title>
+          <Alert.Description>{failureMessage}</Alert.Description>
+        </Alert.Root>
 
-      {#if preview}<LargeBlobMutationPreview {preview} />{/if}
+        {#if preview}<LargeBlobMutationPreview {preview} />{/if}
 
-      <Dialog.Footer>
-        <Button type="button" onclick={() => void onPreview(mutation.credentialIDHex)}>{m.delete()}</Button>
-        <Button variant="outline" type="button" onclick={onClose}>{m.close()}</Button>
-      </Dialog.Footer>
+        <Dialog.Footer>
+          <Button type="button" onclick={() => void onPreview(mutation.credentialIDHex)}>{m.delete()}</Button>
+          <Button variant="outline" type="button" onclick={onClose}>{m.close()}</Button>
+        </Dialog.Footer>
+      </ModalScrollArea>
     </Dialog.Content>
   {/if}
 </Dialog.Root>
@@ -93,30 +96,32 @@
     || (mutation.phase === "error" && mutation.failedPhase === "executing")
   )}
     <AlertDialog.Content class="large-blob-delete-dialog">
-      <AlertDialog.Header>
-        <AlertDialog.Media><TriangleAlert aria-hidden="true" /></AlertDialog.Media>
-        <AlertDialog.Title>{m.confirm_delete()}</AlertDialog.Title>
-      </AlertDialog.Header>
+      <ModalScrollArea>
+        <AlertDialog.Header>
+          <AlertDialog.Media><TriangleAlert aria-hidden="true" /></AlertDialog.Media>
+          <AlertDialog.Title>{m.confirm_delete()}</AlertDialog.Title>
+        </AlertDialog.Header>
 
-      {#if failureMessage}
-        <Alert.Root variant={failureCanceled ? "default" : "destructive"} role={failureCanceled ? "status" : "alert"}>
-          <Alert.Title>
-            {failureCanceled
-              ? m.operation_canceled_with_label({ label: m.large_blob_delete() })
-              : m.operation_failed()}
-          </Alert.Title>
-          <Alert.Description>{failureMessage}</Alert.Description>
-        </Alert.Root>
-      {/if}
+        {#if failureMessage}
+          <Alert.Root variant={failureCanceled ? "default" : "destructive"} role={failureCanceled ? "status" : "alert"}>
+            <Alert.Title>
+              {failureCanceled
+                ? m.operation_canceled_with_label({ label: m.large_blob_delete() })
+                : m.operation_failed()}
+            </Alert.Title>
+            <Alert.Description>{failureMessage}</Alert.Description>
+          </Alert.Root>
+        {/if}
 
-      {#if preview}<LargeBlobMutationPreview {preview} />{/if}
+        {#if preview}<LargeBlobMutationPreview {preview} />{/if}
 
-      <AlertDialog.Footer>
-        <AlertDialog.Cancel onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
-        <AlertDialog.Action variant="destructive" onclick={handleAction}>
-          {m.confirm_delete()}
-        </AlertDialog.Action>
-      </AlertDialog.Footer>
+        <AlertDialog.Footer>
+          <AlertDialog.Cancel onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
+          <AlertDialog.Action variant="destructive" onclick={handleAction}>
+            {m.confirm_delete()}
+          </AlertDialog.Action>
+        </AlertDialog.Footer>
+      </ModalScrollArea>
     </AlertDialog.Content>
   {/if}
 </AlertDialog.Root>
@@ -128,7 +133,7 @@
     width: min(42rem, calc(100vw - 2rem));
     max-width: none;
     max-height: calc(100vh - 2rem);
-    overflow: auto;
+    overflow: hidden;
   }
 }
 </style>

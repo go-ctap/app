@@ -113,57 +113,55 @@ function statusEnvelope(options: {
     selectionId: options.selectionId ?? "authenticator-1",
     kind: OperationKind.OperationConfigStatus,
     result: {
-      report: {
-        device: item,
-        pin: {
-          state: StateValue.StateConfigured,
-          supported: true,
-          configured: true,
-          protocolSupported: true,
-          minPINLength,
-          maxPINLength,
-          retries: { state: StateValue.StateConfigured, remaining: 8 },
-        },
-        uv: {
-          state: StateValue.StateConfigured,
-          supported: true,
-          configured: true,
-          retries: { state: StateValue.StateConfigured, remaining: 5 },
-        },
-        bio: {
+      device: item,
+      pin: {
+        state: StateValue.StateConfigured,
+        supported: true,
+        configured: true,
+        protocolSupported: true,
+        minPINLength,
+        maxPINLength,
+        retries: { state: StateValue.StateConfigured, remaining: 8 },
+      },
+      uv: {
+        state: StateValue.StateConfigured,
+        supported: true,
+        configured: true,
+        retries: { state: StateValue.StateConfigured, remaining: 5 },
+      },
+      bio: {
+        state: bioSupported ? StateValue.StateSupported : StateValue.StateUnsupported,
+        supported: bioSupported,
+        configured: options.bioConfigured ?? false,
+        uvBioEnroll: {
           state: bioSupported ? StateValue.StateSupported : StateValue.StateUnsupported,
           supported: bioSupported,
           configured: options.bioConfigured ?? false,
-          uvBioEnroll: {
-            state: bioSupported ? StateValue.StateSupported : StateValue.StateUnsupported,
-            supported: bioSupported,
-            configured: options.bioConfigured ?? false,
-          },
         },
-        authenticatorConfig: {
+      },
+      authenticatorConfig: {
+        state: StateValue.StateSupported,
+        supported: true,
+        uvAcfg: { state: StateValue.StateSupported, supported: true },
+        alwaysUv: {
           state: StateValue.StateSupported,
           supported: true,
-          uvAcfg: { state: StateValue.StateSupported, supported: true },
-          alwaysUv: {
-            state: StateValue.StateSupported,
-            supported: true,
-            configured: options.alwaysUVConfigured ?? false,
-          },
-          setMinPINLength: { state: StateValue.StateSupported, supported: true },
-          longTouchForReset: {
-            state: options.longTouchConfigured === true
-              ? StateValue.StateConfigured
-              : StateValue.StateNotConfigured,
-            supported: options.longTouchConfigured !== null,
-            configured: options.longTouchConfigured ?? false,
-          },
+          configured: options.alwaysUVConfigured ?? false,
         },
-        resetHints: { longTouchForReset: StateValue.StateUnknown },
-        limits: {
-          minPINLength,
-          maxPINLength,
-          maxRPIDsForSetMinPINLength: options.maxRPIDs ?? 3,
+        setMinPINLength: { state: StateValue.StateSupported, supported: true },
+        longTouchForReset: {
+          state: options.longTouchConfigured === true
+            ? StateValue.StateConfigured
+            : StateValue.StateNotConfigured,
+          supported: options.longTouchConfigured !== null,
+          configured: options.longTouchConfigured ?? false,
         },
+      },
+      resetHints: { longTouchForReset: StateValue.StateUnknown },
+      limits: {
+        minPINLength,
+        maxPINLength,
+        maxRPIDsForSetMinPINLength: options.maxRPIDs ?? 3,
       },
     },
   } as unknown as ConfigStatusEnvelope;
@@ -175,13 +173,11 @@ function bioSensorEnvelope(item = TOKEN, selectionId = "authenticator-1"): BioSe
     selectionId,
     kind: OperationKind.OperationBioSensorInfo,
     result: {
-      report: {
-        device: item,
-        supported: true,
-        previewOnly: false,
-        maxCaptureSamplesRequiredForEnroll: 4,
-        maxTemplateFriendlyName: 32,
-      },
+      device: item,
+      supported: true,
+      previewOnly: false,
+      maxCaptureSamplesRequiredForEnroll: 4,
+      maxTemplateFriendlyName: 32,
     },
   } as unknown as BioSensorEnvelope;
 }
@@ -192,12 +188,10 @@ function bioListEnvelope(item = TOKEN, selectionId = "authenticator-1"): BioList
     selectionId,
     kind: OperationKind.OperationBioList,
     result: {
-      report: {
-        device: item,
-        supported: true,
-        previewOnly: false,
-        enrollments: [{ templateIDHex: "cafe", friendlyName: "Index finger" }],
-      },
+      device: item,
+      supported: true,
+      previewOnly: false,
+      enrollments: [{ templateIDHex: "cafe", friendlyName: "Index finger" }],
     },
   } as unknown as BioListEnvelope;
 }
@@ -230,7 +224,7 @@ function authenticatorConfigEnvelope(
       preview: {
         operation,
         device: TOKEN,
-        authenticatorConfig: statusEnvelope().result!.report.authenticatorConfig,
+        authenticatorConfig: statusEnvelope().result!.authenticatorConfig,
         mode: phase === "preview" ? PreviewMode.PreviewModeDryRun : PreviewMode.PreviewModeExecute,
       },
       result: phase === "result"
@@ -531,7 +525,7 @@ describe("security controller mutations", () => {
     });
     expect(get(securityMutation)).toEqual({ kind: "idle", phase: "idle" });
     const refreshedStatus = get(securityStatus).lastSuccessfulEnvelope!;
-    expect(refreshedStatus.result!.report.authenticatorConfig.alwaysUv.configured).toBe(true);
+    expect(refreshedStatus.result!.authenticatorConfig.alwaysUv.configured).toBe(true);
     expect(get(authenticatorInspection).state).toBe("idle");
     expect(get(overviewBioSensor).state).toBe("idle");
     expect(get(overviewMDS).state).toBe("idle");
@@ -749,7 +743,7 @@ describe("security controller mutations", () => {
   it("validates biometric friendly names by UTF-8 bytes and permits an empty name", async () => {
     seedReadyStatus(statusEnvelope({ bioSupported: true, bioConfigured: true }));
     const sensorEnvelope = bioSensorEnvelope();
-    sensorEnvelope.result!.report.maxTemplateFriendlyName = 4;
+    sensorEnvelope.result!.maxTemplateFriendlyName = 4;
     completeSecurityBioSensorLoad(sensorEnvelope);
     const bioRename = vi.spyOn(api, "bioRename").mockResolvedValue(bioRenamePreviewEnvelope(""));
 

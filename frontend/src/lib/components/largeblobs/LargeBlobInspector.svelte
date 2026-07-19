@@ -12,6 +12,7 @@
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
+  import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
   import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import { largeBlobReadReport } from "$lib/ctapkit-results";
@@ -224,15 +225,13 @@
                 <Alert.Description>{m.decoded_payload_empty()}</Alert.Description>
               </Alert.Root>
             {:else if report.decode.success && report.decode.mode === DecodeMode.DecodeModeUTF8}
-              <!-- svelte-ignore a11y_no_noninteractive_tabindex (scrollable code region) -->
-              <div
+              <ScrollArea
                 class="large-blob-decoded-text"
-                role="region"
-                aria-label={m.payload_encoding_utf8()}
-                tabindex="0"
+                orientation="both"
+                viewportProps={{ role: "region", "aria-label": m.payload_encoding_utf8(), tabindex: 0 }}
               >
                 <pre>{report.decode.decodedText}</pre>
-              </div>
+              </ScrollArea>
             {:else if report.decode.success && (
               report.decode.mode === DecodeMode.DecodeModeJSON
               || report.decode.mode === DecodeMode.DecodeModeCBOR
@@ -264,10 +263,13 @@
                   <Copy data-icon="inline-start" aria-hidden="true" />
                 </Button>
               </div>
-              <!-- svelte-ignore a11y_no_noninteractive_tabindex (scrollable code region) -->
-              <div class="large-blob-raw-hex" role="region" aria-label={m.raw_hex()} tabindex="0">
+              <ScrollArea
+                class="large-blob-raw-hex"
+                orientation="both"
+                viewportProps={{ role: "region", "aria-label": m.raw_hex(), tabindex: 0 }}
+              >
                 <pre>{report.rawHex}</pre>
-              </div>
+              </ScrollArea>
               {/if}
             {/if}
           {/if}
@@ -389,13 +391,15 @@
     white-space: nowrap;
   }
 
-  .large-blob-decoded-text {
+  :global(.large-blob-decoded-text),
+  :global(.large-blob-decoded-text > [data-scroll-area-viewport]) {
     inline-size: 100%;
     max-inline-size: 100%;
     max-block-size: min(18rem, 38dvh);
     min-inline-size: 0;
-    overflow-x: auto;
-    overflow-y: auto;
+  }
+
+  :global(.large-blob-decoded-text) {
     border: 1px solid var(--border);
     background: var(--muted);
   }
@@ -407,7 +411,7 @@
     padding-block: var(--space-2);
   }
 
-  .large-blob-decoded-text pre {
+  :global(.large-blob-decoded-text) pre {
     margin: 0;
     padding: var(--space-3);
     white-space: pre-wrap;
@@ -419,17 +423,20 @@
     font-size: 0.78rem;
   }
 
-  .large-blob-raw-hex {
+  :global(.large-blob-raw-hex),
+  :global(.large-blob-raw-hex > [data-scroll-area-viewport]) {
     inline-size: 100%;
     max-inline-size: 100%;
     max-block-size: min(14rem, 30dvh);
     min-inline-size: 0;
-    overflow: auto;
+  }
+
+  :global(.large-blob-raw-hex) {
     border: 1px solid var(--border);
     background: var(--muted);
   }
 
-  .large-blob-raw-hex pre {
+  :global(.large-blob-raw-hex) pre {
     min-width: max-content;
     margin: 0;
     padding: var(--space-3);

@@ -3,6 +3,7 @@
   import {type Component} from "svelte";
 
   import { Button } from "$lib/components/ui/button/index.js";
+  import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
   import { Spinner } from "$lib/components/ui/spinner/index.js";
   import type { SidebarPresentation } from "$lib/shell-presentation";
   import type { ActiveScreen } from "$lib/stores";
@@ -49,50 +50,56 @@
   </div>
 
   <nav class="sidebar-nav" aria-label={m.screen()}>
-    {#each navItems as item (item.id)}
-      <Button
-        type="button"
-        variant={presentation.activeScreen === item.id ? "secondary" : "ghost"}
-        class="sidebar-nav-button"
-        data-active={presentation.activeScreen === item.id ? "true" : undefined}
-        aria-current={presentation.activeScreen === item.id ? "page" : undefined}
-        aria-label={item.label}
-        onclick={() => onNavigate(item.id)}
-      >
-        <item.icon data-icon="inline-start" />
-        <span class="sidebar-nav-label">{item.label}</span>
-      </Button>
-    {/each}
+    <ScrollArea class="sidebar-nav-scroll">
+      <div class="sidebar-nav-list">
+        {#each navItems as item (item.id)}
+          <Button
+            type="button"
+            variant={presentation.activeScreen === item.id ? "secondary" : "ghost"}
+            class="sidebar-nav-button"
+            data-active={presentation.activeScreen === item.id ? "true" : undefined}
+            aria-current={presentation.activeScreen === item.id ? "page" : undefined}
+            aria-label={item.label}
+            onclick={() => onNavigate(item.id)}
+          >
+            <item.icon data-icon="inline-start" />
+            <span class="sidebar-nav-label">{item.label}</span>
+          </Button>
+        {/each}
+      </div>
+    </ScrollArea>
   </nav>
 
   <section class="sidebar-tokens" aria-labelledby="sidebar-tokens-title">
     <h2 id="sidebar-tokens-title" class="sidebar-section-title">{m.tokens()}</h2>
-    <div class="sidebar-token-list">
-      {#each presentation.tokens as token (token.value)}
-        <Button
-          type="button"
-          variant={presentation.selectedValue === token.value ? "secondary" : "ghost"}
-          class="sidebar-token-button"
-          data-selected={presentation.selectedValue === token.value ? "true" : undefined}
-          aria-pressed={presentation.selectedValue === token.value}
-          aria-label={token.label}
-          disabled={presentation.busy}
-          onclick={() => onSelectToken(token.value)}
-        >
-          {#if presentation.busy && presentation.selectedValue === token.value}
-            <Spinner data-icon="inline-start" />
-          {:else}
-            <Usb data-icon="inline-start" aria-hidden="true" />
-          {/if}
-          <span class="sidebar-token-copy">
-            <span class="sidebar-token-name" title={token.name}>{token.name}</span>
-            <span class="sidebar-token-detail">{token.detail}</span>
-          </span>
-        </Button>
-      {:else}
-        <p class="sidebar-token-empty">{m.no_authenticators_connected()}</p>
-      {/each}
-    </div>
+    <ScrollArea class="sidebar-token-scroll">
+      <div class="sidebar-token-list">
+        {#each presentation.tokens as token (token.value)}
+          <Button
+            type="button"
+            variant={presentation.selectedValue === token.value ? "secondary" : "ghost"}
+            class="sidebar-token-button"
+            data-selected={presentation.selectedValue === token.value ? "true" : undefined}
+            aria-pressed={presentation.selectedValue === token.value}
+            aria-label={token.label}
+            disabled={presentation.busy}
+            onclick={() => onSelectToken(token.value)}
+          >
+            {#if presentation.busy && presentation.selectedValue === token.value}
+              <Spinner data-icon="inline-start" />
+            {:else}
+              <Usb data-icon="inline-start" aria-hidden="true" />
+            {/if}
+            <span class="sidebar-token-copy">
+              <span class="sidebar-token-name" title={token.name}>{token.name}</span>
+              <span class="sidebar-token-detail">{token.detail}</span>
+            </span>
+          </Button>
+        {:else}
+          <p class="sidebar-token-empty">{m.no_authenticators_connected()}</p>
+        {/each}
+      </div>
+    </ScrollArea>
   </section>
 
 </aside>
@@ -153,14 +160,22 @@
     }
 
     .sidebar-nav {
+      min-width: 0;
+      min-height: 0;
+      background: var(--sidebar-background, var(--sidebar));
+    }
+
+    :global(.sidebar-nav-scroll) {
+      height: 100%;
+      min-height: 0;
+    }
+
+    .sidebar-nav-list {
       display: grid;
       align-content: start;
       gap: var(--space-1);
       min-width: 0;
-      min-height: 0;
-      overflow-y: auto;
       padding: var(--space-4);
-      background: var(--sidebar-background, var(--sidebar));
     }
 
     .sidebar-nav :global(.sidebar-nav-button) {
@@ -185,12 +200,15 @@
       text-transform: uppercase;
     }
 
+    :global(.sidebar-token-scroll),
+    :global(.sidebar-token-scroll > [data-scroll-area-viewport]) {
+      max-height: 13rem;
+    }
+
     .sidebar-token-list {
       display: grid;
       gap: var(--space-1);
       min-width: 0;
-      max-height: 13rem;
-      overflow-y: auto;
     }
 
     .sidebar-token-list :global(.sidebar-token-button) {
@@ -250,7 +268,7 @@
       background: var(--sidebar-background, var(--sidebar));
     }
 
-    .app-sidebar[data-native-titlebar="true"] .sidebar-nav {
+    .app-sidebar[data-native-titlebar="true"] .sidebar-nav-list {
       padding-block-start: var(--space-2);
     }
 }

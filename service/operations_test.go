@@ -7,6 +7,7 @@ import (
 
 	ctapkit "github.com/go-ctap/kit"
 	"github.com/go-ctap/kit/model"
+	"github.com/go-ctap/kit/model/credentials"
 	"github.com/go-ctap/kit/model/failure"
 	"github.com/go-ctap/kit/model/report"
 )
@@ -54,7 +55,7 @@ func TestListCredentialsFailureUsesOnlyTheTypedEnvelopeError(t *testing.T) {
 		OperationRequest{SelectionID: "selection-1"},
 		model.OperationListCredentials,
 		false,
-		staticOperationExecutor[model.CredentialsOutput](nil, runErr),
+		staticOperationExecutor[credentials.InventoryReport](nil, runErr),
 	)
 	if err != nil {
 		t.Fatalf("ListCredentials error = %v, want nil because the failure is in the envelope", err)
@@ -100,7 +101,7 @@ func TestOperationEnvelopeReportsAndRetiresClosedSelection(t *testing.T) {
 		OperationRequest{SelectionID: "selection-1"},
 		model.OperationListCredentials,
 		false,
-		staticOperationExecutor[model.CredentialsOutput](nil, runErr),
+		staticOperationExecutor[credentials.InventoryReport](nil, runErr),
 	)
 	if err != nil {
 		t.Fatalf("ListCredentials: %v", err)
@@ -180,7 +181,6 @@ func staticOperationExecutor[T any](result *T, err error) operationExecutor[T] {
 	return func(
 		context.Context,
 		*ctapkit.Authenticator,
-		model.InteractionHandler,
 		...ctapkit.OperationOption,
 	) (*T, error) {
 		return result, err

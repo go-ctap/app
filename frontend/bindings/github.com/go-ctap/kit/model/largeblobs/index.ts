@@ -12,6 +12,7 @@ export {
     ListCredential,
     ListReport,
     MutationOperation,
+    MutationOutput,
     MutationPreview,
     MutationResult,
     ReadReport,

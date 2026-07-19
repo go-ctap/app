@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { ExtensionIdentifier } from "../../bindings/github.com/go-ctap/ctap/extension";
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
-import type { InspectInfo } from "../../bindings/github.com/go-ctap/kit/model";
+import type { Info as InspectInfo } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import {
   Capability,

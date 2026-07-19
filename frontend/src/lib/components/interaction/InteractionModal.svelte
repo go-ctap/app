@@ -3,6 +3,7 @@
   import { InteractionAnswer } from "../../../../bindings/fidobench/service";
 
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
+  import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
@@ -46,7 +47,8 @@
 {#if presentation}
   <Dialog.Root open={true} onOpenChange={(open) => !open && void answer(false, true)}>
     <Dialog.Content class="interaction-dialog" showCloseButton={false}>
-      <form class="interaction-dialog-form" onsubmit={submit}>
+      <ModalScrollArea>
+        <form class="interaction-dialog-form" onsubmit={submit}>
         <Dialog.Header>
           <Dialog.Title>{presentation.title}</Dialog.Title>
           <Dialog.Description>{presentation.message}</Dialog.Description>
@@ -98,7 +100,8 @@
             {presentation.kind === InteractionKind.InteractionKindPIN ? m.send_pin() : m.continue_action()}
           </Button>
         </Dialog.Footer>
-      </form>
+        </form>
+      </ModalScrollArea>
     </Dialog.Content>
   </Dialog.Root>
 {/if}
@@ -108,7 +111,7 @@
     :global(.interaction-dialog) {
       width: min(32rem, calc(100% - 2rem));
       max-height: calc(100vh - 2rem);
-      overflow: auto;
+      overflow: hidden;
     }
 
     .interaction-dialog-form {

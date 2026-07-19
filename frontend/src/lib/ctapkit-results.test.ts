@@ -4,11 +4,9 @@ import { AttestationStatementFormatIdentifier } from "../../bindings/github.com/
 import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/credential";
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import {
-  GetAssertionOutput,
-  MakeCredentialOutput,
   OperationKind,
-  type InspectResult,
 } from "../../bindings/github.com/go-ctap/kit/model";
+import type { Result as InspectResult } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import {
   AuthenticatorConfigOperation,
   BioModality,
@@ -41,7 +39,9 @@ import {
   type ResetFactoryEnvelope,
 } from "../../bindings/fidobench/service";
 import {
+  GetAssertionOutput,
   GetAssertionResult,
+  MakeCredentialOutput,
   MakeCredentialInput,
   MakeCredentialPreview,
   MakeCredentialResult,
@@ -88,7 +88,7 @@ const device: DeviceReport = {
 };
 
 describe("ctapkit result extractors", () => {
-  it("extracts the nested inspect result from an operation envelope", () => {
+  it("extracts the direct inspect result from an operation envelope", () => {
     const result: InspectResult = {
       device,
       info: {
@@ -98,12 +98,12 @@ describe("ctapkit result extractors", () => {
       },
     };
 
-    const envelope = { kind: OperationKind.OperationInspect, result: { result } } as InspectEnvelope;
+    const envelope = { kind: OperationKind.OperationInspect, result } as unknown as InspectEnvelope;
 
     expect(inspectResult(envelope)).toBe(result);
   });
 
-  it("extracts the nested bio sensor report from an operation envelope", () => {
+  it("extracts the direct bio sensor report from an operation envelope", () => {
     const report: BioSensorReport = {
       device,
       supported: true,
@@ -111,7 +111,7 @@ describe("ctapkit result extractors", () => {
       modality: BioModality.BioModalityFingerprint,
     };
 
-    const envelope = { kind: OperationKind.OperationBioSensorInfo, result: { report } } as BioSensorEnvelope;
+    const envelope = { kind: OperationKind.OperationBioSensorInfo, result: report } as unknown as BioSensorEnvelope;
 
     expect(bioSensorReport(envelope)).toBe(report);
   });
@@ -120,27 +120,23 @@ describe("ctapkit result extractors", () => {
     const status = {
       kind: OperationKind.OperationConfigStatus,
       result: {
-        report: {
-          device,
-          pin: { state: StateValue.StateConfigured },
-          bio: { state: StateValue.StateSupported },
-        },
+        device,
+        pin: { state: StateValue.StateConfigured },
+        bio: { state: StateValue.StateSupported },
       },
     } as unknown as ConfigStatusEnvelope;
     const list = {
       kind: OperationKind.OperationBioList,
       result: {
-        report: {
-          device,
-          supported: true,
-          previewOnly: false,
-          enrollments: [{ templateIDHex: "cafe", friendlyName: "Right index" }],
-        },
+        device,
+        supported: true,
+        previewOnly: false,
+        enrollments: [{ templateIDHex: "cafe", friendlyName: "Right index" }],
       },
     } as unknown as BioListEnvelope;
 
-    expect(configStatusReport(status)).toBe(status.result!.report);
-    expect(bioListReport(list)).toBe(list.result!.report);
+    expect(configStatusReport(status)).toBe(status.result);
+    expect(bioListReport(list)).toBe(list.result);
 
     status.error = failureForCode(Code.CodeInternalError);
     list.error = failureForCode(Code.CodeInternalError);
@@ -281,31 +277,27 @@ describe("ctapkit result extractors", () => {
     const list = {
       kind: OperationKind.OperationListLargeBlobs,
       result: {
-        report: {
-          device,
-          support: { largeBlobs: true, largeBlobKeyExtension: true },
-          array: { read: true, blobCount: 1, matchedBlobCount: 1, unmatchedBlobCount: 0 },
-          credentials: [],
-        },
+        device,
+        support: { largeBlobs: true, largeBlobKeyExtension: true },
+        array: { read: true, blobCount: 1, matchedBlobCount: 1, unmatchedBlobCount: 0 },
+        credentials: [],
       },
     } as unknown as LargeBlobListEnvelope;
     const read = {
       kind: OperationKind.OperationReadLargeBlob,
       result: {
-        report: {
-          device,
-          support: { largeBlobs: true, largeBlobKeyExtension: true },
-          target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
-          largeBlobKeyState: "available",
-          array: { read: true, blobCount: 1, blobPresent: true, blobState: "present" },
-          blobPresent: true,
-          rawByteCount: 0,
-        },
+        device,
+        support: { largeBlobs: true, largeBlobKeyExtension: true },
+        target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
+        largeBlobKeyState: "available",
+        array: { read: true, blobCount: 1, blobPresent: true, blobState: "present" },
+        blobPresent: true,
+        rawByteCount: 0,
       },
-    } as LargeBlobReadEnvelope;
+    } as unknown as LargeBlobReadEnvelope;
 
-    expect(largeBlobListReport(list)).toBe(list.result!.report);
-    expect(largeBlobReadReport(read)).toBe(read.result!.report);
+    expect(largeBlobListReport(list)).toBe(list.result);
+    expect(largeBlobReadReport(read)).toBe(read.result);
 
     list.error = failureForCode(Code.CodeInternalError);
     read.error = failureForCode(Code.CodeInternalError);

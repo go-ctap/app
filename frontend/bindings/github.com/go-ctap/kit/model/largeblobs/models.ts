@@ -306,6 +306,39 @@ export enum MutationOperation {
     MutationGC = "garbage_collect",
 };
 
+export class MutationOutput {
+    "preview": MutationPreview;
+    "result": MutationResult | null;
+
+    /** Creates a new MutationOutput instance. */
+    constructor($$source: Partial<MutationOutput> = {}) {
+        if (!("preview" in $$source)) {
+            this["preview"] = (new MutationPreview());
+        }
+        if (!("result" in $$source)) {
+            this["result"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new MutationOutput instance from a string or object.
+     */
+    static createFrom($$source: any = {}): MutationOutput {
+        const $$createField0_0 = $$createType9;
+        const $$createField1_0 = $$createType11;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("preview" in $$parsedSource) {
+            $$parsedSource["preview"] = $$createField0_0($$parsedSource["preview"]);
+        }
+        if ("result" in $$parsedSource) {
+            $$parsedSource["result"] = $$createField1_0($$parsedSource["result"]);
+        }
+        return new MutationOutput($$parsedSource as Partial<MutationOutput>);
+    }
+}
+
 export class MutationPreview {
     "operation": MutationOperation;
     "device": report$0.DeviceReport;
@@ -374,8 +407,8 @@ export class MutationPreview {
     static createFrom($$source: any = {}): MutationPreview {
         const $$createField1_0 = $$createType4;
         const $$createField2_0 = $$createType5;
-        const $$createField3_0 = $$createType9;
-        const $$createField17_0 = $$createType11;
+        const $$createField3_0 = $$createType12;
+        const $$createField17_0 = $$createType14;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField1_0($$parsedSource["device"]);
@@ -510,9 +543,9 @@ export class ReadReport {
     static createFrom($$source: any = {}): ReadReport {
         const $$createField0_0 = $$createType4;
         const $$createField1_0 = $$createType5;
-        const $$createField2_0 = $$createType9;
-        const $$createField4_0 = $$createType12;
-        const $$createField8_0 = $$createType13;
+        const $$createField2_0 = $$createType12;
+        const $$createField4_0 = $$createType15;
+        const $$createField8_0 = $$createType16;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
@@ -569,8 +602,11 @@ const $$createType5 = SupportReport.createFrom;
 const $$createType6 = ListArraySummary.createFrom;
 const $$createType7 = ListCredential.createFrom;
 const $$createType8 = $Create.Array($$createType7);
-const $$createType9 = BlobTarget.createFrom;
-const $$createType10 = safety$0.Warning.createFrom;
-const $$createType11 = $Create.Array($$createType10);
-const $$createType12 = ArrayState.createFrom;
-const $$createType13 = DecodeStatus.createFrom;
+const $$createType9 = MutationPreview.createFrom;
+const $$createType10 = MutationResult.createFrom;
+const $$createType11 = $Create.Nullable($$createType10);
+const $$createType12 = BlobTarget.createFrom;
+const $$createType13 = safety$0.Warning.createFrom;
+const $$createType14 = $Create.Array($$createType13);
+const $$createType15 = ArrayState.createFrom;
+const $$createType16 = DecodeStatus.createFrom;

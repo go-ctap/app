@@ -4,7 +4,7 @@ import (
 	"slices"
 
 	ctapkit "github.com/go-ctap/kit"
-	"github.com/go-ctap/kit/model"
+	"github.com/go-ctap/kit/model/inspect"
 	"github.com/go-ctap/kit/model/report"
 )
 
@@ -37,7 +37,7 @@ func (s *Service) reportWithMetadata(device report.DeviceReport) report.DeviceRe
 	return device
 }
 
-func (s *Service) mergeInspectMetadata(selectionID SelectionID, result *model.InspectOutput) *DiscoverySnapshot {
+func (s *Service) mergeInspectMetadata(selectionID SelectionID, result *inspect.Result) *DiscoverySnapshot {
 	if result == nil {
 		return nil
 	}
@@ -52,21 +52,21 @@ func (s *Service) mergeInspectMetadata(selectionID SelectionID, result *model.In
 
 	key := selected.device.Fingerprint
 	cached, cachedOK := s.enrichment.cache[key]
-	if result.Result.Device.Metadata == nil {
+	if result.Device.Metadata == nil {
 		if cachedOK {
-			result.Result.Device.Metadata = cached
+			result.Device.Metadata = cached
 		}
 		s.mu.Unlock()
 
 		return nil
 	}
 
-	metadata := result.Result.Device.Metadata
+	metadata := result.Device.Metadata
 	fingerprint := selected.device.Fingerprint
 	changed := !cachedOK || !deviceMetadataEqual(*cached, *metadata)
 	s.enrichment.cache[key] = metadata
 
-	selected.device.Metadata = result.Result.Device.Metadata
+	selected.device.Metadata = result.Device.Metadata
 
 	var snapshot *DiscoverySnapshot
 	if changed {

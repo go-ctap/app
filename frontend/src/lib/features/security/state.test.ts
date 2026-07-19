@@ -28,7 +28,7 @@ describe("security state", () => {
       operationId: "status-1",
       selectionId: "authenticator-1",
       kind: OperationKind.OperationConfigStatus,
-      result: { report: {} },
+      result: {},
     } as ConfigStatusEnvelope;
     const failed = {
       operationId: "status-2",

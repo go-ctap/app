@@ -53,29 +53,27 @@ function listEnvelope(keyState = "available", blobPresent = false): LargeBlobLis
     selectionId: "authenticator-1",
     kind: OperationKind.OperationListLargeBlobs,
     result: {
-      report: {
-        device: { fingerprint: "token-1" },
-        support: {
-          largeBlobs: true,
-          largeBlobKeyExtension: true,
-          maxSerializedLargeBlobArray: 0,
-        },
-        array: {
-          read: true,
-          blobCount: blobPresent ? 1 : 0,
-          matchedBlobCount: blobPresent ? 1 : 0,
-          unmatchedBlobCount: 0,
-        },
-        credentials: [{
-          credentialIDHex: "cafe",
-          rp: { id: "example.test", name: "Example" },
-          user: { userIDHex: "01", name: "user" },
-          largeBlobKeyState: keyState,
-          blobPresent,
-          blobState: blobPresent ? "present" : "missing",
-          blobByteCount: 0,
-        }],
+      device: { fingerprint: "token-1" },
+      support: {
+        largeBlobs: true,
+        largeBlobKeyExtension: true,
+        maxSerializedLargeBlobArray: 0,
       },
+      array: {
+        read: true,
+        blobCount: blobPresent ? 1 : 0,
+        matchedBlobCount: blobPresent ? 1 : 0,
+        unmatchedBlobCount: 0,
+      },
+      credentials: [{
+        credentialIDHex: "cafe",
+        rp: { id: "example.test", name: "Example" },
+        user: { userIDHex: "01", name: "user" },
+        largeBlobKeyState: keyState,
+        blobPresent,
+        blobState: blobPresent ? "present" : "missing",
+        blobByteCount: 0,
+      }],
     },
   } as unknown as LargeBlobListEnvelope;
 }
@@ -136,16 +134,14 @@ function readEnvelope(mode: DecodeMode): LargeBlobReadEnvelope {
     selectionId: "authenticator-1",
     kind: OperationKind.OperationReadLargeBlob,
     result: {
-      report: {
-        device: { fingerprint: "token-1" },
-        support: { largeBlobs: true, largeBlobKeyExtension: true },
-        target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
-        largeBlobKeyState: "available",
-        array: { read: true, blobCount: 1, blobPresent: true, blobState: "present" },
-        blobPresent: true,
-        rawByteCount: 0,
-        decode: { requested: true, mode, success: true },
-      },
+      device: { fingerprint: "token-1" },
+      support: { largeBlobs: true, largeBlobKeyExtension: true },
+      target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
+      largeBlobKeyState: "available",
+      array: { read: true, blobCount: 1, blobPresent: true, blobState: "present" },
+      blobPresent: true,
+      rawByteCount: 0,
+      decode: { requested: true, mode, success: true },
     },
   } as unknown as LargeBlobReadEnvelope;
 }
@@ -224,9 +220,9 @@ describe("large blob controller", () => {
   it("prefills an existing UTF-8 blob when editing starts", () => {
     completeLargeBlobsInventoryLoad(listEnvelope("available", true), "2026-07-11T00:00:00.000Z");
     const envelope = readEnvelope(DecodeMode.DecodeModeUTF8);
-    envelope.result!.report.rawHex = "68656c6c6f";
-    envelope.result!.report.rawByteCount = 5;
-    envelope.result!.report.decode.decodedText = "hello";
+    envelope.result!.rawHex = "68656c6c6f";
+    envelope.result!.rawByteCount = 5;
+    envelope.result!.decode.decodedText = "hello";
     largeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "cafe",
@@ -245,9 +241,9 @@ describe("large blob controller", () => {
   it("prefills existing non-UTF-8 bytes as hex", () => {
     completeLargeBlobsInventoryLoad(listEnvelope("available", true), "2026-07-11T00:00:00.000Z");
     const envelope = readEnvelope(DecodeMode.DecodeModeJSON);
-    envelope.result!.report.rawHex = "fffe";
-    envelope.result!.report.rawByteCount = 2;
-    envelope.result!.report.decode.success = false;
+    envelope.result!.rawHex = "fffe";
+    envelope.result!.rawByteCount = 2;
+    envelope.result!.decode.success = false;
     largeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "cafe",

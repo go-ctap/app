@@ -43,25 +43,23 @@ function inventoryEnvelope(readOnlyPermission = true): CredentialsEnvelope {
     selectionId: "authenticator-1",
     kind: OperationKind.OperationListCredentials,
     result: {
-      report: {
-        device: { fingerprint: "token-1" },
-        support: { credentialManagement: true, previewOnly: false, readOnlyPermission },
-        summary: {
-          existingResidentCredentialsCount: 1,
-          maxPossibleRemainingResidentCredentialsCount: 0,
-          totalRPs: 1,
-          totalCredentials: 1,
-        },
-        groups: [{
-          rpID: "example.test",
-          credentials: [{
-            credentialIDHex: "cafe",
-            userIDHex: "01",
-            userName: "user",
-            displayName: "Old name",
-          }],
-        }],
+      device: { fingerprint: "token-1" },
+      support: { credentialManagement: true, previewOnly: false, readOnlyPermission },
+      summary: {
+        existingResidentCredentialsCount: 1,
+        maxPossibleRemainingResidentCredentialsCount: 0,
+        totalRPs: 1,
+        totalCredentials: 1,
       },
+      groups: [{
+        rpID: "example.test",
+        credentials: [{
+          credentialIDHex: "cafe",
+          userIDHex: "01",
+          userName: "user",
+          displayName: "Old name",
+        }],
+      }],
     },
   } as CredentialsEnvelope;
 }
@@ -106,10 +104,8 @@ function storeStateEnvelope(): CredentialStoreStateEnvelope {
     selectionId: "authenticator-1",
     kind: OperationKind.OperationCredentialStoreState,
     result: {
-      result: {
-        authenticatorIdentifierHex: "000102030405060708090a0b0c0d0e0f",
-        credentialStoreStateHex: "101112131415161718191a1b1c1d1e1f",
-      },
+      authenticatorIdentifierHex: "000102030405060708090a0b0c0d0e0f",
+      credentialStoreStateHex: "101112131415161718191a1b1c1d1e1f",
     },
   } as CredentialStoreStateEnvelope;
 }

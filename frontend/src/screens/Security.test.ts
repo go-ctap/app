@@ -92,7 +92,7 @@ function statusEnvelope(maxPINLength = 63): ConfigStatusEnvelope {
     operationId: "security-status-1",
     selectionId: "authenticator-1",
     kind: OperationKind.OperationConfigStatus,
-    result: { report },
+    result: report,
   } as ConfigStatusEnvelope;
 }
 

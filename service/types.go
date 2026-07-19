@@ -4,9 +4,14 @@ package service
 
 import (
 	"github.com/go-ctap/kit/model"
+	"github.com/go-ctap/kit/model/config"
+	"github.com/go-ctap/kit/model/credentials"
 	"github.com/go-ctap/kit/model/failure"
+	"github.com/go-ctap/kit/model/inspect"
+	"github.com/go-ctap/kit/model/largeblobs"
 	appmds "github.com/go-ctap/kit/model/mds"
 	"github.com/go-ctap/kit/model/report"
+	"github.com/go-ctap/kit/model/webauthn"
 	"github.com/go-ctap/kit/transport"
 )
 
@@ -76,92 +81,92 @@ type OperationEnvelopeMeta struct {
 
 type InspectEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.InspectOutput `json:"result,omitempty"`
+	Result *inspect.Result `json:"result,omitempty"`
 }
 
 type CredentialsEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.CredentialsOutput `json:"result,omitempty"`
+	Result *credentials.InventoryReport `json:"result,omitempty"`
 }
 
 type CredentialStoreStateEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.CredentialStoreStateOutput `json:"result,omitempty"`
+	Result *credentials.StoreStateResult `json:"result,omitempty"`
 }
 
 type CredentialDeleteEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.CredentialDeleteOutput `json:"result,omitempty"`
+	Result *credentials.DeleteOutput `json:"result,omitempty"`
 }
 
 type CredentialUpdateEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.CredentialUpdateOutput `json:"result,omitempty"`
+	Result *credentials.UpdateUserOutput `json:"result,omitempty"`
 }
 
 type LargeBlobReadEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.LargeBlobReadOutput `json:"result,omitempty"`
+	Result *largeblobs.ReadReport `json:"result,omitempty"`
 }
 
 type LargeBlobListEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.LargeBlobListOutput `json:"result,omitempty"`
+	Result *largeblobs.ListReport `json:"result,omitempty"`
 }
 
 type LargeBlobMutationEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.LargeBlobMutationOutput `json:"result,omitempty"`
+	Result *largeblobs.MutationOutput `json:"result,omitempty"`
 }
 
 type ConfigStatusEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.ConfigStatusOutput `json:"result,omitempty"`
+	Result *config.StatusReport `json:"result,omitempty"`
 }
 
 type PINEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.PINOutput `json:"result,omitempty"`
+	Result *config.PINOutput `json:"result,omitempty"`
 }
 
 type AuthenticatorConfigEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.AuthenticatorConfigOutput `json:"result,omitempty"`
+	Result *config.AuthenticatorConfigOutput `json:"result,omitempty"`
 }
 
 type BioSensorEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.BioSensorOutput `json:"result,omitempty"`
+	Result *config.BioSensorReport `json:"result,omitempty"`
 }
 
 type BioListEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.BioListOutput `json:"result,omitempty"`
+	Result *config.BioListReport `json:"result,omitempty"`
 }
 
 type BioEnrollEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.BioEnrollOutput `json:"result,omitempty"`
+	Result *config.BioEnrollOutput `json:"result,omitempty"`
 }
 
 type BioMutationEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.BioMutationOutput `json:"result,omitempty"`
+	Result *config.BioMutationOutput `json:"result,omitempty"`
 }
 
 type ResetFactoryEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.ResetFactoryOutput `json:"result,omitempty"`
+	Result *config.ResetFactoryOutput `json:"result,omitempty"`
 }
 
 type MakeCredentialEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.MakeCredentialOutput `json:"result,omitempty"`
+	Result *webauthn.MakeCredentialOutput `json:"result,omitempty"`
 }
 
 type GetAssertionEnvelope struct {
 	OperationEnvelopeMeta
-	Result *model.GetAssertionOutput `json:"result,omitempty"`
+	Result *webauthn.GetAssertionOutput `json:"result,omitempty"`
 }
 
 type CancelOperationRequest struct {

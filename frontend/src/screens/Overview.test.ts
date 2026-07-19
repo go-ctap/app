@@ -3,7 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
-import { InspectInfo, InspectOutput, InspectResult, OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { Info as InspectInfo, Result as InspectResult } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import { Finding, Profile, Report, RuleID, SpecificationID, Target } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
@@ -50,10 +51,9 @@ function inspectEnvelope(operationId: string, aaguid: string, withFinding = fals
     operationId,
     selectionId: "authenticator-1",
     kind: OperationKind.OperationInspect,
-    result: new InspectOutput({
-      result: new InspectResult({
-        device,
-        info: new InspectInfo({
+    result: new InspectResult({
+      device,
+      info: new InspectInfo({
           versions: [Version.FIDO_2_3],
           aaguid,
           options: {},
@@ -70,7 +70,6 @@ function inspectEnvelope(operationId: string, aaguid: string, withFinding = fals
                 })]
               : [],
           }),
-        }),
       }),
     }),
   });

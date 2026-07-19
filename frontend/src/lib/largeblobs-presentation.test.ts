@@ -25,8 +25,7 @@ function envelope(): LargeBlobListEnvelope {
     kind: OperationKind.OperationListLargeBlobs,
     authenticatorClosed: false,
     result: {
-      report: {
-        device: {
+      device: {
           fingerprint: "token-1",
           transport: Mode.ModeHID,
           path: "token-1",
@@ -34,19 +33,19 @@ function envelope(): LargeBlobListEnvelope {
           productId: 2,
           vendor: Vendor.VendorUnknown,
           product: "Test key",
-        },
-        support: {
+      },
+      support: {
           largeBlobs: true,
           largeBlobKeyExtension: true,
           maxSerializedLargeBlobArray: 0,
-        },
-        array: {
+      },
+      array: {
           read: true,
           blobCount: 2,
           matchedBlobCount: 2,
           unmatchedBlobCount: 0,
-        },
-        credentials: [
+      },
+      credentials: [
           {
             credentialIDHex: "zero",
             rp: { id: "example.test", name: "Example", idHashHex: "aa" },
@@ -74,8 +73,7 @@ function envelope(): LargeBlobListEnvelope {
             blobState: BlobState.BlobStateUnknownKeyMissing,
             blobByteCount: 0,
           },
-        ],
-      },
+      ],
     },
   };
 }
@@ -119,7 +117,7 @@ describe("large blob presentation", () => {
   });
 
   it("searches generated RP/user identity and implements every blob filter", () => {
-    const report = envelope().result!.report;
+    const report = envelope().result!;
     for (const query of ["example", "example.test", "aa", "zero", "01", "zero@example", "zero blob"]) {
       expect(buildLargeBlobRows(report, query).map((row) => row.id), query).toEqual(["zero"]);
     }

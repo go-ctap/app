@@ -13,7 +13,6 @@ import (
 type operationExecutor[T any] func(
 	context.Context,
 	*ctapkit.Authenticator,
-	model.InteractionHandler,
 	...ctapkit.OperationOption,
 ) (*T, error)
 
@@ -21,14 +20,12 @@ type authenticatorOperation[O any, T any] func(
 	*ctapkit.Authenticator,
 	context.Context,
 	O,
-	model.InteractionHandler,
 	...ctapkit.OperationOption,
 ) (*T, error)
 
 type inputlessAuthenticatorOperation[T any] func(
 	*ctapkit.Authenticator,
 	context.Context,
-	model.InteractionHandler,
 	...ctapkit.OperationOption,
 ) (*T, error)
 
@@ -39,10 +36,9 @@ func bindOperation[O any, T any](
 	return func(
 		ctx context.Context,
 		authenticator *ctapkit.Authenticator,
-		handler model.InteractionHandler,
 		opts ...ctapkit.OperationOption,
 	) (*T, error) {
-		return execute(authenticator, ctx, operation, handler, opts...)
+		return execute(authenticator, ctx, operation, opts...)
 	}
 }
 
@@ -50,10 +46,9 @@ func bindInputlessOperation[T any](execute inputlessAuthenticatorOperation[T]) o
 	return func(
 		ctx context.Context,
 		authenticator *ctapkit.Authenticator,
-		handler model.InteractionHandler,
 		opts ...ctapkit.OperationOption,
 	) (*T, error) {
-		return execute(authenticator, ctx, handler, opts...)
+		return execute(authenticator, ctx, opts...)
 	}
 }
 
@@ -116,14 +111,15 @@ func runOperation[T any](
 
 	opts := runOptions(req.VerificationFlow)
 	opts = append(opts, ctapkit.WithEventSink(operationEventSink{service: service, operation: state}))
-	ctx = ctapkit.WithLogCorrelation(ctx, string(req.SelectionID), string(operationID), kind)
-	result, operationErr = execute(ctx, selected.runtime.client, interactionHandler{
+	opts = append(opts, ctapkit.WithInteractionHandler(interactionHandler{
 		service:     service,
 		done:        state.done,
 		selectionID: req.SelectionID,
 		operationID: operationID,
 		kind:        kind,
-	}, opts...)
+	}))
+	ctx = ctapkit.WithLogCorrelation(ctx, string(req.SelectionID), string(operationID), kind)
+	result, operationErr = execute(ctx, selected.runtime.client, opts...)
 
 	meta.AuthenticatorClosed = selected.runtime.Closed()
 	meta.Error = failure.Snapshot(operationErr)

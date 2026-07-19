@@ -1,43 +1,40 @@
 import {
-  type AuthenticatorConfigOutput,
-  type BioEnrollOutput,
-  type BioMutationOutput,
-  type CredentialDeleteOutput,
-  type CredentialStoreStateOutput,
-  type CredentialUpdateOutput,
-  type LargeBlobMutationOutput,
-  type PINOutput,
-  type ResetFactoryOutput,
-} from "../../bindings/github.com/go-ctap/kit/model";
-import {
   AuthenticatorConfigOperation,
   BioMutationOperation,
   PINMutationOperation,
+  type AuthenticatorConfigOutput,
   type AuthenticatorConfigPreview,
   type AuthenticatorConfigResult,
+  type BioEnrollOutput,
   type BioEnrollPreview,
   type BioEnrollResult,
   type BioListReport,
+  type BioMutationOutput,
   type BioMutationPreview,
   type BioMutationResult,
   type BioSensorReport,
+  type PINOutput,
   type PINMutationPreview,
   type PINMutationResult,
+  type ResetFactoryOutput,
   type ResetPreview,
   type ResetResult,
   type StatusReport,
 } from "../../bindings/github.com/go-ctap/kit/model/config";
 import type {
+  DeleteOutput as CredentialDeleteOutput,
   DeletePreview,
   DeleteResult,
   InventoryReport,
   StoreStateResult,
+  UpdateUserOutput as CredentialUpdateOutput,
   UpdateUserPreview,
   UpdateUserResult,
 } from "../../bindings/github.com/go-ctap/kit/model/credentials";
 import {
   MutationOperation,
   type ListReport as LargeBlobListReport,
+  type MutationOutput as LargeBlobMutationOutput,
   type MutationPreview as LargeBlobMutationPreview,
   type MutationResult as LargeBlobMutationResult,
   type ReadReport as LargeBlobReadReport,
@@ -75,22 +72,22 @@ import { failureMessage } from "./failure.js";
 
 export function inspectResult(envelope: InspectEnvelope | null | undefined) {
   if (!envelope || envelope.error || !envelope.result) return null;
-  return envelope.result.result;
+  return envelope.result;
 }
 
 export function bioSensorReport(envelope: BioSensorEnvelope | null | undefined): BioSensorReport | null {
   if (!envelope || envelope.error || !envelope.result) return null;
-  return envelope.result.report;
+  return envelope.result;
 }
 
 export function configStatusReport(envelope: ConfigStatusEnvelope | null | undefined): StatusReport | null {
   if (!envelope || envelope.error || !envelope.result) return null;
-  return envelope.result.report;
+  return envelope.result;
 }
 
 export function bioListReport(envelope: BioListEnvelope | null | undefined): BioListReport | null {
   if (!envelope || envelope.error || !envelope.result) return null;
-  return envelope.result.report;
+  return envelope.result;
 }
 
 export function pinMutationOutput(envelope: PINEnvelope | null | undefined): PINOutput | null {
@@ -174,20 +171,14 @@ export function resetFactoryResult(envelope: ResetFactoryEnvelope | null | undef
 
 export function credentialsReport(envelope: CredentialsEnvelope | null | undefined): InventoryReport | null {
   if (!envelope || envelope.error || !envelope.result) return null;
-  return envelope.result.report;
-}
-
-export function credentialStoreStateOutput(
-  envelope: CredentialStoreStateEnvelope | null | undefined,
-): CredentialStoreStateOutput | null {
-  if (!envelope || envelope.error || !envelope.result) return null;
   return envelope.result;
 }
 
 export function credentialStoreStateResult(
   envelope: CredentialStoreStateEnvelope | null | undefined,
 ): StoreStateResult | null {
-  return credentialStoreStateOutput(envelope)?.result ?? null;
+  if (!envelope || envelope.error || !envelope.result) return null;
+  return envelope.result;
 }
 
 export function credentialDeleteOutput(envelope: CredentialDeleteEnvelope | null | undefined): CredentialDeleteOutput | null {
@@ -222,12 +213,12 @@ export function credentialUpdateResult(envelope: CredentialUpdateEnvelope | null
 
 export function largeBlobListReport(envelope: LargeBlobListEnvelope | null | undefined): LargeBlobListReport | null {
   if (!envelope || envelope.error || !envelope.result) return null;
-  return envelope.result.report;
+  return envelope.result;
 }
 
 export function largeBlobReadReport(envelope: LargeBlobReadEnvelope | null | undefined): LargeBlobReadReport | null {
   if (!envelope || envelope.error || !envelope.result) return null;
-  return envelope.result.report;
+  return envelope.result;
 }
 
 export function largeBlobMutationOutput(envelope: LargeBlobMutationEnvelope | null | undefined): LargeBlobMutationOutput | null {

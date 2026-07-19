@@ -1,4 +1,4 @@
-import type { InspectInfo } from "../../bindings/github.com/go-ctap/kit/model";
+import type { Info as InspectInfo } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 
 export type InspectOptions = NonNullable<InspectInfo["options"]>;
 export type InspectCertifications = NonNullable<InspectInfo["certifications"]>;

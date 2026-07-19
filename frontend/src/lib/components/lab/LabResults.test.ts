@@ -14,20 +14,18 @@ import {
   AuthenticationExtensionsPRFValues,
   CredentialPropertiesOutput,
 } from "../../../../bindings/github.com/go-ctap/ctap/webauthn";
-import {
-  GetAssertionOutput,
-  MakeCredentialOutput,
-  OperationKind,
-} from "../../../../bindings/github.com/go-ctap/kit/model";
+import { OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model";
 import {
   Assertion,
   CredentialBlobCreateOutput,
   CredentialBlobGetOutput,
+  GetAssertionOutput,
   GetAssertionClientExtensionResults,
   GetAssertionExtensionResults,
   GetAssertionPRFOutput,
   GetAssertionResult as GetAssertionResultDTO,
   MakeCredentialClientExtensionResults,
+  MakeCredentialOutput,
   MakeCredentialExtensionResults,
   MakeCredentialPRFOutput,
   MakeCredentialResult as MakeCredentialResultDTO,

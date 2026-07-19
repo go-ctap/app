@@ -69,20 +69,19 @@ function listEnvelope(): LargeBlobListEnvelope {
     selectionId: "authenticator-1",
     kind: OperationKind.OperationListLargeBlobs,
     result: {
-      report: {
-        device: { fingerprint: "token-1" },
-        support: {
+      device: { fingerprint: "token-1" },
+      support: {
           largeBlobs: true,
           largeBlobKeyExtension: true,
           maxSerializedLargeBlobArray: 0,
-        },
-        array: {
+      },
+      array: {
           read: true,
           blobCount: 1,
           matchedBlobCount: 1,
           unmatchedBlobCount: 0,
-        },
-        credentials: [
+      },
+      credentials: [
           {
             credentialIDHex: "cafe",
             rp: { id: "example.com", name: "Example" },
@@ -110,8 +109,7 @@ function listEnvelope(): LargeBlobListEnvelope {
             blobState: BlobState.BlobStateMissing,
             blobByteCount: 0,
           },
-        ],
-      },
+      ],
     },
   } as LargeBlobListEnvelope;
 }
@@ -128,8 +126,7 @@ function readEnvelope(options: {
     selectionId: "authenticator-1",
     kind: OperationKind.OperationReadLargeBlob,
     result: {
-      report: {
-        device: { fingerprint: "token-1" },
+      device: { fingerprint: "token-1" },
         support: { largeBlobs: true, largeBlobKeyExtension: true, maxSerializedLargeBlobArray: 0 },
         target: {
           credentialIDHex: missingKey ? "beef" : "cafe",
@@ -151,12 +148,11 @@ function readEnvelope(options: {
         blobPresent: !missingKey,
         rawHex,
         rawByteCount: rawHex.length / 2,
-        decode: options.decode ?? {
+      decode: options.decode ?? {
           requested: true,
           mode: DecodeMode.DecodeModeJSON,
           success: false,
           failure: missingKey ? "no blob present" : "payload is not valid JSON",
-        },
       },
     },
   } as LargeBlobReadEnvelope;
@@ -164,11 +160,11 @@ function readEnvelope(options: {
 
 function missingBlobReadEnvelope(): LargeBlobReadEnvelope {
   const envelope = readEnvelope();
-  envelope.result!.report.target.credentialIDHex = "feed";
-  envelope.result!.report.target.rp.id = "empty.example";
-  envelope.result!.report.array.blobPresent = false;
-  envelope.result!.report.array.blobState = BlobState.BlobStateMissing;
-  envelope.result!.report.blobPresent = false;
+  envelope.result!.target.credentialIDHex = "feed";
+  envelope.result!.target.rp.id = "empty.example";
+  envelope.result!.array.blobPresent = false;
+  envelope.result!.array.blobState = BlobState.BlobStateMissing;
+  envelope.result!.blobPresent = false;
   return envelope;
 }
 
@@ -246,14 +242,14 @@ describe("LargeBlobs", () => {
     loading.unmount();
 
     const unsupported = listEnvelope();
-    unsupported.result!.report.support.largeBlobs = false;
+    unsupported.result!.support.largeBlobs = false;
     seedLargeBlobsEnvelopeForTest(unsupported);
     const unsupportedView = render(LargeBlobs);
     expect(screen.getByText("Large blob management unavailable")).toBeInTheDocument();
     unsupportedView.unmount();
 
     const empty = listEnvelope();
-    empty.result!.report.credentials = [];
+    empty.result!.credentials = [];
     seedLargeBlobsEnvelopeForTest(empty);
     render(LargeBlobs);
     expect(screen.getByText("No resident credentials found")).toBeInTheDocument();

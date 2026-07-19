@@ -178,7 +178,7 @@ func (s *Service) CredentialStoreState(ctx context.Context, req OperationRequest
 }
 
 func (s *Service) DeleteCredential(ctx context.Context, req CredentialDeleteRequest) (CredentialDeleteEnvelope, error) {
-	operation := model.DeleteCredentialOperation{
+	operation := credentials.DeleteOperation{
 		CredentialIDHex: req.CredentialIDHex,
 		DryRun:          req.DryRun,
 	}
@@ -194,7 +194,7 @@ func (s *Service) DeleteCredential(ctx context.Context, req CredentialDeleteRequ
 }
 
 func (s *Service) UpdateCredentialUser(ctx context.Context, req CredentialUpdateRequest) (CredentialUpdateEnvelope, error) {
-	operation := model.UpdateCredentialUserOperation{
+	operation := credentials.UpdateUserOperation{
 		Target:          req.Target,
 		UserIDHex:       req.UserIDHex,
 		Name:            req.Name,
@@ -216,7 +216,7 @@ func (s *Service) UpdateCredentialUser(ctx context.Context, req CredentialUpdate
 }
 
 func (s *Service) ReadLargeBlob(ctx context.Context, req LargeBlobReadRequest) (LargeBlobReadEnvelope, error) {
-	operation := model.ReadLargeBlobOperation{
+	operation := largeblobs.ReadOperation{
 		CredentialIDHex: req.CredentialIDHex,
 		DecodeMode:      req.DecodeMode,
 	}
@@ -244,7 +244,7 @@ func (s *Service) ListLargeBlobs(ctx context.Context, req LargeBlobListRequest) 
 }
 
 func (s *Service) WriteLargeBlob(ctx context.Context, req LargeBlobMutationRequest) (LargeBlobMutationEnvelope, error) {
-	operation := model.WriteLargeBlobOperation{
+	operation := largeblobs.WriteOperation{
 		CredentialIDHex: req.CredentialIDHex,
 		Payload:         req.Payload,
 		DryRun:          req.DryRun,
@@ -261,7 +261,7 @@ func (s *Service) WriteLargeBlob(ctx context.Context, req LargeBlobMutationReque
 }
 
 func (s *Service) DeleteLargeBlob(ctx context.Context, req LargeBlobMutationRequest) (LargeBlobMutationEnvelope, error) {
-	operation := model.DeleteLargeBlobOperation{
+	operation := largeblobs.DeleteOperation{
 		CredentialIDHex: req.CredentialIDHex,
 		DryRun:          req.DryRun,
 	}
@@ -277,7 +277,7 @@ func (s *Service) DeleteLargeBlob(ctx context.Context, req LargeBlobMutationRequ
 }
 
 func (s *Service) GarbageCollectLargeBlobs(ctx context.Context, req LargeBlobGarbageCollectRequest) (LargeBlobMutationEnvelope, error) {
-	operation := model.GarbageCollectLargeBlobsOperation{
+	operation := largeblobs.GarbageCollectOperation{
 		DryRun: req.DryRun,
 	}
 	meta, result, err := runOperation(
@@ -304,7 +304,7 @@ func (s *Service) ConfigStatus(ctx context.Context, req OperationRequest) (Confi
 }
 
 func (s *Service) SetPIN(ctx context.Context, req PINSetRequest) (PINEnvelope, error) {
-	operation := model.SetPINOperation{
+	operation := config.SetPINOperation{
 		NewPIN: req.NewPIN,
 		DryRun: req.DryRun,
 	}
@@ -320,7 +320,7 @@ func (s *Service) SetPIN(ctx context.Context, req PINSetRequest) (PINEnvelope, e
 }
 
 func (s *Service) ChangePIN(ctx context.Context, req PINChangeRequest) (PINEnvelope, error) {
-	operation := model.ChangePINOperation{
+	operation := config.ChangePINOperation{
 		CurrentPIN: req.CurrentPIN,
 		NewPIN:     req.NewPIN,
 		DryRun:     req.DryRun,
@@ -337,7 +337,7 @@ func (s *Service) ChangePIN(ctx context.Context, req PINChangeRequest) (PINEnvel
 }
 
 func (s *Service) SetAlwaysUV(ctx context.Context, req AlwaysUVRequest) (AuthenticatorConfigEnvelope, error) {
-	operation := model.SetAlwaysUVOperation{
+	operation := config.SetAlwaysUVOperation{
 		Target: req.Target,
 		DryRun: req.DryRun,
 	}
@@ -353,7 +353,7 @@ func (s *Service) SetAlwaysUV(ctx context.Context, req AlwaysUVRequest) (Authent
 }
 
 func (s *Service) SetMinPINLength(ctx context.Context, req MinPINLengthRequest) (AuthenticatorConfigEnvelope, error) {
-	operation := model.SetMinPINLengthOperation{
+	operation := config.SetMinPINLengthOperation{
 		NewMinPINLength:     req.NewMinPINLength,
 		MinPINLengthRPIDs:   req.MinPINLengthRPIDs,
 		ForceChangePIN:      req.ForceChangePIN,
@@ -372,7 +372,7 @@ func (s *Service) SetMinPINLength(ctx context.Context, req MinPINLengthRequest) 
 }
 
 func (s *Service) EnableLongTouchForReset(ctx context.Context, req EnableLongTouchForResetRequest) (AuthenticatorConfigEnvelope, error) {
-	operation := model.EnableLongTouchForResetOperation{
+	operation := config.EnableLongTouchForResetOperation{
 		DryRun: req.DryRun,
 	}
 	meta, result, err := runOperation(
@@ -412,7 +412,7 @@ func (s *Service) BioList(ctx context.Context, req OperationRequest) (BioListEnv
 }
 
 func (s *Service) BioEnroll(ctx context.Context, req BioEnrollRequest) (BioEnrollEnvelope, error) {
-	operation := model.BioEnrollOperation{
+	operation := config.BioEnrollOperation{
 		TimeoutMilliseconds: req.TimeoutMilliseconds,
 		DryRun:              req.DryRun,
 	}
@@ -428,7 +428,7 @@ func (s *Service) BioEnroll(ctx context.Context, req BioEnrollRequest) (BioEnrol
 }
 
 func (s *Service) BioRename(ctx context.Context, req BioRenameRequest) (BioMutationEnvelope, error) {
-	operation := model.BioRenameOperation{
+	operation := config.BioRenameOperation{
 		TemplateIDHex: req.TemplateIDHex,
 		FriendlyName:  req.FriendlyName,
 		DryRun:        req.DryRun,
@@ -445,7 +445,7 @@ func (s *Service) BioRename(ctx context.Context, req BioRenameRequest) (BioMutat
 }
 
 func (s *Service) BioRemove(ctx context.Context, req BioRemoveRequest) (BioMutationEnvelope, error) {
-	operation := model.BioRemoveOperation{
+	operation := config.BioRemoveOperation{
 		TemplateIDHex: req.TemplateIDHex,
 		DryRun:        req.DryRun,
 	}
@@ -461,7 +461,7 @@ func (s *Service) BioRemove(ctx context.Context, req BioRemoveRequest) (BioMutat
 }
 
 func (s *Service) ResetFactory(ctx context.Context, req ResetFactoryRequest) (ResetFactoryEnvelope, error) {
-	operation := model.ResetFactoryOperation{
+	operation := config.ResetFactoryOperation{
 		DryRun: req.DryRun,
 	}
 	meta, result, err := runOperation(
@@ -476,7 +476,7 @@ func (s *Service) ResetFactory(ctx context.Context, req ResetFactoryRequest) (Re
 }
 
 func (s *Service) MakeCredential(ctx context.Context, req MakeCredentialRequest) (MakeCredentialEnvelope, error) {
-	operation := model.MakeCredentialOperation{
+	operation := webauthn.MakeCredentialOperation{
 		MakeCredentialInput: req.MakeCredentialInput,
 		DryRun:              req.DryRun,
 	}
@@ -492,7 +492,7 @@ func (s *Service) MakeCredential(ctx context.Context, req MakeCredentialRequest)
 }
 
 func (s *Service) GetAssertion(ctx context.Context, req GetAssertionRequest) (GetAssertionEnvelope, error) {
-	operation := model.GetAssertionOperation{
+	operation := webauthn.GetAssertionOperation{
 		GetAssertionInput: req.GetAssertionInput,
 		DryRun:            req.DryRun,
 	}
