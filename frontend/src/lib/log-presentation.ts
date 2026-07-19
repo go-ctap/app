@@ -124,6 +124,10 @@ export function logOutcome(record: LogRecord) {
   return record.source === "kit" ? record.entry.outcome : LogOutcome.LogOutcomeFailed;
 }
 
+export function isDryRunLog(record: LogRecord) {
+  return record.source === "kit" && record.entry.dryRun === true;
+}
+
 export function logLevelLabel(level: LogLevel) {
   const labels: Record<LogLevel, string> = {
     [LogLevel.$zero]: "—",

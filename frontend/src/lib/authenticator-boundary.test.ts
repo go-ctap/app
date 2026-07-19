@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { InteractionKind, OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { CredentialsEnvelope, InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
 
@@ -27,7 +27,7 @@ describe("operation authenticator boundary", () => {
       operationId: "operation-1",
       selectionId: "authenticator-1",
       interactionId: "interaction-1",
-      request: { kind: "confirm" },
+      request: { kind: InteractionKind.InteractionKindTouch },
     } as InteractionPrompt);
   });
 

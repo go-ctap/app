@@ -812,6 +812,7 @@
   "logs_outcome_succeeded": "Succeeded",
   "logs_outcome_failed": "Failed",
   "logs_outcome_canceled": "Canceled",
+  "logs_dry_run": "Dry run",
   "logs_source": "Source",
   "logs_source_kit": "Authenticator service",
   "logs_source_runtime": "App runtime",

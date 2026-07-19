@@ -4,6 +4,7 @@
 export {
     CredentialGroup,
     CredentialRecord,
+    CredentialTarget,
     DeletePreview,
     DeleteResult,
     InventoryReport,

@@ -66,6 +66,23 @@ function inventoryEnvelope(readOnlyPermission = true): CredentialsEnvelope {
   } as CredentialsEnvelope;
 }
 
+function updateTarget() {
+  const credential = {
+    credentialIDHex: "cafe",
+    userIDHex: "01",
+    userName: "user",
+    displayName: "Old name",
+  };
+
+  return {
+    relyingParty: {
+      rpID: "example.test",
+      credentials: [credential],
+    },
+    credential,
+  };
+}
+
 function updatePreviewEnvelope(): CredentialUpdateEnvelope {
   return {
     operationId: "preview-1",
@@ -192,7 +209,7 @@ describe("passkeys mutation requests", () => {
     const request = buildCredentialUpdatePreviewRequest(
       "authenticator-1",
       VerificationFlow.VerificationFlowPIN,
-      "cafe",
+      updateTarget(),
       { userIDHex: "AABB", name: "old", displayName: "Visible" },
       { userIDHex: " aabb ", name: "", displayName: " Changed " },
     );
@@ -200,7 +217,16 @@ describe("passkeys mutation requests", () => {
     expect(request).toEqual({
       selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowPIN,
-      credentialIdHex: "cafe",
+      target: {
+        record: {
+          credentialIDHex: "cafe",
+          userIDHex: "01",
+          userName: "user",
+          displayName: "Old name",
+        },
+        rp: { id: "example.test" },
+        user: { userIDHex: "aabb", name: "old", displayName: "Visible" },
+      },
       name: "",
       nameProvided: true,
       displayName: "Changed",
@@ -215,7 +241,7 @@ describe("passkeys mutation requests", () => {
     const request = buildCredentialUpdatePreviewRequest(
       "authenticator-1",
       VerificationFlow.VerificationFlowPIN,
-      "cafe",
+      updateTarget(),
       { userIDHex: "AABB", name: "user", displayName: "Visible" },
       { userIDHex: " ccDD ", name: " user ", displayName: "Visible" },
     );
@@ -223,7 +249,16 @@ describe("passkeys mutation requests", () => {
     expect(request).toEqual({
       selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowPIN,
-      credentialIdHex: "cafe",
+      target: {
+        record: {
+          credentialIDHex: "cafe",
+          userIDHex: "01",
+          userName: "user",
+          displayName: "Old name",
+        },
+        rp: { id: "example.test" },
+        user: { userIDHex: "aabb", name: "user", displayName: "Visible" },
+      },
       userIdHex: "ccdd",
       userIdProvided: true,
       dryRun: true,
@@ -270,11 +305,9 @@ describe("passkeys mutation requests", () => {
     expect(update).toHaveBeenCalledTimes(3);
     expect(update.mock.calls[1][0]).toMatchObject({
       dryRun: false,
-      confirmed: true,
     });
     expect(update.mock.calls[2][0]).toMatchObject({
       dryRun: false,
-      confirmed: true,
     });
     expect(list).toHaveBeenCalledTimes(1);
   });
@@ -295,11 +328,9 @@ describe("passkeys mutation requests", () => {
     expect(remove).toHaveBeenCalledTimes(3);
     expect(remove.mock.calls[1][0]).toMatchObject({
       dryRun: false,
-      confirmed: true,
     });
     expect(remove.mock.calls[2][0]).toMatchObject({
       dryRun: false,
-      confirmed: true,
     });
   });
 });

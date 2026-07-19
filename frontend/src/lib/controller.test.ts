@@ -2,6 +2,7 @@ import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  InteractionKind,
   LargeBlobMutationOutput,
   OperationKind,
   VerificationFlow,
@@ -171,6 +172,20 @@ function credentialsEnvelope(item: DeviceReport, selectionId = `authenticator-${
       },
     },
   } as CredentialsEnvelope;
+}
+
+function credentialUpdateTarget(credentialIDHex = "cafe") {
+  return {
+    record: {
+      credentialIDHex,
+      credentialType: "public-key",
+      userIDHex: "01",
+      userName: "user@example.com",
+      displayName: "Example User",
+    },
+    rp: { id: "example.com", name: "Example", idHashHex: "abcd" },
+    user: { userIDHex: "01", name: "user@example.com", displayName: "Example User" },
+  };
 }
 
 function largeBlobListEnvelope(item: DeviceReport, selectionId = `authenticator-${item.fingerprint}`): LargeBlobListEnvelope {
@@ -613,7 +628,7 @@ describe("controller lifecycle", () => {
     const previewRequest = {
       selectionId: "authenticator-token-1",
       verificationFlow: "",
-      credentialIdHex: "cafe",
+      target: credentialUpdateTarget(),
       name: "",
       nameProvided: true,
       dryRun: true,
@@ -624,8 +639,6 @@ describe("controller lifecycle", () => {
     expect(serviceMocks.UpdateCredentialUser).toHaveBeenNthCalledWith(2, {
       ...previewRequest,
       dryRun: false,
-      confirmed: true,
-      confirmationMessage: "Confirm update",
     });
     expect(serviceMocks.ListCredentials).toHaveBeenCalledWith({
       selectionId: "authenticator-token-1",
@@ -755,8 +768,6 @@ describe("controller lifecycle", () => {
     expect(serviceMocks.DeleteCredential).toHaveBeenNthCalledWith(2, {
       ...previewRequest,
       dryRun: false,
-      confirmed: true,
-      confirmationMessage: "Confirm delete",
     });
     expect(serviceMocks.ListCredentials).toHaveBeenCalledWith({
       selectionId: "authenticator-token-1",
@@ -1000,7 +1011,7 @@ describe("controller lifecycle", () => {
       interactionId: "interaction-1",
       operationId: "operation-1",
       selectionId: "authenticator-token-1",
-      request: { kind: "confirm" },
+      request: { kind: InteractionKind.InteractionKindTouch },
     } as InteractionPrompt);
     serviceMocks.ListCredentials.mockResolvedValue({
       operationId: "credentials-token-1",
@@ -1030,7 +1041,7 @@ describe("controller lifecycle", () => {
       interactionId: "interaction-1",
       operationId: "operation-1",
       selectionId: "authenticator-token-1",
-      request: { kind: "confirm" },
+      request: { kind: InteractionKind.InteractionKindTouch },
     } as InteractionPrompt);
     const transportFailure = failureForCode(Code.CodeTransportFailure);
     serviceMocks.ListCredentials.mockResolvedValue({
@@ -1085,7 +1096,7 @@ describe("controller lifecycle", () => {
       interactionId: "interaction-1",
       operationId: "operation-1",
       selectionId: "authenticator-token-1",
-      request: { kind: "confirm" },
+      request: { kind: InteractionKind.InteractionKindTouch },
     } as InteractionPrompt);
 	logController.recordRuntimeFailure("selection-survivor", new Error("not persisted"));
 
@@ -1367,7 +1378,7 @@ describe("controller lifecycle", () => {
       interactionId: "interaction-current",
       operationId: "operation-current",
       selectionId: "authenticator-token-1",
-      request: { kind: "confirm" },
+      request: { kind: InteractionKind.InteractionKindTouch },
     } as InteractionPrompt);
 
     expect(get(pendingInteraction)?.interactionId).toBe("interaction-current");
@@ -1386,7 +1397,6 @@ describe("controller lifecycle", () => {
     const answer = new InteractionAnswer({
       interactionId: "interaction-current",
       pin: "123456",
-      confirmed: true,
     });
 
     const pending = answerPendingInteraction(answer);
@@ -1415,7 +1425,6 @@ describe("controller lifecycle", () => {
     await answerPendingInteraction(new InteractionAnswer({
       interactionId: "interaction-1",
       pin: "1234",
-      confirmed: true,
     }));
 
     expect(get(pendingInteraction)?.interactionId).toBe("interaction-2");
@@ -1435,7 +1444,6 @@ describe("controller lifecycle", () => {
     await expect(answerPendingInteraction(new InteractionAnswer({
       interactionId: "interaction-current",
       pin: "123456",
-      confirmed: true,
     }))).resolves.toBe(false);
 
     expect(get(statusBar).lastOutcome).toMatchObject({

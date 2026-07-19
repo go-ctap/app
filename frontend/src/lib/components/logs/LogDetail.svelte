@@ -11,6 +11,7 @@
   import type { LogRecord } from "$lib/features/logs/state.svelte.js";
   import {
     formatCTAPCode,
+    isDryRunLog,
     logLayer,
     logLayerLabel,
     logLevel,
@@ -133,6 +134,9 @@
         {logLevelLabel(logLevel(record))}
       </Badge>
       <Badge variant="secondary">{logLayerLabel(logLayer(record))}</Badge>
+      {#if isDryRunLog(record)}
+        <Badge variant="outline">{m.logs_dry_run()}</Badge>
+      {/if}
       <Badge variant="outline">{logOutcomeLabel(logOutcome(record))}</Badge>
     </div>
   </header>

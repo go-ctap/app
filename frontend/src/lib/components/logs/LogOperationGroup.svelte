@@ -5,6 +5,7 @@
   import { recordID } from "$lib/features/logs/state.svelte.js";
   import type { OperationLogGroup } from "$lib/log-grouping.js";
   import {
+    isDryRunLog,
     logLevel,
     logLevelLabel,
     logOutcome,
@@ -70,6 +71,9 @@
           {logLevelLabel(logLevel(group.representative))}
         </Badge>
         <Badge variant="secondary" data-log-layer>{m.logs_layer_operation()}</Badge>
+        {#if isDryRunLog(group.representative)}
+          <Badge variant="outline">{m.logs_dry_run()}</Badge>
+        {/if}
         <Badge variant="outline">{logOutcomeLabel(logOutcome(group.representative))}</Badge>
       </span>
     </button>

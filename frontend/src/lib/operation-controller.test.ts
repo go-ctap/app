@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
+import { InteractionKind, OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { CredentialsEnvelope, InteractionPrompt, OperationEventEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
@@ -46,7 +46,7 @@ function seedOperation() {
     operationId: "operation-1",
     selectionId: "authenticator-1",
     interactionId: "interaction-1",
-    request: { kind: "confirm" },
+    request: { kind: InteractionKind.InteractionKindTouch },
   } as InteractionPrompt);
 }
 
@@ -197,7 +197,7 @@ describe("runtime operation events", () => {
       operationId: "operation-2",
       selectionId: "authenticator-1",
       interactionId: "interaction-2",
-      request: { kind: "confirm", message: "Touch the key" },
+      request: { kind: InteractionKind.InteractionKindTouch, message: "Touch the key" },
     } as InteractionPrompt);
 
     expect(get(mutableStatusBar).activeOperation).toMatchObject({

@@ -3,6 +3,7 @@
   import type { LogRecord } from "$lib/features/logs/state.svelte.js";
   import { recordID } from "$lib/features/logs/state.svelte.js";
   import {
+    isDryRunLog,
     logLayer,
     logLayerLabel,
     logLevel,
@@ -13,6 +14,8 @@
     logTime,
   } from "$lib/log-presentation.js";
   import { LogLevel } from "../../../../bindings/github.com/go-ctap/kit/model/index.js";
+
+  import { m } from "../../../paraglide/messages.js";
 
   type Props = {
     record: LogRecord;
@@ -48,6 +51,9 @@
       {logLevelLabel(logLevel(record))}
     </Badge>
     <Badge variant="secondary" data-log-layer>{logLayerLabel(logLayer(record))}</Badge>
+    {#if isDryRunLog(record)}
+      <Badge variant="outline">{m.logs_dry_run()}</Badge>
+    {/if}
     <Badge variant="outline">{logOutcomeLabel(logOutcome(record))}</Badge>
   </span>
 </button>

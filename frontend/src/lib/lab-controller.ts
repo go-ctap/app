@@ -204,8 +204,6 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
     : new MakeCredentialRequest({
         ...previewRequest,
         dryRun: false,
-        confirmed: true,
-        confirmationMessage: m.lab_confirm_make_credential(),
       });
   labState.update((state) => ({
     ...state,
@@ -425,8 +423,6 @@ export async function confirmLabGetAssertion(): Promise<boolean> {
     : new GetAssertionRequest({
         ...step.previewRequest,
         dryRun: false,
-        confirmed: true,
-        confirmationMessage: m.lab_confirm_get_assertion(),
       });
   return executeGetAssertion(step.previewRequest, step.previewEnvelope, request);
 }

@@ -583,8 +583,6 @@ export async function confirmLargeBlobWrite(): Promise<boolean> {
   const request: LargeBlobMutationRequest = {
     ...previewRequest,
     dryRun: false,
-    confirmed: true,
-    confirmationMessage: m.confirm_write(),
   };
   largeBlobsMutation.set({
     kind: "write",
@@ -630,8 +628,6 @@ export async function confirmLargeBlobDelete(): Promise<boolean> {
   const request: LargeBlobMutationRequest = {
     ...previewRequest,
     dryRun: false,
-    confirmed: true,
-    confirmationMessage: m.confirm_delete(),
   };
   largeBlobsMutation.set({
     kind: "delete",
@@ -676,8 +672,6 @@ export async function confirmLargeBlobCleanup(): Promise<boolean> {
   const request: LargeBlobGarbageCollectRequest = {
     ...previewRequest,
     dryRun: false,
-    confirmed: true,
-    confirmationMessage: m.confirm_cleanup(),
   };
   largeBlobsMutation.set({
     kind: "cleanup",

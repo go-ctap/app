@@ -10,7 +10,6 @@ const SECRET_FIELD_NAMES = new Set([
   "newPin",
   "oldPIN",
   "oldPin",
-  "confirmationMessage",
   "resetConfirmation",
   "resetPhrase",
   "encIdentifier",

@@ -155,8 +155,6 @@ function seedSuccessfulMake(rpID = "example.com", credentialIDHex = "cafe") {
   const request: MakeCredentialRequest = {
     ...previewRequest,
     dryRun: false,
-    confirmed: true,
-    confirmationMessage: "Create this WebAuthn credential?",
   };
   labState.set({
     ...current,
@@ -300,7 +298,6 @@ describe("WebAuthn Lab request lifecycle", () => {
       options: { userPresence: true, userVerification: true },
       dryRun: true,
     });
-    expect(makeCredential.mock.calls[0][0].confirmed).toBeUndefined();
     expect(makeCredential.mock.calls[0][0].options?.residentKey).toBeUndefined();
 
     const review = get(labState).makeStep;
@@ -313,8 +310,6 @@ describe("WebAuthn Lab request lifecycle", () => {
     expect(executionRequest).toEqual({
       ...reviewedRequest,
       dryRun: false,
-      confirmed: true,
-      confirmationMessage: "Create this WebAuthn credential?",
     });
     expect(executionRequest.rp).toBe(reviewedRequest.rp);
     expect(executionRequest.user).toBe(reviewedRequest.user);
@@ -345,9 +340,8 @@ describe("WebAuthn Lab request lifecycle", () => {
     expect(makeCredential).toHaveBeenCalledTimes(3);
     expect(makeCredential.mock.calls[1][0]).toMatchObject({
       dryRun: false,
-      confirmed: true,
     });
-    expect(makeCredential.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(makeCredential.mock.calls[2][0]).toMatchObject({ dryRun: false });
     expect(get(labState).makeStep.phase).toBe("success");
   });
 
@@ -391,8 +385,6 @@ describe("WebAuthn Lab request lifecycle", () => {
     expect(getAssertion).toHaveBeenCalledTimes(3);
     expect(getAssertion.mock.calls[2][0]).toMatchObject({
       dryRun: false,
-      confirmed: true,
-      confirmationMessage: "Run this WebAuthn assertion request?",
     });
     expect(getAssertion.mock.calls[2][0].clientDataJSON).toBe(frozenRequest.clientDataJSON);
     expect(get(labState).getStep.phase).toBe("success");

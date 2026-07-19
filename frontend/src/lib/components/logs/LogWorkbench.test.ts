@@ -26,7 +26,7 @@ import { setAppLocale } from "$lib/i18n.js";
 
 import LogWorkbench from "./LogWorkbench.svelte";
 
-function appendOperation(sequence = 1, errorMessage?: string) {
+function appendOperation(sequence = 1, errorMessage?: string, dryRun = false) {
   logController.append(new LogJournalRecord({
     sequence,
     entry: new LogEntry({
@@ -37,6 +37,7 @@ function appendOperation(sequence = 1, errorMessage?: string) {
       outcome: LogOutcome.LogOutcomeSucceeded,
       code: LogCode.LogCodeOperationRun,
       operationKind: OperationKind.OperationInspect,
+      dryRun,
       selectionId: "authenticator-1",
       operationId: `operation-${sequence}`,
       errorMessage,
@@ -113,6 +114,39 @@ describe("LogWorkbench", () => {
   it("shows the empty state before any kit or runtime activity", () => {
     render(LogWorkbench);
     expect(screen.getByText("No log entries yet")).toBeInTheDocument();
+  });
+
+  it("marks dry-run operations in the journal row and open detail", () => {
+    appendOperation(1);
+    appendOperation(2, undefined, true);
+    render(LogWorkbench);
+
+    expect(screen.getAllByText("Dry run")).toHaveLength(2);
+  });
+
+  it("keeps the dry-run badge on a grouped operation", () => {
+    appendEntry(1, { command: "authenticatorGetInfo" });
+    appendEntry(2, {
+      layer: LogLayer.LogLayerOperation,
+      code: LogCode.LogCodeOperationRun,
+      operationKind: OperationKind.OperationInspect,
+      dryRun: true,
+    });
+    render(LogWorkbench);
+
+    expect(screen.getAllByText("Dry run")).toHaveLength(2);
+  });
+
+  it("shows the dry-run badge in the open detail sheet", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(800);
+    appendOperation(1, undefined, true);
+    render(LogWorkbench);
+
+    await user.click(screen.getByRole("button", { name: /Operation: Overview/ }));
+
+    expect(within(screen.getByRole("dialog", { name: "Operation: Overview" }))
+      .getByText("Dry run")).toBeInTheDocument();
   });
 
   it("shows localized detail tabs, literal JSON, redaction, truncation, search, and clear confirmation", async () => {

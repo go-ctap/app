@@ -12,7 +12,7 @@ import type {
 } from "../../bindings/github.com/go-ctap/kit/service";
 import { DiscoveryTrigger } from "../../bindings/github.com/go-ctap/kit/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
-import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
+import { InteractionKind, OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 
 import { setAppLocale } from "$lib/i18n";
@@ -141,7 +141,7 @@ describe("discovery controller", () => {
       interactionId: "interaction-1",
       operationId: "operation-1",
       selectionId: "authenticator-token-1",
-      request: { kind: "confirm" },
+      request: { kind: InteractionKind.InteractionKindTouch },
     } as InteractionPrompt;
     const { handleDiscoveryChanged } = await import("./discovery-controller.js");
     seedSelected(original);
@@ -249,7 +249,7 @@ describe("discovery controller", () => {
       interactionId: "interaction-1",
       operationId: "operation-1",
       selectionId: "authenticator-token-1",
-      request: { kind: "confirm" },
+      request: { kind: InteractionKind.InteractionKindTouch },
     } as InteractionPrompt);
     handleOperationProgress({
       operationId: "operation-1",

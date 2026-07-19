@@ -67,7 +67,6 @@ describe("InteractionModal", () => {
     expect(onAnswer).toHaveBeenCalledWith(new InteractionAnswer({
       interactionId: "interaction-1",
       pin: "123456",
-      confirmed: true,
       canceled: false,
     }));
     expect(screen.queryByText("secret-token")).not.toBeInTheDocument();
@@ -164,7 +163,6 @@ describe("InteractionModal", () => {
     expect(onAnswer).toHaveBeenCalledTimes(1);
     expect(onAnswer).toHaveBeenCalledWith(new InteractionAnswer({
       interactionId: "interaction-1",
-      confirmed: false,
       canceled: true,
     }));
   });

@@ -6,6 +6,7 @@ import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { OperationKind, VerificationFlow } from "../../bindings/github.com/go-ctap/kit/model";
+import type { CredentialTarget } from "../../bindings/github.com/go-ctap/kit/model/credentials";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   CredentialDeleteEnvelope,
@@ -74,6 +75,21 @@ function credentialsEnvelope(): CredentialsEnvelope {
       },
     },
   } as CredentialsEnvelope;
+}
+
+function credentialUpdateTarget(): CredentialTarget {
+  return {
+    record: {
+      credentialIDHex: "cafe",
+      credentialType: "public-key",
+      userIDHex: "01",
+      userName: "user@example.com",
+      displayName: "Example User",
+      credProtect: 2,
+    },
+    rp: { id: "example.com", name: "Example", idHashHex: "abcd" },
+    user: { userIDHex: "01", name: "user@example.com", displayName: "Example User" },
+  };
 }
 
 function mixedRelyingPartyEnvelope(): CredentialsEnvelope {
@@ -510,7 +526,7 @@ describe("Passkeys", () => {
     } as CredentialUpdateEnvelope;
     const previewRequest = {
       selectionId: "authenticator-1",
-      credentialIdHex: "cafe",
+      target: credentialUpdateTarget(),
       name: "updated@example.com",
       nameProvided: true,
       dryRun: true,

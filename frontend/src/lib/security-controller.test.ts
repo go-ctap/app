@@ -455,7 +455,7 @@ describe("security controller loading", () => {
 });
 
 describe("security controller mutations", () => {
-  it("sends exact confirmed:false PIN requests without retaining secrets", async () => {
+  it("sends exact PIN requests without retaining secrets", async () => {
     let sentSetPINRequest: PINSetRequest | null = null;
     let sentChangePINRequest: PINChangeRequest | null = null;
     const setPIN = vi.spyOn(api, "setPIN").mockImplementation((request) => {
@@ -471,8 +471,6 @@ describe("security controller mutations", () => {
     expect(sentSetPINRequest).toEqual({
       selectionId: "authenticator-1",
       newPIN: "set-secret-123",
-      confirmed: false,
-      confirmationMessage: "Set authenticator PIN",
     });
     expect(setPIN.mock.calls[0][0].newPIN).toBe("");
 
@@ -484,8 +482,6 @@ describe("security controller mutations", () => {
       selectionId: "authenticator-1",
       currentPIN: "old-secret-456",
       newPIN: "new-secret-789",
-      confirmed: false,
-      confirmationMessage: "Change authenticator PIN",
     });
     expect(changePIN.mock.calls[0][0]).toMatchObject({ currentPIN: "", newPIN: "" });
     expect(get(securityMutation)).toEqual({ kind: "idle", phase: "idle" });
@@ -532,8 +528,6 @@ describe("security controller mutations", () => {
       selectionId: "authenticator-1",
       target: AlwaysUVTarget.AlwaysUVTargetEnable,
       dryRun: false,
-      confirmed: true,
-      confirmationMessage: "Update Always UV",
     });
     expect(get(securityMutation)).toEqual({ kind: "idle", phase: "idle" });
     const refreshedStatus = get(securityStatus).lastSuccessfulEnvelope!;
@@ -580,8 +574,6 @@ describe("security controller mutations", () => {
       forceChangePin: true,
       pinComplexityPolicy: true,
       dryRun: false,
-      confirmed: true,
-      confirmationMessage: "Update PIN policy",
     });
   });
 
@@ -645,8 +637,6 @@ describe("security controller mutations", () => {
     expect(enableLongTouch.mock.calls[1][0]).toEqual({
       selectionId: "authenticator-1",
       dryRun: false,
-      confirmed: true,
-      confirmationMessage: "Enable long touch for reset",
     });
   });
 
@@ -694,7 +684,6 @@ describe("security controller mutations", () => {
     expect(await restartSecurityPreview()).toBe(true);
     expect(setAlwaysUV).toHaveBeenCalledTimes(2);
     expect(setAlwaysUV.mock.calls[1][0]).toEqual(setAlwaysUV.mock.calls[0][0]);
-    expect(setAlwaysUV.mock.calls[1][0].confirmed).not.toBe(true);
     expect(get(securityMutation)).toMatchObject({ kind: "alwaysUv", phase: "review" });
   });
 
@@ -722,8 +711,8 @@ describe("security controller mutations", () => {
 
     expect(await confirmSecurityMutation()).toBe(true);
     expect(setAlwaysUV).toHaveBeenCalledTimes(3);
-    expect(setAlwaysUV.mock.calls[1][0]).toMatchObject({ dryRun: false, confirmed: true });
-    expect(setAlwaysUV.mock.calls[2][0]).toMatchObject({ dryRun: false, confirmed: true });
+    expect(setAlwaysUV.mock.calls[1][0]).toMatchObject({ dryRun: false });
+    expect(setAlwaysUV.mock.calls[2][0]).toMatchObject({ dryRun: false });
   });
 
   it("retains a real partial biometric enrollment result on execution error", async () => {
@@ -833,8 +822,6 @@ describe("factory reset lifecycle", () => {
     expect(resetFactory.mock.calls[1][0]).toEqual({
       selectionId: "authenticator-1",
       dryRun: false,
-      confirmed: true,
-      confirmationMessage: "Factory reset authenticator",
     });
     expect(setSelection).toHaveBeenCalledTimes(2);
     expect(setSelection.mock.invocationCallOrder[0]).toBeLessThan(discover.mock.invocationCallOrder[0]);

@@ -25,13 +25,12 @@
     return "";
   });
 
-  async function answer(confirmed: boolean, canceled = false) {
+  async function answer(accepted: boolean, canceled = false) {
     if (!presentation) return;
-    if (confirmed && presentation.kind === InteractionKind.InteractionKindPIN && !pin) return;
+    if (accepted && presentation.kind === InteractionKind.InteractionKindPIN && !pin) return;
     const pending = onAnswer(new InteractionAnswer({
       interactionId: presentation.interactionId,
-      ...(confirmed && presentation.kind === InteractionKind.InteractionKindPIN ? { pin } : {}),
-      confirmed,
+      ...(accepted && presentation.kind === InteractionKind.InteractionKindPIN ? { pin } : {}),
       canceled,
     }));
     pin = "";

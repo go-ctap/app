@@ -453,7 +453,6 @@ describe("WebAuthn Lab screen", () => {
     const executionRequest = new MakeCredentialRequest({
       ...previewRequest,
       dryRun: false,
-      confirmed: true,
     });
 
     mutableLabState.set({

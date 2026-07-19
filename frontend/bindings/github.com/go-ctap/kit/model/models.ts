@@ -551,7 +551,6 @@ export enum InteractionKind {
     InteractionKindPIN = "pin",
     InteractionKindUserVerification = "user-verification",
     InteractionKindTouch = "touch",
-    InteractionKindConfirm = "confirm",
 };
 
 export class InteractionRequest {
@@ -693,6 +692,7 @@ export class LogEntry {
     "outcome": LogOutcome;
     "code": LogCode;
     "params"?: { [_ in string]?: string };
+    "dryRun"?: boolean;
     "operationKind"?: OperationKind;
     "command"?: string;
     "commandCode"?: number;

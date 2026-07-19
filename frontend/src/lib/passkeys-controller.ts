@@ -43,7 +43,7 @@ import {
 } from "./features/passkeys/state.js";
 import { selectedSelector, authenticatorStatus } from "./features/authenticator/state.js";
 import { activeScreen } from "./features/workbench/state.js";
-import { findPasskeyCredential } from "./passkeys-presentation.js";
+import { findPasskeyCredential, type PasskeyCredentialTarget } from "./passkeys-presentation.js";
 import { internalFailure, runtimeFailureFrom } from "./failure.js";
 import { applyInvalidSelectionError, applyOperationAuthenticatorBoundary, currentSelectionID } from "./authenticator-boundary.js";
 import {
@@ -262,7 +262,7 @@ export function validateCredentialUpdate(
 export function buildCredentialUpdatePreviewRequest(
   selectionId: string,
   verificationFlow: VerificationFlow,
-  credentialIDHex: string,
+  target: PasskeyCredentialTarget,
   original: CredentialUpdateForm,
   form: CredentialUpdateForm,
 ): CredentialUpdateRequest {
@@ -274,7 +274,19 @@ export function buildCredentialUpdatePreviewRequest(
   return {
     selectionId,
     verificationFlow,
-    credentialIdHex: credentialIDHex,
+    target: {
+      record: target.credential,
+      rp: {
+        id: target.relyingParty.rpID,
+        ...(target.relyingParty.rpName ? { name: target.relyingParty.rpName } : {}),
+        ...(target.relyingParty.rpIDHashHex ? { idHashHex: target.relyingParty.rpIDHashHex } : {}),
+      },
+      user: {
+        userIDHex: current.userIDHex,
+        name: current.name,
+        displayName: current.displayName,
+      },
+    },
     ...(userIDChanged ? { userIdHex: proposed.userIDHex, userIdProvided: true } : {}),
     ...(nameChanged ? { name: proposed.name, nameProvided: true } : {}),
     ...(displayNameChanged ? { displayName: proposed.displayName, displayProvided: true } : {}),
@@ -327,7 +339,10 @@ export async function previewCredentialUpdate(): Promise<boolean> {
   const request = buildCredentialUpdatePreviewRequest(
     currentSelectionID(),
     get(passkeysVerificationFlow),
-    current.credentialIDHex,
+    findPasskeyCredential(
+      credentialsReport(get(passkeysInventoryState).lastSuccessfulEnvelope),
+      current.credentialIDHex,
+    )!,
     current.original,
     current.form,
   );
@@ -369,8 +384,6 @@ export async function confirmCredentialUpdate(): Promise<boolean> {
   const request: CredentialUpdateRequest = {
     ...previewRequest,
     dryRun: false,
-    confirmed: true,
-    confirmationMessage: m.confirm_update(),
   };
   passkeysMutation.set({
     kind: "update",
@@ -484,8 +497,6 @@ export async function confirmCredentialDelete(): Promise<boolean> {
   const request: CredentialDeleteRequest = {
     ...previewRequest,
     dryRun: false,
-    confirmed: true,
-    confirmationMessage: m.confirm_delete(),
   };
   passkeysMutation.set({
     kind: "delete",

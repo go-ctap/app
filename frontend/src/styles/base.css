@@ -1,6 +1,8 @@
 @layer base {
   * {
     box-sizing: border-box;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   html,
@@ -22,6 +24,16 @@
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-tap-highlight-color: color-mix(in srgb, var(--primary) 18%, transparent);
+  }
+
+  input,
+  textarea,
+  [contenteditable]:not([contenteditable="false"]),
+  [contenteditable]:not([contenteditable="false"]) *,
+  [data-text-selectable="true"],
+  [data-text-selectable="true"] * {
+    -webkit-user-select: text;
+    user-select: text;
   }
 
   button,

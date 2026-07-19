@@ -258,8 +258,6 @@ export async function setAuthenticatorPIN(input: PINSetInput): Promise<boolean> 
       const request: PINSetRequest = {
         selectionId: currentSelectionID(),
         newPIN: input.newPIN,
-        confirmed: false,
-        confirmationMessage: label,
       };
       try {
         return api.setPIN(request);
@@ -282,8 +280,6 @@ export async function changeAuthenticatorPIN(input: PINChangeInput): Promise<boo
         selectionId: currentSelectionID(),
         currentPIN: input.currentPIN,
         newPIN: input.newPIN,
-        confirmed: false,
-        confirmationMessage: label,
       };
       try {
         return api.changePIN(request);
@@ -820,11 +816,8 @@ function beginSecurityPreview(current: NonIdleSecurityMutation): Promise<boolean
   }
 }
 
-function executeRequest<T extends { dryRun?: boolean; confirmed?: boolean; confirmationMessage?: string }>(
-  request: T,
-  confirmationMessage: string,
-): T {
-  return { ...request, dryRun: false, confirmed: true, confirmationMessage };
+function executeRequest<T extends { dryRun?: boolean }>(request: T): T {
+  return { ...request, dryRun: false };
 }
 
 async function finishSuccessfulSecurityMutation(kind: NonIdleSecurityMutation["kind"]) {
@@ -906,37 +899,37 @@ export async function confirmSecurityMutation(): Promise<boolean> {
     let hasResult: boolean;
     switch (current.kind) {
       case "alwaysUv": {
-        envelope = await api.setAlwaysUV(executeRequest(current.previewRequest, label));
+        envelope = await api.setAlwaysUV(executeRequest(current.previewRequest));
         hasResult = Boolean(authenticatorConfigResult(envelope));
         break;
       }
       case "pinPolicy": {
-        envelope = await api.setMinPINLength(executeRequest(current.previewRequest, label));
+        envelope = await api.setMinPINLength(executeRequest(current.previewRequest));
         hasResult = Boolean(authenticatorConfigResult(envelope));
         break;
       }
       case "longTouch": {
-        envelope = await api.enableLongTouchForReset(executeRequest(current.previewRequest, label));
+        envelope = await api.enableLongTouchForReset(executeRequest(current.previewRequest));
         hasResult = Boolean(authenticatorConfigResult(envelope));
         break;
       }
       case "bioEnroll": {
-        envelope = await api.bioEnroll(executeRequest(current.previewRequest, label));
+        envelope = await api.bioEnroll(executeRequest(current.previewRequest));
         hasResult = !envelope.error && Boolean(bioEnrollResult(envelope));
         break;
       }
       case "bioRename": {
-        envelope = await api.bioRename(executeRequest(current.previewRequest, label));
+        envelope = await api.bioRename(executeRequest(current.previewRequest));
         hasResult = Boolean(bioMutationResult(envelope));
         break;
       }
       case "bioRemove": {
-        envelope = await api.bioRemove(executeRequest(current.previewRequest, label));
+        envelope = await api.bioRemove(executeRequest(current.previewRequest));
         hasResult = Boolean(bioMutationResult(envelope));
         break;
       }
       case "reset": {
-        envelope = await api.resetFactory(executeRequest(current.previewRequest, label));
+        envelope = await api.resetFactory(executeRequest(current.previewRequest));
         hasResult = Boolean(resetFactoryResult(envelope));
         break;
       }

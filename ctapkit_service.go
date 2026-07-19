@@ -15,7 +15,6 @@ type CtapkitService struct {
 func NewCtapkitService() *CtapkitService {
 	return &CtapkitService{
 		core: kitservice.New(
-			kitservice.WithStrictPermissions(true),
 			kitservice.WithEventEmitter(wailsEmitter{}),
 		),
 	}

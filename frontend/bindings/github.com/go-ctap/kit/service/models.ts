@@ -22,6 +22,9 @@ import * as model$0 from "../model/models.js";
 import * as config$0 from "../model/config/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as credentials$0 from "../model/credentials/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as failure$0 from "../model/failure/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -64,8 +67,6 @@ export class AlwaysUVRequest {
     "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "target": config$0.AlwaysUVTarget;
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new AlwaysUVRequest instance. */
@@ -179,8 +180,6 @@ export class BioEnrollRequest {
     "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "timeoutMilliseconds"?: number;
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new BioEnrollRequest instance. */
@@ -291,8 +290,6 @@ export class BioRemoveRequest {
     "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "templateIdHex": string;
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new BioRemoveRequest instance. */
@@ -321,8 +318,6 @@ export class BioRenameRequest {
     "verificationFlow"?: model$0.VerificationFlow;
     "templateIdHex": string;
     "friendlyName": string;
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new BioRenameRequest instance. */
@@ -503,8 +498,6 @@ export class CredentialDeleteRequest {
     "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
     "credentialIdHex": string;
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new CredentialDeleteRequest instance. */
@@ -639,15 +632,13 @@ export class CredentialUpdateEnvelope {
 export class CredentialUpdateRequest {
     "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
-    "credentialIdHex": string;
+    "target": credentials$0.CredentialTarget;
     "userIdHex"?: string;
     "name"?: string;
     "displayName"?: string;
     "userIdProvided"?: boolean;
     "nameProvided"?: boolean;
     "displayProvided"?: boolean;
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new CredentialUpdateRequest instance. */
@@ -655,8 +646,8 @@ export class CredentialUpdateRequest {
         if (!("selectionId" in $$source)) {
             this["selectionId"] = "";
         }
-        if (!("credentialIdHex" in $$source)) {
-            this["credentialIdHex"] = "";
+        if (!("target" in $$source)) {
+            this["target"] = (new credentials$0.CredentialTarget());
         }
 
         Object.assign(this, $$source);
@@ -666,7 +657,11 @@ export class CredentialUpdateRequest {
      * Creates a new CredentialUpdateRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): CredentialUpdateRequest {
+        const $$createField2_0 = $$createType20;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("target" in $$parsedSource) {
+            $$parsedSource["target"] = $$createField2_0($$parsedSource["target"]);
+        }
         return new CredentialUpdateRequest($$parsedSource as Partial<CredentialUpdateRequest>);
     }
 }
@@ -702,7 +697,7 @@ export class CredentialsEnvelope {
      */
     static createFrom($$source: any = {}): CredentialsEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType21;
+        const $$createField5_0 = $$createType22;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -750,7 +745,7 @@ export class DiscoveryChangedEnvelope {
      * Creates a new DiscoveryChangedEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): DiscoveryChangedEnvelope {
-        const $$createField1_0 = $$createType23;
+        const $$createField1_0 = $$createType24;
         const $$createField2_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("snapshot" in $$parsedSource) {
@@ -779,7 +774,7 @@ export class DiscoverySnapshot {
      * Creates a new DiscoverySnapshot instance from a string or object.
      */
     static createFrom($$source: any = {}): DiscoverySnapshot {
-        const $$createField0_0 = $$createType25;
+        const $$createField0_0 = $$createType26;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("devices" in $$parsedSource) {
             $$parsedSource["devices"] = $$createField0_0($$parsedSource["devices"]);
@@ -803,8 +798,6 @@ export enum DiscoveryTrigger {
 export class EnableLongTouchForResetRequest {
     "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new EnableLongTouchForResetRequest instance. */
@@ -856,7 +849,7 @@ export class GetAssertionEnvelope {
      */
     static createFrom($$source: any = {}): GetAssertionEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType27;
+        const $$createField5_0 = $$createType28;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -876,8 +869,6 @@ export class GetAssertionRequest {
     "allowList"?: credential$0.PublicKeyCredentialDescriptor[];
     "options"?: webauthn$0.AuthenticatorOptions;
     "extensions"?: webauthn$1.GetAuthenticationExtensionsClientInputs | null;
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new GetAssertionRequest instance. */
@@ -900,9 +891,9 @@ export class GetAssertionRequest {
      */
     static createFrom($$source: any = {}): GetAssertionRequest {
         const $$createField3_0 = $Create.ByteSlice;
-        const $$createField4_0 = $$createType29;
-        const $$createField5_0 = $$createType30;
-        const $$createField6_0 = $$createType32;
+        const $$createField4_0 = $$createType30;
+        const $$createField5_0 = $$createType31;
+        const $$createField6_0 = $$createType33;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("clientDataJSON" in $$parsedSource) {
             $$parsedSource["clientDataJSON"] = $$createField3_0($$parsedSource["clientDataJSON"]);
@@ -951,7 +942,7 @@ export class InspectEnvelope {
      */
     static createFrom($$source: any = {}): InspectEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType34;
+        const $$createField5_0 = $$createType35;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -966,7 +957,6 @@ export class InspectEnvelope {
 export class InteractionAnswer {
     "interactionId": InteractionID;
     "pin"?: string;
-    "confirmed"?: boolean;
     "canceled"?: boolean;
 
     /** Creates a new InteractionAnswer instance. */
@@ -1017,7 +1007,7 @@ export class InteractionPrompt {
      * Creates a new InteractionPrompt instance from a string or object.
      */
     static createFrom($$source: any = {}): InteractionPrompt {
-        const $$createField3_0 = $$createType35;
+        const $$createField3_0 = $$createType36;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("request" in $$parsedSource) {
             $$parsedSource["request"] = $$createField3_0($$parsedSource["request"]);
@@ -1029,8 +1019,6 @@ export class InteractionPrompt {
 export class LargeBlobGarbageCollectRequest {
     "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new LargeBlobGarbageCollectRequest instance. */
@@ -1082,7 +1070,7 @@ export class LargeBlobListEnvelope {
      */
     static createFrom($$source: any = {}): LargeBlobListEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType37;
+        const $$createField5_0 = $$createType38;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -1147,7 +1135,7 @@ export class LargeBlobMutationEnvelope {
      */
     static createFrom($$source: any = {}): LargeBlobMutationEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType39;
+        const $$createField5_0 = $$createType40;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -1164,8 +1152,6 @@ export class LargeBlobMutationRequest {
     "verificationFlow"?: model$0.VerificationFlow;
     "credentialIdHex": string;
     "payload"?: string;
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new LargeBlobMutationRequest instance. */
@@ -1224,7 +1210,7 @@ export class LargeBlobReadEnvelope {
      */
     static createFrom($$source: any = {}): LargeBlobReadEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType41;
+        const $$createField5_0 = $$createType42;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -1300,7 +1286,7 @@ export class MDSLookupEnvelope {
      * Creates a new MDSLookupEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): MDSLookupEnvelope {
-        const $$createField0_0 = $$createType42;
+        const $$createField0_0 = $$createType43;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("result" in $$parsedSource) {
             $$parsedSource["result"] = $$createField0_0($$parsedSource["result"]);
@@ -1364,7 +1350,7 @@ export class MakeCredentialEnvelope {
      */
     static createFrom($$source: any = {}): MakeCredentialEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType44;
+        const $$createField5_0 = $$createType45;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -1388,8 +1374,6 @@ export class MakeCredentialRequest {
     "extensions"?: webauthn$1.CreateAuthenticationExtensionsClientInputs | null;
     "enterpriseAttestation"?: number;
     "attestationFormatsPreference"?: attestation$0.AttestationStatementFormatIdentifier[];
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new MakeCredentialRequest instance. */
@@ -1417,14 +1401,14 @@ export class MakeCredentialRequest {
      * Creates a new MakeCredentialRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): MakeCredentialRequest {
-        const $$createField2_0 = $$createType45;
-        const $$createField3_0 = $$createType46;
+        const $$createField2_0 = $$createType46;
+        const $$createField3_0 = $$createType47;
         const $$createField4_0 = $Create.ByteSlice;
-        const $$createField5_0 = $$createType48;
-        const $$createField6_0 = $$createType29;
-        const $$createField7_0 = $$createType30;
-        const $$createField8_0 = $$createType50;
-        const $$createField10_0 = $$createType51;
+        const $$createField5_0 = $$createType49;
+        const $$createField6_0 = $$createType30;
+        const $$createField7_0 = $$createType31;
+        const $$createField8_0 = $$createType51;
+        const $$createField10_0 = $$createType52;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("rp" in $$parsedSource) {
             $$parsedSource["rp"] = $$createField2_0($$parsedSource["rp"]);
@@ -1461,8 +1445,6 @@ export class MinPINLengthRequest {
     "minPinLengthRPIDs"?: string[];
     "forceChangePin"?: boolean;
     "pinComplexityPolicy"?: boolean;
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new MinPINLengthRequest instance. */
@@ -1478,7 +1460,7 @@ export class MinPINLengthRequest {
      * Creates a new MinPINLengthRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): MinPINLengthRequest {
-        const $$createField3_0 = $$createType52;
+        const $$createField3_0 = $$createType53;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("minPinLengthRPIDs" in $$parsedSource) {
             $$parsedSource["minPinLengthRPIDs"] = $$createField3_0($$parsedSource["minPinLengthRPIDs"]);
@@ -1508,7 +1490,7 @@ export class OperationEventEnvelope {
      * Creates a new OperationEventEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): OperationEventEnvelope {
-        const $$createField2_0 = $$createType53;
+        const $$createField2_0 = $$createType54;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("event" in $$parsedSource) {
             $$parsedSource["event"] = $$createField2_0($$parsedSource["event"]);
@@ -1551,8 +1533,6 @@ export class PINChangeRequest {
      */
     "currentPIN": string;
     "newPIN": string;
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new PINChangeRequest instance. */
@@ -1610,7 +1590,7 @@ export class PINEnvelope {
      */
     static createFrom($$source: any = {}): PINEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType55;
+        const $$createField5_0 = $$createType56;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -1631,8 +1611,6 @@ export class PINSetRequest {
      * application boundary and must not log or persist serialized requests.
      */
     "newPIN": string;
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new PINSetRequest instance. */
@@ -1705,7 +1683,7 @@ export class ResetFactoryEnvelope {
      */
     static createFrom($$source: any = {}): ResetFactoryEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType57;
+        const $$createField5_0 = $$createType58;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -1720,8 +1698,6 @@ export class ResetFactoryEnvelope {
 export class ResetFactoryRequest {
     "selectionId": SelectionID;
     "verificationFlow"?: model$0.VerificationFlow;
-    "confirmed"?: boolean;
-    "confirmationMessage"?: string;
     "dryRun"?: boolean;
 
     /** Creates a new ResetFactoryRequest instance. */
@@ -1775,7 +1751,7 @@ export class SelectionSnapshot {
      * Creates a new SelectionSnapshot instance from a string or object.
      */
     static createFrom($$source: any = {}): SelectionSnapshot {
-        const $$createField0_0 = $$createType59;
+        const $$createField0_0 = $$createType60;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("selection" in $$parsedSource) {
             $$parsedSource["selection"] = $$createField0_0($$parsedSource["selection"]);
@@ -1805,43 +1781,44 @@ const $$createType16 = model$0.CredentialStoreStateOutput.createFrom;
 const $$createType17 = $Create.Nullable($$createType16);
 const $$createType18 = model$0.CredentialUpdateOutput.createFrom;
 const $$createType19 = $Create.Nullable($$createType18);
-const $$createType20 = model$0.CredentialsOutput.createFrom;
-const $$createType21 = $Create.Nullable($$createType20);
-const $$createType22 = DiscoverySnapshot.createFrom;
-const $$createType23 = $Create.Nullable($$createType22);
-const $$createType24 = report$0.DeviceReport.createFrom;
-const $$createType25 = $Create.Array($$createType24);
-const $$createType26 = model$0.GetAssertionOutput.createFrom;
-const $$createType27 = $Create.Nullable($$createType26);
-const $$createType28 = credential$0.PublicKeyCredentialDescriptor.createFrom;
-const $$createType29 = $Create.Array($$createType28);
-const $$createType30 = webauthn$0.AuthenticatorOptions.createFrom;
-const $$createType31 = webauthn$1.GetAuthenticationExtensionsClientInputs.createFrom;
-const $$createType32 = $Create.Nullable($$createType31);
-const $$createType33 = model$0.InspectOutput.createFrom;
-const $$createType34 = $Create.Nullable($$createType33);
-const $$createType35 = model$0.InteractionRequest.createFrom;
-const $$createType36 = model$0.LargeBlobListOutput.createFrom;
-const $$createType37 = $Create.Nullable($$createType36);
-const $$createType38 = model$0.LargeBlobMutationOutput.createFrom;
-const $$createType39 = $Create.Nullable($$createType38);
-const $$createType40 = model$0.LargeBlobReadOutput.createFrom;
-const $$createType41 = $Create.Nullable($$createType40);
-const $$createType42 = mds$0.LookupResult.createFrom;
-const $$createType43 = model$0.MakeCredentialOutput.createFrom;
-const $$createType44 = $Create.Nullable($$createType43);
-const $$createType45 = credential$0.PublicKeyCredentialRpEntity.createFrom;
-const $$createType46 = credential$0.PublicKeyCredentialUserEntity.createFrom;
-const $$createType47 = credential$0.PublicKeyCredentialParameters.createFrom;
-const $$createType48 = $Create.Array($$createType47);
-const $$createType49 = webauthn$1.CreateAuthenticationExtensionsClientInputs.createFrom;
-const $$createType50 = $Create.Nullable($$createType49);
-const $$createType51 = $Create.Array($Create.Any);
+const $$createType20 = credentials$0.CredentialTarget.createFrom;
+const $$createType21 = model$0.CredentialsOutput.createFrom;
+const $$createType22 = $Create.Nullable($$createType21);
+const $$createType23 = DiscoverySnapshot.createFrom;
+const $$createType24 = $Create.Nullable($$createType23);
+const $$createType25 = report$0.DeviceReport.createFrom;
+const $$createType26 = $Create.Array($$createType25);
+const $$createType27 = model$0.GetAssertionOutput.createFrom;
+const $$createType28 = $Create.Nullable($$createType27);
+const $$createType29 = credential$0.PublicKeyCredentialDescriptor.createFrom;
+const $$createType30 = $Create.Array($$createType29);
+const $$createType31 = webauthn$0.AuthenticatorOptions.createFrom;
+const $$createType32 = webauthn$1.GetAuthenticationExtensionsClientInputs.createFrom;
+const $$createType33 = $Create.Nullable($$createType32);
+const $$createType34 = model$0.InspectOutput.createFrom;
+const $$createType35 = $Create.Nullable($$createType34);
+const $$createType36 = model$0.InteractionRequest.createFrom;
+const $$createType37 = model$0.LargeBlobListOutput.createFrom;
+const $$createType38 = $Create.Nullable($$createType37);
+const $$createType39 = model$0.LargeBlobMutationOutput.createFrom;
+const $$createType40 = $Create.Nullable($$createType39);
+const $$createType41 = model$0.LargeBlobReadOutput.createFrom;
+const $$createType42 = $Create.Nullable($$createType41);
+const $$createType43 = mds$0.LookupResult.createFrom;
+const $$createType44 = model$0.MakeCredentialOutput.createFrom;
+const $$createType45 = $Create.Nullable($$createType44);
+const $$createType46 = credential$0.PublicKeyCredentialRpEntity.createFrom;
+const $$createType47 = credential$0.PublicKeyCredentialUserEntity.createFrom;
+const $$createType48 = credential$0.PublicKeyCredentialParameters.createFrom;
+const $$createType49 = $Create.Array($$createType48);
+const $$createType50 = webauthn$1.CreateAuthenticationExtensionsClientInputs.createFrom;
+const $$createType51 = $Create.Nullable($$createType50);
 const $$createType52 = $Create.Array($Create.Any);
-const $$createType53 = model$0.OperationEvent.createFrom;
-const $$createType54 = model$0.PINOutput.createFrom;
-const $$createType55 = $Create.Nullable($$createType54);
-const $$createType56 = model$0.ResetFactoryOutput.createFrom;
-const $$createType57 = $Create.Nullable($$createType56);
-const $$createType58 = ActiveSelection.createFrom;
-const $$createType59 = $Create.Nullable($$createType58);
+const $$createType53 = $Create.Array($Create.Any);
+const $$createType54 = model$0.OperationEvent.createFrom;
+const $$createType55 = model$0.PINOutput.createFrom;
+const $$createType56 = $Create.Nullable($$createType55);
+const $$createType57 = model$0.ResetFactoryOutput.createFrom;
+const $$createType58 = $Create.Nullable($$createType57);
+const $$createType59 = ActiveSelection.createFrom;
+const $$createType60 = $Create.Nullable($$createType59);

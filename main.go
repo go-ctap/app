@@ -25,7 +25,6 @@ func init() {
 }
 
 func mainWindowOptions(goos string) application.WebviewWindowOptions {
-	macSidebarTint := application.NewRGBA(30, 30, 32, 96)
 	options := application.WebviewWindowOptions{
 		Title:     "FIDO Authenticator Workbench",
 		Frameless: true,
@@ -38,7 +37,7 @@ func mainWindowOptions(goos string) application.WebviewWindowOptions {
 			LiquidGlass: application.MacLiquidGlass{
 				Style:     application.LiquidGlassStyleDark,
 				Material:  application.NSVisualEffectMaterialSidebar,
-				TintColor: &macSidebarTint,
+				TintColor: new(application.NewRGBA(30, 30, 32, 96)),
 			},
 		},
 		Windows: application.WindowsWindow{
