@@ -2,9 +2,9 @@ import { get } from "svelte/store";
 
 import type {
   DiscoveryChangedEnvelope,
-} from "../../bindings/github.com/go-ctap/kit/service";
+} from "../../bindings/fidobench/service";
 import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { DiscoveryTrigger } from "../../bindings/github.com/go-ctap/kit/service";
+import { DiscoveryTrigger } from "../../bindings/fidobench/service";
 
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";

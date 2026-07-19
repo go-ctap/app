@@ -17,7 +17,7 @@ import type {
   MinPINLengthRequest,
   ResetFactoryEnvelope,
   ResetFactoryRequest,
-} from "../../../../bindings/github.com/go-ctap/kit/service";
+} from "../../../../bindings/fidobench/service";
 import { isUnsupportedFailure } from "../../failure.js";
 
 export type SecurityResourcePhase = "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";

@@ -7,7 +7,7 @@ import { InspectInfo, InspectOutput, InspectResult, OperationKind } from "../../
 import { Finding, Profile, Report, RuleID, SpecificationID, Target } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import { InspectEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import { InspectEnvelope } from "../../bindings/fidobench/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";

@@ -1,6 +1,6 @@
 import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { BioSensorEnvelope, InspectEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type { BioSensorEnvelope, InspectEnvelope } from "../../bindings/fidobench/service";
 
 import { m } from "../paraglide/messages.js";
 import { bioSensorReport, inspectResult } from "./ctapkit-results.js";

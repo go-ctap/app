@@ -16,7 +16,7 @@ import {
   UVStatus,
 } from "../../bindings/github.com/go-ctap/kit/model/config";
 import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { ConfigStatusEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type { ConfigStatusEnvelope } from "../../bindings/fidobench/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import {

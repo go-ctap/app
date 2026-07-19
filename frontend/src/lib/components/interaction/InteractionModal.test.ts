@@ -8,7 +8,7 @@ import {
   PINInteractionState,
 } from "../../../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
-import { InteractionAnswer, InteractionPrompt } from "../../../../bindings/github.com/go-ctap/kit/service";
+import { InteractionAnswer, InteractionPrompt } from "../../../../bindings/fidobench/service";
 
 import { buildInteractionModalPresentation } from "$lib/shell-presentation";
 import { resetAppStateForTest } from "$lib/store-test-utils";

@@ -19,7 +19,7 @@ import {
   CTAPDetail,
   Failure,
 } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
-import { LogCursor } from "../../../../bindings/github.com/go-ctap/kit/service";
+import { LogCursor } from "../../../../bindings/fidobench/service";
 import { api } from "$lib/api.js";
 import { logController } from "$lib/features/logs/state.svelte.js";
 import { setAppLocale } from "$lib/i18n.js";

@@ -7,40 +7,40 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as attestation$0 from "../../ctap/attestation/models.js";
+import * as attestation$0 from "../../github.com/go-ctap/ctap/attestation/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as credential$0 from "../../ctap/credential/models.js";
+import * as credential$0 from "../../github.com/go-ctap/ctap/credential/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as webauthn$1 from "../../ctap/webauthn/models.js";
+import * as webauthn$1 from "../../github.com/go-ctap/ctap/webauthn/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as model$0 from "../model/models.js";
+import * as model$0 from "../../github.com/go-ctap/kit/model/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as config$0 from "../model/config/models.js";
+import * as config$0 from "../../github.com/go-ctap/kit/model/config/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as credentials$0 from "../model/credentials/models.js";
+import * as credentials$0 from "../../github.com/go-ctap/kit/model/credentials/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as failure$0 from "../model/failure/models.js";
+import * as failure$0 from "../../github.com/go-ctap/kit/model/failure/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as largeblobs$0 from "../model/largeblobs/models.js";
+import * as largeblobs$0 from "../../github.com/go-ctap/kit/model/largeblobs/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as mds$0 from "../model/mds/models.js";
+import * as mds$0 from "../../github.com/go-ctap/kit/model/mds/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as report$0 from "../model/report/models.js";
+import * as report$0 from "../../github.com/go-ctap/kit/model/report/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as webauthn$0 from "../model/webauthn/models.js";
+import * as webauthn$0 from "../../github.com/go-ctap/kit/model/webauthn/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as transport$0 from "../transport/models.js";
+import * as transport$0 from "../../github.com/go-ctap/kit/transport/models.js";
 
 export class ActiveSelection {
     "id": SelectionID;

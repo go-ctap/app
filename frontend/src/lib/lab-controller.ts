@@ -5,7 +5,7 @@ import {
   GetAssertionRequest,
   MakeCredentialRequest,
   type GetAssertionEnvelope,
-} from "../../bindings/github.com/go-ctap/kit/service";
+} from "../../bindings/fidobench/service";
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
 import { inspectResult, makeCredentialResult } from "./ctapkit-results.js";

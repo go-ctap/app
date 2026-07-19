@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 
 import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import type { InspectEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type { InspectEnvelope } from "../../bindings/fidobench/service";
 
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";

@@ -5,7 +5,7 @@ import { OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model
 import { StateValue } from "../../../../bindings/github.com/go-ctap/kit/model/config";
 import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import { PreviewMode, Severity } from "../../../../bindings/github.com/go-ctap/kit/model/safety";
-import type { ResetFactoryEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
+import type { ResetFactoryEnvelope } from "../../../../bindings/fidobench/service";
 
 import type { SecurityMutationState } from "$lib/features/security/state";
 import { failureForCode } from "$lib/test-failure";

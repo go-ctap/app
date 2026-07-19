@@ -2,7 +2,7 @@
   import { tick } from "svelte";
   import { Pencil, RotateCcw, Send, WandSparkles } from "@lucide/svelte";
 
-  import type { InspectEnvelope, MakeCredentialEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
+  import type { InspectEnvelope, MakeCredentialEnvelope } from "../../../../bindings/fidobench/service";
 
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";

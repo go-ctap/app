@@ -18,7 +18,7 @@ import type {
   LargeBlobListEnvelope,
   LargeBlobMutationEnvelope,
   LargeBlobReadEnvelope,
-} from "../../bindings/github.com/go-ctap/kit/service";
+} from "../../bindings/fidobench/service";
 
 import {
   emptyLargeBlobsInventoryState,

@@ -10,7 +10,7 @@ import type {
   LargeBlobMutationRequest,
   LargeBlobReadEnvelope,
   LargeBlobReadRequest,
-} from "../../../../bindings/github.com/go-ctap/kit/service";
+} from "../../../../bindings/fidobench/service";
 
 import type {
   LargeBlobPayloadEncoding,

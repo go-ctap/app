@@ -9,8 +9,8 @@ import type {
   InteractionPrompt,
   LargeBlobListEnvelope,
   ActiveSelection,
-} from "../../bindings/github.com/go-ctap/kit/service";
-import { DiscoveryTrigger } from "../../bindings/github.com/go-ctap/kit/service";
+} from "../../bindings/fidobench/service";
+import { DiscoveryTrigger } from "../../bindings/fidobench/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import { InteractionKind, OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";

@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach } from "vitest";
 
 import { OperationKind } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import type { CredentialsEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type { CredentialsEnvelope } from "../../bindings/fidobench/service";
 
 import { setAppLocale } from "$lib/i18n";
 import { failureForCode } from "$lib/test-failure";

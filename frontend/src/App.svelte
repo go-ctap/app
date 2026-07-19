@@ -3,7 +3,7 @@
 	import { Events } from "@wailsio/runtime";
 	import { onMount } from "svelte";
 
-	import type * as kitservice from "../bindings/github.com/go-ctap/kit/service/models";
+	import type * as appservice from "../bindings/fidobench/service/models";
 
 	import InteractionModal from "$lib/components/interaction/InteractionModal.svelte";
 	import EmptyState from "$lib/components/shared/EmptyState.svelte";
@@ -75,7 +75,7 @@
 		void selectToken(selector);
 	}
 
-	async function handleInteractionAnswer(answer: kitservice.InteractionAnswer) {
+	async function handleInteractionAnswer(answer: appservice.InteractionAnswer) {
 		await answerPendingInteraction(answer);
 	}
 

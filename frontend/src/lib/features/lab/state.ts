@@ -11,7 +11,7 @@ import type {
   GetAssertionRequest,
   MakeCredentialEnvelope,
   MakeCredentialRequest,
-} from "../../../../bindings/github.com/go-ctap/kit/service";
+} from "../../../../bindings/fidobench/service";
 
 import {
   buildClientDataJSON,

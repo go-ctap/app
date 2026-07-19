@@ -1,6 +1,6 @@
 import type { InteractionKind, PINInteractionState } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
+import type { InteractionPrompt } from "../../bindings/fidobench/service";
 
 import { m } from "../paraglide/messages.js";
 import { bioSampleStatusLabel, deviceDetail, deviceName, labelDevice, operationStageLabel, permissionLabel, authenticatorStateLabel } from "./format.js";

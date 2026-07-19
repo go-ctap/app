@@ -6,7 +6,7 @@ import { Code, type Failure } from "../../../../bindings/github.com/go-ctap/kit/
 import type {
   BioSensorEnvelope,
   ConfigStatusEnvelope,
-} from "../../../../bindings/github.com/go-ctap/kit/service";
+} from "../../../../bindings/fidobench/service";
 
 import { failureForCode } from "../../test-failure";
 

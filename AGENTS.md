@@ -2,7 +2,7 @@
 
 ## Mission
 - `fidoapp` is a Wails 3 desktop workbench for local FIDO2/CTAP authenticators.
-- The Go app is a product boundary over `github.com/go-ctap/kit`, replaced locally by `../ctapkit`.
+- The Go app is a product boundary over `github.com/go-ctap/kit`, replaced locally by `../kit`.
 - `ctapkit` is a runtime/toolkit for UI applications, not an abstract remote backend; generated Wails and `ctapkit` DTOs are UI-facing first-party model contracts.
 - Keep reusable authenticator, CTAP, device, transport, interaction, token, and selection semantics in `ctapkit`.
 - Keep product UX, Wails wiring, app state, screens, status/log presentation, and app-specific envelopes in this repo.
@@ -11,9 +11,9 @@
 ## Hard Rules
 - Never log, persist, dump, or render PINs, `pinUvAuthToken`, reset confirmations, or authentication-token material.
 - HMAC-secret and PRF output bytes are allowed only as transient Lab result data: keep them hidden by default, reveal one value only after an explicit eye action, never expose them through clipboard actions, status/log/toast output, general JSON, or diagnostic dumps, and clear them on the Lab result/authenticator boundaries defined by the product. Request salts and PRF inputs are not covered by this output-only exception.
-- Treat generated Wails bindings and `ctapkit/service` DTOs as first-party contracts. Do not add defensive optional chaining, fallback object construction, or "unknown JSON" normalization around fields that are required by those Go types; open `../ctapkit` and the generated bindings when in doubt.
-- Operation responses use typed generated envelopes from `ctapkit/service`. Screens must not call raw generated Wails service methods directly. Centralize operation envelope/result traversal in named typed extractors/controllers under `frontend/src/lib/`; after extraction, UI builders and components may accept generated DTO types directly. Do not add `resultOf()`, `objectValue()`, defensive `Partial<>`, or `Record<string, unknown>` normalization around required generated DTO fields. `MDSLookupEnvelope.result` is a typed `LookupResult`; use it directly.
-- Do not fabricate generated `ctapkit/service` operation envelopes or model DTOs to represent frontend, bridge, transport, or thrown runtime failures. If a service call returns a real generated envelope with `error`, pass that envelope through. If a call throws or fails before returning a generated envelope, keep the generated DTO `data` empty/null, store a `failure.Failure` as the error, and report status/log entries through an explicit runtime-failure path rather than constructing fake `CredentialsEnvelope`, `InspectEnvelope`, or similar objects.
+- Treat generated Wails bindings and app-owned `service` DTOs as first-party contracts. Do not add defensive optional chaining, fallback object construction, or "unknown JSON" normalization around fields that are required by those Go types; open `service/`, `../kit`, and the generated bindings when in doubt.
+- Operation responses use typed generated envelopes from `fidobench/service`. Screens must not call raw generated Wails service methods directly. Centralize operation envelope/result traversal in named typed extractors/controllers under `frontend/src/lib/`; after extraction, UI builders and components may accept generated DTO types directly. Do not add `resultOf()`, `objectValue()`, defensive `Partial<>`, or `Record<string, unknown>` normalization around required generated DTO fields. `MDSLookupEnvelope.result` is a typed `LookupResult`; use it directly.
+- Do not fabricate generated `fidobench/service` operation envelopes or model DTOs to represent frontend, bridge, transport, or thrown runtime failures. If a service call returns a real generated envelope with `error`, pass that envelope through. If a call throws or fails before returning a generated envelope, keep the generated DTO `data` empty/null, store a `failure.Failure` as the error, and report status/log entries through an explicit runtime-failure path rather than constructing fake `CredentialsEnvelope`, `InspectEnvelope`, or similar objects.
 - When selection is empty, discovery must automatically select and open the first available authenticator.
 - The selected device is the authenticator boundary: changing selection must close the currently open authenticator, clear pending interaction UI state, clear per-device screen state, and open the newly selected device. The app should not expose manual authenticator lifecycle controls.
 - Clearing selection or app shutdown must close the open authenticator and clear pending interaction UI state; `ctapkit` owns operation and interaction cancellation when the authenticator closes.
@@ -40,7 +40,7 @@
 - Keep state in stores/controllers under `frontend/src/lib/`; screens should not call raw generated bindings directly.
 
 ## Local Map
-- Backend entrypoint: `main.go`; Wails service lifecycle: `ctapkit_service.go`; operation facade: `ctapkit_operations.go`.
+- Backend entrypoint: `main.go`; app-owned orchestration and DTOs: `service/`; Wails service lifecycle: `ctapkit_service.go`; operation facade: `ctapkit_operations.go`.
 - Frontend shell: `frontend/src/App.svelte`.
 - Screens: `frontend/src/screens/`; reusable product/workbench components: `frontend/src/lib/components/` grouped by domain, with shadcn primitives under `frontend/src/lib/components/ui/`; app stores/controllers, typed extractors, and presentation builders: `frontend/src/lib/`. Do not use `frontend/src/lib/` for DTO mirrors.
 - OpenSpec files under `openspec/` are history and requirements, not architectural handcuffs.

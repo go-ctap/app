@@ -4,7 +4,7 @@
     ExtensionIdentifier,
     LargeBlobSupport,
   } from "../../../../bindings/github.com/go-ctap/ctap/extension";
-  import type { InspectEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
+  import type { InspectEnvelope } from "../../../../bindings/fidobench/service";
 
   import * as Accordion from "$lib/components/ui/accordion/index.js";
   import * as Alert from "$lib/components/ui/alert/index.js";

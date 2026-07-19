@@ -12,7 +12,7 @@ import type {
   CredentialDeleteEnvelope,
   CredentialUpdateEnvelope,
   CredentialsEnvelope,
-} from "../../bindings/github.com/go-ctap/kit/service";
+} from "../../bindings/fidobench/service";
 
 import {
   failPasskeysInventoryLoadAtRuntime,

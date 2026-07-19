@@ -1,7 +1,7 @@
 import { derived, writable } from "svelte/store";
 
 import type { DeviceReport } from "../../../../bindings/github.com/go-ctap/kit/model/report";
-import type { InspectEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
+import type { InspectEnvelope } from "../../../../bindings/fidobench/service";
 
 import { idleLoadState, type LoadState } from "$lib/load-state";
 import type { AuthenticatorStatus } from "$lib/authenticator-model";

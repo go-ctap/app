@@ -7,10 +7,10 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as model$0 from "../github.com/go-ctap/kit/model/models.js";
+import * as service$0 from "./service/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as service$0 from "../github.com/go-ctap/kit/service/models.js";
+import * as model$0 from "../github.com/go-ctap/kit/model/models.js";
 
 export function BioEnroll(req: service$0.BioEnrollRequest): $CancellablePromise<service$0.BioEnrollEnvelope> {
     return $Call.ByID(3726523099, req).then(($result: any) => {

@@ -13,7 +13,7 @@ import { MakeCredentialInput, MakeCredentialPreview } from "../../bindings/githu
 import {
   MakeCredentialEnvelope,
   MakeCredentialRequest,
-} from "../../bindings/github.com/go-ctap/kit/service";
+} from "../../bindings/fidobench/service";
 
 import { createLabState, labState as mutableLabState } from "$lib/features/lab/state";
 import { setAppLocale } from "$lib/i18n";

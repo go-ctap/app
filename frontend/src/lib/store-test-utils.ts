@@ -7,7 +7,7 @@ import type {
   InspectEnvelope,
   InteractionPrompt,
   LargeBlobListEnvelope,
-} from "../../bindings/github.com/go-ctap/kit/service";
+} from "../../bindings/fidobench/service";
 
 import { resetInteractionStateForTest, pendingInteraction } from "./features/interaction/state.js";
 import { resetLabStateForTest } from "./features/lab/state.js";

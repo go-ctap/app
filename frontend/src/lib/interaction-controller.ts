@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 
 import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
-import type { InteractionAnswer, InteractionPrompt } from "../../bindings/github.com/go-ctap/kit/service";
+import type { InteractionAnswer, InteractionPrompt } from "../../bindings/fidobench/service";
 
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";

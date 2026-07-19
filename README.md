@@ -31,7 +31,8 @@ go test -race ./... -count=1
 ## Project map
 
 - `main.go` — desktop entrypoint and Wails window setup.
-- `ctapkit_service.go` — application lifecycle wiring around `ctapkit/service`.
+- `service/` — application-owned discovery, selection, interaction, logging, and operation envelopes over the `ctapkit` runtime.
+- `ctapkit_service.go` — Wails lifecycle wiring around the application service.
 - `ctapkit_operations.go` — the Wails-facing `ctapkit` operation facade.
 - `frontend/src/App.svelte` — desktop shell.
 - `frontend/src/screens/` — product screens.

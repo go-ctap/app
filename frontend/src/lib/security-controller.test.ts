@@ -23,7 +23,7 @@ import type {
   PINSetRequest,
   ResetFactoryEnvelope,
   ActiveSelection,
-} from "../../bindings/github.com/go-ctap/kit/service";
+} from "../../bindings/fidobench/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { api } from "./api";

@@ -62,7 +62,7 @@ import type {
   MakeCredentialEnvelope,
   PINEnvelope,
   ResetFactoryEnvelope,
-} from "../../bindings/github.com/go-ctap/kit/service";
+} from "../../bindings/fidobench/service";
 import type {
   GetAssertionPreview,
   GetAssertionResult,

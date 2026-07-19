@@ -2,7 +2,7 @@
   import { RefreshCw } from "@lucide/svelte";
 
   import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit/model";
-  import type { InspectEnvelope } from "../../../../bindings/github.com/go-ctap/kit/service";
+  import type { InspectEnvelope } from "../../../../bindings/fidobench/service";
 
   import * as Field from "$lib/components/ui/field/index.js";
   import { Input } from "$lib/components/ui/input/index.js";

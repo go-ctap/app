@@ -18,7 +18,7 @@ import type {
   MakeCredentialEnvelope,
   MakeCredentialRequest,
   ActiveSelection,
-} from "../../bindings/github.com/go-ctap/kit/service";
+} from "../../bindings/fidobench/service";
 
 import { api } from "./api";
 import { failureForCode } from "./test-failure";

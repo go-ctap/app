@@ -9,7 +9,7 @@ import type {
   CredentialUpdateEnvelope,
   CredentialUpdateRequest,
   CredentialsEnvelope,
-} from "../../../../bindings/github.com/go-ctap/kit/service";
+} from "../../../../bindings/fidobench/service";
 
 export type PasskeysInventoryPhase = "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";
 export type CredentialStoreStatePhase = "idle" | "loading" | "ready" | "error" | "unsupported";

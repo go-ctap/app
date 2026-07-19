@@ -1,6 +1,6 @@
 import { get } from "svelte/store";
 
-import type { OperationEventEnvelope } from "../../bindings/github.com/go-ctap/kit/service";
+import type { OperationEventEnvelope } from "../../bindings/fidobench/service";
 
 import { authenticatorStatus } from "./features/authenticator/state.js";
 import { statusBar } from "./features/workbench/state.js";

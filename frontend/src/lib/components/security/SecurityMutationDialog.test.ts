@@ -12,7 +12,7 @@ import {
   BioEnrollRequest,
   ResetFactoryEnvelope,
   ResetFactoryRequest,
-} from "../../../../bindings/github.com/go-ctap/kit/service";
+} from "../../../../bindings/fidobench/service";
 
 import type { SecurityMutationState } from "$lib/features/security/state";
 import { setAppLocale } from "$lib/i18n";

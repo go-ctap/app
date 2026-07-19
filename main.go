@@ -5,7 +5,7 @@ import (
 	"log"
 	"runtime"
 
-	kitservice "github.com/go-ctap/kit/service"
+	appservice "fidobench/service"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -18,10 +18,10 @@ const (
 )
 
 func init() {
-	application.RegisterEvent[kitservice.DiscoveryChangedEnvelope](kitservice.EventDiscoveryChanged)
-	application.RegisterEvent[kitservice.OperationEventEnvelope](kitservice.EventOperationEvent)
-	application.RegisterEvent[kitservice.InteractionPrompt](kitservice.EventInteractionRequested)
-	application.RegisterEvent[kitservice.LogCursor](kitservice.EventLogsChanged)
+	application.RegisterEvent[appservice.DiscoveryChangedEnvelope](appservice.EventDiscoveryChanged)
+	application.RegisterEvent[appservice.OperationEventEnvelope](appservice.EventOperationEvent)
+	application.RegisterEvent[appservice.InteractionPrompt](appservice.EventInteractionRequested)
+	application.RegisterEvent[appservice.LogCursor](appservice.EventLogsChanged)
 }
 
 func mainWindowOptions(goos string) application.WebviewWindowOptions {

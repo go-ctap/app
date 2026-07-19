@@ -43,6 +43,8 @@ github.com/kevinburke/ssh_config v1.2.0/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF
 github.com/kr/pty v1.1.1 h1:VkoXIwSboBpnk99O/KFauAEILuNHv5DVFKZMBN/gUgw=
 github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0SNc=
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
+github.com/ldclabs/cose v1.4.0 h1:OuGpROCQJpMufFCvouib4F9imWZWRmVdx09TBQs+HP4=
+github.com/ldclabs/cose v1.4.0/go.mod h1:TwHEMH5oR4haUHZYppdGr3T4CmgiyDaFWZk9+Dnnx8Y=
 github.com/leaanthony/gosod v1.0.4 h1:YLAbVyd591MRffDgxUOU1NwLhT9T1/YiwjKZpkNFeaI=
 github.com/leaanthony/gosod v1.0.4/go.mod h1:GKuIL0zzPj3O1SdWQOdgURSuhkF+Urizzxh26t9f1cw=
 github.com/mailru/easyjson v0.7.7 h1:UGYAvKxe3sBsEDzO8ZeWOSlIQfWFlxbzLZe7hwFURr0=

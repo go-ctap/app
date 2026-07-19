@@ -9,7 +9,7 @@ import {
 import type {
   BioListEnvelope,
   BioSensorEnvelope,
-} from "../../../../bindings/github.com/go-ctap/kit/service";
+} from "../../../../bindings/fidobench/service";
 
 import { emptySecurityResourceState } from "$lib/features/security/state";
 import { setAppLocale } from "$lib/i18n";

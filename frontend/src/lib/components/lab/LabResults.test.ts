@@ -35,7 +35,7 @@ import {
 import {
   GetAssertionEnvelope,
   MakeCredentialEnvelope,
-} from "../../../../bindings/github.com/go-ctap/kit/service";
+} from "../../../../bindings/fidobench/service";
 
 import GetAssertionResult from "$lib/components/lab/GetAssertionResult.svelte";
 import MakeCredentialResult from "$lib/components/lab/MakeCredentialResult.svelte";

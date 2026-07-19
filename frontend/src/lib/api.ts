@@ -48,7 +48,7 @@ import {
   type ReadLogsRequest,
   type SelectionRequest,
   type SelectionSnapshot,
-} from "../../bindings/github.com/go-ctap/kit/service";
+} from "../../bindings/fidobench/service";
 
 import { runtimeCall } from "./features/logs/state.svelte.js";
 
