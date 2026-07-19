@@ -38,7 +38,7 @@ func TestListCredentialsInvalidSelectionReturnsTypedErrorEnvelope(t *testing.T) 
 	}
 }
 
-func TestListCredentialsOperationFailureUsesOnlyTheTypedEnvelopeError(t *testing.T) {
+func TestListCredentialsFailureUsesOnlyTheTypedEnvelopeError(t *testing.T) {
 	runtime := &recordingAuthenticator{}
 	runErr := failure.Wrap(
 		failure.CodeOperationCanceled,
@@ -52,7 +52,8 @@ func TestListCredentialsOperationFailureUsesOnlyTheTypedEnvelopeError(t *testing
 		service,
 		context.Background(),
 		OperationRequest{SelectionID: "selection-1"},
-		model.ListCredentialsOperation{},
+		model.OperationListCredentials,
+		false,
 		staticOperationExecutor[model.CredentialsOutput](nil, runErr),
 	)
 	if err != nil {
@@ -97,7 +98,8 @@ func TestOperationEnvelopeReportsAndRetiresClosedSelection(t *testing.T) {
 		service,
 		context.Background(),
 		OperationRequest{SelectionID: "selection-1"},
-		model.ListCredentialsOperation{},
+		model.OperationListCredentials,
+		false,
 		staticOperationExecutor[model.CredentialsOutput](nil, runErr),
 	)
 	if err != nil {

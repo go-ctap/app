@@ -86,13 +86,27 @@ func TestOperationLoggingOmitsPayloadsAndSecrets(t *testing.T) {
 		report.DeviceReport{},
 		openedAuthenticator{lifecycle: runtime},
 	)
+	operation := model.ChangePINOperation{CurrentPIN: currentPIN, NewPIN: newPIN}
+	execute := func(
+		context.Context,
+		*ctapkit.Authenticator,
+		model.InteractionHandler,
+		...ctapkit.OperationOption,
+	) (*model.PINOutput, error) {
+		if operation.CurrentPIN != currentPIN || operation.NewPIN != newPIN {
+			t.Fatalf("captured operation = %#v", operation)
+		}
+
+		return &output, nil
+	}
 
 	_, _, err := runOperation(
 		service,
 		context.Background(),
 		OperationRequest{SelectionID: "selection-1"},
-		model.ChangePINOperation{CurrentPIN: currentPIN, NewPIN: newPIN},
-		staticOperationExecutor(&output, nil),
+		model.OperationChangePIN,
+		false,
+		execute,
 	)
 	if err != nil {
 		t.Fatalf("ChangePIN: %v", err)
@@ -133,7 +147,8 @@ func TestOperationLoggingDoesNotRequireEventEmitter(t *testing.T) {
 		service,
 		context.Background(),
 		OperationRequest{SelectionID: "selection-1"},
-		model.ListCredentialsOperation{},
+		model.OperationListCredentials,
+		false,
 		staticOperationExecutor(&output, nil),
 	)
 	if err != nil {
@@ -172,7 +187,8 @@ func TestOperationLoggingRetainsTransportDiagnostic(t *testing.T) {
 		service,
 		context.Background(),
 		OperationRequest{SelectionID: "selection-1"},
-		model.ListCredentialsOperation{},
+		model.OperationListCredentials,
+		false,
 		staticOperationExecutor[model.CredentialsOutput](nil, runErr),
 	)
 	if err != nil {

@@ -86,7 +86,8 @@ func TestBioEnrollEnvelopeKeepsPartialResultWithFailure(t *testing.T) {
 		service,
 		t.Context(),
 		OperationRequest{SelectionID: "selection-1"},
-		model.BioEnrollOperation{},
+		model.OperationBioEnroll,
+		false,
 		staticOperationExecutor(&output, runErr),
 	)
 	if err != nil {

@@ -53,13 +53,14 @@ func (s *Service) runEnrichment(ctx context.Context) {
 		if !ok {
 			return
 		}
+		deviceReport := device.Report()
 
 		probeCtx, cancel := context.WithTimeout(ctx, enrichmentProbeTimeout)
 		metadata, err := ctapkit.ProbeDeviceMetadata(probeCtx, device)
 		cancel()
 
 		if err == nil && metadata != nil {
-			s.applyEnrichment(device, metadata)
+			s.applyEnrichment(deviceReport, metadata)
 		}
 	}
 }
@@ -67,28 +68,33 @@ func (s *Service) runEnrichment(ctx context.Context) {
 func (s *Service) nextEnrichmentCandidate(
 	ctx context.Context,
 	attempted map[string]struct{},
-) (report.DeviceReport, bool) {
+) (ctapkit.Device, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if ctx.Err() != nil || s.closed {
 		s.finishEnrichmentLocked()
 
-		return report.DeviceReport{}, false
+		return ctapkit.Device{}, false
 	}
 
-	device, ok := takeEnrichmentCandidate(
+	candidate, ok := takeEnrichmentCandidate(
 		deviceReports(s.devices),
 		s.enrichment.cache,
 		attempted,
 	)
 	if ok {
-		return device, true
+		for _, device := range s.devices {
+			report := device.Report()
+			if report.Transport == candidate.Transport && report.Fingerprint == candidate.Fingerprint {
+				return device, true
+			}
+		}
 	}
 
 	s.finishEnrichmentLocked()
 
-	return report.DeviceReport{}, false
+	return ctapkit.Device{}, false
 }
 
 func takeEnrichmentCandidate(

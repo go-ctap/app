@@ -57,11 +57,12 @@ func bindInputlessOperation[T any](execute inputlessAuthenticatorOperation[T]) o
 	}
 }
 
-func runOperation[O model.Operation, T any](
+func runOperation[T any](
 	service *Service,
 	ctx context.Context,
 	req OperationRequest,
-	operation O,
+	kind model.OperationKind,
+	dryRun bool,
 	execute operationExecutor[T],
 ) (meta OperationEnvelopeMeta, result *T, returnErr error) {
 	operationID := OperationID(uuid.NewString())
@@ -72,8 +73,8 @@ func runOperation[O model.Operation, T any](
 			Timestamp:     started.UTC(),
 			Layer:         model.LogLayerOperation,
 			Code:          model.LogCodeOperationRun,
-			DryRun:        operation.IsDryRun(),
-			OperationKind: operation.Kind(),
+			DryRun:        dryRun,
+			OperationKind: kind,
 			SelectionID:   string(req.SelectionID),
 			OperationID:   string(operationID),
 		}, started, operationErr))
@@ -82,7 +83,7 @@ func runOperation[O model.Operation, T any](
 	meta = OperationEnvelopeMeta{
 		OperationID: operationID,
 		SelectionID: req.SelectionID,
-		Kind:        operation.Kind(),
+		Kind:        kind,
 	}
 
 	selected, ok := service.selectionFor(req.SelectionID)
@@ -97,7 +98,7 @@ func runOperation[O model.Operation, T any](
 	state := &operationState{
 		id:          operationID,
 		selectionID: req.SelectionID,
-		kind:        operation.Kind(),
+		kind:        kind,
 		cancel:      cancel,
 		done:        make(chan struct{}),
 	}
@@ -115,13 +116,13 @@ func runOperation[O model.Operation, T any](
 
 	opts := runOptions(req.VerificationFlow)
 	opts = append(opts, ctapkit.WithEventSink(operationEventSink{service: service, operation: state}))
-	ctx = ctapkit.WithLogCorrelation(ctx, string(req.SelectionID), string(operationID), operation.Kind())
+	ctx = ctapkit.WithLogCorrelation(ctx, string(req.SelectionID), string(operationID), kind)
 	result, operationErr = execute(ctx, selected.runtime.client, interactionHandler{
 		service:     service,
 		done:        state.done,
 		selectionID: req.SelectionID,
 		operationID: operationID,
-		kind:        operation.Kind(),
+		kind:        kind,
 	}, opts...)
 
 	meta.AuthenticatorClosed = selected.runtime.Closed()

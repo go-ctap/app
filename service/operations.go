@@ -134,8 +134,14 @@ type GetAssertionRequest struct {
 }
 
 func (s *Service) Inspect(ctx context.Context, req OperationRequest) (InspectEnvelope, error) {
-	operation := model.InspectOperation{}
-	meta, result, err := runOperation(s, ctx, req, operation, bindInputlessOperation((*ctapkit.Authenticator).Inspect))
+	meta, result, err := runOperation(
+		s,
+		ctx,
+		req,
+		model.OperationInspect,
+		false,
+		bindInputlessOperation((*ctapkit.Authenticator).Inspect),
+	)
 	if snapshot := s.mergeInspectMetadata(req.SelectionID, result); snapshot != nil {
 		s.emit(EventDiscoveryChanged, DiscoveryChangedEnvelope{
 			Trigger:  DiscoveryTriggerEnriched,
@@ -147,24 +153,24 @@ func (s *Service) Inspect(ctx context.Context, req OperationRequest) (InspectEnv
 }
 
 func (s *Service) ListCredentials(ctx context.Context, req CredentialListRequest) (CredentialsEnvelope, error) {
-	operation := model.ListCredentialsOperation{}
 	meta, result, err := runOperation(
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationListCredentials,
+		false,
 		bindInputlessOperation((*ctapkit.Authenticator).ListCredentials),
 	)
 	return CredentialsEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
 }
 
 func (s *Service) CredentialStoreState(ctx context.Context, req OperationRequest) (CredentialStoreStateEnvelope, error) {
-	operation := model.CredentialStoreStateOperation{}
 	meta, result, err := runOperation(
 		s,
 		ctx,
 		req,
-		operation,
+		model.OperationCredentialStoreState,
+		false,
 		bindInputlessOperation((*ctapkit.Authenticator).CredentialStoreState),
 	)
 
@@ -180,7 +186,8 @@ func (s *Service) DeleteCredential(ctx context.Context, req CredentialDeleteRequ
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationDeleteCredential,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).DeleteCredential),
 	)
 	return CredentialDeleteEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -201,7 +208,8 @@ func (s *Service) UpdateCredentialUser(ctx context.Context, req CredentialUpdate
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationUpdateCredentialUser,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).UpdateCredentialUser),
 	)
 	return CredentialUpdateEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -216,19 +224,20 @@ func (s *Service) ReadLargeBlob(ctx context.Context, req LargeBlobReadRequest) (
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationReadLargeBlob,
+		false,
 		bindOperation(operation, (*ctapkit.Authenticator).ReadLargeBlob),
 	)
 	return LargeBlobReadEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
 }
 
 func (s *Service) ListLargeBlobs(ctx context.Context, req LargeBlobListRequest) (LargeBlobListEnvelope, error) {
-	operation := model.ListLargeBlobsOperation{}
 	meta, result, err := runOperation(
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationListLargeBlobs,
+		false,
 		bindInputlessOperation((*ctapkit.Authenticator).ListLargeBlobs),
 	)
 	return LargeBlobListEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -244,7 +253,8 @@ func (s *Service) WriteLargeBlob(ctx context.Context, req LargeBlobMutationReque
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationWriteLargeBlob,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).WriteLargeBlob),
 	)
 	return LargeBlobMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -259,7 +269,8 @@ func (s *Service) DeleteLargeBlob(ctx context.Context, req LargeBlobMutationRequ
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationDeleteLargeBlob,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).DeleteLargeBlob),
 	)
 	return LargeBlobMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -273,19 +284,20 @@ func (s *Service) GarbageCollectLargeBlobs(ctx context.Context, req LargeBlobGar
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationGarbageCollectLargeBlobs,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).GarbageCollectLargeBlobs),
 	)
 	return LargeBlobMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
 }
 
 func (s *Service) ConfigStatus(ctx context.Context, req OperationRequest) (ConfigStatusEnvelope, error) {
-	operation := model.ConfigStatusOperation{}
 	meta, result, err := runOperation(
 		s,
 		ctx,
 		req,
-		operation,
+		model.OperationConfigStatus,
+		false,
 		bindInputlessOperation((*ctapkit.Authenticator).ConfigStatus),
 	)
 	return ConfigStatusEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -300,7 +312,8 @@ func (s *Service) SetPIN(ctx context.Context, req PINSetRequest) (PINEnvelope, e
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationSetPIN,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).SetPIN),
 	)
 	return PINEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -316,7 +329,8 @@ func (s *Service) ChangePIN(ctx context.Context, req PINChangeRequest) (PINEnvel
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationChangePIN,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).ChangePIN),
 	)
 	return PINEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -331,7 +345,8 @@ func (s *Service) SetAlwaysUV(ctx context.Context, req AlwaysUVRequest) (Authent
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationSetAlwaysUV,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).SetAlwaysUV),
 	)
 	return AuthenticatorConfigEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -349,7 +364,8 @@ func (s *Service) SetMinPINLength(ctx context.Context, req MinPINLengthRequest) 
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationSetMinPINLength,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).SetMinPINLength),
 	)
 	return AuthenticatorConfigEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -363,7 +379,8 @@ func (s *Service) EnableLongTouchForReset(ctx context.Context, req EnableLongTou
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationEnableLongTouchForReset,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).EnableLongTouchForReset),
 	)
 
@@ -371,24 +388,24 @@ func (s *Service) EnableLongTouchForReset(ctx context.Context, req EnableLongTou
 }
 
 func (s *Service) BioSensorInfo(ctx context.Context, req OperationRequest) (BioSensorEnvelope, error) {
-	operation := model.BioSensorInfoOperation{}
 	meta, result, err := runOperation(
 		s,
 		ctx,
 		req,
-		operation,
+		model.OperationBioSensorInfo,
+		false,
 		bindInputlessOperation((*ctapkit.Authenticator).BioSensorInfo),
 	)
 	return BioSensorEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
 }
 
 func (s *Service) BioList(ctx context.Context, req OperationRequest) (BioListEnvelope, error) {
-	operation := model.BioListOperation{}
 	meta, result, err := runOperation(
 		s,
 		ctx,
 		req,
-		operation,
+		model.OperationBioList,
+		false,
 		bindInputlessOperation((*ctapkit.Authenticator).BioList),
 	)
 	return BioListEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -403,7 +420,8 @@ func (s *Service) BioEnroll(ctx context.Context, req BioEnrollRequest) (BioEnrol
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationBioEnroll,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).BioEnroll),
 	)
 	return BioEnrollEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -419,7 +437,8 @@ func (s *Service) BioRename(ctx context.Context, req BioRenameRequest) (BioMutat
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationBioRename,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).BioRename),
 	)
 	return BioMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -434,7 +453,8 @@ func (s *Service) BioRemove(ctx context.Context, req BioRemoveRequest) (BioMutat
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationBioRemove,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).BioRemove),
 	)
 	return BioMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -448,7 +468,8 @@ func (s *Service) ResetFactory(ctx context.Context, req ResetFactoryRequest) (Re
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationResetFactory,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).ResetFactory),
 	)
 	return ResetFactoryEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -463,7 +484,8 @@ func (s *Service) MakeCredential(ctx context.Context, req MakeCredentialRequest)
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationMakeCredential,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).MakeCredential),
 	)
 	return MakeCredentialEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
@@ -478,7 +500,8 @@ func (s *Service) GetAssertion(ctx context.Context, req GetAssertionRequest) (Ge
 		s,
 		ctx,
 		req.OperationRequest,
-		operation,
+		model.OperationGetAssertion,
+		req.DryRun,
 		bindOperation(operation, (*ctapkit.Authenticator).GetAssertion),
 	)
 	return GetAssertionEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
