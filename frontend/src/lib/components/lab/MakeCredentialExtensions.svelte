@@ -178,7 +178,7 @@
       description={m.lab_extension_prf_description()}
       included={value.prf.included}
       {disabled}
-      status="client-side"
+      status={status(ExtensionIdentifier.ExtensionIdentifierHMACSecret)}
       onInclude={(included) => include("prf", included, value.prf)}
     >
       <Field.Field orientation="horizontal">

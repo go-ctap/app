@@ -8,17 +8,20 @@
   } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
 
   import { copyToClipboard } from "$lib/clipboard";
+  import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import JsonView from "$lib/components/shared/JsonView.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
+  import { Separator } from "$lib/components/ui/separator/index.js";
   import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import { largeBlobReadReport } from "$lib/ctapkit-results";
   import type { LargeBlobReadState } from "$lib/features/largeblobs/state";
   import type { LargeBlobCredentialRow } from "$lib/largeblobs-presentation";
   import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
+  import { advancedMode } from "$lib/preferences";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -278,6 +281,14 @@
         {/if}
       </section>
     </div>
+
+    {#if $advancedMode}
+      <Separator class="large-blob-raw-separator" />
+
+      <div class="large-blob-raw">
+        <JsonDisclosure value={row.raw} title={m.raw_credential_details()} />
+      </div>
+    {/if}
   </section>
 </Tooltip.Provider>
 
@@ -349,6 +360,11 @@
 
   .large-blob-detail-section + .large-blob-detail-section {
     border-left: 1px solid var(--border);
+  }
+
+  .large-blob-raw {
+    min-width: 0;
+    padding: var(--space-3);
   }
 
   .large-blob-detail-list {

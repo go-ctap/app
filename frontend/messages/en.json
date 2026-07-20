@@ -367,7 +367,7 @@
   "lab_extension_large_blob_get_description": "Reads or writes the direct per-credential largeBlob value during assertion.",
   "lab_extension_min_pin_length_description": "Requests the authenticator's current minimum PIN length during credential creation; only authorized RP IDs receive it.",
   "lab_extension_pin_complexity_policy_description": "Requests whether a PIN complexity policy is configured; only authorized RP IDs receive the result.",
-  "lab_extension_prf_description": "Evaluates a credential-bound pseudo-random function for one or two inputs; results can be used as symmetric key material.",
+  "lab_extension_prf_description": "Maps the WebAuthn PRF request to the authenticator's hmac-secret extension, where the credential-bound function is evaluated.",
   "lab_extension_payment_description": "Requests the WebAuthn payment flow and its CTAP thirdPartyPayment extension input.",
   "lab_hmac_secret_create_tooltip": "Sends hmac-secret: true so the authenticator confirms secret material is associated with the new credential.",
   "lab_min_pin_length_tooltip": "Sends minPinLength: true and requests the current minimum PIN length in Unicode code points.",

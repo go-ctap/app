@@ -8,6 +8,7 @@
   import { Separator } from "$lib/components/ui/separator/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import type { PasskeyCredentialRow } from "$lib/passkeys-presentation";
+  import { advancedMode } from "$lib/preferences";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -199,11 +200,13 @@
 
     </div>
 
-    <Separator class="passkey-raw-separator" />
+    {#if $advancedMode}
+      <Separator class="passkey-raw-separator" />
 
-    <div class="passkey-raw">
-      <JsonDisclosure value={row.raw} title={m.raw_credential_details()} />
-    </div>
+      <div class="passkey-raw">
+        <JsonDisclosure value={row.raw} title={m.raw_credential_details()} />
+      </div>
+    {/if}
   </section>
 </Tooltip.Provider>
 

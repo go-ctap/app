@@ -118,6 +118,13 @@ describe("WebAuthn Lab screen", () => {
   it("renders configure sections sequentially and keeps extension include separate from expand", async () => {
     const user = userEvent.setup();
     selectToken();
+    seedOverviewEnvelopeForTest({
+      result: {
+        info: {
+          extensions: [ExtensionIdentifier.ExtensionIdentifierHMACSecret],
+        },
+      },
+    } as unknown as InspectEnvelope);
     render(Lab);
 
     const make = stepCard("MakeCredential");
@@ -129,7 +136,7 @@ describe("WebAuthn Lab screen", () => {
     expect(within(make).getByRole("heading", { name: "Execution" })).toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "WebAuthn client extensions" })).toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "CTAP authenticator extensions" })).toBeInTheDocument();
-    expect(within(make).getByRole("button", { name: /prf.*client-side/i })).toBeInTheDocument();
+    expect(within(make).getByRole("button", { name: /prf.*supported/i })).toBeInTheDocument();
 
     const includeCredProps = within(make).getByRole("switch", { name: "Include credProps" });
     const expandCredProps = within(make).getByRole("button", { name: /credProps/i });
@@ -157,7 +164,7 @@ describe("WebAuthn Lab screen", () => {
     expect(within(assertion).getByRole("heading", { name: "CTAP authenticator extensions" })).toBeInTheDocument();
     const includePRF = within(assertion).getByRole("switch", { name: "Include prf" });
     expect(includePRF).toBeEnabled();
-    expect(within(assertion).getByRole("button", { name: /prf.*client-side/i })).toBeInTheDocument();
+    expect(within(assertion).getByRole("button", { name: /prf.*supported/i })).toBeInTheDocument();
     expect(within(assertion).getByRole("switch", { name: "Include credBlob" })).toBeEnabled();
     expect(within(assertion).getByRole("switch", { name: "Include hmac-secret" })).toBeEnabled();
     expect(within(assertion).getByRole("switch", { name: "Include largeBlob" })).toBeEnabled();
@@ -245,6 +252,37 @@ describe("WebAuthn Lab screen", () => {
       .toBeInTheDocument();
   });
 
+  it.each([
+    {
+      backend: "hmac-secret support",
+      extensions: [ExtensionIdentifier.ExtensionIdentifierHMACSecret],
+      status: "Supported",
+    },
+    {
+      backend: "no hmac-secret support",
+      extensions: [],
+      status: "Not reported",
+    },
+  ])("reports WebAuthn PRF support from $backend", async ({ extensions, status }) => {
+    const user = userEvent.setup();
+    selectToken();
+    seedOverviewEnvelopeForTest({
+      result: {
+        info: { extensions },
+      },
+    } as unknown as InspectEnvelope);
+    render(Lab);
+
+    const make = stepCard("MakeCredential");
+    expect(within(make).getByRole("button", { name: new RegExp(`prf.*${status}`, "i") }))
+      .toBeInTheDocument();
+
+    await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
+    const assertion = stepCard("GetAssertion");
+    expect(within(assertion).getByRole("button", { name: new RegExp(`prf.*${status}`, "i") }))
+      .toBeInTheDocument();
+  });
+
   it("describes every extension and explains its configurable options", async () => {
     const user = userEvent.setup();
     selectToken();
@@ -253,7 +291,7 @@ describe("WebAuthn Lab screen", () => {
     const make = stepCard("MakeCredential");
     for (const description of [
       /Reports whether the newly created credential is discoverable/,
-      /Evaluates a credential-bound pseudo-random function/,
+      /Maps the WebAuthn PRF request to the authenticator's hmac-secret extension/,
       /Stores a policy with the credential/,
       /Stores a small RP-defined opaque blob/,
       /associate credential-scoped HMAC secret material/,
@@ -285,7 +323,8 @@ describe("WebAuthn Lab screen", () => {
 
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
     const assertion = stepCard("GetAssertion");
-    expect(within(assertion).getByText(/Evaluates a credential-bound pseudo-random function/)).toBeInTheDocument();
+    expect(within(assertion).getByText(/Maps the WebAuthn PRF request to the authenticator's hmac-secret extension/))
+      .toBeInTheDocument();
     expect(within(assertion).getByText(/Requests the opaque blob stored with the selected credential/))
       .toBeInTheDocument();
     expect(within(assertion).getByText(/Evaluates the selected credential's HMAC secret/)).toBeInTheDocument();

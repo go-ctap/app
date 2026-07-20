@@ -30,6 +30,7 @@ import {
   largeBlobsSelectedCredentialID as mutableLargeBlobsSelectedCredentialID,
 } from "$lib/features/largeblobs/state";
 import { setAppLocale } from "$lib/i18n";
+import { setAdvancedMode } from "$lib/preferences";
 import { failureForCode } from "$lib/test-failure";
 import {
   resetAppStateForTest,
@@ -209,6 +210,7 @@ function mutationEnvelope(preview: MutationPreview): LargeBlobMutationEnvelope {
 describe("LargeBlobs", () => {
   beforeEach(() => {
     setAppLocale("en");
+    setAdvancedMode(false);
     controllerMocks.readLargeBlob.mockClear();
     controllerMocks.reloadLargeBlobs.mockClear();
     controllerMocks.selectLargeBlobCredential.mockClear();
@@ -331,6 +333,35 @@ describe("LargeBlobs", () => {
     expect(controllerMocks.setLargeBlobsDecodeMode).toHaveBeenCalledWith(DecodeMode.DecodeModeCBOR);
     expect(controllerMocks.readLargeBlob).toHaveBeenCalledTimes(2);
     expect(controllerMocks.readLargeBlob).toHaveBeenLastCalledWith("cafe");
+  });
+
+  it("shows raw credential details only in Advanced Mode", async () => {
+    const user = userEvent.setup();
+    seedLargeBlobsEnvelopeForTest(listEnvelope());
+    render(LargeBlobs);
+
+    const disclosure = screen.getByRole("button", { name: /Zero User, zero@example.com/ });
+    const row = disclosure.closest("tr") as HTMLTableRowElement;
+    await user.click(disclosure);
+
+    const details = row.nextElementSibling as HTMLElement;
+    expect(details.querySelector(".large-blob-raw-separator")).not.toBeInTheDocument();
+    expect(details.querySelector(".large-blob-raw")).not.toBeInTheDocument();
+    expect(within(details).queryByRole("button", { name: "Raw credential details" })).not.toBeInTheDocument();
+
+    setAdvancedMode(true);
+    await waitFor(() => {
+      expect(details.querySelector(".large-blob-raw-separator")).toBeInTheDocument();
+      expect(details.querySelector(".large-blob-raw")).toBeInTheDocument();
+      expect(within(details).getByRole("button", { name: "Raw credential details" })).toHaveAttribute("aria-expanded", "false");
+      expect(within(details).getByRole("button", { name: "Copy JSON" })).toBeInTheDocument();
+    });
+
+    setAdvancedMode(false);
+    await waitFor(() => {
+      expect(details.querySelector(".large-blob-raw-separator")).not.toBeInTheDocument();
+      expect(details.querySelector(".large-blob-raw")).not.toBeInTheDocument();
+    });
   });
 
   it("keeps stale rows and their actions available while showing the warning", async () => {

@@ -19,9 +19,12 @@
     </div>
 
     <Field.Field>
-      <Field.Label for="settings-language">{m.language()}</Field.Label>
       <Select.Root type="single" value={$currentLocale} onValueChange={handleLocaleChange}>
-        <Select.Trigger id="settings-language" class="settings-language-trigger">
+        <Select.Trigger
+          id="settings-language"
+          class="settings-language-trigger"
+          aria-labelledby="settings-language-title"
+        >
           {localeLabel($currentLocale)}
         </Select.Trigger>
         <Select.Content side="bottom" align="end">

@@ -261,6 +261,27 @@ describe("Passkeys", () => {
     expect(record).toHaveAttribute("aria-selected", "true");
   });
 
+  it("removes the raw JSON region and its divider when Advanced Mode is disabled", async () => {
+    const user = userEvent.setup();
+    setAdvancedMode(false);
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      selectionId: "authenticator-1",
+    });
+    seedPasskeysEnvelopeForTest(credentialsEnvelope());
+
+    render(Passkeys);
+
+    const credential = screen.getByRole("button", { name: /Example User, user@example.com/ });
+    const record = credential.closest("tr") as HTMLElement;
+    await user.click(credential);
+
+    const details = record.nextElementSibling as HTMLElement;
+    expect(details.querySelector(".passkey-raw-separator")).not.toBeInTheDocument();
+    expect(details.querySelector(".passkey-raw")).not.toBeInTheDocument();
+    expect(within(details).queryByRole("button", { name: "Copy JSON" })).not.toBeInTheDocument();
+  });
+
   it("collapses inline credential details when the selected row is clicked again", async () => {
     const user = userEvent.setup();
     seedSelectionForTest("token-1", null, {
