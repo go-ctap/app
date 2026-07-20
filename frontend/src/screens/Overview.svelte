@@ -4,6 +4,8 @@
   import OverviewHeroCard from "$lib/components/overview/OverviewHeroCard.svelte";
   import OverviewLoadingCard from "$lib/components/overview/OverviewLoadingCard.svelte";
   import OverviewMDSObservations from "$lib/components/overview/OverviewMDSObservations.svelte";
+  import OverviewStandardCapabilities from "$lib/components/overview/OverviewStandardCapabilities.svelte";
+  import OverviewStandardHeroCard from "$lib/components/overview/OverviewStandardHeroCard.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -20,6 +22,7 @@
     reloadOverview,
   } from "$lib/features/overview";
   import { buildOverviewPresentation } from "$lib/overview-presentation";
+  import { advancedMode } from "$lib/preferences";
 
   import { m } from "../paraglide/messages.js";
 
@@ -50,20 +53,31 @@
 {:else if overview.selector}
   <section class="overview-screen flow">
     {#if overview.hasReport}
-      <OverviewHeroCard
-        hero={overview.hero}
-        signalGroups={overview.signalGroups}
-        mdsLoading={overview.mdsLoading}
-        onRefreshMDS={refreshMDS}
-      />
-      {#if overview.conformance}
-        {#key overview.info}
-          <OverviewConformance presentation={overview.conformance} />
-        {/key}
+      {#if $advancedMode}
+        <OverviewHeroCard
+          hero={overview.hero}
+          signalGroups={overview.signalGroups}
+          mdsLoading={overview.mdsLoading}
+          onRefreshMDS={refreshMDS}
+        />
+        {#if overview.conformance}
+          {#key overview.info}
+            <OverviewConformance presentation={overview.conformance} />
+          {/key}
+        {/if}
+        <OverviewCapabilityMatrix groups={overview.overviewGroups} warningCount={overview.warningCount} />
+        <OverviewMDSObservations observations={overview.mdsObservations} />
+        <JsonDisclosure value={overview.report} />
+      {:else if overview.standard}
+        <OverviewStandardHeroCard hero={overview.hero} presentation={overview.standard} />
+        {#if overview.conformance && overview.conformance.status !== "passed"}
+          {#key overview.info}
+            <OverviewConformance presentation={overview.conformance} />
+          {/key}
+        {/if}
+        <OverviewStandardCapabilities presentation={overview.standard} />
+        <OverviewMDSObservations observations={overview.mdsObservations} />
       {/if}
-      <OverviewCapabilityMatrix groups={overview.overviewGroups} warningCount={overview.warningCount} />
-      <OverviewMDSObservations observations={overview.mdsObservations} />
-      <JsonDisclosure value={overview.report} />
     {:else if overview.loading}
       <OverviewLoadingCard />
     {/if}

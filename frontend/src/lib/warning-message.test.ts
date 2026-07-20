@@ -16,7 +16,7 @@ describe("warningMessage", () => {
       severity: Severity.SeverityWarning,
       code: "webauthn.make_credential.mutation",
       message: "backend fallback",
-    }))).toBe("На этом аутентификаторе могут быть созданы новые учетные данные.");
+    }))).toBe("На этом аутентификаторе может быть создан новый ключ доступа.");
   });
 
   it("preserves the ctapkit message for unknown future warning codes", () => {

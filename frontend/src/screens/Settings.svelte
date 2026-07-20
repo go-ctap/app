@@ -13,7 +13,11 @@
 </script>
 
 <section class="settings-screen flow" aria-label={m.settings()}>
-  <section class="settings-section" aria-labelledby="settings-language-title">
+  <section
+    class="settings-section"
+    data-control="wide"
+    aria-labelledby="settings-language-title"
+  >
     <div class="settings-copy">
       <h2 id="settings-language-title">{m.language()}</h2>
     </div>
@@ -81,9 +85,13 @@
 
     .settings-section {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(13rem, 18rem);
+      grid-template-columns: minmax(0, 1fr) auto;
       gap: var(--space-5);
       align-items: start;
+    }
+
+    .settings-section[data-control="wide"] {
+      grid-template-columns: minmax(0, 1fr) minmax(13rem, 18rem);
     }
 
     .settings-copy {
@@ -104,16 +112,6 @@
     :global(.settings-switch-control) {
       justify-content: flex-end;
       min-height: 38px;
-    }
-
-    @container workspace (max-width: 45rem) {
-      .settings-section {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      :global(.settings-switch-control) {
-        justify-content: flex-start;
-      }
     }
 }
 </style>

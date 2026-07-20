@@ -173,7 +173,7 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(screen.getByText("Read-only credential management: Not available")).toBeInTheDocument();
+    expect(screen.getByText("Read-only passkey management: Not available")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Read state" })).not.toBeInTheDocument();
   });
 
@@ -186,7 +186,7 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(screen.getByText("Read-only credential management: Supported")).toBeInTheDocument();
+    expect(screen.getByText("Read-only passkey management: Supported")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Read state" })).not.toBeInTheDocument();
   });
 
@@ -204,7 +204,7 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(screen.getByText("Load resident credentials from the selected authenticator.")).toBeInTheDocument();
+    expect(screen.getByText("Load discoverable passkeys from the selected authenticator.")).toBeInTheDocument();
     expect(screen.queryByText("The PIN is invalid.")).not.toBeInTheDocument();
   });
 
@@ -222,9 +222,9 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(screen.getByText("Load resident credentials from the selected authenticator.")).toBeInTheDocument();
+    expect(screen.getByText("Load discoverable passkeys from the selected authenticator.")).toBeInTheDocument();
     expect(screen.queryByText("The requested verification flow is not supported.")).not.toBeInTheDocument();
-    expect(screen.queryByText("Credential management unavailable")).not.toBeInTheDocument();
+    expect(screen.queryByText("Passkey management unavailable")).not.toBeInTheDocument();
   });
 
   it("opens credential details immediately after the selected table row", async () => {
@@ -248,8 +248,8 @@ describe("Passkeys", () => {
 
     const details = record?.nextElementSibling as HTMLElement;
     expect(details).toHaveAttribute("id", "passkey-row-details-cafe");
-    expect(details.closest("table")).toBe(screen.getByRole("table", { name: "Resident credentials" }));
-    expect(within(screen.getByRole("table", { name: "Resident credentials" })).getAllByRole("row")).toHaveLength(3);
+    expect(details.closest("table")).toBe(screen.getByRole("table", { name: "Discoverable passkeys" }));
+    expect(within(screen.getByRole("table", { name: "Discoverable passkeys" })).getAllByRole("row")).toHaveLength(3);
     expect(within(details).getByText("public-key")).toBeInTheDocument();
     expect(within(details).getAllByText("01").length).toBeGreaterThan(0);
     const copyJson = within(details).getByRole("button", { name: "Copy JSON" });
@@ -333,7 +333,7 @@ describe("Passkeys", () => {
     await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
     expect(screen.getByText("public-key")).toBeInTheDocument();
 
-    await user.type(screen.getByPlaceholderText("Search RP, user, credential ID, or hash"), "does-not-exist");
+    await user.type(screen.getByPlaceholderText("Search RP, user, passkey ID, or hash"), "does-not-exist");
     await tick();
 
     expect(screen.getByText("No matching passkeys")).toBeInTheDocument();
@@ -353,11 +353,11 @@ describe("Passkeys", () => {
 
     render(Passkeys);
     const compact = screen.getByText("UV 2");
-    expect(compact).toHaveAttribute("title", "Level 2 · UV optional with credential list");
-    expect(screen.queryByText("Level 2 · UV optional with credential list")).not.toBeInTheDocument();
+    expect(compact).toHaveAttribute("title", "Level 2 · UV optional with passkey list");
+    expect(screen.queryByText("Level 2 · UV optional with passkey list")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
-    expect(screen.getByText("Level 2 · UV optional with credential list")).toBeInTheDocument();
+    expect(screen.getByText("Level 2 · UV optional with passkey list")).toBeInTheDocument();
   });
 
   it("presents inventory as one fact and capacity as remaining space", () => {
@@ -369,11 +369,11 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    const inventory = screen.getByRole("region", { name: "Credential inventory" });
-    expect(within(inventory).getByText("1 credentials")).toBeInTheDocument();
+    const inventory = screen.getByRole("region", { name: "Passkey inventory" });
+    expect(within(inventory).getByText("1 passkeys")).toBeInTheDocument();
     expect(within(inventory).getByText("1 relying parties")).toBeInTheDocument();
 
-    const capacity = screen.getByRole("region", { name: "Remaining resident capacity" });
+    const capacity = screen.getByRole("region", { name: "Remaining discoverable capacity" });
     expect(within(capacity).getByText("4")).toBeInTheDocument();
     expect(within(capacity).queryByText("1 stored · up to 4 remaining")).not.toBeInTheDocument();
   });
@@ -388,10 +388,10 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    const table = screen.getByRole("table", { name: "Resident credentials" });
+    const table = screen.getByRole("table", { name: "Discoverable passkeys" });
     expect(within(table).getByRole("columnheader", { name: "RP name" })).toBeInTheDocument();
     expect(within(table).getByRole("columnheader", { name: "User name" })).toBeInTheDocument();
-    expect(within(table).getByRole("columnheader", { name: "Credential ID" })).toBeInTheDocument();
+    expect(within(table).getByRole("columnheader", { name: "Passkey ID" })).toBeInTheDocument();
     expect(within(table).getByRole("columnheader", { name: "UV" })).toBeInTheDocument();
     expect(within(table).getAllByRole("row")).toHaveLength(4);
 
@@ -400,7 +400,7 @@ describe("Passkeys", () => {
     const bob = screen.getByRole("button", { name: /Bob, bob@team\.example/ });
     expect(alice).toHaveAttribute("aria-expanded", "false");
     expect(bob).toBeInTheDocument();
-    expect(screen.queryByText("2 credentials")).not.toBeInTheDocument();
+    expect(screen.queryByText("2 passkeys")).not.toBeInTheDocument();
 
     const aliceRow = alice.closest("tr") as HTMLElement;
     await user.click(alice);
@@ -427,10 +427,10 @@ describe("Passkeys", () => {
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
     render(Passkeys);
-    await user.click(screen.getByRole("button", { name: "Reload credentials" }));
+    await user.click(screen.getByRole("button", { name: "Reload passkeys" }));
 
     expect(controllerMocks.reloadPasskeys).toHaveBeenCalledOnce();
-    expect(toastMocks.success).toHaveBeenCalledWith("Credentials reloaded from the authenticator");
+    expect(toastMocks.success).toHaveBeenCalledWith("Passkeys reloaded from the authenticator");
   });
 
   it("opens the typed update dialog from the inspector", async () => {
@@ -445,7 +445,7 @@ describe("Passkeys", () => {
     await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
     await user.click(screen.getByRole("button", { name: "Edit" }));
 
-    expect(screen.getByRole("dialog", { name: "Edit credential user" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Edit passkey user" })).toBeInTheDocument();
     expect(screen.getByLabelText("User ID hex")).toHaveValue("01");
     expect(screen.getByLabelText("Display name")).toHaveValue("Example User");
     await user.click(screen.getByRole("button", { name: "Cancel" }));
@@ -489,16 +489,16 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(screen.getByText("Credential inventory could not be refreshed")).toBeInTheDocument();
-    expect(screen.getByText(/The last successfully loaded data remains visible\. Reload credentials to try again\./)).toBeInTheDocument();
+    expect(screen.getByText("Passkey inventory could not be refreshed")).toBeInTheDocument();
+    expect(screen.getByText(/The last successfully loaded data remains visible\. Reload passkeys to try again\./)).toBeInTheDocument();
     expect(screen.queryByText(/Communication with the authenticator failed\./)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Reload credentials" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Reload passkeys" })).toBeEnabled();
     await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
     expect(screen.getByRole("button", { name: "Edit" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Delete" })).toBeEnabled();
 
     await user.click(screen.getByRole("button", { name: "Edit" }));
-    expect(screen.getByRole("dialog", { name: "Edit credential user" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Edit passkey user" })).toBeInTheDocument();
   });
 
   it("renders unsupported credential management as a non-retry state", () => {
@@ -512,7 +512,7 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(screen.getByText("Credential management unavailable")).toBeInTheDocument();
+    expect(screen.getByText("Passkey management unavailable")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
   });
 
@@ -586,12 +586,12 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(screen.queryByRole("dialog", { name: "Edit credential user" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "Edit passkey user" })).not.toBeInTheDocument();
 
     mutablePasskeysMutation.set({ ...mutation, phase: "review" });
-    const dialog = await screen.findByRole("dialog", { name: "Edit credential user" });
+    const dialog = await screen.findByRole("dialog", { name: "Edit passkey user" });
     expect(dialog).toBeInTheDocument();
-    expect(screen.getByText("This changes the user information stored with the resident credential.")).toBeInTheDocument();
+    expect(screen.getByText("This changes the user information stored with the discoverable passkey.")).toBeInTheDocument();
     expect(screen.queryByText("credential.update_user.mutation")).not.toBeInTheDocument();
     expect(screen.getByText("Current value")).toBeInTheDocument();
     expect(screen.getByText("Proposed value")).toBeInTheDocument();
@@ -601,7 +601,7 @@ describe("Passkeys", () => {
 
     mutablePasskeysMutation.set({ ...mutation, phase: "executing" });
     await waitFor(() => {
-      expect(screen.queryByRole("dialog", { name: "Edit credential user" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("dialog", { name: "Edit passkey user" })).not.toBeInTheDocument();
     });
 
     mutablePasskeysMutation.set({
@@ -618,7 +618,7 @@ describe("Passkeys", () => {
       failureReason: "response-error",
       validationError: null,
     });
-    const errorDialog = await screen.findByRole("dialog", { name: "Edit credential user" });
+    const errorDialog = await screen.findByRole("dialog", { name: "Edit passkey user" });
     expect(within(errorDialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
     expect(within(errorDialog).getByRole("button", { name: "Confirm update" })).toBeEnabled();
     expect(within(errorDialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
@@ -665,7 +665,7 @@ describe("Passkeys", () => {
 
     const dialog = screen.getByRole("alertdialog", { name: "Confirm delete" });
     expect(dialog).toBeInTheDocument();
-    expect(screen.getByText("Deleting this resident credential is destructive and cannot be undone.")).toBeInTheDocument();
+    expect(screen.getByText("Deleting this discoverable passkey is destructive and cannot be undone.")).toBeInTheDocument();
     expect(screen.queryByText("credential.delete.destructive")).not.toBeInTheDocument();
     expect(screen.getAllByText("cafe").length).toBeGreaterThan(0);
     expect(within(dialog).getByRole("button", { name: "Preview JSON" })).toHaveAttribute("aria-expanded", "false");
@@ -764,7 +764,7 @@ describe("Passkeys", () => {
     render(Passkeys);
 
     expect(screen.queryByRole("alertdialog", { name: "Confirm delete" })).not.toBeInTheDocument();
-    const dialog = screen.getByRole("dialog", { name: "Credential delete preview" });
+    const dialog = screen.getByRole("dialog", { name: "Passkey deletion preview" });
     expect(within(dialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Delete" })).toBeEnabled();
     expect(within(dialog).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();

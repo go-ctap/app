@@ -433,7 +433,7 @@ describe("large blob controller", () => {
     expect(get(statusBar).lastOutcome).toEqual({
       tone: "info",
       title: "Delete large blob",
-      message: "This credential has no large blob to delete.",
+      message: "This passkey has no large blob to delete.",
     });
     expect(await confirmLargeBlobDelete()).toBe(false);
 

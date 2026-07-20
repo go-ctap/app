@@ -125,6 +125,43 @@ export type OverviewHeroPresentation = {
   mdsBlobFacts: OverviewHeroFact[];
 };
 
+export type OverviewStandardTone = "positive" | "neutral" | "muted" | "warning";
+
+export type OverviewStandardFactId = "presence" | "owner-verification" | "passkeys" | "metadata";
+
+export type OverviewStandardCapabilityId =
+  | "fido2"
+  | "u2f"
+  | "presence"
+  | "pin"
+  | "built-in-verification"
+  | "passkey-storage"
+  | "passkey-management"
+  | "remaining-capacity";
+
+export type OverviewStandardFact = {
+  id: OverviewStandardFactId;
+  label: string;
+  value: string;
+  tone: OverviewStandardTone;
+};
+
+export type OverviewStandardCapability = {
+  id: OverviewStandardCapabilityId;
+  name: string;
+  description: string;
+  value: string;
+  tone: OverviewStandardTone;
+};
+
+export type OverviewStandardPresentation = {
+  title: string;
+  description: string;
+  transports: string;
+  facts: OverviewStandardFact[];
+  capabilities: OverviewStandardCapability[];
+};
+
 export type OverviewContext = {
   info?: InspectInfo | null;
   device?: DeviceReport | null;

@@ -9,10 +9,10 @@ describe("ctapkit display labels", () => {
   it("localizes symbolic and canonical permission names", () => {
     setAppLocale("ru");
 
-    expect(permissionLabel("PermissionCredentialManagement")).toBe("Управление учетными данными");
-    expect(permissionLabel("credentialManagement")).toBe("Управление учетными данными");
+    expect(permissionLabel("PermissionCredentialManagement")).toBe("Управление ключами доступа");
+    expect(permissionLabel("credentialManagement")).toBe("Управление ключами доступа");
     expect(permissionLabel("credentialManagement,largeBlobWrite")).toBe(
-      "Управление учетными данными + Запись крупного блоба",
+      "Управление ключами доступа + Запись крупного блоба",
     );
   });
 

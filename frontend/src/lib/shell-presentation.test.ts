@@ -55,7 +55,7 @@ describe("shell status presentation", () => {
     expect(presentation).toMatchObject({
       source: "operation",
       title: "Credential inventory",
-      detail: "Enumerating credentials",
+      detail: "Enumerating passkeys",
       busy: true,
       progress: { value: 2, max: 5, label: "2 of 5" },
       cancel: { disabled: false, ariaLabel: "Cancel operation" },

@@ -1,5 +1,5 @@
 import { Clipboard } from "@wailsio/runtime";
-import { cleanup, render, screen, within } from "@testing-library/svelte";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -228,13 +228,14 @@ describe("WebAuthn Lab results", () => {
 
     expect(screen.getByText("24 bytes")).toBeInTheDocument();
     expect(screen.queryByText(credentialIDHex)).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Copy Credential ID" }));
+    await user.click(screen.getByRole("button", { name: "Copy Passkey ID" }));
     expect(clipboardSetText).toHaveBeenCalledWith(credentialIDHex);
 
     await user.click(screen.getByRole("button", { name: "Technical details 4" }));
     const responseRow = screen.getByText("Full sanitized response").closest(".lab-protocol-row") as HTMLElement;
     await user.click(within(responseRow).getByRole("button", { name: "View" }));
-    expect(screen.getByText(new RegExp(credentialIDHex))).toBeInTheDocument();
+    const responseSheet = await screen.findByRole("dialog", { name: "Full sanitized response" });
+    await waitFor(() => expect(responseSheet).toHaveTextContent(credentialIDHex));
   });
 
   it("keeps PRF outputs out of the DOM until one value is explicitly revealed", async () => {

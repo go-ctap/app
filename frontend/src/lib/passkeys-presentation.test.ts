@@ -104,7 +104,7 @@ describe("buildPasskeysPresentation", () => {
     expect(presentation.rows[0].rpName).toBe("Example");
     expect(presentation.rows[0].rpID).toBe("example.com");
     expect(presentation.rows[0].credentialTransports).toBe("usb, nfc");
-    expect(presentation.rows[0].credProtect).toBe("Level 2 · UV optional with credential list");
+    expect(presentation.rows[0].credProtect).toBe("Level 2 · UV optional with passkey list");
     expect(presentation.rows[0].raw.relyingParty).toEqual({
       rpID: "example.com",
       rpName: "Example",

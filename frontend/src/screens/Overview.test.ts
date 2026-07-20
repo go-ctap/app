@@ -4,7 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
-import { Info as InspectInfo, Result as InspectResult } from "../../bindings/github.com/go-ctap/kit/model/inspect";
+import {
+  FactID,
+  FactOrigin,
+  FactState,
+  FactValue,
+  FactValueKind,
+  Info as InspectInfo,
+  Result as InspectResult,
+  type Assessment,
+} from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import { Finding, Profile, Report, RuleID, SpecificationID, Target } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { DeviceMetadata, DeviceReport, Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
@@ -16,7 +25,7 @@ import { setAdvancedMode } from "$lib/preferences";
 import { errorLoadState } from "$lib/features/overview/state";
 import { authenticatorInspection, selectedDevice } from "$lib/features/authenticator/state";
 import { failureForCode } from "$lib/test-failure";
-import { testOverviewAssessment } from "$lib/test-support/overview-facts";
+import { testOverviewAssessment, testOverviewFact } from "$lib/test-support/overview-facts";
 import {
   resetAppStateForTest,
   seedOverviewEnvelopeForTest,
@@ -49,7 +58,7 @@ const device = new DeviceReport({
   product: "Test authenticator",
 });
 
-function inspectEnvelope(operationId: string, aaguid: string, withFinding = false) {
+function inspectEnvelope(operationId: string, aaguid: string, withFinding = false, assessment: Assessment = testOverviewAssessment()) {
   return new InspectEnvelope({
     operationId,
     selectionId: "authenticator-1",
@@ -60,7 +69,7 @@ function inspectEnvelope(operationId: string, aaguid: string, withFinding = fals
           versions: [Version.FIDO_2_3],
           aaguid,
           options: {},
-          assessment: testOverviewAssessment(),
+          assessment,
           conformance: new Report({
             target: new Target({
               profile: Profile.ProfileFIDO23,
@@ -143,6 +152,37 @@ describe("Overview", () => {
       expect(controllerMocks.loadOverviewMDS).toHaveBeenCalledWith(aaguid, true);
       expect(toastMocks.success).toHaveBeenCalledWith("MDS data refreshed");
     });
+  });
+
+  it("uses the practical Overview variant outside advanced mode", () => {
+    setAdvancedMode(false);
+    seedSelectionForTest("token-1", device, {
+      state: "ready",
+      selectionId: "authenticator-1",
+    });
+    const assessment = testOverviewAssessment([
+      testOverviewFact(
+        FactID.FactIDVersionFIDO23,
+        "versions.FIDO_2_3",
+        FactState.FactStateSupported,
+        FactOrigin.FactOriginDerived,
+        new FactValue({ kind: FactValueKind.FactValueBoolean, boolean: true }),
+      ),
+    ]);
+    seedOverviewEnvelopeForTest(inspectEnvelope(
+      "inspect-standard",
+      "00000000-0000-0000-0000-000000000001",
+      false,
+      assessment,
+    ));
+
+    render(Overview);
+
+    expect(screen.getByRole("heading", { name: "Supports modern FIDO2 sign-in." })).toBeInTheDocument();
+    expect(screen.getByText("Key capabilities")).toBeInTheDocument();
+    expect(screen.queryByText("CTAP options")).not.toBeInTheDocument();
+    expect(screen.queryByText("Capability matrix")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Raw JSON" })).not.toBeInTheDocument();
   });
 
   it("updates the capability matrix when discovery enrichment arrives after inspection", async () => {

@@ -86,7 +86,7 @@ describe("WebAuthn Lab screen", () => {
 
     expect(screen.queryByRole("heading", { name: "WebAuthn Lab" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: "Scenario" })).toBeInTheDocument();
-    expect(screen.getByText("Create a credential, review the exact request, then exercise it with an assertion."))
+    expect(screen.getByText("Create a passkey, review the exact request, then exercise it with an assertion."))
       .toBeInTheDocument();
     expect(screen.getByText("Test authenticator")).toBeInTheDocument();
     expect(screen.queryByText("1. Test authenticator")).not.toBeInTheDocument();
@@ -171,9 +171,9 @@ describe("WebAuthn Lab screen", () => {
     expect(within(assertion).getByRole("switch", { name: "Include payment" })).toBeEnabled();
 
     await user.click(includePRF);
-    const addOverride = within(assertion).getByRole("button", { name: "Add credential override" });
+    const addOverride = within(assertion).getByRole("button", { name: "Add passkey override" });
     expect(addOverride).toBeDisabled();
-    expect(within(assertion).getByText(/one override for each allow-list credential/)).toBeInTheDocument();
+    expect(within(assertion).getByText(/one override for each allow-list passkey/)).toBeInTheDocument();
 
     mutableLabState.update((state) => ({
       ...state,
@@ -290,13 +290,13 @@ describe("WebAuthn Lab screen", () => {
 
     const make = stepCard("MakeCredential");
     for (const description of [
-      /Reports whether the newly created credential is discoverable/,
+      /Reports whether the newly created passkey is discoverable/,
       /Maps the WebAuthn PRF request to the authenticator's hmac-secret extension/,
-      /Stores a policy with the credential/,
+      /Stores a policy with the passkey/,
       /Stores a small RP-defined opaque blob/,
-      /associate credential-scoped HMAC secret material/,
-      /Evaluates the new credential's HMAC secret during MakeCredential/,
-      /current minimum PIN length during credential creation/,
+      /associate passkey-scoped HMAC secret material/,
+      /Evaluates the new passkey's HMAC secret during MakeCredential/,
+      /current minimum PIN length during passkey creation/,
       /Requests whether a PIN complexity policy is configured/,
     ]) {
       expect(within(make).getByText(description)).toBeInTheDocument();
@@ -325,9 +325,9 @@ describe("WebAuthn Lab screen", () => {
     const assertion = stepCard("GetAssertion");
     expect(within(assertion).getByText(/Maps the WebAuthn PRF request to the authenticator's hmac-secret extension/))
       .toBeInTheDocument();
-    expect(within(assertion).getByText(/Requests the opaque blob stored with the selected credential/))
+    expect(within(assertion).getByText(/Requests the opaque blob stored with the selected passkey/))
       .toBeInTheDocument();
-    expect(within(assertion).getByText(/Evaluates the selected credential's HMAC secret/)).toBeInTheDocument();
+    expect(within(assertion).getByText(/Evaluates the selected passkey's HMAC secret/)).toBeInTheDocument();
 
     await user.click(extensionTrigger(assertion, "prf"));
     expect(within(assertion).getByRole("button", { name: "About prf: Global evaluation" }))
@@ -344,7 +344,7 @@ describe("WebAuthn Lab screen", () => {
     const make = stepCard("MakeCredential");
     const userPresence = within(make).getByLabelText("User presence");
     expect(userPresence).toHaveTextContent("Omit — recommended");
-    expect(within(make).getByRole("button", { name: "About Resident key" })).toBeInTheDocument();
+    expect(within(make).getByRole("button", { name: "About Discoverable passkey" })).toBeInTheDocument();
     expect(within(make).getByRole("button", { name: "About User presence" })).toBeInTheDocument();
     expect(within(make).getByRole("button", { name: "About User verification" })).toBeInTheDocument();
     expect(within(make).getByText(/Controls how a pinUvAuthToken is obtained/)).toBeInTheDocument();
@@ -507,7 +507,7 @@ describe("WebAuthn Lab screen", () => {
     expect(within(make).getByRole("button", { name: "View" })).toBeInTheDocument();
     expect(within(make).getByRole("button", { name: "Execute" })).toBeInTheDocument();
     expect(within(make).queryByText(/not valid JSON/)).not.toBeInTheDocument();
-    expect(within(make).getByText("A new credential may be created on this authenticator.")).toBeInTheDocument();
+    expect(within(make).getByText("A new passkey may be created on this authenticator.")).toBeInTheDocument();
     expect(within(make).queryByText("webauthn.make_credential.mutation")).not.toBeInTheDocument();
   });
 

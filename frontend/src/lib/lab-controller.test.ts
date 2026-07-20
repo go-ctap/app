@@ -562,7 +562,7 @@ describe("WebAuthn Lab credential handoff", () => {
     expect(toastMocks.success).toHaveBeenCalledOnce();
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "success",
-      title: "Credential handed off",
+      title: "Passkey handed off",
     });
   });
 

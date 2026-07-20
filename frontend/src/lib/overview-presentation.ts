@@ -12,6 +12,7 @@ import {
   buildOverviewHeroSignalGroups,
   buildOverviewMDSObservations,
   buildOverviewRows,
+  buildOverviewStandardPresentation,
   groupOverviewRows,
 } from "./overview-rules.js";
 
@@ -38,6 +39,7 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
   const bioSensor = bioSensorReport(input.overviewBioSensorState.data);
   const facts = info ? buildOverviewFactLookup(info.assessment) : null;
   const overviewRows = buildOverviewRows({ info, device, bioSensor }, facts ?? undefined);
+  const hero = buildOverviewHero({ info, device, mds: mdsResult, mdsLoading, mdsError: mdsFailureMessage });
 
   return {
     selector,
@@ -46,7 +48,13 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
     hasReport: Boolean(report),
     report,
     info,
-    hero: buildOverviewHero({ info, device, mds: mdsResult, mdsLoading, mdsError: mdsFailureMessage }),
+    hero,
+    standard: facts ? buildOverviewStandardPresentation({
+      facts,
+      mdsState: hero.mdsState,
+      mds: mdsResult,
+      device: device ?? null,
+    }) : null,
     signalGroups: facts ? buildOverviewHeroSignalGroups(facts) : [],
     overviewGroups: groupOverviewRows(overviewRows),
     conformance: buildOverviewConformancePresentation({ info }),

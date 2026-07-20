@@ -47,11 +47,11 @@ describe("log presentation", () => {
   it("localizes CTAP summaries and operation kinds", () => {
     const record = ctapRecord();
     expect(logSummary(record)).toBe("CTAP command: authenticatorClientPIN · getPinUvAuthTokenUsingPinWithPermissions");
-    expect(operationKindLabel(OperationKind.ListCredentials)).toBe("Credential inventory");
+    expect(operationKindLabel(OperationKind.ListCredentials)).toBe("Passkey inventory");
 
     setAppLocale("ru");
     expect(logSummary(record)).toBe("CTAP-команда: authenticatorClientPIN · getPinUvAuthTokenUsingPinWithPermissions");
-    expect(operationKindLabel(OperationKind.ListCredentials)).toBe("Инвентарь учетных данных");
+    expect(operationKindLabel(OperationKind.ListCredentials)).toBe("Список ключей доступа");
   });
 
   it("searches operation metadata, normalized CBOR, diagnostics, and wire codes", () => {

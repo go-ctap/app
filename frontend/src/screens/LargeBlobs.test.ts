@@ -254,7 +254,7 @@ describe("LargeBlobs", () => {
     empty.result!.credentials = [];
     seedLargeBlobsEnvelopeForTest(empty);
     render(LargeBlobs);
-    expect(screen.getByText("No resident credentials found")).toBeInTheDocument();
+    expect(screen.getByText("No discoverable passkeys found")).toBeInTheDocument();
   });
 
   it("keeps a typed inventory error out of the empty state", () => {
@@ -267,7 +267,7 @@ describe("LargeBlobs", () => {
 
     render(LargeBlobs);
 
-    expect(screen.getByText("Load credentials and the serialized large-blob array from the authenticator.")).toBeInTheDocument();
+    expect(screen.getByText("Load passkeys and the serialized large-blob array from the authenticator.")).toBeInTheDocument();
     expect(screen.queryByText("The PIN is invalid.")).not.toBeInTheDocument();
   });
 
@@ -294,7 +294,7 @@ describe("LargeBlobs", () => {
 
     render(LargeBlobs);
 
-    expect(screen.getByText("Load credentials and the serialized large-blob array from the authenticator.")).toBeInTheDocument();
+    expect(screen.getByText("Load passkeys and the serialized large-blob array from the authenticator.")).toBeInTheDocument();
     expect(screen.queryByText("The requested verification flow is not supported.")).not.toBeInTheDocument();
     expect(screen.queryByText("Large blob management unavailable")).not.toBeInTheDocument();
   });
@@ -304,7 +304,7 @@ describe("LargeBlobs", () => {
     seedLargeBlobsEnvelopeForTest(listEnvelope());
     render(LargeBlobs);
 
-    const table = screen.getByRole("table", { name: "Blob credentials" });
+    const table = screen.getByRole("table", { name: "Passkeys with blobs" });
     expect(within(table).getByRole("columnheader", { name: "RP name" })).toBeInTheDocument();
     expect(within(table).getByRole("columnheader", { name: "User name" })).toBeInTheDocument();
     expect(within(table).getByRole("columnheader", { name: "Status" })).toBeInTheDocument();
@@ -347,13 +347,13 @@ describe("LargeBlobs", () => {
     const details = row.nextElementSibling as HTMLElement;
     expect(details.querySelector(".large-blob-raw-separator")).not.toBeInTheDocument();
     expect(details.querySelector(".large-blob-raw")).not.toBeInTheDocument();
-    expect(within(details).queryByRole("button", { name: "Raw credential details" })).not.toBeInTheDocument();
+    expect(within(details).queryByRole("button", { name: "Raw passkey details" })).not.toBeInTheDocument();
 
     setAdvancedMode(true);
     await waitFor(() => {
       expect(details.querySelector(".large-blob-raw-separator")).toBeInTheDocument();
       expect(details.querySelector(".large-blob-raw")).toBeInTheDocument();
-      expect(within(details).getByRole("button", { name: "Raw credential details" })).toHaveAttribute("aria-expanded", "false");
+      expect(within(details).getByRole("button", { name: "Raw passkey details" })).toHaveAttribute("aria-expanded", "false");
       expect(within(details).getByRole("button", { name: "Copy JSON" })).toBeInTheDocument();
     });
 
@@ -731,7 +731,7 @@ describe("LargeBlobs", () => {
 
     const dialog = screen.getByRole("alertdialog", { name: "Confirm cleanup" });
     expect(within(dialog).getByText("1 unmatched")).toBeInTheDocument();
-    expect(within(dialog).queryByText("Credential ID")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText("Passkey ID")).not.toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Confirm cleanup" })).toBeInTheDocument();
 
     mutableLargeBlobsMutation.set({ ...mutation, phase: "executing" });
