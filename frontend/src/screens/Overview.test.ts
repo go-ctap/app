@@ -7,14 +7,14 @@ import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/mod
 import { Info as InspectInfo, Result as InspectResult } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import { Finding, Profile, Report, RuleID, SpecificationID, Target } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { DeviceMetadata, DeviceReport, Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { InspectEnvelope } from "../../bindings/fidobench/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
 import { setAdvancedMode } from "$lib/preferences";
 import { errorLoadState } from "$lib/features/overview/state";
-import { authenticatorInspection } from "$lib/features/authenticator/state";
+import { authenticatorInspection, selectedDevice } from "$lib/features/authenticator/state";
 import { failureForCode } from "$lib/test-failure";
 import { testOverviewAssessment } from "$lib/test-support/overview-facts";
 import {
@@ -143,6 +143,32 @@ describe("Overview", () => {
       expect(controllerMocks.loadOverviewMDS).toHaveBeenCalledWith(aaguid, true);
       expect(toastMocks.success).toHaveBeenCalledWith("MDS data refreshed");
     });
+  });
+
+  it("updates the capability matrix when discovery enrichment arrives after inspection", async () => {
+    seedSelectionForTest("token-1", device, {
+      state: "ready",
+      selectionId: "authenticator-1",
+    });
+    seedOverviewEnvelopeForTest(inspectEnvelope("inspect-1", "00000000-0000-0000-0000-000000000001"));
+    render(Overview);
+
+    expect(screen.queryByText("72103654095303")).not.toBeInTheDocument();
+
+    await act(() => {
+      selectedDevice.set(new DeviceReport({
+        ...device,
+        vendor: Vendor.VendorToken2,
+        metadata: new DeviceMetadata({
+          model: "Token2 Bio3 Dual A+C PIN+",
+          serial: "72103654095303",
+          firmware: "R3.2",
+        }),
+      }));
+    });
+
+    expect(screen.getByText("72103654095303")).toBeInTheDocument();
+    expect(screen.getByText("R3.2")).toBeInTheDocument();
   });
 
   it("keeps degraded Overview errors out of the page", () => {

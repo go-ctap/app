@@ -33,7 +33,7 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
   const mdsFailureMessage = input.overviewMDSState.state === "error" ? m.mds_unavailable_description() : null;
   const report = inspectResult(envelope);
   const info = report?.info;
-  const device = report?.device || input.selectedDevice;
+  const device = input.selectedDevice || report?.device;
   const mdsResult = input.overviewMDSState.data ?? null;
   const bioSensor = bioSensorReport(input.overviewBioSensorState.data);
   const facts = info ? buildOverviewFactLookup(info.assessment) : null;

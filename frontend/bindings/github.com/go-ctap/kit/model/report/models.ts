@@ -56,8 +56,9 @@ export class DeviceMetadata {
 }
 
 /**
- * DeviceReport describes a discovered authenticator. Fingerprint identifies the
- * current transport attachment and may change after device reinsertion.
+ * DeviceReport describes a discovered authenticator. Fingerprint follows a
+ * serial-backed device across attachments and otherwise identifies the current
+ * transport attachment.
  */
 export class DeviceReport {
     "fingerprint": string;
