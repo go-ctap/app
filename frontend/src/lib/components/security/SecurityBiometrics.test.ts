@@ -49,9 +49,11 @@ describe("SecurityBiometrics", () => {
   beforeEach(() => setAppLocale("en"));
   afterEach(() => cleanup());
 
-  it("does not offer biometric actions when the authenticator does not support them", () => {
+  it("hides biometric sections when the authenticator does not support them", () => {
     renderBiometrics(bioStatus(false, false));
 
+    expect(screen.queryByRole("heading", { name: "Biometric sensor" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Biometric enrollments" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Enroll biometric" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Load enrollments" })).not.toBeInTheDocument();
   });

@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { highlightCTAPDiagnostic } from "$lib/ctap-diagnostic-highlighter";
-
   type Props = {
     source: string;
   };
@@ -8,7 +6,12 @@
   const newline = "\n";
 
   let { source }: Props = $props();
-  let highlighted = $derived(highlightCTAPDiagnostic(source));
+  let highlighted = $derived(highlight(source));
+
+  async function highlight(value: string) {
+    const { highlightCTAPDiagnostic } = await import("$lib/ctap-diagnostic-highlighter");
+    return highlightCTAPDiagnostic(value);
+  }
 </script>
 
 {#await highlighted then lines}

@@ -374,7 +374,9 @@ describe("large blob controller", () => {
     const write = vi.spyOn(api, "writeLargeBlob")
       .mockResolvedValueOnce(previewEnvelope(OperationKind.WriteLargeBlob, MutationOperation.MutationCreate))
       .mockResolvedValueOnce(resultEnvelope(OperationKind.WriteLargeBlob, MutationOperation.MutationCreate));
-    vi.spyOn(api, "listLargeBlobs").mockResolvedValue(listEnvelope());
+    const list = vi.spyOn(api, "listLargeBlobs").mockResolvedValue(listEnvelope());
+    const read = vi.spyOn(api, "readLargeBlob")
+      .mockResolvedValue(readEnvelope(DecodeMode.DecodeModeJSON));
 
     beginLargeBlobWrite("cafe");
     updateLargeBlobWriteDraft({ payload: "00 ff", encoding: "hex" });
@@ -386,6 +388,9 @@ describe("large blob controller", () => {
       ...previewRequest,
       dryRun: false,
     });
+    expect(list).toHaveBeenCalledTimes(1);
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(list.mock.invocationCallOrder[0]).toBeLessThan(read.mock.invocationCallOrder[0]);
   });
 
   it("keeps mutation success successful when its follow-up forced refresh fails", async () => {

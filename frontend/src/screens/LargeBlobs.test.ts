@@ -296,7 +296,9 @@ describe("LargeBlobs", () => {
     expect(within(table).getByRole("columnheader", { name: "Payload" })).toBeInTheDocument();
 
     const disclosure = screen.getByRole("button", { name: /Zero User, zero@example.com/ });
-    const row = disclosure.closest("tr") as HTMLElement;
+    const row = disclosure.closest("tr") as HTMLTableRowElement;
+    expect(disclosure.closest("td")).toBe(row.cells[0]);
+    expect(within(row.cells[1]).queryByRole("button")).not.toBeInTheDocument();
     expect(disclosure).toHaveAttribute("aria-controls", "large-blob-row-details-cafe");
     disclosure.focus();
     await user.keyboard("{Enter}");

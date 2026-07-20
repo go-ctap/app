@@ -5,8 +5,8 @@ go 1.26.3
 replace github.com/go-ctap/kit => ../kit
 
 require (
-	github.com/go-ctap/ctap v0.32.0
-	github.com/go-ctap/kit v0.7.1
+	github.com/go-ctap/ctap v0.33.0
+	github.com/go-ctap/kit v0.9.0
 	github.com/google/uuid v1.6.0
 	github.com/wailsapp/wails/v3 v3.0.0-alpha2.117
 )
@@ -26,7 +26,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/jchv/go-winloader v0.0.0-20250406163304-c1995be93bd1 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
-	github.com/mattn/go-isatty v0.0.22 // indirect
+	github.com/mattn/go-isatty v0.0.23 // indirect
 	github.com/samber/lo v1.53.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/crypto v0.54.0 // indirect

@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { highlightJson } from "$lib/json-highlighter";
-
   type Props = {
     source: string;
     wrap?: boolean;
@@ -9,7 +7,12 @@
   const newline = "\n";
 
   let { source, wrap = false }: Props = $props();
-  let highlighted = $derived(highlightJson(source));
+  let highlighted = $derived(highlight(source));
+
+  async function highlight(value: string) {
+    const { highlightJson } = await import("$lib/json-highlighter");
+    return highlightJson(value);
+  }
 </script>
 
 <div class="json-code" data-wrap={wrap || undefined}>

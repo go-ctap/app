@@ -162,7 +162,7 @@
         </Alert.Root>
       {/if}
       {#if requestSource}
-        <PreformattedPayload source={requestSource} title={m.logs_request_tab()} />
+        <PreformattedPayload source={requestSource} />
       {:else if !request?.diagnosticError}
         <p class="log-payload-empty">{payloadEmptyMessage("request")}</p>
       {/if}
@@ -195,7 +195,7 @@
         </Alert.Root>
       {/if}
       {#if responseSource}
-        <PreformattedPayload source={responseSource} title={m.logs_response_tab()} />
+        <PreformattedPayload source={responseSource} />
       {/if}
       {#if !responseSource && !response?.diagnosticError && !failure && !errorMessage}
         <p class="log-payload-empty">{payloadEmptyMessage("response")}</p>
@@ -262,9 +262,8 @@
 
     :global(.log-redacted-notice) {
       min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      overflow-wrap: break-word;
+      white-space: normal;
     }
 
     :global(.log-error-message) {

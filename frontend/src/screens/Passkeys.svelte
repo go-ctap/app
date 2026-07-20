@@ -3,7 +3,6 @@
   import { toast } from "svelte-sonner";
 
   import PasskeyDeleteDialog from "$lib/components/passkeys/PasskeyDeleteDialog.svelte";
-  import CredentialStoreState from "$lib/components/passkeys/CredentialStoreState.svelte";
   import PasskeysInventory from "$lib/components/passkeys/PasskeysInventory.svelte";
   import PasskeysOverview from "$lib/components/passkeys/PasskeysOverview.svelte";
   import PasskeyUpdateDialog from "$lib/components/passkeys/PasskeyUpdateDialog.svelte";
@@ -19,7 +18,6 @@
     editCredentialUpdate,
     previewCredentialUpdate,
     reloadPasskeys,
-    readCredentialStoreState,
     selectPasskeyCredential,
     setPasskeysQuery,
     setPasskeysStatusFilter,
@@ -35,7 +33,6 @@
   import { buildPasskeysPresentation } from "$lib/passkeys-presentation";
   import {
     passkeysInventoryState,
-    credentialStoreStateState,
     passkeysMutation,
     passkeysQuery,
     passkeysSelectedCredentialID,
@@ -81,13 +78,6 @@
       verificationFlow={$passkeysVerificationFlow}
       onReload={handleReload}
       onVerificationFlowChange={setPasskeysVerificationFlow}
-    />
-
-    <CredentialStoreState
-      state={$credentialStoreStateState}
-      supported={passkeys.report?.support.readOnlyPermission ?? null}
-      disabled={$authenticatorBusy || $authenticatorStatus.state !== "ready"}
-      onLoad={readCredentialStoreState}
     />
 
     {#if passkeys.stale}

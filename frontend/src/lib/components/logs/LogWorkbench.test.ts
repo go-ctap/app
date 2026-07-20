@@ -110,11 +110,12 @@ describe("LogWorkbench", () => {
     await user.click(screen.getByRole("tab", { name: "Request" }));
     expect(screen.getByText("CBOR diagnostic notation was truncated to 25 bytes. The original CBOR message was 70000 bytes."))
       .toBeInTheDocument();
-    await waitFor(() => expect(screen.getByRole("region", { name: "Request" }).querySelector("pre")?.textContent)
+    await waitFor(() => expect(screen.getByRole("region", { name: "Diagnostic CBOR" }).querySelector("pre")?.textContent)
       .toBe(`{1: 1, 6: "[REDACTED]"}`));
+    expect(screen.getByRole("button", { name: "Copy payload" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("tab", { name: "Response / Error" }));
-    await waitFor(() => expect(screen.getByRole("tabpanel", { name: "Response / Error" }).querySelector("pre")?.textContent)
+    await user.click(screen.getByRole("tab", { name: "Response" }));
+    await waitFor(() => expect(screen.getByRole("tabpanel", { name: "Response" }).querySelector("pre")?.textContent)
       .toBe(`{2: 8, 5: "[REDACTED]"}`));
 
     await user.type(screen.getByRole("searchbox"), "no-match");
@@ -135,7 +136,7 @@ describe("LogWorkbench", () => {
     });
     render(LogWorkbench);
 
-    await user.click(screen.getByRole("tab", { name: "Response / Error" }));
+    await user.click(screen.getByRole("tab", { name: "Response" }));
     expect(screen.getByText("transport read: io: read/write on closed pipe")).toBeInTheDocument();
   });
 
@@ -166,7 +167,7 @@ describe("LogWorkbench", () => {
     expect(screen.getByText("CBOR diagnostic unavailable")).toBeInTheDocument();
     expect(screen.getByText("diagnostic schema unavailable")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("tab", { name: "Response / Error" }));
+    await user.click(screen.getByRole("tab", { name: "Response" }));
     expect(screen.getByText("CTAP_CBOR_INVALID · CTAP2_ERR_INVALID_CBOR (0x12)")).toBeInTheDocument();
   });
 

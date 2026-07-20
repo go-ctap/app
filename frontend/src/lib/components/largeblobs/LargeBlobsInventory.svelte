@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronDown, FilterX } from "@lucide/svelte";
+  import { ChevronRight, FilterX } from "@lucide/svelte";
 
   import type { DecodeMode } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
 
@@ -168,9 +168,15 @@
         <tr data-slot="expandable-data-table-summary-row">
           <td><Skeleton class="large-blobs-cell-skeleton" /></td>
           <td><Skeleton class="large-blobs-cell-skeleton" /></td>
-          <td><Skeleton class="large-blobs-badge-skeleton" /></td>
-          <td><Skeleton class="large-blobs-badge-skeleton" /></td>
-          <td><Skeleton class="large-blobs-badge-skeleton" /></td>
+          <td class="large-blobs-table-state">
+            <Skeleton class="large-blobs-badge-skeleton" />
+          </td>
+          <td class="large-blobs-table-bytes">
+            <Skeleton class="large-blobs-badge-skeleton" />
+          </td>
+          <td class="large-blobs-table-key">
+            <Skeleton class="large-blobs-badge-skeleton" />
+          </td>
         </tr>
       {/each}
     </ExpandableDataTable.Root>
@@ -207,27 +213,32 @@
         >
           {#snippet summary(triggerProps)}
             <td>
-              <span class="large-blobs-row-copy">
-                <strong>{row.rpName}</strong>
-                <code title={row.rpID}>{row.rpID}</code>
-              </span>
-            </td>
-            <td class="large-blobs-table-user">
-              <Button
-                variant="ghost"
-                size="sm"
-                class="large-blobs-row-trigger"
-                type="button"
-                aria-label={`${row.displayName}, ${row.userName}, ${row.rpName}`}
-                title={selected ? m.close() : m.large_blob_details()}
-                {...triggerProps}
-              >
+              <div class="large-blobs-row-primary">
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  type="button"
+                  aria-label={`${row.displayName}, ${row.userName}, ${row.rpName}`}
+                  title={selected ? m.close() : m.large_blob_details()}
+                  {...triggerProps}
+                >
+                  <ChevronRight
+                    class="large-blobs-row-chevron"
+                    data-icon="inline-start"
+                    aria-hidden="true"
+                  />
+                </Button>
                 <span class="large-blobs-row-copy">
-                  <strong>{row.displayName}</strong>
-                  <span>{row.userName}</span>
+                  <strong>{row.rpName}</strong>
+                  <code title={row.rpID}>{row.rpID}</code>
                 </span>
-                <ChevronDown class="large-blobs-row-chevron" data-icon="inline-end" aria-hidden="true" />
-              </Button>
+              </div>
+            </td>
+            <td>
+              <span class="large-blobs-row-copy">
+                <strong>{row.displayName}</strong>
+                <span title={row.userName}>{row.userName}</span>
+              </span>
             </td>
             <td class="large-blobs-table-state">
               <Badge variant={row.blobPresent ? "secondary" : "outline"}>{blobStateLabel(row)}</Badge>
@@ -336,6 +347,14 @@
     gap: var(--space-1);
   }
 
+  .large-blobs-row-primary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
   .large-blobs-row-copy strong,
   .large-blobs-row-copy span,
   .large-blobs-row-copy code {
@@ -350,21 +369,6 @@
   :global(.large-blobs-table-bytes) {
     color: var(--muted-foreground);
     font-size: 0.72rem;
-  }
-
-  :global(.large-blobs-table-user) {
-    padding: 0;
-  }
-
-  :global(.large-blobs-row-trigger) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: var(--space-2);
-    width: 100%;
-    height: auto;
-    min-width: 0;
-    padding: var(--space-2);
-    text-align: left;
   }
 
   :global(.large-blobs-row-chevron) {
@@ -392,6 +396,31 @@
     }
   }
 
+  @container workspace (max-width: 45rem) {
+    :global(.large-blobs-table) {
+      min-width: 32rem;
+    }
+
+    :global(.large-blobs-table-bytes),
+    :global(.large-blobs-table-key) {
+      display: none;
+    }
+
+    :global(.large-blobs-table th:first-child),
+    :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"] > td:first-child) {
+      width: 34%;
+    }
+
+    :global(.large-blobs-table th:nth-child(2)),
+    :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"] > td:nth-child(2)) {
+      width: 44%;
+    }
+
+    :global(.large-blobs-table-state) {
+      width: 22%;
+    }
+  }
+
   @container workspace (max-width: 38.75rem) {
     .large-blobs-inventory-toolbar {
       grid-template-columns: minmax(0, 1fr);
@@ -410,11 +439,28 @@
       max-width: none;
     }
   }
+
+  @container workspace (max-width: 32.5rem) {
+    :global(.large-blobs-table) {
+      min-width: 0;
+    }
+
+    :global(.large-blobs-table-state) {
+      display: none;
+    }
+
+    :global(.large-blobs-table th:first-child),
+    :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"] > td:first-child),
+    :global(.large-blobs-table th:nth-child(2)),
+    :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"] > td:nth-child(2)) {
+      width: 50%;
+    }
+  }
 }
 
 @layer exceptions {
   :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"][data-open="true"] .large-blobs-row-chevron) {
-    transform: rotate(180deg);
+    transform: rotate(90deg);
   }
 }
 </style>

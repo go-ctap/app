@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronDown, FilterX } from "@lucide/svelte";
+  import { ChevronRight, FilterX } from "@lucide/svelte";
 
   import PasskeyInspector from "$lib/components/passkeys/PasskeyInspector.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
@@ -150,7 +150,7 @@
               <Skeleton class="passkeys-skeleton-secondary" />
             </div>
           </td>
-          <td class="passkeys-table-user">
+          <td>
             <div class="passkeys-skeleton-user">
               <div class="passkeys-skeleton-copy">
                 <Skeleton class="passkeys-skeleton-primary" />
@@ -201,31 +201,32 @@
         >
           {#snippet summary(triggerProps)}
             <td>
-              <span class="passkeys-row-copy">
-                <strong>{row.rpName}</strong>
-                <code title={row.rpID}>{row.rpID}</code>
-              </span>
-            </td>
-            <td class="passkeys-table-user">
-              <Button
-                variant="ghost"
-                size="sm"
-                class="passkeys-row-trigger"
-                type="button"
-                aria-label={`${row.displayName}, ${row.userName}, ${row.rpName}`}
-                title={selected ? m.close() : m.passkey_details()}
-                {...triggerProps}
-              >
+              <div class="passkeys-row-primary">
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  type="button"
+                  aria-label={`${row.displayName}, ${row.userName}, ${row.rpName}`}
+                  title={selected ? m.close() : m.passkey_details()}
+                  {...triggerProps}
+                >
+                  <ChevronRight
+                    class="passkeys-row-chevron"
+                    data-icon="inline-start"
+                    aria-hidden="true"
+                  />
+                </Button>
                 <span class="passkeys-row-copy">
-                  <strong>{row.displayName}</strong>
-                  <span>{row.userName}</span>
+                  <strong>{row.rpName}</strong>
+                  <code title={row.rpID}>{row.rpID}</code>
                 </span>
-                <ChevronDown
-                  class="passkeys-row-chevron"
-                  data-icon="inline-end"
-                  aria-hidden="true"
-                />
-              </Button>
+              </div>
+            </td>
+            <td>
+              <span class="passkeys-row-copy">
+                <strong>{row.displayName}</strong>
+                <span title={row.userName}>{row.userName}</span>
+              </span>
             </td>
             <td class="passkeys-table-credential">
               <code
@@ -330,6 +331,14 @@
     gap: var(--space-1);
   }
 
+  .passkeys-row-primary {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
   .passkeys-row-copy strong,
   .passkeys-row-copy span,
   .passkeys-row-copy code {
@@ -344,10 +353,6 @@
   :global(.passkeys-row-credential) {
     color: var(--muted-foreground);
     font-size: 0.72rem;
-  }
-
-  :global(.passkeys-table-user) {
-    padding: 0;
   }
 
   .passkeys-skeleton-user {
@@ -389,17 +394,6 @@
     width: 2.75rem;
     height: 1.25rem;
     margin-left: auto;
-  }
-
-  :global(.passkeys-row-trigger) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: var(--space-2);
-    width: 100%;
-    height: auto;
-    min-width: 0;
-    padding: var(--space-2);
-    text-align: left;
   }
 
   :global(.passkeys-row-chevron) {
@@ -470,7 +464,7 @@
 
 @layer exceptions {
   :global(.passkeys-table [data-slot="expandable-data-table-summary-row"][data-open="true"] .passkeys-row-chevron) {
-    transform: rotate(180deg);
+    transform: rotate(90deg);
   }
 }
 </style>

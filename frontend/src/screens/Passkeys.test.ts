@@ -39,7 +39,7 @@ vi.mock("$lib/features/passkeys", async (importOriginal) => ({
 }));
 vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
 
-function credentialsEnvelope(): CredentialsEnvelope {
+function credentialsEnvelope(readOnlyPermission = false): CredentialsEnvelope {
   return {
     operationId: "operation-1",
     selectionId: "authenticator-1",
@@ -51,7 +51,7 @@ function credentialsEnvelope(): CredentialsEnvelope {
       support: {
         credentialManagement: true,
         previewOnly: false,
-        readOnlyPermission: false,
+        readOnlyPermission,
       },
       summary: {
         existingResidentCredentialsCount: 1,
@@ -159,11 +159,10 @@ describe("Passkeys", () => {
     render(Passkeys);
 
     expect(screen.getByText("Passkeys not loaded")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Read state" })).toBeDisabled();
-    expect(screen.queryByText("This authenticator does not support persistent credential-management read-only state.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Read state" })).not.toBeInTheDocument();
   });
 
-  it("disables credential-store state without perCredMgmtRO", () => {
+  it("shows the unavailable perCredMgmtRO badge when unsupported", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -172,8 +171,21 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(screen.getByRole("button", { name: "Read state" })).toBeDisabled();
-    expect(screen.getByText("This authenticator does not support persistent credential-management read-only state.")).toBeInTheDocument();
+    expect(screen.getByText("Read-only credential management: Not available")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Read state" })).not.toBeInTheDocument();
+  });
+
+  it("shows only the perCredMgmtRO badge when supported", () => {
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      selectionId: "authenticator-1",
+    });
+    seedPasskeysEnvelopeForTest(credentialsEnvelope(true));
+
+    render(Passkeys);
+
+    expect(screen.getByText("Read-only credential management: Supported")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Read state" })).not.toBeInTheDocument();
   });
 
   it("keeps a typed inventory error out of the empty state", () => {
@@ -226,6 +238,8 @@ describe("Passkeys", () => {
     const credential = screen.getByRole("button", { name: /Example User, user@example.com/ });
     const record = credential.closest("tr");
     expect(record).not.toBeNull();
+    expect(credential.closest("td")).toBe(record?.cells[0]);
+    expect(within(record!.cells[1]).queryByRole("button")).not.toBeInTheDocument();
     expect(credential).toHaveAttribute("aria-expanded", "false");
     expect(credential).toHaveAttribute("aria-controls", "passkey-row-details-cafe");
     await user.click(credential);

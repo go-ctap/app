@@ -115,6 +115,7 @@
   }
 </script>
 
+{#if bio.supported && sensorState.phase !== "unsupported" && sensor?.supported !== false}
 <Card.Root id="security-biometric-sensor" aria-labelledby="security-biometric-sensor-title">
   <Card.Header>
     <Card.Title>
@@ -131,10 +132,6 @@
         <Skeleton class="sensor-skeleton" />
         <Skeleton class="sensor-skeleton" />
       </div>
-    {:else if !bio.supported || sensorState.phase === "unsupported" || (sensor && !sensor.supported)}
-      <EmptyState title={m.status_unsupported()} message={m.security_unsupported_message()} variant="compact">
-        {#snippet icon()}<Fingerprint aria-hidden="true" />{/snippet}
-      </EmptyState>
     {:else}
       {#if sensorError}
         <Alert.Root variant="destructive" role="alert" class="sensor-alert">
@@ -164,38 +161,34 @@
     {/if}
   </Card.Content>
 </Card.Root>
+{/if}
 
+{#if bio.supported && enrollmentState.phase !== "unsupported"}
 <Card.Root id="security-biometric-enrollments" aria-labelledby="security-biometric-enrollments-title">
   <Card.Header>
     <Card.Title>
       <h2 id="security-biometric-enrollments-title" class="security-card-title">{m.security_biometric_enrollments()}</h2>
     </Card.Title>
-    {#if bio.supported && enrollmentState.phase !== "unsupported"}
-      <Card.Action class="enrollment-actions">
-        <Button type="button" {disabled} onclick={() => void onEnroll()}>
-          <Fingerprint data-icon="inline-start" aria-hidden="true" />
-          {m.security_enroll_biometric()}
+    <Card.Action class="enrollment-actions">
+      <Button type="button" {disabled} onclick={() => void onEnroll()}>
+        <Fingerprint data-icon="inline-start" aria-hidden="true" />
+        {m.security_enroll_biometric()}
+      </Button>
+      {#if bio.configured !== false}
+        <Button
+          variant="outline"
+          type="button"
+          disabled={loadDisabled || enrollmentsLoading}
+          onclick={() => void onLoadEnrollments()}
+        >
+          <RefreshCw data-icon="inline-start" aria-hidden="true" />
+          {m.security_load_enrollments()}
         </Button>
-        {#if bio.configured !== false}
-          <Button
-            variant="outline"
-            type="button"
-            disabled={loadDisabled || enrollmentsLoading}
-            onclick={() => void onLoadEnrollments()}
-          >
-            <RefreshCw data-icon="inline-start" aria-hidden="true" />
-            {m.security_load_enrollments()}
-          </Button>
-        {/if}
-      </Card.Action>
-    {/if}
+      {/if}
+    </Card.Action>
   </Card.Header>
   <Card.Content class="enrollment-content">
-    {#if !bio.supported || enrollmentState.phase === "unsupported"}
-      <EmptyState title={m.status_unsupported()} message={m.security_unsupported_message()} variant="compact">
-        {#snippet icon()}<Fingerprint aria-hidden="true" />{/snippet}
-      </EmptyState>
-    {:else if bio.configured === false}
+    {#if bio.configured === false}
       <EmptyState
         title={m.security_bio_not_configured_title()}
         message={m.security_bio_not_configured_message()}
@@ -290,6 +283,7 @@
     {/if}
   </Card.Content>
 </Card.Root>
+{/if}
 
 <Dialog.Root open={renameOpen} onOpenChange={handleRenameOpenChange}>
   {#if renameTarget}

@@ -98,7 +98,7 @@
           <div>
             <dt>{m.user_id_hex()}</dt>
             <dd class="passkey-copy-value">
-              <code>{row.userIDHex}</code>
+              <code title={row.userIDHex}>{row.userIDHex}</code>
               <Tooltip.Root>
                 <Tooltip.Trigger>
                   {#snippet child({ props })}
@@ -132,7 +132,7 @@
           <div>
             <dt>{m.credential_id()}</dt>
             <dd class="passkey-copy-value">
-              <code>{row.credentialIDHex}</code>
+              <code title={row.credentialIDHex}>{row.credentialIDHex}</code>
               <Tooltip.Root>
                 <Tooltip.Trigger>
                   {#snippet child({ props })}
@@ -305,7 +305,9 @@
   .passkey-detail-list dd {
     min-width: 0;
     margin: 0;
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .passkey-copy-value {

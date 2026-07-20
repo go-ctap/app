@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Copy } from "@lucide/svelte";
 
-  import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
+  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
   import { copyToClipboard } from "$lib/clipboard.js";
 
   import { m } from "../../../paraglide/messages.js";
@@ -11,32 +11,37 @@
 
   type Props = {
     source: string;
-    title: string;
   };
 
-  let { source, title }: Props = $props();
+  let { source }: Props = $props();
 
   function copyPayload() {
     void copyToClipboard(source, m.logs_payload_copied());
   }
 </script>
 
-<section class="preformatted-payload" aria-label={title}>
+<section class="preformatted-payload" aria-label={m.logs_format_cbor_diagnostic()}>
   <header class="preformatted-payload-header">
-    <div class="preformatted-payload-heading">
-      <h3>{title}</h3>
-      <Badge variant="outline">{m.logs_format_cbor_diagnostic()}</Badge>
-    </div>
-    <Button
-      type="button"
-      size="sm"
-      variant="outline"
-      aria-label={m.logs_copy_payload()}
-      onclick={copyPayload}
-    >
-      <Copy data-icon="inline-start" aria-hidden="true" />
-      {m.logs_copy_payload()}
-    </Button>
+    <h3>{m.logs_format_cbor_diagnostic()}</h3>
+    <Tooltip.Provider delayDuration={350}>
+      <Tooltip.Root>
+        <Tooltip.Trigger>
+          {#snippet child({ props })}
+            <Button
+              {...props}
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              aria-label={m.logs_copy_payload()}
+              onclick={copyPayload}
+            >
+              <Copy data-icon="inline-start" aria-hidden="true" />
+            </Button>
+          {/snippet}
+        </Tooltip.Trigger>
+        <Tooltip.Content side="top">{m.logs_copy_payload()}</Tooltip.Content>
+      </Tooltip.Root>
+    </Tooltip.Provider>
   </header>
   <ScrollArea class="preformatted-payload-scroll">
     <CTAPDiagnosticCode {source} />
@@ -56,24 +61,16 @@
       background: var(--card);
     }
 
-    .preformatted-payload-header,
-    .preformatted-payload-heading {
-      display: flex;
-      gap: var(--space-3);
-      align-items: center;
-    }
-
     .preformatted-payload-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
       justify-content: space-between;
       border-bottom: 1px solid var(--border);
       padding: var(--space-2) var(--space-3);
     }
 
-    .preformatted-payload-heading {
-      min-width: 0;
-    }
-
-    .preformatted-payload-heading h3 {
+    .preformatted-payload-header h3 {
       min-width: 0;
       margin: 0;
       font-size: 0.75rem;

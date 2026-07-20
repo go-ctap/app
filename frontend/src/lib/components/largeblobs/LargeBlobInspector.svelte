@@ -148,7 +148,7 @@
         <dl class="large-blob-detail-list">
           <div><dt>{m.display_name()}</dt><dd>{row.displayName}</dd></div>
           <div><dt>{m.user_name()}</dt><dd>{row.userName}</dd></div>
-          <div><dt>{m.user_id_hex()}</dt><dd><code>{row.userIDHex}</code></dd></div>
+          <div><dt>{m.user_id_hex()}</dt><dd><code title={row.userIDHex}>{row.userIDHex}</code></dd></div>
           <div><dt>{m.rp_name()}</dt><dd>{row.rpName} <code>{row.rpID}</code></dd></div>
           <div>
             <dt>{m.credential_id()}</dt>
@@ -372,7 +372,9 @@
   .large-blob-detail-list dd {
     min-width: 0;
     margin: 0;
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .large-blob-copy-value,

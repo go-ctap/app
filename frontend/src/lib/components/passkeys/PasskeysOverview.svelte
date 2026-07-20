@@ -120,8 +120,8 @@
             tone={support.previewOnly ? "warn" : "neutral"}
           />
           <StatusBadge
-            label={`${m.read_only_permission()}: ${support.readOnlyPermission ? m.state_available() : m.state_not_available()}`}
-            tone="neutral"
+            label={`${m.permission_persistent_credential_management_read_only()}: ${support.readOnlyPermission ? m.status_supported() : m.state_not_available()}`}
+            tone={support.readOnlyPermission ? "ok" : "neutral"}
           />
         {/if}
       </div>

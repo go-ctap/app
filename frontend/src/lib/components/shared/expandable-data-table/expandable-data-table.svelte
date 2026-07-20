@@ -71,7 +71,9 @@
     white-space: nowrap;
   }
 
-  .expandable-data-table-scroll :global(td) {
+  .expandable-data-table-scroll :global(:where(td)) {
+    min-width: 0;
+    overflow: hidden;
     padding: var(--space-2);
     vertical-align: middle;
     white-space: nowrap;
