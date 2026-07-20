@@ -1,5 +1,10 @@
-import { Option, Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
-import type { Info as InspectInfo } from "../../bindings/github.com/go-ctap/kit/model/inspect";
+import {
+  FactID,
+  FactOrigin,
+  FactState,
+  FactValueKind,
+  type Fact,
+} from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import {
   Capability,
   Interface,
@@ -8,144 +13,403 @@ import {
   type InterfaceReport,
 } from "../../bindings/github.com/go-ctap/kit/model/report";
 
-import type { InspectAlgorithms, InspectBooleanField, InspectCertifications, InspectNumberField, InspectOptions } from "./overview-dto-types.js";
+import {
+  buildOverviewFactLookup,
+  factBoolean,
+  factInteger,
+  factList,
+  factText,
+  factUnit,
+  factUsesSpecDefault,
+  overviewFact,
+  overviewFactStatus,
+  type OverviewFactLookup,
+} from "./overview-facts.js";
 import { m, value } from "./overview-i18n.js";
 import { EXTENSION_ROWS, formatCertificationValue } from "./overview-matrix-rules.js";
 import { compactSecretValue, inlineList } from "./overview-raw-format.js";
 import { row } from "./overview-shared.js";
 import type { MessageText, OverviewContext, OverviewRow, OverviewRowStatus } from "./overview-types.js";
-import {
-  formatAlgorithm,
-  formatIntegerHex,
-  formatNumberWithUnit,
-  textValue,
-} from "./overview-utils.js";
+import { algorithmLabel, formatNumberWithUnit, textValue } from "./overview-utils.js";
 
-type OverviewOptionKey = Option;
-
-const optionKey = {
-  alwaysUv: Option.OptionAlwaysUv,
-  authnrCfg: Option.OptionAuthenticatorConfig,
-  bioEnroll: Option.OptionBioEnroll,
-  clientPin: Option.OptionClientPIN,
-  credMgmt: Option.OptionCredentialManagement,
-  credentialMgmtPreview: Option.OptionCredentialManagementPreview,
-  ep: Option.OptionEnterpriseAttestation,
-  largeBlobs: Option.OptionLargeBlobs,
-  makeCredUvNotRqd: Option.OptionMakeCredentialUvNotRequired,
-  noMcGaPermissionsWithClientPin: Option.OptionNoMcGaPermissionsWithClientPin,
-  perCredMgmtRO: Option.OptionCredentialManagementReadOnly,
-  pinUvAuthToken: Option.OptionPinUvAuthToken,
-  plat: Option.OptionPlatformDevice,
-  rk: Option.OptionResidentKeys,
-  setMinPINLength: Option.OptionSetMinPINLength,
-  up: Option.OptionUserPresence,
-  userVerificationMgmtPreview: Option.OptionUserVerificationMgmtPreview,
-  uv: Option.OptionUserVerification,
-  uvAcfg: Option.OptionUvAcfg,
-  uvBioEnroll: Option.OptionUvBioEnroll,
-} as const satisfies Record<string, OverviewOptionKey>;
-
-const configCommandNames = new Map<number, string>([
-  [0x01, "enableEnterpriseAttestation"],
-  [0x02, "toggleAlwaysUv"],
-  [0x03, "setMinPINLength"],
-  [0x04, "enableLongTouchForReset"],
-  [0xff, "vendorPrototype"],
+const configCommandNames = new Map<string, string>([
+  ["1", "enableEnterpriseAttestation"],
+  ["2", "toggleAlwaysUv"],
+  ["3", "setMinPINLength"],
+  ["4", "enableLongTouchForReset"],
+  ["255", "vendorPrototype"],
 ]);
 
-export function buildOverviewRows(context: OverviewContext = {}): OverviewRow[] {
+const extensionFactIDs = {
+  credProtect: FactID.FactIDExtensionCredProtect,
+  credBlob: FactID.FactIDExtensionCredBlob,
+  largeBlobKey: FactID.FactIDExtensionLargeBlobKey,
+  largeBlob: FactID.FactIDExtensionLargeBlob,
+  minPinLength: FactID.FactIDExtensionMinPINLength,
+  pinComplexityPolicy: FactID.FactIDExtensionPINComplexityPolicy,
+  "hmac-secret": FactID.FactIDExtensionHMACSecret,
+  "hmac-secret-mc": FactID.FactIDExtensionHMACSecretMC,
+  thirdPartyPayment: FactID.FactIDExtensionThirdPartyPayment,
+} as const;
+
+export function buildOverviewRows(
+  context: OverviewContext = {},
+  factLookup?: OverviewFactLookup,
+): OverviewRow[] {
   const info = context.info;
   if (!info) return [];
 
   const device = context.device ?? null;
   const bioSensor = context.bioSensor ?? null;
-  const options = info.options;
-  const versions = info.versions;
-  const extensions = info.extensions ?? [];
-  const transports = info.transports ?? [];
-  const algorithms = info.algorithms ?? [];
-  const attestationFormats = info.attestationFormats ?? [];
-  const pinUvAuthProtocols = info.pinUvAuthProtocols ?? [];
-  const certifications = info.certifications ?? {};
-
-  const extensionsKnown = info.extensions !== undefined;
-  const attestationFormatsKnown = info.attestationFormats !== undefined;
-  const pinUvAuthProtocolsKnown = info.pinUvAuthProtocols !== undefined;
-  const certificationsKnown = info.certifications !== undefined;
-  const largeBlobsCommand = optionValue(options, optionKey.largeBlobs) === true;
+  const facts = factLookup ?? buildOverviewFactLookup(info.assessment);
 
   return [
-    row("Identity", m.matrix_name_aaguid, m.matrix_desc_aaguid_model, "informational", info.aaguid, "aaguid"),
+    localizedFactRow(facts, FactID.FactIDAAGUID, "Identity", m.matrix_name_aaguid, m.matrix_desc_aaguid_model),
     row("Identity", m.matrix_name_device_fingerprint, m.matrix_desc_device_fingerprint, valueStatus(device?.fingerprint), textValue(device?.fingerprint, value.notReported()), "device.fingerprint"),
     ...vendorIdentityRows(device),
-    transportRow(info, device, transports),
-    optionRow("Identity", m.matrix_name_platform_attachment, m.matrix_desc_platform_attachment, optionValue(options, optionKey.plat), "enabled", "disabled", "options.plat", value.defaultFalse()),
-    row("Identity", m.matrix_name_encrypted_device_identifier, m.matrix_desc_encrypted_device_identifier, valueStatus(info.encIdentifier), compactSecretValue(info.encIdentifier), "encIdentifier"),
+    transportRow(facts, device),
+    localizedFactRow(facts, FactID.FactIDPlatformAttachment, "Identity", m.matrix_name_platform_attachment, m.matrix_desc_platform_attachment),
+    secretFactRow(facts, FactID.FactIDEncryptedDeviceIdentifier, "Identity", m.matrix_name_encrypted_device_identifier, m.matrix_desc_encrypted_device_identifier),
 
     ...vendorInterfaceRows(device),
 
-    versionsRow(versions),
-    versionRow("U2F", m.matrix_desc_u2f, versions, Version.U2F_V2),
-    versionRow("FIDO 2.0", m.matrix_desc_fido20, versions, Version.FIDO_2_0),
-    versionRow("FIDO 2.1 Preview", m.matrix_desc_fido21_preview, versions, Version.FIDO_2_1_PRE),
-    versionRow("FIDO 2.1", m.matrix_desc_fido21, versions, Version.FIDO_2_1),
-    versionRow("FIDO 2.3", m.matrix_desc_fido23, versions, Version.FIDO_2_3),
-    algorithmListRow(info, algorithms),
+    localizedFactRow(facts, FactID.FactIDVersions, "Protocol", m.matrix_name_reported_versions, m.matrix_desc_versions),
+    versionRow(facts, FactID.FactIDVersionU2FV2, "U2F", m.matrix_desc_u2f, "U2F_V2"),
+    versionRow(facts, FactID.FactIDVersionFIDO20, "FIDO 2.0", m.matrix_desc_fido20, "FIDO_2_0"),
+    versionRow(facts, FactID.FactIDVersionFIDO21Preview, "FIDO 2.1 Preview", m.matrix_desc_fido21_preview, "FIDO_2_1_PRE"),
+    versionRow(facts, FactID.FactIDVersionFIDO21, "FIDO 2.1", m.matrix_desc_fido21, "FIDO_2_1"),
+    versionRow(facts, FactID.FactIDVersionFIDO23, "FIDO 2.3", m.matrix_desc_fido23, "FIDO_2_3"),
+    algorithmsRow(facts),
 
-    upRow(options),
-    optionRow("Verification", m.matrix_name_discoverable_credentials, m.matrix_desc_rk, optionValue(options, optionKey.rk), "supported", "unsupported", "options.rk", value.defaultFalse()),
-    clientPinRow(options),
-    uvRow(options),
-    optionRow("Verification", m.matrix_name_pin_uv_auth_token_permissions, m.matrix_desc_pin_uv_auth_token, optionValue(options, optionKey.pinUvAuthToken), "supported", "unsupported", "options.pinUvAuthToken", value.defaultFalse()),
-    noMcGaPermissionsRow(options),
-    row("Verification", m.matrix_name_pin_uv_auth_protocols, m.matrix_desc_pin_uv_protocols, pinUvAuthProtocolsKnown ? "informational" : "unknown", inlineList(pinUvAuthProtocols, value.notReported()), "pinUvAuthProtocols"),
-    triStateOptionRow("Verification", m.matrix_name_biometric_enrollment, m.matrix_desc_bio_enroll, optionValue(options, optionKey.bioEnroll), "configured", "not configured", "unsupported", "options.bioEnroll"),
-    triStateOptionRow("Verification", m.matrix_name_biometric_enrollment_preview, m.matrix_desc_bio_enroll_preview, optionValue(options, optionKey.userVerificationMgmtPreview), "configured", "not configured", "unsupported", "options.userVerificationMgmtPreview"),
-    optionRow("Verification", m.matrix_name_uv_biometric_enrollment_permission, m.matrix_desc_uv_bio_enroll, optionValue(options, optionKey.uvBioEnroll), "supported", "unsupported", "options.uvBioEnroll", value.defaultFalse()),
+    userPresenceRow(facts),
+    localizedFactRow(facts, FactID.FactIDResidentCredentials, "Verification", m.matrix_name_discoverable_credentials, m.matrix_desc_rk),
+    clientPINRow(facts),
+    userVerificationRow(facts),
+    localizedFactRow(facts, FactID.FactIDPinUvAuthToken, "Verification", m.matrix_name_pin_uv_auth_token_permissions, m.matrix_desc_pin_uv_auth_token),
+    clientPINMCGAPermissionsRow(facts),
+    localizedFactRow(facts, FactID.FactIDPinUvAuthProtocols, "Verification", m.matrix_name_pin_uv_auth_protocols, m.matrix_desc_pin_uv_protocols),
+    localizedFactRow(facts, FactID.FactIDBioEnrollment, "Verification", m.matrix_name_biometric_enrollment, m.matrix_desc_bio_enroll),
+    localizedFactRow(facts, FactID.FactIDBioEnrollmentPreview, "Verification", m.matrix_name_biometric_enrollment_preview, m.matrix_desc_bio_enroll_preview),
+    localizedFactRow(facts, FactID.FactIDUvBioEnroll, "Verification", m.matrix_name_uv_biometric_enrollment_permission, m.matrix_desc_uv_bio_enroll),
     row("Verification", m.matrix_name_biometric_modality, m.matrix_desc_bio_modality, valueStatus(bioSensor?.modality), textValue(bioSensor?.modality, value.notReported()), "bioSensor.modality"),
-    uintRow("Verification", m.matrix_name_uv_modality_bit_flags, m.matrix_desc_uv_modality, info, "uvModality"),
-    uintRow("Verification", m.matrix_name_preferred_platform_uv_attempts, m.matrix_desc_preferred_platform_uv_attempts, info, "preferredPlatformUvAttempts"),
-    uintRow("Verification", m.matrix_name_uv_count_since_last_pin_entry, m.matrix_desc_uv_count_since_last_pin_entry, info, "uvCountSinceLastPinEntry"),
+    localizedFactRow(facts, FactID.FactIDUvModality, "Verification", m.matrix_name_uv_modality_bit_flags, m.matrix_desc_uv_modality),
+    localizedFactRow(facts, FactID.FactIDPreferredPlatformUVAttempts, "Verification", m.matrix_name_preferred_platform_uv_attempts, m.matrix_desc_preferred_platform_uv_attempts),
+    localizedFactRow(facts, FactID.FactIDUVCountSinceLastPINEntry, "Verification", m.matrix_name_uv_count_since_last_pin_entry, m.matrix_desc_uv_count_since_last_pin_entry),
 
-    largeBlobsCommandRow(largeBlobsCommand, info.maxSerializedLargeBlobArray ?? undefined),
-    largeBlobKeyRow(extensionsKnown, extensions),
-    uintRow("Storage", m.matrix_name_serialized_large_blob_array_limit, m.matrix_desc_large_blob_capacity, info, "maxSerializedLargeBlobArray", "bytes"),
-    uintRow("Storage", m.matrix_name_max_credblob_length, m.matrix_desc_max_credblob_length, info, "maxCredBlobLength", "bytes"),
-    row("Storage", m.matrix_name_encrypted_credential_store_state, m.matrix_desc_encrypted_credential_store_state, valueStatus(info.encCredStoreState), compactSecretValue(info.encCredStoreState), "encCredStoreState"),
+    largeBlobsRow(facts),
+    largeBlobKeyRow(facts),
+    localizedFactRow(facts, FactID.FactIDMaxSerializedLargeBlobArray, "Storage", m.matrix_name_serialized_large_blob_array_limit, m.matrix_desc_large_blob_capacity),
+    localizedFactRow(facts, FactID.FactIDMaxCredBlobLength, "Storage", m.matrix_name_max_credblob_length, m.matrix_desc_max_credblob_length),
+    secretFactRow(facts, FactID.FactIDEncryptedCredentialStoreState, "Storage", m.matrix_name_encrypted_credential_store_state, m.matrix_desc_encrypted_credential_store_state),
 
-    optionRow("Management", m.matrix_name_credential_management, m.matrix_desc_cred_mgmt, optionValue(options, optionKey.credMgmt), "supported", "unsupported", "options.credMgmt", value.defaultFalse()),
-    optionRow("Management", m.matrix_name_credential_management_preview, m.matrix_desc_cred_mgmt_preview, optionValue(options, optionKey.credentialMgmtPreview), "supported", "unsupported", "options.credentialMgmtPreview", value.defaultFalse()),
-    optionRow("Management", m.matrix_name_credential_management_read_only, m.matrix_desc_cred_mgmt_ro, optionValue(options, optionKey.perCredMgmtRO), "supported", "unsupported", "options.perCredMgmtRO", value.defaultFalse()),
-    optionRow("Management", m.matrix_name_authenticator_config, m.matrix_desc_authnr_cfg, optionValue(options, optionKey.authnrCfg), "supported", "unsupported", "options.authnrCfg", value.defaultFalse()),
-    optionRow("Management", m.matrix_name_uv_authenticator_config_permission, m.matrix_desc_uv_acfg, optionValue(options, optionKey.uvAcfg), "supported", "unsupported", "options.uvAcfg", value.defaultFalse()),
-    configCommandListRow(info),
-    vendorConfigCommandListRow(info),
-    booleanFeatureRow("Management", m.matrix_name_long_touch_for_reset, m.matrix_desc_long_touch_for_reset, info, "longTouchForReset", "enabled", "disabled", "unsupported"),
-    resetTransportsRow(info),
+    localizedFactRow(facts, FactID.FactIDCredentialManagement, "Management", m.matrix_name_credential_management, m.matrix_desc_cred_mgmt),
+    localizedFactRow(facts, FactID.FactIDCredentialManagementPreview, "Management", m.matrix_name_credential_management_preview, m.matrix_desc_cred_mgmt_preview),
+    localizedFactRow(facts, FactID.FactIDCredentialManagementReadOnly, "Management", m.matrix_name_credential_management_read_only, m.matrix_desc_cred_mgmt_ro),
+    localizedFactRow(facts, FactID.FactIDAuthenticatorConfig, "Management", m.matrix_name_authenticator_config, m.matrix_desc_authnr_cfg),
+    localizedFactRow(facts, FactID.FactIDUvAuthenticatorConfig, "Management", m.matrix_name_uv_authenticator_config_permission, m.matrix_desc_uv_acfg),
+    configCommandsRow(facts),
+    vendorConfigCommandsRow(facts),
+    localizedFactRow(facts, FactID.FactIDLongTouchForReset, "Management", m.matrix_name_long_touch_for_reset, m.matrix_desc_long_touch_for_reset),
+    localizedFactRow(facts, FactID.FactIDTransportsForReset, "Management", m.matrix_name_reset_transports, m.matrix_desc_reset_transports),
 
-    triStateOptionRow("Policy", m.matrix_name_enterprise_attestation, m.matrix_desc_ep, optionValue(options, optionKey.ep), "enabled", "disabled", "unsupported", "options.ep"),
-    triStateOptionRow("Policy", m.matrix_name_always_require_uv, m.matrix_desc_always_uv, optionValue(options, optionKey.alwaysUv), "enabled", "disabled", "unsupported", "options.alwaysUv"),
-    optionRow("Policy", m.matrix_name_set_minimum_pin_length, m.matrix_desc_set_min_pin_length, optionValue(options, optionKey.setMinPINLength), "supported", "unsupported", "options.setMinPINLength", value.defaultFalse()),
-    makeCredUvRow(options),
-    forcePinChangeRow(info),
-    booleanFeatureRow("Policy", m.matrix_name_pin_complexity_policy, m.matrix_desc_pin_complexity_policy, info, "pinComplexityPolicy", "enabled", "disabled", "unsupported"),
-    row("Policy", m.matrix_name_pin_complexity_policy_url, m.matrix_desc_pin_complexity_policy_url, valueStatus(info.pinComplexityPolicyURL), textValue(info.pinComplexityPolicyURL, value.notReported()), "pinComplexityPolicyURL"),
-    uintRow("Policy", m.matrix_name_rp_ids_for_minimum_pin_length, m.matrix_desc_max_rpids_for_set_min_pin_length, info, "maxRPIDsForSetMinPINLength"),
+    localizedFactRow(facts, FactID.FactIDEnterpriseAttestation, "Policy", m.matrix_name_enterprise_attestation, m.matrix_desc_ep),
+    localizedFactRow(facts, FactID.FactIDAlwaysUV, "Policy", m.matrix_name_always_require_uv, m.matrix_desc_always_uv),
+    localizedFactRow(facts, FactID.FactIDSetMinPINLength, "Policy", m.matrix_name_set_minimum_pin_length, m.matrix_desc_set_min_pin_length),
+    makeCredentialUVRow(facts),
+    forcePINChangeRow(facts),
+    localizedFactRow(facts, FactID.FactIDPINComplexityPolicy, "Policy", m.matrix_name_pin_complexity_policy, m.matrix_desc_pin_complexity_policy),
+    localizedFactRow(facts, FactID.FactIDPINComplexityPolicyURL, "Policy", m.matrix_name_pin_complexity_policy_url, m.matrix_desc_pin_complexity_policy_url),
+    localizedFactRow(facts, FactID.FactIDMaxRPIDsForSetMinPINLength, "Policy", m.matrix_name_rp_ids_for_minimum_pin_length, m.matrix_desc_max_rpids_for_set_min_pin_length),
 
-    ...EXTENSION_ROWS.map((entry) => extensionSupportRow("Extensions", entry.name, entry.description, entry.id, extensionsKnown, extensions, `extensions.${entry.id}`)),
+    ...EXTENSION_ROWS.map((entry) => extensionRow(facts, extensionFactIDs[entry.id], entry.name, entry.description, entry.id)),
 
-    maxMsgSizeRow(info),
-    uintRow("Limits", m.matrix_name_max_credential_list_count, m.matrix_desc_max_credential_list_count, info, "maxCredentialCountInList"),
-    uintRow("Limits", m.matrix_name_max_credential_id_length, m.matrix_desc_max_credential_id_length, info, "maxCredentialIdLength", "bytes"),
-    uintRow("Limits", m.matrix_name_minimum_pin_length, m.matrix_desc_min_pin_length, info, "minPINLength", "codePoints"),
-    maxPinLengthRow(options, info),
-    uintRow("Limits", m.matrix_name_remaining_discoverable_credentials, m.matrix_desc_remaining_discoverable_credentials, info, "remainingDiscoverableCredentials"),
+    localizedFactRow(facts, FactID.FactIDEffectiveMaxMessageSize, "Limits", m.matrix_name_max_message_size, m.matrix_desc_max_msg_size),
+    localizedFactRow(facts, FactID.FactIDMaxCredentialCountInList, "Limits", m.matrix_name_max_credential_list_count, m.matrix_desc_max_credential_list_count),
+    localizedFactRow(facts, FactID.FactIDMaxCredentialIDLength, "Limits", m.matrix_name_max_credential_id_length, m.matrix_desc_max_credential_id_length),
+    localizedFactRow(facts, FactID.FactIDEffectiveMinPINLength, "Limits", m.matrix_name_minimum_pin_length, m.matrix_desc_min_pin_length),
+    localizedFactRow(facts, FactID.FactIDEffectiveMaxPINLength, "Limits", m.matrix_name_maximum_pin_length, m.matrix_desc_max_pin),
+    localizedFactRow(facts, FactID.FactIDRemainingDiscoverableCredentials, "Limits", m.matrix_name_remaining_discoverable_credentials, m.matrix_desc_remaining_discoverable_credentials),
 
-    attestationFormatsRow(attestationFormatsKnown, attestationFormats),
-    certificationsRow(certificationsKnown, certifications),
-    uintRow("Attestation", m.matrix_name_firmware_version, m.matrix_desc_firmware_version, info, "firmwareVersion"),
-  ].filter((item): item is OverviewRow => Boolean(item));
+    attestationFormatsRow(facts),
+    certificationsRow(facts),
+    localizedFactRow(facts, FactID.FactIDFirmwareVersion, "Attestation", m.matrix_name_firmware_version, m.matrix_desc_firmware_version),
+  ];
+}
+
+function localizedFactRow(
+  facts: OverviewFactLookup,
+  id: FactID,
+  group: string,
+  name: MessageText,
+  description: MessageText,
+) {
+  const fact = overviewFact(facts, id);
+  return row(group, name, description, overviewFactStatus(fact), formatFactValue(fact), fact.source);
+}
+
+function secretFactRow(
+  facts: OverviewFactLookup,
+  id: FactID,
+  group: string,
+  name: MessageText,
+  description: MessageText,
+) {
+  const fact = overviewFact(facts, id);
+  const factValue = fact.state === FactState.FactStateUnknown
+    ? value.notReported()
+    : compactSecretValue(factText(fact));
+  return row(group, name, description, overviewFactStatus(fact), factValue, fact.source);
+}
+
+function formatFactValue(fact: Fact): string {
+  if (fact.state === FactState.FactStateUnknown) return value.notReported();
+
+  switch (fact.value.kind) {
+    case FactValueKind.FactValueBoolean: {
+      const input = factBoolean(fact);
+      if (input === undefined) return value.notReported();
+      if (factUsesSpecDefault(fact)) return input ? value.defaultTrue() : value.defaultFalse();
+      return String(input);
+    }
+    case FactValueKind.FactValueInteger: {
+      const input = factInteger(fact);
+      if (input === undefined) return value.notReported();
+      const unit = factUnit(fact);
+      if (factUsesSpecDefault(fact)) {
+        if (unit === "bytes") return value.defaultBytes(input);
+        if (unit === "codePoints") return value.defaultCodePoints(input);
+      }
+      return formatNumberWithUnit(input, unit);
+    }
+    case FactValueKind.FactValueText:
+      return textValue(factText(fact), value.notReported());
+    case FactValueKind.FactValueList:
+      return inlineList(factList(fact) ?? [], value.emptyList());
+    default:
+      throw new Error(`Unexpected value kind for Overview fact ${fact.id}: ${fact.value.kind}`);
+  }
+}
+
+function transportRow(facts: OverviewFactLookup, device: DeviceReport | null) {
+  const fact = overviewFact(facts, FactID.FactIDTransports);
+  if (fact.state !== FactState.FactStateUnknown) {
+    return row("Identity", m.matrix_name_transport, m.matrix_desc_transport_getinfo, overviewFactStatus(fact), formatFactValue(fact), fact.source);
+  }
+  return row("Identity", m.matrix_name_transport, m.matrix_desc_transport_fallback, valueStatus(device?.transport), textValue(device?.transport, value.notReported()), fact.source);
+}
+
+function versionRow(facts: OverviewFactLookup, id: FactID, name: string, description: MessageText, version: string) {
+  const fact = overviewFact(facts, id);
+  return row("Protocol", name, description, overviewFactStatus(fact), formatProtocolVersion(version), fact.source);
+}
+
+function algorithmsRow(facts: OverviewFactLookup) {
+  const fact = overviewFact(facts, FactID.FactIDAlgorithms);
+  const formatted = fact.state === FactState.FactStateUnknown
+    ? value.notReported()
+    : inlineList((factList(fact) ?? []).map(formatCanonicalAlgorithm), value.emptyList());
+  return row("Protocol", m.matrix_name_reported_cose_algorithms, m.matrix_desc_algorithms, overviewFactStatus(fact), formatted, fact.source);
+}
+
+function formatCanonicalAlgorithm(input: string) {
+  const separator = input.lastIndexOf(":");
+  if (separator < 0) return input;
+  const type = input.slice(0, separator);
+  const algorithm = Number(input.slice(separator + 1));
+  return Number.isSafeInteger(algorithm) ? `${algorithmLabel(algorithm)} / ${type}` : input;
+}
+
+function userPresenceRow(facts: OverviewFactLookup) {
+  const fact = overviewFact(facts, FactID.FactIDUserPresence);
+  const present = fact.state === FactState.FactStateUnknown ? undefined : factBoolean(fact);
+  return row(
+    "Verification",
+    m.matrix_name_user_presence_touch,
+    present === false ? m.matrix_desc_up_false : m.matrix_desc_up_true,
+    overviewFactStatus(fact),
+    formatFactValue(fact),
+    fact.source,
+  );
+}
+
+function clientPINRow(facts: OverviewFactLookup) {
+  const fact = overviewFact(facts, FactID.FactIDClientPIN);
+  const description = fact.state === FactState.FactStateConfigured
+    ? m.matrix_desc_client_pin_set
+    : fact.state === FactState.FactStateNotConfigured
+      ? m.matrix_desc_client_pin_not_set
+      : m.matrix_desc_client_pin_absent;
+  const factValue = fact.state === FactState.FactStateConfigured
+    ? value.pinSet()
+    : fact.state === FactState.FactStateNotConfigured
+      ? value.pinNotSet()
+      : formatFactValue(fact);
+  return row("Verification", m.matrix_name_client_pin, description, overviewFactStatus(fact), factValue, fact.source);
+}
+
+function userVerificationRow(facts: OverviewFactLookup) {
+  const fact = overviewFact(facts, FactID.FactIDUserVerification);
+  const description = fact.state === FactState.FactStateConfigured
+    ? m.matrix_desc_uv_configured
+    : fact.state === FactState.FactStateNotConfigured
+      ? m.matrix_desc_uv_not_configured
+      : m.matrix_desc_uv_absent;
+  const factValue = fact.state === FactState.FactStateConfigured
+    ? value.configured()
+    : fact.state === FactState.FactStateNotConfigured
+      ? value.notConfigured()
+      : formatFactValue(fact);
+  return row("Verification", m.matrix_name_built_in_user_verification, description, overviewFactStatus(fact), factValue, fact.source);
+}
+
+function clientPINMCGAPermissionsRow(facts: OverviewFactLookup) {
+  const fact = overviewFact(facts, FactID.FactIDClientPINMCGAPermissions);
+  const available = fact.state === FactState.FactStateUnknown ? undefined : factBoolean(fact);
+  const description = available === false
+    ? m.matrix_desc_no_mc_ga_permissions_true
+    : m.matrix_desc_no_mc_ga_permissions_false;
+  const factValue = available === false
+    ? value.notAvailableThroughClientPinToken()
+    : fact.state === FactState.FactStateUnknown
+      ? value.notReported()
+      : factUsesSpecDefault(fact)
+        ? value.availableByDefault()
+        : value.available();
+  return row("Verification", m.matrix_name_client_pin_token_mc_ga_permissions, description, overviewFactStatus(fact), factValue, fact.source);
+}
+
+function largeBlobsRow(facts: OverviewFactLookup) {
+  const fact = overviewFact(facts, FactID.FactIDLargeBlobs);
+  const capacity = overviewFact(facts, FactID.FactIDMaxSerializedLargeBlobArray);
+  let factValue = formatFactValue(fact);
+  if (fact.state === FactState.FactStateSupported) {
+    factValue = capacity.state === FactState.FactStateUnknown
+      ? value.capacityNotReported()
+      : formatFactValue(capacity);
+  } else if (fact.state === FactState.FactStateUnsupported) {
+    factValue = value.falseOrAbsent();
+  }
+  return row("Storage", m.matrix_name_large_blobs_command, m.matrix_desc_large_blobs_command, overviewFactStatus(fact), factValue, fact.source);
+}
+
+function largeBlobKeyRow(facts: OverviewFactLookup) {
+  const fact = overviewFact(facts, FactID.FactIDLargeBlobKey);
+  const factValue = fact.state === FactState.FactStateSupported
+    ? "largeBlobKey"
+    : fact.state === FactState.FactStateUnsupported
+      ? value.notListed()
+      : value.extensionsNotReported();
+  return row("Storage", m.matrix_name_large_blob_key_extension, m.matrix_desc_large_blob_key, overviewFactStatus(fact), factValue, fact.source);
+}
+
+function configCommandsRow(facts: OverviewFactLookup) {
+  const fact = overviewFact(facts, FactID.FactIDAuthenticatorConfigCommands);
+  const commands = fact.state === FactState.FactStateUnknown
+    ? []
+    : (factList(fact) ?? []).map((command) => {
+        const name = configCommandNames.get(command);
+        const formatted = formatUnsignedDecimalHex(command);
+        return name ? `${name} (${formatted})` : formatted;
+      });
+  const factValue = fact.state === FactState.FactStateUnknown
+    ? value.notReported()
+    : inlineList(commands, value.emptyList());
+  return row("Management", m.matrix_name_authenticator_config_commands, m.matrix_desc_config_commands, overviewFactStatus(fact), factValue, fact.source);
+}
+
+function vendorConfigCommandsRow(facts: OverviewFactLookup) {
+  const fact = overviewFact(facts, FactID.FactIDVendorPrototypeConfigCommands);
+  const commands = fact.state === FactState.FactStateUnknown
+    ? []
+    : (factList(fact) ?? []).map(formatUnsignedDecimalHex);
+  const factValue = fact.state === FactState.FactStateUnknown
+    ? value.notReported()
+    : inlineList(commands, value.emptyList());
+  return row("Management", m.matrix_name_vendor_prototype_config_commands, m.matrix_desc_vendor_config_commands, overviewFactStatus(fact), factValue, fact.source);
+}
+
+function formatUnsignedDecimalHex(input: string) {
+  try {
+    const amount = BigInt(input);
+    if (amount < 0n) return input;
+    const hex = amount.toString(16).toUpperCase();
+    const width = amount <= 0xffn ? 2 : amount <= 0xffffn ? 4 : 0;
+    return `0x${hex.padStart(width, "0")}`;
+  } catch {
+    return input;
+  }
+}
+
+function makeCredentialUVRow(facts: OverviewFactLookup) {
+  const fact = overviewFact(facts, FactID.FactIDMakeCredentialUVRequirement);
+  const required = fact.state === FactState.FactStateUnknown ? undefined : factBoolean(fact);
+  const description = required === false
+    ? m.matrix_desc_make_cred_uv_skipped
+    : m.matrix_desc_make_cred_uv_required;
+  const factValue = required === false
+    ? value.uvMayBeSkipped()
+    : fact.state === FactState.FactStateUnknown
+      ? value.notReported()
+      : factUsesSpecDefault(fact)
+        ? value.uvRequiredByDefault()
+        : value.uvRequired();
+  return row("Policy", m.matrix_name_non_discoverable_credential_uv_requirement, description, overviewFactStatus(fact), factValue, fact.source);
+}
+
+function forcePINChangeRow(facts: OverviewFactLookup) {
+  const fact = overviewFact(facts, FactID.FactIDForcePINChange);
+  const required = fact.state === FactState.FactStateWarning;
+  return row(
+    "Policy",
+    m.matrix_name_force_pin_change,
+    required ? m.matrix_desc_force_pin_required : m.matrix_desc_force_pin_not_required,
+    overviewFactStatus(fact),
+    required
+      ? value.pinChangeRequired()
+      : fact.origin === FactOrigin.FactOriginSpecDefault
+        ? value.notRequiredByDefault()
+        : value.notRequired(),
+    fact.source,
+  );
+}
+
+function extensionRow(facts: OverviewFactLookup, id: FactID, name: MessageText, description: MessageText, extension: string) {
+  const fact = overviewFact(facts, id);
+  const factValue = fact.state === FactState.FactStateSupported
+    ? extension
+    : fact.state === FactState.FactStateUnsupported
+      ? value.notListed()
+      : value.extensionsNotReported();
+  return row("Extensions", name, description, overviewFactStatus(fact), factValue, fact.source);
+}
+
+function attestationFormatsRow(facts: OverviewFactLookup) {
+  const fact = overviewFact(facts, FactID.FactIDAttestationFormats);
+  const factValue = fact.state === FactState.FactStateUnknown
+    ? value.notReported()
+    : fact.origin === FactOrigin.FactOriginSpecDefault
+      ? value.noneImpliedNoFormatsReported()
+      : inlineList(factList(fact) ?? [], value.emptyList());
+  return row("Attestation", m.matrix_name_attestation_formats, m.matrix_desc_attestation_formats, overviewFactStatus(fact), factValue, fact.source);
+}
+
+function certificationsRow(facts: OverviewFactLookup) {
+  const fact = overviewFact(facts, FactID.FactIDCertifications);
+  let factValue: string = value.certificationsNotReported();
+  if (fact.state === FactState.FactStateUnsupported) {
+    factValue = value.notListed();
+  } else if (fact.state !== FactState.FactStateUnknown) {
+    factValue = (factList(fact) ?? []).map(formatCertification).join(", ");
+  }
+  return row("Attestation", m.mds_certification, m.matrix_desc_fido_certification, overviewFactStatus(fact), factValue, fact.source);
+}
+
+function formatCertification(input: string) {
+  const separator = input.lastIndexOf("=");
+  if (separator < 0) return input;
+  const id = input.slice(0, separator);
+  const level = Number(input.slice(separator + 1));
+  return `${id}: ${formatCertificationValue(id, Number.isSafeInteger(level) ? level : undefined)}`;
 }
 
 function vendorIdentityRows(device: DeviceReport | null) {
@@ -186,10 +450,7 @@ function interfacePresenceRow(interfaceReport: InterfaceReport) {
   );
 }
 
-function interfaceApplicationsRow(
-  interfaceReport: InterfaceReport,
-  field: "supported" | "enabled",
-) {
+function interfaceApplicationsRow(interfaceReport: InterfaceReport, field: "supported" | "enabled") {
   const interfaceName = interfaceLabel(interfaceReport.interface);
   const applications = interfaceReport[field].map(capabilityLabel);
   const enabled = field === "enabled";
@@ -229,165 +490,6 @@ function capabilityLabel(input: Capability) {
     [Capability.CapabilityCTAP2]: "CTAP2",
   };
   return labels[input] || input;
-}
-
-function transportRow(info: InspectInfo, device: DeviceReport | null, transports: string[]) {
-  if (info.transports !== undefined) {
-    return row("Identity", m.matrix_name_transport, m.matrix_desc_transport_getinfo, "informational", inlineList(transports, value.emptyList()), "transports");
-  }
-  return row("Identity", m.matrix_name_transport, m.matrix_desc_transport_fallback, valueStatus(device?.transport), textValue(device?.transport, value.notReported()), "transports");
-}
-
-function versionsRow(versions: readonly Version[]) {
-  return row("Protocol", m.matrix_name_reported_versions, m.matrix_desc_versions, "informational", inlineList(versions, value.emptyList()), "versions");
-}
-
-function versionRow(name: string, description: MessageText, versions: readonly Version[], version: Version) {
-  return row("Protocol", name, description, versions.includes(version) ? "supported" : "unsupported", formatProtocolVersion(version), `versions.${version}`);
-}
-
-function algorithmListRow(info: InspectInfo, algorithms: InspectAlgorithms) {
-  const known = info.algorithms !== undefined;
-  if (!known) return row("Protocol", m.matrix_name_reported_cose_algorithms, m.matrix_desc_algorithms, "unknown", value.notReported(), "algorithms");
-  return row("Protocol", m.matrix_name_reported_cose_algorithms, m.matrix_desc_algorithms, "informational", inlineList(algorithms.map(formatAlgorithm), value.emptyList()), "algorithms");
-}
-
-function optionRow(group: string, name: MessageText, description: MessageText, option: boolean | undefined, trueStatus: OverviewRowStatus, falseStatus: OverviewRowStatus, source: string, absentValue = value.absent()) {
-  if (option === true) return row(group, name, description, trueStatus, "true", source);
-  if (option === false) return row(group, name, description, falseStatus, "false", source);
-  return row(group, name, description, falseStatus, absentValue, source);
-}
-
-function triStateOptionRow(group: string, name: MessageText, description: MessageText, option: boolean | undefined, trueStatus: OverviewRowStatus, falseStatus: OverviewRowStatus, absentStatus: OverviewRowStatus, source: string) {
-  if (option === true) return row(group, name, description, trueStatus, "true", source);
-  if (option === false) return row(group, name, description, falseStatus, "false", source);
-  return row(group, name, description, absentStatus, value.absent(), source);
-}
-
-function upRow(options: InspectOptions | undefined) {
-  const up = optionValue(options, optionKey.up);
-  if (up === false) return row("Verification", m.matrix_name_user_presence_touch, m.matrix_desc_up_false, "unsupported", "false", "options.up");
-  return row("Verification", m.matrix_name_user_presence_touch, m.matrix_desc_up_true, "supported", up === true ? "true" : value.defaultTrue(), "options.up");
-}
-
-function clientPinRow(options: InspectOptions | undefined) {
-  const clientPin = optionValue(options, optionKey.clientPin);
-  if (clientPin === true) return row("Verification", m.matrix_name_client_pin, m.matrix_desc_client_pin_set, "configured", value.pinSet(), "options.clientPin");
-  if (clientPin === false) return row("Verification", m.matrix_name_client_pin, m.matrix_desc_client_pin_not_set, "not configured", value.pinNotSet(), "options.clientPin");
-  return row("Verification", m.matrix_name_client_pin, m.matrix_desc_client_pin_absent, "unsupported", value.absent(), "options.clientPin");
-}
-
-function uvRow(options: InspectOptions | undefined) {
-  const uv = optionValue(options, optionKey.uv);
-  if (uv === true) return row("Verification", m.matrix_name_built_in_user_verification, m.matrix_desc_uv_configured, "configured", value.configured(), "options.uv");
-  if (uv === false) return row("Verification", m.matrix_name_built_in_user_verification, m.matrix_desc_uv_not_configured, "not configured", value.notConfigured(), "options.uv");
-  return row("Verification", m.matrix_name_built_in_user_verification, m.matrix_desc_uv_absent, "unsupported", value.absent(), "options.uv");
-}
-
-function noMcGaPermissionsRow(options: InspectOptions | undefined) {
-  const noMcGa = optionValue(options, optionKey.noMcGaPermissionsWithClientPin);
-  if (noMcGa === true) {
-    return row("Verification", m.matrix_name_client_pin_token_mc_ga_permissions, m.matrix_desc_no_mc_ga_permissions_true, "informational", value.notAvailableThroughClientPinToken(), "options.noMcGaPermissionsWithClientPin");
-  }
-  return row("Verification", m.matrix_name_client_pin_token_mc_ga_permissions, m.matrix_desc_no_mc_ga_permissions_false, "informational", noMcGa === false ? value.available() : value.availableByDefault(), "options.noMcGaPermissionsWithClientPin");
-}
-
-function makeCredUvRow(options: InspectOptions | undefined) {
-  const makeCredUvNotRqd = optionValue(options, optionKey.makeCredUvNotRqd);
-  if (makeCredUvNotRqd === true) {
-    return row("Policy", m.matrix_name_non_discoverable_credential_uv_requirement, m.matrix_desc_make_cred_uv_skipped, "informational", value.uvMayBeSkipped(), "options.makeCredUvNotRqd");
-  }
-  return row("Policy", m.matrix_name_non_discoverable_credential_uv_requirement, m.matrix_desc_make_cred_uv_required, "informational", makeCredUvNotRqd === false ? value.uvRequired() : value.uvRequiredByDefault(), "options.makeCredUvNotRqd");
-}
-
-function forcePinChangeRow(info: InspectInfo) {
-  if (info.forcePINChange === true) return row("Policy", m.matrix_name_force_pin_change, m.matrix_desc_force_pin_required, "warning", value.pinChangeRequired(), "forcePINChange");
-  return row("Policy", m.matrix_name_force_pin_change, m.matrix_desc_force_pin_not_required, "informational", reported(info, "forcePINChange") ? value.notRequired() : value.notRequiredByDefault(), "forcePINChange");
-}
-
-function largeBlobsCommandRow(supported: boolean, capacity: number | undefined) {
-  return row("Storage", m.matrix_name_large_blobs_command, m.matrix_desc_large_blobs_command, supported ? "supported" : "unsupported", supported ? (capacity === undefined ? value.capacityNotReported() : value.bytes(capacity)) : value.falseOrAbsent(), "options.largeBlobs");
-}
-
-function largeBlobKeyRow(extensionsKnown: boolean, extensions: string[]) {
-  const hasLargeBlobKey = extensions.includes("largeBlobKey");
-  if (hasLargeBlobKey) return row("Storage", m.matrix_name_large_blob_key_extension, m.matrix_desc_large_blob_key, "supported", "largeBlobKey", "extensions.largeBlobKey");
-  return row("Storage", m.matrix_name_large_blob_key_extension, m.matrix_desc_large_blob_key, extensionsKnown ? "unsupported" : "unknown", extensionsKnown ? value.notListed() : value.extensionsNotReported(), "extensions.largeBlobKey");
-}
-
-function booleanFeatureRow(group: string, name: MessageText, description: MessageText, info: InspectInfo, source: InspectBooleanField, trueStatus: OverviewRowStatus, falseStatus: OverviewRowStatus, absentStatus: OverviewRowStatus) {
-  if (info[source] === null || info[source] === undefined) return row(group, name, description, absentStatus, value.absent(), source);
-  const input = info[source];
-  return row(group, name, description, input ? trueStatus : falseStatus, String(input), source);
-}
-
-function configCommandListRow(info: InspectInfo) {
-  const known = info.authenticatorConfigCommands !== undefined;
-  const commands = info.authenticatorConfigCommands ?? [];
-  if (!known) return row("Management", m.matrix_name_authenticator_config_commands, m.matrix_desc_config_commands, "unknown", value.notReported(), "authenticatorConfigCommands");
-  return row("Management", m.matrix_name_authenticator_config_commands, m.matrix_desc_config_commands, "informational", inlineList(commands.map((command) => {
-    const name = configCommandNames.get(command);
-    return name ? `${name} (${formatIntegerHex(command)})` : formatIntegerHex(command);
-  }), value.emptyList()), "authenticatorConfigCommands");
-}
-
-function vendorConfigCommandListRow(info: InspectInfo) {
-  const known = info.vendorPrototypeConfigCommands !== undefined;
-  const commands = info.vendorPrototypeConfigCommands ?? [];
-  if (!known) return row("Management", m.matrix_name_vendor_prototype_config_commands, m.matrix_desc_vendor_config_commands, "unknown", value.notReported(), "vendorPrototypeConfigCommands");
-  return row("Management", m.matrix_name_vendor_prototype_config_commands, m.matrix_desc_vendor_config_commands, "informational", inlineList(commands.map(formatIntegerHex), value.emptyList()), "vendorPrototypeConfigCommands");
-}
-
-function resetTransportsRow(info: InspectInfo) {
-  const known = info.transportsForReset !== undefined;
-  const transports = info.transportsForReset ?? [];
-  if (!known) return row("Management", m.matrix_name_reset_transports, m.matrix_desc_reset_transports, "unknown", value.notReported(), "transportsForReset");
-  return row("Management", m.matrix_name_reset_transports, m.matrix_desc_reset_transports, "informational", inlineList(transports, value.emptyList()), "transportsForReset");
-}
-
-function extensionSupportRow(group: string, name: MessageText, description: MessageText, id: string, known: boolean, extensions: string[], source: string) {
-  if (!known) return row(group, name, description, "unknown", value.extensionsNotReported(), source);
-  return row(group, name, description, extensions.includes(id) ? "supported" : "unsupported", extensions.includes(id) ? id : value.notListed(), source);
-}
-
-function maxMsgSizeRow(info: InspectInfo) {
-  const source = "maxMsgSize";
-  if (info.maxMsgSize === null || info.maxMsgSize === undefined) return row("Limits", m.matrix_name_max_message_size, m.matrix_desc_max_msg_size, "informational", value.defaultBytes(1024), source);
-  return row("Limits", m.matrix_name_max_message_size, m.matrix_desc_max_msg_size, "informational", value.bytes(info.maxMsgSize), source);
-}
-
-function maxPinLengthRow(options: InspectOptions | undefined, info: InspectInfo) {
-  const source = "maxPINLength";
-  const clientPinSupported = reported(options, optionKey.clientPin);
-  if (info.maxPINLength === null || info.maxPINLength === undefined) return row("Limits", m.matrix_name_maximum_pin_length, m.matrix_desc_max_pin_default, clientPinSupported ? "informational" : "unknown", clientPinSupported ? value.defaultCodePoints(63) : value.notReported(), source);
-  return row("Limits", m.matrix_name_maximum_pin_length, m.matrix_desc_max_pin, "informational", value.codePoints(info.maxPINLength), source);
-}
-
-function uintRow(group: string, name: MessageText, description: MessageText, info: InspectInfo, source: InspectNumberField, unit: "bytes" | "codePoints" | "" = "") {
-  const amount = info[source];
-  if (amount === null || amount === undefined) return row(group, name, description, "unknown", value.notReported(), source);
-  return row(group, name, description, "informational", formatNumberWithUnit(amount, unit), source);
-}
-
-function attestationFormatsRow(known: boolean, attestationFormats: string[]) {
-  if (!known) return row("Attestation", m.matrix_name_attestation_formats, m.matrix_desc_attestation_formats, "informational", value.noneImpliedNoFormatsReported(), "attestationFormats");
-  return row("Attestation", m.matrix_name_attestation_formats, m.matrix_desc_attestation_formats, "informational", inlineList(attestationFormats, value.emptyList()), "attestationFormats");
-}
-
-function certificationsRow(known: boolean, certifications: InspectCertifications) {
-  if (!known) return row("Attestation", m.mds_certification, m.matrix_desc_fido_certification, "unknown", value.certificationsNotReported(), "certifications");
-  const entries = Object.entries(certifications);
-  if (!entries.length) return row("Attestation", m.mds_certification, m.matrix_desc_fido_certification, "unsupported", value.notListed(), "certifications");
-
-  return row("Attestation", m.mds_certification, m.matrix_desc_fido_certification, "informational", entries.map(([id, item]) => `${id}: ${formatCertificationValue(id, item)}`).join(", "), "certifications");
-}
-
-function reported<T extends object, K extends keyof T>(source: T | null | undefined, key: K) {
-  return Boolean(source && Object.prototype.hasOwnProperty.call(source, key));
-}
-
-function optionValue(options: InspectOptions | undefined, key: OverviewOptionKey): boolean | undefined {
-  return options?.[key];
 }
 
 function valueStatus(input: unknown): OverviewRowStatus {

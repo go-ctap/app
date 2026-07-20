@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { ExtensionIdentifier } from "../../bindings/github.com/go-ctap/ctap/extension";
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
-import type { Info as InspectInfo } from "../../bindings/github.com/go-ctap/kit/model/inspect";
+import {
+  FactID,
+  FactOrigin,
+  FactState,
+  FactUnit,
+  FactValue,
+  FactValueKind,
+  Info as InspectInfo,
+} from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import {
   Capability,
@@ -16,15 +23,39 @@ import {
 import { setAppLocale } from "./i18n";
 import { buildOverviewRows } from "./overview-rows";
 import { groupOverviewRows } from "./overview-shared";
+import { testOverviewAssessment, testOverviewFact } from "./test-support/overview-facts";
 import type { OverviewRow } from "./overview-types";
 
 function info(input: Partial<InspectInfo> = {}): InspectInfo {
-  return {
+  return new InspectInfo({
     versions: ["FIDO_2_1" as Version],
     aaguid: "00000000-0000-0000-0000-000000000000",
+    assessment: testOverviewAssessment(),
     conformance: new Report(),
     ...input,
-  };
+  });
+}
+
+function booleanFact(id: FactID, source: string, state: FactState, origin: FactOrigin, boolean: boolean) {
+  return testOverviewFact(id, source, state, origin, new FactValue({
+    kind: FactValueKind.FactValueBoolean,
+    boolean,
+  }));
+}
+
+function integerFact(id: FactID, source: string, integer: number, unit?: FactUnit, origin = FactOrigin.FactOriginReported) {
+  return testOverviewFact(id, source, FactState.FactStateObserved, origin, new FactValue({
+    kind: FactValueKind.FactValueInteger,
+    integer,
+    unit,
+  }));
+}
+
+function listFact(id: FactID, source: string, list: string[], state = FactState.FactStateObserved) {
+  return testOverviewFact(id, source, state, FactOrigin.FactOriginReported, new FactValue({
+    kind: FactValueKind.FactValueList,
+    list,
+  }));
 }
 
 function rowBySource(rows: OverviewRow[], source: string) {
@@ -39,12 +70,12 @@ describe("buildOverviewRows", () => {
 
     const rows = buildOverviewRows({
       info: info({
-        options: {
-          largeBlobs: true,
-          setMinPINLength: true,
-        },
-        extensions: [ExtensionIdentifier.ExtensionIdentifierLargeBlobKey],
-        maxSerializedLargeBlobArray: 2048,
+        assessment: testOverviewAssessment([
+          booleanFact(FactID.FactIDLargeBlobs, "options.largeBlobs", FactState.FactStateSupported, FactOrigin.FactOriginReported, true),
+          booleanFact(FactID.FactIDSetMinPINLength, "options.setMinPINLength", FactState.FactStateSupported, FactOrigin.FactOriginReported, true),
+          booleanFact(FactID.FactIDExtensionLargeBlobKey, "extensions.largeBlobKey", FactState.FactStateSupported, FactOrigin.FactOriginDerived, true),
+          integerFact(FactID.FactIDMaxSerializedLargeBlobArray, "maxSerializedLargeBlobArray", 2048, FactUnit.FactUnitBytes),
+        ]),
       }),
     });
 
@@ -58,21 +89,23 @@ describe("buildOverviewRows", () => {
 
     const falseRows = buildOverviewRows({
       info: info({
-        options: {
-          clientPin: false,
-        },
+        assessment: testOverviewAssessment([
+          booleanFact(FactID.FactIDClientPIN, "options.clientPin", FactState.FactStateNotConfigured, FactOrigin.FactOriginReported, false),
+        ]),
       }),
     });
     const absentRows = buildOverviewRows({
       info: info({
-        options: {},
+        assessment: testOverviewAssessment([
+          booleanFact(FactID.FactIDClientPIN, "options.clientPin", FactState.FactStateUnsupported, FactOrigin.FactOriginSpecDefault, false),
+        ]),
       }),
     });
 
     expect(rowBySource(falseRows, "options.clientPin").status).toBe("not configured");
     expect(rowBySource(falseRows, "options.clientPin").value).toBe("PIN not set");
     expect(rowBySource(absentRows, "options.clientPin").status).toBe("unsupported");
-    expect(rowBySource(absentRows, "options.clientPin").value).toBe("Absent");
+    expect(rowBySource(absentRows, "options.clientPin").value).toBe("Default false");
   });
 
   it("keeps numeric limits informational in the presentation matrix", () => {
@@ -80,12 +113,11 @@ describe("buildOverviewRows", () => {
 
     const rows = buildOverviewRows({
       info: info({
-        options: {
-          clientPin: true,
-        },
-        maxMsgSize: 512,
-        minPINLength: 3,
-        maxPINLength: 7,
+        assessment: testOverviewAssessment([
+          integerFact(FactID.FactIDEffectiveMaxMessageSize, "maxMsgSize", 512, FactUnit.FactUnitBytes),
+          integerFact(FactID.FactIDEffectiveMinPINLength, "minPINLength", 3, FactUnit.FactUnitCodePoints),
+          integerFact(FactID.FactIDEffectiveMaxPINLength, "maxPINLength", 7, FactUnit.FactUnitCodePoints),
+        ]),
       }),
     });
 
@@ -98,9 +130,10 @@ describe("buildOverviewRows", () => {
 
     const defaultRows = buildOverviewRows({
       info: info({
-        options: {
-          clientPin: true,
-        },
+        assessment: testOverviewAssessment([
+          integerFact(FactID.FactIDEffectiveMaxMessageSize, "maxMsgSize", 1024, FactUnit.FactUnitBytes, FactOrigin.FactOriginSpecDefault),
+          integerFact(FactID.FactIDEffectiveMaxPINLength, "maxPINLength", 63, FactUnit.FactUnitCodePoints, FactOrigin.FactOriginSpecDefault),
+        ]),
       }),
     });
 
@@ -113,10 +146,10 @@ describe("buildOverviewRows", () => {
 
     const rows = buildOverviewRows({
       info: info({
-        extensions: [ExtensionIdentifier.ExtensionIdentifierCredentialBlob],
-        certifications: {
-          FIDO: 2,
-        },
+        assessment: testOverviewAssessment([
+          booleanFact(FactID.FactIDExtensionCredBlob, "extensions.credBlob", FactState.FactStateSupported, FactOrigin.FactOriginDerived, true),
+          listFact(FactID.FactIDCertifications, "certifications", ["FIDO=2"]),
+        ]),
       }),
     });
 

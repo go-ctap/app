@@ -164,7 +164,7 @@ export enum Option {
     OptionAuthenticatorConfig = "authnrCfg",
     OptionUvAcfg = "uvAcfg",
     OptionCredentialManagement = "credMgmt",
-    OptionCredentialManagementReadOnly = "perCredMgmtRO",
+    OptionPersistentCredentialManagementReadOnly = "perCredMgmtRO",
     OptionCredentialManagementPreview = "credentialMgmtPreview",
     OptionSetMinPINLength = "setMinPINLength",
     OptionMakeCredentialUvNotRequired = "makeCredUvNotRqd",

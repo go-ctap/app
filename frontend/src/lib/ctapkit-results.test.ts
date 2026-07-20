@@ -4,7 +4,7 @@ import { AttestationStatementFormatIdentifier } from "../../bindings/github.com/
 import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/credential";
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
-import type { Result as InspectResult } from "../../bindings/github.com/go-ctap/kit/model/inspect";
+import { Assessment, type Result as InspectResult } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import {
   AuthenticatorConfigOperation,
   BioModality,
@@ -92,6 +92,7 @@ describe("ctapkit result extractors", () => {
       info: {
         versions: ["FIDO_2_1" as Version],
         aaguid: "00000000-0000-0000-0000-000000000000",
+        assessment: new Assessment(),
         conformance: new Report(),
       },
     };

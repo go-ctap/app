@@ -20,6 +20,8 @@ export type {
 } from "./overview-types.js";
 
 export { buildOverviewHero, buildOverviewMDSObservations } from "./overview-hero.js";
+export { buildOverviewFactLookup, overviewFact } from "./overview-facts.js";
+export type { OverviewFactLookup } from "./overview-facts.js";
 export { buildOverviewHeroSignalGroups } from "./overview-signals.js";
 export { buildOverviewRows } from "./overview-rows.js";
 export { buildOverviewConformancePresentation } from "./overview-conformance.js";

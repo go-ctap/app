@@ -18,6 +18,7 @@ import {
   SpecificationID,
   Target,
 } from "../../bindings/github.com/go-ctap/kit/model/conformance";
+import { Assessment } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 
 import { buildOverviewConformancePresentation } from "./overview-conformance";
 import { localizeCtapAssessment } from "./overview-i18n";
@@ -31,6 +32,7 @@ function infoWith(report: Report, versions: Version[] = [Version.FIDO_2_1]) {
   return {
     versions,
     aaguid: "00000000-0000-0000-0000-000000000000",
+    assessment: new Assessment(),
     conformance: report,
   };
 }

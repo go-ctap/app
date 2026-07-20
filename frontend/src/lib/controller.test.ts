@@ -7,6 +7,7 @@ import {
 import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
+import { Assessment } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import {
   MutationOutput as LargeBlobMutationOutput,
@@ -115,6 +116,7 @@ function inspectEnvelope(item: DeviceReport) {
         versions: [],
         aaguid: "",
         options: {},
+        assessment: new Assessment(),
         conformance: new Report(),
       },
     },

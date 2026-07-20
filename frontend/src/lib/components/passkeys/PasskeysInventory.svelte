@@ -3,13 +3,13 @@
 
   import PasskeyInspector from "$lib/components/passkeys/PasskeyInspector.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
+  import * as ExpandableDataTable from "$lib/components/shared/expandable-data-table/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Field from "$lib/components/ui/field/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import * as Select from "$lib/components/ui/select/index.js";
   import { Skeleton } from "$lib/components/ui/skeleton/index.js";
-  import * as Table from "$lib/components/ui/table/index.js";
   import type { PasskeysStatusFilter } from "$lib/features/passkeys/state";
   import type { PasskeyCredentialRow, PasskeysPresentation } from "$lib/passkeys-presentation";
 
@@ -75,21 +75,13 @@
   function compactCredProtectLabel(row: PasskeyCredentialRow) {
     return row.credProtectLevel ? `UV ${row.credProtectLevel}` : "UV —";
   }
-
-  function toggleCredential(row: PasskeyCredentialRow) {
-    onSelect(presentation.selectedCredentialID === row.id ? "" : row.id);
-  }
 </script>
 
 {#snippet passkeysTableHeader()}
-  <Table.Header>
-    <Table.Row>
-      <Table.Head scope="col">{m.rp_name()}</Table.Head>
-      <Table.Head scope="col">{m.user_name()}</Table.Head>
-      <Table.Head scope="col" class="passkeys-table-credential">{m.credential_id()}</Table.Head>
-      <Table.Head scope="col" class="passkeys-table-protection">UV</Table.Head>
-    </Table.Row>
-  </Table.Header>
+  <th scope="col">{m.rp_name()}</th>
+  <th scope="col">{m.user_name()}</th>
+  <th scope="col" class="passkeys-table-credential">{m.credential_id()}</th>
+  <th scope="col" class="passkeys-table-protection">UV</th>
 {/snippet}
 
 <section class="passkeys-inventory">
@@ -144,42 +136,38 @@
       <Skeleton class="passkeys-toolbar-action-skeleton" />
     </div>
 
-    <div class="passkeys-table-frame">
-      <Table.Root
-        class="passkeys-table passkeys-table-skeleton"
-        aria-label={m.waiting_for_authenticator_response()}
-        aria-busy="true"
-      >
-        {@render passkeysTableHeader()}
-        <Table.Body>
-          {#each SKELETON_ROWS as row (row)}
-            <Table.Row class="passkeys-table-row">
-              <Table.Cell>
-                <div class="passkeys-skeleton-copy">
-                  <Skeleton class="passkeys-skeleton-primary" />
-                  <Skeleton class="passkeys-skeleton-secondary" />
-                </div>
-              </Table.Cell>
-              <Table.Cell class="passkeys-table-user">
-                <div class="passkeys-skeleton-user">
-                  <div class="passkeys-skeleton-copy">
-                    <Skeleton class="passkeys-skeleton-primary" />
-                    <Skeleton class="passkeys-skeleton-secondary" />
-                  </div>
-                  <Skeleton class="passkeys-skeleton-icon" />
-                </div>
-              </Table.Cell>
-              <Table.Cell class="passkeys-table-credential">
-                <Skeleton class="passkeys-skeleton-credential" />
-              </Table.Cell>
-              <Table.Cell class="passkeys-table-protection">
-                <Skeleton class="passkeys-skeleton-badge" />
-              </Table.Cell>
-            </Table.Row>
-          {/each}
-        </Table.Body>
-      </Table.Root>
-    </div>
+    <ExpandableDataTable.Root
+      class="passkeys-table passkeys-table-skeleton"
+      aria-label={m.waiting_for_authenticator_response()}
+      aria-busy="true"
+      header={passkeysTableHeader}
+    >
+      {#each SKELETON_ROWS as row (row)}
+        <tr data-slot="expandable-data-table-summary-row">
+          <td>
+            <div class="passkeys-skeleton-copy">
+              <Skeleton class="passkeys-skeleton-primary" />
+              <Skeleton class="passkeys-skeleton-secondary" />
+            </div>
+          </td>
+          <td class="passkeys-table-user">
+            <div class="passkeys-skeleton-user">
+              <div class="passkeys-skeleton-copy">
+                <Skeleton class="passkeys-skeleton-primary" />
+                <Skeleton class="passkeys-skeleton-secondary" />
+              </div>
+              <Skeleton class="passkeys-skeleton-icon" />
+            </div>
+          </td>
+          <td class="passkeys-table-credential">
+            <Skeleton class="passkeys-skeleton-credential" />
+          </td>
+          <td class="passkeys-table-protection">
+            <Skeleton class="passkeys-skeleton-badge" />
+          </td>
+        </tr>
+      {/each}
+    </ExpandableDataTable.Root>
   {:else if presentation.emptyInventory}
     <EmptyState
       title={m.no_passkeys_found()}
@@ -197,88 +185,79 @@
       {/snippet}
     </EmptyState>
   {:else if presentation.hasReport}
-    <div class="passkeys-table-frame">
-      <Table.Root class="passkeys-table" aria-label={m.resident_credentials()}>
-        {@render passkeysTableHeader()}
-        <Table.Body>
-          {#each presentation.rows as row (row.id)}
-            {@const selected = presentation.selectedCredentialID === row.id}
-            {@const detailsID = credentialDetailsID(row.id)}
-            <Table.Row
-              class="passkeys-table-row"
-              aria-selected={selected}
-              data-selected={selected ? "true" : undefined}
-              data-open={selected ? "true" : undefined}
-            >
-              <Table.Cell>
-                <span class="passkeys-row-copy">
-                  <strong>{row.rpName}</strong>
-                  <code title={row.rpID}>{row.rpID}</code>
-                </span>
-              </Table.Cell>
-              <Table.Cell class="passkeys-table-user">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  class="passkeys-row-trigger"
-                  type="button"
-                  aria-label={`${row.displayName}, ${row.userName}, ${row.rpName}`}
-                  aria-expanded={selected}
-                  aria-controls={detailsID}
-                  title={selected ? m.close() : m.passkey_details()}
-                  onclick={() => toggleCredential(row)}
-                >
-                  <span class="passkeys-row-copy">
-                    <strong>{row.displayName}</strong>
-                    <span>{row.userName}</span>
-                  </span>
-                  <ChevronDown
-                    class="passkeys-row-chevron"
-                    data-icon="inline-end"
-                    aria-hidden="true"
-                  />
-                </Button>
-              </Table.Cell>
-              <Table.Cell class="passkeys-table-credential">
-                <code
-                  class="passkeys-row-credential"
-                  title={row.credentialIDHex}
-                >
-                  {row.credentialIDHex}
-                </code>
-              </Table.Cell>
-              <Table.Cell class="passkeys-table-protection">
-                <Badge
-                  variant="outline"
-                  aria-label={row.credProtect}
-                  title={row.credProtect}
-                >
-                  {compactCredProtectLabel(row)}
-                </Badge>
-              </Table.Cell>
-            </Table.Row>
-            {#if selected}
-              <Table.Row
-                id={detailsID}
-                class="passkeys-table-details"
-                data-open="true"
+    <ExpandableDataTable.Root
+      class="passkeys-table"
+      aria-label={m.resident_credentials()}
+      header={passkeysTableHeader}
+    >
+      {#each presentation.rows as row (row.id)}
+        {@const selected = presentation.selectedCredentialID === row.id}
+        <ExpandableDataTable.Row
+          detailsId={credentialDetailsID(row.id)}
+          open={selected}
+          disabled={false}
+          columnCount={4}
+          onOpenChange={(open) => onSelect(open ? row.id : "")}
+        >
+          {#snippet summary(triggerProps)}
+            <td>
+              <span class="passkeys-row-copy">
+                <strong>{row.rpName}</strong>
+                <code title={row.rpID}>{row.rpID}</code>
+              </span>
+            </td>
+            <td class="passkeys-table-user">
+              <Button
+                variant="ghost"
+                size="sm"
+                class="passkeys-row-trigger"
+                type="button"
+                aria-label={`${row.displayName}, ${row.userName}, ${row.rpName}`}
+                title={selected ? m.close() : m.passkey_details()}
+                {...triggerProps}
               >
-                <Table.Cell class="passkeys-table-details-cell" colspan={4}>
-                  <PasskeyInspector
-                    {row}
-                    {updateDisabled}
-                    {deleteDisabled}
-                    {previewOnly}
-                    {onEdit}
-                    {onDelete}
-                  />
-                </Table.Cell>
-              </Table.Row>
-            {/if}
-          {/each}
-        </Table.Body>
-      </Table.Root>
-    </div>
+                <span class="passkeys-row-copy">
+                  <strong>{row.displayName}</strong>
+                  <span>{row.userName}</span>
+                </span>
+                <ChevronDown
+                  class="passkeys-row-chevron"
+                  data-icon="inline-end"
+                  aria-hidden="true"
+                />
+              </Button>
+            </td>
+            <td class="passkeys-table-credential">
+              <code
+                class="passkeys-row-credential"
+                title={row.credentialIDHex}
+              >
+                {row.credentialIDHex}
+              </code>
+            </td>
+            <td class="passkeys-table-protection">
+              <Badge
+                variant="outline"
+                aria-label={row.credProtect}
+                title={row.credProtect}
+              >
+                {compactCredProtectLabel(row)}
+              </Badge>
+            </td>
+          {/snippet}
+          {#snippet details()}
+            <PasskeyInspector
+              {row}
+              {updateDisabled}
+              {deleteDisabled}
+              {previewOnly}
+              {onEdit}
+              {onDelete}
+            />
+          {/snippet}
+        </ExpandableDataTable.Row>
+      {/each}
+    </ExpandableDataTable.Root>
   {/if}
 </section>
 
@@ -321,23 +300,18 @@
     width: 8rem;
   }
 
-  .passkeys-table-frame {
-    min-width: 0;
-    border: 1px solid var(--border);
-  }
-
   :global(.passkeys-table) {
     min-width: 42rem;
     table-layout: fixed;
   }
 
   :global(.passkeys-table th:first-child),
-  :global(.passkeys-table-row > td:first-child) {
+  :global(.passkeys-table [data-slot="expandable-data-table-summary-row"] > td:first-child) {
     width: 27%;
   }
 
   :global(.passkeys-table th:nth-child(2)),
-  :global(.passkeys-table-row > td:nth-child(2)) {
+  :global(.passkeys-table [data-slot="expandable-data-table-summary-row"] > td:nth-child(2)) {
     width: 39%;
   }
 
@@ -440,13 +414,6 @@
     white-space: nowrap;
   }
 
-  :global(.passkeys-table-details-cell) {
-    min-width: 0;
-    overflow: hidden;
-    padding: 0;
-    white-space: normal;
-  }
-
   @container workspace (max-width: 47.5rem) {
     .passkeys-inventory-toolbar {
       grid-template-columns: minmax(0, 1fr) auto;
@@ -472,9 +439,9 @@
     }
 
     :global(.passkeys-table th:first-child),
-    :global(.passkeys-table-row > td:first-child),
+    :global(.passkeys-table [data-slot="expandable-data-table-summary-row"] > td:first-child),
     :global(.passkeys-table th:nth-child(2)),
-    :global(.passkeys-table-row > td:nth-child(2)) {
+    :global(.passkeys-table [data-slot="expandable-data-table-summary-row"] > td:nth-child(2)) {
       width: 50%;
     }
   }
@@ -502,16 +469,8 @@
 }
 
 @layer exceptions {
-  :global(.passkeys-table-row[data-selected="true"]) {
-    background: var(--muted);
-  }
-
-  :global(.passkeys-table-row[data-open="true"] .passkeys-row-chevron) {
+  :global(.passkeys-table [data-slot="expandable-data-table-summary-row"][data-open="true"] .passkeys-row-chevron) {
     transform: rotate(180deg);
-  }
-
-  :global(.passkeys-table-details[data-open="true"]) {
-    background: var(--muted);
   }
 }
 </style>

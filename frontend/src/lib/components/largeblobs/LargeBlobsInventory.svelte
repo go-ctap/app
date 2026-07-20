@@ -5,13 +5,13 @@
 
   import LargeBlobInspector from "$lib/components/largeblobs/LargeBlobInspector.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
+  import * as ExpandableDataTable from "$lib/components/shared/expandable-data-table/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Field from "$lib/components/ui/field/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
   import * as Select from "$lib/components/ui/select/index.js";
   import { Skeleton } from "$lib/components/ui/skeleton/index.js";
-  import * as Table from "$lib/components/ui/table/index.js";
   import type {
     LargeBlobMutationState,
     LargeBlobReadState,
@@ -98,23 +98,14 @@
   function compactKeyStateLabel(row: LargeBlobCredentialRow) {
     return row.largeBlobKeyAvailable ? m.state_available() : m.state_not_available();
   }
-
-  function toggleCredential(row: LargeBlobCredentialRow) {
-    const closing = presentation.selectedCredentialID === row.id;
-    onSelect(closing ? "" : row.id);
-  }
 </script>
 
 {#snippet largeBlobsTableHeader()}
-  <Table.Header>
-    <Table.Row>
-      <Table.Head scope="col">{m.rp_name()}</Table.Head>
-      <Table.Head scope="col">{m.user_name()}</Table.Head>
-      <Table.Head scope="col" class="large-blobs-table-state">{m.status()}</Table.Head>
-      <Table.Head scope="col" class="large-blobs-table-bytes">{m.payload()}</Table.Head>
-      <Table.Head scope="col" class="large-blobs-table-key">{m.matrix_name_large_blob_key()}</Table.Head>
-    </Table.Row>
-  </Table.Header>
+  <th scope="col">{m.rp_name()}</th>
+  <th scope="col">{m.user_name()}</th>
+  <th scope="col" class="large-blobs-table-state">{m.status()}</th>
+  <th scope="col" class="large-blobs-table-bytes">{m.payload()}</th>
+  <th scope="col" class="large-blobs-table-key">{m.matrix_name_large_blob_key()}</th>
 {/snippet}
 
 <section class="large-blobs-inventory">
@@ -167,26 +158,22 @@
       <Skeleton class="large-blobs-action-skeleton" />
     </div>
 
-    <div class="large-blobs-table-frame">
-      <Table.Root
-        class="large-blobs-table large-blobs-table-skeleton"
-        aria-label={m.waiting_for_authenticator_response()}
-        aria-busy="true"
-      >
-        {@render largeBlobsTableHeader()}
-        <Table.Body>
-          {#each SKELETON_ROWS as row (row)}
-            <Table.Row class="large-blobs-table-row">
-              <Table.Cell><Skeleton class="large-blobs-cell-skeleton" /></Table.Cell>
-              <Table.Cell><Skeleton class="large-blobs-cell-skeleton" /></Table.Cell>
-              <Table.Cell><Skeleton class="large-blobs-badge-skeleton" /></Table.Cell>
-              <Table.Cell><Skeleton class="large-blobs-badge-skeleton" /></Table.Cell>
-              <Table.Cell><Skeleton class="large-blobs-badge-skeleton" /></Table.Cell>
-            </Table.Row>
-          {/each}
-        </Table.Body>
-      </Table.Root>
-    </div>
+    <ExpandableDataTable.Root
+      class="large-blobs-table large-blobs-table-skeleton"
+      aria-label={m.waiting_for_authenticator_response()}
+      aria-busy="true"
+      header={largeBlobsTableHeader}
+    >
+      {#each SKELETON_ROWS as row (row)}
+        <tr data-slot="expandable-data-table-summary-row">
+          <td><Skeleton class="large-blobs-cell-skeleton" /></td>
+          <td><Skeleton class="large-blobs-cell-skeleton" /></td>
+          <td><Skeleton class="large-blobs-badge-skeleton" /></td>
+          <td><Skeleton class="large-blobs-badge-skeleton" /></td>
+          <td><Skeleton class="large-blobs-badge-skeleton" /></td>
+        </tr>
+      {/each}
+    </ExpandableDataTable.Root>
   {:else if presentation.emptyInventory}
     <EmptyState
       title={m.no_resident_credentials_found()}
@@ -204,83 +191,75 @@
       {/snippet}
     </EmptyState>
   {:else if presentation.hasReport}
-    <div class="large-blobs-table-frame">
-      <Table.Root class="large-blobs-table" aria-label={m.blob_credentials()}>
-        {@render largeBlobsTableHeader()}
-        <Table.Body>
-          {#each presentation.rows as row (row.id)}
-            {@const selected = presentation.selectedCredentialID === row.id}
-            {@const detailsID = credentialDetailsID(row.id)}
-            <Table.Row
-              class="large-blobs-table-row"
-              aria-selected={selected}
-              data-selected={selected ? "true" : undefined}
-              data-open={selected ? "true" : undefined}
-              data-blob-state={row.blobPresent ? "present" : "missing"}
-              data-key-state={row.largeBlobKeyAvailable ? "available" : "unavailable"}
-            >
-              <Table.Cell>
+    <ExpandableDataTable.Root
+      class="large-blobs-table"
+      aria-label={m.blob_credentials()}
+      header={largeBlobsTableHeader}
+    >
+      {#each presentation.rows as row (row.id)}
+        {@const selected = presentation.selectedCredentialID === row.id}
+        <ExpandableDataTable.Row
+          detailsId={credentialDetailsID(row.id)}
+          open={selected}
+          disabled={selectionDisabled}
+          columnCount={5}
+          onOpenChange={(open) => onSelect(open ? row.id : "")}
+        >
+          {#snippet summary(triggerProps)}
+            <td>
+              <span class="large-blobs-row-copy">
+                <strong>{row.rpName}</strong>
+                <code title={row.rpID}>{row.rpID}</code>
+              </span>
+            </td>
+            <td class="large-blobs-table-user">
+              <Button
+                variant="ghost"
+                size="sm"
+                class="large-blobs-row-trigger"
+                type="button"
+                aria-label={`${row.displayName}, ${row.userName}, ${row.rpName}`}
+                title={selected ? m.close() : m.large_blob_details()}
+                {...triggerProps}
+              >
                 <span class="large-blobs-row-copy">
-                  <strong>{row.rpName}</strong>
-                  <code title={row.rpID}>{row.rpID}</code>
+                  <strong>{row.displayName}</strong>
+                  <span>{row.userName}</span>
                 </span>
-              </Table.Cell>
-              <Table.Cell class="large-blobs-table-user">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  class="large-blobs-row-trigger"
-                  type="button"
-                  aria-label={`${row.displayName}, ${row.userName}, ${row.rpName}`}
-                  aria-expanded={selected}
-                  aria-controls={detailsID}
-                  title={selected ? m.close() : m.large_blob_details()}
-                  disabled={selectionDisabled}
-                  onclick={() => toggleCredential(row)}
-                >
-                  <span class="large-blobs-row-copy">
-                    <strong>{row.displayName}</strong>
-                    <span>{row.userName}</span>
-                  </span>
-                  <ChevronDown class="large-blobs-row-chevron" data-icon="inline-end" aria-hidden="true" />
-                </Button>
-              </Table.Cell>
-              <Table.Cell class="large-blobs-table-state">
-                <Badge variant={row.blobPresent ? "secondary" : "outline"}>{blobStateLabel(row)}</Badge>
-              </Table.Cell>
-              <Table.Cell class="large-blobs-table-bytes">
-                <span>{row.blobPresent ? m.bytes_count({ count: row.blobByteCount }) : "—"}</span>
-              </Table.Cell>
-              <Table.Cell class="large-blobs-table-key">
-                <Badge
-                  variant="outline"
-                  aria-label={keyStateLabel(row)}
-                  title={keyStateLabel(row)}
-                >
-                  {compactKeyStateLabel(row)}
-                </Badge>
-              </Table.Cell>
-            </Table.Row>
-            {#if selected}
-              <Table.Row id={detailsID} class="large-blobs-table-details" data-open="true">
-                <Table.Cell class="large-blobs-table-details-cell" colspan={5}>
-                  <LargeBlobInspector
-                    {row}
-                    {readState}
-                    {decodeMode}
-                    writeDisabled={presentation.writeDisabled}
-                    deleteDisabled={presentation.deleteDisabled}
-                    {onDecodeModeChange}
-                    {onWrite}
-                    {onDelete}
-                  />
-                </Table.Cell>
-              </Table.Row>
-            {/if}
-          {/each}
-        </Table.Body>
-      </Table.Root>
-    </div>
+                <ChevronDown class="large-blobs-row-chevron" data-icon="inline-end" aria-hidden="true" />
+              </Button>
+            </td>
+            <td class="large-blobs-table-state">
+              <Badge variant={row.blobPresent ? "secondary" : "outline"}>{blobStateLabel(row)}</Badge>
+            </td>
+            <td class="large-blobs-table-bytes">
+              <span>{row.blobPresent ? m.bytes_count({ count: row.blobByteCount }) : "—"}</span>
+            </td>
+            <td class="large-blobs-table-key">
+              <Badge
+                variant="outline"
+                aria-label={keyStateLabel(row)}
+                title={keyStateLabel(row)}
+              >
+                {compactKeyStateLabel(row)}
+              </Badge>
+            </td>
+          {/snippet}
+          {#snippet details()}
+            <LargeBlobInspector
+              {row}
+              {readState}
+              {decodeMode}
+              writeDisabled={presentation.writeDisabled}
+              deleteDisabled={presentation.deleteDisabled}
+              {onDecodeModeChange}
+              {onWrite}
+              {onDelete}
+            />
+          {/snippet}
+        </ExpandableDataTable.Row>
+      {/each}
+    </ExpandableDataTable.Root>
   {/if}
 </section>
 
@@ -323,23 +302,18 @@
     width: 8rem;
   }
 
-  .large-blobs-table-frame {
-    min-width: 0;
-    border: 1px solid var(--border);
-  }
-
   :global(.large-blobs-table) {
     min-width: 52rem;
     table-layout: fixed;
   }
 
   :global(.large-blobs-table th:first-child),
-  :global(.large-blobs-table-row > td:first-child) {
+  :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"] > td:first-child) {
     width: 24%;
   }
 
   :global(.large-blobs-table th:nth-child(2)),
-  :global(.large-blobs-table-row > td:nth-child(2)) {
+  :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"] > td:nth-child(2)) {
     width: 30%;
   }
 
@@ -407,13 +381,6 @@
     height: 1.25rem;
   }
 
-  :global(.large-blobs-table-details-cell) {
-    min-width: 0;
-    overflow: hidden;
-    padding: 0;
-    white-space: normal;
-  }
-
   @container workspace (max-width: 47.5rem) {
     .large-blobs-inventory-toolbar {
       grid-template-columns: minmax(0, 1fr) auto;
@@ -446,16 +413,8 @@
 }
 
 @layer exceptions {
-  :global(.large-blobs-table-row[data-selected="true"]) {
-    background: var(--muted);
-  }
-
-  :global(.large-blobs-table-row[data-open="true"] .large-blobs-row-chevron) {
+  :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"][data-open="true"] .large-blobs-row-chevron) {
     transform: rotate(180deg);
-  }
-
-  :global(.large-blobs-table-details[data-open="true"]) {
-    background: var(--muted);
   }
 }
 </style>

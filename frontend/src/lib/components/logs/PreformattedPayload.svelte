@@ -7,6 +7,7 @@
   import { copyToClipboard } from "$lib/clipboard.js";
 
   import { m } from "../../../paraglide/messages.js";
+  import CTAPDiagnosticCode from "./CTAPDiagnosticCode.svelte";
 
   type Props = {
     source: string;
@@ -38,7 +39,7 @@
     </Button>
   </header>
   <ScrollArea class="preformatted-payload-scroll">
-    <pre class="cbor-diagnostic"><code>{source}</code></pre>
+    <CTAPDiagnosticCode {source} />
   </ScrollArea>
 </section>
 
@@ -85,20 +86,6 @@
       min-width: 0;
       min-height: 0;
       height: 100%;
-    }
-
-    .cbor-diagnostic {
-      width: 100%;
-      min-width: 0;
-      margin: 0;
-      padding: var(--space-3);
-      color: var(--foreground);
-      background: transparent;
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      line-height: 1.55;
-      overflow-wrap: anywhere;
-      white-space: pre-wrap;
     }
   }
 </style>

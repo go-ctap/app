@@ -110,12 +110,12 @@ describe("LogWorkbench", () => {
     await user.click(screen.getByRole("tab", { name: "Request" }));
     expect(screen.getByText("CBOR diagnostic notation was truncated to 25 bytes. The original CBOR message was 70000 bytes."))
       .toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Request" }).querySelector("pre")?.textContent)
-      .toBe(`{1: 1, 6: "[REDACTED]"}`);
+    await waitFor(() => expect(screen.getByRole("region", { name: "Request" }).querySelector("pre")?.textContent)
+      .toBe(`{1: 1, 6: "[REDACTED]"}`));
 
     await user.click(screen.getByRole("tab", { name: "Response / Error" }));
-    expect(screen.getByRole("tabpanel", { name: "Response / Error" }).querySelector("pre")?.textContent)
-      .toBe(`{2: 8, 5: "[REDACTED]"}`);
+    await waitFor(() => expect(screen.getByRole("tabpanel", { name: "Response / Error" }).querySelector("pre")?.textContent)
+      .toBe(`{2: 8, 5: "[REDACTED]"}`));
 
     await user.type(screen.getByRole("searchbox"), "no-match");
     expect(screen.getByText("No matching log entries")).toBeInTheDocument();

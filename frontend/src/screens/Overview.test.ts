@@ -15,6 +15,7 @@ import { setAppLocale } from "$lib/i18n";
 import { errorLoadState } from "$lib/features/overview/state";
 import { authenticatorInspection } from "$lib/features/authenticator/state";
 import { failureForCode } from "$lib/test-failure";
+import { testOverviewAssessment } from "$lib/test-support/overview-facts";
 import {
   resetAppStateForTest,
   seedOverviewEnvelopeForTest,
@@ -58,6 +59,7 @@ function inspectEnvelope(operationId: string, aaguid: string, withFinding = fals
           versions: [Version.FIDO_2_3],
           aaguid,
           options: {},
+          assessment: testOverviewAssessment(),
           conformance: new Report({
             target: new Target({
               profile: Profile.ProfileFIDO23,

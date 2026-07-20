@@ -27,6 +27,238 @@ import * as report$0 from "../report/models.js";
 // @ts-ignore: Unused imports
 import * as uuid$0 from "../../../../google/uuid/models.js";
 
+/**
+ * Assessment is the deterministic, presentation-neutral interpretation of an
+ * authenticatorGetInfo response.
+ */
+export class Assessment {
+    "facts": Fact[];
+
+    /** Creates a new Assessment instance. */
+    constructor($$source: Partial<Assessment> = {}) {
+        if (!("facts" in $$source)) {
+            this["facts"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Assessment instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Assessment {
+        const $$createField0_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("facts" in $$parsedSource) {
+            $$parsedSource["facts"] = $$createField0_0($$parsedSource["facts"]);
+        }
+        return new Assessment($$parsedSource as Partial<Assessment>);
+    }
+}
+
+/**
+ * Fact describes one stable GetInfo capability or observation.
+ */
+export class Fact {
+    "id": FactID;
+    "source": conformance$0.FieldPath;
+    "state": FactState;
+    "origin": FactOrigin;
+    "value": FactValue;
+
+    /** Creates a new Fact instance. */
+    constructor($$source: Partial<Fact> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = FactID.$zero;
+        }
+        if (!("source" in $$source)) {
+            this["source"] = "";
+        }
+        if (!("state" in $$source)) {
+            this["state"] = FactState.$zero;
+        }
+        if (!("origin" in $$source)) {
+            this["origin"] = FactOrigin.$zero;
+        }
+        if (!("value" in $$source)) {
+            this["value"] = (new FactValue());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Fact instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Fact {
+        const $$createField4_0 = $$createType2;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("value" in $$parsedSource) {
+            $$parsedSource["value"] = $$createField4_0($$parsedSource["value"]);
+        }
+        return new Fact($$parsedSource as Partial<Fact>);
+    }
+}
+
+export enum FactID {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    FactIDAAGUID = "aaguid",
+    FactIDTransports = "transports",
+    FactIDPlatformAttachment = "platform_attachment",
+    FactIDEncryptedDeviceIdentifier = "encrypted_device_identifier",
+    FactIDVersions = "versions",
+    FactIDVersionU2FV2 = "version_u2f_v2",
+    FactIDVersionFIDO20 = "version_fido_2_0",
+    FactIDVersionFIDO21Preview = "version_fido_2_1_pre",
+    FactIDVersionFIDO21 = "version_fido_2_1",
+    FactIDVersionFIDO23 = "version_fido_2_3",
+    FactIDAlgorithms = "algorithms",
+    FactIDUserPresence = "user_presence",
+    FactIDResidentCredentials = "resident_credentials",
+    FactIDClientPIN = "client_pin",
+    FactIDUserVerification = "user_verification",
+    FactIDPinUvAuthToken = "pin_uv_auth_token",
+    FactIDClientPINMCGAPermissions = "client_pin_mc_ga_permissions",
+    FactIDPinUvAuthProtocols = "pin_uv_auth_protocols",
+    FactIDBioEnrollment = "bio_enrollment",
+    FactIDBioEnrollmentPreview = "bio_enrollment_preview",
+    FactIDUvBioEnroll = "uv_bio_enroll",
+    FactIDUvModality = "uv_modality",
+    FactIDPreferredPlatformUVAttempts = "preferred_platform_uv_attempts",
+    FactIDUVCountSinceLastPINEntry = "uv_count_since_last_pin_entry",
+    FactIDLargeBlobs = "large_blobs",
+    FactIDLargeBlobKey = "large_blob_key",
+    FactIDMaxSerializedLargeBlobArray = "max_serialized_large_blob_array",
+    FactIDMaxCredBlobLength = "max_cred_blob_length",
+    FactIDEncryptedCredentialStoreState = "encrypted_credential_store_state",
+    FactIDCredentialManagement = "credential_management",
+    FactIDCredentialManagementPreview = "credential_management_preview",
+    FactIDCredentialManagementReadOnly = "credential_management_read_only",
+    FactIDAuthenticatorConfig = "authenticator_config",
+    FactIDUvAuthenticatorConfig = "uv_authenticator_config",
+    FactIDAuthenticatorConfigCommands = "authenticator_config_commands",
+    FactIDVendorPrototypeConfigCommands = "vendor_prototype_config_commands",
+    FactIDLongTouchForReset = "long_touch_for_reset",
+    FactIDTransportsForReset = "transports_for_reset",
+    FactIDEnterpriseAttestation = "enterprise_attestation",
+    FactIDAlwaysUV = "always_uv",
+    FactIDSetMinPINLength = "set_min_pin_length",
+    FactIDMakeCredentialUVRequirement = "make_credential_uv_requirement",
+    FactIDForcePINChange = "force_pin_change",
+    FactIDPINComplexityPolicy = "pin_complexity_policy",
+    FactIDPINComplexityPolicyURL = "pin_complexity_policy_url",
+    FactIDMaxRPIDsForSetMinPINLength = "max_rp_ids_for_set_min_pin_length",
+    FactIDExtensionCredProtect = "extension_cred_protect",
+    FactIDExtensionCredBlob = "extension_cred_blob",
+    FactIDExtensionLargeBlobKey = "extension_large_blob_key",
+    FactIDExtensionLargeBlob = "extension_large_blob",
+    FactIDExtensionMinPINLength = "extension_min_pin_length",
+    FactIDExtensionPINComplexityPolicy = "extension_pin_complexity_policy",
+    FactIDExtensionHMACSecret = "extension_hmac_secret",
+    FactIDExtensionHMACSecretMC = "extension_hmac_secret_mc",
+    FactIDExtensionThirdPartyPayment = "extension_third_party_payment",
+    FactIDEffectiveMaxMessageSize = "effective_max_message_size",
+    FactIDMaxCredentialCountInList = "max_credential_count_in_list",
+    FactIDMaxCredentialIDLength = "max_credential_id_length",
+    FactIDEffectiveMinPINLength = "effective_min_pin_length",
+    FactIDEffectiveMaxPINLength = "effective_max_pin_length",
+    FactIDRemainingDiscoverableCredentials = "remaining_discoverable_credentials",
+    FactIDAttestationFormats = "attestation_formats",
+    FactIDCertifications = "certifications",
+    FactIDFirmwareVersion = "firmware_version",
+};
+
+export enum FactOrigin {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    FactOriginReported = "reported",
+    FactOriginSpecDefault = "spec_default",
+    FactOriginDerived = "derived",
+    FactOriginAbsent = "absent",
+};
+
+export enum FactState {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    FactStateObserved = "observed",
+    FactStateUnknown = "unknown",
+    FactStateSupported = "supported",
+    FactStateUnsupported = "unsupported",
+    FactStateConfigured = "configured",
+    FactStateNotConfigured = "not_configured",
+    FactStateEnabled = "enabled",
+    FactStateDisabled = "disabled",
+    FactStateRequired = "required",
+    FactStateNotRequired = "not_required",
+    FactStateWarning = "warning",
+};
+
+export enum FactUnit {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    FactUnitBytes = "bytes",
+    FactUnitCodePoints = "code_points",
+};
+
+/**
+ * FactValue is a JSON-friendly tagged union. Exactly one value field is set
+ * for observed, derived, or defaulted facts; unknown facts carry only Kind.
+ */
+export class FactValue {
+    "kind": FactValueKind;
+    "boolean"?: boolean | null;
+    "integer"?: number | null;
+    "text"?: string | null;
+    "list"?: string[] | null;
+    "unit"?: FactUnit;
+
+    /** Creates a new FactValue instance. */
+    constructor($$source: Partial<FactValue> = {}) {
+        if (!("kind" in $$source)) {
+            this["kind"] = FactValueKind.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new FactValue instance from a string or object.
+     */
+    static createFrom($$source: any = {}): FactValue {
+        const $$createField4_0 = $$createType4;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("list" in $$parsedSource) {
+            $$parsedSource["list"] = $$createField4_0($$parsedSource["list"]);
+        }
+        return new FactValue($$parsedSource as Partial<FactValue>);
+    }
+}
+
+export enum FactValueKind {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    FactValueBoolean = "boolean",
+    FactValueInteger = "integer",
+    FactValueText = "text",
+    FactValueList = "list",
+};
+
 export class Info {
     "versions": protocol$0.Versions;
     "extensions"?: extension$0.ExtensionIdentifier[];
@@ -60,6 +292,7 @@ export class Info {
     "encCredStoreState"?: string;
     "authenticatorConfigCommands"?: protocol$0.ConfigSubCommand[];
     "uvModalityLabel"?: string;
+    "assessment": Assessment;
     "conformance": conformance$0.Report;
 
     /** Creates a new Info instance. */
@@ -69,6 +302,9 @@ export class Info {
         }
         if (!("aaguid" in $$source)) {
             this["aaguid"] = "";
+        }
+        if (!("assessment" in $$source)) {
+            this["assessment"] = (new Assessment());
         }
         if (!("conformance" in $$source)) {
             this["conformance"] = (new conformance$0.Report());
@@ -81,21 +317,22 @@ export class Info {
      * Creates a new Info instance from a string or object.
      */
     static createFrom($$source: any = {}): Info {
-        const $$createField0_0 = $$createType0;
-        const $$createField1_0 = $$createType2;
-        const $$createField3_0 = $$createType3;
-        const $$createField5_0 = $$createType4;
-        const $$createField8_0 = $$createType5;
-        const $$createField9_0 = $$createType7;
-        const $$createField18_0 = $$createType8;
-        const $$createField20_0 = $$createType9;
-        const $$createField21_0 = $$createType10;
+        const $$createField0_0 = $$createType5;
+        const $$createField1_0 = $$createType7;
+        const $$createField3_0 = $$createType8;
+        const $$createField5_0 = $$createType9;
+        const $$createField8_0 = $$createType10;
+        const $$createField9_0 = $$createType12;
+        const $$createField18_0 = $$createType13;
+        const $$createField20_0 = $$createType14;
+        const $$createField21_0 = $$createType15;
         const $$createField24_0 = $Create.ByteSlice;
-        const $$createField25_0 = $$createType5;
+        const $$createField25_0 = $$createType10;
         const $$createField27_0 = $Create.ByteSlice;
         const $$createField29_0 = $Create.ByteSlice;
-        const $$createField30_0 = $$createType11;
-        const $$createField32_0 = $$createType12;
+        const $$createField30_0 = $$createType16;
+        const $$createField32_0 = $$createType17;
+        const $$createField33_0 = $$createType18;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("versions" in $$parsedSource) {
             $$parsedSource["versions"] = $$createField0_0($$parsedSource["versions"]);
@@ -139,8 +376,11 @@ export class Info {
         if ("authenticatorConfigCommands" in $$parsedSource) {
             $$parsedSource["authenticatorConfigCommands"] = $$createField30_0($$parsedSource["authenticatorConfigCommands"]);
         }
+        if ("assessment" in $$parsedSource) {
+            $$parsedSource["assessment"] = $$createField32_0($$parsedSource["assessment"]);
+        }
         if ("conformance" in $$parsedSource) {
-            $$parsedSource["conformance"] = $$createField32_0($$parsedSource["conformance"]);
+            $$parsedSource["conformance"] = $$createField33_0($$parsedSource["conformance"]);
         }
         return new Info($$parsedSource as Partial<Info>);
     }
@@ -166,8 +406,8 @@ export class Result {
      * Creates a new Result instance from a string or object.
      */
     static createFrom($$source: any = {}): Result {
-        const $$createField0_0 = $$createType13;
-        const $$createField1_0 = $$createType14;
+        const $$createField0_0 = $$createType19;
+        const $$createField1_0 = $$createType20;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
@@ -180,23 +420,29 @@ export class Result {
 }
 
 // Private type creation functions
-var $$createType0 = (function $$initCreateType0(...args: any[]): any {
-    if ($$createType0 === $$initCreateType0) {
-        $$createType0 = $$createType1;
+const $$createType0 = Fact.createFrom;
+const $$createType1 = $Create.Array($$createType0);
+const $$createType2 = FactValue.createFrom;
+const $$createType3 = $Create.Array($Create.Any);
+const $$createType4 = $Create.Nullable($$createType3);
+var $$createType5 = (function $$initCreateType5(...args: any[]): any {
+    if ($$createType5 === $$initCreateType5) {
+        $$createType5 = $$createType6;
     }
-    return $$createType0(...args);
+    return $$createType5(...args);
 });
-const $$createType1 = $Create.Array($Create.Any);
-const $$createType2 = $Create.Array($Create.Any);
-const $$createType3 = $Create.Map($Create.Any, $Create.Any);
-const $$createType4 = $Create.Array($Create.Any);
-const $$createType5 = $Create.Array($Create.Any);
-const $$createType6 = credential$0.PublicKeyCredentialParameters.createFrom;
-const $$createType7 = $Create.Array($$createType6);
+const $$createType6 = $Create.Array($Create.Any);
+const $$createType7 = $Create.Array($Create.Any);
 const $$createType8 = $Create.Map($Create.Any, $Create.Any);
 const $$createType9 = $Create.Array($Create.Any);
 const $$createType10 = $Create.Array($Create.Any);
-const $$createType11 = $Create.Array($Create.Any);
-const $$createType12 = conformance$0.Report.createFrom;
-const $$createType13 = report$0.DeviceReport.createFrom;
-const $$createType14 = Info.createFrom;
+const $$createType11 = credential$0.PublicKeyCredentialParameters.createFrom;
+const $$createType12 = $Create.Array($$createType11);
+const $$createType13 = $Create.Map($Create.Any, $Create.Any);
+const $$createType14 = $Create.Array($Create.Any);
+const $$createType15 = $Create.Array($Create.Any);
+const $$createType16 = $Create.Array($Create.Any);
+const $$createType17 = Assessment.createFrom;
+const $$createType18 = conformance$0.Report.createFrom;
+const $$createType19 = report$0.DeviceReport.createFrom;
+const $$createType20 = Info.createFrom;

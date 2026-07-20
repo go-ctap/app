@@ -5,6 +5,7 @@ import type { BioSensorEnvelope, InspectEnvelope } from "../../bindings/fidobenc
 import { m } from "../paraglide/messages.js";
 import { bioSensorReport, inspectResult } from "./ctapkit-results.js";
 import type { LoadState } from "./features/overview/state.js";
+import { buildOverviewFactLookup } from "./overview-facts.js";
 import {
   buildOverviewConformancePresentation,
   buildOverviewHero,
@@ -35,7 +36,8 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
   const device = report?.device || input.selectedDevice;
   const mdsResult = input.overviewMDSState.data ?? null;
   const bioSensor = bioSensorReport(input.overviewBioSensorState.data);
-  const overviewRows = buildOverviewRows({ info, device, bioSensor });
+  const facts = info ? buildOverviewFactLookup(info.assessment) : null;
+  const overviewRows = buildOverviewRows({ info, device, bioSensor }, facts ?? undefined);
 
   return {
     selector,
@@ -45,7 +47,7 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
     report,
     info,
     hero: buildOverviewHero({ info, device, mds: mdsResult, mdsLoading, mdsError: mdsFailureMessage }),
-    signalGroups: buildOverviewHeroSignalGroups({ info }),
+    signalGroups: facts ? buildOverviewHeroSignalGroups(facts) : [],
     overviewGroups: groupOverviewRows(overviewRows),
     conformance: buildOverviewConformancePresentation({ info }),
     mdsObservations: buildOverviewMDSObservations({ info, mds: mdsResult }),
