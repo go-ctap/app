@@ -184,7 +184,9 @@ describe("SecurityMutationDialog", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(callbacks.onClose).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole("button", { name: "Cancel enrollment" }));
+    const cancelButton = screen.getByRole("button", { name: "Cancel enrollment" });
+    expect(cancelButton.querySelector("svg")).not.toBeInTheDocument();
+    await user.click(cancelButton);
 
     expect(callbacks.onCancelOperation).toHaveBeenCalledOnce();
   });

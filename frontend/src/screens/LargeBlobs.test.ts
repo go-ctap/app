@@ -269,6 +269,19 @@ describe("LargeBlobs", () => {
     expect(screen.queryByText("The PIN is invalid.")).not.toBeInTheDocument();
   });
 
+  it("places cleanup in the overview footer with the passkeys verification pattern", () => {
+    seedLargeBlobsEnvelopeForTest(listEnvelope());
+
+    render(LargeBlobs);
+
+    const cleanupAction = screen.getByRole("button", { name: "Cleanup" });
+    expect(cleanupAction.closest('[data-slot="card-footer"]')).toBeInTheDocument();
+
+    const verification = screen.getByRole("group", { name: "User verification" });
+    expect(within(verification).getByRole("radio", { name: "Auto" })).toBeInTheDocument();
+    expect(within(verification).getByRole("radio", { name: "PIN" })).toBeInTheDocument();
+  });
+
   it("does not turn an unsupported verification flow into unsupported large blobs", () => {
     failLargeBlobsInventoryLoadWithResponse({
       operationId: "verification-flow-error",

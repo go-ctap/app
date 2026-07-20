@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Fingerprint, FingerprintPattern, RotateCcw, Trash2 } from "@lucide/svelte";
+  import { FingerprintPattern, RotateCcw, Trash2 } from "@lucide/svelte";
 
   import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";
   import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
@@ -153,7 +153,6 @@
         <Dialog.Footer>
           {#if enrollmentRunning}
             <Button variant="outline" type="button" onclick={() => void onCancelOperation()}>
-              <Fingerprint data-icon="inline-start" aria-hidden="true" />
               {m.security_cancel_enrollment()}
             </Button>
           {:else}

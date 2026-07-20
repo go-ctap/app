@@ -25,6 +25,7 @@
   "cancel_requested_message": "Waiting for the operation to stop.",
   "capability_matrix": "Capability matrix",
   "capacity_not_reported": "Capacity not reported",
+  "cleanup": "Cleanup",
   "clear_selection": "Clear selection",
   "clear_filters": "Clear filters",
   "close": "Close",

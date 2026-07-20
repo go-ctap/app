@@ -7,7 +7,6 @@
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Card from "$lib/components/ui/card/index.js";
-  import * as Field from "$lib/components/ui/field/index.js";
   import { Spinner } from "$lib/components/ui/spinner/index.js";
   import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
   import type { LargeBlobsPresentation } from "$lib/largeblobs-presentation";
@@ -125,39 +124,39 @@
         {/if}
       </div>
 
-      <div class="large-blobs-overview-actions">
-        <Field.Field class="large-blobs-verification" orientation="horizontal">
-          <Field.FieldTitle id="large-blobs-verification-label">{m.user_verification()}</Field.FieldTitle>
-          <ToggleGroup.Root
-            type="single"
-            bind:value={getVerificationValue, handleVerificationChange}
-            variant="outline"
-            size="sm"
-            aria-labelledby="large-blobs-verification-label"
-            disabled={presentation.loading}
-          >
-            <ToggleGroup.Item value="auto" aria-label={m.verification_auto()}>
-              {m.verification_auto()}
-            </ToggleGroup.Item>
-            <ToggleGroup.Item value="pin" aria-label={m.verification_pin()}>
-              {m.verification_pin()}
-            </ToggleGroup.Item>
-          </ToggleGroup.Root>
-        </Field.Field>
-
-        <Button
+      <div class="large-blobs-verification">
+        <span>{m.user_verification()}</span>
+        <ToggleGroup.Root
+          type="single"
+          bind:value={getVerificationValue, handleVerificationChange}
           variant="outline"
           size="sm"
-          type="button"
-          disabled={presentation.cleanupDisabled}
-          onclick={onCleanup}
+          aria-label={m.user_verification()}
+          disabled={presentation.loading}
         >
-          <Sparkles data-icon="inline-start" aria-hidden="true" />
-          {m.preview_cleanup()}
-        </Button>
+          <ToggleGroup.Item value="auto" aria-label={m.verification_auto()}>
+            {m.verification_auto()}
+          </ToggleGroup.Item>
+          <ToggleGroup.Item value="pin" aria-label={m.verification_pin()}>
+            {m.verification_pin()}
+          </ToggleGroup.Item>
+        </ToggleGroup.Root>
       </div>
     </div>
   </Card.Content>
+
+  <Card.Footer class="large-blobs-overview-footer">
+    <Button
+      variant="outline"
+      size="sm"
+      type="button"
+      disabled={presentation.cleanupDisabled}
+      onclick={onCleanup}
+    >
+      <Sparkles data-icon="inline-start" aria-hidden="true" />
+      {m.cleanup()}
+    </Button>
+  </Card.Footer>
 </Card.Root>
 
 <style>
@@ -191,7 +190,7 @@
   }
 
   .large-blobs-overview-summary > span,
-  :global(.large-blobs-verification [data-slot="field-title"]) {
+  .large-blobs-verification > span {
     color: var(--muted-foreground);
     font-size: 0.72rem;
     font-weight: 700;
@@ -209,8 +208,7 @@
 
   .large-blobs-overview-summary div,
   .large-blobs-capabilities,
-  :global(.large-blobs-verification),
-  .large-blobs-overview-actions {
+  .large-blobs-verification {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -225,8 +223,8 @@
     margin-top: var(--space-3);
   }
 
-  .large-blobs-overview-actions,
-  :global(.large-blobs-verification) {
+  .large-blobs-verification,
+  :global(.large-blobs-overview-footer) {
     justify-content: end;
   }
 
@@ -240,8 +238,7 @@
       flex-direction: column;
     }
 
-    .large-blobs-overview-actions,
-    :global(.large-blobs-verification) {
+    .large-blobs-verification {
       justify-content: start;
     }
   }
