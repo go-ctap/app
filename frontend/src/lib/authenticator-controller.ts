@@ -57,20 +57,24 @@ async function setSelection(devices: DeviceReport[], selector: string): Promise<
   const { selectedSelector: canonicalSelector, selectedDevice } = deviceSelection(devices, selector);
   if (!canonicalSelector || !selectedDevice) {
     await api.setSelection({ selector: "" });
-    return discoverySnapshot(devices, "", null, idleAuthenticatorStatus());
+    return discoverySnapshot(get(deviceStore), "", null, idleAuthenticatorStatus());
   }
 
   const selection = await api.setSelection({ selector: canonicalSelector });
   const snapshot = selection.selection!;
-  return discoverySnapshot(devices, canonicalSelector, selectedDevice, {
+  // Enrichment can update the discovery store while the authenticator opens.
+  // Compose the selection with that latest report, not the pre-await snapshot.
+  const currentDevices = get(deviceStore);
+  const currentSelectedDevice = reportForSelector(currentDevices, canonicalSelector)!;
+  return discoverySnapshot(currentDevices, canonicalSelector, currentSelectedDevice, {
     selectionId: snapshot.id,
     state: "ready",
   });
 }
 
-async function closeSelection(devices: DeviceReport[] = get(deviceStore)): Promise<Discovery> {
+async function closeSelection(): Promise<Discovery> {
   await api.setSelection({ selector: "" });
-  return discoverySnapshot(devices, "", null, idleAuthenticatorStatus());
+  return discoverySnapshot(get(deviceStore), "", null, idleAuthenticatorStatus());
 }
 
 function selectionMessage(discovery: Discovery, fallback: string) {
@@ -79,20 +83,22 @@ function selectionMessage(discovery: Discovery, fallback: string) {
 }
 
 async function selectFromDevices(devices: DeviceReport[], selector: string): Promise<Discovery> {
+  deviceStore.set(devices);
   const requestedSelector = selector.trim();
-  if (!requestedSelector) return closeSelection(devices);
+  if (!requestedSelector) return closeSelection();
 
   const { selectedSelector: canonicalSelector, selectedDevice } = deviceSelection(devices, requestedSelector);
-  if (!canonicalSelector || !selectedDevice) return closeSelection(devices);
+  if (!canonicalSelector || !selectedDevice) return closeSelection();
 
   try {
     return await setSelection(devices, canonicalSelector);
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
+    const currentDevices = get(deviceStore);
     return discoverySnapshot(
-      devices,
+      currentDevices,
       canonicalSelector,
-      selectedDevice,
+      reportForSelector(currentDevices, canonicalSelector),
       idleAuthenticatorStatus("error", runtimeError),
       runtimeError,
     );

@@ -195,6 +195,45 @@ describe("discovery controller", () => {
     expect(get(statusBar).lastOutcome).toBe(outcome);
   });
 
+  it("preserves enrichment that arrives while the first authenticator is opening", async () => {
+    const original = device("token-1", "Security Key");
+    const enriched: DeviceReport = {
+      ...original,
+      vendor: Vendor.VendorYubico,
+      metadata: {
+        model: "YubiKey 5C NFC",
+        serial: "12345678",
+        firmware: "5.7.1",
+      },
+    };
+    let finishSelection!: (value: { selection: ActiveSelection }) => void;
+    serviceMocks.SetSelection.mockReturnValue(new Promise((resolve) => {
+      finishSelection = resolve;
+    }));
+    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+    seedActiveScreenForTest("settings");
+
+    const opening = handleDiscoveryChanged(event({ devices: [original] }));
+    await vi.waitFor(() => {
+      expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-1" });
+    });
+
+    await handleDiscoveryChanged(event(
+      { devices: [enriched] },
+      null,
+      DiscoveryTrigger.DiscoveryTriggerEnriched,
+    ));
+    finishSelection({ selection: snapshot(original) });
+    await opening;
+
+    expect(get(devices)).toEqual([enriched]);
+    expect(get(selectedDevice)).toEqual(enriched);
+    expect(get(authenticatorStatus)).toMatchObject({
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
+  });
+
   it("removes an unselected authenticator without disturbing the selected authenticator", async () => {
     const selected = device("token-1");
     const unselected = device("token-2");
