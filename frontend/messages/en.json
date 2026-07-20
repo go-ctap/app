@@ -2,6 +2,8 @@
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "aaguid_copied": "AAGUID copied",
   "active_ratio": "{supported} of {total} active",
+  "advanced_mode": "Advanced Mode",
+  "advanced_mode_description": "Shows Raw JSON and JSON preview blocks throughout the app.",
   "app_title": "KeyLab",
   "app_subtitle": "Hardware Keys workbench",
   "authenticator": "Authenticator",

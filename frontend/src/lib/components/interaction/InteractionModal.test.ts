@@ -12,6 +12,7 @@ import { UserVerify } from "../../../../bindings/github.com/go-ctap/ctap/protoco
 import { InteractionAnswer, InteractionPrompt } from "../../../../bindings/fidobench/service";
 
 import { buildInteractionModalPresentation } from "$lib/shell-presentation";
+import { setAdvancedMode } from "$lib/preferences";
 import { resetAppStateForTest } from "$lib/store-test-utils";
 import { failureForCode } from "$lib/test-failure";
 
@@ -52,6 +53,7 @@ describe("InteractionModal", () => {
 
   beforeEach(() => {
     onAnswer = vi.fn(async () => {});
+    setAdvancedMode(true);
     resetAppStateForTest();
   });
 

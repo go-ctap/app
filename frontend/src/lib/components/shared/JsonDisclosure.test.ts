@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { setAppLocale } from "$lib/i18n";
+import { setAdvancedMode } from "$lib/preferences";
 
 import JsonDisclosure from "./JsonDisclosure.svelte";
 
@@ -12,6 +13,7 @@ describe("JsonDisclosure", () => {
 
   beforeEach(() => {
     setAppLocale("en");
+    setAdvancedMode(true);
     setText.mockReset();
     setText.mockResolvedValue();
   });
@@ -52,5 +54,27 @@ describe("JsonDisclosure", () => {
 
     expect(disclosure).toHaveAttribute("aria-expanded", "true");
     expect(json).toBeVisible();
+  });
+
+  it("vanishes and resets its disclosure state when Advanced Mode is disabled", async () => {
+    render(JsonDisclosure, {
+      props: {
+        value: { ok: true },
+        open: true,
+      },
+    });
+
+    expect(screen.getByRole("button", { name: "Raw JSON" })).toHaveAttribute("aria-expanded", "true");
+
+    setAdvancedMode(false);
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "Raw JSON" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Copy JSON" })).not.toBeInTheDocument();
+    });
+
+    setAdvancedMode(true);
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Raw JSON" })).toHaveAttribute("aria-expanded", "false");
+    });
   });
 });

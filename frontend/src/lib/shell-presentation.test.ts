@@ -126,7 +126,7 @@ describe("sidebar presentation", () => {
         value: "token-1",
         label: "1. Test key",
         name: "Test key",
-        detail: "S/N token-1",
+        detail: "",
       },
     ]);
   });

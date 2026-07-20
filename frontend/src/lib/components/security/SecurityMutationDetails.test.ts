@@ -10,6 +10,7 @@ import type { ResetFactoryEnvelope } from "../../../../bindings/fidobench/servic
 import type { SecurityMutationState } from "$lib/features/security/state";
 import { failureForCode } from "$lib/test-failure";
 import { setAppLocale } from "$lib/i18n";
+import { setAdvancedMode } from "$lib/preferences";
 
 import SecurityMutationDetails from "./SecurityMutationDetails.svelte";
 
@@ -51,7 +52,10 @@ function erroredPreviewMutation(longTouchForReset = StateValue.StateSupported): 
 }
 
 describe("SecurityMutationDetails", () => {
-  beforeEach(() => setAppLocale("en"));
+  beforeEach(() => {
+    setAppLocale("en");
+    setAdvancedMode(true);
+  });
   afterEach(() => cleanup());
 
   it("keeps a typed preview and its localized warning visible when its envelope also has an error", () => {

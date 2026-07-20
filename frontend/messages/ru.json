@@ -2,6 +2,8 @@
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "aaguid_copied": "AAGUID скопирован",
   "active_ratio": "Активно: {supported} из {total}",
+  "advanced_mode": "Расширенный режим",
+  "advanced_mode_description": "Показывает блоки Raw JSON и JSON-предпросмотра во всём приложении.",
   "app_title": "KeyLab",
   "app_subtitle": "Лаборатория аппаратных ключей",
   "authenticator": "Аутентификатор",

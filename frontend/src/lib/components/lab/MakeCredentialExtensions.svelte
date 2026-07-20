@@ -15,6 +15,7 @@
   import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
   import { inspectResult } from "$lib/ctapkit-results";
   import type { MakeCredentialExtensionsDraft } from "$lib/features/lab/state";
+  import { authenticatorSupportsLabExtension } from "$lib/lab-extension-support";
   import type { LabValidationIssue } from "$lib/lab-input";
   import type { LoadState } from "$lib/load-state";
 
@@ -48,8 +49,8 @@
 
   function status(identifier: ExtensionIdentifier): ExtensionStatus {
     if (inspection.state !== "ready") return "unknown";
-    const extensions = inspectResult(inspection.data)?.info.extensions ?? [];
-    return extensions.includes(identifier) ? "supported" : "not-reported";
+    const info = inspectResult(inspection.data)?.info;
+    return info && authenticatorSupportsLabExtension(info, identifier) ? "supported" : "not-reported";
   }
 
   function hasError(prefix: string) {

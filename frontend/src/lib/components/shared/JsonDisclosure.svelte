@@ -6,6 +6,7 @@
   import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
   import * as Collapsible from "$lib/components/ui/collapsible/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+  import { advancedMode } from "$lib/preferences";
   import { sanitizedJson } from "$lib/redaction";
 
   import { m } from "../../../paraglide/messages.js";
@@ -27,51 +28,57 @@
 
   let source = $derived(sanitizedJson(value) ?? "null");
 
+  $effect(() => {
+    if (!$advancedMode && open) open = false;
+  });
+
   async function copy() {
     await copyToClipboard(source, m.json_copied());
   }
 </script>
 
-<Tooltip.Provider delayDuration={350}>
-  <Collapsible.Root class="json-disclosure" bind:open>
-    <div class="json-disclosure-header">
-      <Collapsible.Trigger
-        class={buttonVariants({ variant: "ghost", size: "sm", class: "json-disclosure-trigger" })}
-        aria-label={title}
-      >
-        <span class="json-disclosure-heading">
-          <span class="json-disclosure-title">{title}</span>
-          {#if description}
-            <span class="json-disclosure-description">{description}</span>
-          {/if}
-        </span>
-        <ChevronDownIcon class="json-disclosure-chevron" data-icon="inline-end" aria-hidden="true" />
-      </Collapsible.Trigger>
+{#if $advancedMode}
+  <Tooltip.Provider delayDuration={350}>
+    <Collapsible.Root class="json-disclosure" bind:open>
+      <div class="json-disclosure-header">
+        <Collapsible.Trigger
+          class={buttonVariants({ variant: "ghost", size: "sm", class: "json-disclosure-trigger" })}
+          aria-label={title}
+        >
+          <span class="json-disclosure-heading">
+            <span class="json-disclosure-title">{title}</span>
+            {#if description}
+              <span class="json-disclosure-description">{description}</span>
+            {/if}
+          </span>
+          <ChevronDownIcon class="json-disclosure-chevron" data-icon="inline-end" aria-hidden="true" />
+        </Collapsible.Trigger>
 
-      <Tooltip.Root>
-        <Tooltip.Trigger>
-          {#snippet child({ props })}
-            <Button
-              {...props}
-              variant="ghost"
-              size="icon-sm"
-              type="button"
-              aria-label={m.copy_json()}
-              onclick={copy}
-            >
-              <CopyIcon data-icon="inline-start" aria-hidden="true" />
-            </Button>
-          {/snippet}
-        </Tooltip.Trigger>
-        <Tooltip.Content side="top">{m.copy_json()}</Tooltip.Content>
-      </Tooltip.Root>
-    </div>
+        <Tooltip.Root>
+          <Tooltip.Trigger>
+            {#snippet child({ props })}
+              <Button
+                {...props}
+                variant="ghost"
+                size="icon-sm"
+                type="button"
+                aria-label={m.copy_json()}
+                onclick={copy}
+              >
+                <CopyIcon data-icon="inline-start" aria-hidden="true" />
+              </Button>
+            {/snippet}
+          </Tooltip.Trigger>
+          <Tooltip.Content side="top">{m.copy_json()}</Tooltip.Content>
+        </Tooltip.Root>
+      </div>
 
-    <Collapsible.Content class="json-disclosure-content">
-      <JsonView {value} {title} variant="code" />
-    </Collapsible.Content>
-  </Collapsible.Root>
-</Tooltip.Provider>
+      <Collapsible.Content class="json-disclosure-content">
+        <JsonView {value} {title} variant="code" />
+      </Collapsible.Content>
+    </Collapsible.Root>
+  </Tooltip.Provider>
+{/if}
 
 <style>
 @layer blocks {

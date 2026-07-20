@@ -31,7 +31,7 @@ function displayModel(device: DeviceReport) {
 
 export function deviceDetail(device: DeviceReport | null | undefined) {
   if (!device) return "";
-  return device.metadata?.serial || device.serial || device.fingerprint || "";
+  return device.metadata?.serial || device.serial || "";
 }
 
 export function authenticatorStateLabel(value: unknown) {

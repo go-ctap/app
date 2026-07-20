@@ -12,6 +12,7 @@ import { InspectEnvelope } from "../../bindings/fidobench/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
+import { setAdvancedMode } from "$lib/preferences";
 import { errorLoadState } from "$lib/features/overview/state";
 import { authenticatorInspection } from "$lib/features/authenticator/state";
 import { failureForCode } from "$lib/test-failure";
@@ -81,6 +82,7 @@ function inspectEnvelope(operationId: string, aaguid: string, withFinding = fals
 describe("Overview", () => {
   beforeEach(() => {
     setAppLocale("en");
+    setAdvancedMode(true);
     controllerMocks.reloadOverview.mockClear();
     controllerMocks.loadOverviewMDS.mockClear();
     toastMocks.success.mockClear();

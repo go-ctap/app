@@ -22,6 +22,7 @@ import {
   passkeysVerificationFlow as mutablePasskeysVerificationFlow,
 } from "$lib/features/passkeys/state";
 import { setAppLocale } from "$lib/i18n";
+import { setAdvancedMode } from "$lib/preferences";
 import { failureForCode } from "$lib/test-failure";
 import { resetAppStateForTest, seedPasskeysEnvelopeForTest, seedSelectionForTest } from "$lib/store-test-utils";
 
@@ -137,6 +138,7 @@ function mixedRelyingPartyEnvelope(): CredentialsEnvelope {
 describe("Passkeys", () => {
   beforeEach(() => {
     setAppLocale("en");
+    setAdvancedMode(true);
     controllerMocks.reloadPasskeys.mockClear();
     clipboardSetText.mockReset();
     clipboardSetText.mockResolvedValue();

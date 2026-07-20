@@ -114,12 +114,12 @@ export function buildSidebarPresentation(input: {
     activeScreenLabel: screenLabel(input.activeScreen),
     tokens: input.devices.toSorted(compareDeviceIdentity).map((device) => {
       const value = selectorFromDevice(device);
-      const detail = `S/N ${deviceDetail(device) || value}`;
+      const serial = deviceDetail(device);
       return {
         value,
         label: labelDevice(device),
         name: deviceName(device),
-        detail,
+        detail: serial ? `S/N ${serial}` : "",
       };
     }),
     selectedValue: input.selectedSelector,
