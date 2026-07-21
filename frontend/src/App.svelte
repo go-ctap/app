@@ -263,6 +263,7 @@
 		.app-shell {
 			--sidebar-inline-size: 14rem;
 			--sidebar-background: var(--sidebar);
+			--sidebar-backdrop-filter: none;
 			--topbar-background: var(--card);
 			--topbar-border: var(--window-border);
 			--statusbar-background: var(--card);
@@ -348,6 +349,12 @@
 	}
 
 	@layer exceptions {
+		.app-shell[data-platform="windows"],
+		.app-shell[data-platform="linux"] {
+			--sidebar-background: color-mix(in srgb, var(--sidebar) 90%, transparent);
+			--sidebar-backdrop-filter: blur(24px) saturate(1.12);
+		}
+
 		.app-shell[data-platform="macos"] {
 			--sidebar-background: transparent;
 			background: transparent;

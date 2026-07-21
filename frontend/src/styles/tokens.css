@@ -7,8 +7,30 @@
     --space-5: 20px;
     --space-6: 24px;
     --shell-titlebar-block-size: 48px;
-    --window-surface: var(--background);
-    --workspace-surface: color-mix(in oklch, var(--background) 55%, var(--card));
+    --window-surface:
+      radial-gradient(
+        40rem 32rem at -8% -10%,
+        color-mix(in oklch, var(--primary) 24%, transparent),
+        transparent 68%
+      ),
+      radial-gradient(
+        32rem 26rem at 108% 0%,
+        color-mix(in oklch, var(--primary) 10%, transparent),
+        transparent 74%
+      ),
+      var(--background);
+    --workspace-surface:
+      radial-gradient(
+        44rem 34rem at -10% -12%,
+        color-mix(in oklch, var(--primary) 16%, transparent),
+        transparent 68%
+      ),
+      radial-gradient(
+        36rem 30rem at 110% 4%,
+        color-mix(in oklch, var(--primary) 7%, transparent),
+        transparent 74%
+      ),
+      color-mix(in oklch, var(--background) 97%, var(--primary));
     --window-border: color-mix(in srgb, var(--border) 72%, transparent);
   }
 }

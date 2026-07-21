@@ -114,11 +114,13 @@
       height: 100dvh;
       border-right: 1px solid var(--window-border);
       background: var(--sidebar-background, var(--sidebar));
+      -webkit-backdrop-filter: var(--sidebar-backdrop-filter, none);
+      backdrop-filter: var(--sidebar-backdrop-filter, none);
     }
 
     .sidebar-titlebar-space {
       min-width: 0;
-      background: var(--sidebar-background, var(--sidebar));
+      background: transparent;
       --wails-non-client-region: caption;
       --wails-draggable: drag;
     }
@@ -130,7 +132,7 @@
       align-items: center;
       min-width: 0;
       border-bottom: 1px solid var(--topbar-border, var(--border));
-      background: var(--sidebar-background, var(--sidebar));
+      background: transparent;
       padding: 0 var(--space-4) 0 var(--space-5);
       --wails-non-client-region: caption;
       --wails-draggable: drag;
@@ -162,7 +164,7 @@
     .sidebar-nav {
       min-width: 0;
       min-height: 0;
-      background: var(--sidebar-background, var(--sidebar));
+      background: transparent;
     }
 
     :global(.sidebar-nav-scroll) {
@@ -259,13 +261,13 @@
     .app-sidebar[data-native-titlebar="true"] .sidebar-brand {
       min-height: var(--shell-titlebar-block-size);
       border-bottom: 0;
-      background: var(--sidebar-background, var(--sidebar));
+      background: transparent;
       --wails-non-client-region: initial;
       --wails-draggable: no-drag;
     }
 
     .app-sidebar[data-native-titlebar="true"] .sidebar-titlebar-space {
-      background: var(--sidebar-background, var(--sidebar));
+      background: transparent;
     }
 
     .app-sidebar[data-native-titlebar="true"] .sidebar-nav-list {
