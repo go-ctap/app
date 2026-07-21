@@ -7,12 +7,14 @@
     --space-5: 20px;
     --space-6: 24px;
     --shell-titlebar-block-size: 48px;
-    --window-surface:
+    --window-tint:
       radial-gradient(
         32rem 36rem at 7rem 0,
         color-mix(in oklch, var(--primary) 24%, transparent),
         transparent 82%
-      ),
+      );
+    --window-surface:
+      var(--window-tint),
       var(--background);
     --workspace-surface: color-mix(in oklch, var(--background) 97%, var(--primary));
     --window-border: color-mix(in srgb, var(--border) 72%, transparent);

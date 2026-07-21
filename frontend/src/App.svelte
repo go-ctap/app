@@ -362,7 +362,7 @@
 
 		.app-shell[data-platform="macos"] {
 			--sidebar-background: transparent;
-			background: transparent;
+			background: var(--window-tint);
 		}
 
 		.app-shell[data-platform="macos"][data-window-active="false"] {
