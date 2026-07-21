@@ -38,7 +38,7 @@
     <Card.Title>{m.capability_matrix()}</Card.Title>
     {#if warningCount}
       <Card.Action>
-        <Badge variant="outline">{m.warnings_count({ count: warningCount })}</Badge>
+        <Badge variant="warning">{m.warnings_count({ count: warningCount })}</Badge>
       </Card.Action>
     {/if}
   </Card.Header>
@@ -109,6 +109,11 @@
   :global(.capability-table-header tr),
   :global(.capability-group-row) {
     background: color-mix(in srgb, var(--muted) 40%, transparent);
+  }
+
+  :global(.capability-table th + th),
+  :global(.capability-table td + td) {
+    border-inline-start: 1px solid var(--border);
   }
 
   :global(.capability-group-row:hover) {

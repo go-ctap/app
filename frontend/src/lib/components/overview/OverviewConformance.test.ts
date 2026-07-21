@@ -67,7 +67,7 @@ describe("OverviewConformance", () => {
     render(OverviewConformance, { props: { presentation: presentation("passed") } });
 
     expect(screen.getByText("Conformance")).toBeInTheDocument();
-    expect(screen.getByText("Passed")).toBeInTheDocument();
+    expect(screen.getAllByText("Passed").length).toBeGreaterThan(0);
     expect(screen.getByText(Profile.ProfileFIDO23)).toBeInTheDocument();
     expect(screen.getByText(SpecificationID.SpecificationCTAP23)).toBeInTheDocument();
 
@@ -100,7 +100,7 @@ describe("OverviewConformance", () => {
 
       expect(screen.getAllByText(label).length).toBeGreaterThan(0);
       expect(screen.getByRole("button", { name: "Collapse conformance details" })).toHaveAttribute("aria-expanded", "true");
-      expect(screen.getByRole("table")).toBeInTheDocument();
+      expect(screen.getByRole("article")).toBeInTheDocument();
       expect(screen.getByText(assessmentName)).toBeInTheDocument();
     },
   );
@@ -116,8 +116,8 @@ describe("OverviewConformance", () => {
 
     render(OverviewConformance, { props: { presentation: mixed } });
 
-    expect(screen.getByText("Findings: 1")).toBeInTheDocument();
-    expect(screen.getByText("Inconclusive: 1")).toBeInTheDocument();
-    expect(screen.getAllByRole("row")).toHaveLength(3);
+    expect(screen.getAllByText("Findings: 1").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Inconclusive: 1").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("article")).toHaveLength(2);
   });
 });

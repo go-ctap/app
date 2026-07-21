@@ -128,6 +128,44 @@ tasks:
       DESKTOP_FILE: '../{{.APP_NAME}}.desktop'
       OUTPUT_DIR: '../../../bin'
 
+  create:appimage:podman:
+    summary: Creates a linux/amd64 AppImage with Podman
+    desc: |
+      Builds the application and packages an x86_64 AppImage entirely inside
+      a Podman Linux machine. This supports macOS, including Apple Silicon
+      hosts. The artifact is copied from the resulting image to bin/.
+    cmds:
+      - >-
+        podman build
+        --platform linux/amd64
+        --file "{{.ROOT_DIR}}/build/docker/Dockerfile.appimage"
+        --ignorefile "{{.ROOT_DIR}}/build/docker/Dockerfile.appimage.dockerignore"
+        --target artifact
+        --tag "{{.APPIMAGE_IMAGE}}"
+        --build-arg "TARGETARCH=amd64"
+        --build-arg "WAILS_LINUX_TAGS={{.APPIMAGE_TAGS}}"
+        "{{.ROOT_DIR}}/.."
+      - |
+        set -eu
+        mkdir -p "{{.ROOT_DIR}}/bin"
+        container_id="$(podman create --platform linux/amd64 "{{.APPIMAGE_IMAGE}}" /bin/true)"
+        cleanup() {
+          podman rm --force "$container_id" >/dev/null 2>&1 || true
+        }
+        trap cleanup EXIT
+        podman cp \
+          "${container_id}:/bin/{{.APP_NAME}}-x86_64.AppImage" \
+          "{{.ROOT_DIR}}/bin/{{.APP_NAME}}-x86_64.AppImage"
+        cleanup
+    vars:
+      APPIMAGE_TAGS: '{{.APPIMAGE_TAGS | default "gtk3"}}'
+      APPIMAGE_IMAGE: 'localhost/{{.APP_NAME}}-appimage-builder:linux-amd64'
+    preconditions:
+      - sh: podman info > /dev/null 2>&1
+        msg: "Podman is required and its machine must be running (run: podman machine start)."
+      - sh: test -f "{{.ROOT_DIR}}/go.work"
+        msg: "go.work is required to resolve local workspace modules."
+
   create:deb:
     summary: Creates a deb package
     deps:

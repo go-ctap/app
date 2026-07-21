@@ -77,9 +77,11 @@
 
   <Card.Content>
     <div class="standard-summary">
-      <div class="standard-summary-copy flow">
-        <span class="standard-eyebrow">{m.overview_standard_eyebrow()}</span>
-        <h3>{presentation.title}</h3>
+      <div class="standard-summary-copy">
+        <div class="standard-summary-heading">
+          <span class="standard-eyebrow">{m.overview_standard_eyebrow()}</span>
+          <h3>{presentation.title}</h3>
+        </div>
         <p>{presentation.description}</p>
       </div>
 
@@ -162,9 +164,18 @@
       align-items: start;
     }
 
+    .standard-summary-copy,
+    .standard-summary-heading {
+      display: grid;
+    }
+
     .standard-summary-copy {
-      --flow-space: var(--space-2);
+      gap: var(--space-4);
       max-width: 44rem;
+    }
+
+    .standard-summary-heading {
+      gap: var(--space-2);
     }
 
     .standard-eyebrow {

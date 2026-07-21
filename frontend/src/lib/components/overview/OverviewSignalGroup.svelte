@@ -1,166 +1,267 @@
-<script module lang="ts">
-  import { FingerprintPattern, Info, KeyRound, ShieldCheck } from "@lucide/svelte";
-
-  const ICONS: Record<string, typeof ShieldCheck> = {
-    authentication: FingerprintPattern,
-    "credentials-management": KeyRound,
-  };
-</script>
-
 <script lang="ts">
-  import { Badge, type BadgeVariant } from "$lib/components/ui/badge/index.js";
+  import {
+    BadgeCheck,
+    Database,
+    FingerprintPattern,
+    HardDrive,
+    Info,
+    KeyRound,
+    ListChecks,
+    Ruler,
+    ScanFace,
+    Settings2,
+    ShieldCheck,
+    Touchpad,
+  } from "@lucide/svelte";
+
   import { Button } from "$lib/components/ui/button/index.js";
   import * as Tooltip from "$lib/components/ui/tooltip/index.js";
-  import type { OverviewHeroSignalGroup, OverviewRowStatus } from "$lib/overview-rules";
+  import type {
+    OverviewHeroSignalGroup,
+    OverviewHeroSignalGroupId,
+    OverviewHeroSignalId,
+  } from "$lib/overview-rules";
 
   let { group }: { group: OverviewHeroSignalGroup } = $props();
-
-  let Icon = $derived(ICONS[group.id] || Info);
-
-  function signalVariant(status: OverviewRowStatus): BadgeVariant {
-    if (status === "supported" || status === "configured" || status === "enabled") return "default";
-    if (status === "warning" || status === "not configured" || status === "disabled") return "secondary";
-    return "outline";
-  }
 </script>
+
+{#snippet groupIcon(id: OverviewHeroSignalGroupId)}
+  {#if id === "authentication"}
+    <FingerprintPattern size={16} aria-hidden="true" />
+  {:else}
+    <KeyRound size={16} aria-hidden="true" />
+  {/if}
+{/snippet}
+
+{#snippet signalIcon(id: OverviewHeroSignalId)}
+  {#if id === "up"}
+    <Touchpad size={16} aria-hidden="true" />
+  {:else if id === "clientPin"}
+    <KeyRound size={16} aria-hidden="true" />
+  {:else if id === "uv"}
+    <ScanFace size={16} aria-hidden="true" />
+  {:else if id === "pinUvAuthToken"}
+    <ShieldCheck size={16} aria-hidden="true" />
+  {:else if id === "alwaysUv"}
+    <BadgeCheck size={16} aria-hidden="true" />
+  {:else if id === "rk"}
+    <HardDrive size={16} aria-hidden="true" />
+  {:else if id === "credMgmt"}
+    <ListChecks size={16} aria-hidden="true" />
+  {:else if id === "largeBlobs"}
+    <Database size={16} aria-hidden="true" />
+  {:else if id === "authnrCfg"}
+    <Settings2 size={16} aria-hidden="true" />
+  {:else}
+    <Ruler size={16} aria-hidden="true" />
+  {/if}
+{/snippet}
 
 <section class="signal-group">
   <header>
-    <Icon size={16} strokeWidth={2.1} />
+    {@render groupIcon(group.id)}
     <h3>{group.title}</h3>
   </header>
 
   <Tooltip.Provider delayDuration={350} skipDelayDuration={80}>
-    <div class="signals">
+    <dl class="signals">
       {#each group.signals as signal (signal.id)}
-        <article class="signal-row">
-          <div class="signal-copy">
-            <div class="signal-title">
-              <span>{signal.title}</span>
-              <Tooltip.Root>
-                <Tooltip.Trigger>
-                  {#snippet child({ props })}
-                    <Button {...props} variant="ghost" size="icon-xs" type="button" aria-label={signal.tooltip}>
-                      <Info data-icon="inline-start" aria-hidden="true" />
-                    </Button>
-                  {/snippet}
-                </Tooltip.Trigger>
-                <Tooltip.Content side="top" sideOffset={6}>
-                  {signal.tooltip}
-                </Tooltip.Content>
-              </Tooltip.Root>
-            </div>
-            <code>
-              <span>{signal.flag}</span>
-              <strong>{signal.value}</strong>
-              {#if signal.valueNote}
-                <span>{signal.valueNote}</span>
-              {/if}
-            </code>
-          </div>
-          <Badge variant={signalVariant(signal.status)}>{signal.statusLabel}</Badge>
-        </article>
+        <div class="signal-row" data-status={signal.status}>
+          <dt>
+            {@render signalIcon(signal.id)}
+            <span class="signal-copy">
+              <span class="signal-title">
+                <strong>{signal.title}</strong>
+                <Tooltip.Root>
+                  <Tooltip.Trigger>
+                    {#snippet child({ props })}
+                      <Button {...props} variant="ghost" size="icon-xs" type="button" aria-label={signal.tooltip}>
+                        <Info data-icon="inline-start" aria-hidden="true" />
+                      </Button>
+                    {/snippet}
+                  </Tooltip.Trigger>
+                  <Tooltip.Content side="top" sideOffset={6}>
+                    {signal.tooltip}
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              </span>
+              <code class="signal-source">
+                <span>{signal.flag}</span>
+                <span aria-hidden="true">·</span>
+                <strong>{signal.value}</strong>
+                {#if signal.valueNote}
+                  <span>{signal.valueNote}</span>
+                {/if}
+              </code>
+            </span>
+          </dt>
+          <dd>
+            <span class="signal-status-dot" aria-hidden="true"></span>
+            <span>{signal.statusLabel}</span>
+          </dd>
+        </div>
       {/each}
-    </div>
+    </dl>
   </Tooltip.Provider>
 </section>
 
 <style>
 @layer blocks {
-    .signal-group {
-      display: grid;
-      align-content: start;
-      min-width: 0;
-    }
+  .signal-group {
+    --signal-positive: color-mix(in oklch, var(--primary) 45%, var(--sidebar-primary));
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100%;
+    min-width: 0;
+  }
 
-    header {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-      border-bottom: 1px solid var(--border);
-      padding-bottom: var(--space-2);
-      color: var(--muted-foreground);
-    }
+  header,
+  .signal-row dt,
+  .signal-title,
+  .signal-source {
+    display: flex;
+    align-items: center;
+  }
 
-    h3 {
-      min-width: 0;
-      overflow: hidden;
-      margin: 0;
-      color: var(--foreground);
-      font-size: 0.9rem;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+  header {
+    gap: var(--space-2);
+    min-height: 2rem;
+    padding: var(--space-4) var(--space-4) var(--space-1);
+    color: var(--muted-foreground);
+  }
 
-    .signals {
-      display: grid;
-      min-width: 0;
-    }
+  h3,
+  .signals,
+  .signal-row dd {
+    margin: 0;
+  }
 
+  h3 {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--foreground);
+    font-size: 0.9rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .signals {
+    display: grid;
+    grid-auto-rows: minmax(0, 1fr);
+    min-width: 0;
+  }
+
+  .signal-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-4);
+    align-items: center;
+    min-width: 0;
+    border-bottom: 1px solid var(--border);
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .signal-row:last-child {
+    border-bottom: 0;
+  }
+
+  .signal-row dt {
+    gap: var(--space-2);
+    min-width: 0;
+    color: var(--muted-foreground);
+  }
+
+  .signal-copy {
+    display: grid;
+    gap: 0.125rem;
+    min-width: 0;
+  }
+
+  .signal-title {
+    gap: var(--space-1);
+    min-width: 0;
+  }
+
+  .signal-title strong {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--foreground);
+    font-size: 0.8rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .signal-source {
+    width: fit-content;
+    max-width: 100%;
+    gap: var(--space-1);
+    overflow: hidden;
+    color: var(--muted-foreground);
+    font-size: 0.68rem;
+  }
+
+  .signal-source span,
+  .signal-source strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .signal-source strong {
+    color: var(--foreground);
+  }
+
+  .signal-row dd {
+    display: inline-flex;
+    align-items: center;
+    justify-self: end;
+    max-width: 20rem;
+    gap: var(--space-2);
+    font-weight: 700;
+    text-align: end;
+  }
+
+  .signal-status-dot {
+    width: 6px;
+    height: 6px;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 14%, transparent);
+  }
+
+  @container workspace (max-width: 30rem) {
     .signal-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: var(--space-3);
-      min-width: 0;
-      border-top: 1px solid var(--border);
-      padding: var(--space-3) 0;
-    }
-
-    .signal-row:first-child {
-      border-top: 0;
-    }
-
-    .signal-copy {
-      display: grid;
-      gap: var(--space-2);
-      min-width: 0;
-    }
-
-    .signal-title {
-      display: flex;
-      align-items: center;
+      grid-template-columns: minmax(0, 1fr);
       gap: var(--space-1);
-      min-width: 0;
-      font-size: 0.875rem;
-      font-weight: 700;
     }
 
-    .signal-title span {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .signal-row dd {
+      justify-self: start;
+      padding-inline-start: 1.5rem;
+      text-align: start;
     }
+  }
+}
 
-    code {
-      display: inline-flex;
-      width: fit-content;
-      max-width: 100%;
-      gap: var(--space-1);
-      overflow: hidden;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      background: var(--muted);
-      color: var(--muted-foreground);
-      padding: 2px 6px;
-      font-size: 0.72rem;
-    }
+@layer exceptions {
+  .signal-row[data-status="supported"] dd,
+  .signal-row[data-status="configured"] dd,
+  .signal-row[data-status="enabled"] dd {
+    color: var(--signal-positive);
+  }
 
-    code span,
-    code strong {
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+  .signal-row[data-status="warning"] dd,
+  .signal-row[data-status="not configured"] dd,
+  .signal-row[data-status="disabled"] dd {
+    color: var(--warning-foreground);
+  }
 
-    code strong {
-      color: var(--foreground);
-    }
-
-    @container workspace (max-width: 32.5rem) {
-      .signal-row {
-        grid-template-columns: 1fr;
-      }
-    }
+  .signal-row[data-status="unsupported"] dd,
+  .signal-row[data-status="unknown"] dd,
+  .signal-row[data-status="informational"] dd {
+    color: var(--muted-foreground);
+  }
 }
 </style>
