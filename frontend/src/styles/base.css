@@ -18,7 +18,6 @@
     margin: 0;
     min-width: 320px;
     font-family: var(--font-mono);
-    color-scheme: light;
     color: var(--foreground);
     background: transparent;
     font-synthesis: none;

@@ -9,14 +9,9 @@
     --shell-titlebar-block-size: 48px;
     --window-surface:
       radial-gradient(
-        64rem 52rem at -18% -14%,
+        32rem 36rem at 7rem 0,
         color-mix(in oklch, var(--primary) 24%, transparent),
         transparent 82%
-      ),
-      radial-gradient(
-        52rem 42rem at 118% -4%,
-        color-mix(in oklch, var(--primary) 10%, transparent),
-        transparent 84%
       ),
       var(--background);
     --workspace-surface: color-mix(in oklch, var(--background) 97%, var(--primary));

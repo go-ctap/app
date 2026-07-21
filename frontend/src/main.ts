@@ -9,17 +9,20 @@ import App from "./App.svelte";
 
 async function syncTheme() {
   try {
-    document.documentElement.classList.toggle("dark", await System.IsDarkMode());
+    const dark = await System.IsDarkMode();
+    document.documentElement.classList.toggle("dark", dark);
+    document.documentElement.style.colorScheme = dark ? "dark" : "light";
   } catch {
-    document.documentElement.classList.remove("dark");
+    // Keep the current theme until the Wails runtime is available again.
   }
 }
 
-void syncTheme();
+const refreshTheme = () => void syncTheme();
+
+refreshTheme();
+Events.On(Events.Types.Common.ThemeChanged, refreshTheme);
+window.addEventListener("focus", refreshTheme);
 initLocale();
-Events.On(Events.Types.Common.ThemeChanged, () => {
-  void syncTheme();
-});
 
 const app = mount(App, {
   target: document.getElementById("app")!,

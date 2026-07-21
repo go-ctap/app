@@ -355,6 +355,11 @@
 			--sidebar-backdrop-filter: blur(24px) saturate(1.2);
 		}
 
+		.app-shell[data-platform="linux"] {
+			border: 1px solid var(--window-border);
+			background-clip: padding-box;
+		}
+
 		.app-shell[data-platform="macos"] {
 			--sidebar-background: transparent;
 			background: transparent;
