@@ -351,8 +351,8 @@
 	@layer exceptions {
 		.app-shell[data-platform="windows"],
 		.app-shell[data-platform="linux"] {
-			--sidebar-background: color-mix(in srgb, var(--sidebar) 90%, transparent);
-			--sidebar-backdrop-filter: blur(24px) saturate(1.12);
+			--sidebar-background: color-mix(in srgb, var(--sidebar) 40%, transparent);
+			--sidebar-backdrop-filter: blur(24px) saturate(1.2);
 		}
 
 		.app-shell[data-platform="macos"] {
