@@ -11,7 +11,7 @@
   "authenticator_list_updated": "Authenticator list updated",
   "authenticator_needs_you": "Authenticator needs you",
   "authenticators_found": "{count} authenticators found",
-  "tokens": "Tokens",
+  "authenticators": "Authenticators",
   "biometrics": "Biometrics",
   "blob_credentials": "Passkeys with blobs",
   "blobs_count": "{count} blobs",

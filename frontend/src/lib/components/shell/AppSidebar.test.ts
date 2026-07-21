@@ -95,7 +95,7 @@ describe("AppSidebar", () => {
       },
     });
 
-    expect(screen.getByRole("heading", { name: "Tokens" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Authenticators" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "YubiKey 5 · ABC" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("YubiKey 5")).toHaveAttribute("title", "YubiKey 5");
     await user.click(screen.getByRole("button", { name: "SoloKey · DEF" }));

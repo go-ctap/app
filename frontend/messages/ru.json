@@ -11,7 +11,7 @@
   "authenticator_list_updated": "Список аутентификаторов обновлён",
   "authenticator_needs_you": "Аутентификатор ожидает действие",
   "authenticators_found": "Найдено аутентификаторов: {count}",
-  "tokens": "Токены",
+  "authenticators": "Аутентификаторы",
   "biometrics": "Биометрия",
   "blob_credentials": "Ключи доступа с блобами",
   "blobs_count": "Блобов: {count}",

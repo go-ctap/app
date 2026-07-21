@@ -71,7 +71,7 @@
   </nav>
 
   <section class="sidebar-tokens" aria-labelledby="sidebar-tokens-title">
-    <h2 id="sidebar-tokens-title" class="sidebar-section-title">{m.tokens()}</h2>
+    <h2 id="sidebar-tokens-title" class="sidebar-section-title">{m.authenticators()}</h2>
     <ScrollArea class="sidebar-token-scroll">
       <div class="sidebar-token-list">
         {#each presentation.tokens as token (token.value)}
