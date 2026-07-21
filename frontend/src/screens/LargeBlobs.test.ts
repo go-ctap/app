@@ -53,6 +53,9 @@ const controllerMocks = vi.hoisted(() => ({
     return credentialIDHex ? controllerMocks.readLargeBlob(credentialIDHex) : Promise.resolve(true);
   }),
 }));
+const workbenchMocks = vi.hoisted(() => ({
+  navigateToScreen: vi.fn(() => Promise.resolve()),
+}));
 const toastMocks = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 
 vi.mock("$lib/features/largeblobs", async (importOriginal) => ({
@@ -61,6 +64,10 @@ vi.mock("$lib/features/largeblobs", async (importOriginal) => ({
   reloadLargeBlobs: controllerMocks.reloadLargeBlobs,
   selectLargeBlobCredential: controllerMocks.selectLargeBlobCredential,
   setLargeBlobsDecodeMode: controllerMocks.setLargeBlobsDecodeMode,
+}));
+vi.mock("$lib/features/workbench", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("$lib/features/workbench")>()),
+  navigateToScreen: workbenchMocks.navigateToScreen,
 }));
 vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
 
@@ -215,6 +222,7 @@ describe("LargeBlobs", () => {
     controllerMocks.reloadLargeBlobs.mockClear();
     controllerMocks.selectLargeBlobCredential.mockClear();
     controllerMocks.setLargeBlobsDecodeMode.mockClear();
+    workbenchMocks.navigateToScreen.mockClear();
     toastMocks.success.mockClear();
     toastMocks.error.mockClear();
     resetAppStateForTest();
@@ -230,7 +238,8 @@ describe("LargeBlobs", () => {
     document.body.style.pointerEvents = "";
   });
 
-  it("distinguishes not-loaded, loading, unsupported, and empty states", () => {
+  it("distinguishes not-loaded, loading, unsupported, and contextual empty states", async () => {
+    const user = userEvent.setup();
     const { unmount } = render(LargeBlobs);
     expect(screen.getByText("Large blobs not loaded")).toBeInTheDocument();
     unmount();
@@ -254,7 +263,17 @@ describe("LargeBlobs", () => {
     empty.result!.credentials = [];
     seedLargeBlobsEnvelopeForTest(empty);
     render(LargeBlobs);
-    expect(screen.getByText("No discoverable passkeys found")).toBeInTheDocument();
+
+    const table = screen.getByRole("table", { name: "Passkeys with blobs" });
+    expect(within(table).getByRole("columnheader", { name: "RP name" })).toBeInTheDocument();
+    expect(within(table).getByText("No passkeys are available for large blobs")).toBeInTheDocument();
+    expect(within(table).getByText(/Large blobs are attached to discoverable passkeys\./)).toBeInTheDocument();
+
+    await user.click(within(table).getByRole("button", { name: "Open WebAuthn Lab" }));
+    expect(workbenchMocks.navigateToScreen).toHaveBeenCalledWith("lab");
+
+    await user.click(within(table).getByRole("button", { name: "Reload inventory" }));
+    await waitFor(() => expect(controllerMocks.reloadLargeBlobs).toHaveBeenCalledOnce());
   });
 
   it("keeps a typed inventory error out of the empty state", () => {

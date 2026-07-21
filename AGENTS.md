@@ -23,6 +23,13 @@
 - Do not hand-edit `frontend/bindings/` unless intentionally updating generated Wails artifacts.
 - Treat Taskfile files as Wails integration-critical. Small targeted edits such as package-manager or lockfile updates are allowed, but never remove or broadly restructure tasks without an explicit user request.
 
+## Git and Commits
+- All commits must follow Conventional Commits 1.0.0: `<type>[optional scope][!]: <description>`.
+- Prefer the most specific standard type: `feat`, `fix`, `refactor`, `test`, `docs`, `build`, `ci`, `perf`, `style`, `chore`, or `revert`.
+- Use a concise lowercase imperative description without a trailing period. Avoid generic messages such as `update files`, `misc changes`, or `fix stuff`.
+- Keep scopes short and product-oriented when they add useful context, for example `feat(passkeys): improve empty inventory guidance`.
+- Mark breaking changes with `!` and explain them in a `BREAKING CHANGE:` footer.
+
 ## Frontend
 - Bindings are the model. Do not create local copies of `DeviceReport`, `LookupResult`, `AuthenticatorGetInfoResponse`, service envelopes, or other `ctapkit` model DTOs.
 - Local frontend types are allowed only for genuine presentation shapes: rows, badges, modal props, sidebar/titlebar state, status/log display, and similar UI-only structures.

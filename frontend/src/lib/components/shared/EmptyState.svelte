@@ -69,18 +69,12 @@
   }
 
   :global(.empty-state) {
-    min-height: max(100%, calc(100vh - 9rem));
-    border: 1px dashed color-mix(in srgb, var(--muted-foreground) 42%, var(--border));
-    background:
-      linear-gradient(var(--card), var(--card)) padding-box,
-      color-mix(in srgb, var(--muted) 22%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--background) 75%, transparent);
+    min-height: 16rem;
     text-align: center;
   }
 
   :global(.empty-state [data-slot="empty-icon"]) {
-    border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--muted) 55%, transparent);
+    background: var(--muted);
   }
 
   :global(.empty-state [data-slot="empty-header"]) {
@@ -98,7 +92,12 @@
   }
 
   :global(.empty-state[data-variant="compact"]) {
-    min-height: 10rem;
+    min-height: 9rem;
+    padding-block: var(--space-5);
+  }
+
+  :global(.empty-state[data-variant="workspace"]) {
+    min-height: max(24rem, calc(100dvh - 10rem));
   }
 }
 </style>

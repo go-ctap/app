@@ -24,6 +24,7 @@
     setPasskeysVerificationFlow,
     updateCredentialDraft,
   } from "$lib/features/passkeys";
+  import { navigateToScreen } from "$lib/features/workbench";
   import {
     authenticatorBusy,
     authenticatorStatus,
@@ -68,6 +69,10 @@
     const succeeded = await confirmCredentialDelete();
     if (succeeded) toast.success(m.credential_deleted());
     return succeeded;
+  }
+
+  function handleOpenLab() {
+    void navigateToScreen("lab");
   }
 </script>
 
@@ -120,6 +125,8 @@
         onSelect={selectPasskeyCredential}
         onEdit={beginCredentialUpdate}
         onDelete={beginCredentialDelete}
+        onOpenLab={handleOpenLab}
+        onReload={handleReload}
       />
     {/if}
   </section>

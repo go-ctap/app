@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronRight, FilterX } from "@lucide/svelte";
+  import { ChevronRight, FilterX, FlaskConical, KeyRound, RefreshCw } from "@lucide/svelte";
 
   import type { DecodeMode } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
 
@@ -37,6 +37,8 @@
     onDecodeModeChange: (mode: DecodeMode) => void | Promise<boolean>;
     onWrite: (credentialIDHex: string) => void;
     onDelete: (credentialIDHex: string) => void | Promise<boolean>;
+    onOpenLab: () => void;
+    onReload: () => void | Promise<boolean>;
   };
 
   let {
@@ -50,6 +52,8 @@
     onDecodeModeChange,
     onWrite,
     onDelete,
+    onOpenLab,
+    onReload,
   }: Props = $props();
 
   let filters = $derived([
@@ -181,11 +185,38 @@
       {/each}
     </ExpandableDataTable.Root>
   {:else if presentation.emptyInventory}
-    <EmptyState
-      title={m.no_resident_credentials_found()}
-      message={m.no_resident_credentials_large_blob_message()}
-      variant="compact"
-    />
+    <ExpandableDataTable.Root
+      class="large-blobs-table"
+      aria-label={m.blob_credentials()}
+      header={largeBlobsTableHeader}
+    >
+      <tr class="large-blobs-empty-row">
+        <td colspan="5">
+          <EmptyState
+            title={m.large_blobs_empty_title()}
+            message={m.large_blobs_empty_message()}
+            variant="compact"
+          >
+            {#snippet icon()}<KeyRound aria-hidden="true" />{/snippet}
+            {#snippet actions()}
+              <Button type="button" onclick={onOpenLab}>
+                <FlaskConical data-icon="inline-start" aria-hidden="true" />
+                {m.open_webauthn_lab()}
+              </Button>
+              <Button
+                variant="outline"
+                type="button"
+                disabled={presentation.reloadDisabled}
+                onclick={onReload}
+              >
+                <RefreshCw data-icon="inline-start" aria-hidden="true" />
+                {m.reload_inventory()}
+              </Button>
+            {/snippet}
+          </EmptyState>
+        </td>
+      </tr>
+    </ExpandableDataTable.Root>
   {:else if presentation.emptyFilteredResult}
     <EmptyState
       title={m.large_blobs_no_filtered_results_title()}
@@ -316,6 +347,11 @@
   :global(.large-blobs-table) {
     min-width: 52rem;
     table-layout: fixed;
+  }
+
+  :global(.large-blobs-empty-row > td) {
+    padding: 0;
+    white-space: normal;
   }
 
   :global(.large-blobs-table th:first-child),

@@ -31,12 +31,19 @@ import Passkeys from "./Passkeys.svelte";
 const controllerMocks = vi.hoisted(() => ({
   reloadPasskeys: vi.fn(() => Promise.resolve(true)),
 }));
+const workbenchMocks = vi.hoisted(() => ({
+  navigateToScreen: vi.fn(() => Promise.resolve()),
+}));
 const toastMocks = vi.hoisted(() => ({ success: vi.fn() }));
 const clipboardSetText = vi.spyOn(Clipboard, "SetText");
 
 vi.mock("$lib/features/passkeys", async (importOriginal) => ({
   ...(await importOriginal<typeof import("$lib/features/passkeys")>()),
   reloadPasskeys: controllerMocks.reloadPasskeys,
+}));
+vi.mock("$lib/features/workbench", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("$lib/features/workbench")>()),
+  navigateToScreen: workbenchMocks.navigateToScreen,
 }));
 vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
 
@@ -75,6 +82,15 @@ function credentialsEnvelope(readOnlyPermission = false): CredentialsEnvelope {
       }],
     },
   } as CredentialsEnvelope;
+}
+
+function emptyCredentialsEnvelope(): CredentialsEnvelope {
+  const envelope = credentialsEnvelope();
+  envelope.result!.summary.existingResidentCredentialsCount = 0;
+  envelope.result!.summary.totalRPs = 0;
+  envelope.result!.summary.totalCredentials = 0;
+  envelope.result!.groups = [];
+  return envelope;
 }
 
 function credentialUpdateTarget(): CredentialTarget {
@@ -140,6 +156,7 @@ describe("Passkeys", () => {
     setAppLocale("en");
     setAdvancedMode(true);
     controllerMocks.reloadPasskeys.mockClear();
+    workbenchMocks.navigateToScreen.mockClear();
     clipboardSetText.mockReset();
     clipboardSetText.mockResolvedValue();
     toastMocks.success.mockClear();
@@ -162,6 +179,28 @@ describe("Passkeys", () => {
 
     expect(screen.getByText("Passkeys not loaded")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Read state" })).not.toBeInTheDocument();
+  });
+
+  it("keeps an empty inventory in context and offers useful next actions", async () => {
+    const user = userEvent.setup();
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      selectionId: "authenticator-1",
+    });
+    seedPasskeysEnvelopeForTest(emptyCredentialsEnvelope());
+
+    render(Passkeys);
+
+    const table = screen.getByRole("table", { name: "Discoverable passkeys" });
+    expect(within(table).getByRole("columnheader", { name: "RP name" })).toBeInTheDocument();
+    expect(within(table).getByText("This authenticator has no discoverable passkeys")).toBeInTheDocument();
+    expect(within(table).getByText(/The inventory loaded successfully\./)).toBeInTheDocument();
+
+    await user.click(within(table).getByRole("button", { name: "Open WebAuthn Lab" }));
+    expect(workbenchMocks.navigateToScreen).toHaveBeenCalledWith("lab");
+
+    await user.click(within(table).getByRole("button", { name: "Reload inventory" }));
+    await waitFor(() => expect(controllerMocks.reloadPasskeys).toHaveBeenCalledOnce());
   });
 
   it("shows the unavailable perCredMgmtRO badge when unsupported", () => {
@@ -530,7 +569,7 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(screen.getByText("No passkeys found")).toBeInTheDocument();
+    expect(screen.getByText("This authenticator has no discoverable passkeys")).toBeInTheDocument();
     expect(screen.queryByText("No matching passkeys")).not.toBeInTheDocument();
   });
 

@@ -1,13 +1,12 @@
 <script lang="ts">
-	import { ShieldCheck } from "@lucide/svelte";
 	import { Events } from "@wailsio/runtime";
 	import { onMount } from "svelte";
 
 	import type * as appservice from "../bindings/fidobench/service/models";
 
 	import InteractionModal from "$lib/components/interaction/InteractionModal.svelte";
-	import EmptyState from "$lib/components/shared/EmptyState.svelte";
 	import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
+	import NoAuthenticatorState from "$lib/components/shell/NoAuthenticatorState.svelte";
 	import ShellStatusBar from "$lib/components/shell/ShellStatusBar.svelte";
 	import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
 	import { Toaster } from "$lib/components/ui/sonner/index.js";
@@ -41,7 +40,6 @@
 	import { buildInteractionModalPresentation, buildShellStatusPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
 	import { detectWindowPlatform, resolveWindowPlatform } from "$lib/window-platform";
 
-	import { m } from "./paraglide/messages.js";
 	let refreshing = $state(false);
 	let initialized = $state(false);
 	let windowPlatform = $state(detectWindowPlatform());
@@ -196,14 +194,7 @@
 									<Settings />
 								{/await}
 							{:else if noDevices}
-								<EmptyState
-									title={m.insert_token()}
-									variant="workspace"
-								>
-									{#snippet icon()}
-										<ShieldCheck size={34} strokeWidth={1.8} />
-									{/snippet}
-								</EmptyState>
+								<NoAuthenticatorState screenLabel={sidebarPresentation.activeScreenLabel} />
 							{:else if $activeScreen === "large-blobs"}
 								{#await import("./screens/LargeBlobs.svelte") then { default: LargeBlobs }}
 									<LargeBlobs />

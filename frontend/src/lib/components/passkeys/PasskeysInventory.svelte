@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronRight, FilterX } from "@lucide/svelte";
+  import { ChevronRight, FilterX, FlaskConical, KeyRound, RefreshCw } from "@lucide/svelte";
 
   import PasskeyInspector from "$lib/components/passkeys/PasskeyInspector.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
@@ -27,6 +27,8 @@
     onSelect: (credentialID: string) => void;
     onEdit: (credentialID: string) => void;
     onDelete: (credentialID: string) => void | Promise<boolean>;
+    onOpenLab: () => void;
+    onReload: () => void | Promise<boolean>;
   };
 
   let {
@@ -39,6 +41,8 @@
     onSelect,
     onEdit,
     onDelete,
+    onOpenLab,
+    onReload,
   }: Props = $props();
 
   let filters = $derived([
@@ -169,11 +173,38 @@
       {/each}
     </ExpandableDataTable.Root>
   {:else if presentation.emptyInventory}
-    <EmptyState
-      title={m.no_passkeys_found()}
-      message={m.no_passkeys_found_message()}
-      variant="compact"
-    />
+    <ExpandableDataTable.Root
+      class="passkeys-table"
+      aria-label={m.resident_credentials()}
+      header={passkeysTableHeader}
+    >
+      <tr class="passkeys-empty-row">
+        <td colspan="4">
+          <EmptyState
+            title={m.passkeys_empty_title()}
+            message={m.passkeys_empty_message()}
+            variant="compact"
+          >
+            {#snippet icon()}<KeyRound aria-hidden="true" />{/snippet}
+            {#snippet actions()}
+              <Button type="button" onclick={onOpenLab}>
+                <FlaskConical data-icon="inline-start" aria-hidden="true" />
+                {m.open_webauthn_lab()}
+              </Button>
+              <Button
+                variant="outline"
+                type="button"
+                disabled={presentation.reloadDisabled}
+                onclick={onReload}
+              >
+                <RefreshCw data-icon="inline-start" aria-hidden="true" />
+                {m.reload_inventory()}
+              </Button>
+            {/snippet}
+          </EmptyState>
+        </td>
+      </tr>
+    </ExpandableDataTable.Root>
   {:else if presentation.emptyFilteredResult}
     <EmptyState
       title={m.passkeys_no_filtered_results_title()}
@@ -304,6 +335,11 @@
   :global(.passkeys-table) {
     min-width: 42rem;
     table-layout: fixed;
+  }
+
+  :global(.passkeys-empty-row > td) {
+    padding: 0;
+    white-space: normal;
   }
 
   :global(.passkeys-table th:first-child),

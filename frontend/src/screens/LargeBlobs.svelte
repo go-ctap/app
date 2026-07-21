@@ -29,6 +29,7 @@
     setLargeBlobsVerificationFlow,
     updateLargeBlobWriteDraft,
   } from "$lib/features/largeblobs";
+  import { navigateToScreen } from "$lib/features/workbench";
   import {
     authenticatorBusy,
     authenticatorStatus,
@@ -81,6 +82,10 @@
     const succeeded = await confirmLargeBlobCleanup();
     if (succeeded) toast.success(m.large_blob_cleanup_complete());
     return succeeded;
+  }
+
+  function handleOpenLab() {
+    void navigateToScreen("lab");
   }
 </script>
 
@@ -135,6 +140,8 @@
         onDecodeModeChange={setLargeBlobsDecodeMode}
         onWrite={beginLargeBlobWrite}
         onDelete={beginLargeBlobDelete}
+        onOpenLab={handleOpenLab}
+        onReload={handleReload}
       />
     {/if}
   </section>
