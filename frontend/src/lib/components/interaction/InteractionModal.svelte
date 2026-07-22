@@ -1,6 +1,6 @@
 <script lang="ts">
   import { InteractionKind } from "../../../../bindings/github.com/go-ctap/kit/model";
-  import { InteractionAnswer } from "../../../../bindings/fidobench/service";
+  import { InteractionAnswer } from "../../../../bindings/telesma/service";
 
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";

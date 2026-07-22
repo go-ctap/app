@@ -5,7 +5,7 @@ import { InteractionKind } from "../../bindings/github.com/go-ctap/kit/model";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { CredentialsEnvelope, InteractionPrompt, OperationEventEnvelope } from "../../bindings/fidobench/service";
+import type { CredentialsEnvelope, InteractionPrompt, OperationEventEnvelope } from "../../bindings/telesma/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { pendingInteraction } from "./features/interaction/state.js";
@@ -25,7 +25,7 @@ const serviceMocks = vi.hoisted(() => ({
   ResolveInteraction: vi.fn(),
 }));
 
-vi.mock("../../bindings/fidobench/ctapkitservice", () => serviceMocks);
+vi.mock("../../bindings/telesma/ctapkitservice", () => serviceMocks);
 
 const token: DeviceReport = {
   fingerprint: "token-1",

@@ -2,7 +2,7 @@
   import { tick } from "svelte";
   import { Pencil, RotateCcw, Send, WandSparkles } from "@lucide/svelte";
 
-  import type { GetAssertionEnvelope, InspectEnvelope } from "../../../../bindings/fidobench/service";
+  import type { GetAssertionEnvelope, InspectEnvelope } from "../../../../bindings/telesma/service";
 
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";

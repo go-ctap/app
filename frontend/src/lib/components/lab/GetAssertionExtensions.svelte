@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ExtensionIdentifier } from "../../../../bindings/github.com/go-ctap/ctap/extension";
-  import type { InspectEnvelope } from "../../../../bindings/fidobench/service";
+  import type { InspectEnvelope } from "../../../../bindings/telesma/service";
   import { Plus, Trash2 } from "@lucide/svelte";
 
   import * as Accordion from "$lib/components/ui/accordion/index.js";

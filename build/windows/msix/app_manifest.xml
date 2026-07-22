@@ -8,15 +8,15 @@
   IgnorableNamespaces="uap3">
   
   <Identity 
-    Name="com.example.fidoapp"
-    Publisher="CN=My Company"
+    Name="app.telesma.telesma"
+    Publisher="CN=Savely Krasovsky"
     Version="0.1.0.0" 
     ProcessorArchitecture="x64" />
   
   <Properties>
-    <DisplayName>My Product</DisplayName>
-    <PublisherDisplayName>My Company</PublisherDisplayName>
-    <Description>A fidoapp application</Description>
+    <DisplayName>Telesma</DisplayName>
+    <PublisherDisplayName>Savely Krasovsky</PublisherDisplayName>
+    <Description>Desktop workbench for local FIDO2/CTAP authenticators</Description>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
   
@@ -29,10 +29,10 @@
   </Resources>
   
   <Applications>
-    <Application Id="com.example.fidoapp" Executable="fidoapp.exe" EntryPoint="Windows.FullTrustApplication">
+    <Application Id="app.telesma.telesma" Executable="telesma.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="My Product"
-        Description="A fidoapp application"
+        DisplayName="Telesma"
+        Description="Desktop workbench for local FIDO2/CTAP authenticators"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
@@ -41,7 +41,7 @@
       </uap:VisualElements>
       
       <Extensions>
-        <desktop:Extension Category="windows.fullTrustProcess" Executable="fidoapp.exe" />
+        <desktop:Extension Category="windows.fullTrustProcess" Executable="telesma.exe" />
         
         
       </Extensions>

@@ -1,6 +1,6 @@
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import type { SelectionID } from "../../bindings/fidobench/service";
+import type { SelectionID } from "../../bindings/telesma/service";
 
 import { deviceName } from "./format.js";
 

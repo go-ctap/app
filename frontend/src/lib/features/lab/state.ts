@@ -11,7 +11,7 @@ import type {
   GetAssertionRequest,
   MakeCredentialEnvelope,
   MakeCredentialRequest,
-} from "../../../../bindings/fidobench/service";
+} from "../../../../bindings/telesma/service";
 
 import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import {

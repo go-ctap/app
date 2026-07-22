@@ -4,7 +4,7 @@ includes:
   common: ../Taskfile.yml
 
 vars:
-  BUNDLE_ID: '{{.BUNDLE_ID | default "com.wails.app"}}'
+  BUNDLE_ID: '{{.BUNDLE_ID | default "app.telesma.telesma"}}'
   # SDK_PATH is computed lazily at task-level to avoid errors on non-macOS systems
   # Each task that needs it defines SDK_PATH in its own vars section
 
@@ -254,10 +254,10 @@ tasks:
           fi
         fi
       - codesign --force --sign - "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app"
-      - xcrun simctl terminate booted "com.wails.{{.APP_NAME | lower}}.dev" 2>/dev/null || true
-      - xcrun simctl uninstall booted "com.wails.{{.APP_NAME | lower}}.dev" 2>/dev/null || true
+      - xcrun simctl terminate booted "{{.BUNDLE_ID}}.dev" 2>/dev/null || true
+      - xcrun simctl uninstall booted "{{.BUNDLE_ID}}.dev" 2>/dev/null || true
       - xcrun simctl install booted "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app"
-      - xcrun simctl launch booted "com.wails.{{.APP_NAME | lower}}.dev"
+      - xcrun simctl launch booted "{{.BUNDLE_ID}}.dev"
 
   xcode:
     summary: Open the generated Xcode project for this app
@@ -281,7 +281,7 @@ tasks:
         xcrun simctl spawn booted log stream \
           --level debug \
           --style compact \
-          --predicate 'senderImagePath CONTAINS[c] ".dev.app/" OR subsystem == "com.wails.{{.APP_NAME | lower}}.dev" OR process == "{{.APP_NAME | lower}}"'
+          --predicate 'senderImagePath CONTAINS[c] ".dev.app/" OR subsystem == "{{.BUNDLE_ID}}.dev" OR process == "{{.APP_NAME | lower}}"'
 
   logs:wide:
     summary: Wide log stream to help discover the exact process/bundle identifiers

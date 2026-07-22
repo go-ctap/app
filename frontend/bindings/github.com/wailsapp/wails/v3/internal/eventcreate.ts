@@ -8,7 +8,7 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as service$0 from "../../../../../fidobench/service/models.js";
+import * as service$0 from "../../../../../telesma/service/models.js";
 
 function configure() {
     Object.freeze(Object.assign($Create.Events, {

@@ -12,7 +12,7 @@ import {
   BioEnrollRequest,
   ResetFactoryEnvelope,
   ResetFactoryRequest,
-} from "../../../../bindings/fidobench/service";
+} from "../../../../bindings/telesma/service";
 
 import type { SecurityMutationState } from "$lib/features/security/state";
 import type { ActiveOperation } from "$lib/features/workbench/state";

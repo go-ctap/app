@@ -1,6 +1,6 @@
 import { writable } from "svelte/store";
 
-import type { InteractionPrompt } from "../../../../bindings/fidobench/service";
+import type { InteractionPrompt } from "../../../../bindings/telesma/service";
 
 export const pendingInteraction = writable<InteractionPrompt | null>(null);
 

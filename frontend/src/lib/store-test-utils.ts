@@ -7,7 +7,7 @@ import type {
   InspectEnvelope,
   InteractionPrompt,
   LargeBlobListEnvelope,
-} from "../../bindings/fidobench/service";
+} from "../../bindings/telesma/service";
 
 import { deviceFeatureLifecycles } from "./feature-lifecycle.js";
 import { resetInteractionStateForTest, pendingInteraction } from "./features/interaction/state.js";

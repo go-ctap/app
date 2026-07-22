@@ -9,8 +9,8 @@ import type {
   InteractionPrompt,
   LargeBlobListEnvelope,
   ActiveSelection,
-} from "../../bindings/fidobench/service";
-import { DiscoveryTrigger } from "../../bindings/fidobench/service";
+} from "../../bindings/telesma/service";
+import { DiscoveryTrigger } from "../../bindings/telesma/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import { InteractionKind, OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
@@ -46,7 +46,7 @@ const serviceMocks = vi.hoisted(() => ({
   StartDiscoveryMonitoring: vi.fn(),
 }));
 
-vi.mock("../../bindings/fidobench/ctapkitservice", () => serviceMocks);
+vi.mock("../../bindings/telesma/ctapkitservice", () => serviceMocks);
 
 function device(id: string, product = id): DeviceReport {
   return {

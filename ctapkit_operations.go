@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	appservice "fidobench/service"
+	appservice "telesma/service"
 )
 
 func (s *CtapkitService) Inspect(ctx context.Context, req appservice.OperationRequest) (appservice.InspectEnvelope, error) {

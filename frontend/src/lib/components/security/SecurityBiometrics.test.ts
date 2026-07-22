@@ -9,7 +9,7 @@ import {
 import type {
   BioListEnvelope,
   BioSensorEnvelope,
-} from "../../../../bindings/fidobench/service";
+} from "../../../../bindings/telesma/service";
 
 import { emptySecurityResourceState } from "$lib/features/security/state";
 import { setAppLocale } from "$lib/i18n";

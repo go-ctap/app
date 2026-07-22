@@ -96,7 +96,7 @@ RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
 
 FROM linux-builder AS appimage-builder
 
-ARG APP_NAME=fidoapp
+ARG APP_NAME=telesma
 ARG WAILS_LINUX_TAGS
 
 COPY app/build/docker/linuxdeploy-extracted-wrapper.sh /usr/local/bin/linuxdeploy-extracted-wrapper

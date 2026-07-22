@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 
-	appservice "fidobench/service"
 	kitmodel "github.com/go-ctap/kit/model"
 	"github.com/wailsapp/wails/v3/pkg/application"
+	appservice "telesma/service"
 )
 
 type CtapkitService struct {

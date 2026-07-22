@@ -11,7 +11,7 @@ import {
   type Locale,
 } from "../paraglide/runtime.js";
 
-const STORAGE_KEY = "fidoapp.locale";
+const STORAGE_KEY = "telesma.locale";
 
 export const availableLocales = locales;
 export const currentLocale = writable<Locale>(initialLocale());

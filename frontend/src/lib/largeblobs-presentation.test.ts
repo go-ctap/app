@@ -4,7 +4,7 @@ import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/mod
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { BlobState, LargeBlobKeyState } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import { Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { LargeBlobListEnvelope } from "../../bindings/fidobench/service";
+import type { LargeBlobListEnvelope } from "../../bindings/telesma/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "./i18n";

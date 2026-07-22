@@ -18,7 +18,7 @@ import type {
   LargeBlobListEnvelope,
   LargeBlobMutationEnvelope,
   LargeBlobReadEnvelope,
-} from "../../bindings/fidobench/service";
+} from "../../bindings/telesma/service";
 
 import {
   emptyLargeBlobsInventoryState,

@@ -9,7 +9,7 @@ import {
 } from "../../../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import { UserVerify } from "../../../../bindings/github.com/go-ctap/ctap/protocol";
-import { InteractionAnswer, InteractionPrompt } from "../../../../bindings/fidobench/service";
+import { InteractionAnswer, InteractionPrompt } from "../../../../bindings/telesma/service";
 
 import { buildInteractionModalPresentation } from "$lib/shell-presentation";
 import { setAdvancedMode } from "$lib/preferences";

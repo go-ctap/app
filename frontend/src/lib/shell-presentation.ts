@@ -15,7 +15,7 @@ import type { Component } from "svelte";
 import { InteractionKind, type PINInteractionState } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { UserVerify } from "../../bindings/github.com/go-ctap/ctap/protocol";
-import type { InteractionPrompt } from "../../bindings/fidobench/service";
+import type { InteractionPrompt } from "../../bindings/telesma/service";
 
 import { m } from "../paraglide/messages.js";
 import { bioSampleStatusLabel, deviceDetail, deviceName, labelDevice, operationStageLabel, permissionLabel, authenticatorStateLabel } from "./format.js";

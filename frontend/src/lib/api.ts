@@ -1,4 +1,4 @@
-import * as service from "../../bindings/fidobench/ctapkitservice";
+import * as service from "../../bindings/telesma/ctapkitservice";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { LogJournalBatch } from "../../bindings/github.com/go-ctap/kit/model";
 import {
@@ -48,7 +48,7 @@ import {
   type ReadLogsRequest,
   type SelectionRequest,
   type SelectionSnapshot,
-} from "../../bindings/fidobench/service";
+} from "../../bindings/telesma/service";
 
 import { runtimeCall } from "./features/logs/state.svelte.js";
 

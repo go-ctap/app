@@ -14,7 +14,7 @@ import type {
   LargeBlobMutationRequest,
   LargeBlobReadEnvelope,
   LargeBlobReadRequest,
-} from "../../bindings/fidobench/service";
+} from "../../bindings/telesma/service";
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
 import {

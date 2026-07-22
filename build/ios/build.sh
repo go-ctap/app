@@ -2,8 +2,8 @@
 set -e
 
 # Build configuration
-APP_NAME="fidoapp.exe"
-BUNDLE_ID="com.example.fidoapp"
+APP_NAME="telesma"
+BUNDLE_ID="app.telesma.telesma"
 VERSION="0.1.0"
 BUILD_NUMBER="0.1.0"
 BUILD_DIR="build/ios"

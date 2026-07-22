@@ -33,7 +33,7 @@ import {
 import {
   GetAssertionEnvelope,
   MakeCredentialEnvelope,
-} from "../../../../bindings/fidobench/service";
+} from "../../../../bindings/telesma/service";
 
 import GetAssertionResult from "$lib/components/lab/GetAssertionResult.svelte";
 import MakeCredentialResult from "$lib/components/lab/MakeCredentialResult.svelte";

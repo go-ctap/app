@@ -9,7 +9,7 @@ import type {
   CredentialStoreStateEnvelope,
   CredentialUpdateEnvelope,
   CredentialsEnvelope,
-} from "../../bindings/fidobench/service";
+} from "../../bindings/telesma/service";
 
 import { api } from "./api";
 import { failureForCode } from "./test-failure";

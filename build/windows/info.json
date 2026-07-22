@@ -5,11 +5,11 @@
 	"info": {
 		"0000": {
 			"ProductVersion": "0.1.0",
-			"CompanyName": "My Company",
-			"FileDescription": "A fidoapp application",
-			"LegalCopyright": "© 2026, My Company",
-			"ProductName": "My Product",
-			"Comments": "This is a comment"
+			"CompanyName": "Savely Krasovsky",
+			"FileDescription": "Desktop workbench for local FIDO2/CTAP authenticators",
+			"LegalCopyright": "© 2026, Savely Krasovsky",
+			"ProductName": "Telesma",
+			"Comments": "Telesma by Savely Krasovsky"
 		}
 	}
 }

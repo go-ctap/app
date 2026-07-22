@@ -9,7 +9,7 @@ includes:
   android: ./build/android/Taskfile.yml
 
 vars:
-  APP_NAME: "fidoapp"
+  APP_NAME: "telesma"
   BIN_DIR: "bin"
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
 

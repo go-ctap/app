@@ -2,7 +2,7 @@
 	import { Events } from "@wailsio/runtime";
 	import { onMount } from "svelte";
 
-	import type * as appservice from "../bindings/fidobench/service/models";
+	import type * as appservice from "../bindings/telesma/service/models";
 
 	import InteractionModal from "$lib/components/interaction/InteractionModal.svelte";
 	import AppSidebar from "$lib/components/shell/AppSidebar.svelte";

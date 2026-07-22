@@ -59,7 +59,7 @@ import type {
   MakeCredentialEnvelope,
   PINEnvelope,
   ResetFactoryEnvelope,
-} from "../../bindings/fidobench/service";
+} from "../../bindings/telesma/service";
 import type {
   GetAssertionPreview,
   GetAssertionResult,

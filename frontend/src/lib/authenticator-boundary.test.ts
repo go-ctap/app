@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { InteractionKind } from "../../bindings/github.com/go-ctap/kit/model";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import type { CredentialsEnvelope, InteractionPrompt } from "../../bindings/fidobench/service";
+import type { CredentialsEnvelope, InteractionPrompt } from "../../bindings/telesma/service";
 
 import { pendingInteraction } from "./features/interaction/state.js";
 import { authenticatorStatus } from "./features/authenticator/state.js";

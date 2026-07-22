@@ -35,7 +35,7 @@ import {
   type LargeBlobReadEnvelope,
   type PINEnvelope,
   type ResetFactoryEnvelope,
-} from "../../bindings/fidobench/service";
+} from "../../bindings/telesma/service";
 import {
   GetAssertionOutput,
   GetAssertionResult,

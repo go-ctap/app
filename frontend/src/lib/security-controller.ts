@@ -21,7 +21,7 @@ import {
   type PINSetRequest,
   type ResetFactoryEnvelope,
   type ResetFactoryRequest,
-} from "../../bindings/fidobench/service";
+} from "../../bindings/telesma/service";
 
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";

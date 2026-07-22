@@ -18,7 +18,7 @@ describe("NoAuthenticatorState", () => {
     render(NoAuthenticatorState, { props: { screenLabel: "Passkeys" } });
 
     expect(screen.getByRole("heading", { name: "Connect an authenticator" })).toBeInTheDocument();
-    expect(screen.getByText("No manual setup is needed. FIDO Workbench is already watching for a compatible local authenticator.")).toBeInTheDocument();
+    expect(screen.getByText("No manual setup is needed. Telesma is already watching for a compatible local authenticator.")).toBeInTheDocument();
 
     const steps = within(screen.getByRole("list")).getAllByRole("listitem");
     expect(steps).toHaveLength(3);

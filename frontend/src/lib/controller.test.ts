@@ -25,7 +25,7 @@ import {
   type MDSLookupEnvelope,
   type OperationEventEnvelope,
   type ActiveSelection,
-} from "../../bindings/fidobench/service";
+} from "../../bindings/telesma/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
@@ -83,7 +83,7 @@ const serviceMocks = vi.hoisted(() => ({
   UpdateCredentialUser: vi.fn(),
 }));
 
-vi.mock("../../bindings/fidobench/ctapkitservice", () => serviceMocks);
+vi.mock("../../bindings/telesma/ctapkitservice", () => serviceMocks);
 
 function device(id: string): DeviceReport {
   return {

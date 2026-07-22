@@ -17,7 +17,7 @@ import type {
   MinPINLengthRequest,
   ResetFactoryEnvelope,
   ResetFactoryRequest,
-} from "../../../../bindings/fidobench/service";
+} from "../../../../bindings/telesma/service";
 import { isUnsupportedFailure } from "../../failure.js";
 import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import {

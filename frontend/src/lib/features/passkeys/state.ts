@@ -9,7 +9,7 @@ import type {
   CredentialUpdateEnvelope,
   CredentialUpdateRequest,
   CredentialsEnvelope,
-} from "../../../../bindings/fidobench/service";
+} from "../../../../bindings/telesma/service";
 
 import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import {

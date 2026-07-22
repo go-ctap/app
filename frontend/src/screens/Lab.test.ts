@@ -16,7 +16,7 @@ import {
   MakeCredentialEnvelope,
   MakeCredentialRequest,
   type InspectEnvelope,
-} from "../../bindings/fidobench/service";
+} from "../../bindings/telesma/service";
 
 import { createLabState, labState as mutableLabState } from "$lib/features/lab/state";
 import { setAppLocale } from "$lib/i18n";

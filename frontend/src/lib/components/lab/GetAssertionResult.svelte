@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { GetAssertionResult as GetAssertionResultDTO } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
-  import type { GetAssertionEnvelope } from "../../../../bindings/fidobench/service";
+  import type { GetAssertionEnvelope } from "../../../../bindings/telesma/service";
 
   import { Badge } from "$lib/components/ui/badge/index.js";
   import * as Tabs from "$lib/components/ui/tabs/index.js";

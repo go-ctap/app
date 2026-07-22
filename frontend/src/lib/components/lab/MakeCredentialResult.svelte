@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { MakeCredentialResult as MakeCredentialResultDTO } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
-  import type { MakeCredentialEnvelope } from "../../../../bindings/fidobench/service";
+  import type { MakeCredentialEnvelope } from "../../../../bindings/telesma/service";
 
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { base64ToHex } from "$lib/lab-input";

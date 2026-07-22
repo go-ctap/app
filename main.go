@@ -5,8 +5,8 @@ import (
 	"log"
 	"runtime"
 
-	appservice "fidobench/service"
 	"github.com/wailsapp/wails/v3/pkg/application"
+	appservice "telesma/service"
 )
 
 //go:embed all:frontend/dist
@@ -26,7 +26,7 @@ func init() {
 
 func mainWindowOptions(goos string) application.WebviewWindowOptions {
 	options := application.WebviewWindowOptions{
-		Title:     "FIDO Authenticator Workbench",
+		Title:     "Telesma",
 		Frameless: true,
 		MinWidth:  mainWindowMinWidth,
 		MinHeight: mainWindowMinHeight,
@@ -58,8 +58,8 @@ func mainWindowOptions(goos string) application.WebviewWindowOptions {
 func main() {
 	ctapkitService := NewCtapkitService()
 	app := application.New(application.Options{
-		Name:        "fidoapp",
-		Description: "Hardware authenticator workbench",
+		Name:        "Telesma",
+		Description: "Desktop workbench for local FIDO2/CTAP authenticators",
 		Services: []application.Service{
 			application.NewService(ctapkitService),
 		},

@@ -1,6 +1,6 @@
 import { get } from "svelte/store";
 
-import type { OperationEventEnvelope } from "../../bindings/fidobench/service";
+import type { OperationEventEnvelope } from "../../bindings/telesma/service";
 
 import { authenticatorStatus } from "./features/authenticator/state.js";
 import { statusBar } from "./features/workbench/state.js";

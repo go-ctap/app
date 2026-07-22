@@ -1,6 +1,6 @@
 import { readonly, writable } from "svelte/store";
 
-const ADVANCED_MODE_STORAGE_KEY = "fidoapp.advancedMode";
+const ADVANCED_MODE_STORAGE_KEY = "telesma.advancedMode";
 
 const advancedModeState = writable(initialAdvancedMode());
 

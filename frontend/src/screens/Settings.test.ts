@@ -26,7 +26,7 @@ describe("Settings", () => {
     await user.click(screen.getByRole("button", { name: "Language" }));
     await user.click(screen.getByText("Russian"));
 
-    expect(localStorage.getItem("fidoapp.locale")).toBe("ru");
+    expect(localStorage.getItem("telesma.locale")).toBe("ru");
     expect(document.documentElement.lang).toBe("ru");
   });
 
@@ -41,6 +41,6 @@ describe("Settings", () => {
     await user.click(advancedMode);
 
     expect(advancedMode).toBeChecked();
-    expect(localStorage.getItem("fidoapp.advancedMode")).toBe("true");
+    expect(localStorage.getItem("telesma.advancedMode")).toBe("true");
   });
 });

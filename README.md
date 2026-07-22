@@ -1,6 +1,8 @@
-# fidoapp
+# Telesma
 
-`fidoapp` is a Wails 3 desktop workbench for inspecting and managing local FIDO2/CTAP authenticators. The application uses `github.com/go-ctap/kit` as its authenticator runtime and keeps product UI and Wails wiring in this repository.
+Telesma is a Wails 3 desktop workbench for inspecting and managing local FIDO2/CTAP authenticators. The application uses `github.com/go-ctap/kit` as its authenticator runtime and keeps product UI and Wails wiring in this repository.
+
+Created by Savely Krasovsky.
 
 ## Development
 
@@ -44,7 +46,7 @@ From this directory, run:
 wails3 task package:linux:amd64
 ```
 
-The result is `bin/fidoapp-x86_64.AppImage`. On an Apple Silicon Mac the first
+The result is `bin/telesma-x86_64.AppImage`. On an Apple Silicon Mac the first
 build is relatively slow because the amd64 compiler and packaging tools run
 under translation or emulation; subsequent builds reuse Podman's cached layers.
 
@@ -64,7 +66,7 @@ podman build \
   --file build/docker/Dockerfile.appimage \
   --ignorefile build/docker/Dockerfile.appimage.dockerignore \
   --target artifact \
-  --tag localhost/fidoapp-appimage-builder:linux-amd64 \
+  --tag localhost/telesma-appimage-builder:linux-amd64 \
   --build-arg TARGETARCH=amd64 \
   --build-arg WAILS_LINUX_TAGS=gtk3 \
   ..
@@ -72,11 +74,11 @@ podman build \
 mkdir -p bin
 container_id="$(podman create \
   --platform linux/amd64 \
-  localhost/fidoapp-appimage-builder:linux-amd64 \
+  localhost/telesma-appimage-builder:linux-amd64 \
   /bin/true)"
 podman cp \
-  "${container_id}:/bin/fidoapp-x86_64.AppImage" \
-  bin/fidoapp-x86_64.AppImage
+  "${container_id}:/bin/telesma-x86_64.AppImage" \
+  bin/telesma-x86_64.AppImage
 podman rm "$container_id"
 ```
 

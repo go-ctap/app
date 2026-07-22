@@ -21,7 +21,7 @@ import {
   GetAssertionRequest,
   MakeCredentialRequest,
   type SelectionID,
-} from "../../bindings/fidobench/service";
+} from "../../bindings/telesma/service";
 import { getDomain } from "tldts";
 
 import type {

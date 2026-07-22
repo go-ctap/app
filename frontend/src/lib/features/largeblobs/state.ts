@@ -10,7 +10,7 @@ import type {
   LargeBlobMutationRequest,
   LargeBlobReadEnvelope,
   LargeBlobReadRequest,
-} from "../../../../bindings/fidobench/service";
+} from "../../../../bindings/telesma/service";
 
 import type {
   LargeBlobPayloadEncoding,
