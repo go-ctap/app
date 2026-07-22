@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	ctapkit "github.com/go-ctap/kit"
 	"github.com/go-ctap/kit/model/failure"
@@ -108,6 +109,34 @@ func TestSetSelectionCancellationAndCloseFailures(t *testing.T) {
 	snapshot, err := service.SetSelection(t.Context(), SelectionRequest{})
 	if err == nil || snapshot.Selection != nil || service.selected != nil {
 		t.Fatalf("clear = (%#v, %v), selected = %#v", snapshot, err, service.selected)
+	}
+}
+
+func TestCloseSelectionClosesRuntimeBeforeWaitingForOperations(t *testing.T) {
+	service := selectionTestService()
+	operationID := OperationID("operation-1")
+	selected := testSelection("selection-1", testDevice("hid://one", "device-1"), nil)
+	operation := &operationState{
+		id:          operationID,
+		selectionID: selected.id,
+		cancel:      func() {},
+		done:        make(chan struct{}),
+	}
+	selected.operations[operationID] = operation
+	selected.runtime.lifecycle = &fakeAuthenticatorRuntime{onClose: func() {
+		service.unregisterOperation(selected, operationID)
+	}}
+
+	closeDone := make(chan error, 1)
+	go func() { closeDone <- service.closeSelection(selected) }()
+
+	select {
+	case err := <-closeDone:
+		if err != nil {
+			t.Fatalf("closeSelection: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("closeSelection waited for the operation before closing the runtime")
 	}
 }
 

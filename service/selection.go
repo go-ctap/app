@@ -202,9 +202,10 @@ func (s *Service) openSelection(
 }
 
 func (s *Service) closeSelection(selected *selection) error {
+	closeErr := selected.runtime.Close()
 	s.cancelAndWait(selected)
 
-	return selected.runtime.Close()
+	return closeErr
 }
 
 func (s *Service) lockSelection(ctx context.Context) (func(), error) {

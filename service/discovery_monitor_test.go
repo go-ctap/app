@@ -355,10 +355,15 @@ func (m *fakeDiscoveryMonitor) isCanceled() bool {
 type fakeAuthenticatorRuntime struct {
 	closed   atomic.Bool
 	closeErr error
+	onClose  func()
 }
 
 func (s *fakeAuthenticatorRuntime) Close() error {
 	s.closed.Store(true)
+	if s.onClose != nil {
+		s.onClose()
+	}
+
 	return s.closeErr
 }
 
