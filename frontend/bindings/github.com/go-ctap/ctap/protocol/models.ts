@@ -154,6 +154,7 @@ export enum Option {
     OptionClientPIN = "clientPin",
     OptionUserPresence = "up",
     OptionUserVerification = "uv",
+    OptionUvToken = "uvToken",
     OptionPinUvAuthToken = "pinUvAuthToken",
     OptionNoMcGaPermissionsWithClientPin = "noMcGaPermissionsWithClientPin",
     OptionLargeBlobs = "largeBlobs",
