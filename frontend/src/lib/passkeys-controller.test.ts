@@ -204,8 +204,8 @@ describe("passkeys mutation requests", () => {
       "authenticator-1",
       VerificationFlow.VerificationFlowPIN,
       updateTarget(),
-      { userIDHex: "AABB", name: "old", displayName: "Visible" },
-      { userIDHex: " aabb ", name: "", displayName: " Changed " },
+      { name: "old", displayName: "Visible" },
+      { name: "", displayName: " Changed " },
     );
 
     expect(request).toEqual({
@@ -219,7 +219,7 @@ describe("passkeys mutation requests", () => {
           displayName: "Old name",
         },
         rp: { id: "example.test" },
-        user: { userIDHex: "aabb", name: "old", displayName: "Visible" },
+        user: { userIDHex: "01", name: "user", displayName: "Old name" },
       },
       name: "",
       nameProvided: true,
@@ -231,13 +231,13 @@ describe("passkeys mutation requests", () => {
     expect(request).not.toHaveProperty("userIdProvided");
   });
 
-  it("marks a genuinely changed normalized user ID exactly", () => {
+  it("does not include user ID fields in update requests", () => {
     const request = buildCredentialUpdatePreviewRequest(
       "authenticator-1",
       VerificationFlow.VerificationFlowPIN,
       updateTarget(),
-      { userIDHex: "AABB", name: "user", displayName: "Visible" },
-      { userIDHex: " ccDD ", name: " user ", displayName: "Visible" },
+      { name: "user", displayName: "Visible" },
+      { name: " user ", displayName: "Visible" },
     );
 
     expect(request).toEqual({
@@ -251,33 +251,24 @@ describe("passkeys mutation requests", () => {
           displayName: "Old name",
         },
         rp: { id: "example.test" },
-        user: { userIDHex: "aabb", name: "user", displayName: "Visible" },
+        user: { userIDHex: "01", name: "user", displayName: "Old name" },
       },
-      userIdHex: "ccdd",
-      userIdProvided: true,
       dryRun: true,
     });
+    expect(request).not.toHaveProperty("userIdHex");
+    expect(request).not.toHaveProperty("userIdProvided");
     expect(request).not.toHaveProperty("nameProvided");
     expect(request).not.toHaveProperty("displayProvided");
   });
 
-  it("normalizes hex and validates required, even-length user IDs", () => {
-    expect(normalizeCredentialUpdateForm({ userIDHex: " AAbb ", name: " User ", displayName: " Display " })).toEqual({
-      userIDHex: "aabb",
+  it("normalizes and validates editable user fields", () => {
+    expect(normalizeCredentialUpdateForm({ name: " User ", displayName: " Display " })).toEqual({
       name: "User",
       displayName: "Display",
     });
     expect(validateCredentialUpdate(
-      { userIDHex: "aa", name: "user", displayName: "User" },
-      { userIDHex: "", name: "user", displayName: "User" },
-    )).toBe("user-id-required");
-    expect(validateCredentialUpdate(
-      { userIDHex: "aa", name: "user", displayName: "User" },
-      { userIDHex: "abc", name: "user", displayName: "User" },
-    )).toBe("user-id-invalid-hex");
-    expect(validateCredentialUpdate(
-      { userIDHex: "AA", name: " user ", displayName: "User" },
-      { userIDHex: "aa", name: "user", displayName: " User " },
+      { name: " user ", displayName: "User" },
+      { name: "user", displayName: " User " },
     )).toBe("no-changes");
   });
 

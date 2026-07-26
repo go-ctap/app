@@ -103,7 +103,7 @@
   "credential_update": "Обновить ключ доступа",
   "credential_update_no_changes": "Измените хотя бы одно поле пользователя перед предпросмотром.",
   "credential_update_preview": "Предпросмотр обновления ключа доступа",
-  "credential_update_warning_mutation": "Будут изменены данные пользователя, сохранённые вместе с обнаруживаемым ключом доступа.",
+  "credential_update_warning_mutation": "Изменение этих данных может лишить вас возможности входа с помощью этого ключа доступа.",
   "credential_update_warning_scope": "ID ключа доступа и привязка к relying party останутся без изменений.",
   "credential_updated": "Ключ доступа обновлён",
   "credentials_count": "Ключей доступа: {count}",

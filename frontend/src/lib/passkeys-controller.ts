@@ -186,7 +186,6 @@ function updateFormFor(credentialIDHex: string): CredentialUpdateForm | null {
   const target = findPasskeyCredential(report, credentialIDHex);
   if (!target) return null;
   return {
-    userIDHex: target.credential.userIDHex ?? "",
     name: target.credential.userName ?? "",
     displayName: target.credential.displayName ?? "",
   };
@@ -245,7 +244,6 @@ export function editCredentialUpdate() {
 
 export function normalizeCredentialUpdateForm(form: CredentialUpdateForm): CredentialUpdateForm {
   return {
-    userIDHex: form.userIDHex.trim().toLowerCase(),
     name: form.name.trim(),
     displayName: form.displayName.trim(),
   };
@@ -257,9 +255,7 @@ export function validateCredentialUpdate(
 ): CredentialUpdateValidationError | null {
   const current = normalizeCredentialUpdateForm(original);
   const proposed = normalizeCredentialUpdateForm(form);
-  if (!proposed.userIDHex) return "user-id-required";
-  if (proposed.userIDHex.length % 2 !== 0 || !/^[0-9a-f]+$/.test(proposed.userIDHex)) return "user-id-invalid-hex";
-  if (current.userIDHex === proposed.userIDHex && current.name === proposed.name && current.displayName === proposed.displayName) return "no-changes";
+  if (current.name === proposed.name && current.displayName === proposed.displayName) return "no-changes";
   return null;
 }
 
@@ -272,7 +268,6 @@ export function buildCredentialUpdatePreviewRequest(
 ): CredentialUpdateRequest {
   const current = normalizeCredentialUpdateForm(original);
   const proposed = normalizeCredentialUpdateForm(form);
-  const userIDChanged = proposed.userIDHex !== current.userIDHex;
   const nameChanged = proposed.name !== current.name;
   const displayNameChanged = proposed.displayName !== current.displayName;
   return {
@@ -286,12 +281,11 @@ export function buildCredentialUpdatePreviewRequest(
         ...(target.relyingParty.rpIDHashHex ? { idHashHex: target.relyingParty.rpIDHashHex } : {}),
       },
       user: {
-        userIDHex: current.userIDHex,
-        name: current.name,
-        displayName: current.displayName,
+        userIDHex: target.credential.userIDHex ?? "",
+        name: target.credential.userName ?? "",
+        displayName: target.credential.displayName ?? "",
       },
     },
-    ...(userIDChanged ? { userIdHex: proposed.userIDHex, userIdProvided: true } : {}),
     ...(nameChanged ? { name: proposed.name, nameProvided: true } : {}),
     ...(displayNameChanged ? { displayName: proposed.displayName, displayProvided: true } : {}),
     dryRun: true,

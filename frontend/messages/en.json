@@ -103,7 +103,7 @@
   "credential_update": "Update passkey",
   "credential_update_no_changes": "Change at least one user field before previewing the update.",
   "credential_update_preview": "Passkey update preview",
-  "credential_update_warning_mutation": "This changes the user information stored with the discoverable passkey.",
+  "credential_update_warning_mutation": "Changing this information may prevent you from signing in with this passkey.",
   "credential_update_warning_scope": "The passkey ID and relying-party binding remain unchanged.",
   "credential_updated": "Passkey updated",
   "credentials_count": "{count} passkeys",

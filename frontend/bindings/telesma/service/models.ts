@@ -642,10 +642,8 @@ export class CredentialUpdateRequest {
     "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
     "target": credentials$0.CredentialTarget;
-    "userIdHex"?: string;
     "name"?: string;
     "displayName"?: string;
-    "userIdProvided"?: boolean;
     "nameProvided"?: boolean;
     "displayProvided"?: boolean;
     "dryRun"?: boolean;

@@ -29,10 +29,8 @@ type CredentialDeleteRequest struct {
 type CredentialUpdateRequest struct {
 	OperationRequest
 	Target          credentials.CredentialTarget `json:"target"`
-	UserIDHex       string                       `json:"userIdHex,omitempty"`
 	Name            string                       `json:"name,omitempty"`
 	DisplayName     string                       `json:"displayName,omitempty"`
-	UserIDProvided  bool                         `json:"userIdProvided,omitempty"`
 	NameProvided    bool                         `json:"nameProvided,omitempty"`
 	DisplayProvided bool                         `json:"displayProvided,omitempty"`
 	DryRun          bool                         `json:"dryRun,omitempty"`
@@ -192,10 +190,8 @@ func (s *Service) DeleteCredential(ctx context.Context, req CredentialDeleteRequ
 func (s *Service) UpdateCredentialUser(ctx context.Context, req CredentialUpdateRequest) (CredentialUpdateEnvelope, error) {
 	operation := credentials.UpdateUserOperation{
 		Target:          req.Target,
-		UserIDHex:       req.UserIDHex,
 		Name:            req.Name,
 		DisplayName:     req.DisplayName,
-		UserIDProvided:  req.UserIDProvided,
 		NameProvided:    req.NameProvided,
 		DisplayProvided: req.DisplayProvided,
 		DryRun:          req.DryRun,

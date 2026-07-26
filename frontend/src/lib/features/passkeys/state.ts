@@ -58,12 +58,11 @@ export type PasskeysStatusFilter =
   | "cred-protect-not-reported";
 
 export type CredentialUpdateForm = {
-  userIDHex: string;
   name: string;
   displayName: string;
 };
 
-export type CredentialUpdateValidationError = "user-id-required" | "user-id-invalid-hex" | "no-changes";
+export type CredentialUpdateValidationError = "no-changes";
 export type PasskeysMutationFailureReason = MutationFailureReason;
 
 type UpdateMutationBase = {

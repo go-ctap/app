@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowRight, Pencil } from "@lucide/svelte";
 
+  import type { Warning } from "../../../../bindings/github.com/go-ctap/kit/model/safety";
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
@@ -82,14 +83,18 @@
   );
 
   function validationMessage(error: CredentialUpdateValidationError | null) {
-    if (error === "user-id-required") return m.user_id_required();
-    if (error === "user-id-invalid-hex") return m.user_id_invalid_hex();
     if (error === "no-changes") return m.credential_update_no_changes();
     return "";
   }
 
   function shown(value: string | undefined) {
     return value?.trim() || m.not_reported();
+  }
+
+  function warningVariant(warning: Warning) {
+    return warning.code === "credential.update_user.mutation" || warning.severity === "destructive"
+      ? "destructive"
+      : "warning";
   }
 
   function handleOpenChange(next: boolean) {
@@ -123,23 +128,6 @@
         <form class="passkey-update-form" onsubmit={handleSubmit}>
         {#if showForm}
           <Field.FieldGroup>
-            <Field.Field
-              data-invalid={validationError === "user-id-required" || validationError === "user-id-invalid-hex"}
-            >
-              <Field.FieldLabel for="passkey-update-user-id">{m.user_id_hex()}</Field.FieldLabel>
-              <Input
-                id="passkey-update-user-id"
-                value={mutation.form.userIDHex}
-                aria-invalid={validationError === "user-id-required" || validationError === "user-id-invalid-hex"}
-                autocomplete="off"
-                spellcheck="false"
-                oninput={(event) => onDraftChange({ userIDHex: event.currentTarget.value })}
-              />
-              {#if validationError === "user-id-required" || validationError === "user-id-invalid-hex"}
-                <Field.FieldError>{validationMessage(validationError)}</Field.FieldError>
-              {/if}
-            </Field.Field>
-
             <Field.Field>
               <Field.FieldLabel for="passkey-update-name">{m.user_name()}</Field.FieldLabel>
               <Input
@@ -196,7 +184,6 @@
               <div>
                 <span>{m.current_value()}</span>
                 <dl>
-                  <div><dt>{m.user_id_hex()}</dt><dd><code>{shown(preview.current.userIDHex)}</code></dd></div>
                   <div><dt>{m.user_name()}</dt><dd>{shown(preview.current.name)}</dd></div>
                   <div><dt>{m.display_name()}</dt><dd>{shown(preview.current.displayName)}</dd></div>
                 </dl>
@@ -205,7 +192,6 @@
               <div>
                 <span>{m.proposed_value()}</span>
                 <dl>
-                  <div><dt>{m.user_id_hex()}</dt><dd><code>{shown(preview.proposed.userIDHex)}</code></dd></div>
                   <div><dt>{m.user_name()}</dt><dd>{shown(preview.proposed.name)}</dd></div>
                   <div><dt>{m.display_name()}</dt><dd>{shown(preview.proposed.displayName)}</dd></div>
                 </dl>
@@ -216,7 +202,7 @@
               <div class="passkey-preview-warnings">
                 <strong>{m.preview_warnings()}</strong>
                 {#each preview.warnings as warning (warning.code)}
-                  <Alert.Root variant={warning.severity === "destructive" ? "destructive" : "warning"}>
+                  <Alert.Root variant={warningVariant(warning)}>
                     <Alert.Description>{warningMessage(warning)}</Alert.Description>
                   </Alert.Root>
                 {/each}
