@@ -7,7 +7,7 @@ import (
 )
 
 func TestMainWindowOptionsUseNativeMacChrome(t *testing.T) {
-	options := mainWindowOptions("darwin")
+	options := mainWindowOptions("darwin", defaultMainWindowState())
 
 	if options.Frameless {
 		t.Fatal("macOS main window must keep its native frame")
@@ -33,7 +33,7 @@ func TestMainWindowOptionsUseNativeMacChrome(t *testing.T) {
 }
 
 func TestMainWindowOptionsSetMinimumSize(t *testing.T) {
-	options := mainWindowOptions("darwin")
+	options := mainWindowOptions("darwin", defaultMainWindowState())
 
 	if options.MinWidth != mainWindowMinWidth {
 		t.Fatalf("minimum window width = %d, want %d", options.MinWidth, mainWindowMinWidth)
@@ -44,7 +44,7 @@ func TestMainWindowOptionsSetMinimumSize(t *testing.T) {
 }
 
 func TestMainWindowOptionsPreserveWindowsNonClientRegions(t *testing.T) {
-	options := mainWindowOptions("windows")
+	options := mainWindowOptions("windows", defaultMainWindowState())
 
 	if !options.Frameless {
 		t.Fatal("Windows main window must stay frameless")
@@ -64,7 +64,39 @@ func TestMainWindowOptionsPreserveWindowsNonClientRegions(t *testing.T) {
 }
 
 func TestMainWindowOptionsKeepLinuxFrameless(t *testing.T) {
-	if !mainWindowOptions("linux").Frameless {
+	if !mainWindowOptions("linux", defaultMainWindowState()).Frameless {
 		t.Fatal("Linux main window must stay frameless")
+	}
+}
+
+func TestMainWindowOptionsRestoreNormalState(t *testing.T) {
+	options := mainWindowOptions("linux", persistedMainWindowState{
+		Width:  1200,
+		Height: 800,
+	})
+
+	if options.Width != 1200 || options.Height != 800 {
+		t.Fatalf("window size = %dx%d, want 1200x800", options.Width, options.Height)
+	}
+	if options.StartState != application.WindowStateNormal {
+		t.Fatalf("start state = %v, want normal", options.StartState)
+	}
+	if options.InitialPosition == application.WindowXY || options.X != 0 || options.Y != 0 {
+		t.Fatalf("window placement must remain managed by the OS: position mode %v, coordinates (%d, %d)", options.InitialPosition, options.X, options.Y)
+	}
+}
+
+func TestMainWindowOptionsRestoreMaximisedState(t *testing.T) {
+	options := mainWindowOptions("linux", persistedMainWindowState{
+		Width:     1200,
+		Height:    800,
+		Maximised: true,
+	})
+
+	if options.Width != 1200 || options.Height != 800 {
+		t.Fatalf("normal window size = %dx%d, want 1200x800", options.Width, options.Height)
+	}
+	if options.StartState != application.WindowStateMaximised {
+		t.Fatalf("start state = %v, want maximised", options.StartState)
 	}
 }

@@ -5,8 +5,9 @@ import (
 	"log"
 	"runtime"
 
-	"github.com/wailsapp/wails/v3/pkg/application"
 	appservice "telesma/service"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 //go:embed all:frontend/dist
@@ -24,12 +25,19 @@ func init() {
 	application.RegisterEvent[appservice.LogCursor](appservice.EventLogsChanged)
 }
 
-func mainWindowOptions(goos string) application.WebviewWindowOptions {
+func mainWindowOptions(goos string, state persistedMainWindowState) application.WebviewWindowOptions {
+	if !validMainWindowState(state) {
+		state = defaultMainWindowState()
+	}
+
 	options := application.WebviewWindowOptions{
-		Title:     "Telesma",
-		Frameless: true,
-		MinWidth:  mainWindowMinWidth,
-		MinHeight: mainWindowMinHeight,
+		Title:      "Telesma",
+		Width:      state.Width,
+		Height:     state.Height,
+		Frameless:  true,
+		MinWidth:   mainWindowMinWidth,
+		MinHeight:  mainWindowMinHeight,
+		StartState: application.WindowStateNormal,
 		Mac: application.MacWindow{
 			Backdrop:           application.MacBackdropLiquidGlass,
 			TitleBar:           application.MacTitleBarHiddenInset,
@@ -48,6 +56,10 @@ func mainWindowOptions(goos string) application.WebviewWindowOptions {
 		URL:              "/",
 	}
 
+	if state.Maximised {
+		options.StartState = application.WindowStateMaximised
+	}
+
 	if goos == "darwin" {
 		options.Frameless = false
 	}
@@ -56,6 +68,8 @@ func mainWindowOptions(goos string) application.WebviewWindowOptions {
 }
 
 func main() {
+	state, statePath := restoreMainWindowState()
+
 	ctapkitService := NewCtapkitService()
 	app := application.New(application.Options{
 		Name:        "Telesma",
@@ -71,7 +85,8 @@ func main() {
 		},
 	})
 
-	app.Window.NewWithOptions(mainWindowOptions(runtime.GOOS))
+	mainWindow := app.Window.NewWithOptions(mainWindowOptions(runtime.GOOS, state))
+	trackMainWindowState(mainWindow, newMainWindowStateTracker(state), statePath)
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)

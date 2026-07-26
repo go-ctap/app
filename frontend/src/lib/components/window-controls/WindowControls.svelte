@@ -2,9 +2,10 @@
   import { Events } from "@wailsio/runtime";
   import { onMount } from "svelte";
 
+  import { closeWindow, isWindowMaximized, minimizeWindow, toggleMaximizeWindow } from "$lib/window-controller.js";
+
   import { m } from "../../../paraglide/messages.js";
   import Icons from "./Icons.svelte";
-  import { closeWindow, isWindowMaximized, minimizeWindow, toggleMaximizeWindow } from "./window";
   import WindowControlButton from "./WindowControlButton.svelte";
 
   let maximized = $state(false);
@@ -21,11 +22,15 @@
     const offRestore = Events.On(Events.Types.Common.WindowRestore, () => {
       maximized = false;
     });
+    const offRuntimeReady = Events.On(Events.Types.Common.WindowRuntimeReady, () => {
+      void syncMaximized();
+    });
 
     return () => {
       offMaximise();
       offUnMaximise();
       offRestore();
+      offRuntimeReady();
     };
   });
 
@@ -33,7 +38,7 @@
     try {
       maximized = await isWindowMaximized();
     } catch {
-      maximized = false;
+      // runtimeCall records the failure; keep the last known native state.
     }
   }
 

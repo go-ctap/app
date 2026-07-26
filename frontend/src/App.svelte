@@ -11,7 +11,6 @@
 	import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
 	import { Toaster } from "$lib/components/ui/sonner/index.js";
 	import { WindowControls, WindowTitlebar } from "$lib/components/window-controls";
-	import { toggleMaximizeWindow } from "$lib/components/window-controls/window";
 	import { handleDiscoveryChanged, startDiscoveryMonitoring } from "$lib/discovery-controller.js";
 	import { handleOperationProgress } from "$lib/event-controller.js";
 	import {
@@ -38,6 +37,7 @@
 	import { cancelActiveOperation } from "$lib/operation-controller.js";
 	import { currentLocale } from "$lib/i18n";
 	import { buildInteractionModalPresentation, buildShellStatusPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
+	import { toggleMaximizeWindow } from "$lib/window-controller.js";
 	import { detectWindowPlatform, resolveWindowPlatform } from "$lib/window-platform";
 
 	let refreshing = $state(false);
@@ -94,6 +94,7 @@
 	}
 
 	function handleTitlebarDoubleClick(event: MouseEvent) {
+		if (isMacOS) return;
 		if (!(event.target instanceof Element)) return;
 		if (!event.target.closest('[data-window-titlebar-region="true"]')) return;
 		if (event.target.closest('button, a, input, select, textarea, [role="button"], [contenteditable="true"]')) return;
