@@ -15,72 +15,50 @@ task dev
 
 `task dev` starts the real Wails window. A browser-only preview is not a reliable smoke test for the Wails 3 runtime.
 
-## Linux x86_64 AppImage from macOS
+### Dev Container (Fedora/Podman)
 
-The Linux binary and AppImage are built and packaged in `linux/amd64` stages,
-so no Linux, Go, Node.js, or GTK tooling is required on the Mac. On Apple
-Silicon the architecture-independent frontend is built in a native arm64 stage
-to avoid running Node/Vite through QEMU. Podman and a running Podman machine are
-required. For a new installation, initialize the machine once; otherwise just
-start the existing one:
+The checked-in Dev Container targets the Linux desktop development workflow:
 
-```sh
-# Run only once for a new Podman installation (6 GiB avoids OOM during pnpm/Go builds):
-podman machine init --memory 6144 --now
+- Ubuntu 24.04 with Go, Node.js, pnpm, Task, and Delve.
+- Wails' GTK4/WebKitGTK 6.0 desktop stack.
+- The host Wayland session and D-Bus session for the real Wails window.
+- The host PC/SC socket plus dynamic HID raw devices and kernel uevents for
+  authenticator hot-plug.
 
-# For an existing stopped machine:
-podman machine start
-```
+The app depends on sibling repositories through `go.work`, `replace`
+directives, and a local frontend package. The configuration therefore mounts the
+parent `go-ctap` directory and opens `/workspaces/go-ctap/app`; cloning only this
+repository into a container volume is not supported by this workspace layout.
 
-If an existing machine still has Podman's 2 GiB default, resize it once:
-
-```sh
-podman machine stop
-podman machine set --memory 6144
-podman machine start
-```
-
-From this directory, run:
+The configuration is editor-independent. Point any Dev Container client at
+`.devcontainer/devcontainer.json`. For clients using Podman's API, enable its
+user socket and configure the system service without an idle timeout:
 
 ```sh
-wails3 task package:linux:amd64
+systemctl --user enable --now podman.socket
 ```
 
-The result is `bin/telesma-x86_64.AppImage`. On an Apple Silicon Mac the first
-build is relatively slow because the amd64 compiler and packaging tools run
-under translation or emulation; subsequent builds reuse Podman's cached layers.
+```toml
+# ~/.config/containers/containers.conf
+[engine]
+service_timeout = 0
+```
 
-The builder defaults to Wails' GTK3 compatibility path so the AppImage can run
-on distributions such as Ubuntu 22.04 and Debian 12. Additional Go build tags
-can be supplied with `APPIMAGE_TAGS`, for example:
+After the post-create hook completes:
 
 ```sh
-wails3 task package:linux:amd64 APPIMAGE_TAGS=gtk3,mytag
+wails3 doctor
+task dev
 ```
 
-The equivalent commands without a locally installed Wails CLI are:
+The host PC/SC daemon must be running for NFC/smart-card readers. Rootless
+Podman also cannot grant more device access than the host user already has, so
+the host's FIDO udev rules must allow that user to open `/dev/hidraw*`.
 
-```sh
-podman build \
-  --platform linux/amd64 \
-  --file build/docker/Dockerfile.appimage \
-  --ignorefile build/docker/Dockerfile.appimage.dockerignore \
-  --target artifact \
-  --tag localhost/telesma-appimage-builder:linux-amd64 \
-  --build-arg TARGETARCH=amd64 \
-  --build-arg WAILS_LINUX_TAGS=gtk3 \
-  ..
-
-mkdir -p bin
-container_id="$(podman create \
-  --platform linux/amd64 \
-  localhost/telesma-appimage-builder:linux-amd64 \
-  /bin/true)"
-podman cp \
-  "${container_id}:/bin/telesma-x86_64.AppImage" \
-  bin/telesma-x86_64.AppImage
-podman rm "$container_id"
-```
+> **Trust boundary:** this development container is intentionally privileged
+> and uses host networking. It mounts the host `/dev`, `/sys`, Wayland socket,
+> D-Bus session, PC/SC socket, and the complete local `go-ctap` workspace.
+> Run it only for trusted source code and dependencies.
 
 ## Verification
 

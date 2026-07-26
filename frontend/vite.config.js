@@ -24,7 +24,7 @@ export default defineConfig({
         paraglideVitePlugin({
             project: "./project.inlang",
             outdir: "./src/paraglide",
-            strategy: ["localStorage", "globalVariable", "baseLocale"],
+            strategy: ["globalVariable", "baseLocale"],
             emitTsDeclarations: true
         }),
         svelte({preprocess: vitePreprocess()}),

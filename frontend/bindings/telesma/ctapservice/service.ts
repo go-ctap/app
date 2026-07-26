@@ -7,197 +7,197 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as model$0 from "../github.com/go-ctap/kit/model/models.js";
+import * as model$0 from "../../github.com/go-ctap/kit/model/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as service$0 from "./service/models.js";
+import * as service$0 from "../service/models.js";
 
 export function BioEnroll(req: service$0.BioEnrollRequest): $CancellablePromise<service$0.BioEnrollEnvelope> {
-    return $Call.ByID(3726523099, req).then(($result: any) => {
+    return $Call.ByID(1857495767, req).then(($result: any) => {
         return $$createType0($result);
     });
 }
 
 export function BioList(req: service$0.OperationRequest): $CancellablePromise<service$0.BioListEnvelope> {
-    return $Call.ByID(4261501351, req).then(($result: any) => {
+    return $Call.ByID(1823563707, req).then(($result: any) => {
         return $$createType1($result);
     });
 }
 
 export function BioRemove(req: service$0.BioRemoveRequest): $CancellablePromise<service$0.BioMutationEnvelope> {
-    return $Call.ByID(4269797987, req).then(($result: any) => {
+    return $Call.ByID(2093347871, req).then(($result: any) => {
         return $$createType2($result);
     });
 }
 
 export function BioRename(req: service$0.BioRenameRequest): $CancellablePromise<service$0.BioMutationEnvelope> {
-    return $Call.ByID(753488149, req).then(($result: any) => {
+    return $Call.ByID(3304619721, req).then(($result: any) => {
         return $$createType2($result);
     });
 }
 
 export function BioSensorInfo(req: service$0.OperationRequest): $CancellablePromise<service$0.BioSensorEnvelope> {
-    return $Call.ByID(2938446073, req).then(($result: any) => {
+    return $Call.ByID(2766429213, req).then(($result: any) => {
         return $$createType3($result);
     });
 }
 
 export function CancelOperation(req: service$0.CancelOperationRequest): $CancellablePromise<boolean> {
-    return $Call.ByID(2425731786, req);
+    return $Call.ByID(891068774, req);
 }
 
 export function ChangePIN(req: service$0.PINChangeRequest): $CancellablePromise<service$0.PINEnvelope> {
-    return $Call.ByID(2066433970, req).then(($result: any) => {
+    return $Call.ByID(860817262, req).then(($result: any) => {
         return $$createType4($result);
     });
 }
 
 export function ClearLogs(): $CancellablePromise<service$0.LogCursor> {
-    return $Call.ByID(2238960883).then(($result: any) => {
+    return $Call.ByID(2572506087).then(($result: any) => {
         return $$createType5($result);
     });
 }
 
 export function ConfigStatus(req: service$0.OperationRequest): $CancellablePromise<service$0.ConfigStatusEnvelope> {
-    return $Call.ByID(752855159, req).then(($result: any) => {
+    return $Call.ByID(3146903587, req).then(($result: any) => {
         return $$createType6($result);
     });
 }
 
 export function CredentialStoreState(req: service$0.OperationRequest): $CancellablePromise<service$0.CredentialStoreStateEnvelope> {
-    return $Call.ByID(71650600, req).then(($result: any) => {
+    return $Call.ByID(1657339740, req).then(($result: any) => {
         return $$createType7($result);
     });
 }
 
 export function DeleteCredential(req: service$0.CredentialDeleteRequest): $CancellablePromise<service$0.CredentialDeleteEnvelope> {
-    return $Call.ByID(764302109, req).then(($result: any) => {
+    return $Call.ByID(1777995249, req).then(($result: any) => {
         return $$createType8($result);
     });
 }
 
 export function DeleteLargeBlob(req: service$0.LargeBlobMutationRequest): $CancellablePromise<service$0.LargeBlobMutationEnvelope> {
-    return $Call.ByID(3645894196, req).then(($result: any) => {
+    return $Call.ByID(417872536, req).then(($result: any) => {
         return $$createType9($result);
     });
 }
 
 export function Discover(req: service$0.DiscoverRequest): $CancellablePromise<service$0.DiscoverySnapshot> {
-    return $Call.ByID(1576779980, req).then(($result: any) => {
+    return $Call.ByID(1537315728, req).then(($result: any) => {
         return $$createType10($result);
     });
 }
 
 export function EnableLongTouchForReset(req: service$0.EnableLongTouchForResetRequest): $CancellablePromise<service$0.AuthenticatorConfigEnvelope> {
-    return $Call.ByID(1474665083, req).then(($result: any) => {
+    return $Call.ByID(716051751, req).then(($result: any) => {
         return $$createType11($result);
     });
 }
 
 export function GarbageCollectLargeBlobs(req: service$0.LargeBlobGarbageCollectRequest): $CancellablePromise<service$0.LargeBlobMutationEnvelope> {
-    return $Call.ByID(1660244725, req).then(($result: any) => {
+    return $Call.ByID(1827961697, req).then(($result: any) => {
         return $$createType9($result);
     });
 }
 
 export function GetAssertion(req: service$0.GetAssertionRequest): $CancellablePromise<service$0.GetAssertionEnvelope> {
-    return $Call.ByID(125734795, req).then(($result: any) => {
+    return $Call.ByID(3743964695, req).then(($result: any) => {
         return $$createType12($result);
     });
 }
 
 export function Inspect(req: service$0.OperationRequest): $CancellablePromise<service$0.InspectEnvelope> {
-    return $Call.ByID(2272061785, req).then(($result: any) => {
+    return $Call.ByID(2330384397, req).then(($result: any) => {
         return $$createType13($result);
     });
 }
 
 export function ListCredentials(req: service$0.CredentialListRequest): $CancellablePromise<service$0.CredentialsEnvelope> {
-    return $Call.ByID(2164995207, req).then(($result: any) => {
+    return $Call.ByID(1591704787, req).then(($result: any) => {
         return $$createType14($result);
     });
 }
 
 export function ListLargeBlobs(req: service$0.LargeBlobListRequest): $CancellablePromise<service$0.LargeBlobListEnvelope> {
-    return $Call.ByID(3401300686, req).then(($result: any) => {
+    return $Call.ByID(3154408666, req).then(($result: any) => {
         return $$createType15($result);
     });
 }
 
 export function LookupMDS(req: service$0.MDSLookupRequest): $CancellablePromise<service$0.MDSLookupEnvelope> {
-    return $Call.ByID(3411323153, req).then(($result: any) => {
+    return $Call.ByID(3619009085, req).then(($result: any) => {
         return $$createType16($result);
     });
 }
 
 export function MakeCredential(req: service$0.MakeCredentialRequest): $CancellablePromise<service$0.MakeCredentialEnvelope> {
-    return $Call.ByID(1636508368, req).then(($result: any) => {
+    return $Call.ByID(2426403780, req).then(($result: any) => {
         return $$createType17($result);
     });
 }
 
 export function ReadLargeBlob(req: service$0.LargeBlobReadRequest): $CancellablePromise<service$0.LargeBlobReadEnvelope> {
-    return $Call.ByID(4104435269, req).then(($result: any) => {
+    return $Call.ByID(229558265, req).then(($result: any) => {
         return $$createType18($result);
     });
 }
 
 export function ReadLogs(req: service$0.ReadLogsRequest): $CancellablePromise<model$0.LogJournalBatch> {
-    return $Call.ByID(2298881328, req).then(($result: any) => {
+    return $Call.ByID(1892100652, req).then(($result: any) => {
         return $$createType19($result);
     });
 }
 
 export function RefreshDiscovery(req: service$0.DiscoverRequest): $CancellablePromise<void> {
-    return $Call.ByID(2373356356, req);
+    return $Call.ByID(783570880, req);
 }
 
 export function ResetFactory(req: service$0.ResetFactoryRequest): $CancellablePromise<service$0.ResetFactoryEnvelope> {
-    return $Call.ByID(2083660208, req).then(($result: any) => {
+    return $Call.ByID(1816695156, req).then(($result: any) => {
         return $$createType20($result);
     });
 }
 
 export function ResolveInteraction(answer: service$0.InteractionAnswer): $CancellablePromise<boolean> {
-    return $Call.ByID(2432292647, answer);
+    return $Call.ByID(1320226131, answer);
 }
 
 export function SetAlwaysUV(req: service$0.AlwaysUVRequest): $CancellablePromise<service$0.AuthenticatorConfigEnvelope> {
-    return $Call.ByID(3387272879, req).then(($result: any) => {
+    return $Call.ByID(2045211195, req).then(($result: any) => {
         return $$createType11($result);
     });
 }
 
 export function SetMinPINLength(req: service$0.MinPINLengthRequest): $CancellablePromise<service$0.AuthenticatorConfigEnvelope> {
-    return $Call.ByID(4215874138, req).then(($result: any) => {
+    return $Call.ByID(2753512262, req).then(($result: any) => {
         return $$createType11($result);
     });
 }
 
 export function SetPIN(req: service$0.PINSetRequest): $CancellablePromise<service$0.PINEnvelope> {
-    return $Call.ByID(459436564, req).then(($result: any) => {
+    return $Call.ByID(3276157520, req).then(($result: any) => {
         return $$createType4($result);
     });
 }
 
 export function SetSelection(req: service$0.SelectionRequest): $CancellablePromise<service$0.SelectionSnapshot> {
-    return $Call.ByID(1766289941, req).then(($result: any) => {
+    return $Call.ByID(580326617, req).then(($result: any) => {
         return $$createType21($result);
     });
 }
 
 export function StartDiscoveryMonitoring(): $CancellablePromise<void> {
-    return $Call.ByID(2304839527);
+    return $Call.ByID(2988543923);
 }
 
 export function UpdateCredentialUser(req: service$0.CredentialUpdateRequest): $CancellablePromise<service$0.CredentialUpdateEnvelope> {
-    return $Call.ByID(921824680, req).then(($result: any) => {
+    return $Call.ByID(1194230284, req).then(($result: any) => {
         return $$createType22($result);
     });
 }
 
 export function WriteLargeBlob(req: service$0.LargeBlobMutationRequest): $CancellablePromise<service$0.LargeBlobMutationEnvelope> {
-    return $Call.ByID(3856356946, req).then(($result: any) => {
+    return $Call.ByID(1879113462, req).then(($result: any) => {
         return $$createType9($result);
     });
 }

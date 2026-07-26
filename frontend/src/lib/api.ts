@@ -1,4 +1,6 @@
-import * as service from "../../bindings/telesma/ctapkitservice";
+import * as applicationService from "../../bindings/telesma/appconfig/service";
+import type { ApplicationConfig, ApplicationConfigSnapshot } from "../../bindings/telesma/appconfig";
+import * as service from "../../bindings/telesma/ctapservice/service";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { LogJournalBatch } from "../../bindings/github.com/go-ctap/kit/model";
 import {
@@ -73,6 +75,14 @@ export type OperationEnvelope =
   | GetAssertionEnvelope;
 
 export const api = {
+  loadApplicationConfig(): Promise<ApplicationConfigSnapshot> {
+    return runtimeCall("application.config.load", () => applicationService.LoadApplicationConfig());
+  },
+
+  saveApplicationConfig(config: ApplicationConfig): Promise<void> {
+    return runtimeCall("application.config.save", () => applicationService.SaveApplicationConfig(config));
+  },
+
   readLogs(request: ReadLogsRequest): Promise<LogJournalBatch> {
     return runtimeCall("ctapkit.logs.read", () => service.ReadLogs(request));
   },

@@ -46,7 +46,7 @@ const serviceMocks = vi.hoisted(() => ({
   StartDiscoveryMonitoring: vi.fn(),
 }));
 
-vi.mock("../../bindings/telesma/ctapkitservice", () => serviceMocks);
+vi.mock("../../bindings/telesma/ctapservice/service", () => serviceMocks);
 
 function device(id: string, product = id): DeviceReport {
   return {

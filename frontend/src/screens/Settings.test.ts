@@ -1,16 +1,28 @@
-import { cleanup, render, screen } from "@testing-library/svelte";
+import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { setAppLocale } from "$lib/i18n";
-import { setAdvancedMode } from "$lib/preferences";
+import { ApplicationConfig, ApplicationConfigSnapshot } from "../../bindings/telesma/appconfig";
+import { initializeApplicationConfig } from "$lib/i18n";
+
+const applicationServiceMocks = vi.hoisted(() => ({
+  LoadApplicationConfig: vi.fn(),
+  SaveApplicationConfig: vi.fn(),
+}));
+
+vi.mock("../../bindings/telesma/appconfig/service", () => applicationServiceMocks);
 
 import Settings from "./Settings.svelte";
 
 describe("Settings", () => {
-  beforeEach(() => {
-    setAppLocale("en");
-    setAdvancedMode(false);
+  beforeEach(async () => {
+    applicationServiceMocks.LoadApplicationConfig.mockResolvedValue(new ApplicationConfigSnapshot({
+      config: new ApplicationConfig({ locale: "en", advancedMode: false }),
+      exists: true,
+    }));
+    applicationServiceMocks.SaveApplicationConfig.mockResolvedValue(undefined);
+    await initializeApplicationConfig();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -26,7 +38,9 @@ describe("Settings", () => {
     await user.click(screen.getByRole("button", { name: "Language" }));
     await user.click(screen.getByText("Russian"));
 
-    expect(localStorage.getItem("telesma.locale")).toBe("ru");
+    await waitFor(() => expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledWith(
+      expect.objectContaining({ locale: "ru", advancedMode: false }),
+    ));
     expect(document.documentElement.lang).toBe("ru");
   });
 
@@ -41,6 +55,8 @@ describe("Settings", () => {
     await user.click(advancedMode);
 
     expect(advancedMode).toBeChecked();
-    expect(localStorage.getItem("telesma.advancedMode")).toBe("true");
+    await waitFor(() => expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledWith(
+      expect.objectContaining({ locale: "en", advancedMode: true }),
+    ));
   });
 });

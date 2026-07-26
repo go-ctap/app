@@ -5,6 +5,9 @@ import (
 	"log"
 	"runtime"
 
+	"telesma/appconfig"
+	"telesma/ctapservice"
+	"telesma/internal/windowstate"
 	appservice "telesma/service"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -25,9 +28,9 @@ func init() {
 	application.RegisterEvent[appservice.LogCursor](appservice.EventLogsChanged)
 }
 
-func mainWindowOptions(goos string, state persistedMainWindowState) application.WebviewWindowOptions {
-	if !validMainWindowState(state) {
-		state = defaultMainWindowState()
+func mainWindowOptions(goos string, state windowstate.State) application.WebviewWindowOptions {
+	if !windowstate.Valid(state, mainWindowMinWidth, mainWindowMinHeight) {
+		state = windowstate.Default(mainWindowMinWidth, mainWindowMinHeight)
 	}
 
 	options := application.WebviewWindowOptions{
@@ -68,13 +71,14 @@ func mainWindowOptions(goos string, state persistedMainWindowState) application.
 }
 
 func main() {
-	state, statePath := restoreMainWindowState()
+	state, statePath := windowstate.Restore(mainWindowMinWidth, mainWindowMinHeight)
 
-	ctapkitService := NewCtapkitService()
+	ctapkitService := ctapservice.New()
 	app := application.New(application.Options{
 		Name:        "Telesma",
 		Description: "Desktop workbench for local FIDO2/CTAP authenticators",
 		Services: []application.Service{
+			application.NewService(appconfig.NewService()),
 			application.NewService(ctapkitService),
 		},
 		Assets: application.AssetOptions{
@@ -86,7 +90,11 @@ func main() {
 	})
 
 	mainWindow := app.Window.NewWithOptions(mainWindowOptions(runtime.GOOS, state))
-	trackMainWindowState(mainWindow, newMainWindowStateTracker(state), statePath)
+	windowstate.Track(
+		mainWindow,
+		windowstate.NewTracker(state, mainWindowMinWidth, mainWindowMinHeight),
+		statePath,
+	)
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)

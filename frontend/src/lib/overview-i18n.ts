@@ -76,12 +76,6 @@ const CTAP_RULE_MESSAGES = {
   [RuleID.RuleAttestationFormatsUnique]: ruleMessages(m.overview_ctap_warning_attestation_formats_list_duplicate_name, m.overview_ctap_warning_attestation_formats_list_duplicate_description),
   [RuleID.RuleAttestationFormatsNoneOmitted]: ruleMessages(m.overview_ctap_warning_attestation_formats_none_name, m.overview_ctap_warning_attestation_formats_none_description),
   [RuleID.RuleCertificationLevelRange]: ruleMessages(m.overview_conformance_certification_level_name, m.overview_conformance_certification_level_description),
-  [RuleID.RuleMaxCredentialCountPositive]: ruleMessages(m.overview_ctap_warning_max_credential_count_in_list_positive_name, m.overview_ctap_warning_max_credential_count_in_list_positive_description),
-  [RuleID.RuleMaxCredentialIDLengthPositive]: ruleMessages(m.overview_ctap_warning_max_credential_id_length_positive_name, m.overview_ctap_warning_max_credential_id_length_positive_description),
-  [RuleID.RulePreferredPlatformUVAttemptsPositive]: {
-    name: () => m.overview_ctap_warning_preferred_platform_uv_attempts_minimum_name(),
-    description: () => m.overview_ctap_warning_preferred_platform_uv_attempts_minimum_description({ minimum: 1 }),
-  },
   [RuleID.RuleProfileHMACSecretRequired]: {
     name: (profile) => m.overview_ctap_warning_ctap23_hmac_secret_name({ profile }),
     description: (profile) => m.overview_ctap_warning_ctap23_hmac_secret_description({ profile }),

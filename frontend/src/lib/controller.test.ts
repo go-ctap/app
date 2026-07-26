@@ -83,7 +83,7 @@ const serviceMocks = vi.hoisted(() => ({
   UpdateCredentialUser: vi.fn(),
 }));
 
-vi.mock("../../bindings/telesma/ctapkitservice", () => serviceMocks);
+vi.mock("../../bindings/telesma/ctapservice/service", () => serviceMocks);
 
 function device(id: string): DeviceReport {
   return {

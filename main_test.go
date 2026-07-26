@@ -4,10 +4,16 @@ import (
 	"testing"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+
+	"telesma/internal/windowstate"
 )
 
+func defaultTestWindowState() windowstate.State {
+	return windowstate.Default(mainWindowMinWidth, mainWindowMinHeight)
+}
+
 func TestMainWindowOptionsUseNativeMacChrome(t *testing.T) {
-	options := mainWindowOptions("darwin", defaultMainWindowState())
+	options := mainWindowOptions("darwin", defaultTestWindowState())
 
 	if options.Frameless {
 		t.Fatal("macOS main window must keep its native frame")
@@ -33,7 +39,7 @@ func TestMainWindowOptionsUseNativeMacChrome(t *testing.T) {
 }
 
 func TestMainWindowOptionsSetMinimumSize(t *testing.T) {
-	options := mainWindowOptions("darwin", defaultMainWindowState())
+	options := mainWindowOptions("darwin", defaultTestWindowState())
 
 	if options.MinWidth != mainWindowMinWidth {
 		t.Fatalf("minimum window width = %d, want %d", options.MinWidth, mainWindowMinWidth)
@@ -44,7 +50,7 @@ func TestMainWindowOptionsSetMinimumSize(t *testing.T) {
 }
 
 func TestMainWindowOptionsPreserveWindowsNonClientRegions(t *testing.T) {
-	options := mainWindowOptions("windows", defaultMainWindowState())
+	options := mainWindowOptions("windows", defaultTestWindowState())
 
 	if !options.Frameless {
 		t.Fatal("Windows main window must stay frameless")
@@ -64,13 +70,13 @@ func TestMainWindowOptionsPreserveWindowsNonClientRegions(t *testing.T) {
 }
 
 func TestMainWindowOptionsKeepLinuxFrameless(t *testing.T) {
-	if !mainWindowOptions("linux", defaultMainWindowState()).Frameless {
+	if !mainWindowOptions("linux", defaultTestWindowState()).Frameless {
 		t.Fatal("Linux main window must stay frameless")
 	}
 }
 
 func TestMainWindowOptionsRestoreNormalState(t *testing.T) {
-	options := mainWindowOptions("linux", persistedMainWindowState{
+	options := mainWindowOptions("linux", windowstate.State{
 		Width:  1200,
 		Height: 800,
 	})
@@ -87,7 +93,7 @@ func TestMainWindowOptionsRestoreNormalState(t *testing.T) {
 }
 
 func TestMainWindowOptionsRestoreMaximisedState(t *testing.T) {
-	options := mainWindowOptions("linux", persistedMainWindowState{
+	options := mainWindowOptions("linux", windowstate.State{
 		Width:     1200,
 		Height:    800,
 		Maximised: true,

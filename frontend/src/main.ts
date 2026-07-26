@@ -3,7 +3,7 @@ import "./app.css";
 import { Events, System } from "@wailsio/runtime";
 import { mount } from "svelte";
 
-import { initLocale } from "$lib/i18n";
+import { initializeApplicationConfig } from "$lib/i18n";
 
 import App from "./App.svelte";
 
@@ -22,7 +22,7 @@ const refreshTheme = () => void syncTheme();
 refreshTheme();
 Events.On(Events.Types.Common.ThemeChanged, refreshTheme);
 window.addEventListener("focus", refreshTheme);
-initLocale();
+await initializeApplicationConfig();
 
 const app = mount(App, {
   target: document.getElementById("app")!,

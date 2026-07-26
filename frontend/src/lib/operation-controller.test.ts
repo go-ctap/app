@@ -25,7 +25,7 @@ const serviceMocks = vi.hoisted(() => ({
   ResolveInteraction: vi.fn(),
 }));
 
-vi.mock("../../bindings/telesma/ctapkitservice", () => serviceMocks);
+vi.mock("../../bindings/telesma/ctapservice/service", () => serviceMocks);
 
 const token: DeviceReport = {
   fingerprint: "token-1",

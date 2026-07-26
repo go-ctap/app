@@ -8,6 +8,7 @@ require (
 	github.com/go-ctap/ctap v0.36.0
 	github.com/go-ctap/kit v0.9.0
 	github.com/google/uuid v1.6.0
+	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/wailsapp/wails/v3 v3.0.0-alpha2.117
 )
 
