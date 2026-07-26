@@ -24,14 +24,6 @@ tasks:
     cmds:
       - task: "{{OS}}:package"
 
-  package:linux:amd64:
-    summary: Packages a linux/amd64 AppImage with Podman
-    cmds:
-      - task: linux:create:appimage:podman
-        vars:
-          APPIMAGE_TAGS:
-            ref: .APPIMAGE_TAGS
-
   run:
     summary: Runs the application
     cmds:
