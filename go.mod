@@ -5,7 +5,7 @@ go 1.26.3
 replace github.com/go-ctap/kit => ../kit
 
 require (
-	github.com/go-ctap/ctap v0.35.0
+	github.com/go-ctap/ctap v0.36.0
 	github.com/go-ctap/kit v0.9.0
 	github.com/google/uuid v1.6.0
 	github.com/wailsapp/wails/v3 v3.0.0-alpha2.117

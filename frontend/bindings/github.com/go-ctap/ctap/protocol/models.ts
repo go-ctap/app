@@ -188,6 +188,10 @@ export enum UserVerify {
      */
     $zero = 0,
 
+    /**
+     * FIDO Registry of Predefined Values 2.3 §3.1 User Verification Methods:
+     * https://fidoalliance.org/specs/common-specs/fido-registry-v2.3-ps-20260105.html#user-verification-methods
+     */
     UserVerifyPresenceInternal = 1,
     UserVerifyFingerprintInternal = 2,
     UserVerifyPasscodeInternal = 4,
@@ -197,10 +201,10 @@ export enum UserVerify {
     UserVerifyEyeprintInternal = 64,
     UserVerifyPatternInternal = 128,
     UserVerifyHandprintInternal = 256,
-    UserVerifyPasscodeExternal = 512,
-    UserVerifyPatternExternal = 1024,
-    UserVerifyNone = 2048,
-    UserVerifyAll = 4096,
+    UserVerifyNone = 512,
+    UserVerifyAll = 1024,
+    UserVerifyPasscodeExternal = 2048,
+    UserVerifyPatternExternal = 4096,
 };
 
 /**
