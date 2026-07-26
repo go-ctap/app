@@ -52,6 +52,9 @@
 - Screens: `frontend/src/screens/`; reusable product/workbench components: `frontend/src/lib/components/` grouped by domain, with shadcn primitives under `frontend/src/lib/components/ui/`; app stores/controllers, typed extractors, and presentation builders: `frontend/src/lib/`. Do not use `frontend/src/lib/` for DTO mirrors.
 - OpenSpec files under `openspec/` are history and requirements, not architectural handcuffs.
 
+## Tooling
+- Prioritize the GoLand MCP tools for code navigation, symbol lookup, usage searches, inspections, refactoring, and other IDE-assisted operations when they are available and applicable.
+
 ## Verify
 - Backend: `go test ./... -count=1`.
 - Authenticator lifecycle, locking, interaction, or cancellation changes: also consider `go test -race ./... -count=1`.
