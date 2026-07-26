@@ -10,6 +10,12 @@ import { m } from "../paraglide/messages.js";
 import {
   largeBlobListReport,
 } from "./ctapkit-results.js";
+import {
+  displayInventoryValue,
+  inventoryQueryMatches,
+  inventoryRowsState,
+  type CredentialIdentityRow,
+} from "./credential-inventory-presentation.js";
 import type {
   LargeBlobsInventoryState,
   LargeBlobsStatusFilter,
@@ -17,14 +23,7 @@ import type {
 import { largeBlobsInventoryIsStale } from "./features/largeblobs/state.js";
 import { deviceName } from "./format.js";
 
-export type LargeBlobCredentialRow = {
-  id: string;
-  credentialIDHex: string;
-  rpID: string;
-  rpName: string;
-  userIDHex: string;
-  userName: string;
-  displayName: string;
+export type LargeBlobCredentialRow = CredentialIdentityRow & {
   largeBlobKeyState: LargeBlobKeyState;
   largeBlobKeyAvailable: boolean;
   blobState: BlobState;
@@ -47,8 +46,7 @@ export type LargeBlobsPresentationInput = {
 export type LargeBlobsPresentation = ReturnType<typeof buildLargeBlobsPresentation>;
 
 function displayValue(value: string | null | undefined) {
-  const text = value?.trim() ?? "";
-  return text || m.not_reported();
+  return displayInventoryValue(value, m.not_reported());
 }
 
 function rowFor(credential: ListCredential): LargeBlobCredentialRow {
@@ -71,8 +69,7 @@ function rowFor(credential: ListCredential): LargeBlobCredentialRow {
 }
 
 function searchMatches(credential: ListCredential, normalizedQuery: string) {
-  if (!normalizedQuery) return true;
-  return [
+  return inventoryQueryMatches([
     credential.credentialIDHex,
     credential.rp.id,
     credential.rp.name,
@@ -80,7 +77,7 @@ function searchMatches(credential: ListCredential, normalizedQuery: string) {
     credential.user.userIDHex,
     credential.user.name,
     credential.user.displayName,
-  ].some((value) => value?.toLowerCase().includes(normalizedQuery));
+  ], normalizedQuery);
 }
 
 function statusMatches(credential: ListCredential, filter: LargeBlobsStatusFilter) {
@@ -128,6 +125,7 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
   const selectedKeyAvailable = Boolean(selectedRow?.largeBlobKeyAvailable);
   const selectedBlobPresent = Boolean(selectedRow?.blobPresent);
   const device = input.selectedDevice ?? report?.device ?? null;
+  const rowsState = inventoryRowsState(allRows, rows, Boolean(report));
 
   return {
     selector: input.selectedSelector,
@@ -152,8 +150,7 @@ export function buildLargeBlobsPresentation(input: LargeBlobsPresentationInput) 
     statusFilter,
     rows,
     selectedCredentialID,
-    emptyInventory: Boolean(report && allRows.length === 0),
-    emptyFilteredResult: Boolean(report && allRows.length > 0 && rows.length === 0),
+    ...rowsState,
     selectedDeviceName: device ? deviceName(device) : m.authenticator(),
     supportItems: [
       { label: m.matrix_name_large_blobs_command(), value: report?.support.largeBlobs ?? false },

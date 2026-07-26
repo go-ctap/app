@@ -18,6 +18,16 @@ import type {
 } from "$lib/largeblobs-payload";
 import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import {
+  beginInventoryLoad,
+  completeInventoryLoad,
+  emptyInventoryState,
+  failInventoryLoadAtRuntime,
+  failInventoryLoadWithResponse,
+  inventoryIsStale,
+  type InventoryPhase,
+  type InventoryState,
+} from "$lib/inventory-state";
+import {
   idleMutation,
   type EditableMutationLifecycle,
   type MutationFailureReason,
@@ -30,20 +40,13 @@ export type {
   LargeBlobPayloadValidationError,
 } from "../../largeblobs-payload.js";
 
-export type LargeBlobsInventoryPhase = "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";
+export type LargeBlobsInventoryPhase = InventoryPhase;
 
 /** The latest successful list stays visible when a later refresh fails. */
-export type LargeBlobsInventoryState = {
-  phase: LargeBlobsInventoryPhase;
-  lastSuccessfulEnvelope: LargeBlobListEnvelope | null;
-  responseEnvelope: LargeBlobListEnvelope | null;
-  runtimeError: Failure | null;
-  lastSuccessfulAt: string | null;
-};
+export type LargeBlobsInventoryState = InventoryState<LargeBlobListEnvelope>;
 
 export function largeBlobsInventoryIsStale(state: LargeBlobsInventoryState) {
-  return Boolean(state.lastSuccessfulEnvelope)
-    && (state.phase === "error" || state.phase === "unsupported");
+  return inventoryIsStale(state);
 }
 
 export type LargeBlobsStatusFilter = "all" | "present" | "missing" | "key-unavailable";
@@ -114,13 +117,7 @@ export type LargeBlobMutationState =
     >;
 
 export function emptyLargeBlobsInventoryState(): LargeBlobsInventoryState {
-  return {
-    phase: "idle",
-    lastSuccessfulEnvelope: null,
-    responseEnvelope: null,
-    runtimeError: null,
-    lastSuccessfulAt: null,
-  };
+  return emptyInventoryState();
 }
 
 export const largeBlobsInventoryState = writable<LargeBlobsInventoryState>(emptyLargeBlobsInventoryState());
@@ -134,40 +131,23 @@ export const largeBlobsPayloadEncoding = writable<LargeBlobPayloadEncoding>("utf
 export const largeBlobsDecodeMode = writable<DecodeMode>(DecodeMode.DecodeModeJSON);
 
 export function beginLargeBlobsInventoryLoad() {
-  largeBlobsInventoryState.update((current) => ({
-    ...current,
-    phase: current.lastSuccessfulEnvelope ? "refreshing" : "loading",
-    responseEnvelope: null,
-    runtimeError: null,
-  }));
+  largeBlobsInventoryState.update(beginInventoryLoad);
 }
 
 export function completeLargeBlobsInventoryLoad(envelope: LargeBlobListEnvelope, completedAt: string) {
-  largeBlobsInventoryState.set({
-    phase: "ready",
-    lastSuccessfulEnvelope: envelope,
-    responseEnvelope: envelope,
-    runtimeError: null,
-    lastSuccessfulAt: completedAt,
-  });
+  largeBlobsInventoryState.set(completeInventoryLoad(envelope, completedAt));
 }
 
 export function failLargeBlobsInventoryLoadWithResponse(envelope: LargeBlobListEnvelope) {
-  largeBlobsInventoryState.update((current) => ({
-    ...current,
-    phase: envelope.error?.code === Code.CodeLargeBlobUnsupported ? "unsupported" : "error",
-    responseEnvelope: envelope,
-    runtimeError: null,
-  }));
+  largeBlobsInventoryState.update((current) => failInventoryLoadWithResponse(
+    current,
+    envelope,
+    envelope.error?.code === Code.CodeLargeBlobUnsupported,
+  ));
 }
 
 export function failLargeBlobsInventoryLoadAtRuntime(error: Failure) {
-  largeBlobsInventoryState.update((current) => ({
-    ...current,
-    phase: "error",
-    responseEnvelope: null,
-    runtimeError: error,
-  }));
+  largeBlobsInventoryState.update((current) => failInventoryLoadAtRuntime(current, error));
 }
 
 export function resetLargeBlobReadState() {

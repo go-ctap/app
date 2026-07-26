@@ -1,16 +1,14 @@
 <script lang="ts">
-  import { ChevronRight, FilterX, FlaskConical, KeyRound, RefreshCw } from "@lucide/svelte";
+  import { ChevronRight, FlaskConical, KeyRound, RefreshCw } from "@lucide/svelte";
 
   import type { DecodeMode } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
 
   import LargeBlobInspector from "$lib/components/largeblobs/LargeBlobInspector.svelte";
+  import CredentialInventoryToolbar from "$lib/components/shared/CredentialInventoryToolbar.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import * as ExpandableDataTable from "$lib/components/shared/expandable-data-table/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
-  import * as Field from "$lib/components/ui/field/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import * as Select from "$lib/components/ui/select/index.js";
   import { Skeleton } from "$lib/components/ui/skeleton/index.js";
   import type {
     LargeBlobMutationState,
@@ -62,22 +60,9 @@
     { value: "missing" as const, label: m.large_blob_filter_missing() },
     { value: "key-unavailable" as const, label: m.large_blob_filter_key_unavailable() },
   ] satisfies { value: LargeBlobsStatusFilter; label: string }[]);
-  let currentFilterLabel = $derived(
-    filters.find((filter) => filter.value === presentation.statusFilter)?.label
-      ?? m.large_blob_filter_all(),
-  );
-  let filtersActive = $derived(
-    Boolean(presentation.query.trim()) || presentation.statusFilter !== "all",
-  );
   let selectionDisabled = $derived(
     presentation.loading || readState.phase === "loading" || mutation.kind !== "idle",
   );
-
-  function handleFilterChange(value: string | string[]) {
-    if (Array.isArray(value)) return;
-    const selected = filters.find((filter) => filter.value === value);
-    if (selected) onFilterChange(selected.value);
-  }
 
   function clearFilters() {
     onQueryChange("");
@@ -114,53 +99,28 @@
 
 <section class="large-blobs-inventory">
   {#if presentation.hasReport && !presentation.emptyInventory}
-    <div class="large-blobs-inventory-toolbar">
-      <Field.Field>
-        <Field.FieldLabel class="sr-only" for="large-blobs-search">
-          {m.large_blobs_search_placeholder()}
-        </Field.FieldLabel>
-        <Input
-          id="large-blobs-search"
-          type="search"
-          value={presentation.query}
-          placeholder={m.large_blobs_search_placeholder()}
-          autocomplete="off"
-          oninput={(event) => onQueryChange(event.currentTarget.value)}
-        />
-      </Field.Field>
-
-      <Field.Field>
-        <Field.FieldLabel class="sr-only" for="large-blobs-status-filter">{m.status()}</Field.FieldLabel>
-        <Select.Root
-          type="single"
-          value={presentation.statusFilter}
-          onValueChange={handleFilterChange}
-          items={filters}
-        >
-          <Select.Trigger id="large-blobs-status-filter" aria-label={m.status()}>{currentFilterLabel}</Select.Trigger>
-          <Select.Content side="bottom" align="end" sideOffset={6}>
-            <Select.Group>
-              {#each filters as filter (filter.value)}
-                <Select.Item value={filter.value} label={filter.label}>{filter.label}</Select.Item>
-              {/each}
-            </Select.Group>
-          </Select.Content>
-        </Select.Root>
-      </Field.Field>
-
-      <Button variant="outline" type="button" disabled={!filtersActive} onclick={clearFilters}>
-        <FilterX data-icon="inline-start" aria-hidden="true" />
-        {m.clear_filters()}
-      </Button>
-    </div>
+    <CredentialInventoryToolbar
+      id="large-blobs-search"
+      query={presentation.query}
+      statusFilter={presentation.statusFilter}
+      {filters}
+      searchPlaceholder={m.large_blobs_search_placeholder()}
+      {onQueryChange}
+      {onFilterChange}
+    />
   {/if}
 
   {#if presentation.loading && !presentation.hasReport}
-    <div class="large-blobs-inventory-toolbar large-blobs-toolbar-skeleton" aria-hidden="true">
-      <Skeleton class="large-blobs-search-skeleton" />
-      <Skeleton class="large-blobs-filter-skeleton" />
-      <Skeleton class="large-blobs-action-skeleton" />
-    </div>
+    <CredentialInventoryToolbar
+      id="large-blobs-search"
+      query={presentation.query}
+      statusFilter={presentation.statusFilter}
+      {filters}
+      searchPlaceholder={m.large_blobs_search_placeholder()}
+      loading
+      {onQueryChange}
+      {onFilterChange}
+    />
 
     <ExpandableDataTable.Root
       class="large-blobs-table large-blobs-table-skeleton"
@@ -313,37 +273,6 @@
     min-width: 0;
   }
 
-  .large-blobs-inventory-toolbar {
-    display: grid;
-    grid-template-columns: minmax(12rem, 1fr) auto auto;
-    gap: var(--space-2);
-    align-items: end;
-  }
-
-  :global(.large-blobs-inventory-toolbar [data-slot="field"]) {
-    min-width: 0;
-  }
-
-  :global(.large-blobs-inventory-toolbar [data-slot="select-trigger"]) {
-    max-width: 18rem;
-  }
-
-  :global(.large-blobs-toolbar-skeleton [data-slot="skeleton"]) {
-    height: 2rem;
-  }
-
-  :global(.large-blobs-search-skeleton) {
-    width: 100%;
-  }
-
-  :global(.large-blobs-filter-skeleton) {
-    width: 12rem;
-  }
-
-  :global(.large-blobs-action-skeleton) {
-    width: 8rem;
-  }
-
   :global(.large-blobs-table) {
     min-width: 52rem;
     table-layout: fixed;
@@ -421,17 +350,6 @@
     height: 1.25rem;
   }
 
-  @container workspace (max-width: 47.5rem) {
-    .large-blobs-inventory-toolbar {
-      grid-template-columns: minmax(0, 1fr) auto;
-    }
-
-    :global(.large-blobs-inventory-toolbar [data-slot="field"]),
-    :global(.large-blobs-search-skeleton) {
-      grid-column: 1 / -1;
-    }
-  }
-
   @container workspace (max-width: 45rem) {
     :global(.large-blobs-table) {
       min-width: 32rem;
@@ -454,25 +372,6 @@
 
     :global(.large-blobs-table-state) {
       width: 22%;
-    }
-  }
-
-  @container workspace (max-width: 38.75rem) {
-    .large-blobs-inventory-toolbar {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    :global(.large-blobs-inventory-toolbar [data-slot="field"]),
-    :global(.large-blobs-search-skeleton) {
-      grid-column: auto;
-    }
-
-    :global(.large-blobs-inventory-toolbar [data-slot="select-trigger"]),
-    :global(.large-blobs-search-skeleton),
-    :global(.large-blobs-filter-skeleton),
-    :global(.large-blobs-action-skeleton) {
-      width: 100%;
-      max-width: none;
     }
   }
 

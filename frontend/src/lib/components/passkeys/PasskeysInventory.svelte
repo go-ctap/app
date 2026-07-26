@@ -1,14 +1,12 @@
 <script lang="ts">
-  import { ChevronRight, FilterX, FlaskConical, KeyRound, RefreshCw } from "@lucide/svelte";
+  import { ChevronRight, FlaskConical, KeyRound, RefreshCw } from "@lucide/svelte";
 
   import PasskeyInspector from "$lib/components/passkeys/PasskeyInspector.svelte";
+  import CredentialInventoryToolbar from "$lib/components/shared/CredentialInventoryToolbar.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import * as ExpandableDataTable from "$lib/components/shared/expandable-data-table/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
-  import * as Field from "$lib/components/ui/field/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import * as Select from "$lib/components/ui/select/index.js";
   import { Skeleton } from "$lib/components/ui/skeleton/index.js";
   import type { PasskeysStatusFilter } from "$lib/features/passkeys/state";
   import type { PasskeyCredentialRow, PasskeysPresentation } from "$lib/passkeys-presentation";
@@ -56,17 +54,6 @@
     { value: "cred-protect-not-reported" as const, label: m.passkeys_filter_cred_protect_not_reported() },
   ] satisfies { value: PasskeysStatusFilter; label: string }[]);
 
-  let currentFilterLabel = $derived(
-    filters.find((filter) => filter.value === presentation.statusFilter)?.label ?? m.passkeys_filter_all(),
-  );
-  let filtersActive = $derived(Boolean(presentation.query.trim()) || presentation.statusFilter !== "all");
-
-  function handleFilterChange(value: string | string[]) {
-    if (Array.isArray(value)) return;
-    const selected = filters.find((filter) => filter.value === value);
-    if (selected) onFilterChange(selected.value);
-  }
-
   function clearFilters() {
     onQueryChange("");
     onFilterChange("all");
@@ -90,55 +77,28 @@
 
 <section class="passkeys-inventory">
   {#if presentation.hasReport && !presentation.emptyInventory}
-    <div class="passkeys-inventory-toolbar">
-      <Field.Field>
-        <Field.FieldLabel class="sr-only" for="passkeys-search">
-          {m.passkeys_search_placeholder()}
-        </Field.FieldLabel>
-        <Input
-          id="passkeys-search"
-          type="search"
-          value={presentation.query}
-          placeholder={m.passkeys_search_placeholder()}
-          autocomplete="off"
-          oninput={(event) => onQueryChange(event.currentTarget.value)}
-        />
-      </Field.Field>
-
-      <Select.Root
-        type="single"
-        value={presentation.statusFilter}
-        onValueChange={handleFilterChange}
-        items={filters}
-      >
-        <Select.Trigger aria-label={m.status()}>{currentFilterLabel}</Select.Trigger>
-        <Select.Content side="bottom" align="end" sideOffset={6}>
-          <Select.Group>
-            {#each filters as filter (filter.value)}
-              <Select.Item value={filter.value} label={filter.label}>{filter.label}</Select.Item>
-            {/each}
-          </Select.Group>
-        </Select.Content>
-      </Select.Root>
-
-      <Button
-        variant="outline"
-        type="button"
-        disabled={!filtersActive}
-        onclick={clearFilters}
-      >
-        <FilterX data-icon="inline-start" aria-hidden="true" />
-        {m.clear_filters()}
-      </Button>
-    </div>
+    <CredentialInventoryToolbar
+      id="passkeys-search"
+      query={presentation.query}
+      statusFilter={presentation.statusFilter}
+      {filters}
+      searchPlaceholder={m.passkeys_search_placeholder()}
+      {onQueryChange}
+      {onFilterChange}
+    />
   {/if}
 
   {#if presentation.loading && !presentation.hasReport}
-    <div class="passkeys-inventory-toolbar passkeys-inventory-toolbar-skeleton" aria-hidden="true">
-      <Skeleton class="passkeys-toolbar-search-skeleton" />
-      <Skeleton class="passkeys-toolbar-filter-skeleton" />
-      <Skeleton class="passkeys-toolbar-action-skeleton" />
-    </div>
+    <CredentialInventoryToolbar
+      id="passkeys-search"
+      query={presentation.query}
+      statusFilter={presentation.statusFilter}
+      {filters}
+      searchPlaceholder={m.passkeys_search_placeholder()}
+      loading
+      {onQueryChange}
+      {onFilterChange}
+    />
 
     <ExpandableDataTable.Root
       class="passkeys-table passkeys-table-skeleton"
@@ -301,37 +261,6 @@
     min-width: 0;
   }
 
-  .passkeys-inventory-toolbar {
-    display: grid;
-    grid-template-columns: minmax(12rem, 1fr) auto auto;
-    gap: var(--space-2);
-    align-items: end;
-  }
-
-  :global(.passkeys-inventory-toolbar [data-slot="field"]) {
-    min-width: 0;
-  }
-
-  :global(.passkeys-inventory-toolbar [data-slot="select-trigger"]) {
-    max-width: 18rem;
-  }
-
-  :global(.passkeys-inventory-toolbar-skeleton [data-slot="skeleton"]) {
-    height: 2rem;
-  }
-
-  :global(.passkeys-toolbar-search-skeleton) {
-    width: 100%;
-  }
-
-  :global(.passkeys-toolbar-filter-skeleton) {
-    width: 14rem;
-  }
-
-  :global(.passkeys-toolbar-action-skeleton) {
-    width: 8rem;
-  }
-
   :global(.passkeys-table) {
     min-width: 42rem;
     table-layout: fixed;
@@ -444,20 +373,6 @@
     white-space: nowrap;
   }
 
-  @container workspace (max-width: 47.5rem) {
-    .passkeys-inventory-toolbar {
-      grid-template-columns: minmax(0, 1fr) auto;
-    }
-
-    :global(.passkeys-inventory-toolbar [data-slot="field"]) {
-      grid-column: 1 / -1;
-    }
-
-    :global(.passkeys-toolbar-search-skeleton) {
-      grid-column: 1 / -1;
-    }
-  }
-
   @container workspace (max-width: 45rem) {
     :global(.passkeys-table) {
       min-width: 28rem;
@@ -476,26 +391,6 @@
     }
   }
 
-  @container workspace (max-width: 32.5rem) {
-    .passkeys-inventory-toolbar {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    :global(.passkeys-inventory-toolbar [data-slot="field"]) {
-      grid-column: auto;
-    }
-
-    :global(.passkeys-inventory-toolbar [data-slot="select-trigger"]) {
-      width: 100%;
-      max-width: none;
-    }
-
-    :global(.passkeys-toolbar-search-skeleton),
-    :global(.passkeys-toolbar-filter-skeleton),
-    :global(.passkeys-toolbar-action-skeleton) {
-      width: 100%;
-    }
-  }
 }
 
 @layer exceptions {
