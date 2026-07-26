@@ -1,12 +1,7 @@
 <script lang="ts">
-  import { TriangleAlert } from "@lucide/svelte";
-
+  import DestructiveMutationDialogs from "$lib/components/shared/DestructiveMutationDialogs.svelte";
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
-  import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";
   import * as Alert from "$lib/components/ui/alert/index.js";
-  import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
   import { credentialDeleteOutput } from "$lib/ctapkit-results";
   import type { PasskeysMutationState } from "$lib/features/passkeys/state";
   import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
@@ -34,9 +29,7 @@
   );
   let output = $derived.by(() => {
     if (mutation.kind !== "delete") return null;
-    if (mutation.phase === "review") {
-      return credentialDeleteOutput(mutation.previewEnvelope);
-    }
+    if (mutation.phase === "review") return credentialDeleteOutput(mutation.previewEnvelope);
     if (mutation.phase === "error" && mutation.previewEnvelope) {
       return credentialDeleteOutput(mutation.previewEnvelope);
     }
@@ -46,7 +39,9 @@
     if (mutation.kind !== "delete" || mutation.phase !== "error") return null;
     if (mutation.failureReason === "missing-preview") return m.operation_missing_preview();
     if (mutation.failureReason === "missing-result") return m.operation_missing_result();
-    return localizeFailure(mutation.runtimeError) ?? localizeFailure(mutation.responseEnvelope?.error) ?? m.operation_failed();
+    return localizeFailure(mutation.runtimeError)
+      ?? localizeFailure(mutation.responseEnvelope?.error)
+      ?? m.operation_failed();
   });
   let failureCanceled = $derived(
     mutation.kind === "delete" && mutation.phase === "error" && (
@@ -54,132 +49,69 @@
       || isCanceledFailure(mutation.responseEnvelope?.error)
     ),
   );
+
   function shown(value: string | undefined) {
     return value?.trim() || m.not_reported();
   }
-
-  function handleOpenChange(next: boolean) {
-    if (!next) onClose();
-  }
-
-  function handleAction(event: MouseEvent) {
-    event.preventDefault();
-    void onConfirm();
-  }
 </script>
 
-<Dialog.Root open={previewErrorOpen} onOpenChange={handleOpenChange}>
-  {#if mutation.kind === "delete" && mutation.phase === "error" && mutation.failedPhase === "previewing"}
-    <Dialog.Content class="passkey-delete-preview-error-dialog">
-      <ModalScrollArea>
-        <Dialog.Header>
-          <Dialog.Title>{m.credential_delete_preview()}</Dialog.Title>
-        </Dialog.Header>
+{#if mutation.kind === "delete"}
+  <DestructiveMutationDialogs
+    {previewErrorOpen}
+    {confirmationOpen}
+    previewTitle={m.credential_delete_preview()}
+    previewCanceledTitle={m.operation_canceled_with_label({ label: m.credential_delete_preview() })}
+    operationCanceledTitle={m.operation_canceled_with_label({ label: m.credential_delete() })}
+    confirmationTitle={m.confirm_delete()}
+    retryLabel={m.delete()}
+    confirmLabel={m.confirm_delete()}
+    {failureMessage}
+    {failureCanceled}
+    size="compact"
+    onRetry={() => onPreview(mutation.credentialIDHex)}
+    {onConfirm}
+    {onClose}
+  >
+    {#snippet confirmationContent()}
+      {#if output}
+        <dl class="passkey-delete-target">
+          <div>
+            <dt>{m.relying_parties()}</dt>
+            <dd>{shown(output.preview.rpName)} <code>{output.preview.rpID}</code></dd>
+          </div>
+          <div>
+            <dt>{m.user_name()}</dt>
+            <dd>{shown(output.preview.displayName)} <span>{shown(output.preview.userName)}</span></dd>
+          </div>
+          <div>
+            <dt>{m.user_id_hex()}</dt>
+            <dd><code>{shown(output.preview.userIDHex)}</code></dd>
+          </div>
+          <div>
+            <dt>{m.credential_id()}</dt>
+            <dd><code>{output.preview.credentialIDHex}</code></dd>
+          </div>
+        </dl>
 
-        <Alert.Root variant={failureCanceled ? "default" : "destructive"} role={failureCanceled ? "status" : "alert"}>
-          <Alert.Title>
-            {failureCanceled
-              ? m.operation_canceled_with_label({ label: m.credential_delete_preview() })
-              : m.operation_failed()}
-          </Alert.Title>
-          <Alert.Description>{failureMessage}</Alert.Description>
-        </Alert.Root>
-
-        <Dialog.Footer>
-          <Button type="button" onclick={() => void onPreview(mutation.credentialIDHex)}>{m.delete()}</Button>
-          <Button variant="outline" type="button" onclick={onClose}>{m.close()}</Button>
-        </Dialog.Footer>
-      </ModalScrollArea>
-    </Dialog.Content>
-  {/if}
-</Dialog.Root>
-
-<AlertDialog.Root open={confirmationOpen} onOpenChange={handleOpenChange}>
-  {#if mutation.kind === "delete" && (
-    mutation.phase === "review"
-    || (mutation.phase === "error" && mutation.failedPhase === "executing")
-  )}
-    <AlertDialog.Content class="passkey-delete-dialog">
-      <ModalScrollArea>
-        <AlertDialog.Header>
-          <AlertDialog.Media><TriangleAlert aria-hidden="true" /></AlertDialog.Media>
-          <AlertDialog.Title>{m.confirm_delete()}</AlertDialog.Title>
-        </AlertDialog.Header>
-
-        {#if failureMessage}
-          <Alert.Root variant={failureCanceled ? "default" : "destructive"} role={failureCanceled ? "status" : "alert"}>
-            <Alert.Title>
-              {failureCanceled
-                ? m.operation_canceled_with_label({ label: m.credential_delete() })
-                : m.operation_failed()}
-            </Alert.Title>
-            <Alert.Description>{failureMessage}</Alert.Description>
-          </Alert.Root>
+        {#if output.preview.warnings?.length}
+          <div class="passkey-delete-warnings">
+            <strong>{m.preview_warnings()}</strong>
+            {#each output.preview.warnings as warning (warning.code)}
+              <Alert.Root variant={warning.severity === "destructive" ? "destructive" : "warning"}>
+                <Alert.Description>{warningMessage(warning)}</Alert.Description>
+              </Alert.Root>
+            {/each}
+          </div>
         {/if}
 
-        {#if output}
-          <dl class="passkey-delete-target">
-            <div>
-              <dt>{m.relying_parties()}</dt>
-              <dd>{shown(output.preview.rpName)} <code>{output.preview.rpID}</code></dd>
-            </div>
-            <div>
-              <dt>{m.user_name()}</dt>
-              <dd>{shown(output.preview.displayName)} <span>{shown(output.preview.userName)}</span></dd>
-            </div>
-            <div>
-              <dt>{m.user_id_hex()}</dt>
-              <dd><code>{shown(output.preview.userIDHex)}</code></dd>
-            </div>
-            <div>
-              <dt>{m.credential_id()}</dt>
-              <dd><code>{output.preview.credentialIDHex}</code></dd>
-            </div>
-          </dl>
-
-          {#if output.preview.warnings?.length}
-            <div class="passkey-delete-warnings">
-              <strong>{m.preview_warnings()}</strong>
-              {#each output.preview.warnings as warning (warning.code)}
-                <Alert.Root variant={warning.severity === "destructive" ? "destructive" : "warning"}>
-                  <Alert.Description>{warningMessage(warning)}</Alert.Description>
-                </Alert.Root>
-              {/each}
-            </div>
-          {/if}
-
-          <JsonDisclosure value={output.preview} title={m.preview_json()} />
-        {/if}
-
-        <AlertDialog.Footer>
-          <AlertDialog.Cancel onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
-          <AlertDialog.Action
-            variant="destructive"
-            onclick={handleAction}
-          >
-            {m.confirm_delete()}
-          </AlertDialog.Action>
-        </AlertDialog.Footer>
-      </ModalScrollArea>
-    </AlertDialog.Content>
-  {/if}
-</AlertDialog.Root>
+        <JsonDisclosure value={output.preview} title={m.preview_json()} />
+      {/if}
+    {/snippet}
+  </DestructiveMutationDialogs>
+{/if}
 
 <style>
 @layer blocks {
-  :global(.passkey-delete-dialog) {
-    width: min(34rem, calc(100vw - 2rem));
-    max-width: none;
-    max-height: calc(100vh - 2rem);
-    overflow: hidden;
-  }
-
-  :global(.passkey-delete-preview-error-dialog) {
-    width: min(30rem, calc(100vw - 2rem));
-    max-height: calc(100vh - 2rem);
-    overflow: hidden;
-  }
-
   .passkey-delete-target,
   .passkey-delete-warnings {
     display: grid;

@@ -1,14 +1,12 @@
 <script lang="ts">
-  import { RefreshCw, Sparkles } from "@lucide/svelte";
+  import { Sparkles } from "@lucide/svelte";
 
   import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit";
 
+  import InventoryOverviewCard from "$lib/components/shared/InventoryOverviewCard.svelte";
   import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
   import { Badge } from "$lib/components/ui/badge/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Spinner } from "$lib/components/ui/spinner/index.js";
-  import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
   import type { LargeBlobsPresentation } from "$lib/largeblobs-presentation";
 
   import { m } from "../../../paraglide/messages.js";
@@ -28,62 +26,23 @@
     onCleanup,
     onVerificationFlowChange,
   }: Props = $props();
-
-  function getVerificationValue() {
-    return verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto";
-  }
-
-  function handleVerificationChange(value: string | string[]) {
-    if (Array.isArray(value) || !value) return;
-    onVerificationFlowChange(
-      value === "pin"
-        ? VerificationFlow.VerificationFlowPIN
-        : VerificationFlow.VerificationFlowDefault,
-    );
-  }
-
-  function formatLastLoaded(value: string | null) {
-    if (!value) return "";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return new Intl.DateTimeFormat(undefined, {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    }).format(date);
-  }
 </script>
 
-<Card.Root class="large-blobs-overview">
-  <Card.Header>
-    <Card.Title><h2 id="large-blobs-title">{m.large_blob_summary()}</h2></Card.Title>
-    <Card.Description>
-      <span>{presentation.selectedDeviceName}</span>
-      {#if presentation.lastSuccessfulAt}
-        <span aria-hidden="true">·</span>
-        <span>
-          {m.large_blobs_last_loaded({ time: formatLastLoaded(presentation.lastSuccessfulAt) })}
-        </span>
-      {/if}
-    </Card.Description>
-    <Card.Action>
-      <Button
-        variant="outline"
-        type="button"
-        onclick={onReload}
-        disabled={presentation.reloadDisabled}
-      >
-        {#if presentation.loading}
-          <Spinner data-icon="inline-start" aria-hidden="true" />
-        {:else}
-          <RefreshCw data-icon="inline-start" aria-hidden="true" />
-        {/if}
-        {presentation.loading ? m.reloading_blobs() : m.reload_blobs()}
-      </Button>
-    </Card.Action>
-  </Card.Header>
-
-  <Card.Content>
+<InventoryOverviewCard
+  titleID="large-blobs-title"
+  title={m.large_blob_summary()}
+  selectedDeviceName={presentation.selectedDeviceName}
+  lastSuccessfulAt={presentation.lastSuccessfulAt}
+  lastLoadedLabel={(time) => m.large_blobs_last_loaded({ time })}
+  loading={presentation.loading}
+  reloadDisabled={presentation.reloadDisabled}
+  reloadLabel={m.reload_blobs()}
+  reloadingLabel={m.reloading_blobs()}
+  {verificationFlow}
+  {onReload}
+  {onVerificationFlowChange}
+>
+  {#snippet summary()}
     <div class="large-blobs-overview-grid">
       <section class="large-blobs-overview-summary" aria-labelledby="large-blobs-credentials-title">
         <span id="large-blobs-credentials-title">{m.blob_credentials()}</span>
@@ -111,41 +70,22 @@
         <small>{m.matrix_name_serialized_large_blob_array_limit()}</small>
       </section>
     </div>
+  {/snippet}
 
-    <div class="large-blobs-overview-controls">
-      <div class="large-blobs-capabilities" aria-label={m.support_mode()}>
-        {#if presentation.support}
-          {#each presentation.supportItems as item (item.label)}
-            <StatusBadge
-              label={`${item.label}: ${item.value ? m.state_available() : m.state_not_available()}`}
-              tone={item.value ? "ok" : "neutral"}
-            />
-          {/each}
-        {/if}
-      </div>
-
-      <div class="large-blobs-verification">
-        <span>{m.user_verification()}</span>
-        <ToggleGroup.Root
-          type="single"
-          bind:value={getVerificationValue, handleVerificationChange}
-          variant="outline"
-          size="sm"
-          aria-label={m.user_verification()}
-          disabled={presentation.loading}
-        >
-          <ToggleGroup.Item value="auto" aria-label={m.verification_auto()}>
-            {m.verification_auto()}
-          </ToggleGroup.Item>
-          <ToggleGroup.Item value="pin" aria-label={m.verification_pin()}>
-            {m.verification_pin()}
-          </ToggleGroup.Item>
-        </ToggleGroup.Root>
-      </div>
+  {#snippet capabilities()}
+    <div class="large-blobs-capabilities" aria-label={m.support_mode()}>
+      {#if presentation.support}
+        {#each presentation.supportItems as item (item.label)}
+          <StatusBadge
+            label={`${item.label}: ${item.value ? m.state_available() : m.state_not_available()}`}
+            tone={item.value ? "ok" : "neutral"}
+          />
+        {/each}
+      {/if}
     </div>
-  </Card.Content>
+  {/snippet}
 
-  <Card.Footer class="large-blobs-overview-footer">
+  {#snippet footer()}
     <Button
       variant="outline"
       size="sm"
@@ -156,41 +96,26 @@
       <Sparkles data-icon="inline-start" aria-hidden="true" />
       {m.cleanup()}
     </Button>
-  </Card.Footer>
-</Card.Root>
+  {/snippet}
+</InventoryOverviewCard>
 
 <style>
 @layer blocks {
-  :global(.large-blobs-overview) {
-    min-width: 0;
-  }
-
-  :global(.large-blobs-overview [data-slot="card-title"] h2) {
-    margin: 0;
-    font: inherit;
-  }
-
-  :global(.large-blobs-overview [data-slot="card-description"]) {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1);
-  }
-
   .large-blobs-overview-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-4);
+    min-width: 0;
   }
 
   .large-blobs-overview-summary {
     display: grid;
+    align-content: start;
     min-width: 0;
     gap: var(--space-2);
-    align-content: start;
   }
 
-  .large-blobs-overview-summary > span,
-  .large-blobs-verification > span {
+  .large-blobs-overview-summary > span {
     color: var(--muted-foreground);
     font-size: 0.72rem;
     font-weight: 700;
@@ -207,39 +132,17 @@
   }
 
   .large-blobs-overview-summary div,
-  .large-blobs-capabilities,
-  .large-blobs-verification {
+  .large-blobs-capabilities {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
-  }
-
-  .large-blobs-overview-controls {
-    display: flex;
-    align-items: end;
-    justify-content: space-between;
-    gap: var(--space-3);
-    margin-top: var(--space-3);
-  }
-
-  .large-blobs-verification,
-  :global(.large-blobs-overview-footer) {
-    justify-content: end;
+    min-width: 0;
   }
 
   @container workspace (max-width: 51.25rem) {
     .large-blobs-overview-grid {
       grid-template-columns: minmax(0, 1fr);
-    }
-
-    .large-blobs-overview-controls {
-      align-items: start;
-      flex-direction: column;
-    }
-
-    .large-blobs-verification {
-      justify-content: start;
     }
   }
 }
