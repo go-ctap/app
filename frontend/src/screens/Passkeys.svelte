@@ -1,12 +1,14 @@
 <script lang="ts">
-  import { KeyRound } from "@lucide/svelte";
+  import { KeyRound, TriangleAlert } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
 
   import PasskeyDeleteDialog from "$lib/components/passkeys/PasskeyDeleteDialog.svelte";
   import PasskeysInventory from "$lib/components/passkeys/PasskeysInventory.svelte";
   import PasskeysOverview from "$lib/components/passkeys/PasskeysOverview.svelte";
   import PasskeyUpdateDialog from "$lib/components/passkeys/PasskeyUpdateDialog.svelte";
-  import InventoryScreenContent from "$lib/components/shared/InventoryScreenContent.svelte";
+  import EmptyState from "$lib/components/shared/EmptyState.svelte";
+  import * as Alert from "$lib/components/ui/alert/index.js";
+  import { Button } from "$lib/components/ui/button/index.js";
   import {
     beginCredentialDelete,
     beginCredentialUpdate,
@@ -83,38 +85,50 @@
       onVerificationFlowChange={setPasskeysVerificationFlow}
     />
 
-    <InventoryScreenContent
-      stale={passkeys.stale}
-      unsupported={passkeys.unsupported}
-      hasReport={passkeys.hasReport}
-      loading={passkeys.loading}
-      reloadDisabled={passkeys.reloadDisabled}
-      staleTitle={m.passkeys_stale_title()}
-      staleMessage={m.passkeys_stale_message()}
-      unsupportedTitle={m.passkeys_unsupported_title()}
-      unsupportedMessage={m.passkeys_unsupported_message()}
-      notLoadedTitle={m.passkeys_not_loaded()}
-      notLoadedMessage={m.passkeys_not_loaded_message()}
-      loadLabel={m.load_credentials()}
-      onReload={handleReload}
-    >
-      {#snippet iconContent()}<KeyRound aria-hidden="true" />{/snippet}
-      {#snippet inventoryContent()}
-        <PasskeysInventory
-          presentation={passkeys}
-          updateDisabled={passkeys.updateDisabled}
-          deleteDisabled={passkeys.deleteDisabled}
-          previewOnly={Boolean(passkeys.report?.support.previewOnly)}
-          onQueryChange={setPasskeysQuery}
-          onFilterChange={setPasskeysStatusFilter}
-          onSelect={selectPasskeyCredential}
-          onEdit={beginCredentialUpdate}
-          onDelete={beginCredentialDelete}
-          onOpenLab={handleOpenLab}
-          onReload={handleReload}
-        />
-      {/snippet}
-    </InventoryScreenContent>
+    {#if passkeys.stale}
+      <Alert.Root variant="warning" role="alert" class="passkeys-state-alert" data-state="stale">
+        <TriangleAlert aria-hidden="true" />
+        <Alert.Title>{m.passkeys_stale_title()}</Alert.Title>
+        <Alert.Description>{m.passkeys_stale_message()}</Alert.Description>
+      </Alert.Root>
+    {/if}
+
+    {#if passkeys.unsupported}
+      <EmptyState
+        title={m.passkeys_unsupported_title()}
+        message={m.passkeys_unsupported_message()}
+        variant="compact"
+      >
+        {#snippet icon()}<KeyRound aria-hidden="true" />{/snippet}
+      </EmptyState>
+    {:else if !passkeys.hasReport && !passkeys.loading}
+      <EmptyState
+        title={m.passkeys_not_loaded()}
+        message={m.passkeys_not_loaded_message()}
+        variant="compact"
+      >
+        {#snippet icon()}<KeyRound aria-hidden="true" />{/snippet}
+        {#snippet actions()}
+          <Button type="button" disabled={passkeys.reloadDisabled} onclick={handleReload}>
+            {m.load_credentials()}
+          </Button>
+        {/snippet}
+      </EmptyState>
+    {:else}
+      <PasskeysInventory
+        presentation={passkeys}
+        updateDisabled={passkeys.updateDisabled}
+        deleteDisabled={passkeys.deleteDisabled}
+        previewOnly={Boolean(passkeys.report?.support.previewOnly)}
+        onQueryChange={setPasskeysQuery}
+        onFilterChange={setPasskeysStatusFilter}
+        onSelect={selectPasskeyCredential}
+        onEdit={beginCredentialUpdate}
+        onDelete={beginCredentialDelete}
+        onOpenLab={handleOpenLab}
+        onReload={handleReload}
+      />
+    {/if}
   </section>
 
   <PasskeyUpdateDialog
@@ -142,6 +156,9 @@
     min-width: 0;
   }
 
+  :global(.passkeys-state-alert) {
+    min-width: 0;
+  }
 }
 
 </style>

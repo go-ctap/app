@@ -13,16 +13,6 @@ import type {
 
 import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import {
-  beginInventoryLoad,
-  completeInventoryLoad,
-  emptyInventoryState,
-  failInventoryLoadAtRuntime,
-  failInventoryLoadWithResponse,
-  inventoryIsStale,
-  type InventoryPhase,
-  type InventoryState,
-} from "$lib/inventory-state";
-import {
   idleMutation,
   type EditableMutationLifecycle,
   type MutationFailureReason,
@@ -30,7 +20,7 @@ import {
   type MutationLifecycle,
 } from "$lib/mutation-lifecycle";
 
-export type PasskeysInventoryPhase = InventoryPhase;
+export type PasskeysInventoryPhase = "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";
 export type CredentialStoreStatePhase = "idle" | "loading" | "ready" | "error" | "unsupported";
 
 /**
@@ -38,7 +28,13 @@ export type CredentialStoreStatePhase = "idle" | "loading" | "ready" | "error" |
  * latest attempt. This lets the UI stay useful after a failed forced refresh
  * without mistaking an errored service envelope for usable data.
  */
-export type PasskeysInventoryState = InventoryState<CredentialsEnvelope>;
+export type PasskeysInventoryState = {
+  phase: PasskeysInventoryPhase;
+  lastSuccessfulEnvelope: CredentialsEnvelope | null;
+  responseEnvelope: CredentialsEnvelope | null;
+  runtimeError: Failure | null;
+  lastSuccessfulAt: string | null;
+};
 
 export type CredentialStoreStateState = {
   phase: CredentialStoreStatePhase;
@@ -47,7 +43,8 @@ export type CredentialStoreStateState = {
 };
 
 export function passkeysInventoryIsStale(state: PasskeysInventoryState) {
-  return inventoryIsStale(state);
+  return Boolean(state.lastSuccessfulEnvelope)
+    && (state.phase === "error" || state.phase === "unsupported");
 }
 
 export type PasskeysStatusFilter =
@@ -96,7 +93,13 @@ export type PasskeysMutationState =
     >;
 
 export function emptyPasskeysInventoryState(): PasskeysInventoryState {
-  return emptyInventoryState();
+  return {
+    phase: "idle",
+    lastSuccessfulEnvelope: null,
+    responseEnvelope: null,
+    runtimeError: null,
+    lastSuccessfulAt: null,
+  };
 }
 
 export function emptyCredentialStoreStateState(): CredentialStoreStateState {
@@ -117,23 +120,40 @@ export const passkeysVerificationFlow = writable<VerificationFlow>(VerificationF
 export const passkeysMutation = writable<PasskeysMutationState>(idleMutation());
 
 export function beginPasskeysInventoryLoad() {
-  passkeysInventoryState.update(beginInventoryLoad);
+  passkeysInventoryState.update((current) => ({
+    ...current,
+    phase: current.lastSuccessfulEnvelope ? "refreshing" : "loading",
+    responseEnvelope: null,
+    runtimeError: null,
+  }));
 }
 
 export function completePasskeysInventoryLoad(envelope: CredentialsEnvelope, completedAt: string) {
-  passkeysInventoryState.set(completeInventoryLoad(envelope, completedAt));
+  passkeysInventoryState.set({
+    phase: "ready",
+    lastSuccessfulEnvelope: envelope,
+    responseEnvelope: envelope,
+    runtimeError: null,
+    lastSuccessfulAt: completedAt,
+  });
 }
 
 export function failPasskeysInventoryLoadWithResponse(envelope: CredentialsEnvelope) {
-  passkeysInventoryState.update((current) => failInventoryLoadWithResponse(
-    current,
-    envelope,
-    envelope.error?.code === Code.CodeCredentialManagementUnsupported,
-  ));
+  passkeysInventoryState.update((current) => ({
+    ...current,
+    phase: envelope.error?.code === Code.CodeCredentialManagementUnsupported ? "unsupported" : "error",
+    responseEnvelope: envelope,
+    runtimeError: null,
+  }));
 }
 
 export function failPasskeysInventoryLoadAtRuntime(error: Failure) {
-  passkeysInventoryState.update((current) => failInventoryLoadAtRuntime(current, error));
+  passkeysInventoryState.update((current) => ({
+    ...current,
+    phase: "error",
+    responseEnvelope: null,
+    runtimeError: error,
+  }));
 }
 
 export function beginCredentialStoreStateLoad() {

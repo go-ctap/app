@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Database } from "@lucide/svelte";
+  import { Database, TriangleAlert } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
 
   import LargeBlobCleanupDialog from "$lib/components/largeblobs/LargeBlobCleanupDialog.svelte";
@@ -7,7 +7,9 @@
   import LargeBlobsInventory from "$lib/components/largeblobs/LargeBlobsInventory.svelte";
   import LargeBlobsOverview from "$lib/components/largeblobs/LargeBlobsOverview.svelte";
   import LargeBlobWriteDialog from "$lib/components/largeblobs/LargeBlobWriteDialog.svelte";
-  import InventoryScreenContent from "$lib/components/shared/InventoryScreenContent.svelte";
+  import EmptyState from "$lib/components/shared/EmptyState.svelte";
+  import * as Alert from "$lib/components/ui/alert/index.js";
+  import { Button } from "$lib/components/ui/button/index.js";
   import {
     beginLargeBlobCleanup,
     beginLargeBlobDelete,
@@ -97,39 +99,51 @@
       onVerificationFlowChange={setLargeBlobsVerificationFlow}
     />
 
-    <InventoryScreenContent
-      stale={largeBlobs.stale}
-      unsupported={largeBlobs.unsupported}
-      hasReport={largeBlobs.hasReport}
-      loading={largeBlobs.loading}
-      reloadDisabled={largeBlobs.reloadDisabled}
-      staleTitle={m.large_blobs_stale_title()}
-      staleMessage={m.large_blobs_stale_message()}
-      unsupportedTitle={m.large_blobs_unsupported_title()}
-      unsupportedMessage={m.large_blobs_unsupported_message()}
-      notLoadedTitle={m.large_blobs_not_loaded()}
-      notLoadedMessage={m.large_blobs_not_loaded_message()}
-      loadLabel={m.load_blobs()}
-      onReload={handleReload}
-    >
-      {#snippet iconContent()}<Database aria-hidden="true" />{/snippet}
-      {#snippet inventoryContent()}
-        <LargeBlobsInventory
-          presentation={largeBlobs}
-          readState={$largeBlobsReadState}
-          mutation={$largeBlobsMutation}
-          decodeMode={$largeBlobsDecodeMode}
-          onQueryChange={setLargeBlobsQuery}
-          onFilterChange={setLargeBlobsStatusFilter}
-          onSelect={selectLargeBlobCredential}
-          onDecodeModeChange={setLargeBlobsDecodeMode}
-          onWrite={beginLargeBlobWrite}
-          onDelete={beginLargeBlobDelete}
-          onOpenLab={handleOpenLab}
-          onReload={handleReload}
-        />
-      {/snippet}
-    </InventoryScreenContent>
+    {#if largeBlobs.stale}
+      <Alert.Root variant="warning" role="alert" class="large-blobs-state-alert" data-state="stale">
+        <TriangleAlert aria-hidden="true" />
+        <Alert.Title>{m.large_blobs_stale_title()}</Alert.Title>
+        <Alert.Description>{m.large_blobs_stale_message()}</Alert.Description>
+      </Alert.Root>
+    {/if}
+
+    {#if largeBlobs.unsupported}
+      <EmptyState
+        title={m.large_blobs_unsupported_title()}
+        message={m.large_blobs_unsupported_message()}
+        variant="compact"
+      >
+        {#snippet icon()}<Database aria-hidden="true" />{/snippet}
+      </EmptyState>
+    {:else if !largeBlobs.hasReport && !largeBlobs.loading}
+      <EmptyState
+        title={m.large_blobs_not_loaded()}
+        message={m.large_blobs_not_loaded_message()}
+        variant="compact"
+      >
+        {#snippet icon()}<Database aria-hidden="true" />{/snippet}
+        {#snippet actions()}
+          <Button type="button" disabled={largeBlobs.reloadDisabled} onclick={handleReload}>
+            {m.load_blobs()}
+          </Button>
+        {/snippet}
+      </EmptyState>
+    {:else}
+      <LargeBlobsInventory
+        presentation={largeBlobs}
+        readState={$largeBlobsReadState}
+        mutation={$largeBlobsMutation}
+        decodeMode={$largeBlobsDecodeMode}
+        onQueryChange={setLargeBlobsQuery}
+        onFilterChange={setLargeBlobsStatusFilter}
+        onSelect={selectLargeBlobCredential}
+        onDecodeModeChange={setLargeBlobsDecodeMode}
+        onWrite={beginLargeBlobWrite}
+        onDelete={beginLargeBlobDelete}
+        onOpenLab={handleOpenLab}
+        onReload={handleReload}
+      />
+    {/if}
   </section>
 
   <LargeBlobWriteDialog
@@ -165,5 +179,8 @@
     min-width: 0;
   }
 
+  :global(.large-blobs-state-alert) {
+    min-width: 0;
+  }
 }
 </style>

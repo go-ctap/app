@@ -3,12 +3,6 @@ import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/r
 
 import { m } from "../paraglide/messages.js";
 import { credentialsReport } from "./ctapkit-results.js";
-import {
-  displayInventoryValue,
-  inventoryQueryMatches,
-  inventoryRowsState,
-  type CredentialIdentityRow,
-} from "./credential-inventory-presentation.js";
 import type { PasskeysInventoryState, PasskeysStatusFilter } from "./features/passkeys/state.js";
 import { passkeysInventoryIsStale } from "./features/passkeys/state.js";
 import { deviceName } from "./format.js";
@@ -18,10 +12,17 @@ export type PasskeyCredentialTarget = {
   credential: CredentialRecord;
 };
 
-export type PasskeyCredentialRow = CredentialIdentityRow & {
+export type PasskeyCredentialRow = {
+  id: string;
+  rpID: string;
+  rpName: string;
   rpIDHashHex: string;
+  credentialIDHex: string;
   credentialType: string;
   credentialTransports: string;
+  userIDHex: string;
+  userName: string;
+  displayName: string;
   largeBlobKeyState: string;
   largeBlobKeyAvailable: boolean;
   credProtect: string;
@@ -57,7 +58,8 @@ export type PasskeysPresentation = ReturnType<typeof buildPasskeysPresentation>;
 function displayValue(value: string | number | boolean | null | undefined) {
   if (value === true) return m.state_available();
   if (value === false) return m.state_not_available();
-  return displayInventoryValue(value, m.not_reported());
+  const text = String(value ?? "").trim();
+  return text || m.not_reported();
 }
 
 function relyingPartyName(group: CredentialGroup) {
@@ -117,7 +119,8 @@ export function findPasskeyCredential(report: InventoryReport | null, credential
 }
 
 function searchMatches(group: CredentialGroup, credential: CredentialRecord, normalizedQuery: string) {
-  return inventoryQueryMatches([
+  if (!normalizedQuery) return true;
+  return [
     group.rpName,
     group.rpID,
     group.rpIDHashHex,
@@ -125,7 +128,7 @@ function searchMatches(group: CredentialGroup, credential: CredentialRecord, nor
     credential.userIDHex,
     credential.userName,
     credential.displayName,
-  ], normalizedQuery);
+  ].some((value) => value?.toLowerCase().includes(normalizedQuery));
 }
 
 function statusMatches(credential: CredentialRecord, filter: PasskeysStatusFilter) {
@@ -187,7 +190,6 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
   const loading = input.inventoryState.phase === "loading" || input.inventoryState.phase === "refreshing";
   const stale = passkeysInventoryIsStale(input.inventoryState);
   const mutationsBlocked = loading || input.authenticatorBusy || !input.authenticatorReady;
-  const rowsState = inventoryRowsState(allRows, rows, Boolean(report));
 
   return {
     selector: input.selectedSelector,
@@ -206,7 +208,8 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
     statusFilter,
     rows,
     selectedCredentialID,
-    ...rowsState,
+    emptyInventory: Boolean(report && allRows.length === 0),
+    emptyFilteredResult: Boolean(report && allRows.length > 0 && rows.length === 0),
     capacity: passkeysCapacity(report),
     selectedDeviceName: input.selectedDevice ? deviceName(input.selectedDevice) : m.authenticator(),
   };
