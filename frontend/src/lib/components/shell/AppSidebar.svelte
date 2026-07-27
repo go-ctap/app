@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { Database, FlaskConical, Gauge, KeyRound, ScrollText, Settings, Shield, ShieldCheck, Usb } from "@lucide/svelte";
+  import { Database, FlaskConical, Gauge, KeyRound, ScrollText, Settings, Shield, Usb } from "@lucide/svelte";
   import {type Component} from "svelte";
 
+  import TelesmaMark from "$lib/components/branding/TelesmaMark.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
   import { Spinner } from "$lib/components/ui/spinner/index.js";
@@ -42,7 +43,7 @@
 
   <div class="sidebar-brand" aria-label={m.app_title()}>
     <span class="sidebar-mark" aria-hidden="true">
-      <ShieldCheck size={22} strokeWidth={2} />
+      <TelesmaMark />
     </span>
     <span class="sidebar-brand-copy">
       <span class="sidebar-title">{m.app_title()}</span>
@@ -127,8 +128,8 @@
 
     .sidebar-brand {
       display: grid;
-      grid-template-columns: 16px minmax(0, 1fr);
-      gap: var(--space-3);
+      grid-template-columns: 26px minmax(0, 1fr);
+      gap: var(--space-2);
       align-items: center;
       min-width: 0;
       border-bottom: 1px solid var(--topbar-border, var(--border));
@@ -141,8 +142,8 @@
     .sidebar-mark {
       display: grid;
       place-items: center;
-      width: 16px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       color: color-mix(in srgb, var(--foreground) 96%, var(--muted-foreground));
     }
 
@@ -155,10 +156,11 @@
     .sidebar-title {
       overflow: hidden;
       color: color-mix(in srgb, var(--foreground) 88%, var(--muted-foreground));
+      font-family: var(--font-brand);
+      font-size: 1.125rem;
       font-weight: 700;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: 0.88rem;
     }
 
     .sidebar-nav {
