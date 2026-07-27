@@ -14,11 +14,10 @@
   import { m } from "../../../paraglide/messages.js";
 
   import LabDataViewerSheet from "./LabDataViewerSheet.svelte";
-  import LabAttestationTrustResult from "./LabAttestationTrustResult.svelte";
   import LabHexValue from "./LabHexValue.svelte";
   import LabProtocolDetails, { type ProtocolDetailRow } from "./LabProtocolDetails.svelte";
   import LabSecretValue from "./LabSecretValue.svelte";
-  import LabVerificationResult from "./LabVerificationResult.svelte";
+  import LabVerificationRoute from "./LabVerificationRoute.svelte";
 
   type Props = {
     result: MakeCredentialResultDTO;
@@ -198,15 +197,12 @@
     {/if}
   </section>
 
-  <LabVerificationResult
+  <LabVerificationRoute
     mode="make"
     state={verification}
-    onRetry={onRetryVerification}
-  />
-
-  <LabAttestationTrustResult
-    state={attestationTrust}
-    onRetry={onRetryAttestationTrust}
+    {attestationTrust}
+    {onRetryVerification}
+    {onRetryAttestationTrust}
   />
 
   <LabProtocolDetails rows={technicalDetails} onView={(row) => { selectedDetail = row; }} />

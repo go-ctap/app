@@ -19,7 +19,7 @@
   import LabProtocolDetails, { type ProtocolDetailRow } from "./LabProtocolDetails.svelte";
   import LabSecretValue from "./LabSecretValue.svelte";
   import LabVerificationMaterialEditor from "./LabVerificationMaterialEditor.svelte";
-  import LabVerificationResult from "./LabVerificationResult.svelte";
+  import LabVerificationRoute from "./LabVerificationRoute.svelte";
 
   type Props = {
     result: GetAssertionResultDTO;
@@ -227,10 +227,10 @@
       onChange={onVerificationMaterialChange}
     />
 
-    <LabVerificationResult
+    <LabVerificationRoute
       mode="get"
       state={verification}
-      onRetry={onRetryVerification}
+      {onRetryVerification}
     />
 
     <LabProtocolDetails rows={technicalDetails} onView={(row) => { selectedDetail = row; }} />

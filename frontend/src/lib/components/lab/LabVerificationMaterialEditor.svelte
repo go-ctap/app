@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { KeyRound, Plus, Trash2 } from "@lucide/svelte";
+  import { ChevronsUpDown, KeyRound, Plus, Trash2 } from "@lucide/svelte";
 
   import { CredentialVerificationMaterial } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
 
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
+  import { Badge } from "$lib/components/ui/badge/index.js";
+  import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
+  import * as Collapsible from "$lib/components/ui/collapsible/index.js";
   import * as Field from "$lib/components/ui/field/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
 
@@ -17,6 +18,11 @@
   };
 
   let { entries, disabled = false, onChange }: Props = $props();
+  let open = $state(false);
+
+  $effect(() => {
+    if (entries.length === 0) open = true;
+  });
 
   function updateEntry(index: number, patch: Partial<CredentialVerificationMaterial>) {
     onChange(entries.map((entry, entryIndex) => entryIndex === index
@@ -44,25 +50,39 @@
   }
 </script>
 
-<Card.Root class="lab-verification-material">
-  <Card.Header>
-    <Card.Title>
-      <span class="lab-verification-material-title">
+<Collapsible.Root bind:open class="lab-verification-material">
+  <header class="lab-verification-material-header">
+    <div class="lab-verification-material-summary">
+      <div class="lab-verification-material-title">
         <KeyRound aria-hidden="true" />
-        {m.lab_verification_material()}
-      </span>
-    </Card.Title>
-    <Card.Description>{m.lab_verification_material_description()}</Card.Description>
-    <Card.Action>
+        <div>
+          <h3>{m.lab_verification_material()}</h3>
+          <p>{m.lab_verification_material_not_sent()}</p>
+        </div>
+      </div>
+      <Badge variant={entries.length ? "secondary" : "outline"}>
+        {m.lab_verification_material_count({ count: entries.length })}
+      </Badge>
+    </div>
+    <Collapsible.Trigger
+      class={buttonVariants({ variant: "ghost", size: "sm" })}
+      disabled={disabled}
+    >
+      {open
+        ? m.lab_verification_material_hide()
+        : m.lab_verification_material_show()}
+      <ChevronsUpDown data-icon="inline-end" aria-hidden="true" />
+    </Collapsible.Trigger>
+  </header>
+
+  <Collapsible.Content class="lab-verification-material-content">
+    <div class="lab-verification-material-actions">
+      <p>{m.lab_verification_material_description()}</p>
       <Button type="button" size="sm" variant="outline" {disabled} onclick={addEntry}>
         <Plus data-icon="inline-start" aria-hidden="true" />
         {m.lab_verification_material_add()}
       </Button>
-    </Card.Action>
-  </Card.Header>
-
-  <Card.Content class="lab-verification-material-content">
-    <p class="lab-verification-material-boundary">{m.lab_verification_material_not_sent()}</p>
+    </div>
     {#each entries as entry, index (`${index}:${entry.credentialIDHex}`)}
       <Field.Group class="lab-verification-material-row" aria-label={`${m.lab_verification_material()} ${index + 1}`}>
         <Field.Field class="lab-verification-material-field" data-disabled={disabled}>
@@ -117,11 +137,11 @@
     {:else}
       <p class="lab-verification-material-empty">{m.lab_verification_material_empty()}</p>
     {/each}
-  </Card.Content>
-</Card.Root>
+  </Collapsible.Content>
+</Collapsible.Root>
 
 <style>
-@layer compositions {
+@layer composition {
   :global(.lab-verification-material-row) {
     display: grid;
     grid-template-columns: minmax(10rem, 1fr) minmax(14rem, 2fr) minmax(9rem, 0.6fr) auto;
@@ -132,19 +152,68 @@
 
 @layer blocks {
   :global(.lab-verification-material) {
+    display: grid;
+    gap: var(--space-3);
     min-width: 0;
+    padding: var(--space-3);
+    border: 1px solid var(--border);
     border-style: dashed;
+    background: color-mix(in oklch, var(--muted) 30%, transparent);
+  }
+
+  .lab-verification-material-header,
+  .lab-verification-material-summary,
+  .lab-verification-material-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .lab-verification-material-header,
+  .lab-verification-material-actions {
+    justify-content: space-between;
+  }
+
+  .lab-verification-material-summary {
+    flex: 1 1 24rem;
   }
 
   .lab-verification-material-title {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: var(--space-2);
+    min-width: 0;
   }
 
-  :global(.lab-verification-material-title svg) {
+  .lab-verification-material-title > div {
+    display: grid;
+    gap: 0.1rem;
+    min-width: 0;
+  }
+
+  .lab-verification-material-title h3,
+  .lab-verification-material-title p,
+  .lab-verification-material-actions p {
+    margin: 0;
+  }
+
+  .lab-verification-material-title h3 {
+    font-size: 0.8rem;
+  }
+
+  .lab-verification-material-title p,
+  .lab-verification-material-actions p,
+  .lab-verification-material-empty {
+    color: var(--muted-foreground);
+    font-size: 0.72rem;
+    line-height: 1.45;
+  }
+
+  .lab-verification-material-title :global(svg) {
     width: 1rem;
     height: 1rem;
+    flex: 0 0 auto;
   }
 
   :global(.lab-verification-material-content) {
@@ -153,19 +222,8 @@
     min-width: 0;
   }
 
-  .lab-verification-material-boundary,
   .lab-verification-material-empty {
     margin: 0;
-    color: var(--muted-foreground);
-    font-size: 0.75rem;
-  }
-
-  .lab-verification-material-boundary {
-    width: fit-content;
-    padding: var(--space-1) var(--space-2);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: var(--muted);
   }
 
   :global(.lab-verification-material-field) {
