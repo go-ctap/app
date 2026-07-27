@@ -25,8 +25,7 @@ func (s *Service) LookupMDS(ctx context.Context, req MDSLookupRequest) (MDSLooku
 		CacheDir: req.CacheDir,
 	}
 	result, err := client.Lookup(ctx, aaguid, mds.LookupOptions{
-		Refresh:                req.Refresh,
-		AllowStaleOnFetchError: true,
+		Refresh: req.Refresh,
 	})
 	if err != nil {
 		return MDSLookupEnvelope{}, normalizeMDSError(err)
