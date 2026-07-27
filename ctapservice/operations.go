@@ -3,6 +3,9 @@ package ctapservice
 import (
 	"context"
 
+	appwebauthn "github.com/go-ctap/kit/model/webauthn"
+	mdsmodel "github.com/go-ctap/mds/model"
+
 	appservice "telesma/service"
 )
 
@@ -100,4 +103,25 @@ func (s *Service) MakeCredential(ctx context.Context, req appservice.MakeCredent
 
 func (s *Service) GetAssertion(ctx context.Context, req appservice.GetAssertionRequest) (appservice.GetAssertionEnvelope, error) {
 	return s.core.GetAssertion(ctx, req)
+}
+
+func (s *Service) VerifyMakeCredential(
+	ctx context.Context,
+	req appservice.MakeCredentialVerificationRequest,
+) appwebauthn.MakeCredentialVerification {
+	return s.core.VerifyMakeCredential(ctx, req)
+}
+
+func (s *Service) VerifyGetAssertion(
+	ctx context.Context,
+	req appservice.GetAssertionVerificationRequest,
+) appwebauthn.GetAssertionVerification {
+	return s.core.VerifyGetAssertion(ctx, req)
+}
+
+func (s *Service) AssessMakeCredentialAttestation(
+	ctx context.Context,
+	req appservice.MakeCredentialAttestationAssessmentRequest,
+) mdsmodel.AttestationTrustAssessment {
+	return s.core.AssessMakeCredentialAttestation(ctx, req)
 }

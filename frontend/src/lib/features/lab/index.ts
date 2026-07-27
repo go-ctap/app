@@ -6,6 +6,7 @@ export const labState = readonly(state.labState);
 
 export type {
   GetAssertionDraft,
+  LabVerificationState,
   LabClientDataDraft,
   LabClientDataMode,
   LabDescriptorDraft,
@@ -35,5 +36,9 @@ export {
   runLabGetAssertion,
   selectLabOperation,
   updateLabGetAssertionDraft,
+  updateLabVerificationMaterial,
   updateLabMakeCredentialDraft,
+  retryLabGetAssertionVerification,
+  retryLabMakeCredentialAttestationTrust,
+  retryLabMakeCredentialVerification,
 } from "../../lab-controller.js";

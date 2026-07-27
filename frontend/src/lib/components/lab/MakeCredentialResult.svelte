@@ -1,24 +1,42 @@
 <script lang="ts">
-  import type { MakeCredentialResult as MakeCredentialResultDTO } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
+  import type {
+    MakeCredentialResult as MakeCredentialResultDTO,
+    MakeCredentialVerification,
+  } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
+  import type { AttestationTrustAssessment } from "../../../../bindings/github.com/go-ctap/mds/model";
   import type { MakeCredentialEnvelope } from "../../../../bindings/telesma/service";
 
   import { Badge } from "$lib/components/ui/badge/index.js";
+  import type { LabVerificationState } from "$lib/features/lab/state";
   import { base64ToHex } from "$lib/lab-input";
   import { sanitizedJson } from "$lib/redaction";
 
   import { m } from "../../../paraglide/messages.js";
 
   import LabDataViewerSheet from "./LabDataViewerSheet.svelte";
+  import LabAttestationTrustResult from "./LabAttestationTrustResult.svelte";
   import LabHexValue from "./LabHexValue.svelte";
   import LabProtocolDetails, { type ProtocolDetailRow } from "./LabProtocolDetails.svelte";
   import LabSecretValue from "./LabSecretValue.svelte";
+  import LabVerificationResult from "./LabVerificationResult.svelte";
 
   type Props = {
     result: MakeCredentialResultDTO;
     responseEnvelope: MakeCredentialEnvelope;
+    attestationTrust?: LabVerificationState<AttestationTrustAssessment>;
+    verification?: LabVerificationState<MakeCredentialVerification>;
+    onRetryAttestationTrust?: () => void;
+    onRetryVerification?: () => void;
   };
 
-  let { result, responseEnvelope }: Props = $props();
+  let {
+    result,
+    responseEnvelope,
+    attestationTrust = { phase: "idle" },
+    verification = { phase: "idle" },
+    onRetryAttestationTrust = () => undefined,
+    onRetryVerification = () => undefined,
+  }: Props = $props();
   let selectedDetail = $state<ProtocolDetailRow | null>(null);
   let clientExtensions = $derived(result.extensionResults?.client);
   let authenticatorExtensions = $derived(result.extensionResults?.authenticator);
@@ -179,6 +197,17 @@
       <p>{m.lab_no_extension_outputs()}</p>
     {/if}
   </section>
+
+  <LabVerificationResult
+    mode="make"
+    state={verification}
+    onRetry={onRetryVerification}
+  />
+
+  <LabAttestationTrustResult
+    state={attestationTrust}
+    onRetry={onRetryAttestationTrust}
+  />
 
   <LabProtocolDetails rows={technicalDetails} onView={(row) => { selectedDetail = row; }} />
 </section>

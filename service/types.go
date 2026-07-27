@@ -9,11 +9,11 @@ import (
 	"github.com/go-ctap/kit/model/failure"
 	"github.com/go-ctap/kit/model/inspect"
 	"github.com/go-ctap/kit/model/largeblobs"
-	appmds "github.com/go-ctap/kit/model/mds"
 	"github.com/go-ctap/kit/model/operation"
 	"github.com/go-ctap/kit/model/report"
 	"github.com/go-ctap/kit/model/webauthn"
 	"github.com/go-ctap/kit/transport"
+	mdsmodel "github.com/go-ctap/mds/model"
 )
 
 type SelectionID string
@@ -201,5 +201,5 @@ type MDSLookupRequest struct {
 }
 
 type MDSLookupEnvelope struct {
-	Result appmds.LookupResult `json:"result"`
+	Result mdsmodel.LookupResult `json:"result"`
 }

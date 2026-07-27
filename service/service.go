@@ -158,37 +158,6 @@ func (s *Service) ResolveInteraction(ctx context.Context, answer InteractionAnsw
 	}
 }
 
-func (s *Service) LookupMDS(ctx context.Context, req MDSLookupRequest) (MDSLookupEnvelope, error) {
-	aaguid, err := uuid.Parse(req.AAGUID)
-	if err != nil {
-		return MDSLookupEnvelope{}, failure.Wrap(
-			failure.CodeMDSAAGUIDInvalid,
-			err,
-			failure.WithPhase(failure.PhaseMetadata),
-		)
-	}
-
-	opts := []ctapkit.MDSOption{}
-	if req.Source != "" {
-		opts = append(opts, ctapkit.WithMDSSource(req.Source))
-	}
-
-	if req.CacheDir != "" {
-		opts = append(opts, ctapkit.WithMDSCacheDir(req.CacheDir))
-	}
-
-	if req.Refresh {
-		opts = append(opts, ctapkit.WithMDSRefresh())
-	}
-
-	result, err := ctapkit.LookupMDS(ctx, aaguid, opts...)
-	if err != nil {
-		return MDSLookupEnvelope{}, err
-	}
-
-	return MDSLookupEnvelope{Result: result}, nil
-}
-
 func (s *Service) selectionFor(id SelectionID) (*selection, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

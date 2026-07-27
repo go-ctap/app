@@ -7,6 +7,12 @@ import {
 import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit";
 import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
+  CredentialVerificationMaterial,
+  GetAssertionVerification,
+  MakeCredentialVerification,
+} from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
+import type { AttestationTrustAssessment } from "../../../../bindings/github.com/go-ctap/mds/model";
+import type {
   GetAssertionEnvelope,
   GetAssertionRequest,
   MakeCredentialEnvelope,
@@ -140,7 +146,14 @@ export type GetAssertionDraft = {
   userVerification: LabTriState;
   verificationFlow: VerificationFlow;
   extensions: GetAssertionExtensionsDraft;
+  verificationMaterial: CredentialVerificationMaterial[];
 };
+
+export type LabVerificationState<T> =
+  | { phase: "idle" }
+  | { phase: "loading" }
+  | { phase: "ready"; verification: T }
+  | { phase: "error"; error: Failure };
 
 export type LabMakeStep =
   | { phase: "editing" }
@@ -211,6 +224,8 @@ export type LabGetStep =
 export type LabPendingHandoff = {
   rpID: string;
   credentialIDHex: string;
+  publicKeyCOSEHex: string;
+  previousSignCount: number;
 };
 
 export type LabState = {
@@ -219,6 +234,9 @@ export type LabState = {
   getDraft: GetAssertionDraft;
   makeStep: LabMakeStep;
   getStep: LabGetStep;
+  makeVerification: LabVerificationState<MakeCredentialVerification>;
+  makeAttestationTrust: LabVerificationState<AttestationTrustAssessment>;
+  getVerification: LabVerificationState<GetAssertionVerification>;
   pendingHandoff: LabPendingHandoff | null;
 };
 
@@ -328,9 +346,13 @@ export function createLabState(randomSource?: LabRandomSource): LabState {
       userVerification: "auto",
       verificationFlow: VerificationFlow.VerificationFlowDefault,
       extensions: getExtensionDefaults(randomSource),
+      verificationMaterial: [],
     },
     makeStep: { phase: "editing" },
     getStep: { phase: "editing" },
+    makeVerification: { phase: "idle" },
+    makeAttestationTrust: { phase: "idle" },
+    getVerification: { phase: "idle" },
     pendingHandoff: null,
   };
 }

@@ -6,7 +6,7 @@ import type {
   RuleID,
   Target,
 } from "../../bindings/github.com/go-ctap/kit/model/conformance";
-import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
+import type { LookupResult } from "../../bindings/github.com/go-ctap/mds/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 
 export type OverviewRowStatus =

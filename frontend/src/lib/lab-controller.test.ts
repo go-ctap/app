@@ -8,6 +8,16 @@ import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/mod
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { DecodeMode } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import {
+  CredentialVerificationMaterial,
+  GetAssertionVerification,
+  MakeCredentialVerification,
+  VerificationStatus,
+} from "../../bindings/github.com/go-ctap/kit/model/webauthn";
+import {
+  AttestationTrustAssessment,
+  LookupResult,
+} from "../../bindings/github.com/go-ctap/mds/model";
 import type {
   CredentialsEnvelope,
   GetAssertionEnvelope,
@@ -55,6 +65,7 @@ import {
   handoffLabCredential,
   previewLabMakeCredential,
   rerunLabGetAssertion,
+  retryLabMakeCredentialVerification,
   runLabGetAssertion,
   selectLabOperation,
   updateLabGetAssertionDraft,
@@ -172,6 +183,14 @@ beforeEach(() => {
   resetWorkbenchStateForTest();
   resetLabStateForTest((target) => target.fill(0x11));
   authenticatorStatus.set({ state: "ready", selectionId: "authenticator-1" });
+  vi.spyOn(api, "verifyMakeCredential").mockResolvedValue(new MakeCredentialVerification());
+  vi.spyOn(api, "verifyGetAssertion").mockResolvedValue(new GetAssertionVerification());
+  vi.spyOn(api, "lookupMDS").mockResolvedValue({
+    result: new LookupResult(),
+  });
+  vi.spyOn(api, "assessMakeCredentialAttestation").mockResolvedValue(
+    new AttestationTrustAssessment(),
+  );
   toastMocks.error.mockClear();
   toastMocks.info.mockClear();
   toastMocks.success.mockClear();
@@ -317,6 +336,60 @@ describe("WebAuthn Lab request lifecycle", () => {
     expect(get(labState).makeStep.phase).toBe("success");
   });
 
+  it("publishes the CTAP result while local verification loads and supports retry", async () => {
+    let resolveVerification!: (verification: MakeCredentialVerification) => void;
+    vi.mocked(api.verifyMakeCredential).mockReturnValueOnce(new Promise((resolve) => {
+      resolveVerification = resolve;
+    }));
+    vi.spyOn(api, "makeCredential")
+      .mockResolvedValueOnce(makePreviewEnvelope())
+      .mockResolvedValueOnce(makeResultEnvelope("lab.example", "cafe"));
+
+    expect(await previewLabMakeCredential()).toBe(true);
+    expect(await confirmLabMakeCredential()).toBe(true);
+    expect(get(labState)).toMatchObject({
+      makeStep: { phase: "success" },
+      makeVerification: { phase: "loading" },
+    });
+    expect(api.verifyMakeCredential).toHaveBeenCalledWith(expect.objectContaining({
+      input: expect.objectContaining({
+        rp: expect.objectContaining({ id: "example.com" }),
+      }),
+      result: expect.objectContaining({
+        rpID: "lab.example",
+        attestationObjectCBORHex: "a363666d74",
+      }),
+    }));
+
+    const verification = new MakeCredentialVerification({
+      status: VerificationStatus.VerificationStatusVerified,
+    });
+    resolveVerification(verification);
+    await vi.waitFor(() => {
+      expect(get(labState).makeVerification).toEqual({ phase: "ready", verification });
+    });
+
+    vi.mocked(api.verifyMakeCredential).mockResolvedValueOnce(verification);
+    expect(retryLabMakeCredentialVerification()).toBe(true);
+    await vi.waitFor(() => {
+      expect(api.verifyMakeCredential).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("keeps a successful CTAP result when the independent verification call fails", async () => {
+    vi.mocked(api.verifyMakeCredential).mockRejectedValueOnce(new Error("verification unavailable"));
+    vi.spyOn(api, "makeCredential")
+      .mockResolvedValueOnce(makePreviewEnvelope())
+      .mockResolvedValueOnce(makeResultEnvelope());
+
+    expect(await previewLabMakeCredential()).toBe(true);
+    expect(await confirmLabMakeCredential()).toBe(true);
+    await vi.waitFor(() => {
+      expect(get(labState).makeVerification.phase).toBe("error");
+    });
+    expect(get(labState).makeStep.phase).toBe("success");
+  });
+
   it("reconfirms directly after any execution failure without rebuilding the preview", async () => {
     const executionFailure = makePreviewEnvelope();
     executionFailure.error = failureForCode(Code.CodeTransportFailure);
@@ -385,6 +458,53 @@ describe("WebAuthn Lab request lifecycle", () => {
       dryRun: false,
     });
     expect(getAssertion.mock.calls[2][0].clientDataJSON).toBe(frozenRequest.clientDataJSON);
+    expect(get(labState).getStep.phase).toBe("success");
+  });
+
+  it("verifies the full assertion result with local material matched by credential ID", async () => {
+    const envelope = getResultEnvelope("example.com");
+    envelope.result!.result!.assertions = [{
+      index: 0,
+      credential: {
+        type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
+        id: "yv4=",
+      },
+      authenticatorDataHex: "11".repeat(37),
+      signatureHex: "22".repeat(64),
+      signCount: 8,
+      userPresent: true,
+      userVerified: false,
+    }];
+    expect(updateLabGetAssertionDraft({
+      verificationMaterial: [new CredentialVerificationMaterial({
+        credentialIDHex: "cafe",
+        publicKeyCOSEHex: "a5010203",
+        previousSignCount: 7,
+      })],
+    })).toBe(true);
+    vi.spyOn(api, "getAssertion")
+      .mockResolvedValueOnce(envelope)
+      .mockResolvedValueOnce(envelope);
+
+    expect(await runLabGetAssertion()).toBe(true);
+    expect(await confirmLabGetAssertion()).toBe(true);
+    await vi.waitFor(() => {
+      expect(api.verifyGetAssertion).toHaveBeenCalledWith(expect.objectContaining({
+        input: expect.objectContaining({ rpID: "example.com" }),
+        result: expect.objectContaining({
+          rpID: "example.com",
+          assertions: [expect.objectContaining({
+            authenticatorDataHex: "11".repeat(37),
+            signatureHex: "22".repeat(64),
+          })],
+        }),
+        verificationMaterial: [expect.objectContaining({
+          credentialIDHex: "cafe",
+          publicKeyCOSEHex: "a5010203",
+          previousSignCount: 7,
+        })],
+      }));
+    });
     expect(get(labState).getStep.phase).toBe("success");
   });
 
@@ -557,6 +677,11 @@ describe("WebAuthn Lab credential handoff", () => {
         { credentialIDHex: "beef" },
         { credentialIDHex: "CAFE" },
       ],
+      verificationMaterial: [{
+        credentialIDHex: "cafe",
+        publicKeyCOSEHex: "a5010203262001215820",
+        previousSignCount: 0,
+      }],
     });
     expect(get(labState).pendingHandoff).toBeNull();
     expect(toastMocks.success).toHaveBeenCalledOnce();
@@ -580,6 +705,11 @@ describe("WebAuthn Lab credential handoff", () => {
         { credentialIDHex: "beef" },
         { credentialIDHex: "cafe" },
       ],
+      verificationMaterial: [{
+        credentialIDHex: "cafe",
+        publicKeyCOSEHex: "a5010203262001215820",
+        previousSignCount: 0,
+      }],
     });
     expect(get(labState).getStep.phase).toBe("editing");
   });
@@ -595,6 +725,8 @@ describe("WebAuthn Lab credential handoff", () => {
     expect(get(labState).pendingHandoff).toEqual({
       rpID: "created.example",
       credentialIDHex: "cafe",
+      publicKeyCOSEHex: "a5010203262001215820",
+      previousSignCount: 0,
     });
     expect(get(labState).getDraft).toMatchObject({
       rpID: "other.example",
@@ -609,6 +741,11 @@ describe("WebAuthn Lab credential handoff", () => {
     expect(get(labState).getDraft).toMatchObject({
       rpID: "created.example",
       allowList: [{ credentialIDHex: "cafe" }],
+      verificationMaterial: [{
+        credentialIDHex: "cafe",
+        publicKeyCOSEHex: "a5010203262001215820",
+        previousSignCount: 0,
+      }],
     });
     expect(get(labState).getStep.phase).toBe("editing");
   });
@@ -635,10 +772,19 @@ describe("WebAuthn Lab credential handoff", () => {
     expect(get(labState).pendingHandoff).toEqual({
       rpID: "example.com",
       credentialIDHex: "cafe",
+      publicKeyCOSEHex: "a5010203262001215820",
+      previousSignCount: 0,
     });
     expect(confirmLabHandoff()).toBe(true);
     expect(get(labState).getDraft.allowList).toEqual([
       { credentialIDHex: "cafe" },
+    ]);
+    expect(get(labState).getDraft.verificationMaterial).toEqual([
+      expect.objectContaining({
+        credentialIDHex: "cafe",
+        publicKeyCOSEHex: "a5010203262001215820",
+        previousSignCount: 0,
+      }),
     ]);
     expect(get(labState).getStep.phase).toBe("editing");
   });

@@ -2,10 +2,21 @@ import { get } from "svelte/store";
 import { toast } from "svelte-sonner";
 
 import {
+  GetAssertionVerificationRequest,
   GetAssertionRequest,
+  MakeCredentialAttestationAssessmentRequest,
   MakeCredentialRequest,
+  MakeCredentialVerificationRequest,
+  MDSLookupRequest,
   type GetAssertionEnvelope,
 } from "../../bindings/telesma/service";
+import {
+  CredentialVerificationMaterial,
+  GetAssertionInput,
+  MakeCredentialInput,
+  type GetAssertionResult,
+  type MakeCredentialResult,
+} from "../../bindings/github.com/go-ctap/kit/model/webauthn";
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
 import {
@@ -33,6 +44,7 @@ import {
   validateGetAssertionDraft,
   validateMakeCredentialDraft,
 } from "./lab-input.js";
+import { runtimeFailureFrom } from "./failure.js";
 import { currentSelectionID } from "./authenticator-boundary.js";
 import { ensureActiveSelectionReady } from "./authenticator-controller.js";
 import {
@@ -45,6 +57,80 @@ import {
 
 export function selectLabOperation(activeOperation: LabState["activeOperation"]) {
   labState.update((state) => ({ ...state, activeOperation }));
+}
+
+async function verifyMakeCredentialResult(
+  request: MakeCredentialRequest,
+  result: MakeCredentialResult,
+) {
+  try {
+    const verification = await api.verifyMakeCredential(new MakeCredentialVerificationRequest({
+      input: new MakeCredentialInput(request),
+      result,
+    }));
+    labState.update((state) => ({
+      ...state,
+      makeVerification: { phase: "ready", verification },
+    }));
+  } catch (cause) {
+    const error = runtimeFailureFrom(cause);
+    labState.update((state) => ({
+      ...state,
+      makeVerification: { phase: "error", error },
+    }));
+  }
+}
+
+async function assessMakeCredentialAttestation(
+  request: MakeCredentialRequest,
+  result: MakeCredentialResult,
+) {
+  try {
+    const metadata = await api.lookupMDS(new MDSLookupRequest({
+      aaguid: result.aaguid,
+    }));
+    const assessment = await api.assessMakeCredentialAttestation(
+      new MakeCredentialAttestationAssessmentRequest({
+        input: new MakeCredentialInput(request),
+        result,
+        metadata: metadata.result,
+      }),
+    );
+    labState.update((state) => ({
+      ...state,
+      makeAttestationTrust: { phase: "ready", verification: assessment },
+    }));
+  } catch (cause) {
+    const error = runtimeFailureFrom(cause);
+    labState.update((state) => ({
+      ...state,
+      makeAttestationTrust: { phase: "error", error },
+    }));
+  }
+}
+
+async function verifyGetAssertionResult(
+  request: GetAssertionRequest,
+  result: GetAssertionResult,
+  verificationMaterial: CredentialVerificationMaterial[],
+) {
+  try {
+    const verification = await api.verifyGetAssertion(new GetAssertionVerificationRequest({
+      input: new GetAssertionInput(request),
+      result,
+      verificationMaterial,
+    }));
+    labState.update((state) => ({
+      ...state,
+      getVerification: { phase: "ready", verification },
+    }));
+  } catch (cause) {
+    const error = runtimeFailureFrom(cause);
+    labState.update((state) => ({
+      ...state,
+      getVerification: { phase: "error", error },
+    }));
+  }
 }
 
 function demoClientData(
@@ -92,6 +178,8 @@ export function updateLabMakeCredentialDraft(patch: Partial<MakeCredentialDraft>
     ...current,
     makeDraft,
     makeStep: { phase: "editing" },
+    makeVerification: { phase: "idle" },
+    makeAttestationTrust: { phase: "idle" },
   });
   return true;
 }
@@ -107,6 +195,7 @@ export function updateLabGetAssertionDraft(patch: Partial<GetAssertionDraft>) {
     ...current,
     getDraft,
     getStep: { phase: "editing" },
+    getVerification: { phase: "idle" },
   });
   return true;
 }
@@ -149,6 +238,8 @@ export async function previewLabMakeCredential(): Promise<boolean> {
   labState.update((state) => ({
     ...state,
     makeStep: { phase: "previewing", previewRequest },
+    makeVerification: { phase: "idle" },
+    makeAttestationTrust: { phase: "idle" },
   }));
   const label = m.lab_make_credential_preview();
   const outcome = await runTypedOperationStage({
@@ -167,6 +258,8 @@ export async function previewLabMakeCredential(): Promise<boolean> {
           responseEnvelope: details.responseEnvelope,
           runtimeError: details.runtimeError,
         },
+        makeVerification: { phase: "idle" },
+        makeAttestationTrust: { phase: "idle" },
       }));
     },
     onSuccess: (_preview, envelope) => labState.update((state) => ({
@@ -203,6 +296,8 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
       previewEnvelope,
       request,
     },
+    makeVerification: { phase: "idle" },
+    makeAttestationTrust: { phase: "idle" },
   }));
 
   const label = m.lab_make_credential();
@@ -222,9 +317,11 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
           responseEnvelope: details.responseEnvelope,
           runtimeError: details.runtimeError,
         },
+        makeVerification: { phase: "idle" },
+        makeAttestationTrust: { phase: "idle" },
       }));
     },
-    onSuccess: (_result, envelope) => {
+    onSuccess: (result, envelope) => {
       labState.update((state) => ({
         ...state,
         makeStep: {
@@ -234,7 +331,11 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
           request,
           responseEnvelope: envelope,
         },
+        makeVerification: { phase: "loading" },
+        makeAttestationTrust: { phase: "loading" },
       }));
+      void verifyMakeCredentialResult(request, result);
+      void assessMakeCredentialAttestation(request, result);
       invalidatePasskeysInventory();
       invalidateLargeBlobsInventory();
     },
@@ -249,6 +350,8 @@ export function editLabMakeCredential() {
     ...current,
     pendingHandoff: null,
     makeStep: { phase: "editing" },
+    makeVerification: { phase: "idle" },
+    makeAttestationTrust: { phase: "idle" },
   });
   return true;
 }
@@ -266,6 +369,8 @@ export function newLabMakeCredentialRun() {
     pendingHandoff: null,
     makeDraft,
     makeStep: { phase: "editing" },
+    makeVerification: { phase: "idle" },
+    makeAttestationTrust: { phase: "idle" },
   });
   return true;
 }
@@ -278,6 +383,7 @@ async function executeGetAssertion(
   labState.update((state) => ({
     ...state,
     getStep: { phase: "executing", previewRequest, previewEnvelope, request },
+    getVerification: { phase: "idle" },
   }));
   const label = m.lab_get_assertion();
   const outcome = await runTypedOperationStage({
@@ -296,13 +402,17 @@ async function executeGetAssertion(
           responseEnvelope: details.responseEnvelope,
           runtimeError: details.runtimeError,
         },
+        getVerification: { phase: "idle" },
       }));
     },
-    onSuccess: (_result, envelope) => {
+    onSuccess: (result, envelope) => {
+      const verificationMaterial = get(labState).getDraft.verificationMaterial;
       labState.update((state) => ({
         ...state,
         getStep: { phase: "success", previewRequest, previewEnvelope, request, responseEnvelope: envelope },
+        getVerification: { phase: "loading" },
       }));
+      void verifyGetAssertionResult(request, result, verificationMaterial);
       if (request.extensions?.largeBlob?.write !== undefined) invalidateLargeBlobsInventory();
     },
   });
@@ -326,6 +436,7 @@ export async function runLabGetAssertion(): Promise<boolean> {
   labState.update((state) => ({
     ...state,
     getStep: { phase: "previewing", previewRequest },
+    getVerification: { phase: "idle" },
   }));
   const label = m.lab_get_assertion();
   const outcome = await runTypedOperationStage({
@@ -344,6 +455,7 @@ export async function runLabGetAssertion(): Promise<boolean> {
           responseEnvelope: details.responseEnvelope,
           runtimeError: details.runtimeError,
         },
+        getVerification: { phase: "idle" },
       }));
     },
     onSuccess: (_preview, envelope) => labState.update((state) => ({
@@ -389,6 +501,7 @@ export function editLabGetAssertion() {
     pendingHandoff: null,
     activeOperation: "get",
     getStep: { phase: "editing" },
+    getVerification: { phase: "idle" },
   });
   return true;
 }
@@ -407,11 +520,91 @@ export function newLabGetAssertionRun() {
     activeOperation: "get",
     getDraft,
     getStep: { phase: "editing" },
+    getVerification: { phase: "idle" },
   });
   return true;
 }
 
-function completeHandoff(rpID: string, credentialIDHex: string, replace: boolean) {
+export function retryLabMakeCredentialVerification() {
+  const current = get(labState);
+  if (current.makeStep.phase !== "success") return false;
+  const result = makeCredentialResult(current.makeStep.responseEnvelope);
+  if (!result) return false;
+
+  const { request } = current.makeStep;
+  labState.set({
+    ...current,
+    makeVerification: { phase: "loading" },
+  });
+  void verifyMakeCredentialResult(request, result);
+  return true;
+}
+
+export function retryLabMakeCredentialAttestationTrust() {
+  const current = get(labState);
+  if (current.makeStep.phase !== "success") return false;
+  const result = makeCredentialResult(current.makeStep.responseEnvelope);
+  if (!result) return false;
+
+  labState.set({
+    ...current,
+    makeAttestationTrust: { phase: "loading" },
+  });
+  void assessMakeCredentialAttestation(current.makeStep.request, result);
+  return true;
+}
+
+export function retryLabGetAssertionVerification() {
+  const current = get(labState);
+  if (current.getStep.phase !== "success") return false;
+  const result = getAssertionResult(current.getStep.responseEnvelope);
+  if (!result) return false;
+
+  const { request } = current.getStep;
+  labState.set({
+    ...current,
+    getVerification: { phase: "loading" },
+  });
+  void verifyGetAssertionResult(
+    request,
+    result,
+    current.getDraft.verificationMaterial,
+  );
+  return true;
+}
+
+export function updateLabVerificationMaterial(material: CredentialVerificationMaterial[]) {
+  const current = get(labState);
+  const getDraft = {
+    ...current.getDraft,
+    verificationMaterial: material.map((entry) => new CredentialVerificationMaterial(entry)),
+  };
+  labState.set({
+    ...current,
+    getDraft,
+    getVerification: current.getStep.phase === "success"
+      ? { phase: "loading" }
+      : { phase: "idle" },
+  });
+  if (current.getStep.phase !== "success") return true;
+
+  const result = getAssertionResult(current.getStep.responseEnvelope);
+  if (!result) return false;
+  void verifyGetAssertionResult(
+    current.getStep.request,
+    result,
+    getDraft.verificationMaterial,
+  );
+  return true;
+}
+
+function completeHandoff(
+  rpID: string,
+  credentialIDHex: string,
+  publicKeyCOSEHex: string,
+  previousSignCount: number,
+  replace: boolean,
+) {
   const current = get(labState);
   const duplicate = current.getDraft.allowList.some(
     (entry) => entry.credentialIDHex.trim().toLowerCase() === credentialIDHex.toLowerCase(),
@@ -420,13 +613,27 @@ function completeHandoff(rpID: string, credentialIDHex: string, replace: boolean
   const allowList = replace
     ? [created]
     : duplicate ? current.getDraft.allowList : [...current.getDraft.allowList, created];
-  const getDraft = { ...current.getDraft, rpID, allowList };
+  const verification = new CredentialVerificationMaterial({
+    credentialIDHex,
+    publicKeyCOSEHex,
+    previousSignCount,
+  });
+  const verificationMaterial = replace
+    ? [verification]
+    : [
+        ...current.getDraft.verificationMaterial.filter(
+          (entry) => entry.credentialIDHex.trim().toLowerCase() !== credentialIDHex.toLowerCase(),
+        ),
+        verification,
+      ];
+  const getDraft = { ...current.getDraft, rpID, allowList, verificationMaterial };
   labState.set({
     ...current,
     pendingHandoff: null,
     activeOperation: "get",
     getDraft,
     getStep: { phase: "editing" },
+    getVerification: { phase: "idle" },
   });
   const outcome = {
     tone: "success" as const,
@@ -451,17 +658,31 @@ export function handoffLabCredential() {
       pendingHandoff: {
         rpID: result.rpID,
         credentialIDHex: result.credentialIDHex,
+        publicKeyCOSEHex: result.publicKeyCOSEHex,
+        previousSignCount: result.signCount,
       },
     });
     return false;
   }
-  return completeHandoff(result.rpID, result.credentialIDHex, false);
+  return completeHandoff(
+    result.rpID,
+    result.credentialIDHex,
+    result.publicKeyCOSEHex,
+    result.signCount,
+    false,
+  );
 }
 
 export function confirmLabHandoff() {
   const pending = get(labState).pendingHandoff;
   if (!pending) return false;
-  return completeHandoff(pending.rpID, pending.credentialIDHex, true);
+  return completeHandoff(
+    pending.rpID,
+    pending.credentialIDHex,
+    pending.publicKeyCOSEHex,
+    pending.previousSignCount,
+    true,
+  );
 }
 
 export function cancelLabHandoff() {

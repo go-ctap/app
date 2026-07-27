@@ -7,10 +7,91 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as protocol$0 from "../../../ctap/protocol/models.js";
+import * as protocol$0 from "../../ctap/protocol/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as uuid$0 from "../../../../google/uuid/models.js";
+import * as uuid$0 from "../../../google/uuid/models.js";
+
+/**
+ * AttestationTrustAssessment contains policy-neutral MDS trust facts. Status
+ * reports are preserved so a relying party can apply stricter product policy.
+ */
+export class AttestationTrustAssessment {
+    "status": AttestationTrustStatus;
+    "metadataFound": boolean;
+    "certificateChainTrusted"?: boolean | null;
+    "authenticatorStatuses"?: AuthenticatorStatus[];
+    "issues"?: AttestationTrustIssueCode[];
+
+    /** Creates a new AttestationTrustAssessment instance. */
+    constructor($$source: Partial<AttestationTrustAssessment> = {}) {
+        if (!("status" in $$source)) {
+            this["status"] = AttestationTrustStatus.$zero;
+        }
+        if (!("metadataFound" in $$source)) {
+            this["metadataFound"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AttestationTrustAssessment instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AttestationTrustAssessment {
+        const $$createField3_0 = $$createType0;
+        const $$createField4_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("authenticatorStatuses" in $$parsedSource) {
+            $$parsedSource["authenticatorStatuses"] = $$createField3_0($$parsedSource["authenticatorStatuses"]);
+        }
+        if ("issues" in $$parsedSource) {
+            $$parsedSource["issues"] = $$createField4_0($$parsedSource["issues"]);
+        }
+        return new AttestationTrustAssessment($$parsedSource as Partial<AttestationTrustAssessment>);
+    }
+}
+
+/**
+ * AttestationTrustIssueCode identifies a stable reason for an attestation
+ * trust outcome.
+ */
+export enum AttestationTrustIssueCode {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    AttestationTrustIssueMetadataNotFound = "mds.attestation.metadata_not_found",
+    AttestationTrustIssueMetadataAAGUIDMismatch = "mds.attestation.metadata_aaguid_mismatch",
+    AttestationTrustIssueEvidenceMalformed = "mds.attestation.evidence_malformed",
+    AttestationTrustIssueEvidenceUnverified = "mds.attestation.evidence_unverified",
+    AttestationTrustIssueFormatUnsupported = "mds.attestation.format_unsupported",
+    AttestationTrustIssueCertificateChainMissing = "mds.attestation.certificate_chain_missing",
+    AttestationTrustIssueCertificateChainMalformed = "mds.attestation.certificate_chain_malformed",
+    AttestationTrustIssueAttestationRootsMissing = "mds.attestation.roots_missing",
+    AttestationTrustIssueAttestationRootMalformed = "mds.attestation.root_malformed",
+    AttestationTrustIssueCertificateChainUntrusted = "mds.attestation.certificate_chain_untrusted",
+    AttestationTrustIssueAuthenticatorRevoked = "mds.attestation.authenticator_revoked",
+    AttestationTrustIssueAttestationKeyCompromise = "mds.attestation.attestation_key_compromise",
+    AttestationTrustIssueStatusCertificateMalformed = "mds.attestation.status_certificate_malformed",
+};
+
+/**
+ * AttestationTrustStatus is the outcome of evaluating attestation evidence
+ * against one verified MDS entry.
+ */
+export enum AttestationTrustStatus {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    AttestationTrustStatusTrusted = "trusted",
+    AttestationTrustStatusUntrusted = "untrusted",
+    AttestationTrustStatusUnavailable = "unavailable",
+    AttestationTrustStatusNotApplicable = "not_applicable",
+};
 
 /**
  * AuthenticatorStatus is an MDS authenticator status value.
@@ -120,7 +201,7 @@ export class DisplayPNGCharacteristicsDescriptor {
      * Creates a new DisplayPNGCharacteristicsDescriptor instance from a string or object.
      */
     static createFrom($$source: any = {}): DisplayPNGCharacteristicsDescriptor {
-        const $$createField7_0 = $$createType1;
+        const $$createField7_0 = $$createType3;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("plte" in $$parsedSource) {
             $$parsedSource["plte"] = $$createField7_0($$parsedSource["plte"]);
@@ -224,7 +305,7 @@ export class ExtensionDescriptor {
 }
 
 /**
- * LookupResult is the public result of a FIDO Metadata Service AAGUID lookup.
+ * LookupResult is the public result of a verified FIDO Metadata Service AAGUID lookup.
  */
 export class LookupResult {
     "aaguid": uuid$0.UUID;
@@ -263,7 +344,7 @@ export class LookupResult {
      * Creates a new LookupResult instance from a string or object.
      */
     static createFrom($$source: any = {}): LookupResult {
-        const $$createField2_0 = $$createType3;
+        const $$createField2_0 = $$createType5;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("entry" in $$parsedSource) {
             $$parsedSource["entry"] = $$createField2_0($$parsedSource["entry"]);
@@ -360,23 +441,23 @@ export class MetadataStatement {
      * Creates a new MetadataStatement instance from a string or object.
      */
     static createFrom($$source: any = {}): MetadataStatement {
-        const $$createField3_0 = $$createType4;
-        const $$createField4_0 = $$createType5;
-        const $$createField6_0 = $$createType5;
-        const $$createField10_0 = $$createType7;
-        const $$createField11_0 = $$createType4;
-        const $$createField12_0 = $$createType4;
-        const $$createField13_0 = $$createType4;
-        const $$createField14_0 = $$createType8;
-        const $$createField15_0 = $$createType4;
-        const $$createField18_0 = $$createType4;
-        const $$createField20_0 = $$createType4;
-        const $$createField21_0 = $$createType4;
-        const $$createField23_0 = $$createType10;
-        const $$createField24_0 = $$createType4;
-        const $$createField25_0 = $$createType12;
-        const $$createField30_0 = $$createType14;
-        const $$createField32_0 = $$createType15;
+        const $$createField3_0 = $$createType6;
+        const $$createField4_0 = $$createType7;
+        const $$createField6_0 = $$createType7;
+        const $$createField10_0 = $$createType9;
+        const $$createField11_0 = $$createType6;
+        const $$createField12_0 = $$createType6;
+        const $$createField13_0 = $$createType6;
+        const $$createField14_0 = $$createType10;
+        const $$createField15_0 = $$createType6;
+        const $$createField18_0 = $$createType6;
+        const $$createField20_0 = $$createType6;
+        const $$createField21_0 = $$createType6;
+        const $$createField23_0 = $$createType12;
+        const $$createField24_0 = $$createType6;
+        const $$createField25_0 = $$createType14;
+        const $$createField30_0 = $$createType16;
+        const $$createField32_0 = $$createType17;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("attestationCertificateKeyIdentifiers" in $$parsedSource) {
             $$parsedSource["attestationCertificateKeyIdentifiers"] = $$createField3_0($$parsedSource["attestationCertificateKeyIdentifiers"]);
@@ -457,10 +538,10 @@ export class PayloadEntry {
      * Creates a new PayloadEntry instance from a string or object.
      */
     static createFrom($$source: any = {}): PayloadEntry {
-        const $$createField2_0 = $$createType4;
-        const $$createField3_0 = $$createType16;
-        const $$createField4_0 = $$createType18;
-        const $$createField5_0 = $$createType20;
+        const $$createField2_0 = $$createType6;
+        const $$createField3_0 = $$createType18;
+        const $$createField4_0 = $$createType20;
+        const $$createField5_0 = $$createType22;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("attestationCertificateKeyIdentifiers" in $$parsedSource) {
             $$parsedSource["attestationCertificateKeyIdentifiers"] = $$createField2_0($$parsedSource["attestationCertificateKeyIdentifiers"]);
@@ -514,6 +595,7 @@ export class StatusReport {
     "status": AuthenticatorStatus;
     "effectiveDate"?: string | null;
     "authenticatorVersion"?: number | null;
+    "batchCertificate"?: string | null;
     "certificate"?: string | null;
     "url"?: string | null;
     "certificationDescriptor"?: string | null;
@@ -538,10 +620,10 @@ export class StatusReport {
      * Creates a new StatusReport instance from a string or object.
      */
     static createFrom($$source: any = {}): StatusReport {
-        const $$createField8_0 = $$createType4;
+        const $$createField9_0 = $$createType6;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("certificationProfiles" in $$parsedSource) {
-            $$parsedSource["certificationProfiles"] = $$createField8_0($$parsedSource["certificationProfiles"]);
+            $$parsedSource["certificationProfiles"] = $$createField9_0($$parsedSource["certificationProfiles"]);
         }
         return new StatusReport($$parsedSource as Partial<StatusReport>);
     }
@@ -573,24 +655,26 @@ export class Version {
 }
 
 // Private type creation functions
-const $$createType0 = RGBPaletteEntry.createFrom;
-const $$createType1 = $Create.Array($$createType0);
-const $$createType2 = PayloadEntry.createFrom;
-const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = $Create.Array($Create.Any);
-const $$createType5 = $Create.Map($Create.Any, $Create.Any);
-const $$createType6 = Version.createFrom;
-const $$createType7 = $Create.Array($$createType6);
-const $$createType8 = $Create.Array($Create.Any);
-const $$createType9 = DisplayPNGCharacteristicsDescriptor.createFrom;
-const $$createType10 = $Create.Array($$createType9);
-const $$createType11 = ECDAATrustAnchor.createFrom;
+const $$createType0 = $Create.Array($Create.Any);
+const $$createType1 = $Create.Array($Create.Any);
+const $$createType2 = RGBPaletteEntry.createFrom;
+const $$createType3 = $Create.Array($$createType2);
+const $$createType4 = PayloadEntry.createFrom;
+const $$createType5 = $Create.Nullable($$createType4);
+const $$createType6 = $Create.Array($Create.Any);
+const $$createType7 = $Create.Map($Create.Any, $Create.Any);
+const $$createType8 = Version.createFrom;
+const $$createType9 = $Create.Array($$createType8);
+const $$createType10 = $Create.Array($Create.Any);
+const $$createType11 = DisplayPNGCharacteristicsDescriptor.createFrom;
 const $$createType12 = $Create.Array($$createType11);
-const $$createType13 = ExtensionDescriptor.createFrom;
+const $$createType13 = ECDAATrustAnchor.createFrom;
 const $$createType14 = $Create.Array($$createType13);
-const $$createType15 = protocol$0.AuthenticatorGetInfoResponse.createFrom;
-const $$createType16 = MetadataStatement.createFrom;
-const $$createType17 = BiometricStatusReport.createFrom;
-const $$createType18 = $Create.Array($$createType17);
-const $$createType19 = StatusReport.createFrom;
+const $$createType15 = ExtensionDescriptor.createFrom;
+const $$createType16 = $Create.Array($$createType15);
+const $$createType17 = protocol$0.AuthenticatorGetInfoResponse.createFrom;
+const $$createType18 = MetadataStatement.createFrom;
+const $$createType19 = BiometricStatusReport.createFrom;
 const $$createType20 = $Create.Array($$createType19);
+const $$createType21 = StatusReport.createFrom;
+const $$createType22 = $Create.Array($$createType21);

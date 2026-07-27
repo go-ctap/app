@@ -1,4 +1,4 @@
-import type { LookupResult, MetadataStatement, PayloadEntry, StatusReport } from "../../bindings/github.com/go-ctap/kit/model/mds";
+import type { LookupResult, MetadataStatement, PayloadEntry, StatusReport } from "../../bindings/github.com/go-ctap/mds/model";
 import { Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
 
 import { deviceName as formattedDeviceName } from "./format.js";

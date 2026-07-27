@@ -23,9 +23,13 @@
     regenerateLabMakeChallenge,
     regenerateLabUserID,
     rerunLabGetAssertion,
+    retryLabGetAssertionVerification,
+    retryLabMakeCredentialAttestationTrust,
+    retryLabMakeCredentialVerification,
     runLabGetAssertion,
     selectLabOperation,
     updateLabGetAssertionDraft,
+    updateLabVerificationMaterial,
     updateLabMakeCredentialDraft,
   } from "$lib/features/lab";
   import { labState } from "$lib/features/lab";
@@ -103,6 +107,8 @@
           onEdit={editLabMakeCredential}
           onNewRun={newLabMakeCredentialRun}
           onHandoff={handleHandoff}
+          onRetryAttestationTrust={retryLabMakeCredentialAttestationTrust}
+          onRetryVerification={retryLabMakeCredentialVerification}
           onRetryInspection={reloadOverview}
         />
       </Tabs.Content>
@@ -118,6 +124,8 @@
           onRetry={rerunLabGetAssertion}
           onEdit={editLabGetAssertion}
           onNewRun={newLabGetAssertionRun}
+          onVerificationMaterialChange={updateLabVerificationMaterial}
+          onRetryVerification={retryLabGetAssertionVerification}
           onRetryInspection={reloadOverview}
         />
       </Tabs.Content>

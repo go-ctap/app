@@ -1,9 +1,14 @@
 <script lang="ts">
-  import type { GetAssertionResult as GetAssertionResultDTO } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
+  import type {
+    CredentialVerificationMaterial,
+    GetAssertionResult as GetAssertionResultDTO,
+    GetAssertionVerification,
+  } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
   import type { GetAssertionEnvelope } from "../../../../bindings/telesma/service";
 
   import { Badge } from "$lib/components/ui/badge/index.js";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
+  import type { LabVerificationState } from "$lib/features/lab/state";
   import { base64ToHex } from "$lib/lab-input";
   import { sanitizedJson } from "$lib/redaction";
 
@@ -13,13 +18,26 @@
   import LabHexValue from "./LabHexValue.svelte";
   import LabProtocolDetails, { type ProtocolDetailRow } from "./LabProtocolDetails.svelte";
   import LabSecretValue from "./LabSecretValue.svelte";
+  import LabVerificationMaterialEditor from "./LabVerificationMaterialEditor.svelte";
+  import LabVerificationResult from "./LabVerificationResult.svelte";
 
   type Props = {
     result: GetAssertionResultDTO;
     responseEnvelope: GetAssertionEnvelope;
+    verification?: LabVerificationState<GetAssertionVerification>;
+    verificationMaterial?: CredentialVerificationMaterial[];
+    onVerificationMaterialChange?: (entries: CredentialVerificationMaterial[]) => void;
+    onRetryVerification?: () => void;
   };
 
-  let { result, responseEnvelope }: Props = $props();
+  let {
+    result,
+    responseEnvelope,
+    verification = { phase: "idle" },
+    verificationMaterial = [],
+    onVerificationMaterialChange = () => undefined,
+    onRetryVerification = () => undefined,
+  }: Props = $props();
   let assertions = $derived(result.assertions ?? []);
   let selectedValue = $state("");
   let selectedAssertion = $derived(
@@ -203,6 +221,17 @@
         <p>{m.lab_no_extension_outputs()}</p>
       {/if}
     </section>
+
+    <LabVerificationMaterialEditor
+      entries={verificationMaterial}
+      onChange={onVerificationMaterialChange}
+    />
+
+    <LabVerificationResult
+      mode="get"
+      state={verification}
+      onRetry={onRetryVerification}
+    />
 
     <LabProtocolDetails rows={technicalDetails} onView={(row) => { selectedDetail = row; }} />
   {/if}

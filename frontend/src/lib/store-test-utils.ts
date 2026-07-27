@@ -1,4 +1,4 @@
-import type { LookupResult } from "../../bindings/github.com/go-ctap/kit/model/mds";
+import type { LookupResult } from "../../bindings/github.com/go-ctap/mds/model";
 import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type {

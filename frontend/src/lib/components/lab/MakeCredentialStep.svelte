@@ -36,6 +36,8 @@
     onEdit: () => void;
     onNewRun: () => void;
     onHandoff: () => void;
+    onRetryAttestationTrust: () => void;
+    onRetryVerification: () => void;
     onRetryInspection: () => void;
   };
 
@@ -51,6 +53,8 @@
     onEdit,
     onNewRun,
     onHandoff,
+    onRetryAttestationTrust,
+    onRetryVerification,
     onRetryInspection,
   }: Props = $props();
 
@@ -133,7 +137,14 @@
         />
       </section>
     {:else if phase === "success" && result && responseEnvelope}
-      <MakeCredentialResult {result} {responseEnvelope} />
+      <MakeCredentialResult
+        {result}
+        {responseEnvelope}
+        attestationTrust={lab.makeAttestationTrust}
+        verification={lab.makeVerification}
+        {onRetryAttestationTrust}
+        {onRetryVerification}
+      />
     {:else if preview}
       <MakeCredentialReview {preview} />
     {/if}

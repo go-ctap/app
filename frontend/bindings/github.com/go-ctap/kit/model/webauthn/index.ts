@@ -3,10 +3,13 @@
 
 export {
     Assertion,
+    AssertionVerification,
+    AttestationType,
     AuthenticatorOptions,
     CredentialBlobCreateOutput,
     CredentialBlobGetOutput,
     CredentialProtectionOutput,
+    CredentialVerificationMaterial,
     GetAssertionAuthenticatorExtensionOutputs,
     GetAssertionClientExtensionResults,
     GetAssertionExtensionResults,
@@ -15,6 +18,7 @@ export {
     GetAssertionPRFOutput,
     GetAssertionPreview,
     GetAssertionResult,
+    GetAssertionVerification,
     HMACSecretCreateOutput,
     HMACSecretOutput,
     LargeBlobCreateOutput,
@@ -27,6 +31,10 @@ export {
     MakeCredentialPRFOutput,
     MakeCredentialPreview,
     MakeCredentialResult,
+    MakeCredentialVerification,
     MinPINLengthOutput,
-    PINComplexityPolicyOutput
+    PINComplexityPolicyOutput,
+    SignCountStatus,
+    VerificationIssueCode,
+    VerificationStatus
 } from "./models.js";

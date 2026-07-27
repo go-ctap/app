@@ -3,6 +3,7 @@
   import { Pencil, RotateCcw, Send, WandSparkles } from "@lucide/svelte";
 
   import type { GetAssertionEnvelope, InspectEnvelope } from "../../../../bindings/telesma/service";
+  import type { CredentialVerificationMaterial } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
 
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Badge } from "$lib/components/ui/badge/index.js";
@@ -34,6 +35,8 @@
     onRetry: () => void | Promise<boolean>;
     onEdit: () => void;
     onNewRun: () => void;
+    onVerificationMaterialChange: (entries: CredentialVerificationMaterial[]) => void;
+    onRetryVerification: () => void;
     onRetryInspection: () => void;
   };
 
@@ -48,6 +51,8 @@
     onRetry,
     onEdit,
     onNewRun,
+    onVerificationMaterialChange,
+    onRetryVerification,
     onRetryInspection,
   }: Props = $props();
 
@@ -126,7 +131,14 @@
         />
       </section>
     {:else if phase === "success" && result && responseEnvelope}
-      <GetAssertionResult {result} {responseEnvelope} />
+      <GetAssertionResult
+        {result}
+        {responseEnvelope}
+        verification={lab.getVerification}
+        verificationMaterial={lab.getDraft.verificationMaterial}
+        {onVerificationMaterialChange}
+        {onRetryVerification}
+      />
     {:else if preview}
       <GetAssertionReview {preview} />
     {/if}

@@ -20,6 +20,71 @@ export enum Algorithm {
     AlgorithmES256 = -7,
 
     /**
+     * AlgorithmESP256 is deterministic ECDSA with SHA-256 on the P-256 curve.
+     */
+    AlgorithmESP256 = -9,
+
+    /**
+     * AlgorithmES384 is ECDSA with SHA-384 on the P-384 curve.
+     */
+    AlgorithmES384 = -35,
+
+    /**
+     * AlgorithmESP384 is deterministic ECDSA with SHA-384 on the P-384 curve.
+     */
+    AlgorithmESP384 = -51,
+
+    /**
+     * AlgorithmES512 is ECDSA with SHA-512 on the P-521 curve.
+     */
+    AlgorithmES512 = -36,
+
+    /**
+     * AlgorithmESP512 is deterministic ECDSA with SHA-512 on the P-521 curve.
+     */
+    AlgorithmESP512 = -52,
+
+    /**
+     * AlgorithmEdDSA is EdDSA using a key-selected Edwards curve.
+     */
+    AlgorithmEdDSA = -8,
+
+    /**
+     * AlgorithmEd25519 is EdDSA using Ed25519.
+     */
+    AlgorithmEd25519 = -19,
+
+    /**
+     * AlgorithmRS256 is RSASSA-PKCS1-v1_5 with SHA-256.
+     */
+    AlgorithmRS256 = -257,
+
+    /**
+     * AlgorithmRS384 is RSASSA-PKCS1-v1_5 with SHA-384.
+     */
+    AlgorithmRS384 = -258,
+
+    /**
+     * AlgorithmRS512 is RSASSA-PKCS1-v1_5 with SHA-512.
+     */
+    AlgorithmRS512 = -259,
+
+    /**
+     * AlgorithmPS256 is RSASSA-PSS with SHA-256.
+     */
+    AlgorithmPS256 = -37,
+
+    /**
+     * AlgorithmPS384 is RSASSA-PSS with SHA-384.
+     */
+    AlgorithmPS384 = -38,
+
+    /**
+     * AlgorithmPS512 is RSASSA-PSS with SHA-512.
+     */
+    AlgorithmPS512 = -39,
+
+    /**
      * AlgorithmECDHESHKDF256 is ECDH ES with HKDF-SHA-256.
      */
     AlgorithmECDHESHKDF256 = -25,

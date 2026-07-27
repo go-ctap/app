@@ -39,6 +39,9 @@ describe("WebAuthn Lab authenticator lifecycle", () => {
       pendingHandoff: null,
       makeStep: { phase: "editing" },
       getStep: { phase: "editing" },
+      makeVerification: { phase: "idle" },
+      makeAttestationTrust: { phase: "idle" },
+      getVerification: { phase: "idle" },
       makeDraft: { rpID: "example.com" },
       getDraft: { rpID: "example.com" },
     });

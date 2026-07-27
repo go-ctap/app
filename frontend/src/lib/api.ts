@@ -3,6 +3,11 @@ import type { ApplicationConfig, ApplicationConfigSnapshot } from "../../binding
 import * as service from "../../bindings/telesma/ctapservice/service";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { LogJournalBatch } from "../../bindings/github.com/go-ctap/kit/model";
+import type {
+  GetAssertionVerification,
+  MakeCredentialVerification,
+} from "../../bindings/github.com/go-ctap/kit/model/webauthn";
+import type { AttestationTrustAssessment } from "../../bindings/github.com/go-ctap/mds/model";
 import {
   type AlwaysUVRequest,
   type AuthenticatorConfigEnvelope,
@@ -38,8 +43,10 @@ import {
   type LogCursor,
   type MDSLookupEnvelope,
   type MDSLookupRequest,
+  type MakeCredentialAttestationAssessmentRequest,
   type MakeCredentialEnvelope,
   type MakeCredentialRequest,
+  type MakeCredentialVerificationRequest,
   type MinPINLengthRequest,
   type OperationRequest,
   type PINEnvelope,
@@ -50,6 +57,7 @@ import {
   type ReadLogsRequest,
   type SelectionRequest,
   type SelectionSnapshot,
+  type GetAssertionVerificationRequest,
 } from "../../bindings/telesma/service";
 
 import { runtimeCall } from "./features/logs/state.svelte.js";
@@ -211,7 +219,24 @@ export const api = {
     return runtimeCall("ctapkit.operation.getAssertion", () => service.GetAssertion(request));
   },
 
+  verifyMakeCredential(request: MakeCredentialVerificationRequest): Promise<MakeCredentialVerification> {
+    return runtimeCall("ctapkit.verification.makeCredential", () => service.VerifyMakeCredential(request));
+  },
+
+  verifyGetAssertion(request: GetAssertionVerificationRequest): Promise<GetAssertionVerification> {
+    return runtimeCall("ctapkit.verification.getAssertion", () => service.VerifyGetAssertion(request));
+  },
+
+  assessMakeCredentialAttestation(
+    request: MakeCredentialAttestationAssessmentRequest,
+  ): Promise<AttestationTrustAssessment> {
+    return runtimeCall(
+      "mds.attestation.assess",
+      () => service.AssessMakeCredentialAttestation(request),
+    );
+  },
+
   lookupMDS(request: MDSLookupRequest): Promise<MDSLookupEnvelope> {
-    return runtimeCall("ctapkit.mds.lookup", () => service.LookupMDS(request));
+    return runtimeCall("mds.lookup", () => service.LookupMDS(request));
   },
 } as const;

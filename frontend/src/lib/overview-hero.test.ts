@@ -7,7 +7,7 @@ import {
   MetadataStatement,
   PayloadEntry,
   StatusReport,
-} from "../../bindings/github.com/go-ctap/kit/model/mds";
+} from "../../bindings/github.com/go-ctap/mds/model";
 import { DeviceMetadata, DeviceReport, Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
 
 import { setAppLocale } from "./i18n";

@@ -5,6 +5,7 @@ use (
 	../ctap
 	../hid
 	../kit
+	../mds
 	../token2
 	../wails/v3
 )

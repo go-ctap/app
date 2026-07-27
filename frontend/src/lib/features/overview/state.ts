@@ -1,6 +1,6 @@
 import { writable } from "svelte/store";
 
-import type { LookupResult } from "../../../../bindings/github.com/go-ctap/kit/model/mds";
+import type { LookupResult } from "../../../../bindings/github.com/go-ctap/mds/model";
 import type { BioSensorEnvelope } from "../../../../bindings/telesma/service";
 
 import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";

@@ -619,6 +619,8 @@ describe("WebAuthn Lab screen", () => {
       pendingHandoff: {
         rpID: "other.example",
         credentialIDHex: "cafe",
+        publicKeyCOSEHex: "a5010203",
+        previousSignCount: 0,
       },
     }));
     render(Lab);
