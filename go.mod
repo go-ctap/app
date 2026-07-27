@@ -4,13 +4,11 @@ go 1.26.3
 
 replace github.com/go-ctap/kit => ../kit
 
-replace github.com/go-ctap/mds => ../mds
-
 require (
 	github.com/fxamacker/cbor/v2 v2.9.2
 	github.com/go-ctap/ctap v0.37.0
 	github.com/go-ctap/kit v0.9.0
-	github.com/go-ctap/mds v0.0.0
+	github.com/go-ctap/mds v0.2.0
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/wailsapp/wails/v3 v3.0.0-alpha2.117
