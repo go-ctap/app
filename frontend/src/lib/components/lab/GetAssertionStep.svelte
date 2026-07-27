@@ -130,10 +130,10 @@
           {onRetryInspection}
         />
       </section>
-    {:else if phase === "success" && result && responseEnvelope}
+    {:else if phase === "success" && preview && result}
       <GetAssertionResult
+        {preview}
         {result}
-        {responseEnvelope}
         verification={lab.getVerification}
         verificationMaterial={lab.getDraft.verificationMaterial}
         {onVerificationMaterialChange}

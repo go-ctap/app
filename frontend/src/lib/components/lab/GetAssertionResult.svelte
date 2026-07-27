@@ -1,29 +1,30 @@
 <script lang="ts">
   import type {
     CredentialVerificationMaterial,
+    GetAssertionPreview,
     GetAssertionResult as GetAssertionResultDTO,
     GetAssertionVerification,
   } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
-  import type { GetAssertionEnvelope } from "../../../../bindings/telesma/service";
 
   import { Badge } from "$lib/components/ui/badge/index.js";
   import * as Tabs from "$lib/components/ui/tabs/index.js";
   import type { LabVerificationState } from "$lib/features/lab/state";
-  import { base64ToHex } from "$lib/lab-input";
+  import { base64ToHex, base64ToUTF8 } from "$lib/lab-input";
   import { sanitizedJson } from "$lib/redaction";
 
   import { m } from "../../../paraglide/messages.js";
 
-  import LabDataViewerSheet from "./LabDataViewerSheet.svelte";
   import LabHexValue from "./LabHexValue.svelte";
-  import LabProtocolDetails, { type ProtocolDetailRow } from "./LabProtocolDetails.svelte";
   import LabSecretValue from "./LabSecretValue.svelte";
+  import LabTechnicalDataViewer, {
+    type LabTechnicalDataItem,
+  } from "./LabTechnicalDataViewer.svelte";
   import LabVerificationMaterialEditor from "./LabVerificationMaterialEditor.svelte";
   import LabVerificationRoute from "./LabVerificationRoute.svelte";
 
   type Props = {
+    preview: GetAssertionPreview;
     result: GetAssertionResultDTO;
-    responseEnvelope: GetAssertionEnvelope;
     verification?: LabVerificationState<GetAssertionVerification>;
     verificationMaterial?: CredentialVerificationMaterial[];
     onVerificationMaterialChange?: (entries: CredentialVerificationMaterial[]) => void;
@@ -31,8 +32,8 @@
   };
 
   let {
+    preview,
     result,
-    responseEnvelope,
     verification = { phase: "idle" },
     verificationMaterial = [],
     onVerificationMaterialChange = () => undefined,
@@ -43,7 +44,6 @@
   let selectedAssertion = $derived(
     assertions.find((assertion) => String(assertion.index) === selectedValue) ?? assertions[0],
   );
-  let selectedDetail = $state<ProtocolDetailRow | null>(null);
   let clientExtensions = $derived(selectedAssertion?.extensionResults?.client);
   let authenticatorExtensions = $derived(selectedAssertion?.extensionResults?.authenticator);
   let hasWebAuthnOutputs = $derived(Boolean(clientExtensions?.prf || clientExtensions?.largeBlob));
@@ -53,33 +53,42 @@
     || authenticatorExtensions?.thirdPartyPayment !== undefined,
   ));
   let hasExtensionOutputs = $derived(hasWebAuthnOutputs || hasCTAPOutputs);
-  let technicalDetails = $derived.by((): ProtocolDetailRow[] => {
+  let technicalDetails = $derived.by((): LabTechnicalDataItem[] => {
     if (!selectedAssertion) return [];
-    const responseJson = sanitizedJson(responseEnvelope) ?? "null";
+    const clientDataJSON = base64ToUTF8(preview.input.clientDataJSON);
+    const resultJSON = sanitizedJson(result) ?? "null";
     return [
+      {
+        id: "client-data-json",
+        label: m.lab_client_data(),
+        syntax: "json",
+        type: "UTF-8 JSON",
+        byteCount: utf8ByteCount(clientDataJSON),
+        source: clientDataJSON,
+      },
       {
         id: "signature",
         label: m.lab_signature(),
-        kind: "hex",
+        syntax: "hex",
         type: "signature",
         byteCount: hexByteCount(selectedAssertion.signatureHex),
-        value: selectedAssertion.signatureHex,
+        source: selectedAssertion.signatureHex,
       },
       {
         id: "authenticator-data",
         label: m.lab_authenticator_data(),
-        kind: "hex",
+        syntax: "hex",
         type: "WebAuthn binary",
         byteCount: hexByteCount(selectedAssertion.authenticatorDataHex),
-        value: selectedAssertion.authenticatorDataHex,
+        source: selectedAssertion.authenticatorDataHex,
       },
       {
-        id: "full-response",
-        label: m.lab_full_response(),
-        kind: "json",
+        id: "result",
+        label: m.lab_result(),
+        syntax: "json",
         type: "JSON",
-        byteCount: new TextEncoder().encode(responseJson).byteLength,
-        value: responseEnvelope,
+        byteCount: utf8ByteCount(resultJSON),
+        source: resultJSON,
       },
     ];
   });
@@ -94,6 +103,10 @@
 
   function hexByteCount(value: string) {
     return Math.floor(value.length / 2);
+  }
+
+  function utf8ByteCount(value: string) {
+    return new TextEncoder().encode(value).byteLength;
   }
 
   function changeAssertion(next: string | string[]) {
@@ -233,20 +246,9 @@
       {onRetryVerification}
     />
 
-    <LabProtocolDetails rows={technicalDetails} onView={(row) => { selectedDetail = row; }} />
+    <LabTechnicalDataViewer items={technicalDetails} />
   {/if}
 </section>
-
-{#if selectedDetail}
-  <LabDataViewerSheet
-    open
-    title={selectedDetail.label}
-    kind={selectedDetail.kind}
-    value={selectedDetail.value}
-    byteCount={selectedDetail.byteCount}
-    onOpenChange={(open) => { if (!open) selectedDetail = null; }}
-  />
-{/if}
 
 <style>
 @layer blocks {

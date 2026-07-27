@@ -6,7 +6,7 @@ replace github.com/go-ctap/kit => ../kit
 
 require (
 	github.com/fxamacker/cbor/v2 v2.9.2
-	github.com/go-ctap/ctap v0.37.0
+	github.com/go-ctap/ctap v0.38.0
 	github.com/go-ctap/kit v0.9.0
 	github.com/go-ctap/mds v0.2.0
 	github.com/google/uuid v1.6.0

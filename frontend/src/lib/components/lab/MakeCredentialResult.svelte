@@ -1,27 +1,28 @@
 <script lang="ts">
   import type {
+    MakeCredentialPreview,
     MakeCredentialResult as MakeCredentialResultDTO,
     MakeCredentialVerification,
   } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
   import type { AttestationTrustAssessment } from "../../../../bindings/github.com/go-ctap/mds/model";
-  import type { MakeCredentialEnvelope } from "../../../../bindings/telesma/service";
 
   import { Badge } from "$lib/components/ui/badge/index.js";
   import type { LabVerificationState } from "$lib/features/lab/state";
-  import { base64ToHex } from "$lib/lab-input";
+  import { base64ToHex, base64ToUTF8 } from "$lib/lab-input";
   import { sanitizedJson } from "$lib/redaction";
 
   import { m } from "../../../paraglide/messages.js";
 
-  import LabDataViewerSheet from "./LabDataViewerSheet.svelte";
   import LabHexValue from "./LabHexValue.svelte";
-  import LabProtocolDetails, { type ProtocolDetailRow } from "./LabProtocolDetails.svelte";
   import LabSecretValue from "./LabSecretValue.svelte";
+  import LabTechnicalDataViewer, {
+    type LabTechnicalDataItem,
+  } from "./LabTechnicalDataViewer.svelte";
   import LabVerificationRoute from "./LabVerificationRoute.svelte";
 
   type Props = {
+    preview: MakeCredentialPreview;
     result: MakeCredentialResultDTO;
-    responseEnvelope: MakeCredentialEnvelope;
     attestationTrust?: LabVerificationState<AttestationTrustAssessment>;
     verification?: LabVerificationState<MakeCredentialVerification>;
     onRetryAttestationTrust?: () => void;
@@ -29,14 +30,13 @@
   };
 
   let {
+    preview,
     result,
-    responseEnvelope,
     attestationTrust = { phase: "idle" },
     verification = { phase: "idle" },
     onRetryAttestationTrust = () => undefined,
     onRetryVerification = () => undefined,
   }: Props = $props();
-  let selectedDetail = $state<ProtocolDetailRow | null>(null);
   let clientExtensions = $derived(result.extensionResults?.client);
   let authenticatorExtensions = $derived(result.extensionResults?.authenticator);
   let hasWebAuthnOutputs = $derived(Boolean(
@@ -51,40 +51,49 @@
     || authenticatorExtensions?.pinComplexityPolicy,
   ));
   let hasExtensionOutputs = $derived(hasWebAuthnOutputs || hasCTAPOutputs);
-  let technicalDetails = $derived.by((): ProtocolDetailRow[] => {
-    const responseJson = sanitizedJson(responseEnvelope) ?? "null";
+  let technicalDetails = $derived.by((): LabTechnicalDataItem[] => {
+    const clientDataJSON = base64ToUTF8(preview.input.clientDataJSON);
+    const resultJSON = sanitizedJson(result) ?? "null";
     return [
+      {
+        id: "client-data-json",
+        label: m.lab_client_data(),
+        syntax: "json",
+        type: "UTF-8 JSON",
+        byteCount: utf8ByteCount(clientDataJSON),
+        source: clientDataJSON,
+      },
       {
         id: "public-key",
         label: m.lab_public_key_cose(),
-        kind: "hex",
+        syntax: "hex",
         type: "COSE",
         byteCount: hexByteCount(result.publicKeyCOSEHex),
-        value: result.publicKeyCOSEHex,
+        source: result.publicKeyCOSEHex,
       },
       {
         id: "authenticator-data",
         label: m.lab_authenticator_data(),
-        kind: "hex",
+        syntax: "hex",
         type: "WebAuthn binary",
         byteCount: hexByteCount(result.authenticatorDataHex),
-        value: result.authenticatorDataHex,
+        source: result.authenticatorDataHex,
       },
       {
         id: "attestation-object",
         label: m.lab_attestation_object(),
-        kind: "hex",
+        syntax: "hex",
         type: "CBOR",
         byteCount: hexByteCount(result.attestationObjectCBORHex),
-        value: result.attestationObjectCBORHex,
+        source: result.attestationObjectCBORHex,
       },
       {
-        id: "full-response",
-        label: m.lab_full_response(),
-        kind: "json",
+        id: "result",
+        label: m.lab_result(),
+        syntax: "json",
         type: "JSON",
-        byteCount: new TextEncoder().encode(responseJson).byteLength,
-        value: responseEnvelope,
+        byteCount: utf8ByteCount(resultJSON),
+        source: resultJSON,
       },
     ];
   });
@@ -99,6 +108,10 @@
 
   function hexByteCount(value: string) {
     return Math.floor(value.length / 2);
+  }
+
+  function utf8ByteCount(value: string) {
+    return new TextEncoder().encode(value).byteLength;
   }
 </script>
 
@@ -205,19 +218,8 @@
     {onRetryAttestationTrust}
   />
 
-  <LabProtocolDetails rows={technicalDetails} onView={(row) => { selectedDetail = row; }} />
+  <LabTechnicalDataViewer items={technicalDetails} />
 </section>
-
-{#if selectedDetail}
-  <LabDataViewerSheet
-    open
-    title={selectedDetail.label}
-    kind={selectedDetail.kind}
-    value={selectedDetail.value}
-    byteCount={selectedDetail.byteCount}
-    onOpenChange={(open) => { if (!open) selectedDetail = null; }}
-  />
-{/if}
 
 <style>
 @layer blocks {

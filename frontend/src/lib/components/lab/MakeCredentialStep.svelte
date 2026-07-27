@@ -136,10 +136,10 @@
           {onRetryInspection}
         />
       </section>
-    {:else if phase === "success" && result && responseEnvelope}
+    {:else if phase === "success" && preview && result}
       <MakeCredentialResult
+        {preview}
         {result}
-        {responseEnvelope}
         attestationTrust={lab.makeAttestationTrust}
         verification={lab.makeVerification}
         {onRetryAttestationTrust}
