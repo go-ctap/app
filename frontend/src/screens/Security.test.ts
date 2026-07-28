@@ -32,13 +32,11 @@ import { failureForCode } from "$lib/test-failure";
 import Security from "./Security.svelte";
 
 const token = new DeviceReport({
-  fingerprint: "token-1",
-  ordinalAlias: "token-1",
-  transport: Mode.ModeHID,
-  path: "token-1",
-  vendorId: 1,
-  productId: 2,
-  product: "Test authenticator",
+  attachment: {
+    id: "token-1",
+    transport: Mode.ModeHID,
+    usb: { product: "Test authenticator", vendorId: 1, productId: 2 },
+  },
 });
 
 function statusEnvelope(maxPINLength = 63): ConfigStatusEnvelope {
@@ -100,7 +98,7 @@ describe("Security screen", () => {
   beforeEach(() => {
     setAppLocale("en");
     resetAppStateForTest();
-    seedSelectionForTest(token.fingerprint, token, { state: "ready", selectionId: "authenticator-1" });
+    seedSelectionForTest(token.attachment.id, token, { state: "ready", selectionId: "authenticator-1" });
     completeSecurityStatusLoad(statusEnvelope());
   });
 

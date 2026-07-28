@@ -3,6 +3,7 @@ import { describe, expect, it, beforeEach } from "vitest";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { CredentialsEnvelope } from "../../bindings/telesma/service";
+import { testHIDDevice } from "../test/device.js";
 
 import { setAppLocale } from "$lib/i18n";
 import { failureForCode } from "$lib/test-failure";
@@ -17,9 +18,7 @@ function envelope(groups: NonNullable<CredentialsEnvelope["result"]>["groups"] =
     selectionId: "authenticator-1",
     kind: OperationKind.ListCredentials,
     result: {
-      device: {
-        fingerprint: "token-1",
-      },
+      device: testHIDDevice(),
       support: {
         credentialManagement: true,
         previewOnly: true,

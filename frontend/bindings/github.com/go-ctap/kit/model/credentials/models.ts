@@ -182,7 +182,7 @@ export class DeletePreview {
 }
 
 export class DeleteResult {
-    "deviceFingerprint": string;
+    "attachmentId": report$0.AttachmentID;
     "credentialIDHex": string;
     "rpID": string;
     "rpName"?: string;
@@ -192,8 +192,8 @@ export class DeleteResult {
 
     /** Creates a new DeleteResult instance. */
     constructor($$source: Partial<DeleteResult> = {}) {
-        if (!("deviceFingerprint" in $$source)) {
-            this["deviceFingerprint"] = "";
+        if (!("attachmentId" in $$source)) {
+            this["attachmentId"] = "";
         }
         if (!("credentialIDHex" in $$source)) {
             this["credentialIDHex"] = "";
@@ -454,7 +454,7 @@ export class UpdateUserPreview {
 }
 
 export class UpdateUserResult {
-    "deviceFingerprint": string;
+    "attachmentId": report$0.AttachmentID;
     "credentialIDHex": string;
     "rpID": string;
     "rpName"?: string;
@@ -463,8 +463,8 @@ export class UpdateUserResult {
 
     /** Creates a new UpdateUserResult instance. */
     constructor($$source: Partial<UpdateUserResult> = {}) {
-        if (!("deviceFingerprint" in $$source)) {
-            this["deviceFingerprint"] = "";
+        if (!("attachmentId" in $$source)) {
+            this["attachmentId"] = "";
         }
         if (!("credentialIDHex" in $$source)) {
             this["credentialIDHex"] = "";

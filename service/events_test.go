@@ -6,13 +6,12 @@ import (
 	"testing"
 
 	"github.com/go-ctap/kit/model"
-	"github.com/go-ctap/kit/model/report"
 )
 
 func TestOperationEventEmitsWithoutWritingApplicationJournalEntry(t *testing.T) {
 	emitter := newCountingEmitter()
 	service := New(WithEventEmitter(emitter))
-	service.selected = newSelection("selection-1", report.DeviceReport{}, openedAuthenticator{})
+	service.selected = newSelection("selection-1", openedAuthenticator{})
 	operation := &operationState{
 		id:          "operation-1",
 		selectionID: "selection-1",
@@ -35,7 +34,7 @@ func TestInteractionEmitsWithoutWritingApplicationJournalEntry(t *testing.T) {
 	emitter := newCountingEmitter()
 	service := New(WithEventEmitter(emitter))
 	done := make(chan struct{})
-	service.selected = newSelection("selection-1", report.DeviceReport{}, openedAuthenticator{})
+	service.selected = newSelection("selection-1", openedAuthenticator{})
 	service.selected.operations["operation-1"] = &operationState{
 		id:          "operation-1",
 		selectionID: "selection-1",

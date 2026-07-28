@@ -5,6 +5,9 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+/**
+ * Mode selects the transport policy for an Inventory.
+ */
 export enum Mode {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -13,5 +16,6 @@ export enum Mode {
 
     ModeAuto = "auto",
     ModeHID = "hid",
+    ModeSmartCard = "smart-card",
     ModeWindowsProxy = "windows-proxy",
 };

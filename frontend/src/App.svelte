@@ -11,7 +11,7 @@
 	import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
 	import { Toaster } from "$lib/components/ui/sonner/index.js";
 	import { WindowControls, WindowTitlebar } from "$lib/components/window-controls";
-	import { handleDiscoveryChanged, startDiscoveryMonitoring } from "$lib/discovery-controller.js";
+	import { handleDiscoveryChanged } from "$lib/discovery-controller.js";
 	import { handleOperationProgress } from "$lib/event-controller.js";
 	import {
 		authenticatorStatus,
@@ -134,7 +134,6 @@
 		void syncLogJournal();
 
 		bootstrap()
-			.then(() => disposed ? undefined : startDiscoveryMonitoring())
 			.finally(() => {
 				if (disposed) return;
 				refreshing = false;

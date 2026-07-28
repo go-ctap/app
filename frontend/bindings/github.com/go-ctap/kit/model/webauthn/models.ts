@@ -492,14 +492,14 @@ export class GetAssertionPreview {
 }
 
 export class GetAssertionResult {
-    "deviceFingerprint": string;
+    "attachmentId": report$0.AttachmentID;
     "rpID": string;
     "assertions"?: Assertion[];
 
     /** Creates a new GetAssertionResult instance. */
     constructor($$source: Partial<GetAssertionResult> = {}) {
-        if (!("deviceFingerprint" in $$source)) {
-            this["deviceFingerprint"] = "";
+        if (!("attachmentId" in $$source)) {
+            this["attachmentId"] = "";
         }
         if (!("rpID" in $$source)) {
             this["rpID"] = "";
@@ -912,7 +912,7 @@ export class MakeCredentialPreview {
 }
 
 export class MakeCredentialResult {
-    "deviceFingerprint": string;
+    "attachmentId": report$0.AttachmentID;
     "rpID": string;
     "fmt": attestation$0.AttestationStatementFormatIdentifier;
     "credentialIDHex": string;
@@ -928,8 +928,8 @@ export class MakeCredentialResult {
 
     /** Creates a new MakeCredentialResult instance. */
     constructor($$source: Partial<MakeCredentialResult> = {}) {
-        if (!("deviceFingerprint" in $$source)) {
-            this["deviceFingerprint"] = "";
+        if (!("attachmentId" in $$source)) {
+            this["attachmentId"] = "";
         }
         if (!("rpID" in $$source)) {
             this["rpID"] = "";

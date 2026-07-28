@@ -4,7 +4,7 @@ import type {
   DiscoveryChangedEnvelope,
 } from "../../bindings/telesma/service";
 import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { DiscoveryTrigger } from "../../bindings/telesma/service";
+import { InventoryTrigger } from "../../bindings/github.com/go-ctap/kit";
 
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
@@ -127,22 +127,13 @@ export async function handleDiscoveryChanged(envelope: DiscoveryChangedEnvelope)
     return;
   }
   if (
-    envelope.trigger === DiscoveryTrigger.DiscoveryTriggerEnriched
+    envelope.trigger === InventoryTrigger.InventoryTriggerIdentity
     && !envelope.error
     && !result.selectedDisconnected
   ) return;
 
   const presentation = discoveryPresentation(envelope, result.selectedDisconnected, result.deviceCount);
   recordDiscoveryOutcome(presentation);
-}
-
-export async function startDiscoveryMonitoring() {
-  try {
-    return await api.startDiscoveryMonitoring();
-  } catch (error) {
-    recordDiscoveryRuntimeFailure(runtimeFailureFrom(error));
-    return null;
-  }
 }
 
 export async function refreshDiscovery() {

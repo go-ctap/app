@@ -139,12 +139,6 @@ func (s *Service) Inspect(ctx context.Context, req OperationRequest) (InspectEnv
 		appoperation.Inspect,
 		bindInputlessOperation((*ctapkit.Authenticator).Inspect),
 	)
-	if snapshot := s.mergeInspectMetadata(req.SelectionID, result); snapshot != nil {
-		s.emit(EventDiscoveryChanged, DiscoveryChangedEnvelope{
-			Trigger:  DiscoveryTriggerEnriched,
-			Snapshot: snapshot,
-		})
-	}
 
 	return InspectEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
 }

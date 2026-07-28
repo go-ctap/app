@@ -1,5 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
+import { CreditCard, Usb } from "@lucide/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import AppSidebar from "./AppSidebar.svelte";
@@ -86,8 +87,14 @@ describe("AppSidebar", () => {
           selectedValue: "token-1",
           busy: false,
           tokens: [
-            { value: "token-1", label: "YubiKey 5 · ABC", name: "YubiKey 5", detail: "S/N ABC" },
-            { value: "token-2", label: "SoloKey · DEF", name: "SoloKey", detail: "S/N DEF" },
+            { value: "token-1", label: "YubiKey 5 · ABC", name: "YubiKey 5", detail: "S/N ABC", icon: Usb },
+            {
+              value: "token-2",
+              label: "Token2 FIDO2 Card",
+              name: "Token2 FIDO2 Card",
+              detail: "ACS ACR1252 Dual Reader · PC/SC",
+              icon: CreditCard,
+            },
           ],
         },
         onNavigate: vi.fn(),
@@ -96,9 +103,13 @@ describe("AppSidebar", () => {
     });
 
     expect(screen.getByRole("heading", { name: "Authenticators" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "YubiKey 5 · ABC" })).toHaveAttribute("aria-pressed", "true");
+    const usbButton = screen.getByRole("button", { name: "YubiKey 5 · ABC" });
+    const smartCardButton = screen.getByRole("button", { name: "Token2 FIDO2 Card" });
+    expect(usbButton).toHaveAttribute("aria-pressed", "true");
+    expect(usbButton.querySelector(".lucide-usb")).toBeInTheDocument();
+    expect(smartCardButton.querySelector(".lucide-credit-card")).toBeInTheDocument();
     expect(screen.getByText("YubiKey 5")).toHaveAttribute("title", "YubiKey 5");
-    await user.click(screen.getByRole("button", { name: "SoloKey · DEF" }));
+    await user.click(smartCardButton);
     expect(onSelectToken).toHaveBeenCalledWith("token-2");
   });
 });

@@ -37,6 +37,7 @@ import {
   seedLargeBlobsEnvelopeForTest,
   seedSelectionForTest,
 } from "$lib/store-test-utils";
+import { testHIDDevice } from "../test/device.js";
 
 import LargeBlobs from "./LargeBlobs.svelte";
 
@@ -77,7 +78,7 @@ function listEnvelope(): LargeBlobListEnvelope {
     selectionId: "authenticator-1",
     kind: OperationKind.ListLargeBlobs,
     result: {
-      device: { fingerprint: "token-1" },
+      device: testHIDDevice(),
       support: {
           largeBlobs: true,
           largeBlobKeyExtension: true,
@@ -134,7 +135,7 @@ function readEnvelope(options: {
     selectionId: "authenticator-1",
     kind: OperationKind.ReadLargeBlob,
     result: {
-      device: { fingerprint: "token-1" },
+      device: testHIDDevice(),
         support: { largeBlobs: true, largeBlobKeyExtension: true, maxSerializedLargeBlobArray: 0 },
         target: {
           credentialIDHex: missingKey ? "beef" : "cafe",
@@ -179,7 +180,7 @@ function missingBlobReadEnvelope(): LargeBlobReadEnvelope {
 function mutationPreview(operation: MutationOperation, overrides: Partial<MutationPreview> = {}): MutationPreview {
   return {
     operation,
-    device: { fingerprint: "token-1" },
+    device: testHIDDevice(),
     support: { largeBlobs: true, largeBlobKeyExtension: true, maxSerializedLargeBlobArray: 0 },
     target: {
       credentialIDHex: operation === MutationOperation.MutationGC ? "" : "cafe",

@@ -8,6 +8,7 @@ import { PreviewMode, Severity } from "../../../../bindings/github.com/go-ctap/k
 import type { ResetFactoryEnvelope } from "../../../../bindings/telesma/service";
 
 import type { SecurityMutationState } from "$lib/features/security/state";
+import { testHIDDevice } from "../../../test/device.js";
 import { failureForCode } from "$lib/test-failure";
 import { setAppLocale } from "$lib/i18n";
 import { setAdvancedMode } from "$lib/preferences";
@@ -22,7 +23,7 @@ function erroredPreviewMutation(longTouchForReset = StateValue.StateSupported): 
     error: failureForCode(Code.CodeResetWindowExpired),
     result: {
       preview: {
-        device: { fingerprint: "token-1" },
+        device: testHIDDevice(),
         resetHints: {
           longTouchForReset,
           transportsForReset: ["usb"],

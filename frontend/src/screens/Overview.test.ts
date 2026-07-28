@@ -16,7 +16,7 @@ import {
 } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import { Finding, Profile, Report, RuleID, SpecificationID, Target } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { DeviceMetadata, DeviceReport, Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { DeviceIdentity, DeviceReport, Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { InspectEnvelope } from "../../bindings/telesma/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
@@ -49,13 +49,11 @@ vi.mock("$lib/features/overview", async (importOriginal) => ({
 vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
 
 const device = new DeviceReport({
-  fingerprint: "token-1",
-  ordinalAlias: "token-1",
-  transport: Mode.ModeHID,
-  path: "token-1",
-  vendorId: 1,
-  productId: 2,
-  product: "Test authenticator",
+  attachment: {
+    id: "token-1",
+    transport: Mode.ModeHID,
+    usb: { product: "Test authenticator", vendorId: 1, productId: 2 },
+  },
 });
 
 function inspectEnvelope(operationId: string, aaguid: string, withFinding = false, assessment: Assessment = testOverviewAssessment()) {
@@ -198,8 +196,8 @@ describe("Overview", () => {
     await act(() => {
       selectedDevice.set(new DeviceReport({
         ...device,
-        vendor: Vendor.VendorToken2,
-        metadata: new DeviceMetadata({
+        identity: new DeviceIdentity({
+          vendor: Vendor.VendorToken2,
           model: "Token2 Bio3 Dual A+C PIN+",
           serial: "72103654095303",
           firmware: "R3.2",

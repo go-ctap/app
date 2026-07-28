@@ -13,11 +13,16 @@ import {
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import {
   Capability,
-  DeviceMetadata,
+  DeviceIdentity,
   DeviceReport,
   Interface,
   InterfaceReport,
   Vendor,
+  VendorDetails,
+  YubicoDetails,
+  YubicoFormFactor,
+  YubicoReleaseType,
+  YubicoVersionQualifier,
 } from "../../bindings/github.com/go-ctap/kit/model/report";
 
 import { setAppLocale } from "./i18n";
@@ -157,37 +162,98 @@ describe("buildOverviewRows", () => {
     expect(rowBySource(rows, "certifications").value).toContain("FIDO L1+");
   });
 
-  it("presents normalized vendor identity and interface applications", () => {
+  it("presents normalized vendor identity, interface applications, and Yubico details", () => {
     setAppLocale("en");
     const device = new DeviceReport({
-      fingerprint: "token-1",
-      product: "Yubico Security Key",
-      vendor: Vendor.VendorYubico,
-      metadata: new DeviceMetadata({
+      identity: new DeviceIdentity({
+        vendor: Vendor.VendorYubico,
         model: "YubiKey 5C NFC",
         serial: "12345678",
         firmware: "5.7.1",
         interfaces: [new InterfaceReport({
           interface: Interface.InterfaceUSB,
-          supported: [Capability.CapabilityU2F, Capability.CapabilityCTAP2],
-          enabled: [Capability.CapabilityCTAP2],
+          supported: [
+            Capability.CapabilityU2F,
+            Capability.CapabilityHSMAuth,
+            Capability.CapabilityCTAP2,
+          ],
+          enabled: [
+            Capability.CapabilityHSMAuth,
+            Capability.CapabilityCTAP2,
+          ],
         })],
+        details: new VendorDetails({
+          yubico: new YubicoDetails({
+            partNumber: "5060405",
+            formFactor: YubicoFormFactor.YubicoFormFactorUSBCKeychain,
+            isFIPS: true,
+            isSecurityKey: false,
+            effectiveFirmware: "5.8.0",
+            versionQualifier: new YubicoVersionQualifier({
+              version: "5.8.0",
+              releaseType: YubicoReleaseType.YubicoReleaseTypeBeta,
+              iteration: 3,
+            }),
+            autoEjectTimeout: 10,
+            challengeResponseTimeout: 20,
+            locked: true,
+            fipsCapable: [
+              Capability.CapabilityPIV,
+              Capability.CapabilityHSMAuth,
+              Capability.CapabilityCTAP2,
+            ],
+            fipsApproved: [
+              Capability.CapabilityPIV,
+              Capability.CapabilityCTAP2,
+            ],
+            pinComplexity: true,
+            nfcRestricted: true,
+            resetBlocked: [
+              Capability.CapabilityU2F,
+              Capability.CapabilityHSMAuth,
+            ],
+            fpsVersion: "1.2.3",
+            stmVersion: "4.5.6",
+          }),
+        }),
       }),
     });
 
     const rows = buildOverviewRows({ info: info(), device });
 
-    expect(rowBySource(rows, "device.vendor").value).toBe("yubico");
-    expect(rowBySource(rows, "device.metadata.model").value).toBe("YubiKey 5C NFC");
-    expect(rowBySource(rows, "device.metadata.serial").value).toBe("12345678");
-    expect(rowBySource(rows, "device.metadata.firmware").value).toBe("5.7.1");
-    expect(rowBySource(rows, "device.metadata.interfaces.usb.supported").value).toBe("U2F, CTAP2");
-    expect(rowBySource(rows, "device.metadata.interfaces.usb.enabled").value).toBe("CTAP2");
+    expect(rowBySource(rows, "device.identity.vendor").value).toBe("yubico");
+    expect(rowBySource(rows, "device.identity.model").value).toBe("YubiKey 5C NFC");
+    expect(rowBySource(rows, "device.identity.serial").value).toBe("12345678");
+    expect(rowBySource(rows, "device.identity.firmware").value).toBe("5.7.1");
+    expect(rowBySource(rows, "device.identity.interfaces.usb.supported").value).toBe("U2F, HSM Auth, CTAP2");
+    expect(rowBySource(rows, "device.identity.interfaces.usb.enabled").value).toBe("HSM Auth, CTAP2");
+    expect(rowBySource(rows, "device.identity.details.yubico.partNumber").value).toBe("5060405");
+    expect(rowBySource(rows, "device.identity.details.yubico.formFactor").value).toBe("USB-C keychain");
+    expect(rowBySource(rows, "device.identity.details.yubico.isFIPS").value).toBe("Enabled");
+    expect(rowBySource(rows, "device.identity.details.yubico.isSecurityKey").value).toBe("Disabled");
+    expect(rowBySource(rows, "device.identity.details.yubico.effectiveFirmware").value).toBe("5.8.0");
+    expect(rowBySource(rows, "device.identity.details.yubico.versionQualifier").value).toBe("5.8.0 beta 3");
+    expect(rowBySource(rows, "device.identity.details.yubico.autoEjectTimeout").value).toBe("10");
+    expect(rowBySource(rows, "device.identity.details.yubico.challengeResponseTimeout").value).toBe("20");
+    expect(rowBySource(rows, "device.identity.details.yubico.locked").value).toBe("Enabled");
+    expect(rowBySource(rows, "device.identity.details.yubico.fipsCapable").value).toBe("PIV, HSM Auth, CTAP2");
+    expect(rowBySource(rows, "device.identity.details.yubico.fipsApproved").value).toBe("PIV, CTAP2");
+    expect(rowBySource(rows, "device.identity.details.yubico.pinComplexity").value).toBe("Enabled");
+    expect(rowBySource(rows, "device.identity.details.yubico.nfcRestricted").value).toBe("Enabled");
+    expect(rowBySource(rows, "device.identity.details.yubico.resetBlocked").value).toBe("U2F, HSM Auth");
+    expect(rowBySource(rows, "device.identity.details.yubico.fpsVersion").value).toBe("1.2.3");
+    expect(rowBySource(rows, "device.identity.details.yubico.stmVersion").value).toBe("4.5.6");
     expect(groupOverviewRows(rows)).toEqual(expect.arrayContaining([
       expect.objectContaining({
         name: "Vendor interfaces",
         rows: expect.arrayContaining([
-          expect.objectContaining({ source: "device.metadata.interfaces.usb.supported" }),
+          expect.objectContaining({ source: "device.identity.interfaces.usb.supported" }),
+        ]),
+      }),
+      expect.objectContaining({
+        name: "Vendor details",
+        rows: expect.arrayContaining([
+          expect.objectContaining({ source: "device.identity.details.yubico.formFactor" }),
         ]),
       }),
     ]));
@@ -196,9 +262,8 @@ describe("buildOverviewRows", () => {
   it("does not present unknown Token2 enabled state as an empty enabled list", () => {
     setAppLocale("en");
     const device = new DeviceReport({
-      fingerprint: "token-2",
-      vendor: Vendor.VendorToken2,
-      metadata: new DeviceMetadata({
+      identity: new DeviceIdentity({
+        vendor: Vendor.VendorToken2,
         model: "Token2 T2F2",
         serial: "T2-123456",
         firmware: "R3.2",
@@ -217,11 +282,12 @@ describe("buildOverviewRows", () => {
 
     const rows = buildOverviewRows({ info: info(), device });
 
-    expect(rowBySource(rows, "device.metadata.interfaces.usb.supported").value).toBe("OTP, CCID, CTAP2");
-    expect(rowBySource(rows, "device.metadata.firmware").value).toBe("R3.2");
-    expect(rows.find((row) => row.source === "device.metadata.interfaces.usb.enabled")).toBeUndefined();
-    expect(rowBySource(rows, "device.metadata.interfaces.nfc.interface").value).toBe("Available");
-    expect(rows.find((row) => row.source === "device.metadata.interfaces.nfc.supported")).toBeUndefined();
-    expect(rows.find((row) => row.source === "device.metadata.interfaces.nfc.enabled")).toBeUndefined();
+    expect(rowBySource(rows, "device.identity.interfaces.usb.supported").value).toBe("OTP, CCID, CTAP2");
+    expect(rowBySource(rows, "device.identity.firmware").value).toBe("R3.2");
+    expect(rows.find((row) => row.source === "device.identity.interfaces.usb.enabled")).toBeUndefined();
+    expect(rowBySource(rows, "device.identity.interfaces.nfc.interface").value).toBe("Available");
+    expect(rows.find((row) => row.source === "device.identity.interfaces.nfc.supported")).toBeUndefined();
+    expect(rows.find((row) => row.source === "device.identity.interfaces.nfc.enabled")).toBeUndefined();
+    expect(groupOverviewRows(rows).find((group) => group.name === "Vendor details")).toBeUndefined();
   });
 });

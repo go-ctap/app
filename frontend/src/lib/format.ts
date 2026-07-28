@@ -1,37 +1,29 @@
-import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { m } from "../paraglide/messages.js";
 
 export function labelDevice(device: DeviceReport | null | undefined) {
   if (!device) return m.no_token_selected();
   const name = deviceName(device);
-  const serialValue = device.metadata?.serial || device.serial;
+  const serialValue = device.identity?.serial;
   const serial = serialValue ? ` · ${serialValue}` : "";
-  const alias = device.ordinalAlias ? `${device.ordinalAlias}. ` : "";
-  return `${alias}${name || device.fingerprint || m.authenticator()}${serial}`;
+  return `${name || device.attachment.id || m.authenticator()}${serial}`;
 }
 
 export function deviceName(device: DeviceReport | null | undefined) {
   if (!device) return m.no_token_selected();
-  return displayModel(device)
-    || [device.manufacturer, device.product].filter(Boolean).join(" ")
-    || device.product
-    || device.fingerprint
+  return device.identity?.model?.trim()
+    || (device.attachment.transport === Mode.ModeSmartCard ? m.fido_smart_card() : "")
+    || device.attachment.usb?.product?.trim()
+    || device.attachment.usb?.manufacturer?.trim()
+    || device.attachment.id
     || m.authenticator();
-}
-
-function displayModel(device: DeviceReport) {
-  const model = device.metadata?.model?.trim() || "";
-  const revision = device.metadata?.firmware?.trim() || "";
-  if (device.vendor !== Vendor.VendorToken2 || !model || !revision) return model;
-
-  const suffix = ` ${revision}`;
-  return model.endsWith(suffix) ? model.slice(0, -suffix.length).trimEnd() : model;
 }
 
 export function deviceDetail(device: DeviceReport | null | undefined) {
   if (!device) return "";
-  return device.metadata?.serial || device.serial || "";
+  return device.identity?.serial ?? "";
 }
 
 export function authenticatorStateLabel(value: unknown) {

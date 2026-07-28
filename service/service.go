@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	ctapdiscover "github.com/go-ctap/ctap/discover"
 	ctapkit "github.com/go-ctap/kit"
 	"github.com/go-ctap/kit/model"
 	"github.com/go-ctap/kit/model/failure"
@@ -19,23 +18,37 @@ type EventEmitter interface {
 
 type Option func(*Service)
 
-type Service struct {
-	mu                     sync.Mutex
-	deviceMetadataCacheMu  sync.Mutex
-	emitter                EventEmitter
-	closed                 bool
-	lastDiscoverMode       transport.Mode
-	monitorCancel          context.CancelFunc
-	monitorDone            chan struct{}
-	scanDevices            func(context.Context, transport.Mode) ([]ctapkit.Device, error)
-	openMonitor            func(context.Context, transport.Mode) (<-chan ctapdiscover.Event, error)
-	resolveDevice          func([]ctapkit.Device, string) (selectedDevice, error)
-	openAuthenticator      openAuthenticatorFunc
-	enrichment             discoveryEnrichment
-	deviceMetadataCacheDir string
-	selectionGate          chan struct{}
+type inventoryRuntime interface {
+	Snapshot() ctapkit.InventorySnapshot
+	Events() <-chan ctapkit.InventoryEvent
+	Refresh(context.Context) error
+	OpenAuthenticator(
+		context.Context,
+		report.AttachmentID,
+		...ctapkit.AuthenticatorOption,
+	) (*ctapkit.Authenticator, error)
+	Close() error
+}
 
-	devices      []ctapkit.Device
+type openAuthenticatorFunc func(
+	context.Context,
+	inventoryRuntime,
+	report.AttachmentID,
+	...ctapkit.AuthenticatorOption,
+) (openedAuthenticator, error)
+
+type Service struct {
+	mu                sync.Mutex
+	emitter           EventEmitter
+	closed            bool
+	openInventory     func(context.Context, transport.Mode) (inventoryRuntime, error)
+	openAuthenticator openAuthenticatorFunc
+	inventory         inventoryRuntime
+	inventoryMode     transport.Mode
+	inventoryDone     chan struct{}
+	selectionGate     chan struct{}
+
+	devices      []report.DeviceReport
 	selected     *selection
 	interactions map[InteractionID]*pendingInteraction
 	logs         *ctapkit.LogJournal
@@ -56,34 +69,27 @@ type pendingInteraction struct {
 
 func New(opts ...Option) *Service {
 	service := &Service{
-		interactions:     make(map[InteractionID]*pendingInteraction),
-		lastDiscoverMode: transport.ModeAuto,
-		scanDevices:      ctapkit.DiscoverDevices,
-		openMonitor:      transport.Events,
-		resolveDevice: func(devices []ctapkit.Device, selector string) (selectedDevice, error) {
-			device, err := ctapkit.SelectDevice(devices, selector)
-			if err != nil {
-				return selectedDevice{}, err
-			}
-
-			return selectedDevice{handle: device, report: device.Report()}, nil
+		interactions: make(map[InteractionID]*pendingInteraction),
+		openInventory: func(
+			ctx context.Context,
+			mode transport.Mode,
+		) (inventoryRuntime, error) {
+			return ctapkit.OpenInventory(ctx, mode)
 		},
 		openAuthenticator: func(
 			ctx context.Context,
-			device ctapkit.Device,
+			inventory inventoryRuntime,
+			attachmentID report.AttachmentID,
 			opts ...ctapkit.AuthenticatorOption,
 		) (openedAuthenticator, error) {
-			client, err := ctapkit.OpenAuthenticator(ctx, device, opts...)
+			client, err := inventory.OpenAuthenticator(ctx, attachmentID, opts...)
 			if err != nil {
 				return openedAuthenticator{}, err
 			}
-
 			return newOpenedAuthenticator(client), nil
 		},
-		enrichment:             newDiscoveryEnrichment(),
-		deviceMetadataCacheDir: defaultDeviceMetadataCacheDir(),
-		selectionGate:          make(chan struct{}, 1),
-		logs:                   ctapkit.NewLogJournal(),
+		selectionGate: make(chan struct{}, 1),
+		logs:          ctapkit.NewLogJournal(),
 	}
 
 	for _, opt := range opts {
@@ -99,10 +105,6 @@ func WithEventEmitter(emitter EventEmitter) Option {
 	return func(service *Service) {
 		service.emitter = emitter
 	}
-}
-
-func (s *Service) Discover(ctx context.Context, req DiscoverRequest) (DiscoverySnapshot, error) {
-	return s.discoverSnapshot(ctx, req)
 }
 
 func (s *Service) CancelOperation(req CancelOperationRequest) bool {
@@ -297,13 +299,4 @@ func runOptions(verificationFlow ctapkit.VerificationFlow) []ctapkit.OperationOp
 	}
 
 	return []ctapkit.OperationOption{ctapkit.WithVerificationFlow(verificationFlow)}
-}
-
-func deviceReports(devices []ctapkit.Device) []report.DeviceReport {
-	reports := make([]report.DeviceReport, 0, len(devices))
-	for _, device := range devices {
-		reports = append(reports, device.Report())
-	}
-
-	return reports
 }

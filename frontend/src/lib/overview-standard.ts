@@ -354,7 +354,7 @@ function passkeySummary(
 function transportSummary(facts: OverviewFactLookup, device: DeviceReport | null) {
   const transportFact = overviewFact(facts, FactID.FactIDTransports);
   const transports = transportFact.state === FactState.FactStateUnknown
-    ? [device?.transport || ""]
+    ? [device?.attachment.transport || ""]
     : factList(transportFact) ?? [];
   return [...new Set(transports.map(transportLabel).filter(Boolean))].join(" · ");
 }
@@ -367,6 +367,7 @@ function transportLabel(input: string) {
     ble: "Bluetooth LE",
     hybrid: "Hybrid",
     internal: "Internal",
+    "smart-card": "PC/SC",
     "windows-proxy": "Windows",
   };
   return labels[input.toLowerCase()] || input;

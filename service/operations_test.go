@@ -9,7 +9,6 @@ import (
 	"github.com/go-ctap/kit/model/credentials"
 	"github.com/go-ctap/kit/model/failure"
 	"github.com/go-ctap/kit/model/operation"
-	"github.com/go-ctap/kit/model/report"
 )
 
 func TestListCredentialsInvalidSelectionReturnsTypedErrorEnvelope(t *testing.T) {
@@ -47,7 +46,7 @@ func TestListCredentialsFailureUsesOnlyTheTypedEnvelopeError(t *testing.T) {
 		failure.WithPhase(failure.PhaseAuthenticatorCommand),
 	)
 	service := New()
-	service.selected = newSelection("selection-1", report.DeviceReport{}, openedAuthenticator{lifecycle: runtime})
+	service.selected = newSelection("selection-1", openedAuthenticator{lifecycle: runtime})
 
 	meta, result, err := runOperation(
 		service,
@@ -92,7 +91,7 @@ func TestOperationEnvelopeReportsAndRetiresClosedSelection(t *testing.T) {
 		failure.WithPhase(failure.PhaseAuthenticatorCommand),
 	)
 	service := New()
-	service.selected = newSelection("selection-1", report.DeviceReport{}, openedAuthenticator{lifecycle: runtime})
+	service.selected = newSelection("selection-1", openedAuthenticator{lifecycle: runtime})
 
 	meta, result, err := runOperation(
 		service,

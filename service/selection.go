@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"strings"
 
 	ctapkit "github.com/go-ctap/kit"
 	"github.com/go-ctap/kit/model/failure"
@@ -17,11 +16,6 @@ type selection struct {
 	operations map[OperationID]*operationState
 }
 
-type selectedDevice struct {
-	handle ctapkit.Device
-	report report.DeviceReport
-}
-
 type authenticatorLifecycle interface {
 	Close() error
 	Closed() bool
@@ -30,10 +24,15 @@ type authenticatorLifecycle interface {
 type openedAuthenticator struct {
 	client    *ctapkit.Authenticator
 	lifecycle authenticatorLifecycle
+	device    report.DeviceReport
 }
 
 func newOpenedAuthenticator(client *ctapkit.Authenticator) openedAuthenticator {
-	return openedAuthenticator{client: client, lifecycle: client}
+	return openedAuthenticator{
+		client:    client,
+		lifecycle: client,
+		device:    client.Device(),
+	}
 }
 
 func (a openedAuthenticator) Close() error {
@@ -44,16 +43,10 @@ func (a openedAuthenticator) Closed() bool {
 	return a.lifecycle.Closed()
 }
 
-type openAuthenticatorFunc func(
-	context.Context,
-	ctapkit.Device,
-	...ctapkit.AuthenticatorOption,
-) (openedAuthenticator, error)
-
-func newSelection(id SelectionID, device report.DeviceReport, runtime openedAuthenticator) *selection {
+func newSelection(id SelectionID, runtime openedAuthenticator) *selection {
 	return &selection{
 		id:         id,
-		device:     device,
+		device:     runtime.device,
 		runtime:    runtime,
 		operations: make(map[OperationID]*operationState),
 	}
@@ -70,96 +63,95 @@ func (s *Service) SetSelection(ctx context.Context, req SelectionRequest) (Selec
 		return SelectionSnapshot{}, closedServiceError(failure.PhaseAuthenticator)
 	}
 
-	selector := strings.TrimSpace(req.Selector)
-	if selector == "" {
-		selected := s.takeSelection()
-		if selected == nil {
-			return SelectionSnapshot{}, nil
+	if req.AttachmentID == "" {
+		if selected := s.currentSelection(); selected != nil {
+			closeErr := s.closeSelection(selected)
+			s.retireSelection(selected)
+			return SelectionSnapshot{}, closeErr
 		}
-
-		defer s.startEnrichment()
-		return SelectionSnapshot{}, s.closeSelection(selected)
-	}
-
-	device, err := s.selectDevice(selector)
-	if err != nil {
-		return SelectionSnapshot{}, err
-	}
-
-	if selected := s.currentSelection(); selected != nil &&
-		selected.device.Transport == device.report.Transport &&
-		selected.device.Fingerprint == device.report.Fingerprint {
-		snapshot := ActiveSelection{ID: selected.id}
-
-		return SelectionSnapshot{Selection: &snapshot}, nil
-	}
-
-	if previous := s.takeSelection(); previous != nil {
-		_ = s.closeSelection(previous)
-	}
-
-	selected, err := s.openSelection(ctx, device)
-	if err != nil {
-		return SelectionSnapshot{}, err
+		return SelectionSnapshot{}, nil
 	}
 
 	s.mu.Lock()
-	s.selected = selected
+	inventory := s.inventory
+	present := attachmentPresent(s.devices, req.AttachmentID)
+	current := s.selected
 	s.mu.Unlock()
+	if inventory == nil || !present {
+		return SelectionSnapshot{}, failure.New(
+			failure.CodeDeviceNotFound,
+			failure.WithPhase(failure.PhaseDiscovery),
+		)
+	}
+	if current != nil && current.device.Attachment.ID == req.AttachmentID {
+		active := ActiveSelection{ID: current.id}
+		return SelectionSnapshot{Selection: &active}, nil
+	}
 
-	snapshot := ActiveSelection{ID: selected.id}
+	if current != nil {
+		_ = s.closeSelection(current)
+		s.retireSelection(current)
+	}
 
-	return SelectionSnapshot{Selection: &snapshot}, nil
-}
-
-func (s *Service) Close() error {
-	s.selectionGate <- struct{}{}
-	defer func() { <-s.selectionGate }()
+	runtime, err := s.openAuthenticator(
+		ctx,
+		inventory,
+		req.AttachmentID,
+		ctapkit.WithLogJournal(s.logs),
+	)
+	if err != nil {
+		return SelectionSnapshot{}, err
+	}
+	selected := newSelection(
+		SelectionID(uuid.NewString()),
+		runtime,
+	)
 
 	s.mu.Lock()
 	if s.closed {
 		s.mu.Unlock()
-
-		return nil
+		_ = selected.runtime.Close()
+		return SelectionSnapshot{}, closedServiceError(failure.PhaseAuthenticator)
 	}
-
-	s.closed = true
-	monitorCancel, monitorDone := s.monitorCancel, s.monitorDone
-	enrichmentCancel, enrichmentDone := s.enrichment.cancel, s.enrichment.done
-	s.monitorCancel, s.monitorDone = nil, nil
-	selected := s.selected
-	s.selected = nil
+	s.selected = selected
 	s.mu.Unlock()
 
-	if enrichmentCancel != nil {
-		enrichmentCancel()
-	}
-
-	if monitorCancel != nil {
-		monitorCancel()
-	}
-
-	if monitorDone != nil {
-		<-monitorDone
-	}
-
-	if enrichmentDone != nil {
-		<-enrichmentDone
-	}
-
-	if selected != nil {
-		return s.closeSelection(selected)
-	}
-
-	return nil
+	active := ActiveSelection{ID: selected.id}
+	return SelectionSnapshot{Selection: &active}, nil
 }
 
-func (s *Service) selectDevice(selector string) (selectedDevice, error) {
+func (s *Service) Close() error {
+	s.selectionGate <- struct{}{}
+
 	s.mu.Lock()
-	devices := s.devices
+	if s.closed {
+		s.mu.Unlock()
+		<-s.selectionGate
+		return nil
+	}
+	s.closed = true
+	selected := s.selected
+	inventory := s.inventory
+	inventoryDone := s.inventoryDone
 	s.mu.Unlock()
 
-	return s.resolveDevice(devices, selector)
+	var closeErr error
+	if selected != nil {
+		closeErr = s.closeSelection(selected)
+		s.retireSelection(selected)
+	}
+	<-s.selectionGate
+
+	if inventory != nil {
+		if err := inventory.Close(); closeErr == nil {
+			closeErr = err
+		}
+	}
+	if inventoryDone != nil {
+		<-inventoryDone
+	}
+
+	return closeErr
 }
 
 func (s *Service) currentSelection() *selection {
@@ -169,45 +161,6 @@ func (s *Service) currentSelection() *selection {
 	return s.selected
 }
 
-func (s *Service) takeSelection() *selection {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	selected := s.selected
-	s.selected = nil
-
-	return selected
-}
-
-func (s *Service) openSelection(
-	ctx context.Context,
-	device selectedDevice,
-) (*selection, error) {
-	selectionID := SelectionID(uuid.NewString())
-
-	opts := []ctapkit.AuthenticatorOption{
-		ctapkit.WithLogJournal(s.logs),
-	}
-
-	runtime, err := s.openAuthenticator(
-		ctx,
-		device.handle,
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return newSelection(selectionID, s.reportWithMetadata(device.report), runtime), nil
-}
-
-func (s *Service) closeSelection(selected *selection) error {
-	closeErr := selected.runtime.Close()
-	s.cancelAndWait(selected)
-
-	return closeErr
-}
-
 func (s *Service) lockSelection(ctx context.Context) (func(), error) {
 	select {
 	case s.selectionGate <- struct{}{}:
@@ -215,6 +168,13 @@ func (s *Service) lockSelection(ctx context.Context) (func(), error) {
 	case <-ctx.Done():
 		return nil, normalizeServicePhaseError(ctx.Err(), failure.PhaseAuthenticator)
 	}
+}
+
+func (s *Service) closeSelection(selected *selection) error {
+	closeErr := selected.runtime.Close()
+	s.cancelAndWait(selected)
+
+	return closeErr
 }
 
 func (s *Service) cancelAndWait(selected *selection) {
@@ -228,7 +188,6 @@ func (s *Service) cancelAndWait(selected *selection) {
 	for _, operation := range operations {
 		operation.cancel()
 	}
-
 	for _, operation := range operations {
 		<-operation.done
 	}

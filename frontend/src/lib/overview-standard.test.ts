@@ -50,7 +50,9 @@ describe("buildOverviewStandardPresentation", () => {
           fipsRevision: 3,
         }),
       ),
-      device: new DeviceReport({ transport: Mode.ModeHID }),
+      device: new DeviceReport({
+        attachment: { id: "hid", transport: Mode.ModeHID },
+      }),
     });
 
     expect(presentation.title).toBe("Supports passkeys stored on the device.");
@@ -84,6 +86,22 @@ describe("buildOverviewStandardPresentation", () => {
       value: "Not configured",
       tone: "warning",
     });
+  });
+
+  it("uses the PC/SC transport when a smart card does not report transports", () => {
+    setAppLocale("en");
+    const facts = buildOverviewFactLookup(testOverviewAssessment([]));
+
+    const presentation = buildOverviewStandardPresentation({
+      facts,
+      mdsState: "missing",
+      mds: null,
+      device: new DeviceReport({
+        attachment: { id: "smart-card", transport: Mode.ModeSmartCard },
+      }),
+    });
+
+    expect(presentation.transports).toBe("PC/SC");
   });
 
   it("does not present every MDS record as certification", () => {

@@ -96,7 +96,7 @@ describe("WebAuthn Lab results", () => {
 
   it("distinguishes a successful GetAssertion response with 0 assertions", () => {
     const result = new GetAssertionResultDTO({
-      deviceFingerprint: "token-1",
+      attachmentId: "token-1",
       rpID: "example.com",
       assertions: [],
     });
@@ -144,7 +144,7 @@ describe("WebAuthn Lab results", () => {
       }),
     ];
 
-    const result = new GetAssertionResultDTO({ deviceFingerprint: "token-1", rpID: "example.com", assertions });
+    const result = new GetAssertionResultDTO({ attachmentId: "token-1", rpID: "example.com", assertions });
     renderGetResult(result);
 
     expect(screen.getByText("2 assertions")).toBeInTheDocument();
@@ -173,7 +173,7 @@ describe("WebAuthn Lab results", () => {
   it("renders authentication PRF results without a registration-only enabled field", () => {
     const secret = "cd".repeat(32);
     const result = new GetAssertionResultDTO({
-      deviceFingerprint: "token-1",
+      attachmentId: "token-1",
       rpID: "example.com",
       assertions: [new Assertion({
         index: 0,
@@ -202,7 +202,7 @@ describe("WebAuthn Lab results", () => {
 
   it("labels credential blob output with the extension identifier", () => {
     const result = new GetAssertionResultDTO({
-      deviceFingerprint: "token-1",
+      attachmentId: "token-1",
       rpID: "example.com",
       assertions: [new Assertion({
         index: 0,
@@ -232,7 +232,7 @@ describe("WebAuthn Lab results", () => {
     const exactClientDataJSON =
       "{\n  \"type\": \"webauthn.create\",\n  \"challenge\": \"signed bytes stay exact\"\n}";
     const result = new MakeCredentialResultDTO({
-      deviceFingerprint: "token-1",
+      attachmentId: "token-1",
       rpID: "example.com",
       fmt: AttestationStatementFormatIdentifier.AttestationStatementFormatIdentifierPacked,
       credentialIDHex,
@@ -290,7 +290,7 @@ describe("WebAuthn Lab results", () => {
     const user = userEvent.setup();
     const secret = "ab".repeat(32);
     const result = new MakeCredentialResultDTO({
-      deviceFingerprint: "token-1",
+      attachmentId: "token-1",
       rpID: "example.com",
       fmt: AttestationStatementFormatIdentifier.AttestationStatementFormatIdentifierPacked,
       credentialIDHex: "0011",

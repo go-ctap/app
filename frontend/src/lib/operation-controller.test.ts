@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { InteractionKind } from "../../bindings/github.com/go-ctap/kit/model";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { CredentialsEnvelope, InteractionPrompt, OperationEventEnvelope } from "../../bindings/telesma/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
@@ -27,16 +27,13 @@ const serviceMocks = vi.hoisted(() => ({
 
 vi.mock("../../bindings/telesma/ctapservice/service", () => serviceMocks);
 
-const token: DeviceReport = {
-  fingerprint: "token-1",
-  ordinalAlias: "1",
-  transport: Mode.ModeHID,
-  path: "token-1",
-  vendorId: 1,
-  productId: 2,
-  vendor: Vendor.VendorUnknown,
-  product: "Test key",
-};
+const token = new DeviceReport({
+  attachment: {
+    id: "token-1",
+    transport: Mode.ModeHID,
+    usb: { product: "Test key", vendorId: 1, productId: 2 },
+  },
+});
 
 function seedAuthenticator(state: "ready" | "running" = "running") {
   seedSelectionForTest("token-1", token, {

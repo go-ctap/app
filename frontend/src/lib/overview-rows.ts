@@ -7,8 +7,10 @@ import {
 } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import {
   Capability,
+  IdentityResolutionState,
   Interface,
   Vendor,
+  YubicoFormFactor,
   type DeviceReport,
   type InterfaceReport,
 } from "../../bindings/github.com/go-ctap/kit/model/report";
@@ -65,13 +67,16 @@ export function buildOverviewRows(
 
   return [
     localizedFactRow(facts, FactID.FactIDAAGUID, "Identity", m.matrix_name_aaguid, m.matrix_desc_aaguid_model),
-    row("Identity", m.matrix_name_device_fingerprint, m.matrix_desc_device_fingerprint, valueStatus(device?.fingerprint), textValue(device?.fingerprint, value.notReported()), "device.fingerprint"),
+    row("Identity", m.matrix_name_attachment_id, m.matrix_desc_attachment_id, valueStatus(device?.attachment.id), textValue(device?.attachment.id, value.notReported()), "device.attachment.id"),
+    identityResolutionRow(device),
     ...vendorIdentityRows(device),
     transportRow(facts, device),
+    ...connectionRows(device),
     localizedFactRow(facts, FactID.FactIDPlatformAttachment, "Identity", m.matrix_name_platform_attachment, m.matrix_desc_platform_attachment),
     secretFactRow(facts, FactID.FactIDEncryptedDeviceIdentifier, "Identity", m.matrix_name_encrypted_device_identifier, m.matrix_desc_encrypted_device_identifier),
 
     ...vendorInterfaceRows(device),
+    ...vendorDetailRows(device),
 
     localizedFactRow(facts, FactID.FactIDVersions, "Protocol", m.matrix_name_reported_versions, m.matrix_desc_versions),
     versionRow(facts, FactID.FactIDVersionU2FV2, "U2F", m.matrix_desc_u2f, "U2F_V2"),
@@ -195,7 +200,8 @@ function transportRow(facts: OverviewFactLookup, device: DeviceReport | null) {
   if (fact.state !== FactState.FactStateUnknown) {
     return row("Identity", m.matrix_name_transport, m.matrix_desc_transport_getinfo, overviewFactStatus(fact), formatFactValue(fact), fact.source);
   }
-  return row("Identity", m.matrix_name_transport, m.matrix_desc_transport_fallback, valueStatus(device?.transport), textValue(device?.transport, value.notReported()), fact.source);
+  const transport = device?.attachment.transport;
+  return row("Identity", m.matrix_name_transport, m.matrix_desc_transport_fallback, valueStatus(transport), textValue(transport, value.notReported()), fact.source);
 }
 
 function versionRow(facts: OverviewFactLookup, id: FactID, name: string, description: MessageText, version: string) {
@@ -413,29 +419,102 @@ function formatCertification(input: string) {
 }
 
 function vendorIdentityRows(device: DeviceReport | null) {
-  const metadata = device?.metadata;
-  const model = metadata?.model || device?.product;
-  const serial = metadata?.serial || device?.serial;
+  const identity = device?.identity;
 
   return [
-    row("Identity", m.matrix_name_device_vendor, m.matrix_desc_device_vendor, valueStatus(device?.vendor), textValue(device?.vendor, value.notReported()), "device.vendor"),
-    row("Identity", m.matrix_name_device_model, m.matrix_desc_device_model, valueStatus(model), textValue(model, value.notReported()), metadata?.model ? "device.metadata.model" : "device.product"),
-    row("Identity", m.matrix_name_device_serial, m.matrix_desc_device_serial, valueStatus(serial), textValue(serial, value.notReported()), metadata?.serial ? "device.metadata.serial" : "device.serial"),
-    row("Identity", m.matrix_name_device_firmware, m.matrix_desc_device_firmware, valueStatus(metadata?.firmware), textValue(metadata?.firmware, value.notReported()), "device.metadata.firmware"),
+    row("Identity", m.matrix_name_device_vendor, m.matrix_desc_device_vendor, valueStatus(identity?.vendor), textValue(identity?.vendor, value.notReported()), "device.identity.vendor"),
+    row("Identity", m.matrix_name_device_model, m.matrix_desc_device_model, valueStatus(identity?.model), textValue(identity?.model, value.notReported()), "device.identity.model"),
+    row("Identity", m.matrix_name_device_serial, m.matrix_desc_device_serial, valueStatus(identity?.serial), textValue(identity?.serial, value.notReported()), "device.identity.serial"),
+    row("Identity", m.matrix_name_device_firmware, m.matrix_desc_device_firmware, valueStatus(identity?.firmware), textValue(identity?.firmware, value.notReported()), "device.identity.firmware"),
   ];
 }
 
 function vendorInterfaceRows(device: DeviceReport | null) {
-  return (device?.metadata?.interfaces ?? []).flatMap((interfaceReport) => {
+  return (device?.identity?.interfaces ?? []).flatMap((interfaceReport) => {
     const rows = [interfacePresenceRow(interfaceReport)];
-    if (device?.vendor !== Vendor.VendorToken2 || interfaceReport.supported.length > 0) {
+    if (device?.identity?.vendor !== Vendor.VendorToken2 || (interfaceReport.supported?.length ?? 0) > 0) {
       rows.push(interfaceApplicationsRow(interfaceReport, "supported"));
     }
-    if (device?.vendor === Vendor.VendorYubico) {
+    if (device?.identity?.vendor === Vendor.VendorYubico) {
       rows.push(interfaceApplicationsRow(interfaceReport, "enabled"));
     }
     return rows;
   });
+}
+
+function vendorDetailRows(device: DeviceReport | null) {
+  return [
+    ...yubicoDetailRows(device),
+  ];
+}
+
+function yubicoDetailRows(device: DeviceReport | null) {
+  const details = device?.identity?.details?.yubico;
+  if (!details) return [];
+
+  const rows: OverviewRow[] = [];
+  if (details.partNumber) {
+    rows.push(row("Vendor", m.matrix_name_yubico_part_number, m.matrix_desc_yubico_part_number, "informational", details.partNumber, "device.identity.details.yubico.partNumber"));
+  }
+  rows.push(
+    row("Vendor", m.matrix_name_yubico_form_factor, m.matrix_desc_yubico_form_factor, "informational", yubicoFormFactorLabel(details.formFactor), "device.identity.details.yubico.formFactor"),
+    yubicoBooleanRow(m.matrix_name_yubico_fips, m.matrix_desc_yubico_fips, details.isFIPS, "device.identity.details.yubico.isFIPS"),
+    yubicoBooleanRow(m.matrix_name_yubico_security_key, m.matrix_desc_yubico_security_key, details.isSecurityKey, "device.identity.details.yubico.isSecurityKey"),
+  );
+  if (details.effectiveFirmware) {
+    rows.push(row("Vendor", m.matrix_name_yubico_effective_firmware, m.matrix_desc_yubico_effective_firmware, "informational", details.effectiveFirmware, "device.identity.details.yubico.effectiveFirmware"));
+  }
+  if (details.versionQualifier) {
+    rows.push(row(
+      "Vendor",
+      m.matrix_name_yubico_version_qualifier,
+      m.matrix_desc_yubico_version_qualifier,
+      "informational",
+      `${details.versionQualifier.version} ${details.versionQualifier.releaseType} ${details.versionQualifier.iteration}`,
+      "device.identity.details.yubico.versionQualifier",
+    ));
+  }
+  rows.push(
+    row("Vendor", m.matrix_name_yubico_auto_eject_timeout, m.matrix_desc_yubico_auto_eject_timeout, "informational", String(details.autoEjectTimeout), "device.identity.details.yubico.autoEjectTimeout"),
+    row("Vendor", m.matrix_name_yubico_challenge_response_timeout, m.matrix_desc_yubico_challenge_response_timeout, "informational", String(details.challengeResponseTimeout), "device.identity.details.yubico.challengeResponseTimeout"),
+    yubicoBooleanRow(m.matrix_name_yubico_locked, m.matrix_desc_yubico_locked, details.locked, "device.identity.details.yubico.locked"),
+    yubicoCapabilitiesRow(m.matrix_name_yubico_fips_capable, m.matrix_desc_yubico_fips_capable, details.fipsCapable ?? [], "device.identity.details.yubico.fipsCapable"),
+    yubicoCapabilitiesRow(m.matrix_name_yubico_fips_approved, m.matrix_desc_yubico_fips_approved, details.fipsApproved ?? [], "device.identity.details.yubico.fipsApproved"),
+    yubicoBooleanRow(m.matrix_name_yubico_pin_complexity, m.matrix_desc_yubico_pin_complexity, details.pinComplexity, "device.identity.details.yubico.pinComplexity"),
+    yubicoBooleanRow(m.matrix_name_yubico_nfc_restricted, m.matrix_desc_yubico_nfc_restricted, details.nfcRestricted, "device.identity.details.yubico.nfcRestricted"),
+    yubicoCapabilitiesRow(m.matrix_name_yubico_reset_blocked, m.matrix_desc_yubico_reset_blocked, details.resetBlocked ?? [], "device.identity.details.yubico.resetBlocked"),
+  );
+  if (details.fpsVersion) {
+    rows.push(row("Vendor", m.matrix_name_yubico_fps_version, m.matrix_desc_yubico_fps_version, "informational", details.fpsVersion, "device.identity.details.yubico.fpsVersion"));
+  }
+  if (details.stmVersion) {
+    rows.push(row("Vendor", m.matrix_name_yubico_stm_version, m.matrix_desc_yubico_stm_version, "informational", details.stmVersion, "device.identity.details.yubico.stmVersion"));
+  }
+
+  return rows;
+}
+
+function yubicoBooleanRow(name: MessageText, description: MessageText, enabled: boolean, source: string) {
+  return row("Vendor", name, description, "informational", enabled ? m.status_enabled() : m.status_disabled(), source);
+}
+
+function yubicoCapabilitiesRow(name: MessageText, description: MessageText, capabilities: Capability[], source: string) {
+  return row("Vendor", name, description, "informational", inlineList(capabilities.map(capabilityLabel), value.emptyList()), source);
+}
+
+function yubicoFormFactorLabel(input: YubicoFormFactor) {
+  const labels: Record<YubicoFormFactor, string> = {
+    [YubicoFormFactor.$zero]: value.notReported(),
+    [YubicoFormFactor.YubicoFormFactorUnknown]: value.notReported(),
+    [YubicoFormFactor.YubicoFormFactorUSBAKeychain]: "USB-A keychain",
+    [YubicoFormFactor.YubicoFormFactorUSBANano]: "USB-A Nano",
+    [YubicoFormFactor.YubicoFormFactorUSBCKeychain]: "USB-C keychain",
+    [YubicoFormFactor.YubicoFormFactorUSBCNano]: "USB-C Nano",
+    [YubicoFormFactor.YubicoFormFactorUSBCLightning]: "USB-C + Lightning",
+    [YubicoFormFactor.YubicoFormFactorUSBABiometricKeychain]: "USB-A biometric keychain",
+    [YubicoFormFactor.YubicoFormFactorUSBCBiometricKeychain]: "USB-C biometric keychain",
+  };
+  return labels[input];
 }
 
 function interfacePresenceRow(interfaceReport: InterfaceReport) {
@@ -446,13 +525,13 @@ function interfacePresenceRow(interfaceReport: InterfaceReport) {
     m.matrix_desc_vendor_interface,
     "informational",
     value.available(),
-    `device.metadata.interfaces.${interfaceReport.interface}.interface`,
+    `device.identity.interfaces.${interfaceReport.interface}.interface`,
   );
 }
 
 function interfaceApplicationsRow(interfaceReport: InterfaceReport, field: "supported" | "enabled") {
   const interfaceName = interfaceLabel(interfaceReport.interface);
-  const applications = interfaceReport[field].map(capabilityLabel);
+  const applications = (interfaceReport[field] ?? []).map(capabilityLabel);
   const enabled = field === "enabled";
 
   return row(
@@ -465,8 +544,36 @@ function interfaceApplicationsRow(interfaceReport: InterfaceReport, field: "supp
       : m.matrix_desc_supported_applications({ interface: interfaceName }),
     "informational",
     inlineList(applications, value.emptyList()),
-    `device.metadata.interfaces.${interfaceReport.interface}.${field}`,
+    `device.identity.interfaces.${interfaceReport.interface}.${field}`,
   );
+}
+
+function identityResolutionRow(device: DeviceReport | null) {
+  const state = device?.identityResolution.state;
+  const labels: Record<IdentityResolutionState, string> = {
+    [IdentityResolutionState.$zero]: "",
+    [IdentityResolutionState.IdentityResolving]: m.identity_resolving(),
+    [IdentityResolutionState.IdentityResolved]: m.identity_resolved(),
+    [IdentityResolutionState.IdentityUnavailable]: m.identity_unavailable(),
+    [IdentityResolutionState.IdentityFailed]: m.identity_failed(),
+  };
+  return row(
+    "Identity",
+    m.matrix_name_identity_resolution,
+    m.matrix_desc_identity_resolution,
+    state ? "informational" : "unknown",
+    state ? labels[state] : value.notReported(),
+    "device.identityResolution.state",
+  );
+}
+
+function connectionRows(device: DeviceReport | null) {
+  const smartCard = device?.attachment.smartCard;
+  if (!smartCard) return [];
+  return [
+    row("Identity", m.matrix_name_smart_card_reader, m.matrix_desc_smart_card_reader, valueStatus(smartCard.reader), textValue(smartCard.reader, value.notReported()), "device.attachment.smartCard.reader"),
+    row("Identity", m.matrix_name_smart_card_atr, m.matrix_desc_smart_card_atr, valueStatus(smartCard.atr), textValue(smartCard.atr, value.notReported()), "device.attachment.smartCard.atr"),
+  ];
 }
 
 function interfaceLabel(input: Interface) {
@@ -487,6 +594,7 @@ function capabilityLabel(input: Capability) {
     [Capability.CapabilityOpenPGP]: "OpenPGP",
     [Capability.CapabilityPIV]: "PIV",
     [Capability.CapabilityOATH]: "OATH",
+    [Capability.CapabilityHSMAuth]: "HSM Auth",
     [Capability.CapabilityCTAP2]: "CTAP2",
   };
   return labels[input] || input;

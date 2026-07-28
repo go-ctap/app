@@ -78,10 +78,7 @@ export enum Code {
     CodeInteractionHandlerRequired = "INTERACTION_HANDLER_REQUIRED",
     CodeInteractionCanceled = "INTERACTION_CANCELED",
     CodeAuthenticatorClosed = "AUTHENTICATOR_CLOSED",
-    CodeDeviceHandleInvalid = "DEVICE_HANDLE_INVALID",
     CodeDeviceNotFound = "DEVICE_NOT_FOUND",
-    CodeDeviceSelectionRequired = "DEVICE_SELECTION_REQUIRED",
-    CodeDeviceUnavailable = "DEVICE_UNAVAILABLE",
     CodeTransportModeUnsupported = "TRANSPORT_MODE_UNSUPPORTED",
     CodeTransportPermissionDenied = "TRANSPORT_PERMISSION_DENIED",
     CodeTransportProxyUnavailable = "TRANSPORT_PROXY_UNAVAILABLE",
@@ -245,6 +242,7 @@ export enum Phase {
     PhaseAuthenticatorCommand = "authenticator-command",
     PhaseAssertionContinuation = "assertion-continuation",
     PhaseMetadata = "metadata",
+    PhaseIdentity = "identity",
     PhaseDecode = "decode",
     PhaseCleanup = "cleanup",
 };

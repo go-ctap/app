@@ -25,6 +25,7 @@ import { setAppLocale } from "$lib/i18n";
 import { setAdvancedMode } from "$lib/preferences";
 import { failureForCode } from "$lib/test-failure";
 import { resetAppStateForTest, seedPasskeysEnvelopeForTest, seedSelectionForTest } from "$lib/store-test-utils";
+import { testHIDDevice } from "../test/device.js";
 
 import Passkeys from "./Passkeys.svelte";
 
@@ -53,9 +54,7 @@ function credentialsEnvelope(readOnlyPermission = false): CredentialsEnvelope {
     selectionId: "authenticator-1",
     kind: OperationKind.ListCredentials,
     result: {
-      device: {
-        fingerprint: "token-1",
-      },
+      device: testHIDDevice(),
       support: {
         credentialManagement: true,
         previewOnly: false,
@@ -484,9 +483,10 @@ describe("Passkeys", () => {
     await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
     await user.click(screen.getByRole("button", { name: "Edit" }));
 
-    expect(screen.getByRole("dialog", { name: "Edit passkey user" })).toBeInTheDocument();
-    expect(screen.getByLabelText("User ID hex")).toHaveValue("01");
-    expect(screen.getByLabelText("Display name")).toHaveValue("Example User");
+    const dialog = screen.getByRole("dialog", { name: "Edit passkey user" });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("User name")).toHaveValue("user@example.com");
+    expect(within(dialog).getByLabelText("Display name")).toHaveValue("Example User");
     await user.click(screen.getByRole("button", { name: "Cancel" }));
   });
 
@@ -630,7 +630,7 @@ describe("Passkeys", () => {
     mutablePasskeysMutation.set({ ...mutation, phase: "review" });
     const dialog = await screen.findByRole("dialog", { name: "Edit passkey user" });
     expect(dialog).toBeInTheDocument();
-    expect(screen.getByText("This changes the user information stored with the discoverable passkey.")).toBeInTheDocument();
+    expect(screen.getByText("Changing this information may prevent you from signing in with this passkey.")).toBeInTheDocument();
     expect(screen.queryByText("credential.update_user.mutation")).not.toBeInTheDocument();
     expect(screen.getByText("Current value")).toBeInTheDocument();
     expect(screen.getByText("Proposed value")).toBeInTheDocument();

@@ -1,15 +1,15 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { testHIDDevice } from "../test/device.js";
 
 import { labState } from "./features/lab/state";
 import { activeScreen } from "./features/workbench/state";
 import { resetAppStateForTest, seedSelectionForTest } from "./store-test-utils";
 import { applyDiscovery, clearWorkbenchScreenCaches } from "./workbench-state";
 
-const first = new DeviceReport({ fingerprint: "token-1", product: "First" });
-const second = new DeviceReport({ fingerprint: "token-2", product: "Second" });
+const first = testHIDDevice("token-1", "First");
+const second = testHIDDevice("token-2", "Second");
 
 describe("WebAuthn Lab authenticator lifecycle", () => {
   beforeEach(() => resetAppStateForTest());

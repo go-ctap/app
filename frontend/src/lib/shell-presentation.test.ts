@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { CreditCard, Usb } from "@lucide/svelte";
 
 import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { DeviceIdentity, DeviceReport, Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "./i18n.js";
@@ -11,16 +12,13 @@ import { buildShellStatusPresentation, buildSidebarPresentation } from "./shell-
 import type { AuthenticatorStatus } from "./authenticator-model.js";
 import type { StatusBarState } from "./features/workbench/index.js";
 
-const token: DeviceReport = {
-  fingerprint: "token-1",
-  ordinalAlias: "1",
-  transport: Mode.ModeHID,
-  path: "token-1",
-  vendorId: 1,
-  productId: 2,
-  vendor: Vendor.VendorUnknown,
-  product: "Test key",
-};
+const token = new DeviceReport({
+  attachment: {
+    id: "token-1",
+    transport: Mode.ModeHID,
+    usb: { product: "Test key", vendorId: 1, productId: 2 },
+  },
+});
 
 function authenticator(state: AuthenticatorStatus["state"]): AuthenticatorStatus {
   return {
@@ -124,28 +122,31 @@ describe("sidebar presentation", () => {
     expect(presentation.tokens).toEqual([
       {
         value: "token-1",
-        label: "1. Test key",
+        label: "Test key",
         name: "Test key",
         detail: "",
+        icon: Usb,
       },
     ]);
   });
 
-  it("orders tokens by stable discovery fields instead of discovery order or attachment fingerprint", () => {
-    const first: DeviceReport = {
+  it("keeps inventory order stable across identity updates", () => {
+    const first = new DeviceReport({
       ...token,
-      fingerprint: "token-z",
-      ordinalAlias: "2",
-      path: "hid://a",
-      product: "Alpha Key",
-    };
-    const second: DeviceReport = {
+      attachment: {
+        id: "token-z",
+        transport: Mode.ModeHID,
+        usb: { product: "Alpha Key", vendorId: 1, productId: 2 },
+      },
+    });
+    const second = new DeviceReport({
       ...token,
-      fingerprint: "token-a",
-      ordinalAlias: "1",
-      path: "hid://b",
-      product: "Zebra Key",
-    };
+      attachment: {
+        id: "token-a",
+        transport: Mode.ModeHID,
+        usb: { product: "Zebra Key", vendorId: 1, productId: 2 },
+      },
+    });
     const discoveryOrder = [second, first];
 
     const presentation = buildSidebarPresentation({
@@ -155,7 +156,7 @@ describe("sidebar presentation", () => {
       busy: false,
     });
 
-    expect(presentation.tokens.map(({ value }) => value)).toEqual(["token-z", "token-a"]);
+    expect(presentation.tokens.map(({ value }) => value)).toEqual(["token-a", "token-z"]);
     expect(discoveryOrder).toEqual([second, first]);
   });
 
@@ -171,15 +172,15 @@ describe("sidebar presentation", () => {
   });
 
   it("prefers enriched model and serial in discovered token rows", () => {
-    const enriched: DeviceReport = {
+    const enriched = new DeviceReport({
       ...token,
-      vendor: Vendor.VendorYubico,
-      metadata: {
+      identity: new DeviceIdentity({
+        vendor: Vendor.VendorYubico,
         model: "YubiKey 5C NFC",
         serial: "12345678",
         firmware: "5.7.1",
-      },
-    };
+      }),
+    });
 
     const presentation = buildSidebarPresentation({
       activeScreen: "overview",
@@ -190,22 +191,23 @@ describe("sidebar presentation", () => {
 
     expect(presentation.tokens[0]).toEqual({
       value: "token-1",
-      label: "1. YubiKey 5C NFC · 12345678",
+      label: "YubiKey 5C NFC · 12345678",
       name: "YubiKey 5C NFC",
       detail: "S/N 12345678",
+      icon: Usb,
     });
   });
 
-  it("omits the Token2 revision from the device name", () => {
-    const token2: DeviceReport = {
+  it("uses the canonical Token2 model and separate firmware", () => {
+    const token2 = new DeviceReport({
       ...token,
-      vendor: Vendor.VendorToken2,
-      metadata: {
-        model: "Token2 Bio3 Dual A+C PIN+ R3.2",
+      identity: new DeviceIdentity({
+        vendor: Vendor.VendorToken2,
+        model: "Token2 Bio3 Dual A+C PIN+",
         serial: "72103654095303",
         firmware: "R3.2",
-      },
-    };
+      }),
+    });
 
     const presentation = buildSidebarPresentation({
       activeScreen: "overview",
@@ -216,9 +218,66 @@ describe("sidebar presentation", () => {
 
     expect(presentation.tokens[0]).toEqual({
       value: "token-1",
-      label: "1. Token2 Bio3 Dual A+C PIN+ · 72103654095303",
+      label: "Token2 Bio3 Dual A+C PIN+ · 72103654095303",
       name: "Token2 Bio3 Dual A+C PIN+",
       detail: "S/N 72103654095303",
+      icon: Usb,
+    });
+  });
+
+  it("keeps a smart-card reader separate from the card identity", () => {
+    const smartCard = new DeviceReport({
+      ...token,
+      attachment: {
+        id: "smart-card-1",
+        transport: Mode.ModeSmartCard,
+        smartCard: { reader: "ACS ACR1252 Dual Reader" },
+      },
+    });
+
+    const presentation = buildSidebarPresentation({
+      activeScreen: "overview",
+      devices: [smartCard],
+      selectedSelector: "smart-card-1",
+      busy: false,
+    });
+
+    expect(presentation.tokens[0]).toEqual({
+      value: "smart-card-1",
+      label: "FIDO smart card",
+      name: "FIDO smart card",
+      detail: "ACS ACR1252 Dual Reader · PC/SC",
+      icon: CreditCard,
+    });
+  });
+
+  it("shows an enriched smart-card model above its reader", () => {
+    const smartCard = new DeviceReport({
+      ...token,
+      attachment: {
+        id: "smart-card-1",
+        transport: Mode.ModeSmartCard,
+        smartCard: { reader: "Token2 Smart Reader" },
+      },
+      identity: new DeviceIdentity({
+        vendor: Vendor.VendorToken2,
+        model: "Token2 FIDO2 Card",
+      }),
+    });
+
+    const presentation = buildSidebarPresentation({
+      activeScreen: "overview",
+      devices: [smartCard],
+      selectedSelector: "smart-card-1",
+      busy: false,
+    });
+
+    expect(presentation.tokens[0]).toEqual({
+      value: "smart-card-1",
+      label: "Token2 FIDO2 Card",
+      name: "Token2 FIDO2 Card",
+      detail: "Token2 Smart Reader · PC/SC",
+      icon: CreditCard,
     });
   });
 });

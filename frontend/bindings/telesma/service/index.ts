@@ -24,7 +24,6 @@ export {
     DiscoverRequest,
     DiscoveryChangedEnvelope,
     DiscoverySnapshot,
-    DiscoveryTrigger,
     EnableLongTouchForResetRequest,
     GetAssertionEnvelope,
     GetAssertionRequest,

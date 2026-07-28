@@ -10,6 +10,7 @@ import type {
   CredentialUpdateEnvelope,
   CredentialsEnvelope,
 } from "../../bindings/telesma/service";
+import { testHIDDevice } from "../test/device.js";
 
 import { api } from "./api";
 import { failureForCode } from "./test-failure";
@@ -41,7 +42,7 @@ function inventoryEnvelope(readOnlyPermission = true): CredentialsEnvelope {
     selectionId: "authenticator-1",
     kind: OperationKind.ListCredentials,
     result: {
-      device: { fingerprint: "token-1" },
+      device: testHIDDevice(),
       support: { credentialManagement: true, previewOnly: false, readOnlyPermission },
       summary: {
         existingResidentCredentialsCount: 1,
@@ -112,7 +113,7 @@ function updateResultEnvelope(): CredentialUpdateEnvelope {
   const envelope = updatePreviewEnvelope();
   envelope.operationId = "update-1";
   envelope.result!.result = {
-    deviceFingerprint: "token-1",
+    attachmentId: "token-1",
     credentialIDHex: "cafe",
     rpID: "example.test",
     previous: { userIDHex: "01", name: "user", displayName: "Old name" },
@@ -141,7 +142,7 @@ function deleteResultEnvelope(): CredentialDeleteEnvelope {
   const envelope = deletePreviewEnvelope();
   envelope.operationId = "delete-1";
   envelope.result!.result = {
-    deviceFingerprint: "token-1",
+    attachmentId: "token-1",
     credentialIDHex: "cafe",
     rpID: "example.test",
     userIDHex: "01",

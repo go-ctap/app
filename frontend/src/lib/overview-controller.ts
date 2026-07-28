@@ -70,7 +70,7 @@ export async function maybeLoadOverview() {
 async function loadOverviewDetails(envelope: InspectEnvelope, selectionId: string) {
   const aaguid = inspectResult(envelope)?.info.aaguid.trim() ?? "";
   if (aaguid) {
-    void loadOverviewMDS(aaguid);
+    void loadOverviewMDS(aaguid, false);
   }
   if (!shouldLoadBioSensor(envelope)) return null;
 
@@ -131,7 +131,10 @@ export async function loadOverview() {
   }
 }
 
-export async function loadOverviewMDS(aaguid: string, refresh = false) {
+export async function loadOverviewMDS(
+  aaguid: string,
+  refresh = false,
+) {
   aaguid = aaguid.trim();
   const selector = get(selectedSelector).trim();
   if (!aaguid || !selector) {
@@ -141,7 +144,10 @@ export async function loadOverviewMDS(aaguid: string, refresh = false) {
 
   overviewMDS.set(loadingLoadState());
   try {
-    const envelope = await api.lookupMDS({ aaguid, refresh });
+    const envelope = await api.lookupMDS({
+      aaguid,
+      refresh,
+    });
     overviewMDS.set(readyLoadState(envelope.result));
     return true;
   } catch (error) {

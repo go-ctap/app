@@ -103,10 +103,6 @@ export const api = {
     return runtimeCall("ctapkit.discover", async () => (await service.Discover(request)).devices);
   },
 
-  startDiscoveryMonitoring(): Promise<void> {
-    return runtimeCall("ctapkit.discovery.startMonitoring", () => service.StartDiscoveryMonitoring());
-  },
-
   refreshDiscovery(request: DiscoverRequest = {}): Promise<void> {
     return runtimeCall("ctapkit.discovery.refresh", () => service.RefreshDiscovery(request));
   },

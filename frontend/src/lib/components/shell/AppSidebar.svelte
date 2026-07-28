@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Database, FlaskConical, Gauge, KeyRound, ScrollText, Settings, Shield, Usb } from "@lucide/svelte";
+  import { Database, FlaskConical, Gauge, KeyRound, ScrollText, Settings, Shield } from "@lucide/svelte";
   import {type Component} from "svelte";
 
   import TelesmaMark from "$lib/components/branding/TelesmaMark.svelte";
@@ -89,7 +89,7 @@
             {#if presentation.busy && presentation.selectedValue === token.value}
               <Spinner data-icon="inline-start" />
             {:else}
-              <Usb data-icon="inline-start" aria-hidden="true" />
+              <token.icon data-icon="inline-start" aria-hidden="true" />
             {/if}
             <span class="sidebar-token-copy">
               <span class="sidebar-token-name" title={token.name}>{token.name}</span>

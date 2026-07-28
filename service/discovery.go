@@ -3,155 +3,140 @@ package service
 import (
 	"context"
 
+	ctapkit "github.com/go-ctap/kit"
 	"github.com/go-ctap/kit/model/failure"
 	"github.com/go-ctap/kit/model/report"
 	"github.com/go-ctap/kit/transport"
 )
 
-func (s *Service) discoverSnapshot(ctx context.Context, req DiscoverRequest) (DiscoverySnapshot, error) {
-	result, err := s.updateDiscovery(ctx, req)
-	if err != nil {
+func (s *Service) Discover(ctx context.Context, req DiscoverRequest) (DiscoverySnapshot, error) {
+	if err := s.ensureInventory(ctx, normalizedDiscoverMode(req.Mode)); err != nil {
 		return DiscoverySnapshot{}, err
 	}
 
-	if result.snapshot == nil {
-		return DiscoverySnapshot{}, result.err
-	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	return *result.snapshot, result.err
+	return DiscoverySnapshot{Devices: s.devices}, nil
 }
 
 func (s *Service) RefreshDiscovery(ctx context.Context, req DiscoverRequest) error {
-	effective := s.effectiveDiscoverRequest(req)
-
-	return s.reconcileTopology(ctx, effective, DiscoveryTriggerManual, true)
-}
-
-func (s *Service) reconcileTopology(
-	ctx context.Context,
-	req DiscoverRequest,
-	trigger DiscoveryTrigger,
-	force bool,
-) error {
-	result, err := s.updateDiscovery(ctx, req)
-	if err != nil {
+	mode := normalizedDiscoverMode(req.Mode)
+	if req.Mode == "" {
+		s.mu.Lock()
+		if s.inventory != nil {
+			mode = s.inventoryMode
+		}
+		s.mu.Unlock()
+	}
+	if err := s.ensureInventory(ctx, mode); err != nil {
 		return err
 	}
 
-	envelope := DiscoveryChangedEnvelope{
-		Trigger:  trigger,
-		Snapshot: result.snapshot,
-		Error:    failure.Snapshot(result.err),
-	}
-
-	if force || result.changed || envelope.Error != nil {
-		s.emit(EventDiscoveryChanged, envelope)
-	}
-
-	if result.snapshot != nil {
-		s.startEnrichment()
-	}
-
-	return nil
-}
-
-type discoveryResult struct {
-	snapshot *DiscoverySnapshot
-	err      error
-	changed  bool
-}
-
-func (s *Service) updateDiscovery(
-	ctx context.Context,
-	req DiscoverRequest,
-) (discoveryResult, error) {
-	result := discoveryResult{}
-	if s.isClosed() {
-		return result, closedServiceError(failure.PhaseDiscovery)
-	}
-
 	s.mu.Lock()
-	previousDevices := s.devices
+	inventory := s.inventory
 	s.mu.Unlock()
-	previousReports := s.deviceReportsWithMetadata(previousDevices)
 
-	devices, scanErr := s.scanDevices(ctx, normalizedDiscoverMode(req.Mode))
-	if ctxErr := ctx.Err(); scanErr != nil && ctxErr != nil {
-		return result, normalizeServicePhaseError(ctxErr, failure.PhaseDiscovery)
-	}
+	return inventory.Refresh(ctx)
+}
 
-	var nextReports []report.DeviceReport
-	authoritative := scanErr == nil
-	if authoritative {
-		s.restoreDeviceMetadata(deviceReports(devices))
-		nextReports = s.deviceReportsWithMetadata(devices)
-	}
-
-	releaseSelection, err := s.lockSelection(ctx)
+func (s *Service) ensureInventory(ctx context.Context, mode transport.Mode) error {
+	unlock, err := s.lockSelection(ctx)
 	if err != nil {
-		return result, err
+		return err
 	}
-	defer releaseSelection()
+	defer unlock()
 
 	s.mu.Lock()
 	if s.closed {
 		s.mu.Unlock()
-
-		return result, closedServiceError(failure.PhaseDiscovery)
+		return closedServiceError(failure.PhaseDiscovery)
 	}
-
-	var affected *selection
-	if authoritative {
-		s.pruneEnrichmentCacheLocked(devices)
-		s.devices = devices
-		s.lastDiscoverMode = normalizedDiscoverMode(req.Mode)
-		affected = s.detachMissingSelectionLocked(nextReports)
-	}
-	s.mu.Unlock()
-
-	var closeErr error
-	if affected != nil {
-		closeErr = s.closeSelection(affected)
-	}
-
-	result.err = scanErr
-	if result.err == nil {
-		result.err = closeErr
-	}
-
-	if authoritative {
-		snapshot := DiscoverySnapshot{Devices: nextReports}
-		result.snapshot = &snapshot
-		result.changed = !deviceReportsEqual(previousReports, nextReports)
-	}
-
-	return result, nil
-}
-
-func (s *Service) detachMissingSelectionLocked(devices []report.DeviceReport) *selection {
-	selected := s.selected
-	if selected == nil || deviceReportPresent(devices, selected.device) {
+	if s.inventory != nil {
+		currentMode := s.inventoryMode
+		s.mu.Unlock()
+		if currentMode != mode {
+			return failure.New(
+				failure.CodeTransportModeUnsupported,
+				failure.WithPhase(failure.PhaseDiscovery),
+			)
+		}
 		return nil
 	}
-	s.selected = nil
-
-	return selected
-}
-
-func (s *Service) currentDiscoverRequest() DiscoverRequest {
-	s.mu.Lock()
-	mode := s.lastDiscoverMode
+	open := s.openInventory
 	s.mu.Unlock()
 
-	return DiscoverRequest{Mode: mode}
-}
-
-func (s *Service) effectiveDiscoverRequest(req DiscoverRequest) DiscoverRequest {
-	if req.Mode == "" {
-		return s.currentDiscoverRequest()
+	inventory, err := open(ctx, mode)
+	if err != nil {
+		return normalizeServicePhaseError(err, failure.PhaseDiscovery)
 	}
 
-	return req
+	done := make(chan struct{})
+	s.mu.Lock()
+	if s.closed {
+		s.mu.Unlock()
+		_ = inventory.Close()
+		return closedServiceError(failure.PhaseDiscovery)
+	}
+	s.inventory = inventory
+	s.inventoryMode = mode
+	s.inventoryDone = done
+	s.devices = inventory.Snapshot().Devices
+	s.mu.Unlock()
+
+	go s.forwardInventoryEvents(inventory, done)
+
+	return nil
+}
+
+func (s *Service) forwardInventoryEvents(inventory inventoryRuntime, done chan struct{}) {
+	defer close(done)
+
+	for event := range inventory.Events() {
+		s.applyInventoryEvent(event)
+	}
+}
+
+func (s *Service) applyInventoryEvent(event ctapkit.InventoryEvent) {
+	s.selectionGate <- struct{}{}
+	defer func() { <-s.selectionGate }()
+
+	s.mu.Lock()
+	if s.closed || s.inventory == nil {
+		s.mu.Unlock()
+		return
+	}
+	selected := s.selected
+	missing := selected != nil &&
+		!attachmentPresent(event.Snapshot.Devices, selected.device.Attachment.ID)
+	s.mu.Unlock()
+
+	if missing {
+		_ = s.closeSelection(selected)
+	}
+
+	s.mu.Lock()
+	if missing && s.selected == selected {
+		s.selected = nil
+	}
+	s.devices = event.Snapshot.Devices
+	s.mu.Unlock()
+
+	s.emit(EventDiscoveryChanged, DiscoveryChangedEnvelope{
+		Trigger:  event.Trigger,
+		Snapshot: &event.Snapshot,
+		Error:    event.Error,
+	})
+}
+
+func attachmentPresent(devices []report.DeviceReport, id report.AttachmentID) bool {
+	for _, device := range devices {
+		if device.Attachment.ID == id {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (s *Service) isClosed() bool {
@@ -170,18 +155,9 @@ func normalizedDiscoverMode(mode transport.Mode) transport.Mode {
 	return mode
 }
 
-func deviceReportPresent(devices []report.DeviceReport, selected report.DeviceReport) bool {
-	for _, device := range devices {
-		if device.Transport == selected.Transport && device.Fingerprint == selected.Fingerprint {
-			return true
-		}
-	}
-
-	return false
-}
-
 func closedServiceError(phase failure.Phase) error {
-	return failure.New(failure.CodeOperationCanceled,
+	return failure.New(
+		failure.CodeOperationCanceled,
 		failure.WithPhase(phase),
 	)
 }

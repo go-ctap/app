@@ -7,6 +7,9 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as ctapkit$0 from "../../github.com/go-ctap/kit/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as model$1 from "../../github.com/go-ctap/kit/model/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -198,10 +201,6 @@ export function SetSelection(req: service$0.SelectionRequest): $CancellablePromi
     });
 }
 
-export function StartDiscoveryMonitoring(): $CancellablePromise<void> {
-    return $Call.ByID(2988543923);
-}
-
 export function UpdateCredentialUser(req: service$0.CredentialUpdateRequest): $CancellablePromise<service$0.CredentialUpdateEnvelope> {
     return $Call.ByID(1194230284, req).then(($result: any) => {
         return $$createType23($result);
@@ -238,7 +237,7 @@ const $$createType7 = service$0.ConfigStatusEnvelope.createFrom;
 const $$createType8 = service$0.CredentialStoreStateEnvelope.createFrom;
 const $$createType9 = service$0.CredentialDeleteEnvelope.createFrom;
 const $$createType10 = service$0.LargeBlobMutationEnvelope.createFrom;
-const $$createType11 = service$0.DiscoverySnapshot.createFrom;
+const $$createType11 = ctapkit$0.InventorySnapshot.createFrom;
 const $$createType12 = service$0.AuthenticatorConfigEnvelope.createFrom;
 const $$createType13 = service$0.GetAssertionEnvelope.createFrom;
 const $$createType14 = service$0.InspectEnvelope.createFrom;

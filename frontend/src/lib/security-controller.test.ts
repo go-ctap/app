@@ -9,7 +9,7 @@ import {
   StateValue,
 } from "../../bindings/github.com/go-ctap/kit/model/config";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { IdentityResolutionState, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { PreviewMode } from "../../bindings/github.com/go-ctap/kit/model/safety";
 import type {
   AuthenticatorConfigEnvelope,
@@ -79,18 +79,16 @@ const TOKEN = device("token-1");
 
 function device(id: string): DeviceReport {
   return {
-    fingerprint: id,
-    ordinalAlias: id,
-    transport: Mode.ModeHID,
-    path: id,
-    vendorId: 1,
-    productId: 2,
-    vendor: Vendor.VendorUnknown,
-    product: id,
+    attachment: {
+      id,
+      transport: Mode.ModeHID,
+      usb: { product: id, vendorId: 1, productId: 2 },
+    },
+    identityResolution: { state: IdentityResolutionState.IdentityUnavailable },
   };
 }
 
-function snapshot(item: DeviceReport, selectionId = `authenticator-${item.fingerprint}`): ActiveSelection {
+function snapshot(item: DeviceReport, selectionId = `authenticator-${item.attachment.id}`): ActiveSelection {
   return {
     id: selectionId,
   } as ActiveSelection;
@@ -233,7 +231,7 @@ function authenticatorConfigEnvelope(
       result: phase === "result"
         ? {
             operation,
-            deviceFingerprint: TOKEN.fingerprint,
+            attachmentId: TOKEN.attachment.id,
             state: StateValue.StateConfigured,
           }
         : null,
@@ -272,7 +270,7 @@ function partialBioEnrollErrorEnvelope(): BioEnrollEnvelope {
         mode: PreviewMode.PreviewModeExecute,
       },
       result: {
-        deviceFingerprint: TOKEN.fingerprint,
+        attachmentId: TOKEN.attachment.id,
         previewOnly: false,
         templateIDHex: "beef",
         samples: [
@@ -329,7 +327,7 @@ function resetEnvelope(phase: "preview" | "result"): ResetFactoryEnvelope {
         mode: phase === "preview" ? PreviewMode.PreviewModeDryRun : PreviewMode.PreviewModeExecute,
       },
       result: phase === "result"
-        ? { deviceFingerprint: TOKEN.fingerprint, reset: true }
+        ? { attachmentId: TOKEN.attachment.id, reset: true }
         : null,
     },
   } as unknown as ResetFactoryEnvelope;
@@ -343,7 +341,7 @@ beforeEach(() => {
   setAppLocale("en");
   resetAppStateForTest();
   seedDevicesForTest([TOKEN]);
-  seedSelectionForTest(TOKEN.fingerprint, TOKEN, { state: "ready", selectionId: "authenticator-1" });
+  seedSelectionForTest(TOKEN.attachment.id, TOKEN, { state: "ready", selectionId: "authenticator-1" });
 });
 
 afterEach(() => {
@@ -365,7 +363,7 @@ describe("security controller loading", () => {
     selectedSelector.set("");
     expect(await maybeLoadSecurity()).toBe(false);
 
-    selectedSelector.set(TOKEN.fingerprint);
+    selectedSelector.set(TOKEN.attachment.id);
     expect(await maybeLoadSecurity()).toBe(true);
     expect(await maybeLoadSecurity()).toBe(false);
 
@@ -444,7 +442,7 @@ describe("security controller loading", () => {
     expect(get(authenticatorStatus).selectionId).toBeUndefined();
 
     expect(await reloadSecurity()).toBe(true);
-    expect(setSelection).toHaveBeenCalledWith({ selector: TOKEN.fingerprint });
+    expect(setSelection).toHaveBeenCalledWith({ attachmentId: TOKEN.attachment.id });
     expect(configStatus.mock.calls[1][0]).toEqual({ selectionId: "authenticator-2" });
     expect(get(authenticatorStatus)).toMatchObject({ state: "ready", selectionId: "authenticator-2" });
     expect(get(securityStatus).phase).toBe("ready");
@@ -823,9 +821,9 @@ describe("factory reset lifecycle", () => {
     expect(setSelection).toHaveBeenCalledTimes(2);
     expect(setSelection.mock.invocationCallOrder[0]).toBeLessThan(discover.mock.invocationCallOrder[0]);
     expect(discover.mock.invocationCallOrder[0]).toBeLessThan(setSelection.mock.invocationCallOrder[1]);
-    expect(setSelection).toHaveBeenLastCalledWith({ selector: replacement.fingerprint });
+    expect(setSelection).toHaveBeenLastCalledWith({ attachmentId: replacement.attachment.id });
     expect(get(devices)).toEqual([replacement]);
-    expect(get(selectedSelector)).toBe(replacement.fingerprint);
+    expect(get(selectedSelector)).toBe(replacement.attachment.id);
     expect(get(authenticatorStatus)).toMatchObject({
       state: "ready",
       selectionId: "authenticator-token-after-reset",
@@ -852,10 +850,10 @@ describe("factory reset lifecycle", () => {
     expect(await confirmSecurityMutation()).toBe(true);
 
     expect(setSelection).toHaveBeenCalledTimes(2);
-    expect(setSelection).toHaveBeenLastCalledWith({ selector: replacements[0].fingerprint });
+    expect(setSelection).toHaveBeenLastCalledWith({ attachmentId: replacements[0].attachment.id });
     expect(configStatus).toHaveBeenCalledWith({ selectionId: "authenticator-token-a" });
     expect(get(devices)).toEqual(replacements);
-    expect(get(selectedSelector)).toBe(replacements[0].fingerprint);
+    expect(get(selectedSelector)).toBe(replacements[0].attachment.id);
     expect(get(authenticatorStatus)).toMatchObject({
       state: "ready",
       selectionId: "authenticator-token-a",
@@ -880,7 +878,7 @@ describe("factory reset lifecycle", () => {
     expect(await beginFactoryReset()).toBe(true);
     expect(await confirmSecurityMutation()).toBe(true);
 
-    expect(setSelection).toHaveBeenLastCalledWith({ selector: replacement.fingerprint });
+    expect(setSelection).toHaveBeenLastCalledWith({ attachmentId: replacement.attachment.id });
     expect(get(authenticatorStatus)).toMatchObject({ state: "ready", selectionId: "fresh-authenticator" });
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "warning",

@@ -8,7 +8,8 @@ import {
   PayloadEntry,
   StatusReport,
 } from "../../bindings/github.com/go-ctap/mds/model";
-import { DeviceMetadata, DeviceReport, Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { DeviceIdentity, DeviceReport, Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "./i18n";
 import { buildOverviewHero } from "./overview-hero";
@@ -49,10 +50,12 @@ describe("buildOverviewHero", () => {
 
   it("prefers the normalized vendor model over the discovery product", () => {
     const device = new DeviceReport({
-      fingerprint: "token-1",
-      product: "Yubico Security Key",
-      vendor: Vendor.VendorYubico,
-      metadata: new DeviceMetadata({ model: "YubiKey 5C NFC" }),
+      attachment: {
+        id: "token-1",
+        transport: Mode.ModeHID,
+        usb: { product: "Yubico Security Key", vendorId: 0x1050, productId: 0x0407 },
+      },
+      identity: new DeviceIdentity({ vendor: Vendor.VendorYubico, model: "YubiKey 5C NFC" }),
     });
 
     expect(buildOverviewHero({ device }).title).toBe("YubiKey 5C NFC");
@@ -60,16 +63,13 @@ describe("buildOverviewHero", () => {
 
   it("shows vendor firmware instead of a generic authenticator-ready badge", () => {
     const yubico = new DeviceReport({
-      vendor: Vendor.VendorYubico,
-      metadata: new DeviceMetadata({ firmware: "5.7.1" }),
+      identity: new DeviceIdentity({ vendor: Vendor.VendorYubico, firmware: "5.7.1" }),
     });
     const token2 = new DeviceReport({
-      vendor: Vendor.VendorToken2,
-      metadata: new DeviceMetadata({ model: "Token2 Bio3 Dual A+C PIN+ R3.2", firmware: "R3.2" }),
+      identity: new DeviceIdentity({ vendor: Vendor.VendorToken2, model: "Token2 Bio3 Dual A+C PIN+", firmware: "R3.2" }),
     });
     const other = new DeviceReport({
-      vendor: Vendor.VendorUnknown,
-      metadata: new DeviceMetadata({ firmware: "1.0" }),
+      identity: new DeviceIdentity({ vendor: Vendor.VendorUnknown, firmware: "1.0" }),
     });
 
     expect(buildOverviewHero({ device: yubico }).versionBadge).toBe("Firmware 5.7.1");

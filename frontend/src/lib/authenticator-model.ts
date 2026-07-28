@@ -21,18 +21,18 @@ export type Discovery = {
 };
 
 export function selectorFromDevice(device: DeviceReport | null | undefined) {
-  return device?.fingerprint || device?.ordinalAlias || "";
+  return device?.attachment.id ?? "";
 }
 
 export function reportForSelector(devices: DeviceReport[], selector: string) {
   const requestedSelector = selector.trim();
   if (!requestedSelector) return null;
-  return devices.find((device) => device.fingerprint === requestedSelector || device.ordinalAlias === requestedSelector) || null;
+  return devices.find((device) => device.attachment.id === requestedSelector) ?? null;
 }
 
 export function labelForDevice(device: DeviceReport) {
   const name = deviceName(device);
-  return [name, device.metadata?.serial || device.serial].filter(Boolean).join(" · ");
+  return [name, device.identity?.serial].filter(Boolean).join(" · ");
 }
 
 export function idleAuthenticatorStatus(state: AuthenticatorState = "idle", error?: Failure | null): AuthenticatorStatus {

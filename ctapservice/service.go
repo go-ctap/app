@@ -56,10 +56,6 @@ func (s *Service) Discover(ctx context.Context, req appservice.DiscoverRequest) 
 	return s.core.Discover(ctx, req)
 }
 
-func (s *Service) StartDiscoveryMonitoring(ctx context.Context) error {
-	return s.core.StartDiscoveryMonitoring(ctx)
-}
-
 func (s *Service) RefreshDiscovery(ctx context.Context, req appservice.DiscoverRequest) error {
 	return s.core.RefreshDiscovery(ctx, req)
 }

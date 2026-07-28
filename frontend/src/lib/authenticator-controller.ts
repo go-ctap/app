@@ -56,14 +56,13 @@ function discoverySnapshot(
 async function setSelection(devices: DeviceReport[], selector: string): Promise<Discovery> {
   const { selectedSelector: canonicalSelector, selectedDevice } = deviceSelection(devices, selector);
   if (!canonicalSelector || !selectedDevice) {
-    await api.setSelection({ selector: "" });
+    await api.setSelection({ attachmentId: "" });
     return discoverySnapshot(get(deviceStore), "", null, idleAuthenticatorStatus());
   }
 
-  const selection = await api.setSelection({ selector: canonicalSelector });
+  const selection = await api.setSelection({ attachmentId: canonicalSelector });
   const snapshot = selection.selection!;
-  // Enrichment can update the discovery store while the authenticator opens.
-  // Compose the selection with that latest report, not the pre-await snapshot.
+  // Inventory may publish identity while the authenticator opens.
   const currentDevices = get(deviceStore);
   const currentSelectedDevice = reportForSelector(currentDevices, canonicalSelector)!;
   return discoverySnapshot(currentDevices, canonicalSelector, currentSelectedDevice, {
@@ -73,7 +72,7 @@ async function setSelection(devices: DeviceReport[], selector: string): Promise<
 }
 
 async function closeSelection(): Promise<Discovery> {
-  await api.setSelection({ selector: "" });
+  await api.setSelection({ attachmentId: "" });
   return discoverySnapshot(get(deviceStore), "", null, idleAuthenticatorStatus());
 }
 
@@ -191,7 +190,7 @@ export async function selectAuthenticatorSession(selector: string) {
 export async function rediscoverAfterFactoryReset(): Promise<Failure | null> {
   let closeError: Failure | null = null;
   try {
-    await api.setSelection({ selector: "" });
+    await api.setSelection({ attachmentId: "" });
   } catch (error) {
     closeError = runtimeFailureFrom(error);
   }
@@ -222,7 +221,7 @@ export async function rediscoverAfterFactoryReset(): Promise<Failure | null> {
 
 export async function shutdownWorkbench() {
   try {
-    await api.setSelection({ selector: "" });
+    await api.setSelection({ attachmentId: "" });
   } finally {
     clearWorkbenchScreenCaches();
     authenticatorStatus.set(idleAuthenticatorStatus());

@@ -1,7 +1,12 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import {
+  IdentityResolutionState,
+  Vendor,
+  type DeviceReport,
+} from "../../bindings/github.com/go-ctap/kit/model/report";
+import { InventoryTrigger } from "../../bindings/github.com/go-ctap/kit";
 import type {
   CredentialsEnvelope,
   DiscoveryChangedEnvelope,
@@ -10,7 +15,6 @@ import type {
   LargeBlobListEnvelope,
   ActiveSelection,
 } from "../../bindings/telesma/service";
-import { DiscoveryTrigger } from "../../bindings/telesma/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import { InteractionKind, OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
@@ -43,28 +47,25 @@ import {
 const serviceMocks = vi.hoisted(() => ({
   SetSelection: vi.fn(),
   RefreshDiscovery: vi.fn(),
-  StartDiscoveryMonitoring: vi.fn(),
 }));
 
 vi.mock("../../bindings/telesma/ctapservice/service", () => serviceMocks);
 
 function device(id: string, product = id): DeviceReport {
   return {
-    fingerprint: id,
-    ordinalAlias: id,
-    transport: Mode.ModeHID,
-    path: id,
-    vendorId: 1,
-    productId: 2,
-    vendor: Vendor.VendorUnknown,
-    product,
+    attachment: {
+      id,
+      transport: Mode.ModeHID,
+      usb: { product, vendorId: 1, productId: 2 },
+    },
+    identityResolution: { state: IdentityResolutionState.IdentityUnavailable },
   };
 }
 
 function event(
   snapshot: { devices: DeviceReport[] } | null,
   error: DiscoveryChangedEnvelope["error"] = null,
-  trigger = "hotplug",
+  trigger = InventoryTrigger.InventoryTriggerTopology,
 ): DiscoveryChangedEnvelope {
   return {
     trigger,
@@ -75,15 +76,15 @@ function event(
 
 function seedSelected(token: DeviceReport, state: "ready" | "running" = "ready") {
   seedDevicesForTest([token]);
-  seedSelectionForTest(token.fingerprint, token, {
+  seedSelectionForTest(token.attachment.id, token, {
     state,
-    selectionId: `authenticator-${token.fingerprint}`,
+    selectionId: `authenticator-${token.attachment.id}`,
   });
 }
 
 function snapshot(token: DeviceReport): ActiveSelection {
   return {
-    id: `authenticator-${token.fingerprint}`,
+    id: `authenticator-${token.attachment.id}`,
   } as ActiveSelection;
 }
 
@@ -109,7 +110,7 @@ describe("discovery controller", () => {
       state: "ready",
       selectionId: "authenticator-token-1",
     });
-    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-1" });
+    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "info",
       title: "Token selected",
@@ -128,7 +129,7 @@ describe("discovery controller", () => {
     expect(get(devices)).toEqual([first, second]);
     expect(get(selectedSelector)).toBe("token-1");
     expect(get(selectedDevice)).toEqual(first);
-    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-1" });
+    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
   });
 
   it("preserves the selected authenticator and screen state when its device remains", async () => {
@@ -153,7 +154,7 @@ describe("discovery controller", () => {
     handleDiscoveryChanged(event({ devices: [refreshed] }));
 
     expect(get(selectedSelector)).toBe("token-1");
-    expect(get(selectedDevice)?.product).toBe("Refreshed");
+    expect(get(selectedDevice)?.attachment.usb?.product).toBe("Refreshed");
     expect(get(authenticatorStatus)).toMatchObject({
       state: "ready",
       selectionId: "authenticator-token-1",
@@ -168,22 +169,26 @@ describe("discovery controller", () => {
     const original = device("token-1", "Security Key");
     const enriched: DeviceReport = {
       ...original,
-      vendor: Vendor.VendorYubico,
-      metadata: {
+      identity: {
+        vendor: Vendor.VendorYubico,
         model: "YubiKey 5C NFC",
         serial: "12345678",
         firmware: "5.7.1",
+      },
+      identityResolution: {
+        state: IdentityResolutionState.IdentityResolved,
+        provider: Vendor.VendorYubico,
       },
     };
     const { handleDiscoveryChanged } = await import("./discovery-controller.js");
     seedSelected(original);
 
-    handleDiscoveryChanged(event({ devices: [original] }, null, "monitor"));
+    handleDiscoveryChanged(event({ devices: [original] }));
     const outcome = get(statusBar).lastOutcome;
     handleDiscoveryChanged(event(
       { devices: [enriched] },
       null,
-      DiscoveryTrigger.DiscoveryTriggerEnriched,
+      InventoryTrigger.InventoryTriggerIdentity,
     ));
 
     expect(get(devices)).toEqual([enriched]);
@@ -199,11 +204,15 @@ describe("discovery controller", () => {
     const original = device("token-1", "Security Key");
     const enriched: DeviceReport = {
       ...original,
-      vendor: Vendor.VendorYubico,
-      metadata: {
+      identity: {
+        vendor: Vendor.VendorYubico,
         model: "YubiKey 5C NFC",
         serial: "12345678",
         firmware: "5.7.1",
+      },
+      identityResolution: {
+        state: IdentityResolutionState.IdentityResolved,
+        provider: Vendor.VendorYubico,
       },
     };
     let finishSelection!: (value: { selection: ActiveSelection }) => void;
@@ -215,13 +224,13 @@ describe("discovery controller", () => {
 
     const opening = handleDiscoveryChanged(event({ devices: [original] }));
     await vi.waitFor(() => {
-      expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-1" });
+      expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
     });
 
     await handleDiscoveryChanged(event(
       { devices: [enriched] },
       null,
-      DiscoveryTrigger.DiscoveryTriggerEnriched,
+      InventoryTrigger.InventoryTriggerIdentity,
     ));
     finishSelection({ selection: snapshot(original) });
     await opening;
@@ -240,7 +249,7 @@ describe("discovery controller", () => {
     const inspection = { operationId: "inspect-1" } as InspectEnvelope;
     const { handleDiscoveryChanged } = await import("./discovery-controller.js");
     seedDevicesForTest([selected, unselected]);
-    seedSelectionForTest(selected.fingerprint, selected, {
+    seedSelectionForTest(selected.attachment.id, selected, {
       state: "ready",
       selectionId: "authenticator-token-1",
     });
@@ -271,7 +280,7 @@ describe("discovery controller", () => {
       state: "ready",
       selectionId: "authenticator-token-2",
     });
-    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-2" });
+    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-2" });
   });
 
   it("clears running and interaction state when the selected authenticator disappears", async () => {
@@ -337,7 +346,7 @@ describe("discovery controller", () => {
     seedSelected(token);
     seedOverviewEnvelopeForTest(inspection);
 
-    handleDiscoveryChanged(event({ devices: [token] }, null, "monitor"));
+    handleDiscoveryChanged(event({ devices: [token] }));
 
     expect(get(authenticatorStatus).selectionId).toBe("authenticator-token-1");
     expect(get(authenticatorInspection).data).toBe(inspection);
@@ -357,12 +366,4 @@ describe("discovery controller", () => {
     expect(get(statusBar).lastOutcome).toBeNull();
   });
 
-  it("starts monitoring through the service", async () => {
-    const { startDiscoveryMonitoring } = await import("./discovery-controller.js");
-    serviceMocks.StartDiscoveryMonitoring.mockResolvedValue(undefined);
-
-    await expect(startDiscoveryMonitoring()).resolves.toBeUndefined();
-
-    expect(serviceMocks.StartDiscoveryMonitoring).toHaveBeenCalledTimes(1);
-  });
 });

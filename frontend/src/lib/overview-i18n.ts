@@ -218,6 +218,7 @@ export function overviewGroupLabel(name: string) {
   const labels: Record<string, string> = {
     Identity: m.group_identity(),
     Interfaces: m.group_interfaces(),
+    Vendor: m.group_vendor_details(),
     Protocol: m.group_protocol(),
     Verification: m.group_verification(),
     Storage: m.group_storage(),

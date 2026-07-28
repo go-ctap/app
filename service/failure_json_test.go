@@ -9,7 +9,6 @@ import (
 	"github.com/go-ctap/kit/model/config"
 	"github.com/go-ctap/kit/model/failure"
 	"github.com/go-ctap/kit/model/operation"
-	"github.com/go-ctap/kit/model/report"
 )
 
 func TestGetAssertionFailureEnvelopeExactJSON(t *testing.T) {
@@ -48,7 +47,7 @@ func TestGetAssertionFailureEnvelopeExactJSON(t *testing.T) {
 func TestDirectServiceErrorIsTypedAndMachineReadable(t *testing.T) {
 	service := New()
 
-	_, err := service.SetSelection(context.Background(), SelectionRequest{Selector: "missing-device"})
+	_, err := service.SetSelection(context.Background(), SelectionRequest{AttachmentID: "missing-device"})
 	if err == nil {
 		t.Fatal("SetSelection error = nil, want failure")
 	}
@@ -58,8 +57,8 @@ func TestDirectServiceErrorIsTypedAndMachineReadable(t *testing.T) {
 		t.Fatalf("SetSelection error type = %T, want *failure.Error", err)
 	}
 
-	if !failure.IsCode(err, failure.CodeDeviceUnavailable) {
-		t.Fatalf("SetSelection error = %v, want %s", err, failure.CodeDeviceUnavailable)
+	if !failure.IsCode(err, failure.CodeDeviceNotFound) {
+		t.Fatalf("SetSelection error = %v, want %s", err, failure.CodeDeviceNotFound)
 	}
 }
 
@@ -78,7 +77,6 @@ func TestBioEnrollEnvelopeKeepsPartialResultWithFailure(t *testing.T) {
 	service := New()
 	service.selected = newSelection(
 		"selection-1",
-		report.DeviceReport{},
 		openedAuthenticator{lifecycle: runtime},
 	)
 

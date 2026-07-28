@@ -13,6 +13,7 @@ import type {
   LargeBlobMutationEnvelope,
   LargeBlobReadEnvelope,
 } from "../../bindings/telesma/service";
+import { testHIDDevice } from "../test/device.js";
 
 import { api } from "./api";
 import { failureForCode } from "./test-failure";
@@ -54,7 +55,7 @@ function listEnvelope(keyState = "available", blobPresent = false): LargeBlobLis
     selectionId: "authenticator-1",
     kind: OperationKind.ListLargeBlobs,
     result: {
-      device: { fingerprint: "token-1" },
+      device: testHIDDevice(),
       support: {
         largeBlobs: true,
         largeBlobKeyExtension: true,
@@ -91,7 +92,7 @@ function previewEnvelope(
     result: {
       preview: {
         operation,
-        device: { fingerprint: "token-1" },
+        device: testHIDDevice(),
         support: { largeBlobs: true, largeBlobKeyExtension: true },
         target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
         largeBlobKeyState: "available",
@@ -115,7 +116,7 @@ function resultEnvelope(kind: OperationKind, operation: MutationOperation): Larg
   envelope.operationId = `result-${kind}`;
   envelope.result!.result = {
     operation,
-    deviceFingerprint: "token-1",
+    attachmentId: "token-1",
     credentialIDHex: "cafe",
     rpID: "example.test",
     currentByteCount: 0,
@@ -135,7 +136,7 @@ function readEnvelope(mode: DecodeMode): LargeBlobReadEnvelope {
     selectionId: "authenticator-1",
     kind: OperationKind.ReadLargeBlob,
     result: {
-      device: { fingerprint: "token-1" },
+      device: testHIDDevice(),
       support: { largeBlobs: true, largeBlobKeyExtension: true },
       target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
       largeBlobKeyState: "available",
@@ -454,7 +455,7 @@ describe("large blob controller", () => {
       kind: OperationKind.ReadLargeBlob,
       result: {
         report: {
-          device: { fingerprint: "token-1" },
+          device: testHIDDevice(),
           support: { largeBlobs: true, largeBlobKeyExtension: true },
           target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
           largeBlobKeyState: "missing",

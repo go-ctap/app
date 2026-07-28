@@ -14,7 +14,7 @@ import {
   MutationOperation,
   MutationPreview,
 } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
-import { Vendor, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { IdentityResolutionState, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import {
   InteractionAnswer,
   LargeBlobMutationEnvelope,
@@ -87,18 +87,16 @@ vi.mock("../../bindings/telesma/ctapservice/service", () => serviceMocks);
 
 function device(id: string): DeviceReport {
   return {
-    fingerprint: id,
-    ordinalAlias: id,
-    transport: Mode.ModeHID,
-    path: id,
-    vendorId: 1,
-    productId: 2,
-    vendor: Vendor.VendorUnknown,
-    product: id,
+    attachment: {
+      id,
+      transport: Mode.ModeHID,
+      usb: { product: id, vendorId: 1, productId: 2 },
+    },
+    identityResolution: { state: IdentityResolutionState.IdentityUnavailable },
   };
 }
 
-function snapshot(item: DeviceReport, selectionId = `authenticator-${item.fingerprint}`): ActiveSelection {
+function snapshot(item: DeviceReport, selectionId = `authenticator-${item.attachment.id}`): ActiveSelection {
   return {
     id: selectionId,
   } as ActiveSelection;
@@ -106,8 +104,8 @@ function snapshot(item: DeviceReport, selectionId = `authenticator-${item.finger
 
 function inspectEnvelope(item: DeviceReport) {
   return {
-    operationId: `inspect-${item.fingerprint}`,
-    selectionId: `authenticator-${item.fingerprint}`,
+    operationId: `inspect-${item.attachment.id}`,
+    selectionId: `authenticator-${item.attachment.id}`,
     kind: OperationKind.Inspect,
     authenticatorClosed: false,
     result: {
@@ -125,8 +123,8 @@ function inspectEnvelope(item: DeviceReport) {
 
 function bioSensorEnvelope(item: DeviceReport): BioSensorEnvelope {
   return {
-    operationId: `bio-${item.fingerprint}`,
-    selectionId: `authenticator-${item.fingerprint}`,
+    operationId: `bio-${item.attachment.id}`,
+    selectionId: `authenticator-${item.attachment.id}`,
     kind: OperationKind.BioSensorInfo,
     result: {
       device: item,
@@ -136,9 +134,9 @@ function bioSensorEnvelope(item: DeviceReport): BioSensorEnvelope {
   } as BioSensorEnvelope;
 }
 
-function credentialsEnvelope(item: DeviceReport, selectionId = `authenticator-${item.fingerprint}`, credentialIDHex = "cafe"): CredentialsEnvelope {
+function credentialsEnvelope(item: DeviceReport, selectionId = `authenticator-${item.attachment.id}`, credentialIDHex = "cafe"): CredentialsEnvelope {
   return {
-    operationId: `credentials-${item.fingerprint}`,
+    operationId: `credentials-${item.attachment.id}`,
     selectionId,
     kind: OperationKind.ListCredentials,
     result: {
@@ -184,9 +182,9 @@ function credentialUpdateTarget(credentialIDHex = "cafe") {
   };
 }
 
-function largeBlobListEnvelope(item: DeviceReport, selectionId = `authenticator-${item.fingerprint}`): LargeBlobListEnvelope {
+function largeBlobListEnvelope(item: DeviceReport, selectionId = `authenticator-${item.attachment.id}`): LargeBlobListEnvelope {
   return {
-    operationId: `large-blobs-${item.fingerprint}`,
+    operationId: `large-blobs-${item.attachment.id}`,
     selectionId,
     kind: OperationKind.ListLargeBlobs,
     result: {
@@ -237,7 +235,7 @@ describe("controller lifecycle", () => {
     await bootstrap();
 
     expect(get(selectedSelector)).toBe("token-1");
-    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-1" });
+    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
     expect(serviceMocks.Inspect).toHaveBeenCalledTimes(1);
     expect(serviceMocks.Inspect).toHaveBeenCalledWith({ selectionId: "authenticator-token-1" });
   });
@@ -252,7 +250,7 @@ describe("controller lifecycle", () => {
     await bootstrap();
 
     expect(get(selectedSelector)).toBe("token-1");
-    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-1" });
+    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
     expect(serviceMocks.Inspect).toHaveBeenCalledWith({ selectionId: "authenticator-token-1" });
   });
 
@@ -385,7 +383,7 @@ describe("controller lifecycle", () => {
     const recovery = reloadPasskeys();
     await vi.waitFor(() => expect(serviceMocks.ListCredentials).toHaveBeenCalledTimes(1));
 
-    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-1" });
+    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
     expect(serviceMocks.ListCredentials).toHaveBeenCalledWith({
       selectionId: "authenticator-reopened",
       verificationFlow: "",
@@ -434,7 +432,7 @@ describe("controller lifecycle", () => {
       responseEnvelope: null,
     });
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(previous);
-    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-1" });
+    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
     expect(serviceMocks.ListCredentials).not.toHaveBeenCalled();
   });
 
@@ -534,7 +532,7 @@ describe("controller lifecycle", () => {
     });
 
     expect(await beginCredentialDelete("cafe")).toBe(true);
-    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-1" });
+    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
     expect(serviceMocks.DeleteCredential).toHaveBeenCalledWith({
       selectionId: "authenticator-reopened",
       verificationFlow: "",
@@ -566,7 +564,7 @@ describe("controller lifecycle", () => {
     }));
 
     expect(await beginLargeBlobDelete("cafe")).toBe(true);
-    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-1" });
+    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
     expect(serviceMocks.DeleteLargeBlob).toHaveBeenCalledWith({
       selectionId: "authenticator-reopened",
       verificationFlow: "",
@@ -606,7 +604,7 @@ describe("controller lifecycle", () => {
         result: {
           preview,
           result: {
-            deviceFingerprint: "token-1",
+            attachmentId: "token-1",
             credentialIDHex: "cafe",
             rpID: "example.com",
             previous: preview.current,
@@ -673,7 +671,7 @@ describe("controller lifecycle", () => {
         result: {
           preview,
           result: {
-            deviceFingerprint: "token-1",
+            attachmentId: "token-1",
             credentialIDHex: "cafe",
             rpID: "example.com",
             previous: preview.current,
@@ -737,7 +735,7 @@ describe("controller lifecycle", () => {
         result: {
           preview,
           result: {
-            deviceFingerprint: "token-1",
+            attachmentId: "token-1",
             credentialIDHex: "cafe",
             rpID: "example.com",
             rpName: "Example",
@@ -1149,7 +1147,7 @@ describe("controller lifecycle", () => {
     expect(get(passkeysSelectedCredentialID)).toBe("");
     expect(get(passkeysMutation)).toEqual({ kind: "idle", phase: "idle" });
     expect(get(passkeysVerificationFlow)).toBe(VerificationFlow.VerificationFlowPIN);
-    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-2" });
+    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-2" });
   });
 
   it("switches authenticators with one atomic selection call", async () => {
@@ -1170,7 +1168,7 @@ describe("controller lifecycle", () => {
       state: "ready",
       selectionId: "authenticator-token-2",
     });
-    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-2" });
+    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-2" });
   });
 
   it("reports an atomic selection failure", async () => {
@@ -1186,7 +1184,7 @@ describe("controller lifecycle", () => {
 
     await selectToken("token-2");
 
-    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-2" });
+    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-2" });
     expect(get(authenticatorStatus)).toMatchObject({
       state: "error",
       error: expect.objectContaining({ code: Code.CodeInternalError }),
@@ -1211,7 +1209,7 @@ describe("controller lifecycle", () => {
       selectionId: "authenticator-token-1",
     });
     expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBeNull();
-    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-1" });
+    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
   });
 
   it("reports the concrete authenticator-open failure when device selection cannot open", async () => {
@@ -1266,6 +1264,7 @@ describe("controller lifecycle", () => {
   it("reuses Lab inspection when Overview only needs biometric and MDS details", async () => {
     const token = device("token-1");
     const envelope = inspectEnvelope(token);
+    envelope.result.info.aaguid = "00112233-4455-6677-8899-aabbccddeeff";
     envelope.result.info.options = { bioEnroll: true };
     const { maybeLoadOverview } = await import("./overview-controller");
     seedDevicesForTest([token]);
@@ -1278,6 +1277,10 @@ describe("controller lifecycle", () => {
 
     expect(serviceMocks.Inspect).not.toHaveBeenCalled();
     expect(serviceMocks.BioSensorInfo).toHaveBeenCalledWith({ selectionId: "authenticator-token-1" });
+    expect(serviceMocks.LookupMDS).toHaveBeenCalledWith({
+      aaguid: "00112233-4455-6677-8899-aabbccddeeff",
+      refresh: false,
+    });
     expect(get(authenticatorInspection).data).toBe(envelope);
   });
 
@@ -1295,7 +1298,7 @@ describe("controller lifecycle", () => {
 
     await reloadOverview();
 
-    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ selector: "token-1" });
+    expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
     expect(serviceMocks.Inspect).toHaveBeenCalledWith({ selectionId: "authenticator-reopened" });
     expect(get(authenticatorStatus)).toMatchObject({ state: "ready", selectionId: "authenticator-reopened" });
   });

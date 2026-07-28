@@ -11,6 +11,7 @@ import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/
 import { ExtensionIdentifier } from "../../bindings/github.com/go-ctap/ctap/extension";
 import { Option } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import { MakeCredentialInput, MakeCredentialPreview } from "../../bindings/github.com/go-ctap/kit/model/webauthn";
 import {
   MakeCredentialEnvelope,
@@ -41,13 +42,15 @@ vi.mock("$lib/features/lab", async (importOriginal) => ({
 }));
 
 const token = new DeviceReport({
-  fingerprint: "token-1",
-  ordinalAlias: "1",
-  product: "Test authenticator",
+  attachment: {
+    id: "token-1",
+    transport: Mode.ModeHID,
+    usb: { product: "Test authenticator", vendorId: 1, productId: 2 },
+  },
 });
 
 function selectToken() {
-  seedSelectionForTest(token.fingerprint, token, { state: "ready", selectionId: "authenticator-1" });
+  seedSelectionForTest(token.attachment.id, token, { state: "ready", selectionId: "authenticator-1" });
 }
 
 function stepCard(name: string) {
@@ -437,7 +440,7 @@ describe("WebAuthn Lab screen", () => {
 
   it("locks action controls in both operation tabs while the authenticator is running", async () => {
     const user = userEvent.setup();
-    seedSelectionForTest(token.fingerprint, token, { state: "running", selectionId: "authenticator-1" });
+    seedSelectionForTest(token.attachment.id, token, { state: "running", selectionId: "authenticator-1" });
     render(Lab);
 
     const make = stepCard("MakeCredential");

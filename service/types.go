@@ -3,6 +3,7 @@
 package service
 
 import (
+	ctapkit "github.com/go-ctap/kit"
 	"github.com/go-ctap/kit/model"
 	"github.com/go-ctap/kit/model/config"
 	"github.com/go-ctap/kit/model/credentials"
@@ -37,31 +38,26 @@ type LogCursor struct {
 	Sequence uint64 `json:"sequence"`
 }
 
-type DiscoveryTrigger string
-
 const (
-	DiscoveryTriggerMonitor  DiscoveryTrigger = "monitor"
-	DiscoveryTriggerHotplug  DiscoveryTrigger = "hotplug"
-	DiscoveryTriggerManual   DiscoveryTrigger = "manual"
-	DiscoveryTriggerEnriched DiscoveryTrigger = "enriched"
+	DiscoveryTriggerTopology = ctapkit.InventoryTriggerTopology
+	DiscoveryTriggerManual   = ctapkit.InventoryTriggerManual
+	DiscoveryTriggerIdentity = ctapkit.InventoryTriggerIdentity
 )
 
 type DiscoverRequest struct {
 	Mode transport.Mode `json:"mode,omitempty"`
 }
 
-type DiscoverySnapshot struct {
-	Devices []report.DeviceReport `json:"devices"`
-}
+type DiscoverySnapshot = ctapkit.InventorySnapshot
 
 type DiscoveryChangedEnvelope struct {
-	Trigger  DiscoveryTrigger   `json:"trigger"`
-	Snapshot *DiscoverySnapshot `json:"snapshot,omitempty"`
-	Error    *failure.Failure   `json:"error,omitempty"`
+	Trigger  ctapkit.InventoryTrigger `json:"trigger"`
+	Snapshot *DiscoverySnapshot       `json:"snapshot,omitempty"`
+	Error    *failure.Failure         `json:"error,omitempty"`
 }
 
 type SelectionRequest struct {
-	Selector string `json:"selector,omitempty"`
+	AttachmentID report.AttachmentID `json:"attachmentId,omitempty"`
 }
 
 type SelectionSnapshot struct {

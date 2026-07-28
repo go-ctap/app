@@ -7,7 +7,6 @@ import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { DecodeMode } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
-import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import {
   CredentialVerificationMaterial,
   GetAssertionVerification,
@@ -27,6 +26,7 @@ import type {
   MakeCredentialRequest,
   ActiveSelection,
 } from "../../bindings/telesma/service";
+import { testHIDDevice } from "../test/device.js";
 
 import { api } from "./api";
 import { failureForCode } from "./test-failure";
@@ -91,7 +91,7 @@ function makePreviewEnvelope(): MakeCredentialEnvelope {
     kind: OperationKind.MakeCredential,
     result: {
       preview: {
-        device: new DeviceReport({ fingerprint: "token-1" }),
+        device: testHIDDevice(),
         rp: { id: "lab.example", name: "Lab" },
         user: { id: "AAECAw==", name: "alice", displayName: "Alice" },
         pubKeyCredParams: [{
@@ -112,7 +112,7 @@ function makeResultEnvelope(
   const envelope = makePreviewEnvelope();
   envelope.operationId = "make-result-1";
   envelope.result!.result = {
-    deviceFingerprint: "token-1",
+    attachmentId: "token-1",
     rpID,
     fmt: AttestationStatementFormatIdentifier.AttestationStatementFormatIdentifierPacked,
     credentialIDHex,
@@ -136,7 +136,7 @@ function getResultEnvelope(rpID = "example.com"): GetAssertionEnvelope {
     authenticatorClosed: false,
     result: {
       preview: {
-        device: new DeviceReport({ fingerprint: "token-1" }),
+        device: testHIDDevice(),
         input: {
           rpID,
           clientDataJSON: "e30=",
@@ -146,7 +146,7 @@ function getResultEnvelope(rpID = "example.com"): GetAssertionEnvelope {
         warnings: [],
       },
       result: {
-        deviceFingerprint: "token-1",
+        attachmentId: "token-1",
         rpID,
         assertions: [],
       },
@@ -535,7 +535,7 @@ describe("WebAuthn Lab request lifecycle", () => {
   });
 
   it("reopens an invalid authenticator before starting a fresh MakeCredential preview", async () => {
-    const token = new DeviceReport({ fingerprint: "token-1", product: "Test authenticator" });
+    const token = testHIDDevice("token-1", "Test authenticator");
     devices.set([token]);
     selectedSelector.set("token-1");
     selectedDevice.set(token);
@@ -569,7 +569,7 @@ describe("WebAuthn Lab request lifecycle", () => {
         rawJSON: "{not-json\n",
       },
     })).toBe(true);
-    const token = new DeviceReport({ fingerprint: "token-1", product: "Test authenticator" });
+    const token = testHIDDevice("token-1", "Test authenticator");
     devices.set([token]);
     selectedSelector.set("token-1");
     selectedDevice.set(token);

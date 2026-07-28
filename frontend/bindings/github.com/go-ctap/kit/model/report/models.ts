@@ -7,7 +7,55 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as failure$0 from "../failure/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as transport$0 from "../../transport/models.js";
+
+/**
+ * AttachmentID identifies one currently reachable transport endpoint. It is
+ * not a physical-device identity and is never derived from hardware identity.
+ */
+export type AttachmentID = string;
+
+/**
+ * AttachmentReport is the transport-layer view of one reachable CTAP
+ * authenticator.
+ */
+export class AttachmentReport {
+    "id": AttachmentID;
+    "transport": transport$0.Mode;
+    "usb"?: USBReport | null;
+    "smartCard"?: SmartCardReport | null;
+
+    /** Creates a new AttachmentReport instance. */
+    constructor($$source: Partial<AttachmentReport> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("transport" in $$source)) {
+            this["transport"] = transport$0.Mode.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AttachmentReport instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AttachmentReport {
+        const $$createField2_0 = $$createType1;
+        const $$createField3_0 = $$createType3;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("usb" in $$parsedSource) {
+            $$parsedSource["usb"] = $$createField2_0($$parsedSource["usb"]);
+        }
+        if ("smartCard" in $$parsedSource) {
+            $$parsedSource["smartCard"] = $$createField3_0($$parsedSource["smartCard"]);
+        }
+        return new AttachmentReport($$parsedSource as Partial<AttachmentReport>);
+    }
+}
 
 /**
  * Capability identifies a normalized application exposed by an authenticator.
@@ -24,74 +72,64 @@ export enum Capability {
     CapabilityOpenPGP = "openpgp",
     CapabilityPIV = "piv",
     CapabilityOATH = "oath",
+    CapabilityHSMAuth = "hsmauth",
     CapabilityCTAP2 = "ctap2",
 };
 
 /**
- * DeviceMetadata contains normalized details obtained from vendor protocols.
+ * DeviceIdentity is an atomic hardware identity returned by one vendor
+ * provider.
  */
-export class DeviceMetadata {
+export class DeviceIdentity {
+    "vendor": Vendor;
     "model"?: string;
     "serial"?: string;
     "firmware"?: string;
     "interfaces"?: InterfaceReport[];
+    "details"?: VendorDetails | null;
 
-    /** Creates a new DeviceMetadata instance. */
-    constructor($$source: Partial<DeviceMetadata> = {}) {
+    /** Creates a new DeviceIdentity instance. */
+    constructor($$source: Partial<DeviceIdentity> = {}) {
+        if (!("vendor" in $$source)) {
+            this["vendor"] = Vendor.$zero;
+        }
 
         Object.assign(this, $$source);
     }
 
     /**
-     * Creates a new DeviceMetadata instance from a string or object.
+     * Creates a new DeviceIdentity instance from a string or object.
      */
-    static createFrom($$source: any = {}): DeviceMetadata {
-        const $$createField3_0 = $$createType1;
+    static createFrom($$source: any = {}): DeviceIdentity {
+        const $$createField4_0 = $$createType5;
+        const $$createField5_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("interfaces" in $$parsedSource) {
-            $$parsedSource["interfaces"] = $$createField3_0($$parsedSource["interfaces"]);
+            $$parsedSource["interfaces"] = $$createField4_0($$parsedSource["interfaces"]);
         }
-        return new DeviceMetadata($$parsedSource as Partial<DeviceMetadata>);
+        if ("details" in $$parsedSource) {
+            $$parsedSource["details"] = $$createField5_0($$parsedSource["details"]);
+        }
+        return new DeviceIdentity($$parsedSource as Partial<DeviceIdentity>);
     }
 }
 
 /**
- * DeviceReport describes a discovered authenticator. Fingerprint follows a
- * serial-backed device across attachments and otherwise identifies the current
- * transport attachment.
+ * DeviceReport joins one selectable attachment with optional hardware
+ * identity.
  */
 export class DeviceReport {
-    "fingerprint": string;
-    "ordinalAlias"?: string;
-    "transport": transport$0.Mode;
-    "path": string;
-    "manufacturer"?: string;
-    "product"?: string;
-    "serial"?: string;
-    "vendorId": number;
-    "productId": number;
-    "vendor": Vendor;
-    "metadata"?: DeviceMetadata | null;
+    "attachment": AttachmentReport;
+    "identity"?: DeviceIdentity | null;
+    "identityResolution": IdentityResolution;
 
     /** Creates a new DeviceReport instance. */
     constructor($$source: Partial<DeviceReport> = {}) {
-        if (!("fingerprint" in $$source)) {
-            this["fingerprint"] = "";
+        if (!("attachment" in $$source)) {
+            this["attachment"] = (new AttachmentReport());
         }
-        if (!("transport" in $$source)) {
-            this["transport"] = transport$0.Mode.$zero;
-        }
-        if (!("path" in $$source)) {
-            this["path"] = "";
-        }
-        if (!("vendorId" in $$source)) {
-            this["vendorId"] = 0;
-        }
-        if (!("productId" in $$source)) {
-            this["productId"] = 0;
-        }
-        if (!("vendor" in $$source)) {
-            this["vendor"] = Vendor.$zero;
+        if (!("identityResolution" in $$source)) {
+            this["identityResolution"] = (new IdentityResolution());
         }
 
         Object.assign(this, $$source);
@@ -101,17 +139,71 @@ export class DeviceReport {
      * Creates a new DeviceReport instance from a string or object.
      */
     static createFrom($$source: any = {}): DeviceReport {
-        const $$createField10_0 = $$createType3;
+        const $$createField0_0 = $$createType8;
+        const $$createField1_0 = $$createType10;
+        const $$createField2_0 = $$createType11;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("metadata" in $$parsedSource) {
-            $$parsedSource["metadata"] = $$createField10_0($$parsedSource["metadata"]);
+        if ("attachment" in $$parsedSource) {
+            $$parsedSource["attachment"] = $$createField0_0($$parsedSource["attachment"]);
+        }
+        if ("identity" in $$parsedSource) {
+            $$parsedSource["identity"] = $$createField1_0($$parsedSource["identity"]);
+        }
+        if ("identityResolution" in $$parsedSource) {
+            $$parsedSource["identityResolution"] = $$createField2_0($$parsedSource["identityResolution"]);
         }
         return new DeviceReport($$parsedSource as Partial<DeviceReport>);
     }
 }
 
 /**
- * Interface identifies a physical interface reported by vendor metadata.
+ * IdentityResolution exposes identity progress without turning it into a
+ * discovery or authenticator failure.
+ */
+export class IdentityResolution {
+    "state": IdentityResolutionState;
+    "provider"?: Vendor;
+    "error"?: failure$0.Failure | null;
+
+    /** Creates a new IdentityResolution instance. */
+    constructor($$source: Partial<IdentityResolution> = {}) {
+        if (!("state" in $$source)) {
+            this["state"] = IdentityResolutionState.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new IdentityResolution instance from a string or object.
+     */
+    static createFrom($$source: any = {}): IdentityResolution {
+        const $$createField2_0 = $$createType13;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("error" in $$parsedSource) {
+            $$parsedSource["error"] = $$createField2_0($$parsedSource["error"]);
+        }
+        return new IdentityResolution($$parsedSource as Partial<IdentityResolution>);
+    }
+}
+
+/**
+ * IdentityResolutionState describes optional identity progress.
+ */
+export enum IdentityResolutionState {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    IdentityResolving = "resolving",
+    IdentityResolved = "resolved",
+    IdentityUnavailable = "unavailable",
+    IdentityFailed = "failed",
+};
+
+/**
+ * Interface identifies a physical interface reported by a vendor.
  */
 export enum Interface {
     /**
@@ -124,23 +216,18 @@ export enum Interface {
 };
 
 /**
- * InterfaceReport describes supported and enabled applications on one interface.
+ * InterfaceReport describes supported and enabled applications on one
+ * physical interface.
  */
 export class InterfaceReport {
     "interface": Interface;
-    "supported": Capability[];
-    "enabled": Capability[];
+    "supported"?: Capability[];
+    "enabled"?: Capability[];
 
     /** Creates a new InterfaceReport instance. */
     constructor($$source: Partial<InterfaceReport> = {}) {
         if (!("interface" in $$source)) {
             this["interface"] = Interface.$zero;
-        }
-        if (!("supported" in $$source)) {
-            this["supported"] = [];
-        }
-        if (!("enabled" in $$source)) {
-            this["enabled"] = [];
         }
 
         Object.assign(this, $$source);
@@ -150,8 +237,8 @@ export class InterfaceReport {
      * Creates a new InterfaceReport instance from a string or object.
      */
     static createFrom($$source: any = {}): InterfaceReport {
-        const $$createField1_0 = $$createType4;
-        const $$createField2_0 = $$createType4;
+        const $$createField1_0 = $$createType14;
+        const $$createField2_0 = $$createType14;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("supported" in $$parsedSource) {
             $$parsedSource["supported"] = $$createField1_0($$parsedSource["supported"]);
@@ -164,8 +251,64 @@ export class InterfaceReport {
 }
 
 /**
- * Vendor identifies the authenticator manufacturer selected for optional
- * vendor-specific runtime behavior.
+ * SmartCardReport describes a PC/SC attachment separately from card identity.
+ */
+export class SmartCardReport {
+    "reader": string;
+    "atr"?: string;
+
+    /** Creates a new SmartCardReport instance. */
+    constructor($$source: Partial<SmartCardReport> = {}) {
+        if (!("reader" in $$source)) {
+            this["reader"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SmartCardReport instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SmartCardReport {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new SmartCardReport($$parsedSource as Partial<SmartCardReport>);
+    }
+}
+
+/**
+ * USBReport contains observations reported by USB/HID topology. ReportedSerial
+ * is not the canonical hardware serial returned by a vendor provider.
+ */
+export class USBReport {
+    "manufacturer"?: string;
+    "product"?: string;
+    "reportedSerial"?: string;
+    "vendorId": number;
+    "productId": number;
+
+    /** Creates a new USBReport instance. */
+    constructor($$source: Partial<USBReport> = {}) {
+        if (!("vendorId" in $$source)) {
+            this["vendorId"] = 0;
+        }
+        if (!("productId" in $$source)) {
+            this["productId"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new USBReport instance from a string or object.
+     */
+    static createFrom($$source: any = {}): USBReport {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new USBReport($$parsedSource as Partial<USBReport>);
+    }
+}
+
+/**
+ * Vendor identifies the provider of an optional hardware identity.
  */
 export enum Vendor {
     /**
@@ -178,9 +321,193 @@ export enum Vendor {
     VendorToken2 = "token2",
 };
 
+/**
+ * VendorDetails is an extensible tagged union of provider-specific details.
+ * A provider sets only its own field.
+ */
+export class VendorDetails {
+    "yubico"?: YubicoDetails | null;
+
+    /** Creates a new VendorDetails instance. */
+    constructor($$source: Partial<VendorDetails> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new VendorDetails instance from a string or object.
+     */
+    static createFrom($$source: any = {}): VendorDetails {
+        const $$createField0_0 = $$createType16;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("yubico" in $$parsedSource) {
+            $$parsedSource["yubico"] = $$createField0_0($$parsedSource["yubico"]);
+        }
+        return new VendorDetails($$parsedSource as Partial<VendorDetails>);
+    }
+}
+
+/**
+ * YubicoDetails contains Yubico-specific identity and device state obtained
+ * from GET DEVICE INFORMATION. Raw unknown fields and undecoded flags remain
+ * private to the provider.
+ */
+export class YubicoDetails {
+    "partNumber"?: string;
+    "formFactor": YubicoFormFactor;
+    "isFIPS": boolean;
+    "isSecurityKey": boolean;
+    "effectiveFirmware"?: string;
+    "versionQualifier"?: YubicoVersionQualifier | null;
+    "autoEjectTimeout": number;
+    "challengeResponseTimeout": number;
+    "locked": boolean;
+    "fipsCapable"?: Capability[];
+    "fipsApproved"?: Capability[];
+    "pinComplexity": boolean;
+    "nfcRestricted": boolean;
+    "resetBlocked"?: Capability[];
+    "fpsVersion"?: string;
+    "stmVersion"?: string;
+
+    /** Creates a new YubicoDetails instance. */
+    constructor($$source: Partial<YubicoDetails> = {}) {
+        if (!("formFactor" in $$source)) {
+            this["formFactor"] = YubicoFormFactor.$zero;
+        }
+        if (!("isFIPS" in $$source)) {
+            this["isFIPS"] = false;
+        }
+        if (!("isSecurityKey" in $$source)) {
+            this["isSecurityKey"] = false;
+        }
+        if (!("autoEjectTimeout" in $$source)) {
+            this["autoEjectTimeout"] = 0;
+        }
+        if (!("challengeResponseTimeout" in $$source)) {
+            this["challengeResponseTimeout"] = 0;
+        }
+        if (!("locked" in $$source)) {
+            this["locked"] = false;
+        }
+        if (!("pinComplexity" in $$source)) {
+            this["pinComplexity"] = false;
+        }
+        if (!("nfcRestricted" in $$source)) {
+            this["nfcRestricted"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new YubicoDetails instance from a string or object.
+     */
+    static createFrom($$source: any = {}): YubicoDetails {
+        const $$createField5_0 = $$createType18;
+        const $$createField9_0 = $$createType14;
+        const $$createField10_0 = $$createType14;
+        const $$createField13_0 = $$createType14;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("versionQualifier" in $$parsedSource) {
+            $$parsedSource["versionQualifier"] = $$createField5_0($$parsedSource["versionQualifier"]);
+        }
+        if ("fipsCapable" in $$parsedSource) {
+            $$parsedSource["fipsCapable"] = $$createField9_0($$parsedSource["fipsCapable"]);
+        }
+        if ("fipsApproved" in $$parsedSource) {
+            $$parsedSource["fipsApproved"] = $$createField10_0($$parsedSource["fipsApproved"]);
+        }
+        if ("resetBlocked" in $$parsedSource) {
+            $$parsedSource["resetBlocked"] = $$createField13_0($$parsedSource["resetBlocked"]);
+        }
+        return new YubicoDetails($$parsedSource as Partial<YubicoDetails>);
+    }
+}
+
+/**
+ * YubicoFormFactor identifies the physical YubiKey shape and connector.
+ */
+export enum YubicoFormFactor {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    YubicoFormFactorUnknown = "unknown",
+    YubicoFormFactorUSBAKeychain = "usbAKeychain",
+    YubicoFormFactorUSBANano = "usbANano",
+    YubicoFormFactorUSBCKeychain = "usbCKeychain",
+    YubicoFormFactorUSBCNano = "usbCNano",
+    YubicoFormFactorUSBCLightning = "usbCLightning",
+    YubicoFormFactorUSBABiometricKeychain = "usbABiometricKeychain",
+    YubicoFormFactorUSBCBiometricKeychain = "usbCBiometricKeychain",
+};
+
+/**
+ * YubicoReleaseType identifies the release stage of qualified firmware.
+ */
+export enum YubicoReleaseType {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    YubicoReleaseTypeAlpha = "alpha",
+    YubicoReleaseTypeBeta = "beta",
+    YubicoReleaseTypeFinal = "final",
+};
+
+/**
+ * YubicoVersionQualifier describes the behavioral firmware version reported
+ * by development firmware.
+ */
+export class YubicoVersionQualifier {
+    "version": string;
+    "releaseType": YubicoReleaseType;
+    "iteration": number;
+
+    /** Creates a new YubicoVersionQualifier instance. */
+    constructor($$source: Partial<YubicoVersionQualifier> = {}) {
+        if (!("version" in $$source)) {
+            this["version"] = "";
+        }
+        if (!("releaseType" in $$source)) {
+            this["releaseType"] = YubicoReleaseType.$zero;
+        }
+        if (!("iteration" in $$source)) {
+            this["iteration"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new YubicoVersionQualifier instance from a string or object.
+     */
+    static createFrom($$source: any = {}): YubicoVersionQualifier {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new YubicoVersionQualifier($$parsedSource as Partial<YubicoVersionQualifier>);
+    }
+}
+
 // Private type creation functions
-const $$createType0 = InterfaceReport.createFrom;
-const $$createType1 = $Create.Array($$createType0);
-const $$createType2 = DeviceMetadata.createFrom;
+const $$createType0 = USBReport.createFrom;
+const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = SmartCardReport.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = $Create.Array($Create.Any);
+const $$createType4 = InterfaceReport.createFrom;
+const $$createType5 = $Create.Array($$createType4);
+const $$createType6 = VendorDetails.createFrom;
+const $$createType7 = $Create.Nullable($$createType6);
+const $$createType8 = AttachmentReport.createFrom;
+const $$createType9 = DeviceIdentity.createFrom;
+const $$createType10 = $Create.Nullable($$createType9);
+const $$createType11 = IdentityResolution.createFrom;
+const $$createType12 = failure$0.Failure.createFrom;
+const $$createType13 = $Create.Nullable($$createType12);
+const $$createType14 = $Create.Array($Create.Any);
+const $$createType15 = YubicoDetails.createFrom;
+const $$createType16 = $Create.Nullable($$createType15);
+const $$createType17 = YubicoVersionQualifier.createFrom;
+const $$createType18 = $Create.Nullable($$createType17);

@@ -1,4 +1,5 @@
 import {
+  CreditCard,
   FingerprintPattern,
   Grid3X3,
   Hand,
@@ -9,11 +10,13 @@ import {
   ScanFace,
   ShieldCheck,
   TriangleAlert,
+  Usb,
 } from "@lucide/svelte";
 import type { Component } from "svelte";
 
 import { InteractionKind, type PINInteractionState } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import { UserVerify } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import type { InteractionPrompt } from "../../bindings/telesma/service";
 
@@ -31,6 +34,7 @@ export type SidebarTokenItem = {
   label: string;
   name: string;
   detail: string;
+  icon: Component;
 };
 
 export type SidebarPresentation = {
@@ -78,31 +82,6 @@ export type InteractionModalPresentation = {
   icon: Component;
 };
 
-const deviceIdentityCollator = new Intl.Collator("en", {
-  numeric: true,
-  sensitivity: "base",
-});
-
-function compareDeviceIdentity(left: DeviceReport, right: DeviceReport) {
-  // Prefer descriptor identity; enrichment and ordinal aliases can change between events.
-  const orderFields: Array<[string | number, string | number]> = [
-    [left.manufacturer ?? "", right.manufacturer ?? ""],
-    [left.product ?? "", right.product ?? ""],
-    [left.serial ?? "", right.serial ?? ""],
-    [left.vendorId, right.vendorId],
-    [left.productId, right.productId],
-    [left.transport, right.transport],
-    [left.fingerprint, right.fingerprint],
-    [left.path, right.path],
-  ];
-
-  for (const [leftValue, rightValue] of orderFields) {
-    const order = deviceIdentityCollator.compare(String(leftValue), String(rightValue));
-    if (order !== 0) return order;
-  }
-  return 0;
-}
-
 export function buildSidebarPresentation(input: {
   activeScreen: ActiveScreen;
   devices: DeviceReport[];
@@ -112,14 +91,19 @@ export function buildSidebarPresentation(input: {
   return {
     activeScreen: input.activeScreen,
     activeScreenLabel: screenLabel(input.activeScreen),
-    tokens: input.devices.toSorted(compareDeviceIdentity).map((device) => {
+    tokens: input.devices.map((device) => {
       const value = selectorFromDevice(device);
       const serial = deviceDetail(device);
+      const smartCard = device.attachment.transport === Mode.ModeSmartCard;
+      const reader = device.attachment.smartCard?.reader.trim() ?? "";
       return {
         value,
         label: labelDevice(device),
         name: deviceName(device),
-        detail: serial ? `S/N ${serial}` : "",
+        detail: serial ? `S/N ${serial}` : smartCard
+          ? [reader, "PC/SC"].filter(Boolean).join(" · ")
+          : "",
+        icon: smartCard ? CreditCard : Usb,
       };
     }),
     selectedValue: input.selectedSelector,

@@ -45,7 +45,7 @@ export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHe
   return {
     title: deviceName || mdsName || m.selected_authenticator(),
     subtitle: textValue(statement?.description, "") || m.current_authenticator_overview(),
-    versionBadge: vendorVersionBadge(device?.vendor, device?.metadata?.firmware),
+    versionBadge: vendorVersionBadge(device?.identity?.vendor, device?.identity?.firmware),
     aaguid,
     aaguidAvailable: hasAaguid(rawAaguid, aaguid),
     iconSrc: safeMDSImage(statement?.icon) || safeMDSImage(statement?.iconDark) || "",

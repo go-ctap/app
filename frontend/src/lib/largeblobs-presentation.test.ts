@@ -3,9 +3,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { BlobState, LargeBlobKeyState } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
-import { Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { LargeBlobListEnvelope } from "../../bindings/telesma/service";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import { testHIDDevice } from "../test/device.js";
 
 import { setAppLocale } from "./i18n";
 import { failureForCode } from "./test-failure";
@@ -25,15 +24,7 @@ function envelope(): LargeBlobListEnvelope {
     kind: OperationKind.ListLargeBlobs,
     authenticatorClosed: false,
     result: {
-      device: {
-          fingerprint: "token-1",
-          transport: Mode.ModeHID,
-          path: "token-1",
-          vendorId: 1,
-          productId: 2,
-          vendor: Vendor.VendorUnknown,
-          product: "Test key",
-      },
+      device: testHIDDevice(),
       support: {
           largeBlobs: true,
           largeBlobKeyExtension: true,
