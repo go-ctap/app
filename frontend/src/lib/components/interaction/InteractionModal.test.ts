@@ -98,6 +98,11 @@ describe("InteractionModal", () => {
     });
 
     const input = await screen.findByLabelText("PIN");
+    expect(screen.getByRole("button", { name: "Preview JSON" })).toHaveAttribute("aria-expanded", "false");
+    const preview = screen.getByRole("region", { name: "Preview JSON", hidden: true });
+    await waitFor(() => expect(preview).toHaveTextContent('"pinUvAuthToken": "[redacted]"'));
+    expect(preview).not.toBeVisible();
+
     await user.type(input, "123456{Enter}");
 
     expect(onAnswer).toHaveBeenCalledTimes(1);
@@ -107,8 +112,6 @@ describe("InteractionModal", () => {
       canceled: false,
     }));
     expect(screen.queryByText("secret-token")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Preview JSON" })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByText((_, element) => element?.tagName === "PRE" && element.textContent?.includes('"pinUvAuthToken": "[redacted]"'))).not.toBeVisible();
   });
 
   it("does not submit an empty PIN", async () => {

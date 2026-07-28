@@ -120,7 +120,7 @@ export async function ensureActiveSelectionReady(): Promise<boolean> {
   const devices = get(deviceStore);
   if (!reportForSelector(devices, selector)) {
     const error = new Failure({
-      code: Code.CodeDeviceUnavailable,
+      code: Code.CodeDeviceNotFound,
       category: Category.CategoryInvalidState,
     });
     applyDiscovery(discoverySnapshot(

@@ -74,7 +74,7 @@ describe("buildOverviewHero", () => {
 
     expect(buildOverviewHero({ device: yubico }).versionBadge).toBe("Firmware 5.7.1");
     expect(buildOverviewHero({ device: token2 }).title).toBe("Token2 Bio3 Dual A+C PIN+");
-    expect(buildOverviewHero({ device: token2 }).versionBadge).toBe("Revision R3.2");
+    expect(buildOverviewHero({ device: token2 }).versionBadge).toBe("Firmware R3.2");
     expect(buildOverviewHero({ device: other }).versionBadge).toBe("");
   });
 });

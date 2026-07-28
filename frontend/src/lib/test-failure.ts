@@ -11,7 +11,7 @@ const TEST_CATEGORY_BY_CODE: Partial<Record<Code, Category>> = {
   [Code.CodeBioInteractionTimeout]: Category.CategoryTimeout,
   [Code.CodeCredentialCreationDenied]: Category.CategoryInvalidState,
   [Code.CodeCredentialManagementUnsupported]: Category.CategoryUnsupported,
-  [Code.CodeDeviceUnavailable]: Category.CategoryInvalidState,
+  [Code.CodeDeviceNotFound]: Category.CategoryInvalidState,
   [Code.CodeInternalError]: Category.CategoryInternal,
   [Code.CodeLargeBlobArrayTooLarge]: Category.CategoryInvalidState,
   [Code.CodeLargeBlobMissing]: Category.CategoryInvalidState,

@@ -79,4 +79,14 @@ describe("runtimeFailureFrom", () => {
       category: Category.CategoryTransportFailure,
     }))).toBe("The authenticator returned data that violates the CTAP specification.");
   });
+
+  it("presents user-presence exhaustion as a terminal retry instruction", () => {
+    expect(failureMessage(new Failure({
+      code: Code.CodeUserPresenceRequired,
+      category: Category.CategoryInvalidState,
+    }))).toBe(
+      "Confirm presence on the authenticator, then retry the operation. "
+      + "For an NFC key, remove it and present it again before retrying.",
+    );
+  });
 });

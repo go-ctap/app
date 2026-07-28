@@ -1217,14 +1217,14 @@ describe("controller lifecycle", () => {
     const { selectToken } = await import("./test-support/controller");
     seedDevicesForTest([token]);
     serviceMocks.SetSelection.mockRejectedValue(new Error("authenticator open failed", {
-      cause: failureForCode(Code.CodeDeviceUnavailable),
+      cause: failureForCode(Code.CodeDeviceNotFound),
     }));
 
     await selectToken("token-1");
 
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "error",
-      message: "The authenticator is unavailable.",
+      message: "The authenticator was not found.",
     });
   });
 

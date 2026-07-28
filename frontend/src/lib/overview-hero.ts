@@ -60,8 +60,9 @@ export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHe
 function vendorVersionBadge(vendor: Vendor | undefined, firmware: string | undefined) {
   const version = textValue(firmware, "");
   if (!version) return "";
-  if (vendor === Vendor.VendorToken2) return m.token_revision_badge({ version });
-  if (vendor === Vendor.VendorYubico) return m.token_firmware_badge({ version });
+  if (vendor === Vendor.VendorToken2 || vendor === Vendor.VendorYubico) {
+    return m.token_firmware_badge({ version });
+  }
   return "";
 }
 
