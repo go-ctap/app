@@ -8,11 +8,19 @@
     TriangleAlert,
   } from "@lucide/svelte";
 
-  import type {
-    GetAssertionVerification,
-    MakeCredentialVerification,
+  import {
+    AttestationType,
+    SignCountStatus,
+    VerificationStatus,
+    type AssertionVerification,
+    type GetAssertionVerification,
+    type MakeCredentialVerification,
+    type VerificationStatus as VerificationStatusValue,
   } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
-  import type { AttestationTrustAssessment } from "../../../../bindings/github.com/go-ctap/mds/model";
+  import {
+    AttestationTrustStatus,
+    type AttestationTrustAssessment,
+  } from "../../../../bindings/github.com/go-ctap/mds/model";
 
   import * as Alert from "$lib/components/ui/alert/index.js";
   import { Badge, type BadgeVariant } from "$lib/components/ui/badge/index.js";
@@ -21,20 +29,36 @@
   import * as Tabs from "$lib/components/ui/tabs/index.js";
   import type { LabVerificationState } from "$lib/features/lab/state";
   import { failureMessage } from "$lib/failure";
-  import {
-    aggregateVerificationStatus,
-    buildAssertionVerificationStages,
-    buildAttestationTrustStage,
-    buildMakeCredentialVerificationStages,
-    buildMissingAssertionStages,
-    pendingStage,
-    type LabVerificationCheckTone,
-    type LabVerificationStage,
-    type LabVerificationStageStatus,
-    verificationStatusLabel,
-  } from "$lib/lab-verification-route";
 
   import { m } from "../../../paraglide/messages.js";
+
+  type StageStatus =
+    | "verified"
+    | "failed"
+    | "unavailable"
+    | "warning"
+    | "not-applicable"
+    | "neutral"
+    | "loading"
+    | "pending";
+  type CheckTone = "ok" | "bad" | "warning" | "neutral";
+  type Check = { label: string; value: string; tone: CheckTone };
+  type Detail = {
+    label: string;
+    values: string[];
+    presentation: "text" | "code" | "tags";
+  };
+  type Stage = {
+    id: string;
+    title: string;
+    description: string;
+    status: StageStatus;
+    statusLabel?: string;
+    checks: Check[];
+    details: Detail[];
+    issues: string[];
+    warnings: string[];
+  };
 
   type Props = {
     mode: "make" | "get";
@@ -80,75 +104,448 @@
     }
   });
 
-  function unavailableStage(
-    id: string,
-    title: string,
-    description: string,
-  ): LabVerificationStage {
+  function statusFromVerification(status: VerificationStatusValue): StageStatus {
+    if (status === VerificationStatus.VerificationStatusVerified) return "verified";
+    if (status === VerificationStatus.VerificationStatusFailed) return "failed";
+    return "unavailable";
+  }
+
+  function statusLabel(status: StageStatus) {
+    switch (status) {
+      case "verified":
+        return m.lab_verification_verified();
+      case "failed":
+        return m.lab_verification_failed();
+      case "unavailable":
+        return m.lab_verification_unavailable();
+      case "warning":
+        return m.lab_verification_warning();
+      case "not-applicable":
+        return m.lab_verification_not_applicable();
+      case "loading":
+        return m.lab_verification_in_progress();
+      case "pending":
+        return m.lab_verification_pending();
+      case "neutral":
+        return m.lab_verification_not_checked();
+    }
+  }
+
+  function statusVariant(status: StageStatus): BadgeVariant {
+    if (status === "failed") return "destructive";
+    if (status === "warning") return "warning";
+    if (status === "verified") return "secondary";
+    return "outline";
+  }
+
+  function stageSummary(status: StageStatus) {
+    switch (status) {
+      case "verified":
+        return m.lab_verification_stage_verified_summary();
+      case "failed":
+        return m.lab_verification_stage_failed_summary();
+      case "unavailable":
+        return m.lab_verification_stage_unavailable_summary();
+      case "warning":
+        return m.lab_verification_stage_warning_summary();
+      case "not-applicable":
+        return m.lab_verification_stage_not_applicable_summary();
+      case "loading":
+        return m.lab_verification_stage_loading_summary();
+      case "pending":
+        return m.lab_verification_stage_pending_summary();
+      case "neutral":
+        return m.lab_verification_stage_neutral_summary();
+    }
+  }
+
+  function check(
+    label: string,
+    value: boolean,
+    positive: string,
+    negative: string,
+  ): Check {
     return {
-      ...pendingStage(id, title, description),
-      status: "unavailable",
-      statusLabel: verificationStatusLabel("unavailable"),
+      label,
+      value: value ? positive : negative,
+      tone: value ? "ok" : "bad",
     };
   }
 
-  function pendingMakeStages(): LabVerificationStage[] {
-    const verificationLoading = verificationState.phase === "loading";
-    const verificationError = verificationState.phase === "error";
-    const localFirst = verificationError
-      ? unavailableStage(
-          "authenticator-data",
-          m.lab_verification_authenticator_data(),
-          m.lab_verification_authenticator_data_description(),
-        )
-      : pendingStage(
-          "authenticator-data",
-          m.lab_verification_authenticator_data(),
-          m.lab_verification_authenticator_data_description(),
-          verificationLoading,
-        );
-    const trustStage = attestationTrust.phase === "ready"
-      ? buildAttestationTrustStage(attestationTrust.verification)
-      : attestationTrust.phase === "error"
-        ? unavailableStage(
-            "attestation-trust",
-            m.lab_attestation_trust_title(),
-            m.lab_attestation_trust_description(),
-          )
-        : pendingStage(
-            "attestation-trust",
-            m.lab_attestation_trust_title(),
-            m.lab_attestation_trust_description(),
-            attestationTrust.phase === "loading",
-          );
+  function detail(
+    label: string,
+    value: string,
+    presentation: Detail["presentation"] = "text",
+  ): Detail {
+    return { label, values: [value], presentation };
+  }
 
+  function pendingStage(
+    id: string,
+    title: string,
+    description: string,
+    status: "pending" | "loading" | "unavailable" = "pending",
+  ): Stage {
+    return { id, title, description, status, checks: [], details: [], issues: [], warnings: [] };
+  }
+
+  function makeAuthenticatorChecks(verification: MakeCredentialVerification): Check[] {
+    if (verification.status !== VerificationStatus.VerificationStatusVerified) return [];
     return [
-      localFirst,
-      pendingStage(
-        "attestation-evidence",
-        m.lab_verification_attestation_evidence(),
-        m.lab_verification_attestation_evidence_description(),
+      check(
+        m.lab_verification_rp_id_hash(),
+        verification.rpIDHashMatches,
+        m.lab_verification_matches(),
+        m.lab_verification_does_not_match(),
       ),
-      trustStage,
+      check(
+        m.lab_user_presence(),
+        verification.userPresenceRequirementMet,
+        m.lab_verification_requirement_met(),
+        m.lab_verification_not_met(),
+      ),
+      check(
+        m.lab_user_verification(),
+        verification.userVerificationRequirementMet,
+        m.lab_verification_requirement_met(),
+        m.lab_verification_not_met(),
+      ),
+      check(
+        m.lab_verification_attested_data(),
+        true,
+        m.lab_verification_present(),
+        m.lab_verification_missing(),
+      ),
+      check(
+        m.lab_verification_credential_algorithm(),
+        verification.credentialAlgorithmAllowed,
+        m.lab_verification_allowed(),
+        m.lab_verification_disallowed(),
+      ),
     ];
   }
 
-  function pendingGetStages(): LabVerificationStage[] {
-    const verificationLoading = verificationState.phase === "loading";
-    const first = verificationState.phase === "error"
-      ? unavailableStage(
-          "credential-authenticator-data",
-          m.lab_verification_credential_authenticator_data(),
-          m.lab_verification_credential_authenticator_data_description(),
-        )
-      : pendingStage(
-          "credential-authenticator-data",
-          m.lab_verification_credential_authenticator_data(),
-          m.lab_verification_credential_authenticator_data_description(),
-          verificationLoading,
-        );
+  function makeStages(verification: MakeCredentialVerification): Stage[] {
+    let evidenceStatus: StageStatus;
+    if (verification.attestationType === AttestationType.AttestationTypeNone) {
+      evidenceStatus = "not-applicable";
+    } else if (verification.signatureValid === true) {
+      evidenceStatus = "verified";
+    } else if (verification.signatureValid === false) {
+      evidenceStatus = "failed";
+    } else {
+      evidenceStatus = "unavailable";
+    }
+
     return [
-      first,
+      {
+        id: "authenticator-data",
+        title: m.lab_verification_authenticator_data(),
+        description: m.lab_verification_authenticator_data_description(),
+        status: statusFromVerification(verification.status),
+        checks: makeAuthenticatorChecks(verification),
+        details: [],
+        issues: [...new Set(verification.issues ?? [])],
+        warnings: [],
+      },
+      {
+        id: "attestation-evidence",
+        title: m.lab_verification_attestation_evidence(),
+        description: m.lab_verification_attestation_evidence_description(),
+        status: evidenceStatus,
+        checks: verification.signatureValid === null
+          || verification.signatureValid === undefined
+          ? []
+          : [check(
+              m.lab_signature(),
+              verification.signatureValid,
+              m.lab_verification_valid(),
+              m.lab_verification_invalid(),
+            )],
+        details: [
+          detail(
+            m.lab_format(),
+            verification.attestationFormat || m.lab_not_reported(),
+            "code",
+          ),
+          detail(
+            m.lab_attestation(),
+            verification.attestationType || m.lab_not_reported(),
+            "code",
+          ),
+        ],
+        issues: [],
+        warnings: [],
+      },
+      trustStage(),
+    ];
+  }
+
+  function assertionChecks(verification: AssertionVerification): Check[] {
+    if (verification.status !== VerificationStatus.VerificationStatusVerified) return [];
+    return [
+      check(
+        m.lab_verification_credential_allowed(),
+        verification.credentialAllowed,
+        m.lab_verification_allowed(),
+        m.lab_verification_disallowed(),
+      ),
+      check(
+        m.lab_verification_rp_id_hash(),
+        verification.rpIDHashMatches,
+        m.lab_verification_matches(),
+        m.lab_verification_does_not_match(),
+      ),
+      check(
+        m.lab_user_presence(),
+        verification.userPresenceRequirementMet,
+        m.lab_verification_requirement_met(),
+        m.lab_verification_not_met(),
+      ),
+      check(
+        m.lab_user_verification(),
+        verification.userVerificationRequirementMet,
+        m.lab_verification_requirement_met(),
+        m.lab_verification_not_met(),
+      ),
+      check(
+        m.lab_verification_attested_data(),
+        true,
+        m.lab_verification_absent_as_expected(),
+        m.lab_verification_unexpected(),
+      ),
+    ];
+  }
+
+  function proofStage(verification: AssertionVerification): Stage {
+    let status: StageStatus;
+    if (verification.signatureValid === true) {
+      status = "verified";
+    } else if (verification.signatureValid === false) {
+      status = "failed";
+    } else {
+      status = "unavailable";
+    }
+    return {
+      id: "cryptographic-proof",
+      title: m.lab_verification_cryptographic_proof(),
+      description: m.lab_verification_cryptographic_proof_description(),
+      status,
+      checks: verification.signatureValid === null
+        || verification.signatureValid === undefined
+        ? []
+        : [check(
+            m.lab_signature(),
+            verification.signatureValid,
+            m.lab_verification_valid(),
+            m.lab_verification_invalid(),
+          )],
+      details: verification.signatureValid === null
+        || verification.signatureValid === undefined
+        ? []
+        : [detail(
+            m.lab_verification_signed_data(),
+            m.lab_verification_signed_data_value(),
+            "code",
+          )],
+      issues: [],
+      warnings: [],
+    };
+  }
+
+  function counterStage(verification: AssertionVerification): Stage {
+    let status: StageStatus;
+    let label: string;
+    switch (verification.signCount) {
+      case SignCountStatus.SignCountStatusAdvanced:
+        status = "verified";
+        label = m.lab_verification_advanced();
+        break;
+      case SignCountStatus.SignCountStatusNotAdvanced:
+        status = "warning";
+        label = m.lab_verification_not_advanced();
+        break;
+      case SignCountStatus.SignCountStatusUnsupported:
+        status = "not-applicable";
+        label = m.lab_verification_unsupported();
+        break;
+      case SignCountStatus.SignCountStatusNotChecked:
+      default:
+        status = "neutral";
+        label = m.lab_verification_not_checked();
+    }
+    return {
+      id: "signature-counter",
+      title: m.lab_verification_signature_counter(),
+      description: m.lab_verification_signature_counter_description(),
+      status,
+      statusLabel: label,
+      checks: status === "verified" || status === "warning"
+        ? [{
+            label: m.lab_verification_sign_count(),
+            value: label,
+            tone: status === "warning" ? "warning" : "ok",
+          }]
+        : [],
+      details: status === "verified" || status === "warning"
+        ? []
+        : [detail(m.lab_verification_sign_count(), label)],
+      issues: [],
+      warnings: [...new Set(verification.warnings ?? [])],
+    };
+  }
+
+  function getStages(
+    verification: GetAssertionVerification,
+    assertion: AssertionVerification | undefined,
+  ): Stage[] {
+    const firstStatus = assertion
+      ? statusFromVerification(assertion.status)
+      : statusFromVerification(verification.status);
+    const first: Stage = {
+      id: "credential-authenticator-data",
+      title: m.lab_verification_credential_authenticator_data(),
+      description: m.lab_verification_credential_authenticator_data_description(),
+      status: firstStatus,
+      checks: assertion ? assertionChecks(assertion) : [],
+      details: [detail(
+        m.lab_verification_assertions_received(),
+        String(verification.assertions.length),
+      )],
+      issues: [...new Set([
+        ...(verification.issues ?? []),
+        ...(assertion?.issues ?? []),
+      ])],
+      warnings: [],
+    };
+    if (!assertion) {
+      return [
+        first,
+        pendingStage(
+          "cryptographic-proof",
+          m.lab_verification_cryptographic_proof(),
+          m.lab_verification_cryptographic_proof_description(),
+        ),
+        pendingStage(
+          "signature-counter",
+          m.lab_verification_signature_counter(),
+          m.lab_verification_signature_counter_description(),
+        ),
+      ];
+    }
+    return [first, proofStage(assertion), counterStage(assertion)];
+  }
+
+  function trustStage(): Stage {
+    if (attestationTrust.phase === "loading") {
+      return pendingStage(
+        "attestation-trust",
+        m.lab_attestation_trust_title(),
+        m.lab_attestation_trust_description(),
+        "loading",
+      );
+    }
+    if (attestationTrust.phase === "error") {
+      return pendingStage(
+        "attestation-trust",
+        m.lab_attestation_trust_title(),
+        m.lab_attestation_trust_description(),
+        "unavailable",
+      );
+    }
+    if (attestationTrust.phase !== "ready") {
+      return pendingStage(
+        "attestation-trust",
+        m.lab_attestation_trust_title(),
+        m.lab_attestation_trust_description(),
+      );
+    }
+
+    const assessment = attestationTrust.verification;
+    let status: StageStatus;
+    let label: string;
+    switch (assessment.status) {
+      case AttestationTrustStatus.AttestationTrustStatusTrusted:
+        status = "verified";
+        label = m.lab_attestation_trust_trusted();
+        break;
+      case AttestationTrustStatus.AttestationTrustStatusUntrusted:
+        status = "failed";
+        label = m.lab_attestation_trust_untrusted();
+        break;
+      case AttestationTrustStatus.AttestationTrustStatusNotApplicable:
+        status = "not-applicable";
+        label = m.lab_attestation_trust_not_applicable();
+        break;
+      case AttestationTrustStatus.AttestationTrustStatusUnavailable:
+      default:
+        status = "unavailable";
+        label = m.lab_verification_unavailable();
+    }
+
+    const checks: Check[] = [{
+      label: m.lab_attestation_trust_metadata(),
+      value: assessment.metadataFound
+        ? m.lab_attestation_trust_found()
+        : m.lab_attestation_trust_not_found(),
+      tone: assessment.metadataFound ? "ok" : "neutral",
+    }];
+    if (assessment.certificateChainTrusted !== null
+      && assessment.certificateChainTrusted !== undefined) {
+      checks.push(check(
+        m.lab_attestation_trust_chain(),
+        assessment.certificateChainTrusted,
+        m.lab_attestation_trust_trusted(),
+        m.lab_attestation_trust_untrusted(),
+      ));
+    }
+
+    return {
+      id: "attestation-trust",
+      title: m.lab_attestation_trust_title(),
+      description: m.lab_attestation_trust_description(),
+      status,
+      statusLabel: label,
+      checks,
+      details: assessment.authenticatorStatuses?.length
+        ? [{
+            label: m.lab_attestation_trust_statuses(),
+            values: assessment.authenticatorStatuses,
+            presentation: "tags",
+          }]
+        : [],
+      issues: [...new Set(assessment.issues ?? [])],
+      warnings: [],
+    };
+  }
+
+  function pendingStages(): Stage[] {
+    const localStatus = verificationState.phase === "loading"
+      ? "loading"
+      : verificationState.phase === "error" ? "unavailable" : "pending";
+    if (mode === "make") {
+      return [
+        pendingStage(
+          "authenticator-data",
+          m.lab_verification_authenticator_data(),
+          m.lab_verification_authenticator_data_description(),
+          localStatus,
+        ),
+        pendingStage(
+          "attestation-evidence",
+          m.lab_verification_attestation_evidence(),
+          m.lab_verification_attestation_evidence_description(),
+        ),
+        trustStage(),
+      ];
+    }
+    return [
+      pendingStage(
+        "credential-authenticator-data",
+        m.lab_verification_credential_authenticator_data(),
+        m.lab_verification_credential_authenticator_data_description(),
+        localStatus,
+      ),
       pendingStage(
         "cryptographic-proof",
         m.lab_verification_cryptographic_proof(),
@@ -162,46 +559,26 @@
     ];
   }
 
-  let routeStages = $derived.by((): LabVerificationStage[] => {
-    if (makeVerification) {
-      const localStages = buildMakeCredentialVerificationStages(makeVerification);
-      const trustStage = attestationTrust.phase === "ready"
-        ? buildAttestationTrustStage(attestationTrust.verification)
-        : attestationTrust.phase === "error"
-          ? unavailableStage(
-              "attestation-trust",
-              m.lab_attestation_trust_title(),
-              m.lab_attestation_trust_description(),
-            )
-          : pendingStage(
-              "attestation-trust",
-              m.lab_attestation_trust_title(),
-              m.lab_attestation_trust_description(),
-              attestationTrust.phase === "loading",
-            );
-      return [...localStages, trustStage];
-    }
-    if (getVerification) {
-      return selectedAssertion
-        ? buildAssertionVerificationStages(selectedAssertion, getVerification)
-        : buildMissingAssertionStages(getVerification);
-    }
-    return mode === "make" ? pendingMakeStages() : pendingGetStages();
+  let routeStages = $derived.by(() => {
+    if (makeVerification) return makeStages(makeVerification);
+    if (getVerification) return getStages(getVerification, selectedAssertion);
+    return pendingStages();
   });
-  let overallStatus = $derived(aggregateVerificationStatus(routeStages));
 
-  function statusVariant(status: LabVerificationStageStatus): BadgeVariant {
-    if (status === "failed") return "destructive";
-    if (status === "warning") return "warning";
-    if (status === "verified") return "secondary";
-    return "outline";
-  }
+  let overallStatus = $derived.by((): StageStatus => {
+    const statuses = routeStages.map((stage) => stage.status);
+    if (statuses.includes("failed")) return "failed";
+    if (statuses.includes("unavailable")) return "unavailable";
+    if (statuses.includes("warning")) return "warning";
+    if (statuses.includes("loading")) return "loading";
+    if (statuses.includes("pending")) return "pending";
+    if (statuses.includes("verified")) return "verified";
+    if (statuses.includes("not-applicable")) return "not-applicable";
+    return "neutral";
+  });
 
   function runtimeFailure(stageID: string) {
-    if (
-      stageID === "attestation-trust"
-      && attestationTrust.phase === "error"
-    ) {
+    if (stageID === "attestation-trust" && attestationTrust.phase === "error") {
       return {
         message: failureMessage(attestationTrust.error) ?? m.lab_attestation_trust_error(),
         retryLabel: m.lab_attestation_trust_retry(),
@@ -225,30 +602,9 @@
   function changeAssertion(next: string | string[]) {
     if (!Array.isArray(next)) selectedAssertionValue = next;
   }
-
-  function stageSummary(status: LabVerificationStageStatus) {
-    switch (status) {
-      case "verified":
-        return m.lab_verification_stage_verified_summary();
-      case "failed":
-        return m.lab_verification_stage_failed_summary();
-      case "unavailable":
-        return m.lab_verification_stage_unavailable_summary();
-      case "warning":
-        return m.lab_verification_stage_warning_summary();
-      case "not-applicable":
-        return m.lab_verification_stage_not_applicable_summary();
-      case "loading":
-        return m.lab_verification_stage_loading_summary();
-      case "pending":
-        return m.lab_verification_stage_pending_summary();
-      case "neutral":
-        return m.lab_verification_stage_neutral_summary();
-    }
-  }
 </script>
 
-{#snippet statusIcon(status: LabVerificationStageStatus)}
+{#snippet statusIcon(status: StageStatus)}
   {#if status === "verified"}
     <CircleCheck aria-hidden="true" />
   {:else if status === "failed"}
@@ -262,7 +618,7 @@
   {/if}
 {/snippet}
 
-{#snippet checkIcon(tone: LabVerificationCheckTone)}
+{#snippet checkIcon(tone: CheckTone)}
   {#if tone === "ok"}
     <CircleCheck aria-hidden="true" />
   {:else if tone === "bad"}
@@ -274,7 +630,7 @@
   {/if}
 {/snippet}
 
-{#snippet routeList(stages: LabVerificationStage[], routeID: string)}
+{#snippet routeList(stages: Stage[], routeID: string)}
   <ol class="lab-verification-route">
     {#each stages as stage (stage.id)}
       {@const runtime = runtimeFailure(stage.id)}
@@ -295,7 +651,7 @@
               {@render statusIcon(stage.status)}
             </span>
             <div>
-              <strong>{stage.statusLabel}</strong>
+              <strong>{stage.statusLabel ?? statusLabel(stage.status)}</strong>
               <span>{stageSummary(stage.status)}</span>
             </div>
           </div>
@@ -304,14 +660,14 @@
             <section class="lab-verification-group" aria-labelledby={`${routeID}-${stage.id}-checks`}>
               <h5 id={`${routeID}-${stage.id}-checks`}>{m.lab_verification_checks()}</h5>
               <dl class="lab-verification-checks">
-                {#each stage.checks as check (`${check.label}:${check.value}`)}
-                  <div class="lab-verification-check" data-tone={check.tone}>
-                    <dt>{check.label}</dt>
+                {#each stage.checks as item (`${item.label}:${item.value}`)}
+                  <div class="lab-verification-check" data-tone={item.tone}>
+                    <dt>{item.label}</dt>
                     <dd>
                       <span class="lab-verification-check-marker" aria-hidden="true">
-                        {@render checkIcon(check.tone)}
+                        {@render checkIcon(item.tone)}
                       </span>
-                      <span>{check.value}</span>
+                      <span>{item.value}</span>
                     </dd>
                   </div>
                 {/each}
@@ -323,24 +679,24 @@
             <section class="lab-verification-group" aria-labelledby={`${routeID}-${stage.id}-details`}>
               <h5 id={`${routeID}-${stage.id}-details`}>{m.lab_verification_details()}</h5>
               <dl class="lab-verification-details">
-                {#each stage.details as detail (`${detail.label}:${detail.values.join(":")}`)}
+                {#each stage.details as item (`${item.label}:${item.values.join(":")}`)}
                   <div
                     class="lab-verification-detail"
                     data-kind="detail"
-                    data-presentation={detail.presentation}
+                    data-presentation={item.presentation}
                   >
-                    <dt>{detail.label}</dt>
+                    <dt>{item.label}</dt>
                     <dd>
-                      {#if detail.presentation === "tags"}
+                      {#if item.presentation === "tags"}
                         <span class="lab-verification-tags">
-                          {#each detail.values as value (value)}
+                          {#each item.values as value (value)}
                             <Badge variant="outline"><code>{value}</code></Badge>
                           {/each}
                         </span>
-                      {:else if detail.presentation === "code"}
-                        <code>{detail.values[0]}</code>
+                      {:else if item.presentation === "code"}
+                        <code>{item.values[0]}</code>
                       {:else}
-                        <span>{detail.values[0]}</span>
+                        <span>{item.values[0]}</span>
                       {/if}
                     </dd>
                   </div>
@@ -411,7 +767,7 @@
     </div>
     <Badge variant={statusVariant(overallStatus)}>
       {@render statusIcon(overallStatus)}
-      {verificationStatusLabel(overallStatus)}
+      {statusLabel(overallStatus)}
     </Badge>
   </header>
 
@@ -435,7 +791,7 @@
             <code>{assertion.credentialIDHex}</code>
           </div>
           {@render routeList(
-            buildAssertionVerificationStages(assertion, getVerification),
+            getStages(getVerification, assertion),
             `lab-get-${assertion.index}`,
           )}
         </Tabs.Content>

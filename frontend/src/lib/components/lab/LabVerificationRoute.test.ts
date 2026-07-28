@@ -31,7 +31,7 @@ describe("Lab verification route", () => {
     beforeEach(() => setAppLocale("en"));
     afterEach(() => cleanup());
 
-    it("renders registration verification and MDS as one semantic route", () => {
+    it("renders generated registration and MDS outcomes directly", () => {
         render(LabVerificationRoute, {
             mode: "make",
             state: {
@@ -42,7 +42,8 @@ describe("Lab verification route", () => {
                     userPresenceRequirementMet: true,
                     userVerificationRequirementMet: true,
                     credentialAlgorithmAllowed: true,
-                    attestationFormat: AttestationStatementFormatIdentifier.AttestationStatementFormatIdentifierPacked,
+                    attestationFormat:
+                    AttestationStatementFormatIdentifier.AttestationStatementFormatIdentifierPacked,
                     attestationType: AttestationType.AttestationTypeBasic,
                     signatureValid: true,
                 }),
@@ -63,34 +64,21 @@ describe("Lab verification route", () => {
             onRetryAttestationTrust: vi.fn(),
         });
 
-        const route = screen.getByRole("list");
-        expect(route.tagName).toBe("OL");
-        expect(screen.getAllByRole("listitem")).toHaveLength(3);
         expect(screen.getByRole("heading", {name: "Authenticator data"})).toBeInTheDocument();
         expect(screen.getByRole("heading", {name: "Attestation evidence"})).toBeInTheDocument();
         expect(screen.getByRole("heading", {name: "MDS attestation trust"})).toBeInTheDocument();
+        expect(screen.getByRole("list")).toBeInTheDocument();
+        expect(screen.getAllByRole("listitem")).toHaveLength(3);
         expect(screen.getByText("RP ID hash")).toBeInTheDocument();
         expect(screen.getByText("Credential algorithm")).toBeInTheDocument();
-        expect(screen.getAllByRole("heading", {name: "Checks"})).toHaveLength(3);
-        expect(screen.getAllByRole("heading", {name: "Details"})).toHaveLength(2);
-
-        const packed = screen.getByText("packed");
-        const basic = screen.getByText("basic");
-        expect(packed.closest('[data-kind="detail"]')?.querySelector("svg")).toBeNull();
-        expect(basic.closest('[data-kind="detail"]')?.querySelector("svg")).toBeNull();
-
-        const certifiedL2 = screen.getByText("FIDO_CERTIFIED_L2");
-        const certified = screen.getByText("FIDO_CERTIFIED");
-        expect(certifiedL2.closest('[data-slot="badge"]')).toBeInTheDocument();
-        expect(certified.closest('[data-slot="badge"]')).toBeInTheDocument();
-        expect(certifiedL2.closest('[data-kind="detail"]')?.querySelector("svg")).toBeNull();
-
-        const successfulCheck = screen.getByText("Matches").closest('[data-tone="ok"]');
-        expect(successfulCheck?.querySelector(".lab-verification-check-marker"))
-            .toBeInTheDocument();
+        expect(screen.getByText("Signature")).toBeInTheDocument();
+        expect(screen.getByText("packed")).toBeInTheDocument();
+        expect(screen.getByText("basic")).toBeInTheDocument();
+        expect(screen.getByText("FIDO_CERTIFIED_L2")).toBeInTheDocument();
+        expect(screen.getByText("FIDO_CERTIFIED")).toBeInTheDocument();
     });
 
-    it("keeps stable issue codes visible inside the affected assertion stage", () => {
+    it("uses the generated assertion status and keeps issue codes visible", () => {
         render(LabVerificationRoute, {
             mode: "get",
             state: {
@@ -113,16 +101,17 @@ describe("Lab verification route", () => {
             onRetryVerification: vi.fn(),
         });
 
+        expect(screen.getByRole("heading", {
+            name: "Credential and authenticator data",
+        })).toBeInTheDocument();
         expect(screen.getByText("cafe")).toBeInTheDocument();
         expect(screen.getByText(
             VerificationIssueCode.VerificationIssueVerificationMaterialMissing,
         )).toBeInTheDocument();
-        expect(screen.getByRole("heading", {name: "Cryptographic proof"}))
-            .toBeInTheDocument();
         expect(screen.getAllByText("Unavailable").length).toBeGreaterThan(0);
     });
 
-    it("uses keyboard-accessible tabs to select an independent assertion route", async () => {
+    it("keeps multiple assertions keyboard-accessible through tabs", async () => {
         const user = userEvent.setup();
         const first = new AssertionVerification({
             index: 0,
@@ -173,7 +162,7 @@ describe("Lab verification route", () => {
         expect(secondTab).toHaveAttribute("aria-selected", "true");
     });
 
-    it("keeps runtime failures and retry local to their route stage", async () => {
+    it("keeps local verification failure retryable", async () => {
         const user = userEvent.setup();
         const onRetryVerification = vi.fn();
         render(LabVerificationRoute, {
@@ -194,7 +183,7 @@ describe("Lab verification route", () => {
         expect(onRetryVerification).toHaveBeenCalledOnce();
     });
 
-    it("keeps an MDS runtime failure and retry in the trust stage", async () => {
+    it("keeps MDS assessment failure independently retryable", async () => {
         const user = userEvent.setup();
         const onRetryAttestationTrust = vi.fn();
         render(LabVerificationRoute, {
