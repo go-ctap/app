@@ -25,6 +25,7 @@ const TEST_CATEGORY_BY_CODE: Partial<Record<Code, Category>> = {
   [Code.CodeResetTouchTimeout]: Category.CategoryTimeout,
   [Code.CodeResetWindowExpired]: Category.CategoryInvalidState,
   [Code.CodeTransportFailure]: Category.CategoryTransportFailure,
+  [Code.CodeUserPresenceRequired]: Category.CategoryInvalidState,
   [Code.CodeVerificationFlowUnsupported]: Category.CategoryUnsupported,
 };
 

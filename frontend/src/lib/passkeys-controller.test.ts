@@ -10,7 +10,7 @@ import type {
   CredentialUpdateEnvelope,
   CredentialsEnvelope,
 } from "../../bindings/telesma/service";
-import { testHIDDevice } from "../test/device.js";
+import { testHIDDevice, testSmartCardDevice } from "../test/device.js";
 
 import { api } from "./api";
 import { failureForCode } from "./test-failure";
@@ -20,8 +20,19 @@ import {
   failPasskeysInventoryLoadAtRuntime,
   resetPasskeysStateForTest,
 } from "./features/passkeys/state";
-import { resetAuthenticatorStateForTest, selectedSelector, authenticatorStatus } from "./features/authenticator/state";
+import {
+  devices,
+  resetAuthenticatorStateForTest,
+  selectedDevice,
+  selectedSelector,
+  authenticatorStatus,
+} from "./features/authenticator/state";
 import { resetWorkbenchStateForTest } from "./features/workbench/state";
+import {
+  cancelOperationRecovery,
+  operationRecovery,
+  retryOperationRecovery,
+} from "./operation-recovery.js";
 import {
   beginCredentialDelete,
   beginCredentialUpdate,
@@ -31,6 +42,7 @@ import {
   confirmCredentialUpdate,
   normalizeCredentialUpdateForm,
   loadCredentialStoreState,
+  loadPasskeys,
   previewCredentialUpdate,
   updateCredentialDraft,
   validateCredentialUpdate,
@@ -160,10 +172,47 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  cancelOperationRecovery();
   vi.restoreAllMocks();
 });
 
 describe("passkeys mutation requests", () => {
+  it("recovers inventory loading through the shared operation lifecycle", async () => {
+    const firstCard = testSmartCardDevice("card-1");
+    const secondCard = testSmartCardDevice("card-2");
+    devices.set([firstCard]);
+    selectedSelector.set(firstCard.attachment.id);
+    selectedDevice.set(firstCard);
+    authenticatorStatus.set({ state: "ready", selectionId: "authenticator-card-1" });
+    const denied = inventoryEnvelope();
+    denied.error = failureForCode(Code.CodeUserPresenceRequired);
+    denied.result = null;
+    const responses = [denied, inventoryEnvelope()];
+    const sentSelectionIds: string[] = [];
+    vi.spyOn(api, "listCredentials").mockImplementation((request) => {
+      sentSelectionIds.push(request.selectionId);
+      return Promise.resolve(responses.shift()!);
+    });
+
+    const loading = loadPasskeys();
+    await vi.waitFor(() => expect(get(operationRecovery)).not.toBeNull());
+    devices.set([]);
+    selectedSelector.set("");
+    selectedDevice.set(null);
+    authenticatorStatus.set({ state: "idle" });
+    devices.set([secondCard]);
+    selectedSelector.set(secondCard.attachment.id);
+    selectedDevice.set(secondCard);
+    authenticatorStatus.set({ state: "ready", selectionId: "authenticator-card-2" });
+    expect(retryOperationRecovery()).toBe(true);
+
+    await expect(loading).resolves.toBe(true);
+    expect(sentSelectionIds).toEqual([
+      "authenticator-card-1",
+      "authenticator-card-2",
+    ]);
+  });
+
   it("loads persistent credential-store state with the selected verification flow", async () => {
     const envelope = storeStateEnvelope();
     const read = vi.spyOn(api, "credentialStoreState").mockResolvedValue(envelope);

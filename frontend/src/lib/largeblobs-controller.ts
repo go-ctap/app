@@ -68,6 +68,7 @@ import {
 import {
   completeOperation,
   operationStageFailureDetails,
+  requestForCurrentSelection,
   runOperation,
   runTypedOperationStage,
 } from "./operation-lifecycle.js";
@@ -121,7 +122,7 @@ export async function loadLargeBlobs() {
   };
   const attempt = await runOperation({
     label,
-    call: () => api.listLargeBlobs(request),
+    call: () => api.listLargeBlobs(requestForCurrentSelection(request)),
     onRuntimeFailure: failLargeBlobsInventoryLoadAtRuntime,
   });
   if (!attempt.ok) return false;
@@ -267,7 +268,7 @@ export async function readLargeBlob(credentialIDHex = get(largeBlobsSelectedCred
   const label = m.large_blob_read();
   const attempt = await runOperation({
     label,
-    call: () => api.readLargeBlob(request),
+    call: () => api.readLargeBlob(requestForCurrentSelection(request)),
     onRuntimeFailure: (error) => readError(credentialIDHex, request, null, error, "runtime-error"),
   });
   if (!attempt.ok) return false;
@@ -405,7 +406,7 @@ export async function previewLargeBlobWrite(): Promise<boolean> {
   const label = m.large_blob_write();
   const outcome = await runTypedOperationStage({
     label,
-    call: () => api.writeLargeBlob(request),
+    call: () => api.writeLargeBlob(requestForCurrentSelection(request)),
     extract: largeBlobMutationPreview,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-preview");
@@ -451,7 +452,7 @@ export async function beginLargeBlobDelete(credentialIDHex = get(largeBlobsSelec
   let noop = false;
   const outcome = await runTypedOperationStage({
     label,
-    call: () => api.deleteLargeBlob(request),
+    call: () => api.deleteLargeBlob(requestForCurrentSelection(request)),
     extract: largeBlobMutationPreview,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-preview");
@@ -517,7 +518,7 @@ export async function beginLargeBlobCleanup(): Promise<boolean> {
   let noop = false;
   const outcome = await runTypedOperationStage({
     label,
-    call: () => api.garbageCollectLargeBlobs(request),
+    call: () => api.garbageCollectLargeBlobs(requestForCurrentSelection(request)),
     extract: largeBlobMutationPreview,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-preview");
@@ -569,7 +570,7 @@ export async function confirmLargeBlobWrite(): Promise<boolean> {
   const label = m.large_blob_write();
   const outcome = await runTypedOperationStage({
     label,
-    call: () => api.writeLargeBlob(request),
+    call: () => api.writeLargeBlob(requestForCurrentSelection(request)),
     extract: largeBlobMutationResult,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-result");
@@ -599,7 +600,7 @@ export async function confirmLargeBlobDelete(): Promise<boolean> {
   const label = m.large_blob_delete();
   const outcome = await runTypedOperationStage({
     label,
-    call: () => api.deleteLargeBlob(request),
+    call: () => api.deleteLargeBlob(requestForCurrentSelection(request)),
     extract: largeBlobMutationResult,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-result");
@@ -629,7 +630,7 @@ export async function confirmLargeBlobCleanup(): Promise<boolean> {
   const label = m.large_blob_cleanup();
   const outcome = await runTypedOperationStage({
     label,
-    call: () => api.garbageCollectLargeBlobs(request),
+    call: () => api.garbageCollectLargeBlobs(requestForCurrentSelection(request)),
     extract: largeBlobMutationResult,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-result");

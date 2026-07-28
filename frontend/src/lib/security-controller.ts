@@ -82,6 +82,7 @@ import {
 import {
   completeOperation,
   operationStageFailureDetails,
+  requestForCurrentSelection,
   runOperation,
   runTypedOperationStage,
 } from "./operation-lifecycle.js";
@@ -184,7 +185,10 @@ async function runSecurityPreviewStage<
 }): Promise<boolean> {
   const outcome = await runTypedOperationStage({
     label,
-    call,
+    call: () => {
+      requestForCurrentSelection(current.previewRequest);
+      return call();
+    },
     extract,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-preview");
@@ -228,10 +232,9 @@ export async function loadSecurityStatus(): Promise<boolean> {
 
   beginSecurityStatusLoad();
   const label = m.security_status_operation();
-  const selectionId = currentSelectionID();
   const attempt = await runOperation({
     label,
-    call: () => api.configStatus({ selectionId }),
+    call: () => api.configStatus({ selectionId: currentSelectionID() }),
     onRuntimeFailure: failSecurityStatusLoadAtRuntime,
   });
   if (!attempt.ok) return false;
@@ -249,14 +252,14 @@ export async function loadSecurityStatus(): Promise<boolean> {
   if (envelope.error || !report) return false;
 
   if (report.bio.supported) {
-    await loadSecurityBioSensor(selectionId);
+    await loadSecurityBioSensor();
   } else {
     securitySensor.set(emptySecurityResourceState());
   }
   return true;
 }
 
-export async function loadSecurityBioSensor(selectionId = ""): Promise<boolean> {
+export async function loadSecurityBioSensor(): Promise<boolean> {
   const report = currentStatusReport();
   if (!report?.bio.supported) {
     securitySensor.set(emptySecurityResourceState());
@@ -267,7 +270,7 @@ export async function loadSecurityBioSensor(selectionId = ""): Promise<boolean> 
   const label = m.security_bio_sensor_operation();
   const attempt = await runOperation({
     label,
-    call: () => api.bioSensorInfo({ selectionId: selectionId || currentSelectionID() }),
+    call: () => api.bioSensorInfo({ selectionId: currentSelectionID() }),
     onRuntimeFailure: failSecurityBioSensorLoadAtRuntime,
   });
   if (!attempt.ok) return false;
@@ -319,7 +322,11 @@ async function runPINOperation(
   label: string,
   call: () => Promise<PINEnvelope>,
 ): Promise<boolean> {
-  const attempt = await runOperation({ label, call });
+  const attempt = await runOperation({
+    label,
+    call,
+    cardPresenceRecovery: false,
+  });
   if (!attempt.ok) return false;
 
   const envelope = attempt.envelope;
@@ -725,7 +732,10 @@ async function runSecurityExecutionStage<
 ): Promise<boolean> {
   const outcome = await runTypedOperationStage({
     label,
-    call,
+    call: () => {
+      requestForCurrentSelection(execution.previewRequest);
+      return call();
+    },
     extract,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-result");

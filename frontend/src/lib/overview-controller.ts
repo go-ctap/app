@@ -58,7 +58,7 @@ export async function maybeLoadOverview() {
   if (!canAutoLoadOverview()) return;
   const inspection = get(authenticatorInspection);
   if (get(activeScreen) === "overview" && inspection.state === "ready" && inspection.data) {
-    const biometricFailure = await loadOverviewDetails(inspection.data, currentSelectionID());
+    const biometricFailure = await loadOverviewDetails(inspection.data);
     if (biometricFailure) {
       reportDegradedOverviewLoad(m.biometrics(), biometricFailure);
     }
@@ -67,7 +67,7 @@ export async function maybeLoadOverview() {
   await loadOverview();
 }
 
-async function loadOverviewDetails(envelope: InspectEnvelope, selectionId: string) {
+async function loadOverviewDetails(envelope: InspectEnvelope) {
   const aaguid = inspectResult(envelope)?.info.aaguid.trim() ?? "";
   if (aaguid) {
     void loadOverviewMDS(aaguid, false);
@@ -77,7 +77,7 @@ async function loadOverviewDetails(envelope: InspectEnvelope, selectionId: strin
   overviewBioSensor.set(loadingLoadState());
   const attempt = await runOperation({
     label: m.security_bio_sensor_operation(),
-    call: () => api.bioSensorInfo({ selectionId }),
+    call: () => api.bioSensorInfo({ selectionId: currentSelectionID() }),
     onRuntimeFailure: (error) => overviewBioSensor.set(errorLoadState(error)),
   });
   if (!attempt.ok) return attempt.error;
@@ -104,10 +104,9 @@ export async function loadOverview() {
   authenticatorInspection.set(loadingLoadState());
   overviewBioSensor.set(idleLoadState());
   overviewMDS.set(idleLoadState());
-  const selectionId = currentSelectionID();
   const attempt = await runOperation({
     label: m.overview_inspection(),
-    call: () => api.inspect({ selectionId }),
+    call: () => api.inspect({ selectionId: currentSelectionID() }),
     onRuntimeFailure: (error) => {
       authenticatorInspection.set(errorLoadState(error));
       overviewBioSensor.set(idleLoadState());
@@ -123,7 +122,7 @@ export async function loadOverview() {
   );
   let biometricFailure: Failure | null = null;
   if (!envelope.error && get(activeScreen) === "overview") {
-    biometricFailure = await loadOverviewDetails(envelope, selectionId);
+    biometricFailure = await loadOverviewDetails(envelope);
   }
   completeOperation(m.overview_inspection(), envelope);
   if (biometricFailure) {

@@ -60,6 +60,7 @@ import {
 import {
   completeOperation,
   operationStageFailureDetails,
+  requestForCurrentSelection,
   runOperation,
   runTypedOperationStage,
 } from "./operation-lifecycle.js";
@@ -109,7 +110,7 @@ export async function loadPasskeys() {
   };
   const attempt = await runOperation({
     label,
-    call: () => api.listCredentials(request),
+    call: () => api.listCredentials(requestForCurrentSelection(request)),
     onRuntimeFailure: failPasskeysInventoryLoadAtRuntime,
   });
   if (!attempt.ok) return false;
@@ -336,7 +337,7 @@ export async function previewCredentialUpdate(): Promise<boolean> {
   const label = m.credential_update_preview();
   const outcome = await runTypedOperationStage({
     label,
-    call: () => api.updateCredentialUser(request),
+    call: () => api.updateCredentialUser(requestForCurrentSelection(request)),
     extract: credentialUpdatePreview,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-preview");
@@ -367,7 +368,7 @@ export async function confirmCredentialUpdate(): Promise<boolean> {
   const label = m.credential_update();
   const outcome = await runTypedOperationStage({
     label,
-    call: () => api.updateCredentialUser(request),
+    call: () => api.updateCredentialUser(requestForCurrentSelection(request)),
     extract: credentialUpdateResult,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-result");
@@ -416,7 +417,7 @@ async function previewCredentialDelete(credentialIDHex: string): Promise<boolean
   const label = m.credential_delete_preview();
   const outcome = await runTypedOperationStage({
     label,
-    call: () => api.deleteCredential(request),
+    call: () => api.deleteCredential(requestForCurrentSelection(request)),
     extract: credentialDeletePreview,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-preview");
@@ -451,7 +452,7 @@ export async function confirmCredentialDelete(): Promise<boolean> {
   const label = m.credential_delete();
   const outcome = await runTypedOperationStage({
     label,
-    call: () => api.deleteCredential(request),
+    call: () => api.deleteCredential(requestForCurrentSelection(request)),
     extract: credentialDeleteResult,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-result");

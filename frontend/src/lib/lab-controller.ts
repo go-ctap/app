@@ -49,6 +49,7 @@ import { currentSelectionID } from "./authenticator-boundary.js";
 import { ensureActiveSelectionReady } from "./authenticator-controller.js";
 import {
   operationStageFailureDetails,
+  requestForCurrentSelection,
   runTypedOperationStage,
 } from "./operation-lifecycle.js";
 import {
@@ -244,7 +245,7 @@ export async function previewLabMakeCredential(): Promise<boolean> {
   const label = m.lab_make_credential_preview();
   const outcome = await runTypedOperationStage({
     label,
-    call: () => api.makeCredential(previewRequest),
+    call: () => api.makeCredential(requestForCurrentSelection(previewRequest)),
     extract: makeCredentialPreview,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-preview");
@@ -303,7 +304,7 @@ export async function confirmLabMakeCredential(): Promise<boolean> {
   const label = m.lab_make_credential();
   const outcome = await runTypedOperationStage({
     label,
-    call: () => api.makeCredential(request),
+    call: () => api.makeCredential(requestForCurrentSelection(request)),
     extract: makeCredentialResult,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-result");
@@ -378,8 +379,10 @@ export function newLabMakeCredentialRun() {
 async function executeGetAssertion(
   previewRequest: GetAssertionRequest,
   previewEnvelope: GetAssertionEnvelope,
-  request: GetAssertionRequest,
+  initialRequest: GetAssertionRequest,
 ): Promise<boolean> {
+  const request = initialRequest;
+  const verificationMaterial = get(labState).getDraft.verificationMaterial;
   labState.update((state) => ({
     ...state,
     getStep: { phase: "executing", previewRequest, previewEnvelope, request },
@@ -388,7 +391,7 @@ async function executeGetAssertion(
   const label = m.lab_get_assertion();
   const outcome = await runTypedOperationStage({
     label,
-    call: () => api.getAssertion(request),
+    call: () => api.getAssertion(requestForCurrentSelection(request)),
     extract: getAssertionResult,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-result");
@@ -406,7 +409,6 @@ async function executeGetAssertion(
       }));
     },
     onSuccess: (result, envelope) => {
-      const verificationMaterial = get(labState).getDraft.verificationMaterial;
       labState.update((state) => ({
         ...state,
         getStep: { phase: "success", previewRequest, previewEnvelope, request, responseEnvelope: envelope },
@@ -441,7 +443,7 @@ export async function runLabGetAssertion(): Promise<boolean> {
   const label = m.lab_get_assertion();
   const outcome = await runTypedOperationStage({
     label,
-    call: () => api.getAssertion(previewRequest),
+    call: () => api.getAssertion(requestForCurrentSelection(previewRequest)),
     extract: getAssertionPreview,
     onFailure: (failure) => {
       const details = operationStageFailureDetails(failure, "missing-preview");

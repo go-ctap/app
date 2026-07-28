@@ -5,6 +5,7 @@
 	import type * as appservice from "../bindings/telesma/service/models";
 
 	import InteractionModal from "$lib/components/interaction/InteractionModal.svelte";
+	import OperationRecoveryDialog from "$lib/components/operation/OperationRecoveryDialog.svelte";
 	import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
 	import NoAuthenticatorState from "$lib/components/shell/NoAuthenticatorState.svelte";
 	import ShellStatusBar from "$lib/components/shell/ShellStatusBar.svelte";
@@ -36,6 +37,11 @@
 	import { syncLogJournal } from "$lib/logs-controller.js";
 	import { cancelActiveOperation } from "$lib/operation-controller.js";
 	import { currentLocale } from "$lib/i18n";
+	import {
+		cancelOperationRecovery,
+		operationRecovery,
+		retryOperationRecovery,
+	} from "$lib/operation-recovery.js";
 	import { buildInteractionModalPresentation, buildShellStatusPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
 	import { toggleMaximizeWindow } from "$lib/window-controller.js";
 	import { detectWindowPlatform, resolveWindowPlatform } from "$lib/window-platform";
@@ -150,6 +156,7 @@
 			offInteraction();
 			offDiscovery();
 			offLogsChanged();
+			cancelOperationRecovery();
 			void shutdownWorkbench();
 		};
 	});
@@ -227,6 +234,11 @@
 		</section>
 
 		<InteractionModal presentation={interactionModalPresentation} onAnswer={handleInteractionAnswer} />
+		<OperationRecoveryDialog
+			presentation={$operationRecovery}
+			onCancel={cancelOperationRecovery}
+			onRetry={retryOperationRecovery}
+		/>
 	</div>
 	{/key}
 {:else}

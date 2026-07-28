@@ -10,3 +10,13 @@ export function testHIDDevice(id = "token-1", product = "Test key") {
     },
   });
 }
+
+export function testSmartCardDevice(id = "card-1") {
+  return new DeviceReport({
+    attachment: {
+      id,
+      transport: Mode.ModeSmartCard,
+      smartCard: { reader: "Test reader" },
+    },
+  });
+}

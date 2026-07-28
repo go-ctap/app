@@ -25,6 +25,7 @@ import type {
   ActiveSelection,
 } from "../../bindings/telesma/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import { testSmartCardDevice } from "../test/device.js";
 
 import { api } from "./api";
 import {
@@ -49,6 +50,7 @@ import {
 } from "./features/authenticator/state";
 import { activeScreen, statusBar } from "./features/workbench/state";
 import { setAppLocale } from "./i18n";
+import { operationRecovery } from "./operation-recovery.js";
 import {
   beginAlwaysUVChange,
   beginBioEnrollment,
@@ -450,6 +452,26 @@ describe("security controller loading", () => {
 });
 
 describe("security controller mutations", () => {
+  it("does not retain or replay PIN input through card recovery", async () => {
+    const card = testSmartCardDevice();
+    seedDevicesForTest([card]);
+    seedSelectionForTest(card.attachment.id, card, {
+      state: "ready",
+      selectionId: "authenticator-card-1",
+    });
+    const denied = pinErrorEnvelope(OperationKind.SetPIN);
+    denied.error = failureForCode(Code.CodeUserPresenceRequired);
+    const setPIN = vi.spyOn(api, "setPIN").mockResolvedValue(denied);
+    const input = { newPIN: "set-secret-123" };
+
+    await expect(setAuthenticatorPIN(input)).resolves.toBe(false);
+
+    expect(setPIN).toHaveBeenCalledOnce();
+    expect(input.newPIN).toBe("");
+    expect(setPIN.mock.calls[0][0].newPIN).toBe("");
+    expect(get(operationRecovery)).toBeNull();
+  });
+
   it("sends exact PIN requests without retaining secrets", async () => {
     let sentSetPINRequest: PINSetRequest | null = null;
     let sentChangePINRequest: PINChangeRequest | null = null;

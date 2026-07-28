@@ -38,6 +38,7 @@ import {
   resetAuthenticatorStateForTest,
 } from "./features/authenticator/state.js";
 import "./features/security/state.js";
+import { cancelOperationRecovery } from "./operation-recovery.js";
 import {
   activeScreen,
   resetWorkbenchStateForTest,
@@ -46,6 +47,7 @@ import type { AuthenticatorStatus } from "./authenticator-model.js";
 import type { ActiveScreen } from "./features/workbench/index.js";
 
 export function resetAppStateForTest() {
+  cancelOperationRecovery();
   resetAuthenticatorStateForTest();
   resetWorkbenchStateForTest();
   resetInteractionStateForTest();

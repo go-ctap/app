@@ -26,7 +26,7 @@ import type {
   MakeCredentialRequest,
   ActiveSelection,
 } from "../../bindings/telesma/service";
-import { testHIDDevice } from "../test/device.js";
+import { testHIDDevice, testSmartCardDevice } from "../test/device.js";
 
 import { api } from "./api";
 import { failureForCode } from "./test-failure";
@@ -56,6 +56,11 @@ import {
 } from "./features/authenticator/state";
 import { resetWorkbenchStateForTest, statusBar } from "./features/workbench/state";
 import { setAppLocale } from "./i18n";
+import {
+  cancelOperationRecovery,
+  operationRecovery,
+  retryOperationRecovery,
+} from "./operation-recovery.js";
 import {
   cancelLabHandoff,
   confirmLabHandoff,
@@ -197,6 +202,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  cancelOperationRecovery();
   vi.restoreAllMocks();
 });
 
@@ -374,6 +380,44 @@ describe("WebAuthn Lab request lifecycle", () => {
     await vi.waitFor(() => {
       expect(api.verifyMakeCredential).toHaveBeenCalledTimes(2);
     });
+  });
+
+  it("uses shared card recovery without Lab-specific replay state", async () => {
+    const firstCard = testSmartCardDevice("card-1");
+    const secondCard = testSmartCardDevice("card-2");
+    devices.set([firstCard]);
+    selectedSelector.set(firstCard.attachment.id);
+    selectedDevice.set(firstCard);
+    authenticatorStatus.set({ state: "ready", selectionId: "authenticator-card-1" });
+    const denied = makePreviewEnvelope();
+    denied.error = failureForCode(Code.CodeUserPresenceRequired);
+    const responses = [makePreviewEnvelope(), denied, makeResultEnvelope()];
+    const sentSelectionIds: string[] = [];
+    vi.spyOn(api, "makeCredential").mockImplementation((request) => {
+      sentSelectionIds.push(request.selectionId);
+      return Promise.resolve(responses.shift()!);
+    });
+
+    expect(await previewLabMakeCredential()).toBe(true);
+    const executing = confirmLabMakeCredential();
+    await vi.waitFor(() => expect(get(operationRecovery)).not.toBeNull());
+    devices.set([]);
+    selectedSelector.set("");
+    selectedDevice.set(null);
+    authenticatorStatus.set({ state: "idle" });
+    devices.set([secondCard]);
+    selectedSelector.set(secondCard.attachment.id);
+    selectedDevice.set(secondCard);
+    authenticatorStatus.set({ state: "ready", selectionId: "authenticator-card-2" });
+    expect(retryOperationRecovery()).toBe(true);
+
+    await expect(executing).resolves.toBe(true);
+    expect(sentSelectionIds).toEqual([
+      "authenticator-card-1",
+      "authenticator-card-1",
+      "authenticator-card-2",
+    ]);
+    expect(get(labState).makeStep.phase).toBe("success");
   });
 
   it("keeps a successful CTAP result when the independent verification call fails", async () => {

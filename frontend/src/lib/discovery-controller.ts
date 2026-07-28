@@ -5,6 +5,7 @@ import type {
 } from "../../bindings/telesma/service";
 import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { InventoryTrigger } from "../../bindings/github.com/go-ctap/kit";
+import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { m } from "../paraglide/messages.js";
 import { api } from "./api.js";
@@ -20,6 +21,8 @@ import {
   reportForSelector,
   selectorFromDevice,
 } from "./authenticator-model.js";
+import { selectAuthenticatorSession } from "./authenticator-controller.js";
+import { operationRecovery } from "./operation-recovery.js";
 import { selectToken } from "./workbench-controller.js";
 import {
   clearWorkbenchScreenCaches,
@@ -39,22 +42,30 @@ function invalidateActiveSelection() {
 
 function applyTopology(envelope: DiscoveryChangedEnvelope) {
   const previousSelector = get(selectedSelector);
-  const previousDeviceCount = get(devices).length;
   const snapshot = envelope.snapshot;
   const nextDevices = snapshot ? snapshot.devices : get(devices);
   const nextSelectedDevice = snapshot && previousSelector
     ? reportForSelector(snapshot.devices, previousSelector)
     : get(selectedDevice);
+  const selectionOpening = get(authenticatorStatus).state === "opening";
   const selectedDeviceMissing = Boolean(snapshot && previousSelector && !nextSelectedDevice);
   const selectedDisconnected = Boolean(previousSelector && selectedDeviceMissing);
-  const autoSelectSelector = snapshot
+  const recoverySmartCard = get(operationRecovery) && snapshot
+    ? snapshot.devices.find((device) => device.attachment.transport === Mode.ModeSmartCard)
+    : null;
+  const recoverySelector = recoverySmartCard
+    && nextSelectedDevice?.attachment.transport !== Mode.ModeSmartCard
+      ? selectorFromDevice(recoverySmartCard)
+      : "";
+  const ordinarySelector = snapshot
     && snapshot.devices.length > 0
     && (
       selectedDeviceMissing
-      || (previousDeviceCount === 0 && !previousSelector)
+      || (!previousSelector && !selectionOpening)
     )
       ? selectorFromDevice(snapshot.devices[0])
       : "";
+  const autoSelectSelector = recoverySelector || ordinarySelector;
 
   if (snapshot) {
     devices.set(snapshot.devices);
@@ -123,7 +134,11 @@ function recordDiscoveryRuntimeFailure(error: Failure) {
 export async function handleDiscoveryChanged(envelope: DiscoveryChangedEnvelope) {
   const result = applyTopology(envelope);
   if (!envelope.error && result.autoSelectSelector) {
-    await selectToken(result.autoSelectSelector);
+    if (get(operationRecovery)) {
+      await selectAuthenticatorSession(result.autoSelectSelector);
+    } else {
+      await selectToken(result.autoSelectSelector);
+    }
     return;
   }
   if (

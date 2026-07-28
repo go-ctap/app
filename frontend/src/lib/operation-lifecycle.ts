@@ -4,8 +4,10 @@ import type { OperationEnvelope } from "./api.js";
 import {
   applyAuthenticatorClosedError,
   applyOperationAuthenticatorBoundary,
+  currentSelectionID,
 } from "./authenticator-boundary.js";
 import { internalFailure, runtimeFailureFrom } from "./failure.js";
+import { offerOperationRecovery } from "./operation-recovery.js";
 import {
   beginOperation,
   finishOperation,
@@ -21,6 +23,7 @@ export type OperationAttempt<E extends OperationEnvelope> =
 interface RunOperationOptions<E extends OperationEnvelope> {
   label: string;
   call: () => Promise<E>;
+  cardPresenceRecovery?: boolean;
   onRuntimeFailure?: (error: Failure) => void;
 }
 
@@ -38,9 +41,21 @@ export type TypedOperationStageOutcome<E extends OperationEnvelope, TValue> =
   | { ok: true; envelope: E; value: TValue }
   | TypedOperationStageFailure<E, TValue>;
 
+/**
+ * Rebinds a captured request to the authenticator selected for this attempt.
+ * Mutation is intentional so feature history reflects the request actually sent.
+ */
+export function requestForCurrentSelection<T extends { selectionId: string }>(
+  request: T,
+): T {
+  request.selectionId = currentSelectionID();
+  return request;
+}
+
 interface RunTypedOperationStageOptions<E extends OperationEnvelope, TValue> {
   label: string;
   call: () => Promise<E>;
+  cardPresenceRecovery?: boolean;
   extract: (envelope: E) => TValue | null;
   onFailure: (failure: TypedOperationStageFailure<E, TValue>) => void;
   onSuccess?: (value: TValue, envelope: E) => void;
@@ -88,17 +103,28 @@ export function operationStageFailureDetails<
 export async function runOperation<E extends OperationEnvelope>({
   label,
   call,
+  cardPresenceRecovery = true,
   onRuntimeFailure,
 }: RunOperationOptions<E>): Promise<OperationAttempt<E>> {
-  beginOperation(label);
-  try {
-    return { ok: true, envelope: await call() };
-  } catch (cause) {
-    const error = runtimeFailureFrom(cause);
-    onRuntimeFailure?.(error);
-    summarizeOperationFailure(label, error);
-    applyAuthenticatorClosedError(error);
-    return { ok: false, error };
+  while (true) {
+    beginOperation(label);
+    try {
+      const envelope = await call();
+      const recovery = cardPresenceRecovery && envelope.error
+        ? offerOperationRecovery(label, envelope.error)
+        : null;
+      if (recovery) {
+        finishOperation();
+        if (await recovery === "retry") continue;
+      }
+      return { ok: true, envelope };
+    } catch (cause) {
+      const error = runtimeFailureFrom(cause);
+      onRuntimeFailure?.(error);
+      summarizeOperationFailure(label, error);
+      applyAuthenticatorClosedError(error);
+      return { ok: false, error };
+    }
   }
 }
 
@@ -116,6 +142,7 @@ export async function runTypedOperationStage<
 >({
   label,
   call,
+  cardPresenceRecovery,
   extract,
   onFailure,
   onSuccess,
@@ -125,6 +152,7 @@ export async function runTypedOperationStage<
   const attempt = await runOperation({
     label,
     call,
+    cardPresenceRecovery,
     onRuntimeFailure: (error) => {
       runtimeOutcome = { ok: false, reason: "runtime-error", error };
       onFailure(runtimeOutcome);

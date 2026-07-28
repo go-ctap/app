@@ -20,7 +20,13 @@ import { InteractionKind, OperationStage } from "../../bindings/github.com/go-ct
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 
 import { setAppLocale } from "$lib/i18n";
+import {
+  cancelOperationRecovery,
+  offerOperationRecovery,
+  operationRecovery,
+} from "$lib/operation-recovery";
 import { failureForCode } from "$lib/test-failure";
+import { testSmartCardDevice } from "../test/device.js";
 
 import {
   resetAppStateForTest,
@@ -45,6 +51,8 @@ import {
 } from "./test-support/stores.js";
 
 const serviceMocks = vi.hoisted(() => ({
+  Inspect: vi.fn(),
+  ListCredentials: vi.fn(),
   SetSelection: vi.fn(),
   RefreshDiscovery: vi.fn(),
 }));
@@ -130,6 +138,92 @@ describe("discovery controller", () => {
     expect(get(selectedSelector)).toBe("token-1");
     expect(get(selectedDevice)).toEqual(first);
     expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
+  });
+
+  it("opens a reappearing card when selection is empty but the previous inventory was not", async () => {
+    const original = testSmartCardDevice("card-1");
+    const retainedInventory = device("other-token");
+    const reattached = testSmartCardDevice("card-2");
+    seedDevicesForTest([original]);
+    seedSelectionForTest(original.attachment.id, original, {
+      state: "ready",
+      selectionId: "authenticator-card-1",
+    });
+    const decision = offerOperationRecovery(
+      "Create credential",
+      failureForCode(Code.CodeUserPresenceRequired),
+    );
+    seedDevicesForTest([retainedInventory]);
+    seedSelectionForTest("", null, { state: "idle" });
+    seedActiveScreenForTest("lab");
+
+    let finishSelection!: (value: { selection: ActiveSelection }) => void;
+    serviceMocks.SetSelection.mockReturnValue(new Promise((resolve) => {
+      finishSelection = resolve;
+    }));
+    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+    const opening = handleDiscoveryChanged(event({ devices: [retainedInventory, reattached] }));
+
+    await vi.waitFor(() => {
+      expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "card-2" });
+      expect(get(operationRecovery)).toMatchObject({
+        cardVisible: true,
+        opening: true,
+        canRetry: false,
+      });
+    });
+    finishSelection({ selection: snapshot(reattached) });
+    await opening;
+
+    expect(get(selectedSelector)).toBe("card-2");
+    expect(get(selectedDevice)).toEqual(reattached);
+    expect(get(operationRecovery)).toMatchObject({
+      label: "Create credential",
+      opening: false,
+      canRetry: true,
+    });
+    expect(serviceMocks.Inspect).not.toHaveBeenCalled();
+    expect(serviceMocks.ListCredentials).not.toHaveBeenCalled();
+    cancelOperationRecovery();
+    await expect(decision).resolves.toBe("cancel");
+  });
+
+  it("switches from a retained HID authenticator to a reappearing smart card during recovery", async () => {
+    const original = testSmartCardDevice("card-1");
+    const retained = device("other-token");
+    const reattached = testSmartCardDevice("card-2");
+    seedDevicesForTest([original]);
+    seedSelectionForTest(original.attachment.id, original, {
+      state: "ready",
+      selectionId: "authenticator-card-1",
+    });
+    const decision = offerOperationRecovery(
+      "Create credential",
+      failureForCode(Code.CodeUserPresenceRequired),
+    );
+    seedActiveScreenForTest("passkeys");
+    serviceMocks.SetSelection.mockImplementation(({ attachmentId }) => {
+      const selected = attachmentId === retained.attachment.id ? retained : reattached;
+      return Promise.resolve({ selection: snapshot(selected) });
+    });
+    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+
+    await handleDiscoveryChanged(event({ devices: [retained] }));
+    expect(get(selectedDevice)).toEqual(retained);
+    expect(get(operationRecovery)).toMatchObject({ wrongDevice: true });
+
+    await handleDiscoveryChanged(event({ devices: [retained, reattached] }));
+    expect(get(selectedDevice)).toEqual(reattached);
+    expect(get(operationRecovery)).toMatchObject({ canRetry: true });
+    expect(serviceMocks.SetSelection.mock.calls.map(([request]) => request.attachmentId)).toEqual([
+      "other-token",
+      "card-2",
+    ]);
+    expect(serviceMocks.Inspect).not.toHaveBeenCalled();
+    expect(serviceMocks.ListCredentials).not.toHaveBeenCalled();
+
+    cancelOperationRecovery();
+    await expect(decision).resolves.toBe("cancel");
   });
 
   it("preserves the selected authenticator and screen state when its device remains", async () => {

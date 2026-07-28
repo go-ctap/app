@@ -7,7 +7,6 @@ require (
 	github.com/go-ctap/ctap v0.40.0
 	github.com/go-ctap/kit v0.11.0
 	github.com/go-ctap/mds v0.2.0
-	github.com/go-ctap/pcsc v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/wailsapp/wails/v3 v3.0.0-alpha2.119
@@ -20,6 +19,7 @@ require (
 	github.com/ebitengine/purego v0.10.2 // indirect
 	github.com/go-ctap/hid v0.10.1 // indirect
 	github.com/go-ctap/iso7816 v0.1.0 // indirect
+	github.com/go-ctap/pcsc v0.6.0 // indirect
 	github.com/go-ctap/token2 v0.7.0 // indirect
 	github.com/go-ctap/windows-proxy v0.3.1 // indirect
 	github.com/go-ctap/yubico v0.2.0 // indirect
