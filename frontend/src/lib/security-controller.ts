@@ -1,4 +1,4 @@
-import { get } from "svelte/store";
+import { get, type Writable } from "svelte/store";
 import { toast } from "svelte-sonner";
 
 import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
@@ -24,7 +24,7 @@ import {
 } from "../../bindings/telesma/service";
 
 import { m } from "../paraglide/messages.js";
-import { api } from "./api.js";
+import { api, type OperationEnvelope } from "./api.js";
 import {
   authenticatorConfigPreview,
   authenticatorConfigResult,
@@ -40,22 +40,12 @@ import {
   resetFactoryResult,
 } from "./ctapkit-results.js";
 import {
-  beginSecurityBioListLoad,
-  beginSecurityBioSensorLoad,
-  beginSecurityStatusLoad,
-  completeSecurityBioListLoad,
-  completeSecurityBioSensorLoad,
-  completeSecurityStatusLoad,
+  beginSecurityResourceLoad,
+  completeSecurityResourceLoad,
   emptySecurityResourceState,
-  failSecurityBioListLoadAtRuntime,
-  failSecurityBioListLoadWithContractError,
-  failSecurityBioListLoadWithResponse,
-  failSecurityBioSensorLoadAtRuntime,
-  failSecurityBioSensorLoadWithContractError,
-  failSecurityBioSensorLoadWithResponse,
-  failSecurityStatusLoadAtRuntime,
-  failSecurityStatusLoadWithContractError,
-  failSecurityStatusLoadWithResponse,
+  failSecurityResourceLoadAtRuntime,
+  failSecurityResourceLoadWithContractError,
+  failSecurityResourceLoadWithResponse,
   securityEnrollments,
   securityMutation,
   securitySensor,
@@ -63,6 +53,7 @@ import {
   type SecurityMutationState,
   type SecurityMutationValidationError,
   type SecurityPINPolicyDraft,
+  type SecurityResourceState,
 } from "./features/security/state.js";
 import { selectedSelector, authenticatorStatus } from "./features/authenticator/state.js";
 import { activeScreen } from "./features/workbench/state.js";
@@ -227,29 +218,48 @@ export async function maybeLoadSecurity() {
   return loadSecurityStatus();
 }
 
+async function loadSecurityResource<
+  E extends OperationEnvelope,
+  TValue,
+>(
+  store: Writable<SecurityResourceState<E>>,
+  label: string,
+  call: () => Promise<E>,
+  extract: (envelope: E) => TValue | null,
+): Promise<TValue | null> {
+  beginSecurityResourceLoad(store);
+  const outcome = await runTypedOperationStage({
+    label,
+    call,
+    extract,
+    onFailure: (failure) => {
+      switch (failure.reason) {
+        case "runtime-error":
+          failSecurityResourceLoadAtRuntime(store, failure.error);
+          break;
+        case "response-error":
+          failSecurityResourceLoadWithResponse(store, failure.envelope);
+          break;
+        case "missing-contract":
+          failSecurityResourceLoadWithContractError(store, failure.envelope, internalFailure());
+          break;
+      }
+    },
+    onSuccess: (_value, envelope) => completeSecurityResourceLoad(store, envelope),
+  });
+  return outcome.ok ? outcome.value : null;
+}
+
 export async function loadSecurityStatus(): Promise<boolean> {
   if (!get(selectedSelector).trim()) return false;
 
-  beginSecurityStatusLoad();
-  const label = m.security_status_operation();
-  const attempt = await runOperation({
-    label,
-    call: () => api.configStatus({ selectionId: currentSelectionID() }),
-    onRuntimeFailure: failSecurityStatusLoadAtRuntime,
-  });
-  if (!attempt.ok) return false;
-
-  const envelope = attempt.envelope;
-  const report = configStatusReport(envelope);
-  if (envelope.error) {
-    failSecurityStatusLoadWithResponse(envelope);
-  } else if (!report) {
-    failSecurityStatusLoadWithContractError(envelope, internalFailure());
-  } else {
-    completeSecurityStatusLoad(envelope);
-  }
-  completeOperation(label, envelope, { contractValid: Boolean(report) });
-  if (envelope.error || !report) return false;
+  const report = await loadSecurityResource(
+    securityStatus,
+    m.security_status_operation(),
+    () => api.configStatus({ selectionId: currentSelectionID() }),
+    configStatusReport,
+  );
+  if (!report) return false;
 
   if (report.bio.supported) {
     await loadSecurityBioSensor();
@@ -266,26 +276,13 @@ export async function loadSecurityBioSensor(): Promise<boolean> {
     return false;
   }
 
-  beginSecurityBioSensorLoad();
-  const label = m.security_bio_sensor_operation();
-  const attempt = await runOperation({
-    label,
-    call: () => api.bioSensorInfo({ selectionId: currentSelectionID() }),
-    onRuntimeFailure: failSecurityBioSensorLoadAtRuntime,
-  });
-  if (!attempt.ok) return false;
-
-  const envelope = attempt.envelope;
-  const sensor = bioSensorReport(envelope);
-  if (envelope.error) {
-    failSecurityBioSensorLoadWithResponse(envelope);
-  } else if (!sensor) {
-    failSecurityBioSensorLoadWithContractError(envelope, internalFailure());
-  } else {
-    completeSecurityBioSensorLoad(envelope);
-  }
-  completeOperation(label, envelope, { contractValid: Boolean(sensor) });
-  return !envelope.error && Boolean(sensor);
+  const sensor = await loadSecurityResource(
+    securitySensor,
+    m.security_bio_sensor_operation(),
+    () => api.bioSensorInfo({ selectionId: currentSelectionID() }),
+    bioSensorReport,
+  );
+  return Boolean(sensor);
 }
 
 export async function loadSecurityEnrollments(): Promise<boolean> {
@@ -296,26 +293,13 @@ export async function loadSecurityEnrollments(): Promise<boolean> {
     return true;
   }
 
-  beginSecurityBioListLoad();
-  const label = m.security_bio_list_operation();
-  const attempt = await runOperation({
-    label,
-    call: () => api.bioList({ selectionId: currentSelectionID() }),
-    onRuntimeFailure: failSecurityBioListLoadAtRuntime,
-  });
-  if (!attempt.ok) return false;
-
-  const envelope = attempt.envelope;
-  const list = bioListReport(envelope);
-  if (envelope.error) {
-    failSecurityBioListLoadWithResponse(envelope);
-  } else if (!list) {
-    failSecurityBioListLoadWithContractError(envelope, internalFailure());
-  } else {
-    completeSecurityBioListLoad(envelope);
-  }
-  completeOperation(label, envelope, { contractValid: Boolean(list) });
-  return !envelope.error && Boolean(list);
+  const list = await loadSecurityResource(
+    securityEnrollments,
+    m.security_bio_list_operation(),
+    () => api.bioList({ selectionId: currentSelectionID() }),
+    bioListReport,
+  );
+  return Boolean(list);
 }
 
 async function runPINOperation(

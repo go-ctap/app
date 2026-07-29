@@ -750,6 +750,9 @@ describe("LargeBlobs", () => {
     render(LargeBlobs);
 
     const dialog = screen.getByRole("alertdialog", { name: "Confirm cleanup" });
+    expect(
+      within(dialog).getByText("Remove entries that no longer match a discoverable passkey."),
+    ).toBeInTheDocument();
     expect(within(dialog).getByText("1 unmatched")).toBeInTheDocument();
     expect(within(dialog).queryByText("Passkey ID")).not.toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Confirm cleanup" })).toBeInTheDocument();
@@ -776,6 +779,39 @@ describe("LargeBlobs", () => {
     expect(within(reopenedDialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
     expect(within(reopenedDialog).getByRole("button", { name: "Confirm cleanup" })).toBeEnabled();
     expect(within(reopenedDialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+  });
+
+  it("keeps a canceled cleanup preview retryable with its accessible description", () => {
+    seedLargeBlobsEnvelopeForTest(listEnvelope());
+    const preview = mutationPreview(MutationOperation.MutationGC, {
+      unmatchedBlobCount: 1,
+      noop: false,
+    });
+    const responseEnvelope = {
+      ...mutationEnvelope(preview),
+      error: failureForCode(Code.CodeOperationCanceled),
+    } as LargeBlobMutationEnvelope;
+    mutableLargeBlobsMutation.set({
+      kind: "cleanup",
+      phase: "error",
+      failedPhase: "previewing",
+      previewRequest: { selectionId: "authenticator-1", dryRun: true },
+      previewEnvelope: null,
+      responseEnvelope,
+      runtimeError: null,
+      failureReason: "response-error",
+    });
+
+    render(LargeBlobs);
+
+    const dialog = screen.getByRole("dialog", { name: "Large blob cleanup preview" });
+    expect(
+      within(dialog).getByText("Remove entries that no longer match a discoverable passkey."),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText("Large blob cleanup preview canceled")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Preview cleanup" })).toBeEnabled();
+    expect(within(dialog).getAllByRole("button", { name: "Close" })).toHaveLength(2);
+    expect(screen.queryByRole("alertdialog", { name: "Confirm cleanup" })).not.toBeInTheDocument();
   });
 
   it("keeps the delete confirmation action after any execution error", () => {

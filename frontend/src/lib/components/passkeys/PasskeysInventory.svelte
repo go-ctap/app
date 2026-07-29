@@ -17,9 +17,6 @@
 
   type Props = {
     presentation: PasskeysPresentation;
-    updateDisabled: boolean;
-    deleteDisabled: boolean;
-    previewOnly: boolean;
     onQueryChange: (query: string) => void;
     onFilterChange: (filter: PasskeysStatusFilter) => void;
     onSelect: (credentialID: string) => void;
@@ -31,9 +28,6 @@
 
   let {
     presentation,
-    updateDisabled,
-    deleteDisabled,
-    previewOnly,
     onQueryChange,
     onFilterChange,
     onSelect,
@@ -240,9 +234,9 @@
           {#snippet details()}
             <PasskeyInspector
               {row}
-              {updateDisabled}
-              {deleteDisabled}
-              {previewOnly}
+              updateDisabled={presentation.updateDisabled}
+              deleteDisabled={presentation.deleteDisabled}
+              previewOnly={Boolean(presentation.report?.support.previewOnly)}
               {onEdit}
               {onDelete}
             />

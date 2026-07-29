@@ -11,10 +11,10 @@ import type {
 import { failureForCode } from "../../test-failure";
 
 import {
-  beginSecurityStatusLoad,
-  completeSecurityStatusLoad,
-  failSecurityBioSensorLoadAtRuntime,
-  failSecurityStatusLoadWithResponse,
+  beginSecurityResourceLoad,
+  completeSecurityResourceLoad,
+  failSecurityResourceLoadAtRuntime,
+  failSecurityResourceLoadWithResponse,
   resetSecurityStateForTest,
   securitySensor,
   securityStatus,
@@ -37,14 +37,14 @@ describe("security state", () => {
       error: failureForCode(Code.CodeOperationUnsupported),
     } as ConfigStatusEnvelope;
 
-    beginSecurityStatusLoad();
+    beginSecurityResourceLoad(securityStatus);
     expect(get(securityStatus).phase).toBe("loading");
 
-    completeSecurityStatusLoad(successful);
-    beginSecurityStatusLoad();
+    completeSecurityResourceLoad(securityStatus, successful);
+    beginSecurityResourceLoad(securityStatus);
     expect(get(securityStatus).phase).toBe("refreshing");
 
-    failSecurityStatusLoadWithResponse(failed);
+    failSecurityResourceLoadWithResponse(securityStatus, failed);
     expect(get(securityStatus)).toMatchObject({
       phase: "unsupported",
       lastSuccessfulEnvelope: successful,
@@ -56,7 +56,7 @@ describe("security state", () => {
   it("keeps thrown runtime failures separate from generated envelopes", () => {
     const error: Failure = failureForCode(Code.CodeInternalError);
 
-    failSecurityBioSensorLoadAtRuntime(error);
+    failSecurityResourceLoadAtRuntime(securitySensor, error);
 
     expect(get(securitySensor)).toEqual({
       phase: "error",

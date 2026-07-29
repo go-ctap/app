@@ -20,9 +20,9 @@ import type { ConfigStatusEnvelope } from "../../bindings/telesma/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import {
-  completeSecurityStatusLoad,
+  completeSecurityResourceLoad,
   emptySecurityResourceState,
-  failSecurityStatusLoadAtRuntime,
+  failSecurityResourceLoadAtRuntime,
   securityStatus,
 } from "$lib/features/security/state";
 import { setAppLocale } from "$lib/i18n";
@@ -99,7 +99,7 @@ describe("Security screen", () => {
     setAppLocale("en");
     resetAppStateForTest();
     seedSelectionForTest(token.attachment.id, token, { state: "ready", selectionId: "authenticator-1" });
-    completeSecurityStatusLoad(statusEnvelope());
+    completeSecurityResourceLoad(securityStatus, statusEnvelope());
   });
 
   afterEach(() => cleanup());
@@ -114,7 +114,7 @@ describe("Security screen", () => {
   });
 
   it("shows and enforces the effective CTAP maximum PIN length", () => {
-    completeSecurityStatusLoad(statusEnvelope());
+    completeSecurityResourceLoad(securityStatus, statusEnvelope());
     render(Security);
 
     expect(screen.getByRole("spinbutton", { name: "Minimum PIN length" })).toHaveAttribute("max", "63");
@@ -123,7 +123,7 @@ describe("Security screen", () => {
 
   it("keeps a status-load failure out of the empty state", () => {
     securityStatus.set(emptySecurityResourceState());
-    failSecurityStatusLoadAtRuntime(failureForCode(Code.CodePINInvalid));
+    failSecurityResourceLoadAtRuntime(securityStatus, failureForCode(Code.CodePINInvalid));
 
     render(Security);
 

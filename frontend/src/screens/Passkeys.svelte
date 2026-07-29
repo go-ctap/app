@@ -117,9 +117,6 @@
     {:else}
       <PasskeysInventory
         presentation={passkeys}
-        updateDisabled={passkeys.updateDisabled}
-        deleteDisabled={passkeys.deleteDisabled}
-        previewOnly={Boolean(passkeys.report?.support.previewOnly)}
         onQueryChange={setPasskeysQuery}
         onFilterChange={setPasskeysStatusFilter}
         onSelect={selectPasskeyCredential}

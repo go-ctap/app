@@ -156,15 +156,10 @@ export type SecurityMutationState =
       SecurityMutationValidationError
     >;
 
-export const securityStatusState = writable<SecurityStatusState>(emptySecurityResourceState());
-export const securityBioSensorState = writable<SecurityBioSensorState>(emptySecurityResourceState());
-export const securityBioListState = writable<SecurityBioListState>(emptySecurityResourceState());
+export const securityStatus = writable<SecurityStatusState>(emptySecurityResourceState());
+export const securitySensor = writable<SecurityBioSensorState>(emptySecurityResourceState());
+export const securityEnrollments = writable<SecurityBioListState>(emptySecurityResourceState());
 export const securityMutation = writable<SecurityMutationState>(idleMutation());
-
-// Public feature names used by controllers and readonly app-store exports.
-export const securityStatus = securityStatusState;
-export const securitySensor = securityBioSensorState;
-export const securityEnrollments = securityBioListState;
 
 type ErrorBearingEnvelope = { error?: Failure | null };
 
@@ -226,79 +221,10 @@ export function failSecurityResourceLoadWithContractError<TEnvelope>(
   }));
 }
 
-export function beginSecurityStatusLoad() {
-  beginSecurityResourceLoad(securityStatusState);
-}
-
-export function completeSecurityStatusLoad(envelope: ConfigStatusEnvelope) {
-  completeSecurityResourceLoad(securityStatusState, envelope);
-}
-
-export function failSecurityStatusLoadWithResponse(envelope: ConfigStatusEnvelope) {
-  failSecurityResourceLoadWithResponse(securityStatusState, envelope);
-}
-
-export function failSecurityStatusLoadAtRuntime(error: Failure) {
-  failSecurityResourceLoadAtRuntime(securityStatusState, error);
-}
-
-export function failSecurityStatusLoadWithContractError(
-  envelope: ConfigStatusEnvelope,
-  error: Failure,
-) {
-  failSecurityResourceLoadWithContractError(securityStatusState, envelope, error);
-}
-
-export function beginSecurityBioSensorLoad() {
-  beginSecurityResourceLoad(securityBioSensorState);
-}
-
-export function completeSecurityBioSensorLoad(envelope: BioSensorEnvelope) {
-  completeSecurityResourceLoad(securityBioSensorState, envelope);
-}
-
-export function failSecurityBioSensorLoadWithResponse(envelope: BioSensorEnvelope) {
-  failSecurityResourceLoadWithResponse(securityBioSensorState, envelope);
-}
-
-export function failSecurityBioSensorLoadAtRuntime(error: Failure) {
-  failSecurityResourceLoadAtRuntime(securityBioSensorState, error);
-}
-
-export function failSecurityBioSensorLoadWithContractError(
-  envelope: BioSensorEnvelope,
-  error: Failure,
-) {
-  failSecurityResourceLoadWithContractError(securityBioSensorState, envelope, error);
-}
-
-export function beginSecurityBioListLoad() {
-  beginSecurityResourceLoad(securityBioListState);
-}
-
-export function completeSecurityBioListLoad(envelope: BioListEnvelope) {
-  completeSecurityResourceLoad(securityBioListState, envelope);
-}
-
-export function failSecurityBioListLoadWithResponse(envelope: BioListEnvelope) {
-  failSecurityResourceLoadWithResponse(securityBioListState, envelope);
-}
-
-export function failSecurityBioListLoadAtRuntime(error: Failure) {
-  failSecurityResourceLoadAtRuntime(securityBioListState, error);
-}
-
-export function failSecurityBioListLoadWithContractError(
-  envelope: BioListEnvelope,
-  error: Failure,
-) {
-  failSecurityResourceLoadWithContractError(securityBioListState, envelope, error);
-}
-
 export function resetSecurityDeviceState() {
-  securityStatusState.set(emptySecurityResourceState());
-  securityBioSensorState.set(emptySecurityResourceState());
-  securityBioListState.set(emptySecurityResourceState());
+  securityStatus.set(emptySecurityResourceState());
+  securitySensor.set(emptySecurityResourceState());
+  securityEnrollments.set(emptySecurityResourceState());
   securityMutation.set(idleMutation());
 }
 

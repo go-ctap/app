@@ -35,8 +35,7 @@ import {
 } from "./features/overview/state";
 import { failureForCode } from "./test-failure";
 import {
-  completeSecurityBioSensorLoad,
-  completeSecurityStatusLoad,
+  completeSecurityResourceLoad,
   securityEnrollments,
   securityMutation,
   securitySensor,
@@ -336,7 +335,7 @@ function resetEnvelope(phase: "preview" | "result"): ResetFactoryEnvelope {
 }
 
 function seedReadyStatus(envelope = statusEnvelope()) {
-  completeSecurityStatusLoad(envelope);
+  completeSecurityResourceLoad(securityStatus, envelope);
 }
 
 beforeEach(() => {
@@ -767,7 +766,7 @@ describe("security controller mutations", () => {
     seedReadyStatus(statusEnvelope({ bioSupported: true, bioConfigured: true }));
     const sensorEnvelope = bioSensorEnvelope();
     sensorEnvelope.result!.maxTemplateFriendlyName = 4;
-    completeSecurityBioSensorLoad(sensorEnvelope);
+    completeSecurityResourceLoad(securitySensor, sensorEnvelope);
     const bioRename = vi.spyOn(api, "bioRename").mockResolvedValue(bioRenamePreviewEnvelope(""));
 
     expect(await beginBioRename("cafe", "ééé")).toBe(false);

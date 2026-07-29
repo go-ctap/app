@@ -14,9 +14,11 @@
     previewErrorOpen: boolean;
     confirmationOpen: boolean;
     previewTitle: string;
+    previewDescription?: string;
     previewCanceledTitle: string;
     operationCanceledTitle: string;
     confirmationTitle: string;
+    confirmationDescription?: string;
     retryLabel: string;
     confirmLabel: string;
     failureMessage: string | null;
@@ -33,9 +35,11 @@
     previewErrorOpen,
     confirmationOpen,
     previewTitle,
+    previewDescription,
     previewCanceledTitle,
     operationCanceledTitle,
     confirmationTitle,
+    confirmationDescription,
     retryLabel,
     confirmLabel,
     failureMessage,
@@ -64,6 +68,9 @@
       <ModalScrollArea>
         <Dialog.Header>
           <Dialog.Title>{previewTitle}</Dialog.Title>
+          {#if previewDescription}
+            <Dialog.Description>{previewDescription}</Dialog.Description>
+          {/if}
         </Dialog.Header>
 
         <Alert.Root
@@ -92,6 +99,9 @@
         <AlertDialog.Header>
           <AlertDialog.Media><TriangleAlert aria-hidden="true" /></AlertDialog.Media>
           <AlertDialog.Title>{confirmationTitle}</AlertDialog.Title>
+          {#if confirmationDescription}
+            <AlertDialog.Description>{confirmationDescription}</AlertDialog.Description>
+          {/if}
         </AlertDialog.Header>
 
         {#if failureMessage}

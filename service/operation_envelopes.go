@@ -28,27 +28,37 @@ type inputlessAuthenticatorOperation[T any] func(
 	...ctapkit.OperationOption,
 ) (*T, error)
 
-func bindOperation[O any, T any](
-	operation O,
+func runAuthenticatorOperation[O any, T any](
+	service *Service,
+	ctx context.Context,
+	req OperationRequest,
+	kind operation.Kind,
+	input O,
 	execute authenticatorOperation[O, T],
-) operationExecutor[T] {
-	return func(
+) (OperationEnvelopeMeta, *T, error) {
+	return runOperation(service, ctx, req, kind, func(
 		ctx context.Context,
 		authenticator *ctapkit.Authenticator,
 		opts ...ctapkit.OperationOption,
 	) (*T, error) {
-		return execute(authenticator, ctx, operation, opts...)
-	}
+		return execute(authenticator, ctx, input, opts...)
+	})
 }
 
-func bindInputlessOperation[T any](execute inputlessAuthenticatorOperation[T]) operationExecutor[T] {
-	return func(
+func runInputlessOperation[T any](
+	service *Service,
+	ctx context.Context,
+	req OperationRequest,
+	kind operation.Kind,
+	execute inputlessAuthenticatorOperation[T],
+) (OperationEnvelopeMeta, *T, error) {
+	return runOperation(service, ctx, req, kind, func(
 		ctx context.Context,
 		authenticator *ctapkit.Authenticator,
 		opts ...ctapkit.OperationOption,
 	) (*T, error) {
 		return execute(authenticator, ctx, opts...)
-	}
+	})
 }
 
 func runOperation[T any](
