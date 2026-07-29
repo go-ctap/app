@@ -233,12 +233,7 @@ describe("Passkeys", () => {
       state: "ready",
       selectionId: "authenticator-1",
     });
-    failPasskeysInventoryLoadWithResponse({
-      operationId: "operation-error",
-      selectionId: "authenticator-1",
-      kind: OperationKind.ListCredentials,
-      error: failureForCode(Code.CodePINInvalid),
-    } as CredentialsEnvelope);
+    failPasskeysInventoryLoadWithResponse(false);
 
     render(Passkeys);
 
@@ -251,12 +246,7 @@ describe("Passkeys", () => {
       state: "ready",
       selectionId: "authenticator-1",
     });
-    failPasskeysInventoryLoadWithResponse({
-      operationId: "verification-flow-error",
-      selectionId: "authenticator-1",
-      kind: OperationKind.ListCredentials,
-      error: failureForCode(Code.CodeVerificationFlowUnsupported),
-    } as CredentialsEnvelope);
+    failPasskeysInventoryLoadWithResponse(false);
 
     render(Passkeys);
 
@@ -524,7 +514,7 @@ describe("Passkeys", () => {
       selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
-    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeTransportFailure));
+    failPasskeysInventoryLoadAtRuntime();
 
     render(Passkeys);
 
@@ -608,17 +598,15 @@ describe("Passkeys", () => {
     };
     const mutation = {
       kind: "update",
-      credentialIDHex: "cafe",
-      original: { userIDHex: "01", name: "user@example.com", displayName: "Example User" },
-      form: { userIDHex: "01", name: "updated@example.com", displayName: "Example User" },
+      target: credentialUpdateTarget(),
+      form: { name: "updated@example.com", displayName: "Example User" },
       previewRequest,
       previewEnvelope,
     } as const;
     mutablePasskeysMutation.set({
       kind: "update",
       phase: "previewing",
-      credentialIDHex: mutation.credentialIDHex,
-      original: mutation.original,
+      target: mutation.target,
       form: mutation.form,
       previewRequest,
     });

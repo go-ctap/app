@@ -2,6 +2,7 @@ import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
+import type { CredentialTarget } from "../../bindings/github.com/go-ctap/kit/model/credentials";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
@@ -18,6 +19,8 @@ import {
   completePasskeysInventoryLoad,
   credentialStoreStateState,
   failPasskeysInventoryLoadAtRuntime,
+  passkeysInventoryState,
+  passkeysMutation,
   resetPasskeysStateForTest,
 } from "./features/passkeys/state";
 import {
@@ -75,8 +78,8 @@ function inventoryEnvelope(readOnlyPermission = true): CredentialsEnvelope {
   } as CredentialsEnvelope;
 }
 
-function updateTarget() {
-  const credential = {
+function updateTarget(): CredentialTarget {
+  const record = {
     credentialIDHex: "cafe",
     userIDHex: "01",
     userName: "user",
@@ -84,11 +87,9 @@ function updateTarget() {
   };
 
   return {
-    relyingParty: {
-      rpID: "example.test",
-      credentials: [credential],
-    },
-    credential,
+    record,
+    rp: { id: "example.test" },
+    user: { userIDHex: "01", name: "user", displayName: "Old name" },
   };
 }
 
@@ -168,7 +169,7 @@ beforeEach(() => {
   resetPasskeysStateForTest();
   selectedSelector.set("token-1");
   authenticatorStatus.set({ state: "ready", selectionId: "authenticator-1" });
-  completePasskeysInventoryLoad(inventoryEnvelope(), "2026-07-12T00:00:00.000Z");
+  completePasskeysInventoryLoad(inventoryEnvelope().result!, "2026-07-12T00:00:00.000Z");
 });
 
 afterEach(() => {
@@ -230,7 +231,7 @@ describe("passkeys mutation requests", () => {
   });
 
   it("does not request persistent state without perCredMgmtRO", async () => {
-    completePasskeysInventoryLoad(inventoryEnvelope(false), "2026-07-12T00:00:00.000Z");
+    completePasskeysInventoryLoad(inventoryEnvelope(false).result!, "2026-07-12T00:00:00.000Z");
     const read = vi.spyOn(api, "credentialStoreState");
 
     expect(await loadCredentialStoreState()).toBe(false);
@@ -239,7 +240,14 @@ describe("passkeys mutation requests", () => {
   });
 
   it("allows update and delete from last-known-good rows after refresh fails", async () => {
-    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeTransportFailure));
+    const report = get(passkeysInventoryState).report;
+    failPasskeysInventoryLoadAtRuntime();
+
+    expect(get(passkeysInventoryState)).toEqual({
+      phase: "error",
+      report,
+      lastSuccessfulAt: "2026-07-12T00:00:00.000Z",
+    });
 
     expect(beginCredentialUpdate("cafe")).toBe(true);
     closePasskeysMutation();
@@ -249,15 +257,56 @@ describe("passkeys mutation requests", () => {
     expect(remove).toHaveBeenCalledOnce();
   });
 
+  it.each([
+    [Code.CodeCredentialManagementUnsupported, "unsupported"],
+    [Code.CodeVerificationFlowUnsupported, "error"],
+  ] as const)("classifies response code %s without discarding stale inventory", async (code, phase) => {
+    const report = get(passkeysInventoryState).report;
+    const envelope = inventoryEnvelope();
+    envelope.error = failureForCode(code);
+    envelope.result = null;
+    vi.spyOn(api, "listCredentials").mockResolvedValue(envelope);
+
+    expect(await loadPasskeys()).toBe(false);
+    expect(get(passkeysInventoryState)).toEqual({
+      phase,
+      report,
+      lastSuccessfulAt: "2026-07-12T00:00:00.000Z",
+    });
+  });
+
+  it("captures the generated credential target once and sends it unchanged", async () => {
+    const report = inventoryEnvelope().result!;
+    const record = report.groups![0].credentials![0];
+    completePasskeysInventoryLoad(report, "2026-07-12T00:00:00.000Z");
+    const update = vi.spyOn(api, "updateCredentialUser").mockResolvedValue(updatePreviewEnvelope());
+
+    expect(beginCredentialUpdate("cafe")).toBe(true);
+    const mutation = get(passkeysMutation);
+    expect(mutation.kind).toBe("update");
+    if (mutation.kind !== "update") return;
+    expect(mutation.target).toEqual({
+      record,
+      rp: { id: "example.test" },
+      user: { userIDHex: "01", name: "user", displayName: "Old name" },
+    });
+    expect(mutation.target.record).toBe(record);
+
+    updateCredentialDraft({ displayName: "New name" });
+    expect(await previewCredentialUpdate()).toBe(true);
+    expect(update.mock.calls[0][0].target).toBe(mutation.target);
+  });
+
   it("marks only normalized fields that actually changed", () => {
+    const target = updateTarget();
     const request = buildCredentialUpdatePreviewRequest(
       "authenticator-1",
       VerificationFlow.VerificationFlowPIN,
-      updateTarget(),
-      { name: "old", displayName: "Visible" },
+      target,
       { name: "", displayName: " Changed " },
     );
 
+    expect(request.target).toBe(target);
     expect(request).toEqual({
       selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowPIN,
@@ -286,8 +335,7 @@ describe("passkeys mutation requests", () => {
       "authenticator-1",
       VerificationFlow.VerificationFlowPIN,
       updateTarget(),
-      { name: "user", displayName: "Visible" },
-      { name: " user ", displayName: "Visible" },
+      { name: " user ", displayName: "Old name" },
     );
 
     expect(request).toEqual({

@@ -1,14 +1,17 @@
 import { writable } from "svelte/store";
 
 import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit";
-import { Code, type Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+import type {
+  CredentialTarget,
+  InventoryReport,
+} from "../../../../bindings/github.com/go-ctap/kit/model/credentials";
 import type {
   CredentialDeleteEnvelope,
   CredentialDeleteRequest,
   CredentialStoreStateEnvelope,
   CredentialUpdateEnvelope,
   CredentialUpdateRequest,
-  CredentialsEnvelope,
 } from "../../../../bindings/telesma/service";
 
 import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
@@ -23,16 +26,10 @@ import {
 export type PasskeysInventoryPhase = "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";
 export type CredentialStoreStatePhase = "idle" | "loading" | "ready" | "error" | "unsupported";
 
-/**
- * Passkeys keeps the last-known-good inventory separate from the response to the
- * latest attempt. This lets the UI stay useful after a failed forced refresh
- * without mistaking an errored service envelope for usable data.
- */
+/** Retains the last-known-good generated report while a forced refresh fails. */
 export type PasskeysInventoryState = {
   phase: PasskeysInventoryPhase;
-  lastSuccessfulEnvelope: CredentialsEnvelope | null;
-  responseEnvelope: CredentialsEnvelope | null;
-  runtimeError: Failure | null;
+  report: InventoryReport | null;
   lastSuccessfulAt: string | null;
 };
 
@@ -43,7 +40,7 @@ export type CredentialStoreStateState = {
 };
 
 export function passkeysInventoryIsStale(state: PasskeysInventoryState) {
-  return Boolean(state.lastSuccessfulEnvelope)
+  return Boolean(state.report)
     && (state.phase === "error" || state.phase === "unsupported");
 }
 
@@ -67,8 +64,7 @@ export type PasskeysMutationFailureReason = MutationFailureReason;
 
 type UpdateMutationBase = {
   kind: "update";
-  credentialIDHex: string;
-  original: CredentialUpdateForm;
+  target: CredentialTarget;
   form: CredentialUpdateForm;
 };
 
@@ -94,9 +90,7 @@ export type PasskeysMutationState =
 export function emptyPasskeysInventoryState(): PasskeysInventoryState {
   return {
     phase: "idle",
-    lastSuccessfulEnvelope: null,
-    responseEnvelope: null,
-    runtimeError: null,
+    report: null,
     lastSuccessfulAt: null,
   };
 }
@@ -121,37 +115,29 @@ export const passkeysMutation = writable<PasskeysMutationState>(idleMutation());
 export function beginPasskeysInventoryLoad() {
   passkeysInventoryState.update((current) => ({
     ...current,
-    phase: current.lastSuccessfulEnvelope ? "refreshing" : "loading",
-    responseEnvelope: null,
-    runtimeError: null,
+    phase: current.report ? "refreshing" : "loading",
   }));
 }
 
-export function completePasskeysInventoryLoad(envelope: CredentialsEnvelope, completedAt: string) {
+export function completePasskeysInventoryLoad(report: InventoryReport, completedAt: string) {
   passkeysInventoryState.set({
     phase: "ready",
-    lastSuccessfulEnvelope: envelope,
-    responseEnvelope: envelope,
-    runtimeError: null,
+    report,
     lastSuccessfulAt: completedAt,
   });
 }
 
-export function failPasskeysInventoryLoadWithResponse(envelope: CredentialsEnvelope) {
+export function failPasskeysInventoryLoadWithResponse(unsupported: boolean) {
   passkeysInventoryState.update((current) => ({
     ...current,
-    phase: envelope.error?.code === Code.CodeCredentialManagementUnsupported ? "unsupported" : "error",
-    responseEnvelope: envelope,
-    runtimeError: null,
+    phase: unsupported ? "unsupported" : "error",
   }));
 }
 
-export function failPasskeysInventoryLoadAtRuntime(error: Failure) {
+export function failPasskeysInventoryLoadAtRuntime() {
   passkeysInventoryState.update((current) => ({
     ...current,
     phase: "error",
-    responseEnvelope: null,
-    runtimeError: error,
   }));
 }
 

@@ -230,7 +230,7 @@ describe("discovery controller", () => {
     const original = device("token-1", "Original");
     const refreshed = device("token-1", "Refreshed");
     const inspection = { operationId: "inspect-1" } as InspectEnvelope;
-    const inventory = { operationId: "credentials-1" } as CredentialsEnvelope;
+    const inventory = { operationId: "credentials-1", result: {} } as CredentialsEnvelope;
     const largeBlobs = { operationId: "large-blobs-1" } as LargeBlobListEnvelope;
     const prompt = {
       interactionId: "interaction-1",
@@ -254,7 +254,7 @@ describe("discovery controller", () => {
       selectionId: "authenticator-token-1",
     });
     expect(get(authenticatorInspection).data).toBe(inspection);
-    expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(inventory);
+    expect(get(passkeysInventoryState).report).toBe(inventory.result);
     expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).toBe(largeBlobs);
     expect(get(pendingInteraction)).toBe(prompt);
   });
@@ -408,7 +408,7 @@ describe("discovery controller", () => {
     expect(get(authenticatorStatus).selectionId).toBeUndefined();
     expect(get(pendingInteraction)).toBeNull();
     expect(get(authenticatorInspection).data).toBeNull();
-    expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBeNull();
+    expect(get(passkeysInventoryState).report).toBeNull();
     expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).toBeNull();
     expect(get(statusBar).activeOperation).toBeNull();
     expect(get(statusBar).lastOutcome).toMatchObject({

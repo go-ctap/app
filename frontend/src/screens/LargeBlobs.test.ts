@@ -407,10 +407,6 @@ describe("LargeBlobs", () => {
     mutableLargeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "cafe",
-      request: {
-        selectionId: "authenticator-1",
-        credentialIdHex: "cafe",
-      },
       responseEnvelope: readEnvelope(),
     });
 
@@ -430,10 +426,6 @@ describe("LargeBlobs", () => {
     mutableLargeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "beef",
-      request: {
-        selectionId: "authenticator-1",
-        credentialIdHex: "beef",
-      },
       responseEnvelope: readEnvelope({ missingKey: true }),
     });
 
@@ -453,7 +445,6 @@ describe("LargeBlobs", () => {
       mutableLargeBlobsReadState.set({
         phase: "error",
         credentialIDHex: "cafe",
-        request: { selectionId: "authenticator-1", credentialIdHex: "cafe" },
         responseEnvelope: {
           operationId: "large-blob-read-error",
           selectionId: "authenticator-1",
@@ -477,10 +468,6 @@ describe("LargeBlobs", () => {
     mutableLargeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "feed",
-      request: {
-        selectionId: "authenticator-1",
-        credentialIdHex: "feed",
-      },
       responseEnvelope: missingBlobReadEnvelope(),
     });
 
@@ -509,10 +496,6 @@ describe("LargeBlobs", () => {
     mutableLargeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "cafe",
-      request: {
-        selectionId: "authenticator-1",
-        credentialIdHex: "cafe",
-      },
       responseEnvelope: envelope,
     });
 
@@ -542,10 +525,6 @@ describe("LargeBlobs", () => {
     mutableLargeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "cafe",
-      request: {
-        selectionId: "authenticator-1",
-        credentialIdHex: "cafe",
-      },
       responseEnvelope: envelope,
     });
 
@@ -574,7 +553,6 @@ describe("LargeBlobs", () => {
     mutableLargeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "cafe",
-      request: { selectionId: "authenticator-1", credentialIdHex: "cafe" },
       responseEnvelope: envelope,
     });
     render(LargeBlobs);
@@ -619,7 +597,6 @@ describe("LargeBlobs", () => {
     mutableLargeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "cafe",
-      request: { selectionId: "authenticator-1", credentialIdHex: "cafe" },
       responseEnvelope: envelope,
     });
 

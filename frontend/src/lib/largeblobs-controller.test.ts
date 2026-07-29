@@ -22,7 +22,6 @@ import {
   beginLargeBlobCleanup,
   beginLargeBlobDelete,
   beginLargeBlobWrite,
-  buildLargeBlobReadRequest,
   confirmLargeBlobCleanup,
   confirmLargeBlobDelete,
   confirmLargeBlobWrite,
@@ -166,20 +165,6 @@ afterEach(() => {
 });
 
 describe("large blob controller", () => {
-  it("builds an exact typed read request with the selected decode mode", () => {
-    expect(buildLargeBlobReadRequest(
-      "authenticator-1",
-      VerificationFlow.VerificationFlowPIN,
-      "cafe",
-      DecodeMode.DecodeModeCBOR,
-    )).toEqual({
-      selectionId: "authenticator-1",
-      verificationFlow: VerificationFlow.VerificationFlowPIN,
-      credentialIdHex: "cafe",
-      decodeMode: DecodeMode.DecodeModeCBOR,
-    });
-  });
-
   it("reads on selection and decodes again immediately when the mode changes", async () => {
     const initial = readEnvelope(DecodeMode.DecodeModeJSON);
     const decoded = readEnvelope(DecodeMode.DecodeModeCBOR);
@@ -228,7 +213,6 @@ describe("large blob controller", () => {
     largeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "cafe",
-      request: { selectionId: "authenticator-1", credentialIdHex: "cafe" },
       responseEnvelope: envelope,
     });
 
@@ -249,7 +233,6 @@ describe("large blob controller", () => {
     largeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "cafe",
-      request: { selectionId: "authenticator-1", credentialIdHex: "cafe" },
       responseEnvelope: envelope,
     });
 
@@ -342,6 +325,30 @@ describe("large blob controller", () => {
     expect(write).toHaveBeenCalledTimes(3);
     expect(write.mock.calls[1][0]).toMatchObject({ dryRun: false });
     expect(write.mock.calls[2][0]).toMatchObject({ dryRun: false });
+  });
+
+  it("keeps an execution runtime failure separate from generated envelopes", async () => {
+    const preview = previewEnvelope(
+      OperationKind.WriteLargeBlob,
+      MutationOperation.MutationReplace,
+    );
+    vi.spyOn(api, "writeLargeBlob")
+      .mockResolvedValueOnce(preview)
+      .mockRejectedValueOnce(new Error("bridge offline"));
+
+    expect(beginLargeBlobWrite("cafe")).toBe(true);
+    expect(await previewLargeBlobWrite()).toBe(true);
+    expect(await confirmLargeBlobWrite()).toBe(false);
+
+    expect(get(largeBlobsMutation)).toMatchObject({
+      kind: "write",
+      phase: "error",
+      failedPhase: "executing",
+      previewEnvelope: preview,
+      responseEnvelope: null,
+      failureReason: "runtime-error",
+      runtimeError: { code: Code.CodeInternalError },
+    });
   });
 
   it("reconfirms cleanup after any execution failure", async () => {
@@ -513,10 +520,6 @@ describe("large blob controller", () => {
     largeBlobsReadState.set({
       phase: "ready",
       credentialIDHex: "cafe",
-      request: {
-        selectionId: "authenticator-1",
-        credentialIdHex: "cafe",
-      },
       responseEnvelope: {
         operationId: "old-read",
         selectionId: "authenticator-1",

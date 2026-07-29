@@ -1,5 +1,5 @@
 import type { LookupResult } from "../../bindings/github.com/go-ctap/mds/model";
-import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { Code, type Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type {
   BioSensorEnvelope,
@@ -29,6 +29,7 @@ import {
   emptyPasskeysInventoryState,
   passkeysInventoryState,
 } from "./features/passkeys/state.js";
+import { credentialsReport } from "./ctapkit-results.js";
 import {
   authenticatorInspection,
   devices,
@@ -105,8 +106,7 @@ export function seedPasskeysEnvelopeForTest(envelope: CredentialsEnvelope | null
     passkeysInventoryState.set({
       ...emptyPasskeysInventoryState(),
       phase: "error",
-      lastSuccessfulEnvelope: envelope,
-      runtimeError: error,
+      report: envelope?.result ?? null,
     });
     return;
   }
@@ -114,7 +114,15 @@ export function seedPasskeysEnvelopeForTest(envelope: CredentialsEnvelope | null
     passkeysInventoryState.set(emptyPasskeysInventoryState());
     return;
   }
-  completePasskeysInventoryLoad(envelope, "2026-06-22T00:00:00.000Z");
+  const report = credentialsReport(envelope);
+  if (report) {
+    completePasskeysInventoryLoad(report, "2026-06-22T00:00:00.000Z");
+    return;
+  }
+  passkeysInventoryState.set({
+    ...emptyPasskeysInventoryState(),
+    phase: envelope.error?.code === Code.CodeCredentialManagementUnsupported ? "unsupported" : "error",
+  });
 }
 
 export function seedLargeBlobsEnvelopeForTest(envelope: LargeBlobListEnvelope | null, error?: Failure | null) {

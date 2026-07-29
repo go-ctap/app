@@ -2,32 +2,22 @@ import type { CredentialGroup, CredentialRecord, InventoryReport } from "../../b
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 
 import { m } from "../paraglide/messages.js";
-import { credentialsReport } from "./ctapkit-results.js";
 import type { PasskeysInventoryState, PasskeysStatusFilter } from "./features/passkeys/state.js";
 import { passkeysInventoryIsStale } from "./features/passkeys/state.js";
 import { deviceName } from "./format.js";
-
-export type PasskeyCredentialTarget = {
-  relyingParty: CredentialGroup;
-  credential: CredentialRecord;
-};
 
 export type PasskeyCredentialRow = {
   id: string;
   rpID: string;
   rpName: string;
-  rpIDHashHex: string;
   credentialIDHex: string;
   credentialType: string;
-  credentialTransports: string;
   userIDHex: string;
   userName: string;
   displayName: string;
-  largeBlobKeyState: string;
   largeBlobKeyAvailable: boolean;
   credProtect: string;
   credProtectLevel: number | null;
-  thirdPartyPayment: string;
   thirdPartyPaymentEnabled: boolean;
   raw: {
     relyingParty: Omit<CredentialGroup, "credentials">;
@@ -86,18 +76,14 @@ function rowFor(group: CredentialGroup, credential: CredentialRecord): PasskeyCr
     id: credential.credentialIDHex,
     rpID: group.rpID,
     rpName: relyingPartyName(group),
-    rpIDHashHex: displayValue(group.rpIDHashHex),
     credentialIDHex: credential.credentialIDHex,
     credentialType: displayValue(credential.credentialType),
-    credentialTransports: (credential.credentialTransports ?? []).join(", ") || m.not_reported(),
     userIDHex: displayValue(credential.userIDHex),
     userName: displayValue(credential.userName),
     displayName: displayValue(credential.displayName),
-    largeBlobKeyState: displayValue(credential.largeBlobKeyState),
     largeBlobKeyAvailable: credential.largeBlobKeyState === "available",
     credProtect: credProtectLabel(credential.credProtect),
     credProtectLevel: credential.credProtect || null,
-    thirdPartyPayment: displayValue(credential.thirdPartyPayment),
     thirdPartyPaymentEnabled: credential.thirdPartyPayment === true,
     raw: {
       relyingParty: {
@@ -108,14 +94,6 @@ function rowFor(group: CredentialGroup, credential: CredentialRecord): PasskeyCr
       credential,
     },
   };
-}
-
-export function passkeyCredentialTargets(report: InventoryReport | null): PasskeyCredentialTarget[] {
-  return (report?.groups ?? []).flatMap((group) => (group.credentials ?? []).map((credential) => ({ relyingParty: group, credential })));
-}
-
-export function findPasskeyCredential(report: InventoryReport | null, credentialIDHex: string): PasskeyCredentialTarget | null {
-  return passkeyCredentialTargets(report).find((target) => target.credential.credentialIDHex === credentialIDHex) ?? null;
 }
 
 function searchMatches(group: CredentialGroup, credential: CredentialRecord, normalizedQuery: string) {
@@ -181,8 +159,7 @@ export function passkeysCapacity(report: InventoryReport | null): PasskeysCapaci
 export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
   const query = input.query;
   const statusFilter = input.statusFilter;
-  const envelope = input.inventoryState.lastSuccessfulEnvelope;
-  const report = credentialsReport(envelope);
+  const report = input.inventoryState.report;
   const allRows = buildPasskeyRows(report);
   const rows = buildPasskeyRows(report, query, statusFilter);
   const selectedCredentialID = input.selectedCredentialID;

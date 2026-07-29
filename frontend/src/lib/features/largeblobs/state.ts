@@ -9,7 +9,6 @@ import type {
   LargeBlobMutationEnvelope,
   LargeBlobMutationRequest,
   LargeBlobReadEnvelope,
-  LargeBlobReadRequest,
 } from "../../../../bindings/telesma/service";
 
 import type {
@@ -55,18 +54,15 @@ export type LargeBlobReadState =
   | {
       phase: "loading";
       credentialIDHex: string;
-      request: LargeBlobReadRequest;
     }
   | {
       phase: "ready";
       credentialIDHex: string;
-      request: LargeBlobReadRequest;
       responseEnvelope: LargeBlobReadEnvelope;
     }
   | {
       phase: "error";
       credentialIDHex: string;
-      request: LargeBlobReadRequest | null;
       responseEnvelope: LargeBlobReadEnvelope | null;
       runtimeError: Failure | null;
       failureReason: LargeBlobReadFailureReason;

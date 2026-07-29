@@ -1,12 +1,10 @@
 import { describe, expect, it, beforeEach } from "vitest";
 
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { CredentialsEnvelope } from "../../bindings/telesma/service";
 import { testHIDDevice } from "../test/device.js";
 
 import { setAppLocale } from "$lib/i18n";
-import { failureForCode } from "$lib/test-failure";
 import { emptyPasskeysInventoryState, type PasskeysInventoryState } from "$lib/features/passkeys/state";
 
 import { buildPasskeyRows, buildPasskeysPresentation } from "./passkeys-presentation";
@@ -39,8 +37,7 @@ function inventoryState(credentials: CredentialsEnvelope): PasskeysInventoryStat
   return {
     ...emptyPasskeysInventoryState(),
     phase: "ready",
-    lastSuccessfulEnvelope: credentials,
-    responseEnvelope: credentials,
+    report: credentials.result!,
     lastSuccessfulAt: "2026-06-22T00:00:00.000Z",
   };
 }
@@ -102,8 +99,8 @@ describe("buildPasskeysPresentation", () => {
     expect(presentation.rows).toHaveLength(1);
     expect(presentation.rows[0].rpName).toBe("Example");
     expect(presentation.rows[0].rpID).toBe("example.com");
-    expect(presentation.rows[0].credentialTransports).toBe("usb, nfc");
     expect(presentation.rows[0].credProtect).toBe("Level 2 · UV optional with passkey list");
+    expect(presentation.rows[0].raw.credential.credentialTransports).toEqual(["usb", "nfc"]);
     expect(presentation.rows[0].raw.relyingParty).toEqual({
       rpID: "example.com",
       rpName: "Example",
@@ -301,8 +298,6 @@ describe("buildPasskeysPresentation", () => {
     const state: PasskeysInventoryState = {
       ...inventoryState(credentials),
       phase: "error",
-      responseEnvelope: null,
-      runtimeError: failureForCode(Code.CodeTransportFailure),
     };
     const presentation = buildPasskeysPresentation({
       ...defaultView,

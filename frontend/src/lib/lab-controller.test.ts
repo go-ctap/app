@@ -659,7 +659,7 @@ describe("WebAuthn Lab request lifecycle", () => {
   });
 
   it("invalidates Passkeys and Large Blobs after success without losing UI preferences", async () => {
-    completePasskeysInventoryLoad({} as CredentialsEnvelope, "2026-07-13T00:00:00.000Z");
+    completePasskeysInventoryLoad({} as NonNullable<CredentialsEnvelope["result"]>, "2026-07-13T00:00:00.000Z");
     passkeysQuery.set("alice");
     passkeysStatusFilter.set("large-blob-available");
     passkeysVerificationFlow.set(VerificationFlow.VerificationFlowPIN);
@@ -680,9 +680,7 @@ describe("WebAuthn Lab request lifecycle", () => {
 
     expect(get(passkeysInventoryState)).toEqual({
       phase: "idle",
-      lastSuccessfulEnvelope: null,
-      responseEnvelope: null,
-      runtimeError: null,
+      report: null,
       lastSuccessfulAt: null,
     });
     expect(get(passkeysQuery)).toBe("alice");

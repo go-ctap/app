@@ -22,6 +22,7 @@ import {
   type StatusReport,
 } from "../../bindings/github.com/go-ctap/kit/model/config";
 import type {
+  CredentialTarget,
   DeleteOutput as CredentialDeleteOutput,
   DeletePreview,
   DeleteResult,
@@ -172,6 +173,32 @@ export function resetFactoryResult(envelope: ResetFactoryEnvelope | null | undef
 export function credentialsReport(envelope: CredentialsEnvelope | null | undefined): InventoryReport | null {
   if (!envelope || envelope.error || !envelope.result) return null;
   return envelope.result;
+}
+
+export function credentialTarget(
+  report: InventoryReport | null,
+  credentialIDHex: string,
+): CredentialTarget | null {
+  for (const group of report?.groups ?? []) {
+    const record = group.credentials?.find((credential) => credential.credentialIDHex === credentialIDHex);
+    if (!record) continue;
+
+    return {
+      record,
+      rp: {
+        id: group.rpID,
+        ...(group.rpName ? { name: group.rpName } : {}),
+        ...(group.rpIDHashHex ? { idHashHex: group.rpIDHashHex } : {}),
+      },
+      user: {
+        userIDHex: record.userIDHex ?? "",
+        name: record.userName ?? "",
+        displayName: record.displayName ?? "",
+      },
+    };
+  }
+
+  return null;
 }
 
 export function credentialStoreStateResult(

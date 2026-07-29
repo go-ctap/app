@@ -221,23 +221,8 @@ function editingLargeBlobWrite(
   return editingMutation(base, validationError);
 }
 
-export function buildLargeBlobReadRequest(
-  selectionId: string,
-  verificationFlow: VerificationFlow,
-  credentialIDHex: string,
-  decodeMode: DecodeMode,
-): LargeBlobReadRequest {
-  return {
-    selectionId,
-    verificationFlow,
-    credentialIdHex: credentialIDHex,
-    decodeMode,
-  };
-}
-
 function readError(
   credentialIDHex: string,
-  request: LargeBlobReadRequest | null,
   responseEnvelope: LargeBlobReadEnvelope | null,
   runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
   failureReason: "response-error" | "runtime-error" | "missing-result",
@@ -245,7 +230,6 @@ function readError(
   largeBlobsReadState.set({
     phase: "error",
     credentialIDHex,
-    request,
     responseEnvelope,
     runtimeError,
     failureReason,
@@ -256,31 +240,31 @@ export async function readLargeBlob(credentialIDHex = get(largeBlobsSelectedCred
   const inventory = reportForActions();
   if (!inventory || !findLargeBlobCredential(inventory, credentialIDHex)) return false;
 
-  const request = buildLargeBlobReadRequest(
-    currentSelectionID(),
-    get(largeBlobsVerificationFlow),
-    credentialIDHex,
-    get(largeBlobsDecodeMode),
-  );
+  const request: LargeBlobReadRequest = {
+    selectionId: currentSelectionID(),
+    verificationFlow: get(largeBlobsVerificationFlow),
+    credentialIdHex: credentialIDHex,
+    decodeMode: get(largeBlobsDecodeMode),
+  };
 
   largeBlobsSelectedCredentialID.set(credentialIDHex);
-  largeBlobsReadState.set({ phase: "loading", credentialIDHex, request });
+  largeBlobsReadState.set({ phase: "loading", credentialIDHex });
   const label = m.large_blob_read();
   const attempt = await runOperation({
     label,
     call: () => api.readLargeBlob(requestForCurrentSelection(request)),
-    onRuntimeFailure: (error) => readError(credentialIDHex, request, null, error, "runtime-error"),
+    onRuntimeFailure: (error) => readError(credentialIDHex, null, error, "runtime-error"),
   });
   if (!attempt.ok) return false;
 
   const envelope = attempt.envelope;
   const report = largeBlobReadReport(envelope);
   if (envelope.error) {
-    readError(credentialIDHex, request, envelope, null, "response-error");
+    readError(credentialIDHex, envelope, null, "response-error");
   } else if (!report) {
-    readError(credentialIDHex, request, envelope, null, "missing-result");
+    readError(credentialIDHex, envelope, null, "missing-result");
   } else {
-    largeBlobsReadState.set({ phase: "ready", credentialIDHex, request, responseEnvelope: envelope });
+    largeBlobsReadState.set({ phase: "ready", credentialIDHex, responseEnvelope: envelope });
   }
   completeOperation(label, envelope, { contractValid: Boolean(report) });
   return !envelope.error && Boolean(report);
@@ -552,34 +536,64 @@ async function refreshAfterMutation() {
   await loadLargeBlobs();
 }
 
+type LargeBlobExecutionRequest = LargeBlobMutationRequest | LargeBlobGarbageCollectRequest;
+
+type LargeBlobExecutionOptions<TRequest extends LargeBlobExecutionRequest> = {
+  label: string;
+  execution: {
+    previewRequest: TRequest;
+    previewEnvelope: LargeBlobMutationEnvelope;
+  };
+  call: (request: TRequest) => Promise<LargeBlobMutationEnvelope>;
+  makeExecuting: (request: TRequest, envelope: LargeBlobMutationEnvelope) => LargeBlobMutationState;
+  setFailure: (
+    responseEnvelope: LargeBlobMutationEnvelope | null,
+    runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
+    failureReason: LargeBlobMutationFailureReason,
+  ) => void;
+};
+
+async function executeReviewedLargeBlobMutation<TRequest extends LargeBlobExecutionRequest>({
+  label,
+  execution,
+  call,
+  makeExecuting,
+  setFailure,
+}: LargeBlobExecutionOptions<TRequest>): Promise<boolean> {
+  const request = {
+    ...execution.previewRequest,
+    dryRun: false,
+  };
+  largeBlobsMutation.set(makeExecuting(execution.previewRequest, execution.previewEnvelope));
+  const outcome = await runTypedOperationStage({
+    label,
+    call: () => call(requestForCurrentSelection(request)),
+    extract: largeBlobMutationResult,
+    onFailure: (failure) => {
+      const details = operationStageFailureDetails(failure, "missing-result");
+      setFailure(details.responseEnvelope, details.runtimeError, details.failureReason);
+    },
+  });
+  if (!outcome.ok) return false;
+
+  await refreshAfterMutation();
+  return true;
+}
+
 export async function confirmLargeBlobWrite(): Promise<boolean> {
   const current = get(largeBlobsMutation);
   if (current.kind !== "write" || (current.phase !== "review" && current.phase !== "error")) return false;
   const execution = mutationExecutionContext(current);
   if (!execution) return false;
-  const { previewRequest, previewEnvelope } = execution;
-  const request: LargeBlobMutationRequest = {
-    ...previewRequest,
-    dryRun: false,
-  };
-  largeBlobsMutation.set(executingMutation(
-    writeMutationBase(current),
-    previewRequest,
-    previewEnvelope,
-  ));
-  const label = m.large_blob_write();
-  const outcome = await runTypedOperationStage({
-    label,
-    call: () => api.writeLargeBlob(requestForCurrentSelection(request)),
-    extract: largeBlobMutationResult,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-result");
-      writeError(current, "executing", previewRequest, previewEnvelope, details.responseEnvelope, details.runtimeError, details.failureReason);
-    },
+
+  return executeReviewedLargeBlobMutation({
+    label: m.large_blob_write(),
+    execution,
+    call: (request) => api.writeLargeBlob(request),
+    makeExecuting: (request, envelope) => executingMutation(writeMutationBase(current), request, envelope),
+    setFailure: (response, runtime, reason) =>
+      writeError(current, "executing", execution.previewRequest, execution.previewEnvelope, response, runtime, reason),
   });
-  if (!outcome.ok) return false;
-  await refreshAfterMutation();
-  return true;
 }
 
 export async function confirmLargeBlobDelete(): Promise<boolean> {
@@ -587,29 +601,17 @@ export async function confirmLargeBlobDelete(): Promise<boolean> {
   if (current.kind !== "delete" || (current.phase !== "review" && current.phase !== "error")) return false;
   const execution = mutationExecutionContext(current);
   if (!execution) return false;
-  const { previewRequest, previewEnvelope } = execution;
-  const request: LargeBlobMutationRequest = {
-    ...previewRequest,
-    dryRun: false,
-  };
-  largeBlobsMutation.set(executingMutation(
-    deleteMutationBase(current.credentialIDHex),
-    previewRequest,
-    previewEnvelope,
-  ));
-  const label = m.large_blob_delete();
-  const outcome = await runTypedOperationStage({
-    label,
-    call: () => api.deleteLargeBlob(requestForCurrentSelection(request)),
-    extract: largeBlobMutationResult,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-result");
-      deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, details.responseEnvelope, details.runtimeError, details.failureReason);
-    },
+
+  return executeReviewedLargeBlobMutation({
+    label: m.large_blob_delete(),
+    execution,
+    call: (request) => api.deleteLargeBlob(request),
+    makeExecuting: (request, envelope) =>
+      executingMutation(deleteMutationBase(current.credentialIDHex), request, envelope),
+    setFailure: (response, runtime, reason) =>
+      deleteError(current.credentialIDHex, "executing", execution.previewRequest, execution.previewEnvelope,
+        response, runtime, reason),
   });
-  if (!outcome.ok) return false;
-  await refreshAfterMutation();
-  return true;
 }
 
 export async function confirmLargeBlobCleanup(): Promise<boolean> {
@@ -617,29 +619,15 @@ export async function confirmLargeBlobCleanup(): Promise<boolean> {
   if (current.kind !== "cleanup" || (current.phase !== "review" && current.phase !== "error")) return false;
   const execution = mutationExecutionContext(current);
   if (!execution) return false;
-  const { previewRequest, previewEnvelope } = execution;
-  const request: LargeBlobGarbageCollectRequest = {
-    ...previewRequest,
-    dryRun: false,
-  };
-  largeBlobsMutation.set(executingMutation(
-    cleanupMutationBase(),
-    previewRequest,
-    previewEnvelope,
-  ));
-  const label = m.large_blob_cleanup();
-  const outcome = await runTypedOperationStage({
-    label,
-    call: () => api.garbageCollectLargeBlobs(requestForCurrentSelection(request)),
-    extract: largeBlobMutationResult,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-result");
-      cleanupError("executing", previewRequest, previewEnvelope, details.responseEnvelope, details.runtimeError, details.failureReason);
-    },
+
+  return executeReviewedLargeBlobMutation({
+    label: m.large_blob_cleanup(),
+    execution,
+    call: (request) => api.garbageCollectLargeBlobs(request),
+    makeExecuting: (request, envelope) => executingMutation(cleanupMutationBase(), request, envelope),
+    setFailure: (response, runtime, reason) =>
+      cleanupError("executing", execution.previewRequest, execution.previewEnvelope, response, runtime, reason),
   });
-  if (!outcome.ok) return false;
-  await refreshAfterMutation();
-  return true;
 }
 
 export function closeLargeBlobMutation() {

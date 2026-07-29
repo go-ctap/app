@@ -1,6 +1,8 @@
 import { get } from "svelte/store";
 
 import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
+import type { CredentialTarget } from "../../bindings/github.com/go-ctap/kit/model/credentials";
+import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   CredentialDeleteEnvelope,
   CredentialDeleteRequest,
@@ -15,6 +17,7 @@ import {
   credentialDeletePreview,
   credentialDeleteResult,
   credentialStoreStateResult,
+  credentialTarget,
   credentialsReport,
   credentialUpdatePreview,
   credentialUpdateResult,
@@ -43,7 +46,6 @@ import {
 } from "./features/passkeys/state.js";
 import { selectedSelector, authenticatorStatus } from "./features/authenticator/state.js";
 import { activeScreen } from "./features/workbench/state.js";
-import { findPasskeyCredential, type PasskeyCredentialTarget } from "./passkeys-presentation.js";
 import { internalFailure, runtimeFailureFrom } from "./failure.js";
 import { currentSelectionID } from "./authenticator-boundary.js";
 import {
@@ -75,7 +77,7 @@ function shouldAutoLoadPasskeys() {
   const inventory = get(passkeysInventoryState);
   return get(activeScreen) === "passkeys"
     && Boolean(passkeysAutoLoadKey())
-    && !inventory.lastSuccessfulEnvelope
+    && !inventory.report
     && inventory.phase !== "loading"
     && inventory.phase !== "refreshing"
     && inventory.phase !== "unsupported";
@@ -84,8 +86,7 @@ function shouldAutoLoadPasskeys() {
 function reconcileSelectedCredential() {
   const selectedID = get(passkeysSelectedCredentialID);
   if (!selectedID) return;
-  const report = credentialsReport(get(passkeysInventoryState).lastSuccessfulEnvelope);
-  if (findPasskeyCredential(report, selectedID)) return;
+  if (credentialTarget(get(passkeysInventoryState).report, selectedID)) return;
   passkeysSelectedCredentialID.set("");
   passkeysMutation.set(idleMutation());
 }
@@ -118,9 +119,11 @@ export async function loadPasskeys() {
   const envelope = attempt.envelope;
   const report = credentialsReport(envelope);
   if (envelope.error || !report) {
-    failPasskeysInventoryLoadWithResponse(envelope);
+    failPasskeysInventoryLoadWithResponse(
+      envelope.error?.code === Code.CodeCredentialManagementUnsupported,
+    );
   } else {
-    completePasskeysInventoryLoad(envelope, new Date().toISOString());
+    completePasskeysInventoryLoad(report, new Date().toISOString());
     reconcileSelectedCredential();
   }
   completeOperation(label, envelope, { contractValid: Boolean(report) });
@@ -128,7 +131,7 @@ export async function loadPasskeys() {
 }
 
 export async function loadCredentialStoreState(): Promise<boolean> {
-  const inventory = credentialsReport(get(passkeysInventoryState).lastSuccessfulEnvelope);
+  const inventory = get(passkeysInventoryState).report;
   if (!get(selectedSelector).trim() || !inventory?.support.readOnlyPermission) return false;
 
   beginCredentialStoreStateLoad();
@@ -177,26 +180,22 @@ function mutationsAvailable(kind: "update" | "delete") {
   if (inventory.phase === "loading" || inventory.phase === "refreshing") return false;
   const authenticator = get(authenticatorStatus);
   if (authenticator.state !== "ready" || !authenticator.selectionId) return false;
-  const report = credentialsReport(inventory.lastSuccessfulEnvelope);
+  const report = inventory.report;
   if (!report?.support.credentialManagement) return false;
   return kind === "delete" || !report.support.previewOnly;
 }
 
-function updateFormFor(credentialIDHex: string): CredentialUpdateForm | null {
-  const report = credentialsReport(get(passkeysInventoryState).lastSuccessfulEnvelope);
-  const target = findPasskeyCredential(report, credentialIDHex);
-  if (!target) return null;
+function updateFormFor(target: CredentialTarget): CredentialUpdateForm {
   return {
-    name: target.credential.userName ?? "",
-    displayName: target.credential.displayName ?? "",
+    name: target.user.name ?? "",
+    displayName: target.user.displayName ?? "",
   };
 }
 
 function updateMutationBase(current: Extract<PasskeysMutationState, { kind: "update" }>) {
   return {
     kind: "update" as const,
-    credentialIDHex: current.credentialIDHex,
-    original: current.original,
+    target: current.target,
     form: current.form,
   };
 }
@@ -214,14 +213,13 @@ function editingCredentialUpdate(
 
 export function beginCredentialUpdate(credentialIDHex = get(passkeysSelectedCredentialID)) {
   if (!mutationsAvailable("update")) return false;
-  const original = updateFormFor(credentialIDHex);
-  if (!original) return false;
+  const target = credentialTarget(get(passkeysInventoryState).report, credentialIDHex);
+  if (!target) return false;
   passkeysSelectedCredentialID.set(credentialIDHex);
   passkeysMutation.set(editingCredentialUpdate({
     kind: "update" as const,
-    credentialIDHex,
-    original,
-    form: { ...original },
+    target,
+    form: updateFormFor(target),
   }, null));
   return true;
 }
@@ -263,30 +261,17 @@ export function validateCredentialUpdate(
 export function buildCredentialUpdatePreviewRequest(
   selectionId: string,
   verificationFlow: VerificationFlow,
-  target: PasskeyCredentialTarget,
-  original: CredentialUpdateForm,
+  target: CredentialTarget,
   form: CredentialUpdateForm,
 ): CredentialUpdateRequest {
-  const current = normalizeCredentialUpdateForm(original);
+  const current = normalizeCredentialUpdateForm(updateFormFor(target));
   const proposed = normalizeCredentialUpdateForm(form);
   const nameChanged = proposed.name !== current.name;
   const displayNameChanged = proposed.displayName !== current.displayName;
   return {
     selectionId,
     verificationFlow,
-    target: {
-      record: target.credential,
-      rp: {
-        id: target.relyingParty.rpID,
-        ...(target.relyingParty.rpName ? { name: target.relyingParty.rpName } : {}),
-        ...(target.relyingParty.rpIDHashHex ? { idHashHex: target.relyingParty.rpIDHashHex } : {}),
-      },
-      user: {
-        userIDHex: target.credential.userIDHex ?? "",
-        name: target.credential.userName ?? "",
-        displayName: target.credential.displayName ?? "",
-      },
-    },
+    target,
     ...(nameChanged ? { name: proposed.name, nameProvided: true } : {}),
     ...(displayNameChanged ? { displayName: proposed.displayName, displayProvided: true } : {}),
     dryRun: true,
@@ -316,7 +301,7 @@ export async function previewCredentialUpdate(): Promise<boolean> {
   const current = get(passkeysMutation);
   if (current.kind !== "update" || (current.phase !== "editing" && current.phase !== "error")) return false;
   if (!mutationsAvailable("update")) return false;
-  const validationError = validateCredentialUpdate(current.original, current.form);
+  const validationError = validateCredentialUpdate(updateFormFor(current.target), current.form);
   if (validationError) {
     passkeysMutation.set(editingCredentialUpdate(updateMutationBase(current), validationError));
     return false;
@@ -325,11 +310,7 @@ export async function previewCredentialUpdate(): Promise<boolean> {
   const request = buildCredentialUpdatePreviewRequest(
     currentSelectionID(),
     get(passkeysVerificationFlow),
-    findPasskeyCredential(
-      credentialsReport(get(passkeysInventoryState).lastSuccessfulEnvelope),
-      current.credentialIDHex,
-    )!,
-    current.original,
+    current.target,
     current.form,
   );
 
@@ -375,7 +356,7 @@ export async function confirmCredentialUpdate(): Promise<boolean> {
       updateError(current, "executing", previewRequest, previewEnvelope, details.responseEnvelope, details.runtimeError, details.failureReason);
     },
     onSuccess: () => {
-      passkeysSelectedCredentialID.set(current.credentialIDHex);
+      passkeysSelectedCredentialID.set(current.target.record.credentialIDHex);
       passkeysMutation.set(idleMutation());
     },
   });
@@ -404,7 +385,7 @@ function deleteError(
 }
 
 async function previewCredentialDelete(credentialIDHex: string): Promise<boolean> {
-  if (!mutationsAvailable("delete") || !findPasskeyCredential(credentialsReport(get(passkeysInventoryState).lastSuccessfulEnvelope), credentialIDHex)) return false;
+  if (!mutationsAvailable("delete") || !credentialTarget(get(passkeysInventoryState).report, credentialIDHex)) return false;
   const request: CredentialDeleteRequest = {
     selectionId: currentSelectionID(),
     verificationFlow: get(passkeysVerificationFlow),

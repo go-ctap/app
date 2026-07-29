@@ -371,7 +371,7 @@ describe("controller lifecycle", () => {
       error: failureForCode(Code.CodeAuthenticatorClosed),
     });
     seedPasskeysEnvelopeForTest(previous);
-    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeAuthenticatorClosed));
+    failPasskeysInventoryLoadAtRuntime();
     serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token, "authenticator-reopened") });
 
     let resolveRefresh!: (envelope: CredentialsEnvelope) => void;
@@ -390,20 +390,18 @@ describe("controller lifecycle", () => {
     });
     expect(get(passkeysInventoryState)).toMatchObject({
       phase: "refreshing",
-      lastSuccessfulEnvelope: previous,
+      report: previous.result,
     });
-    expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(previous);
+    expect(get(passkeysInventoryState).report).toBe(previous.result);
 
     resolveRefresh(refreshed);
     await expect(recovery).resolves.toBe(true);
     expect(get(authenticatorStatus)).toMatchObject({ state: "ready", selectionId: "authenticator-reopened" });
     expect(get(passkeysInventoryState)).toMatchObject({
       phase: "ready",
-      lastSuccessfulEnvelope: refreshed,
-      responseEnvelope: refreshed,
-      runtimeError: null,
+      report: refreshed.result,
     });
-    expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(refreshed);
+    expect(get(passkeysInventoryState).report).toBe(refreshed.result);
   });
 
   it("preserves last-known-good inventory when reopening the selected authenticator fails", async () => {
@@ -416,7 +414,7 @@ describe("controller lifecycle", () => {
       error: failureForCode(Code.CodeAuthenticatorClosed),
     });
     seedPasskeysEnvelopeForTest(previous);
-    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeAuthenticatorClosed));
+    failPasskeysInventoryLoadAtRuntime();
     serviceMocks.SetSelection.mockRejectedValueOnce(new Error("authenticator bridge offline"));
 
     await expect(reloadPasskeys()).resolves.toBe(false);
@@ -428,10 +426,9 @@ describe("controller lifecycle", () => {
     });
     expect(get(passkeysInventoryState)).toMatchObject({
       phase: "error",
-      lastSuccessfulEnvelope: previous,
-      responseEnvelope: null,
+      report: previous.result,
     });
-    expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(previous);
+    expect(get(passkeysInventoryState).report).toBe(previous.result);
     expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
     expect(serviceMocks.ListCredentials).not.toHaveBeenCalled();
   });
@@ -452,7 +449,7 @@ describe("controller lifecycle", () => {
       error: failureForCode(Code.CodeAuthenticatorClosed),
     });
     seedPasskeysEnvelopeForTest(previous);
-    failPasskeysInventoryLoadAtRuntime(failureForCode(Code.CodeAuthenticatorClosed));
+    failPasskeysInventoryLoadAtRuntime();
     serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token, "authenticator-reopened") });
     serviceMocks.ListCredentials.mockResolvedValue(refreshError);
 
@@ -464,11 +461,9 @@ describe("controller lifecycle", () => {
     });
     expect(get(passkeysInventoryState)).toMatchObject({
       phase: "error",
-      lastSuccessfulEnvelope: previous,
-      responseEnvelope: refreshError,
-      runtimeError: null,
+      report: previous.result,
     });
-    expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBe(previous);
+    expect(get(passkeysInventoryState).report).toBe(previous.result);
     expect(get(authenticatorStatus)).toMatchObject({ state: "ready", selectionId: "authenticator-reopened" });
   });
 
@@ -769,9 +764,7 @@ describe("controller lifecycle", () => {
     expect(get(passkeysMutation)).toEqual({ kind: "idle", phase: "idle" });
     expect(get(passkeysInventoryState)).toMatchObject({
       phase: "error",
-      lastSuccessfulEnvelope: inventory,
-      responseEnvelope: null,
-      runtimeError: failureForCode(Code.CodeInternalError),
+      report: inventory.result,
     });
   });
 
@@ -959,16 +952,16 @@ describe("controller lifecycle", () => {
     await loadPasskeys();
 
     const inventory = get(passkeysInventoryState);
-    expect(inventory.phase).toBe("error");
-    expect(inventory.lastSuccessfulEnvelope).toBeNull();
-    expect(inventory.responseEnvelope).toBeNull();
-    expect(inventory.runtimeError?.code).toBe(Code.CodeInternalError);
-    expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBeNull();
+    expect(inventory).toEqual({
+      phase: "error",
+      report: null,
+      lastSuccessfulAt: null,
+    });
     expect(get(statusBar).activeOperation).toBeNull();
     expect(get(statusBar).lastOutcome?.message).toBe("The operation failed because of an internal error.");
   });
 
-  it("keeps an exact result-less credential-list envelope and reports the contract failure separately", async () => {
+  it("reports a result-less credential-list envelope without storing it as inventory", async () => {
     const token = device("token-1");
     const { loadPasskeys } = await import("./test-support/controller");
     const envelope = {
@@ -981,11 +974,10 @@ describe("controller lifecycle", () => {
 
     await loadPasskeys();
 
-    expect(get(passkeysInventoryState)).toMatchObject({
+    expect(get(passkeysInventoryState)).toEqual({
       phase: "error",
-      lastSuccessfulEnvelope: null,
-      responseEnvelope: envelope,
-      runtimeError: null,
+      report: null,
+      lastSuccessfulAt: null,
     });
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "error",
@@ -1098,7 +1090,7 @@ describe("controller lifecycle", () => {
     expect(get(authenticatorInspection).data).toBeNull();
     expect(get(overviewBioSensor).data).toBeNull();
     expect(get(overviewMDS).data).toBeNull();
-    expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBeNull();
+    expect(get(passkeysInventoryState).report).toBeNull();
     expect(get(passkeysQuery)).toBe("");
     expect(get(passkeysStatusFilter)).toBe("all");
     expect(get(passkeysSelectedCredentialID)).toBe("");
@@ -1142,7 +1134,7 @@ describe("controller lifecycle", () => {
     await selectToken("token-2");
 
     expect(get(selectedSelector)).toBe("token-2");
-    expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBeNull();
+    expect(get(passkeysInventoryState).report).toBeNull();
     expect(get(passkeysQuery)).toBe("");
     expect(get(passkeysSelectedCredentialID)).toBe("");
     expect(get(passkeysMutation)).toEqual({ kind: "idle", phase: "idle" });
@@ -1208,7 +1200,7 @@ describe("controller lifecycle", () => {
       state: "ready",
       selectionId: "authenticator-token-1",
     });
-    expect(get(passkeysInventoryState).lastSuccessfulEnvelope).toBeNull();
+    expect(get(passkeysInventoryState).report).toBeNull();
     expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
   });
 
