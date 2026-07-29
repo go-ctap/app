@@ -77,12 +77,6 @@
 
 {#if $selectedSelector && $selectedDevice}
   <section class="lab-screen" aria-label={m.lab_title()}>
-    <LabHeader
-      device={$selectedDevice}
-      disabled={demoValuesDisabled}
-      onFillDemoValues={fillLabDemoValues}
-    />
-
     <Tabs.Root
       value={$labState.activeOperation}
       onValueChange={(operation) => {
@@ -90,15 +84,20 @@
       }}
       class="lab-operation-tabs"
     >
-      <Tabs.List aria-label={m.lab_title()}>
-        <Tabs.Trigger value="make">{m.lab_make_credential()}</Tabs.Trigger>
-        <Tabs.Trigger value="get">{m.lab_get_assertion()}</Tabs.Trigger>
-      </Tabs.List>
+      <div class="lab-operation-toolbar">
+        <LabHeader />
+        <Tabs.List aria-label={m.lab_title()}>
+          <Tabs.Trigger value="make">{m.lab_make_credential()}</Tabs.Trigger>
+          <Tabs.Trigger value="get">{m.lab_get_assertion()}</Tabs.Trigger>
+        </Tabs.List>
+      </div>
       <Tabs.Content value="make" class="lab-operation-panel">
         <MakeCredentialStep
           lab={$labState}
           inspection={$authenticatorInspection}
+          device={$selectedDevice}
           disabled={controlsDisabled}
+          fillDemoDisabled={demoValuesDisabled}
           onDraftChange={updateLabMakeCredentialDraft}
           onRegenerateUserID={regenerateLabUserID}
           onRegenerateChallenge={regenerateLabMakeChallenge}
@@ -110,13 +109,16 @@
           onRetryAttestationTrust={retryLabMakeCredentialAttestationTrust}
           onRetryVerification={retryLabMakeCredentialVerification}
           onRetryInspection={reloadOverview}
+          onFillDemoValues={fillLabDemoValues}
         />
       </Tabs.Content>
       <Tabs.Content value="get" class="lab-operation-panel">
         <GetAssertionStep
           lab={$labState}
           inspection={$authenticatorInspection}
+          device={$selectedDevice}
           disabled={controlsDisabled}
+          fillDemoDisabled={demoValuesDisabled}
           onDraftChange={updateLabGetAssertionDraft}
           onRegenerateChallenge={regenerateLabGetChallenge}
           onPreview={runLabGetAssertion}
@@ -127,6 +129,7 @@
           onVerificationMaterialChange={updateLabVerificationMaterial}
           onRetryVerification={retryLabGetAssertionVerification}
           onRetryInspection={reloadOverview}
+          onFillDemoValues={fillLabDemoValues}
         />
       </Tabs.Content>
     </Tabs.Root>
@@ -155,7 +158,10 @@
     display: grid;
     align-content: start;
     gap: var(--space-4);
+    width: 100%;
+    max-width: 96rem;
     min-width: 0;
+    margin-inline: auto;
   }
 
   :global(.lab-confirmation-dialog) {
@@ -168,12 +174,52 @@
     min-width: 0;
   }
 
-  :global(.lab-operation-tabs > [data-slot="tabs-list"]) {
+  :global(.lab-operation-tabs) {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .lab-operation-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+
+  .lab-operation-toolbar :global([data-slot="tabs-list"]) {
     width: min(30rem, 100%);
   }
 
   :global(.lab-operation-panel) {
-    padding-top: var(--space-3);
+    min-width: 0;
+  }
+
+  :global(.lab-step-layout) {
+    display: grid;
+    grid-template-columns: minmax(0, 72rem) minmax(18rem, 20rem);
+    align-items: start;
+    justify-content: center;
+    gap: var(--space-4);
+    min-width: 0;
+  }
+
+  @container workspace (max-width: 58rem) {
+    :global(.lab-step-layout) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @container workspace (max-width: 42rem) {
+    .lab-operation-toolbar {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .lab-operation-toolbar :global([data-slot="tabs-list"]) {
+      width: 100%;
+    }
   }
 }
 </style>

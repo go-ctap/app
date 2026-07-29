@@ -7,9 +7,10 @@
 
   type Props = {
     step: LabMakeStep | LabGetStep;
+    orientation?: "horizontal" | "vertical";
   };
 
-  let { step }: Props = $props();
+  let { step, orientation = "horizontal" }: Props = $props();
 
   let currentIndex = $derived.by(() => {
     if (step.phase === "success") return 2;
@@ -20,7 +21,7 @@
   const labels = [m.lab_configure, m.lab_review, m.lab_result];
 </script>
 
-<ol class="lab-workflow-steps" aria-label={m.lab_scenario_status()}>
+<ol class="lab-workflow-steps" data-orientation={orientation} aria-label={m.lab_scenario_status()}>
   {#each labels as label, index (index)}
     <li
       data-current={index === currentIndex}
@@ -79,6 +80,23 @@
   .lab-workflow-marker :global(svg) {
     width: 0.75rem;
     height: 0.75rem;
+  }
+
+  .lab-workflow-steps[data-orientation="vertical"] {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .lab-workflow-steps[data-orientation="vertical"] li {
+    padding-inline: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .lab-workflow-steps[data-orientation="vertical"] li:last-child {
+    border-bottom: 1px solid var(--border);
   }
 }
 

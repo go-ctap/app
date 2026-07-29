@@ -53,8 +53,8 @@ function selectToken() {
   seedSelectionForTest(token.attachment.id, token, { state: "ready", selectionId: "authenticator-1" });
 }
 
-function stepCard(name: string) {
-  return screen.getByRole("heading", { level: 2, name }).closest('[data-slot="card"]') as HTMLElement;
+function stepLayout(name: string) {
+  return screen.getByRole("heading", { level: 2, name }).closest(".lab-step-layout") as HTMLElement;
 }
 
 function extensionTrigger(scope: HTMLElement, title: string) {
@@ -91,7 +91,9 @@ describe("WebAuthn Lab screen", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Scenario" })).toBeInTheDocument();
     expect(screen.getByText("Create a passkey, review the exact request, then exercise it with an assertion."))
       .toBeInTheDocument();
-    expect(screen.getByText("Test authenticator")).toBeInTheDocument();
+    const commandCenter = screen.getByRole("complementary", { name: "Current run" });
+    expect(within(commandCenter).getByText("Test authenticator")).toBeInTheDocument();
+    expect(within(commandCenter).getByRole("heading", { name: "Request readiness" })).toBeInTheDocument();
     expect(screen.queryByText("1. Test authenticator")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Fill demo values" })).toBeEnabled();
     expect(screen.getByRole("tab", { name: "MakeCredential" })).toHaveAttribute("aria-selected", "true");
@@ -99,23 +101,23 @@ describe("WebAuthn Lab screen", () => {
     expect(screen.getByRole("heading", { level: 2, name: "MakeCredential" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: "GetAssertion" })).not.toBeInTheDocument();
 
-    const make = stepCard("MakeCredential");
+    const make = stepLayout("MakeCredential");
     expect(within(make).getByLabelText("RP name")).toHaveValue("Example");
     expect((within(make).getByLabelText("User ID hex") as HTMLInputElement).value).toMatch(/^[0-9a-f]{32}$/);
     await user.clear(within(make).getByLabelText("RP name"));
     await user.type(within(make).getByLabelText("RP name"), "Edited make RP");
 
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
-    const assertion = stepCard("GetAssertion");
+    const assertion = stepLayout("GetAssertion");
     expect(within(assertion).getByLabelText("RP ID")).toHaveValue("example.com");
     expect(within(assertion).getByText(/Leave empty to let the authenticator choose/)).toBeInTheDocument();
     await user.clear(within(assertion).getByLabelText("RP ID"));
     await user.type(within(assertion).getByLabelText("RP ID"), "get.example.com");
 
     await user.click(screen.getByRole("tab", { name: "MakeCredential" }));
-    expect(within(stepCard("MakeCredential")).getByLabelText("RP name")).toHaveValue("Edited make RP");
+    expect(within(stepLayout("MakeCredential")).getByLabelText("RP name")).toHaveValue("Edited make RP");
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
-    expect(within(stepCard("GetAssertion")).getByLabelText("RP ID")).toHaveValue("get.example.com");
+    expect(within(stepLayout("GetAssertion")).getByLabelText("RP ID")).toHaveValue("get.example.com");
   });
 
   it("renders configure sections sequentially and keeps extension include separate from expand", async () => {
@@ -130,7 +132,7 @@ describe("WebAuthn Lab screen", () => {
     } as unknown as InspectEnvelope);
     render(Lab);
 
-    const make = stepCard("MakeCredential");
+    const make = stepLayout("MakeCredential");
     expect(within(make).queryByRole("tab")).not.toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "Basics" })).toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "clientDataJSON" })).toBeInTheDocument();
@@ -159,7 +161,7 @@ describe("WebAuthn Lab screen", () => {
     expect(within(make).getByRole("switch", { name: "Include payment" })).toBeEnabled();
 
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
-    const assertion = stepCard("GetAssertion");
+    const assertion = stepLayout("GetAssertion");
     expect(within(assertion).queryByRole("tab")).not.toBeInTheDocument();
     expect(within(assertion).getByRole("heading", { name: "clientDataJSON" })).toBeInTheDocument();
     expect(within(assertion).getByRole("heading", { name: "Extensions · 0" })).toBeInTheDocument();
@@ -245,12 +247,12 @@ describe("WebAuthn Lab screen", () => {
     } as unknown as InspectEnvelope);
     render(Lab);
 
-    const make = stepCard("MakeCredential");
+    const make = stepLayout("MakeCredential");
     expect(within(make).getByRole("button", { name: new RegExp(`largeBlob.*${status}`, "i") }))
       .toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
-    const assertion = stepCard("GetAssertion");
+    const assertion = stepLayout("GetAssertion");
     expect(within(assertion).getByRole("button", { name: new RegExp(`largeBlob.*${status}`, "i") }))
       .toBeInTheDocument();
   });
@@ -276,12 +278,12 @@ describe("WebAuthn Lab screen", () => {
     } as unknown as InspectEnvelope);
     render(Lab);
 
-    const make = stepCard("MakeCredential");
+    const make = stepLayout("MakeCredential");
     expect(within(make).getByRole("button", { name: new RegExp(`prf.*${status}`, "i") }))
       .toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
-    const assertion = stepCard("GetAssertion");
+    const assertion = stepLayout("GetAssertion");
     expect(within(assertion).getByRole("button", { name: new RegExp(`prf.*${status}`, "i") }))
       .toBeInTheDocument();
   });
@@ -291,7 +293,7 @@ describe("WebAuthn Lab screen", () => {
     selectToken();
     render(Lab);
 
-    const make = stepCard("MakeCredential");
+    const make = stepLayout("MakeCredential");
     for (const description of [
       /Reports whether the newly created passkey is discoverable/,
       /Maps the WebAuthn PRF request to the authenticator's hmac-secret extension/,
@@ -325,7 +327,7 @@ describe("WebAuthn Lab screen", () => {
     }
 
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
-    const assertion = stepCard("GetAssertion");
+    const assertion = stepLayout("GetAssertion");
     expect(within(assertion).getByText(/Maps the WebAuthn PRF request to the authenticator's hmac-secret extension/))
       .toBeInTheDocument();
     expect(within(assertion).getByText(/Requests the opaque blob stored with the selected passkey/))
@@ -344,7 +346,7 @@ describe("WebAuthn Lab screen", () => {
     selectToken();
     render(Lab);
 
-    const make = stepCard("MakeCredential");
+    const make = stepLayout("MakeCredential");
     const userPresence = within(make).getByLabelText("User presence");
     expect(userPresence).toHaveTextContent("Omit — recommended");
     expect(within(make).getByRole("button", { name: "About Discoverable passkey" })).toBeInTheDocument();
@@ -363,7 +365,7 @@ describe("WebAuthn Lab screen", () => {
     expect(within(make).queryByText("CTAP 2.1+", { exact: true })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
-    const get = stepCard("GetAssertion");
+    const get = stepLayout("GetAssertion");
     expect(within(get).getByRole("button", { name: "About User presence" })).toBeInTheDocument();
     expect(within(get).getByRole("button", { name: "About User verification" })).toBeInTheDocument();
     expect(within(get).getByText(/Controls how a pinUvAuthToken is obtained/)).toBeInTheDocument();
@@ -374,7 +376,7 @@ describe("WebAuthn Lab screen", () => {
     selectToken();
     render(Lab);
 
-    const make = stepCard("MakeCredential");
+    const make = stepLayout("MakeCredential");
     const basics = within(make).getByRole("heading", { name: "Basics" }).closest("section") as HTMLElement;
     const clientData = within(make).getByRole("heading", { name: "clientDataJSON" }).closest("section") as HTMLElement;
 
@@ -403,7 +405,7 @@ describe("WebAuthn Lab screen", () => {
     expect(within(clientData).getByText(/without normalization/)).toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
-    const assertion = stepCard("GetAssertion");
+    const assertion = stepLayout("GetAssertion");
     const assertionClientData = within(assertion).getByRole("heading", { name: "clientDataJSON" }).closest("section") as HTMLElement;
     expect(within(assertionClientData).getByText("webauthn.get")).toBeInTheDocument();
   });
@@ -414,7 +416,7 @@ describe("WebAuthn Lab screen", () => {
     mutableLabState.set(createLabState());
     render(Lab);
 
-    const make = stepCard("MakeCredential");
+    const make = stepLayout("MakeCredential");
     const rpName = within(make).getByLabelText("RP name");
     rpName.focus();
     await user.keyboard("{Enter}");
@@ -443,11 +445,11 @@ describe("WebAuthn Lab screen", () => {
     seedSelectionForTest(token.attachment.id, token, { state: "running", selectionId: "authenticator-1" });
     render(Lab);
 
-    const make = stepCard("MakeCredential");
+    const make = stepLayout("MakeCredential");
     expect(within(make).getByLabelText("RP ID")).toBeDisabled();
     expect(within(make).getByRole("button", { name: "Preview" })).toBeDisabled();
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
-    const assertion = stepCard("GetAssertion");
+    const assertion = stepLayout("GetAssertion");
     expect(within(assertion).getByLabelText("RP ID")).toBeDisabled();
     expect(within(assertion).getByRole("button", { name: "Preview" })).toBeDisabled();
   });
@@ -503,7 +505,7 @@ describe("WebAuthn Lab screen", () => {
 
     render(Lab);
 
-    const make = stepCard("MakeCredential");
+    const make = stepLayout("MakeCredential");
     expect(within(make).queryByLabelText("RP ID")).not.toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "Reviewed snapshot" })).toBeInTheDocument();
     expect(within(make).getByText("Configure").closest("li")).not.toHaveAttribute("data-completed");
@@ -564,7 +566,7 @@ describe("WebAuthn Lab screen", () => {
     });
     render(Lab);
 
-    const make = stepCard("MakeCredential");
+    const make = stepLayout("MakeCredential");
     expect(within(make).getByRole("button", { name: "Edit" })).toBeInTheDocument();
     expect(within(make).getByRole("button", { name: "Retry preview" })).toBeInTheDocument();
     expect(within(make).queryByRole("button", { name: "Execute" })).not.toBeInTheDocument();
@@ -600,7 +602,7 @@ describe("WebAuthn Lab screen", () => {
     selectToken();
     render(Lab);
 
-    const make = stepCard("MakeCredential");
+    const make = stepLayout("MakeCredential");
     const before = get(mutableLabState);
     await user.clear(within(make).getByLabelText("RP name"));
     await user.type(within(make).getByLabelText("RP name"), "Edited");
