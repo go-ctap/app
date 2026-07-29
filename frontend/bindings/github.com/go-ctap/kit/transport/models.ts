@@ -19,3 +19,18 @@ export enum Mode {
     ModeSmartCard = "smart-card",
     ModeWindowsProxy = "windows-proxy",
 };
+
+/**
+ * SmartCardInterface identifies how a smart card is coupled to its reader.
+ * Detection is best effort and may be unavailable for some PC/SC drivers.
+ */
+export enum SmartCardInterface {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    SmartCardInterfaceUnknown = "unknown",
+    SmartCardInterfaceContact = "contact",
+    SmartCardInterfaceContactless = "contactless",
+};

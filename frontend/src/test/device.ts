@@ -1,5 +1,5 @@
 import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import { Mode, SmartCardInterface } from "../../bindings/github.com/go-ctap/kit/transport";
 
 export function testHIDDevice(id = "token-1", product = "Test key") {
   return new DeviceReport({
@@ -16,7 +16,10 @@ export function testSmartCardDevice(id = "card-1") {
     attachment: {
       id,
       transport: Mode.ModeSmartCard,
-      smartCard: { reader: "Test reader" },
+      smartCard: {
+        reader: "Test reader",
+        interface: SmartCardInterface.SmartCardInterfaceUnknown,
+      },
     },
   });
 }

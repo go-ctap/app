@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import { CreditCard, Usb } from "@lucide/svelte";
+import { Nfc, Usb } from "@lucide/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import AppSidebar from "./AppSidebar.svelte";
@@ -93,7 +93,7 @@ describe("AppSidebar", () => {
               label: "Token2 FIDO2 Card",
               name: "Token2 FIDO2 Card",
               detail: "ACS ACR1252 Dual Reader · PC/SC",
-              icon: CreditCard,
+              icon: Nfc,
             },
           ],
         },
@@ -107,7 +107,7 @@ describe("AppSidebar", () => {
     const smartCardButton = screen.getByRole("button", { name: "Token2 FIDO2 Card" });
     expect(usbButton).toHaveAttribute("aria-pressed", "true");
     expect(usbButton.querySelector(".lucide-usb")).toBeInTheDocument();
-    expect(smartCardButton.querySelector(".lucide-credit-card")).toBeInTheDocument();
+    expect(smartCardButton.querySelector(".lucide-nfc")).toBeInTheDocument();
     expect(screen.getByText("YubiKey 5")).toHaveAttribute("title", "YubiKey 5");
     await user.click(smartCardButton);
     expect(onSelectToken).toHaveBeenCalledWith("token-2");

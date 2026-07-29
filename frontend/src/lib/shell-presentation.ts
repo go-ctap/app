@@ -6,6 +6,7 @@ import {
   KeyRound,
   MapPin,
   Mic,
+  Nfc,
   ScanEye,
   ScanFace,
   ShieldCheck,
@@ -16,7 +17,7 @@ import type { Component } from "svelte";
 
 import { InteractionKind, type PINInteractionState } from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import { Mode, SmartCardInterface } from "../../bindings/github.com/go-ctap/kit/transport";
 import { UserVerify } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import type { InteractionPrompt } from "../../bindings/telesma/service";
 
@@ -82,6 +83,13 @@ export type InteractionModalPresentation = {
   icon: Component;
 };
 
+function sidebarDeviceIcon(device: DeviceReport): Component {
+  if (device.attachment.transport !== Mode.ModeSmartCard) return Usb;
+  return device.attachment.smartCard?.interface === SmartCardInterface.SmartCardInterfaceContactless
+    ? Nfc
+    : CreditCard;
+}
+
 export function buildSidebarPresentation(input: {
   activeScreen: ActiveScreen;
   devices: DeviceReport[];
@@ -103,7 +111,7 @@ export function buildSidebarPresentation(input: {
         detail: serial ? `S/N ${serial}` : smartCard
           ? [reader, "PC/SC"].filter(Boolean).join(" · ")
           : "",
-        icon: smartCard ? CreditCard : Usb,
+        icon: sidebarDeviceIcon(device),
       };
     }),
     selectedValue: input.selectedSelector,

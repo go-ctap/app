@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { CreditCard, Usb } from "@lucide/svelte";
+import { CreditCard, Nfc, Usb } from "@lucide/svelte";
 
 import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { DeviceIdentity, DeviceReport, Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import { Mode, SmartCardInterface } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "./i18n.js";
 import { failureForCode } from "./test-failure.js";
@@ -231,7 +231,10 @@ describe("sidebar presentation", () => {
       attachment: {
         id: "smart-card-1",
         transport: Mode.ModeSmartCard,
-        smartCard: { reader: "ACS ACR1252 Dual Reader" },
+        smartCard: {
+          reader: "ACS ACR1252 Dual Reader",
+          interface: SmartCardInterface.SmartCardInterfaceContact,
+        },
       },
     });
 
@@ -251,13 +254,16 @@ describe("sidebar presentation", () => {
     });
   });
 
-  it("shows an enriched smart-card model above its reader", () => {
+  it("shows an enriched contactless smart-card model above its reader", () => {
     const smartCard = new DeviceReport({
       ...token,
       attachment: {
         id: "smart-card-1",
         transport: Mode.ModeSmartCard,
-        smartCard: { reader: "Token2 Smart Reader" },
+        smartCard: {
+          reader: "Token2 Smart Reader",
+          interface: SmartCardInterface.SmartCardInterfaceContactless,
+        },
       },
       identity: new DeviceIdentity({
         vendor: Vendor.VendorToken2,
@@ -277,7 +283,7 @@ describe("sidebar presentation", () => {
       label: "Token2 FIDO2 Card",
       name: "Token2 FIDO2 Card",
       detail: "Token2 Smart Reader · PC/SC",
-      icon: CreditCard,
+      icon: Nfc,
     });
   });
 });

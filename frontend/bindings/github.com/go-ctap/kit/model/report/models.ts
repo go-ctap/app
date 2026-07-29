@@ -256,11 +256,15 @@ export class InterfaceReport {
 export class SmartCardReport {
     "reader": string;
     "atr"?: string;
+    "interface": transport$0.SmartCardInterface;
 
     /** Creates a new SmartCardReport instance. */
     constructor($$source: Partial<SmartCardReport> = {}) {
         if (!("reader" in $$source)) {
             this["reader"] = "";
+        }
+        if (!("interface" in $$source)) {
+            this["interface"] = transport$0.SmartCardInterface.$zero;
         }
 
         Object.assign(this, $$source);

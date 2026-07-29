@@ -315,8 +315,6 @@ export class BioEnrollResult {
     "samples"?: BioEnrollSample[];
     "lastEnrollSampleStatus"?: string;
     "remainingSamples"?: number | null;
-    "cancelAttempted": boolean;
-    "cancelSucceeded": boolean;
 
     /** Creates a new BioEnrollResult instance. */
     constructor($$source: Partial<BioEnrollResult> = {}) {
@@ -328,12 +326,6 @@ export class BioEnrollResult {
         }
         if (!("templateIDHex" in $$source)) {
             this["templateIDHex"] = "";
-        }
-        if (!("cancelAttempted" in $$source)) {
-            this["cancelAttempted"] = false;
-        }
-        if (!("cancelSucceeded" in $$source)) {
-            this["cancelSucceeded"] = false;
         }
 
         Object.assign(this, $$source);
