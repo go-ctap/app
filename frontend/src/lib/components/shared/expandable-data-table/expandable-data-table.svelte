@@ -30,7 +30,9 @@
   @layer blocks {
     .expandable-data-table-frame {
       min-width: 0;
-      border: 1px solid var(--border);
+      overflow: hidden;
+      border: 1px solid var(--data-table-border);
+      background: var(--data-table-surface);
     }
 
     .expandable-data-table-scroll {
@@ -46,7 +48,8 @@
     }
 
     thead :global(tr) {
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--data-table-border);
+      background: var(--data-table-header-surface);
     }
 
     tbody :global(tr:last-child) {
@@ -57,7 +60,7 @@
       height: 2.5rem;
       padding: var(--space-2);
       color: var(--foreground);
-      font-weight: 500;
+      font-weight: 600;
       text-align: left;
       vertical-align: middle;
       white-space: nowrap;

@@ -128,7 +128,7 @@ func (s *Service) applyInventoryEvent(event ctapkit.InventoryEvent) {
 	}
 
 	snapshot := s.sessionSnapshot(event.Snapshot.Devices, selectionErr)
-	if snapshot.Error == nil {
+	if snapshot.Error == nil && event.Trigger != ctapkit.InventoryTriggerIdentity {
 		snapshot.Error = event.Error
 	}
 

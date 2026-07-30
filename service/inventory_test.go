@@ -9,6 +9,7 @@ import (
 	"time"
 
 	ctapkit "github.com/go-ctap/kit"
+	"github.com/go-ctap/kit/model/failure"
 	"github.com/go-ctap/kit/model/report"
 	"github.com/go-ctap/kit/transport"
 )
@@ -60,6 +61,69 @@ func TestDiscoverAutoSelectsFirstAndIdentityKeepsSelection(t *testing.T) {
 
 	if service.selected == nil || service.selected.id != selected {
 		t.Fatalf("identity update changed selection: %#v", service.selected)
+	}
+
+	if err := service.close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+}
+
+func TestIdentityFailureDoesNotFailAuthenticatorSession(t *testing.T) {
+	device := testDevice("device-1")
+	inventory := newFakeInventory([]report.DeviceReport{device})
+	emitted := make(chan DiscoveryChangedEnvelope, 1)
+	service := New(WithEventEmitter(emitterFunc(func(name string, payload any) {
+		if name == EventDiscoveryChanged {
+			emitted <- payload.(DiscoveryChangedEnvelope)
+		}
+	})))
+
+	service.openInventory = func(context.Context, transport.Mode) (inventoryRuntime, error) {
+		return inventory, nil
+	}
+	service.openAuthenticator = func(
+		context.Context,
+		inventoryRuntime,
+		report.AttachmentID,
+		...ctapkit.AuthenticatorOption,
+	) (openedAuthenticator, error) {
+		return openedFor("device-1", &fakeAuthenticatorRuntime{}), nil
+	}
+
+	initial, err := service.Discover(t.Context())
+	if err != nil || initial.Selection == nil {
+		t.Fatalf("Discover = (%#v, %v), want active selection", initial, err)
+	}
+
+	device.Resolution = report.IdentityResolution{
+		State:    report.IdentityFailed,
+		Provider: report.VendorYubico,
+	}
+	inventory.events <- ctapkit.InventoryEvent{
+		Trigger: ctapkit.InventoryTriggerIdentity,
+		Snapshot: ctapkit.InventorySnapshot{
+			Devices: []report.DeviceReport{device},
+		},
+		Error: failure.Snapshot(failure.New(
+			failure.CodeOperationTimeout,
+			failure.WithPhase(failure.PhaseIdentity),
+		)),
+	}
+
+	select {
+	case event := <-emitted:
+		if event.Snapshot.Error != nil {
+			t.Fatalf("identity failure became session error: %#v", event.Snapshot.Error)
+		}
+		if event.Snapshot.Selection == nil ||
+			event.Snapshot.Selection.ID != initial.Selection.ID {
+			t.Fatalf("identity failure changed selection: %#v", event.Snapshot.Selection)
+		}
+		if got := event.Snapshot.Devices[0].Resolution.State; got != report.IdentityFailed {
+			t.Fatalf("identity resolution state = %q, want failed", got)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("identity failure event was not emitted")
 	}
 
 	if err := service.close(); err != nil {

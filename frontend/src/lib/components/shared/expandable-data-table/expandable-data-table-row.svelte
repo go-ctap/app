@@ -69,7 +69,7 @@
   @layer blocks {
     .expandable-data-table-summary-row,
     .expandable-data-table-details-row {
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid var(--data-table-row-border);
     }
 
     .expandable-data-table-summary-row {
@@ -79,7 +79,7 @@
     }
 
     .expandable-data-table-summary-row:hover {
-      background: color-mix(in srgb, var(--muted) 50%, transparent);
+      background: var(--data-table-hover-surface);
     }
 
     .expandable-data-table-details-cell {
@@ -93,7 +93,15 @@
   @layer exceptions {
     .expandable-data-table-summary-row[data-selected="true"],
     .expandable-data-table-details-row[data-open="true"] {
-      background: var(--muted);
+      box-shadow: inset 2px 0 var(--primary);
+    }
+
+    .expandable-data-table-summary-row[data-selected="true"] {
+      background: var(--data-table-selected-surface);
+    }
+
+    .expandable-data-table-details-row[data-open="true"] {
+      background: var(--data-table-details-surface);
     }
   }
 </style>
