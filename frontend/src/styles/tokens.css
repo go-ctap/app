@@ -18,8 +18,8 @@
     --data-table-surface: var(--card);
     --data-table-header-surface: color-mix(in oklch, var(--muted) 72%, var(--card));
     --data-table-hover-surface: color-mix(in oklch, var(--muted) 58%, var(--card));
-    --data-table-selected-surface: color-mix(in oklch, var(--primary) 10%, var(--card));
-    --data-table-details-surface: color-mix(in oklch, var(--primary) 6%, var(--card));
+    --data-table-selected-surface: color-mix(in srgb, var(--primary) 10%, var(--card));
+    --data-table-details-surface: color-mix(in srgb, var(--primary) 6%, var(--card));
     --data-table-border: color-mix(in oklch, var(--border), var(--foreground) 8%);
     --data-table-row-border: color-mix(in oklch, var(--border), var(--foreground) 4%);
   }

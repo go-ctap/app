@@ -405,7 +405,7 @@
       margin-left: auto;
     }
 
-    @container workspace (max-width: 45rem) {
+    @container workspace (max-width: 54rem) {
       :global(.large-blobs-table) {
         min-width: 32rem;
       }
@@ -413,6 +413,22 @@
       :global(.large-blobs-table-bytes),
       :global(.large-blobs-table-payload) {
         display: none;
+      }
+
+      :global(.large-blobs-table th:first-child),
+      :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"] > td:first-child) {
+        width: 32%;
+      }
+
+      :global(.large-blobs-table th:nth-child(2)),
+      :global(
+        .large-blobs-table [data-slot="expandable-data-table-summary-row"] > td:nth-child(2)
+      ) {
+        width: 43%;
+      }
+
+      :global(.large-blobs-table-state) {
+        width: 25%;
       }
     }
   }
