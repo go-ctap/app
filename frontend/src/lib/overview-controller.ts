@@ -21,7 +21,6 @@ import {
 import { activeScreen } from "$lib/features/workbench/state.js";
 import { failureMessage, runtimeFailureFrom } from "$lib/failure.js";
 import { inspectResult } from "$lib/ctapkit-results.js";
-import { currentSelectionID } from "$lib/authenticator-boundary.js";
 import { completeOperation, runOperation } from "$lib/operation-lifecycle.js";
 import { setStatusOutcome } from "$lib/workbench-state.js";
 
@@ -91,7 +90,7 @@ async function loadOverviewDetails(envelope: InspectEnvelope) {
 
   const attempt = await runOperation({
     label: m.security_bio_sensor_operation(),
-    call: () => api.bioSensorInfo({ selectionId: currentSelectionID() }),
+    call: () => api.bioSensorInfo({}),
     onRuntimeFailure: (error) => overviewBioSensor.set(errorLoadState(error)),
   });
 
@@ -127,7 +126,7 @@ export async function loadOverview() {
 
   const attempt = await runOperation({
     label: m.overview_inspection(),
-    call: () => api.inspect({ selectionId: currentSelectionID() }),
+    call: () => api.inspect({}),
     onRuntimeFailure: (error) => {
       authenticatorInspection.set(errorLoadState(error));
       overviewBioSensor.set(idleLoadState());

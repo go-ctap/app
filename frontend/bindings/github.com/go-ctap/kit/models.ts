@@ -5,35 +5,6 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as report$0 from "./model/report/models.js";
-
-export class InventorySnapshot {
-    "devices": report$0.DeviceReport[];
-
-    /** Creates a new InventorySnapshot instance. */
-    constructor($$source: Partial<InventorySnapshot> = {}) {
-        if (!("devices" in $$source)) {
-            this["devices"] = [];
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new InventorySnapshot instance from a string or object.
-     */
-    static createFrom($$source: any = {}): InventorySnapshot {
-        const $$createField0_0 = $$createType1;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("devices" in $$parsedSource) {
-            $$parsedSource["devices"] = $$createField0_0($$parsedSource["devices"]);
-        }
-        return new InventorySnapshot($$parsedSource as Partial<InventorySnapshot>);
-    }
-}
-
 export enum InventoryTrigger {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -64,7 +35,3 @@ export enum VerificationFlow {
      */
     VerificationFlowPIN = "pin",
 };
-
-// Private type creation functions
-const $$createType0 = report$0.DeviceReport.createFrom;
-const $$createType1 = $Create.Array($$createType0);

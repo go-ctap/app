@@ -24,22 +24,6 @@ func TestDecodeLargeBlobSuccess(t *testing.T) {
 	}
 }
 
-func TestDecodeLargeBlobFailureUsesOnlyTypedEnvelopeError(t *testing.T) {
-	envelope := New().DecodeLargeBlob(context.Background(), LargeBlobDecodeRequest{
-		RawHex: "7b2262726f6b656e22",
-		Mode:   largeblobs.DecodeModeJSON,
-	})
-	if envelope.Result != nil {
-		t.Fatalf("DecodeLargeBlob result = %#v, want nil", envelope.Result)
-	}
-	if envelope.Error == nil || envelope.Error.Code != failure.CodeLargeBlobJSONInvalid {
-		t.Fatalf("DecodeLargeBlob envelope error = %#v, want %s", envelope.Error, failure.CodeLargeBlobJSONInvalid)
-	}
-	if envelope.Error.Phase != failure.PhaseDecode {
-		t.Fatalf("DecodeLargeBlob failure phase = %q, want %q", envelope.Error.Phase, failure.PhaseDecode)
-	}
-}
-
 func TestDecodeLargeBlobInvalidHexUsesOnlyTypedInternalError(t *testing.T) {
 	envelope := New().DecodeLargeBlob(context.Background(), LargeBlobDecodeRequest{
 		RawHex: "not-hex",

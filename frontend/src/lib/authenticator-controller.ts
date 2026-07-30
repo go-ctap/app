@@ -1,189 +1,41 @@
 import { get } from "svelte/store";
 
-import { Category, Code, Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 
 import { m } from "../paraglide/messages.js";
 import { api } from "$lib/api.js";
+import { authenticatorSession } from "$lib/features/authenticator/state.js";
 import { pendingInteraction } from "$lib/features/interaction/state.js";
-import {
-  devices as deviceStore,
-  selectedDevice as selectedDeviceStore,
-  selectedSelector,
-  authenticatorStatus,
-} from "$lib/features/authenticator/state.js";
 import { deviceName } from "$lib/format.js";
 import { failureMessage, runtimeFailureFrom } from "$lib/failure.js";
-import {
-  idleAuthenticatorStatus,
-  reportForSelector,
-  selectorFromDevice,
-  type Discovery,
-  type AuthenticatorStatus,
-} from "$lib/authenticator-model.js";
+import { reportForSelector } from "$lib/authenticator-model.js";
 import {
   applyDiscovery,
+  applySelection,
+  clearAuthenticatorSession,
   clearWorkbenchScreenCaches,
   finishOperation,
+  setAuthenticatorError,
+  setAuthenticatorOpening,
   setStatusOutcome,
 } from "$lib/workbench-state.js";
 
-function deviceSelection(devices: DeviceReport[], requestedSelector: string) {
-  const device = reportForSelector(devices, requestedSelector);
-
-  return {
-    selectedDevice: device,
-    selectedSelector: selectorFromDevice(device),
-  };
-}
-
-function discoverySnapshot(
-  devices: DeviceReport[],
-  selectedSelector: string,
-  selectedDevice: DeviceReport | null,
-  authenticator: AuthenticatorStatus,
-  error?: Failure | null,
-): Discovery {
-  const discovery: Discovery = {
-    devices,
-    selectedSelector,
-    selectedDevice,
-    authenticator,
-  };
-
-  if (error) discovery.error = error;
-
-  return discovery;
-}
-
-async function setSelection(devices: DeviceReport[], selector: string): Promise<Discovery> {
-  const { selectedSelector: canonicalSelector, selectedDevice } = deviceSelection(
-    devices,
-    selector,
-  );
-
-  if (!canonicalSelector || !selectedDevice) {
-    await api.setSelection({ attachmentId: "" });
-
-    return discoverySnapshot(get(deviceStore), "", null, idleAuthenticatorStatus());
-  }
-
-  const selection = await api.setSelection({ attachmentId: canonicalSelector });
-  const snapshot = selection.selection!;
-  // Inventory may publish identity while the authenticator opens.
-  const currentDevices = get(deviceStore);
-  const currentSelectedDevice = reportForSelector(currentDevices, canonicalSelector)!;
-
-  return discoverySnapshot(currentDevices, canonicalSelector, currentSelectedDevice, {
-    selectionId: snapshot.id,
-    state: "ready",
-  });
-}
-
-async function closeSelection(): Promise<Discovery> {
-  await api.setSelection({ attachmentId: "" });
-
-  return discoverySnapshot(get(deviceStore), "", null, idleAuthenticatorStatus());
-}
-
-function selectionMessage(discovery: Discovery, fallback: string) {
-  const device = discovery.selectedDevice;
-
-  return device ? deviceName(device) : fallback || m.selection_updated();
-}
-
-async function selectFromDevices(devices: DeviceReport[], selector: string): Promise<Discovery> {
-  deviceStore.set(devices);
-
-  const requestedSelector = selector.trim();
-
-  if (!requestedSelector) return closeSelection();
-
-  const { selectedSelector: canonicalSelector, selectedDevice } = deviceSelection(
-    devices,
-    requestedSelector,
-  );
-
-  if (!canonicalSelector || !selectedDevice) return closeSelection();
-
-  try {
-    return await setSelection(devices, canonicalSelector);
-  } catch (error) {
-    const runtimeError = runtimeFailureFrom(error);
-    const currentDevices = get(deviceStore);
-
-    return discoverySnapshot(
-      currentDevices,
-      canonicalSelector,
-      reportForSelector(currentDevices, canonicalSelector),
-      idleAuthenticatorStatus("error", runtimeError),
-      runtimeError,
-    );
-  }
-}
-
-/**
- * Restores the selected authenticator without crossing the per-device
- * screen-state boundary. Callers can then rerun their own forced operation
- * while last-known-good presentation data remains intact.
- */
-export async function ensureActiveSelectionReady(): Promise<boolean> {
-  const current = get(authenticatorStatus);
-
-  if (current.state === "ready" && current.selectionId) return true;
-
-  if (current.state === "opening" || current.state === "running") return false;
-
-  const selector = get(selectedSelector).trim();
-
-  if (!selector) return false;
-
-  const devices = get(deviceStore);
-
-  if (!reportForSelector(devices, selector)) {
-    const error = new Failure({
-      code: Code.CodeDeviceNotFound,
-      category: Category.CategoryInvalidState,
-    });
-
-    applyDiscovery(
-      discoverySnapshot(
-        devices,
-        selector,
-        get(selectedDeviceStore),
-        idleAuthenticatorStatus("error", error),
-        error,
-      ),
-    );
-
-    return false;
-  }
-
-  pendingInteraction.set(null);
-  authenticatorStatus.set(idleAuthenticatorStatus("opening"));
-
-  const discovery = await selectFromDevices(devices, selector);
-
-  applyDiscovery(discovery);
-
-  const recovered = get(authenticatorStatus);
-
-  return recovered.state === "ready" && Boolean(recovered.selectionId);
-}
-
 export async function bootstrapAuthenticatorSession() {
   try {
-    const discoveredDevices = await api.discover();
-    const discovery = await selectFromDevices(
-      discoveredDevices,
-      selectorFromDevice(discoveredDevices[0]),
-    );
+    const snapshot = await api.discover();
 
-    applyDiscovery(discovery);
+    applyDiscovery(snapshot);
+    if (snapshot.error) {
+      setStatusOutcome({
+        tone: "error",
+        title: m.discovery_issue(),
+        message: failureMessage(snapshot.error),
+      });
+    }
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
 
-    authenticatorStatus.set(idleAuthenticatorStatus("error", runtimeError));
+    setAuthenticatorError(runtimeError);
     setStatusOutcome({
       tone: "error",
       title: m.discovery_issue(),
@@ -194,28 +46,26 @@ export async function bootstrapAuthenticatorSession() {
 
 export async function selectAuthenticatorSession(selector: string) {
   const requestedSelector = selector.trim();
+  const device = reportForSelector(get(authenticatorSession).devices, requestedSelector);
+  const attachmentId = device?.attachment.id ?? "";
 
   clearWorkbenchScreenCaches();
   pendingInteraction.set(null);
+  if (attachmentId) setAuthenticatorOpening(attachmentId);
+
   try {
-    if (requestedSelector) {
-      authenticatorStatus.set(idleAuthenticatorStatus("opening"));
-    }
+    const response = await api.setSelection({ attachmentId });
 
-    const discovery = await selectFromDevices(get(deviceStore), selector);
-
-    applyDiscovery(discovery);
+    applySelection(response.selection ?? null);
     setStatusOutcome({
-      tone: discovery.error ? "error" : "info",
-      title: discovery.error ? m.token_selection_issue() : m.token_selected(),
-      message: discovery.error
-        ? failureMessage(discovery.error)
-        : selectionMessage(discovery, selector),
+      tone: "info",
+      title: m.token_selected(),
+      message: device ? deviceName(device) : selector || m.selection_updated(),
     });
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
 
-    authenticatorStatus.set(idleAuthenticatorStatus("error", runtimeError));
+    setAuthenticatorError(runtimeError);
     setStatusOutcome({
       tone: "error",
       title: m.token_selection_issue(),
@@ -226,8 +76,8 @@ export async function selectAuthenticatorSession(selector: string) {
 
 /**
  * Factory reset invalidates the selected authenticator as an application
- * boundary. Close the old authenticator, clear selection-owned state, then
- * apply the normal startup rule: auto-open the first discovered authenticator.
+ * boundary. Close it, clear selection-owned state, then let discovery apply
+ * the normal backend-owned auto-selection rule.
  */
 export async function rediscoverAfterFactoryReset(): Promise<Failure | null> {
   let closeError: Failure | null = null;
@@ -238,27 +88,20 @@ export async function rediscoverAfterFactoryReset(): Promise<Failure | null> {
     closeError = runtimeFailureFrom(error);
   }
 
-  clearWorkbenchScreenCaches();
   pendingInteraction.set(null);
   finishOperation();
-  applyDiscovery(discoverySnapshot([], "", null, idleAuthenticatorStatus()));
+  clearAuthenticatorSession();
 
   try {
-    const discoveredDevices = await api.discover();
-    const discovery = await selectFromDevices(
-      discoveredDevices,
-      selectorFromDevice(discoveredDevices[0]),
-    );
+    const snapshot = await api.discover();
 
-    applyDiscovery(discovery);
+    applyDiscovery(snapshot);
 
-    return discovery.error ?? closeError;
+    return snapshot.error ?? closeError;
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
 
-    applyDiscovery(
-      discoverySnapshot([], "", null, idleAuthenticatorStatus("error", runtimeError), runtimeError),
-    );
+    setAuthenticatorError(runtimeError);
 
     return runtimeError;
   }
@@ -268,9 +111,8 @@ export async function shutdownWorkbench() {
   try {
     await api.setSelection({ attachmentId: "" });
   } finally {
-    clearWorkbenchScreenCaches();
-    authenticatorStatus.set(idleAuthenticatorStatus());
     pendingInteraction.set(null);
     finishOperation();
+    clearAuthenticatorSession();
   }
 }

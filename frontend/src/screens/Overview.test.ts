@@ -5,11 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import {
-  FactID,
-  FactOrigin,
-  FactState,
-  FactValue,
-  FactValueKind,
   Info as InspectInfo,
   Result as InspectResult,
   type Assessment,
@@ -34,9 +29,9 @@ import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import { setAppLocale } from "$lib/i18n";
 import { setAdvancedMode } from "$lib/preferences";
 import { errorLoadState } from "$lib/features/overview/state";
-import { authenticatorInspection, selectedDevice } from "$lib/features/authenticator/state";
+import { authenticatorInspection } from "$lib/features/authenticator/state";
 import { failureForCode } from "$lib/test-support/failure";
-import { testOverviewAssessment, testOverviewFact } from "$lib/test-support/overview-facts";
+import { testOverviewAssessment } from "$lib/test-support/overview-facts";
 import {
   resetAppStateForTest,
   seedOverviewEnvelopeForTest,
@@ -159,6 +154,27 @@ describe("Overview", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("shows the practical overview outside advanced mode", () => {
+    setAdvancedMode(false);
+    seedSelectionForTest("token-1", device, {
+      state: "ready",
+      selectionId: "authenticator-1",
+    });
+    seedOverviewEnvelopeForTest(
+      inspectEnvelope("inspect-1", "00000000-0000-0000-0000-000000000001"),
+    );
+
+    render(Overview);
+
+    expect(screen.getByText("Key capabilities")).toBeInTheDocument();
+    expect(
+      screen.getByText("Practical capabilities reported by the selected authenticator."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("CTAP options")).not.toBeInTheDocument();
+    expect(screen.queryByText("Capability matrix")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Raw JSON" })).not.toBeInTheDocument();
+  });
+
   it("forces an MDS refresh and confirms completion", async () => {
     const user = userEvent.setup();
     const aaguid = "00000000-0000-0000-0000-000000000001";
@@ -183,43 +199,6 @@ describe("Overview", () => {
     });
   });
 
-  it("uses the practical Overview variant outside advanced mode", () => {
-    setAdvancedMode(false);
-    seedSelectionForTest("token-1", device, {
-      state: "ready",
-      selectionId: "authenticator-1",
-    });
-
-    const assessment = testOverviewAssessment([
-      testOverviewFact(
-        FactID.FactIDVersionFIDO23,
-        "versions.FIDO_2_3",
-        FactState.FactStateSupported,
-        FactOrigin.FactOriginDerived,
-        new FactValue({ kind: FactValueKind.FactValueBoolean, boolean: true }),
-      ),
-    ]);
-
-    seedOverviewEnvelopeForTest(
-      inspectEnvelope(
-        "inspect-standard",
-        "00000000-0000-0000-0000-000000000001",
-        false,
-        assessment,
-      ),
-    );
-
-    render(Overview);
-
-    expect(
-      screen.getByRole("heading", { name: "Supports modern FIDO2 sign-in." }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Key capabilities")).toBeInTheDocument();
-    expect(screen.queryByText("CTAP options")).not.toBeInTheDocument();
-    expect(screen.queryByText("Capability matrix")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Raw JSON" })).not.toBeInTheDocument();
-  });
-
   it("updates the capability matrix when discovery enrichment arrives after inspection", async () => {
     seedSelectionForTest("token-1", device, {
       state: "ready",
@@ -233,17 +212,20 @@ describe("Overview", () => {
     expect(screen.queryByText("72103654095303")).not.toBeInTheDocument();
 
     await act(() => {
-      selectedDevice.set(
-        new DeviceReport({
-          ...device,
-          identity: new DeviceIdentity({
-            vendor: Vendor.VendorToken2,
-            model: "Token2 Bio3 Dual A+C PIN+",
-            serial: "72103654095303",
-            firmware: "R3.2",
-          }),
+      const enriched = new DeviceReport({
+        ...device,
+        identity: new DeviceIdentity({
+          vendor: Vendor.VendorToken2,
+          model: "Token2 Bio3 Dual A+C PIN+",
+          serial: "72103654095303",
+          firmware: "R3.2",
         }),
-      );
+      });
+
+      seedSelectionForTest("token-1", enriched, {
+        state: "ready",
+        selectionId: "authenticator-1",
+      });
     });
 
     expect(screen.getByText("72103654095303")).toBeInTheDocument();

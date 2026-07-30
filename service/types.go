@@ -13,7 +13,6 @@ import (
 	"github.com/go-ctap/kit/model/operation"
 	"github.com/go-ctap/kit/model/report"
 	"github.com/go-ctap/kit/model/webauthn"
-	"github.com/go-ctap/kit/transport"
 	mdsmodel "github.com/go-ctap/mds/model"
 )
 
@@ -38,14 +37,9 @@ type LogCursor struct {
 	Sequence uint64 `json:"sequence"`
 }
 
-type DiscoverRequest struct {
-	Mode transport.Mode `json:"mode,omitempty"`
-}
-
 type DiscoveryChangedEnvelope struct {
-	Trigger  ctapkit.InventoryTrigger  `json:"trigger"`
-	Snapshot ctapkit.InventorySnapshot `json:"snapshot"`
-	Error    *failure.Failure          `json:"error,omitempty"`
+	Trigger  ctapkit.InventoryTrigger     `json:"trigger"`
+	Snapshot AuthenticatorSessionSnapshot `json:"snapshot"`
 }
 
 type SelectionRequest struct {
@@ -57,7 +51,14 @@ type SelectionSnapshot struct {
 }
 
 type ActiveSelection struct {
-	ID SelectionID `json:"id"`
+	ID           SelectionID         `json:"id"`
+	AttachmentID report.AttachmentID `json:"attachmentId"`
+}
+
+type AuthenticatorSessionSnapshot struct {
+	Devices   []report.DeviceReport `json:"devices"`
+	Selection *ActiveSelection      `json:"selection,omitempty"`
+	Error     *failure.Failure      `json:"error,omitempty"`
 }
 
 type OperationEnvelopeMeta struct {

@@ -2,7 +2,6 @@ import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failur
 
 import type { OperationEnvelope } from "$lib/api.js";
 import {
-  requestForCurrentSelection,
   runTypedOperationStage,
   type CompleteOperationOptions,
   type TypedOperationStageFailure,
@@ -125,11 +124,7 @@ type PreviewReviewPolicy<TValue, TEnvelope> =
       onSkipped: (value: TValue, envelope: TEnvelope) => void;
     };
 
-type RunConfirmedPreviewOptions<
-  TRequest extends { selectionId: string },
-  TEnvelope extends OperationEnvelope,
-  TValue,
-> = {
+type RunConfirmedPreviewOptions<TRequest, TEnvelope extends OperationEnvelope, TValue> = {
   label: string;
   request: TRequest;
   call: (request: TRequest) => Promise<TEnvelope>;
@@ -141,7 +136,7 @@ type RunConfirmedPreviewOptions<
 } & PreviewReviewPolicy<TValue, TEnvelope>;
 
 interface RunConfirmedExecutionOptions<
-  TRequest extends { selectionId: string; dryRun?: boolean },
+  TRequest extends { dryRun?: boolean },
   TEnvelope extends OperationEnvelope,
   TPreview,
   TValue,
@@ -233,11 +228,7 @@ export function confirmedOperationExecution<TRequest, TEnvelope, TPreview = unkn
   };
 }
 
-export async function runConfirmedPreview<
-  TRequest extends { selectionId: string },
-  TEnvelope extends OperationEnvelope,
-  TValue,
->({
+export async function runConfirmedPreview<TRequest, TEnvelope extends OperationEnvelope, TValue>({
   label,
   request,
   call,
@@ -252,7 +243,7 @@ export async function runConfirmedPreview<
 
   const outcome = await runTypedOperationStage({
     label,
-    call: () => call(requestForCurrentSelection(request)),
+    call: () => call(request),
     extract,
     onFailure: (failure) => publish(previewFailure(failure)),
     onSuccess: (value, envelope) => {
@@ -281,7 +272,7 @@ export async function runConfirmedPreview<
 }
 
 export async function runConfirmedExecution<
-  TRequest extends { selectionId: string; dryRun?: boolean },
+  TRequest extends { dryRun?: boolean },
   TEnvelope extends OperationEnvelope,
   TPreview,
   TValue,
@@ -306,7 +297,7 @@ export async function runConfirmedExecution<
 
   const outcome = await runTypedOperationStage({
     label,
-    call: () => call(requestForCurrentSelection(execution.request)),
+    call: () => call(execution.request),
     extract,
     onFailure: (failure) => publish(executionFailure(execution, failure)),
     onSuccess: (value, envelope) => onSuccess?.(value, envelope, execution),

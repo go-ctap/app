@@ -73,13 +73,6 @@ func TestSetSelectionSerializesAndReuses(t *testing.T) {
 		t.Fatalf("final selection = %#v, want device-2", service.selected)
 	}
 
-	stale := service.ListCredentials(t.Context(), OperationRequest{
-		SelectionID: first.Selection.ID,
-	})
-
-	if stale.Error == nil || stale.Error.Code != failure.CodeAuthenticatorClosed {
-		t.Fatalf("stale operation = %#v, want %s", stale, failure.CodeAuthenticatorClosed)
-	}
 }
 
 func TestSetSelectionCancellationAndCloseFailures(t *testing.T) {
@@ -166,9 +159,10 @@ func TestCloseSelectionClosesRuntimeBeforeWaitingForOperations(t *testing.T) {
 func selectionTestService() *Service {
 	service := New()
 
-	service.devices = []report.DeviceReport{testDevice("device-1"), testDevice("device-2")}
-	service.inventory = newFakeInventory(service.devices)
-	service.inventoryMode = transport.ModeAuto
+	service.inventory = newFakeInventory([]report.DeviceReport{
+		testDevice("device-1"),
+		testDevice("device-2"),
+	})
 
 	return service
 }

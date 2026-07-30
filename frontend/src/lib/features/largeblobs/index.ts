@@ -1,6 +1,5 @@
 import { readonly } from "svelte/store";
 
-import { ensureActiveSelectionReady } from "$lib/authenticator-controller.js";
 import {
   beginLargeBlobCleanup as beginLargeBlobCleanupOperation,
   beginLargeBlobDelete as beginLargeBlobDeleteOperation,
@@ -37,31 +36,13 @@ export type {
 } from "$lib/features/largeblobs/state.js";
 export type { LargeBlobPayloadEncoding } from "$lib/largeblobs-payload.js";
 
-export async function reloadLargeBlobs(): Promise<boolean> {
-  if (!(await ensureActiveSelectionReady())) return false;
-
-  return loadLargeBlobsOperation();
-}
-
-export async function previewLargeBlobWrite(): Promise<boolean> {
-  if (!(await ensureActiveSelectionReady())) return false;
-
-  return previewLargeBlobWriteOperation();
-}
-
-export async function beginLargeBlobDelete(entryIndex?: number): Promise<boolean> {
-  if (!(await ensureActiveSelectionReady())) return false;
-
-  return beginLargeBlobDeleteOperation(entryIndex);
-}
-
-export async function beginLargeBlobCleanup(): Promise<boolean> {
-  if (!(await ensureActiveSelectionReady())) return false;
-
-  return beginLargeBlobCleanupOperation();
-}
-
-export { loadLargeBlobsOperation as loadLargeBlobs };
+export {
+  beginLargeBlobCleanupOperation as beginLargeBlobCleanup,
+  beginLargeBlobDeleteOperation as beginLargeBlobDelete,
+  loadLargeBlobsOperation as loadLargeBlobs,
+  loadLargeBlobsOperation as reloadLargeBlobs,
+  previewLargeBlobWriteOperation as previewLargeBlobWrite,
+};
 
 export {
   beginLargeBlobWrite,

@@ -22,7 +22,6 @@ import { failureForCode } from "$lib/test-support/failure";
 import SecurityMutationDialog from "$lib/components/security/SecurityMutationDialog.svelte";
 
 const request = new AlwaysUVRequest({
-  selectionId: "authenticator-1",
   target: AlwaysUVTarget.AlwaysUVTargetEnable,
   dryRun: true,
 });
@@ -81,7 +80,6 @@ function executingBioEnrollment(): SecurityMutationState {
       }),
       previewValue: undefined,
       request: new BioEnrollRequest({
-        selectionId: "authenticator-1",
         timeoutMilliseconds: 60_000,
         dryRun: false,
       }),
@@ -147,7 +145,7 @@ describe("SecurityMutationDialog", () => {
   );
 
   it("keeps the destructive action after any execution failure", async () => {
-    const request = new ResetFactoryRequest({ selectionId: "authenticator-1", dryRun: true });
+    const request = new ResetFactoryRequest({ dryRun: true });
     const previewEnvelope = new ResetFactoryEnvelope({
       operationId: "reset-preview-1",
       selectionId: "authenticator-1",
@@ -217,18 +215,5 @@ describe("SecurityMutationDialog", () => {
     await user.click(cancelButton);
 
     expect(callbacks.onCancelOperation).toHaveBeenCalledOnce();
-  });
-
-  it("marks biometric enrollment with concise capture guidance", () => {
-    renderDialog(executingBioEnrollment(), { completed: 1, total: 4, sampleStatus: "good" });
-
-    expect(screen.getByRole("heading", { name: "Enroll biometric" })).toBeInTheDocument();
-    expect(
-      screen.getByText("Complete each capture requested by the authenticator."),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Latest sample: Good fingerprint sample")).toBeInTheDocument();
-    expect(
-      screen.getByRole("dialog").querySelector("[data-prompt-visual] .lucide-fingerprint-pattern"),
-    ).toBeInTheDocument();
   });
 });

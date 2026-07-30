@@ -24,7 +24,6 @@ import type {
   LargeBlobListEnvelope,
   MakeCredentialEnvelope,
   MakeCredentialRequest,
-  ActiveSelection,
 } from "../../bindings/telesma/service";
 import { testHIDDevice, testSmartCardDevice } from "../test/device.js";
 
@@ -48,11 +47,8 @@ import {
   passkeysVerificationFlow,
 } from "$lib/features/passkeys/state";
 import {
-  devices,
-  resetAuthenticatorStateForTest,
-  selectedDevice,
-  selectedSelector,
   authenticatorStatus,
+  resetAuthenticatorStateForTest,
 } from "$lib/features/authenticator/state";
 import { resetWorkbenchStateForTest, statusBar } from "$lib/features/workbench/state";
 import { setAppLocale } from "$lib/i18n";
@@ -61,6 +57,7 @@ import {
   operationRecovery,
   retryOperationRecovery,
 } from "$lib/operation-recovery.js";
+import { seedDevicesForTest, seedSelectionForTest } from "$lib/test-support/store-utils.js";
 import {
   cancelLabHandoff,
   confirmLabHandoff,
@@ -163,7 +160,7 @@ function getResultEnvelope(rpID = "example.com"): GetAssertionEnvelope {
 function seedSuccessfulMake(rpID = "example.com", credentialIDHex = "cafe") {
   const current = get(labState);
   const previewRequest: MakeCredentialRequest = {
-    ...buildMakeCredentialRequest("authenticator-1", current.makeDraft),
+    ...buildMakeCredentialRequest(current.makeDraft),
     dryRun: true,
   };
   const previewEnvelope = makePreviewEnvelope();
@@ -191,7 +188,10 @@ beforeEach(() => {
   resetAuthenticatorStateForTest();
   resetWorkbenchStateForTest();
   resetLabStateForTest((target) => target.fill(0x11));
-  authenticatorStatus.set({ state: "ready", selectionId: "authenticator-1" });
+  seedSelectionForTest("token-1", null, {
+    state: "ready",
+    selectionId: "authenticator-1",
+  });
   vi.spyOn(api, "verifyMakeCredential").mockResolvedValue(new MakeCredentialVerification());
   vi.spyOn(api, "verifyGetAssertion").mockResolvedValue(new GetAssertionVerification());
   vi.spyOn(api, "lookupMDS").mockResolvedValue({
@@ -322,8 +322,7 @@ describe("WebAuthn Lab request lifecycle", () => {
       .mockResolvedValueOnce(makeResultEnvelope());
 
     expect(await previewLabMakeCredential()).toBe(true);
-    expect(makeCredential.mock.calls[0][0]).toEqual({
-      selectionId: "authenticator-1",
+    expect(makeCredential.mock.calls[0][0]).toMatchObject({
       verificationFlow: VerificationFlow.VerificationFlowPIN,
       rp: { id: "lab.example", name: "Lab" },
       user: { id: "AAECAw==", name: "alice", displayName: "Alice" },
@@ -417,45 +416,37 @@ describe("WebAuthn Lab request lifecycle", () => {
     const firstCard = testSmartCardDevice("card-1");
     const secondCard = testSmartCardDevice("card-2");
 
-    devices.set([firstCard]);
-    selectedSelector.set(firstCard.attachment.id);
-    selectedDevice.set(firstCard);
-    authenticatorStatus.set({ state: "ready", selectionId: "authenticator-card-1" });
+    seedDevicesForTest([firstCard]);
+    seedSelectionForTest(firstCard.attachment.id, firstCard, {
+      state: "ready",
+      selectionId: "authenticator-card-1",
+    });
 
     const denied = makePreviewEnvelope();
 
     denied.error = failureForCode(Code.CodeUserPresenceRequired);
 
     const responses = [makePreviewEnvelope(), denied, makeResultEnvelope()];
-    const sentSelectionIds: string[] = [];
-
-    vi.spyOn(api, "makeCredential").mockImplementation((request) => {
-      sentSelectionIds.push(request.selectionId);
-
-      return Promise.resolve(responses.shift()!);
-    });
+    const makeCredential = vi
+      .spyOn(api, "makeCredential")
+      .mockImplementation(() => Promise.resolve(responses.shift()!));
 
     expect(await previewLabMakeCredential()).toBe(true);
 
     const executing = confirmLabMakeCredential();
 
     await vi.waitFor(() => expect(get(operationRecovery)).not.toBeNull());
-    devices.set([]);
-    selectedSelector.set("");
-    selectedDevice.set(null);
-    authenticatorStatus.set({ state: "idle" });
-    devices.set([secondCard]);
-    selectedSelector.set(secondCard.attachment.id);
-    selectedDevice.set(secondCard);
-    authenticatorStatus.set({ state: "ready", selectionId: "authenticator-card-2" });
+    seedDevicesForTest([]);
+    seedSelectionForTest("", null, { state: "idle" });
+    seedDevicesForTest([secondCard]);
+    seedSelectionForTest(secondCard.attachment.id, secondCard, {
+      state: "ready",
+      selectionId: "authenticator-card-2",
+    });
     expect(retryOperationRecovery()).toBe(true);
 
     await expect(executing).resolves.toBe(true);
-    expect(sentSelectionIds).toEqual([
-      "authenticator-card-1",
-      "authenticator-card-1",
-      "authenticator-card-2",
-    ]);
+    expect(makeCredential).toHaveBeenCalledTimes(3);
     expect(get(labState).makeStep.phase).toBe("success");
   });
 
@@ -532,7 +523,6 @@ describe("WebAuthn Lab request lifecycle", () => {
     const frozenRequest = getAssertion.mock.calls[0][0];
 
     expect(frozenRequest).toMatchObject({
-      selectionId: "authenticator-1",
       rpID: "example.com",
       clientDataJSON: "e25vdC1qc29uCg==",
       dryRun: true,
@@ -640,109 +630,6 @@ describe("WebAuthn Lab request lifecycle", () => {
       responseEnvelope: null,
       runtimeError: failureForCode(Code.CodeInternalError),
     });
-  });
-
-  it("reopens an invalid authenticator before starting a fresh MakeCredential preview", async () => {
-    const token = testHIDDevice("token-1", "Test authenticator");
-
-    devices.set([token]);
-    selectedSelector.set("token-1");
-    selectedDevice.set(token);
-
-    const invalidSelection = makePreviewEnvelope();
-
-    invalidSelection.error = failureForCode(Code.CodeAuthenticatorClosed);
-
-    const makeCredential = vi
-      .spyOn(api, "makeCredential")
-      .mockResolvedValueOnce(invalidSelection)
-      .mockResolvedValueOnce(makePreviewEnvelope());
-
-    vi.spyOn(api, "setSelection").mockResolvedValue({
-      selection: {
-        id: "authenticator-2",
-      } as ActiveSelection,
-    });
-
-    expect(await previewLabMakeCredential()).toBe(false);
-    expect(get(labState).makeStep.phase).toBe("error");
-    expect(get(authenticatorStatus)).toMatchObject({ state: "error" });
-
-    expect(await previewLabMakeCredential()).toBe(true);
-    expect(makeCredential).toHaveBeenCalledTimes(2);
-    expect(makeCredential.mock.calls[1][0].selectionId).toBe("authenticator-2");
-    expect(get(labState).makeStep.phase).toBe("review");
-  });
-
-  it("reopens an invalid authenticator and reruns GetAssertion with the same client-data bytes", async () => {
-    const initial = get(labState);
-
-    expect(
-      updateLabGetAssertionDraft({
-        clientData: {
-          ...initial.getDraft.clientData,
-          mode: "raw",
-          rawJSON: "{not-json\n",
-        },
-      }),
-    ).toBe(true);
-
-    const token = testHIDDevice("token-1", "Test authenticator");
-
-    devices.set([token]);
-    selectedSelector.set("token-1");
-    selectedDevice.set(token);
-
-    const invalidSelection = getResultEnvelope();
-
-    invalidSelection.error = failureForCode(Code.CodeAuthenticatorClosed);
-
-    const success = getResultEnvelope();
-
-    success.selectionId = "authenticator-2";
-
-    const getAssertion = vi
-      .spyOn(api, "getAssertion")
-      .mockResolvedValueOnce(invalidSelection)
-      .mockResolvedValueOnce(success)
-      .mockResolvedValueOnce(success);
-
-    vi.spyOn(api, "setSelection").mockResolvedValue({
-      selection: {
-        id: "authenticator-2",
-      } as ActiveSelection,
-    });
-
-    expect(await runLabGetAssertion()).toBe(false);
-
-    const firstRequest = getAssertion.mock.calls[0][0];
-
-    expect(get(labState).getStep).toMatchObject({
-      phase: "error",
-      responseEnvelope: invalidSelection,
-      runtimeError: null,
-    });
-    expect(get(authenticatorStatus)).toEqual({
-      state: "error",
-      error: failureForCode(Code.CodeAuthenticatorClosed),
-    });
-
-    expect(await rerunLabGetAssertion()).toBe(true);
-    expect(getAssertion).toHaveBeenCalledTimes(2);
-    expect(getAssertion.mock.calls[1][0]).toEqual({
-      ...firstRequest,
-      selectionId: "authenticator-2",
-    });
-    expect(getAssertion.mock.calls[1][0].clientDataJSON).toBe(firstRequest.clientDataJSON);
-    expect(get(labState).getStep.phase).toBe("review");
-    expect(await confirmLabGetAssertion()).toBe(true);
-    expect(getAssertion).toHaveBeenCalledTimes(3);
-    expect(getAssertion.mock.calls[2][0]).toMatchObject({
-      selectionId: "authenticator-2",
-      dryRun: false,
-    });
-    expect(getAssertion.mock.calls[2][0].clientDataJSON).toBe(firstRequest.clientDataJSON);
-    expect(get(labState).getStep.phase).toBe("success");
   });
 
   it("invalidates Passkeys and Large Blobs after success without losing UI preferences", async () => {
@@ -895,10 +782,7 @@ describe("WebAuthn Lab credential handoff", () => {
     ).toBe(true);
 
     const current = get(labState);
-    const request: GetAssertionRequest = buildGetAssertionRequest(
-      "authenticator-1",
-      current.getDraft,
-    );
+    const request: GetAssertionRequest = buildGetAssertionRequest(current.getDraft);
 
     labState.set({
       ...current,

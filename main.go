@@ -6,7 +6,6 @@ import (
 	"runtime"
 
 	"telesma/appconfig"
-	"telesma/ctapservice"
 	"telesma/internal/windowstate"
 	appservice "telesma/service"
 
@@ -73,7 +72,7 @@ func mainWindowOptions(goos string, state windowstate.State) application.Webview
 func main() {
 	state, statePath := windowstate.Restore(mainWindowMinWidth, mainWindowMinHeight)
 
-	ctapkitService := ctapservice.New()
+	ctapkitService := appservice.NewWailsService()
 	app := application.New(application.Options{
 		Name:        "Telesma",
 		Description: "Desktop workbench for local FIDO2/CTAP authenticators",

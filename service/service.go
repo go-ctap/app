@@ -21,7 +21,6 @@ type Option func(*Service)
 type inventoryRuntime interface {
 	Snapshot() ctapkit.InventorySnapshot
 	Events() <-chan ctapkit.InventoryEvent
-	Refresh(context.Context) error
 	OpenAuthenticator(
 		context.Context,
 		report.AttachmentID,
@@ -44,11 +43,9 @@ type Service struct {
 	openInventory     func(context.Context, transport.Mode) (inventoryRuntime, error)
 	openAuthenticator openAuthenticatorFunc
 	inventory         inventoryRuntime
-	inventoryMode     transport.Mode
 	inventoryDone     chan struct{}
 	selectionGate     chan struct{}
 
-	devices      []report.DeviceReport
 	selected     *selection
 	interactions map[InteractionID]*pendingInteraction
 	logs         *ctapkit.LogJournal
@@ -62,7 +59,6 @@ type operationState struct {
 }
 
 type pendingInteraction struct {
-	prompt   InteractionPrompt
 	response chan model.InteractionResponse
 	done     <-chan struct{}
 }
@@ -164,18 +160,8 @@ func (s *Service) ResolveInteraction(ctx context.Context, answer InteractionAnsw
 	case <-ctx.Done():
 		clear(response.PIN)
 
-		return false, normalizeServicePhaseError(ctx.Err(), failure.PhaseInteraction)
+		return false, ctapkit.NormalizeError(ctx.Err(), failure.PhaseInteraction)
 	}
-}
-
-func (s *Service) selectionFor(id SelectionID) (*selection, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	selected := s.selected
-	ok := selected != nil && selected.id == id
-
-	return selected, ok
 }
 
 func (s *Service) retireSelection(selected *selection) {
@@ -212,15 +198,14 @@ func (s *Service) unregisterOperation(selected *selection, id OperationID) {
 }
 
 func (s *Service) registerInteraction(
-	prompt InteractionPrompt,
+	id InteractionID,
 	response chan model.InteractionResponse,
 	done <-chan struct{},
 ) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.interactions[prompt.InteractionID] = &pendingInteraction{
-		prompt:   prompt,
+	s.interactions[id] = &pendingInteraction{
 		response: response,
 		done:     done,
 	}
@@ -292,7 +277,7 @@ func (h interactionHandler) RequestInteraction(ctx context.Context, req model.In
 	}
 	response := make(chan model.InteractionResponse)
 
-	h.service.registerInteraction(prompt, response, h.done)
+	h.service.registerInteraction(prompt.InteractionID, response, h.done)
 	h.service.emit(EventInteractionRequested, prompt)
 	defer h.service.unregisterInteraction(prompt.InteractionID)
 

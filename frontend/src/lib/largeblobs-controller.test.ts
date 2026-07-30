@@ -23,15 +23,12 @@ import {
   largeBlobsSelectedEntryIndex,
   resetLargeBlobsStateForTest,
 } from "$lib/features/largeblobs/state";
-import {
-  authenticatorStatus,
-  resetAuthenticatorStateForTest,
-  selectedSelector,
-} from "$lib/features/authenticator/state";
+import { resetAuthenticatorStateForTest } from "$lib/features/authenticator/state";
 import { selectLargeBlobEntry, setLargeBlobsDecodeMode } from "$lib/largeblobs-controller";
 import { resetWorkbenchStateForTest } from "$lib/features/workbench/state";
 import { setAppLocale } from "$lib/i18n";
 import { failureForCode } from "$lib/test-support/failure";
+import { seedSelectionForTest } from "$lib/test-support/store-utils.js";
 import { testHIDDevice } from "../test/device";
 
 function listEnvelope(): LargeBlobListEnvelope {
@@ -111,8 +108,10 @@ beforeEach(() => {
   resetAuthenticatorStateForTest();
   resetWorkbenchStateForTest();
   resetLargeBlobsStateForTest();
-  selectedSelector.set("token-1");
-  authenticatorStatus.set({ state: "ready", selectionId: "authenticator-1" });
+  seedSelectionForTest("token-1", null, {
+    state: "ready",
+    selectionId: "authenticator-1",
+  });
   completeLargeBlobsInventoryLoad(listEnvelope().result!, "2026-07-30T00:00:00.000Z");
 });
 
@@ -128,9 +127,8 @@ describe("large blob entry controller", () => {
     expect(await selectLargeBlobEntry(0)).toBe(true);
 
     expect(read).toHaveBeenCalledWith({
-      selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowDefault,
-      credentialIdHex: "cafe",
+      credentialIDHex: "cafe",
     });
     expect(decode).toHaveBeenCalledWith({
       rawHex: "68656c6c6f",

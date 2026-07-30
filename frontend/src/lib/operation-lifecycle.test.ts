@@ -7,7 +7,7 @@ import type { CredentialsEnvelope } from "../../bindings/telesma/service";
 
 import { runConfirmedPreview } from "$lib/confirmed-operation.js";
 import { setAppLocale } from "$lib/i18n.js";
-import { requestForCurrentSelection, runTypedOperationStage } from "$lib/operation-lifecycle.js";
+import { runTypedOperationStage } from "$lib/operation-lifecycle.js";
 import {
   cancelOperationRecovery,
   operationRecovery,
@@ -125,13 +125,13 @@ describe("typed operation stages", () => {
     expect(call).toHaveBeenCalledOnce();
   });
 
-  it("retries as a new attempt with the current selection ID", async () => {
+  it("retries the same captured request only after an explicit decision", async () => {
     const response = envelope(failureForCode(Code.CodeUserPresenceRequired));
-    const request = { selectionId: "stale-selection" };
-    const sentSelectionIds: string[] = [];
+    const request = { marker: "frozen" };
+    const sentRequests: (typeof request)[] = [];
     const responses = [response, envelope()];
     const call = vi.fn(async () => {
-      sentSelectionIds.push(requestForCurrentSelection(request).selectionId);
+      sentRequests.push(request);
 
       return responses.shift()!;
     });
@@ -149,7 +149,7 @@ describe("typed operation stages", () => {
     expect(retryOperationRecovery()).toBe(true);
 
     await expect(pending).resolves.toMatchObject({ ok: true });
-    expect(sentSelectionIds).toEqual(["authenticator-card-1", "authenticator-card-2"]);
+    expect(sentRequests).toEqual([request, request]);
   });
 
   it("prompts again when an explicit retry receives another eligible error", async () => {
@@ -202,7 +202,7 @@ describe("typed operation stages", () => {
     await expect(
       runConfirmedPreview({
         label: "Preview cleanup",
-        request: { selectionId: "stale-selection" },
+        request: { marker: "frozen" },
         call: async () => response,
         extract: () => preview,
         publish,
@@ -225,7 +225,7 @@ describe("typed operation stages", () => {
     await expect(
       runConfirmedPreview({
         label: "Preview mutation",
-        request: { selectionId: "stale-selection" },
+        request: { marker: "frozen" },
         call: async () => response,
         extract: () => preview,
         publish,
@@ -234,7 +234,7 @@ describe("typed operation stages", () => {
 
     expect(publish).toHaveBeenLastCalledWith({
       phase: "review",
-      previewRequest: { selectionId: "authenticator-card-1" },
+      previewRequest: { marker: "frozen" },
       previewEnvelope: response,
       previewValue: preview,
     });

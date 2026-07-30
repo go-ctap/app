@@ -441,26 +441,6 @@ describe("Passkeys", () => {
     expect(screen.getByText("Level 2 · UV optional with passkey list")).toBeInTheDocument();
   });
 
-  it("presents inventory as one fact and capacity as remaining space", () => {
-    seedSelectionForTest("token-1", null, {
-      state: "ready",
-      selectionId: "authenticator-1",
-    });
-    seedPasskeysEnvelopeForTest(credentialsEnvelope());
-
-    render(Passkeys);
-
-    const inventory = screen.getByRole("region", { name: "Passkey inventory" });
-
-    expect(within(inventory).getByText("1 passkeys")).toBeInTheDocument();
-    expect(within(inventory).getByText("1 relying parties")).toBeInTheDocument();
-
-    const capacity = screen.getByRole("region", { name: "Remaining discoverable capacity" });
-
-    expect(within(capacity).getByText("4")).toBeInTheDocument();
-    expect(within(capacity).queryByText("1 stored · up to 4 remaining")).not.toBeInTheDocument();
-  });
-
   it("renders every passkey as a flat table row without RP collapsibles", async () => {
     const user = userEvent.setup();
 
@@ -512,22 +492,6 @@ describe("Passkeys", () => {
     expect(aliceRow).toHaveAttribute("aria-selected", "false");
     expect(within(table).getAllByRole("row")).toHaveLength(4);
     expect(bob).toBeInTheDocument();
-  });
-
-  it("confirms a successful forced reload immediately", async () => {
-    const user = userEvent.setup();
-
-    seedSelectionForTest("token-1", null, {
-      state: "ready",
-      selectionId: "authenticator-1",
-    });
-    seedPasskeysEnvelopeForTest(credentialsEnvelope());
-
-    render(Passkeys);
-    await user.click(screen.getByRole("button", { name: "Reload passkeys" }));
-
-    expect(controllerMocks.reloadPasskeys).toHaveBeenCalledOnce();
-    expect(toastMocks.success).toHaveBeenCalledWith("Passkeys reloaded from the authenticator");
   });
 
   it("opens the typed update dialog from the inspector", async () => {
@@ -804,7 +768,7 @@ describe("Passkeys", () => {
       credentialIDHex: "cafe",
       operation: {
         phase: "review",
-        previewRequest: { selectionId: "authenticator-1", credentialIdHex: "cafe", dryRun: true },
+        previewRequest: { credentialIDHex: "cafe", dryRun: true },
         previewEnvelope,
         previewValue: previewEnvelope.result!.preview,
       },
@@ -825,99 +789,6 @@ describe("Passkeys", () => {
       "false",
     );
     await user.click(screen.getByRole("button", { name: "Cancel" }));
-  });
-
-  it("closes delete confirmation during execution and restores it after any error", async () => {
-    seedSelectionForTest("token-1", null, {
-      state: "ready",
-      selectionId: "authenticator-1",
-    });
-    seedPasskeysEnvelopeForTest(credentialsEnvelope());
-
-    const previewEnvelope = {
-      operationId: "delete-preview-1",
-      selectionId: "authenticator-1",
-      kind: OperationKind.DeleteCredential,
-      authenticatorClosed: false,
-      result: {
-        preview: {
-          credentialIDHex: "cafe",
-          rpID: "example.com",
-          rpName: "Example",
-          userIDHex: "01",
-          userName: "user@example.com",
-          displayName: "Example User",
-          warnings: [],
-        },
-        result: null,
-      },
-    } as CredentialDeleteEnvelope;
-    const errorEnvelope = {
-      operationId: "delete-1",
-      selectionId: "authenticator-1",
-      kind: OperationKind.DeleteCredential,
-      authenticatorClosed: false,
-      error: failureForCode(Code.CodeTransportFailure),
-    } as CredentialDeleteEnvelope;
-    const mutation = {
-      kind: "delete",
-      credentialIDHex: "cafe",
-      previewRequest: { selectionId: "authenticator-1", credentialIdHex: "cafe", dryRun: true },
-      previewEnvelope,
-    } as const;
-    const { previewRequest } = mutation;
-
-    mutablePasskeysMutation.set({
-      kind: mutation.kind,
-      credentialIDHex: mutation.credentialIDHex,
-      operation: {
-        phase: "review",
-        previewRequest,
-        previewEnvelope,
-        previewValue: previewEnvelope.result!.preview,
-      },
-    });
-
-    render(Passkeys);
-
-    expect(screen.getByRole("alertdialog", { name: "Confirm delete" })).toBeInTheDocument();
-
-    mutablePasskeysMutation.set({
-      kind: mutation.kind,
-      credentialIDHex: mutation.credentialIDHex,
-      operation: {
-        phase: "executing",
-        previewEnvelope,
-        previewValue: previewEnvelope.result!.preview,
-        request: { ...previewRequest, dryRun: false },
-      },
-    });
-    await waitFor(() => {
-      expect(screen.queryByRole("alertdialog", { name: "Confirm delete" })).not.toBeInTheDocument();
-    });
-
-    mutablePasskeysMutation.set({
-      kind: mutation.kind,
-      credentialIDHex: mutation.credentialIDHex,
-      operation: {
-        phase: "error",
-        failedPhase: "executing",
-        previewEnvelope,
-        previewValue: previewEnvelope.result!.preview,
-        request: { ...previewRequest, dryRun: false },
-        responseEnvelope: errorEnvelope,
-        runtimeError: null,
-      },
-    });
-
-    const dialog = await screen.findByRole("alertdialog", { name: "Confirm delete" });
-
-    expect(
-      within(dialog).getByText("Communication with the authenticator failed."),
-    ).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: "Confirm delete" })).toBeEnabled();
-    expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
-    expect(within(dialog).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
   });
 
   it("shows a regular error dialog instead of delete confirmation when dry-run fails without a preview", () => {

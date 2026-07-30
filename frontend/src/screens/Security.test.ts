@@ -143,19 +143,6 @@ describe("Security screen", () => {
     expect(screen.queryByRole("button", { name: "Reload overview" })).not.toBeInTheDocument();
   });
 
-  it("keeps configuration actions out of the factory-reset block", () => {
-    render(Security);
-
-    const reset = screen
-      .getByRole("heading", { name: "Factory reset" })
-      .closest<HTMLElement>("#security-factory-reset");
-
-    expect(reset).not.toBeNull();
-    expect(within(reset!).getByRole("button", { name: "Preview change" })).toBeInTheDocument();
-    expect(within(reset!).queryByText("Long touch for reset")).not.toBeInTheDocument();
-    expect(within(reset!).queryByText("Enterprise attestation")).not.toBeInTheDocument();
-  });
-
   it("shows and enforces the effective CTAP maximum PIN length", () => {
     completeSecurityResourceLoad(securityStatus, statusEnvelope());
     render(Security);

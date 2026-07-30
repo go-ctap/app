@@ -27,10 +27,6 @@ type ApplicationConfigSnapshot struct {
 }
 
 type Service struct {
-	store *store
-}
-
-type store struct {
 	mu      sync.Mutex
 	path    string
 	pathErr error
@@ -39,11 +35,11 @@ type store struct {
 func NewService() *Service {
 	path, err := configPath()
 
-	return &Service{store: &store{path: path, pathErr: err}}
+	return &Service{path: path, pathErr: err}
 }
 
 func newService(path string) *Service {
-	return &Service{store: &store{path: path}}
+	return &Service{path: path}
 }
 
 func (s *Service) ServiceName() string {
@@ -51,11 +47,11 @@ func (s *Service) ServiceName() string {
 }
 
 func (s *Service) LoadApplicationConfig(_ context.Context) (ApplicationConfigSnapshot, error) {
-	return s.store.load()
+	return s.load()
 }
 
 func (s *Service) SaveApplicationConfig(_ context.Context, config ApplicationConfig) error {
-	return s.store.save(config)
+	return s.save(config)
 }
 
 func defaultConfig() ApplicationConfig {
@@ -81,7 +77,7 @@ func configPath() (string, error) {
 	return filepath.Join(configDir, "Telesma", configFile), nil
 }
 
-func (s *store) load() (ApplicationConfigSnapshot, error) {
+func (s *Service) load() (ApplicationConfigSnapshot, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -108,7 +104,7 @@ func (s *store) load() (ApplicationConfigSnapshot, error) {
 	return ApplicationConfigSnapshot{Config: config, Exists: true}, nil
 }
 
-func (s *store) save(config ApplicationConfig) error {
+func (s *Service) save(config ApplicationConfig) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

@@ -12,10 +12,10 @@ func (s *Service) ClearLogs() LogCursor {
 	return LogCursor{Sequence: s.logs.Clear()}
 }
 
-func (s *Service) CurrentLogCursor() LogCursor {
+func (s *Service) currentLogCursor() LogCursor {
 	return LogCursor{Sequence: s.logs.Cursor()}
 }
 
-func (s *Service) LogChanges() <-chan struct{} {
+func (s *Service) logChanges() <-chan struct{} {
 	return s.logs.Changes()
 }

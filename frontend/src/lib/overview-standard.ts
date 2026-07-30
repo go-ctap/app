@@ -138,6 +138,7 @@ export function buildOverviewStandardPresentation(
     transports: transportSummary(input.facts, input.device),
     facts: standardFacts(
       input.mdsState,
+      input.mds,
       presence,
       clientPIN,
       userVerification,
@@ -354,6 +355,7 @@ function isDangerousMDSStatus(status: string) {
 
 function standardFacts(
   mdsState: OverviewMDSState,
+  mds: LookupResult | null,
   presence: ReturnType<typeof overviewFact>,
   clientPIN: ReturnType<typeof overviewFact>,
   userVerification: ReturnType<typeof overviewFact>,
@@ -381,6 +383,11 @@ function standardFacts(
       ...passkeySummary(residentCredentials, credentialManagement),
     },
     {
+      id: "certification",
+      label: m.overview_standard_fact_certification(),
+      ...certificationSummary(mdsState, mds),
+    },
+    {
       id: "metadata",
       label: m.overview_standard_fact_metadata(),
       value: mdsStateText(mdsState),
@@ -394,6 +401,42 @@ function standardFacts(
               : "neutral",
     },
   ];
+}
+
+function certificationSummary(
+  mdsState: OverviewMDSState,
+  mds: LookupResult | null,
+): Pick<OverviewStandardFact, "value" | "tone"> {
+  if (mdsState !== "found" || mds?.found !== true) {
+    return {
+      value: m.overview_standard_certification_unverified(),
+      tone: mdsState === "error" ? "warning" : "muted",
+    };
+  }
+
+  const statusReports = mds.entry?.statusReports ?? [];
+  const statuses = statusReports.map(({ status }) => status.toUpperCase());
+
+  if (statuses.some(isDangerousMDSStatus)) {
+    return {
+      value: m.overview_standard_certification_warning(),
+      tone: "warning",
+    };
+  }
+
+  const fidoStatus = statuses.find((status) => /^FIDO_CERTIFIED_L[1-3](PLUS)?$/.test(status));
+  const fidoLevel = fidoStatus?.match(/^FIDO_CERTIFIED_L([1-3])(PLUS)?$/);
+  const fido = fidoLevel
+    ? `FIDO L${fidoLevel[1]}${fidoLevel[2] ? "+" : ""}`
+    : statuses.includes("FIDO_CERTIFIED")
+      ? m.overview_standard_certification_verified()
+      : "";
+  const fips = fipsCertification(mds, statusReports);
+  const verified = [fido, fips ? `${fips.standard} L${fips.level}` : ""].filter(Boolean);
+
+  return verified.length > 0
+    ? { value: verified.join(" · "), tone: "positive" }
+    : { value: m.overview_standard_certification_unverified(), tone: "muted" };
 }
 
 function ownerVerification(

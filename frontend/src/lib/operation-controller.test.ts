@@ -10,6 +10,7 @@ import type {
   InteractionPrompt,
   OperationEventEnvelope,
 } from "../../bindings/telesma/service";
+import { InteractionAnswer } from "../../bindings/telesma/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { pendingInteraction } from "$lib/features/interaction/state.js";
@@ -37,7 +38,7 @@ const serviceMocks = vi.hoisted(() => ({
   ResolveInteraction: vi.fn(),
 }));
 
-vi.mock("../../bindings/telesma/ctapservice/service", () => serviceMocks);
+vi.mock("../../bindings/telesma/service/service", () => serviceMocks);
 
 const token = new DeviceReport({
   attachment: {
@@ -47,9 +48,9 @@ const token = new DeviceReport({
   },
 });
 
-function seedAuthenticator(state: "ready" | "running" = "running") {
+function seedAuthenticator() {
   seedSelectionForTest("token-1", token, {
-    state,
+    state: "ready",
     selectionId: "authenticator-1",
   });
 }
@@ -90,7 +91,7 @@ describe("operation controller", () => {
       cancelPending: false,
       cancelRequested: true,
     });
-    expect(get(authenticatorStatus).state).toBe("running");
+    expect(get(authenticatorStatus).state).toBe("ready");
     expect(get(readonlyPendingInteraction)).toBeNull();
   });
 
@@ -193,7 +194,7 @@ describe("runtime operation events", () => {
   beforeEach(() => {
     setAppLocale("en");
     resetAppStateForTest();
-    seedAuthenticator("ready");
+    seedAuthenticator();
   });
 
   it("captures operation ids and determinate progress from progress events", async () => {
@@ -216,7 +217,7 @@ describe("runtime operation events", () => {
       total: 3,
       sampleStatus: "good",
     });
-    expect(get(authenticatorStatus)).toMatchObject({ state: "running" });
+    expect(get(authenticatorStatus)).toMatchObject({ state: "ready" });
   });
 
   it("captures an operation id from an interaction before any progress event", async () => {
@@ -234,5 +235,42 @@ describe("runtime operation events", () => {
       stage: "interaction-required",
     });
     expect(get(pendingInteraction)?.interactionId).toBe("interaction-2");
+  });
+});
+
+describe("interaction bridge", () => {
+  beforeEach(() => {
+    setAppLocale("en");
+    vi.clearAllMocks();
+    resetAppStateForTest();
+    seedAuthenticator();
+    seedOperation();
+  });
+
+  it("forwards a PIN once and clears it before the bridge settles", async () => {
+    let settle!: (accepted: boolean) => void;
+    let forwardedPIN = "";
+
+    serviceMocks.ResolveInteraction.mockImplementation(
+      (answer: InteractionAnswer) =>
+        new Promise<boolean>((resolve) => {
+          forwardedPIN = answer.pin ?? "";
+          settle = resolve;
+        }),
+    );
+
+    const { answerPendingInteraction } = await import("$lib/interaction-controller.js");
+    const answer = new InteractionAnswer({
+      interactionId: "interaction-1",
+      pin: "123456",
+    });
+    const resolution = answerPendingInteraction(answer);
+
+    expect(forwardedPIN).toBe("123456");
+    expect(answer.pin).toBe("");
+
+    settle(true);
+    await expect(resolution).resolves.toBe(true);
+    expect(get(readonlyPendingInteraction)).toBeNull();
   });
 });

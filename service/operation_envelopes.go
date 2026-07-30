@@ -71,13 +71,12 @@ func runOperation[T any](
 	operationID := OperationID(uuid.NewString())
 	meta := OperationEnvelopeMeta{
 		OperationID: operationID,
-		SelectionID: req.SelectionID,
 		Kind:        kind,
 	}
 
-	selected, ok := service.selectionFor(req.SelectionID)
+	selected := service.currentSelection()
 
-	if !ok {
+	if selected == nil {
 		operationErr := authenticatorClosedError()
 
 		meta.Error = failure.Snapshot(operationErr)
@@ -85,10 +84,11 @@ func runOperation[T any](
 		return meta, nil
 	}
 
+	meta.SelectionID = selected.id
 	ctx, cancel := context.WithCancel(ctx)
 	state := &operationState{
 		id:          operationID,
-		selectionID: req.SelectionID,
+		selectionID: selected.id,
 		cancel:      cancel,
 		done:        make(chan struct{}),
 	}
@@ -116,7 +116,7 @@ func runOperation[T any](
 	opts = append(opts, ctapkit.WithInteractionHandler(interactionHandler{
 		service:     service,
 		done:        state.done,
-		selectionID: req.SelectionID,
+		selectionID: selected.id,
 		operationID: operationID,
 	}))
 

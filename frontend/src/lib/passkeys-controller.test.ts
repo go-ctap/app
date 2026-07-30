@@ -21,19 +21,14 @@ import {
   passkeysMutation,
   resetPasskeysStateForTest,
 } from "$lib/features/passkeys/state";
-import {
-  devices,
-  resetAuthenticatorStateForTest,
-  selectedDevice,
-  selectedSelector,
-  authenticatorStatus,
-} from "$lib/features/authenticator/state";
+import { resetAuthenticatorStateForTest } from "$lib/features/authenticator/state";
 import { resetWorkbenchStateForTest } from "$lib/features/workbench/state";
 import {
   cancelOperationRecovery,
   operationRecovery,
   retryOperationRecovery,
 } from "$lib/operation-recovery.js";
+import { seedDevicesForTest, seedSelectionForTest } from "$lib/test-support/store-utils.js";
 import {
   beginCredentialDelete,
   beginCredentialUpdate,
@@ -160,8 +155,10 @@ beforeEach(() => {
   resetAuthenticatorStateForTest();
   resetWorkbenchStateForTest();
   resetPasskeysStateForTest();
-  selectedSelector.set("token-1");
-  authenticatorStatus.set({ state: "ready", selectionId: "authenticator-1" });
+  seedSelectionForTest("token-1", null, {
+    state: "ready",
+    selectionId: "authenticator-1",
+  });
   completePasskeysInventoryLoad(inventoryEnvelope().result!, "2026-07-12T00:00:00.000Z");
 });
 
@@ -175,10 +172,11 @@ describe("passkeys mutation requests", () => {
     const firstCard = testSmartCardDevice("card-1");
     const secondCard = testSmartCardDevice("card-2");
 
-    devices.set([firstCard]);
-    selectedSelector.set(firstCard.attachment.id);
-    selectedDevice.set(firstCard);
-    authenticatorStatus.set({ state: "ready", selectionId: "authenticator-card-1" });
+    seedDevicesForTest([firstCard]);
+    seedSelectionForTest(firstCard.attachment.id, firstCard, {
+      state: "ready",
+      selectionId: "authenticator-card-1",
+    });
 
     const denied = inventoryEnvelope();
 
@@ -186,29 +184,24 @@ describe("passkeys mutation requests", () => {
     denied.result = null;
 
     const responses = [denied, inventoryEnvelope()];
-    const sentSelectionIds: string[] = [];
-
-    vi.spyOn(api, "listCredentials").mockImplementation((request) => {
-      sentSelectionIds.push(request.selectionId);
-
-      return Promise.resolve(responses.shift()!);
-    });
+    const listCredentials = vi
+      .spyOn(api, "listCredentials")
+      .mockImplementation(() => Promise.resolve(responses.shift()!));
 
     const loading = loadPasskeys();
 
     await vi.waitFor(() => expect(get(operationRecovery)).not.toBeNull());
-    devices.set([]);
-    selectedSelector.set("");
-    selectedDevice.set(null);
-    authenticatorStatus.set({ state: "idle" });
-    devices.set([secondCard]);
-    selectedSelector.set(secondCard.attachment.id);
-    selectedDevice.set(secondCard);
-    authenticatorStatus.set({ state: "ready", selectionId: "authenticator-card-2" });
+    seedDevicesForTest([]);
+    seedSelectionForTest("", null, { state: "idle" });
+    seedDevicesForTest([secondCard]);
+    seedSelectionForTest(secondCard.attachment.id, secondCard, {
+      state: "ready",
+      selectionId: "authenticator-card-2",
+    });
     expect(retryOperationRecovery()).toBe(true);
 
     await expect(loading).resolves.toBe(true);
-    expect(sentSelectionIds).toEqual(["authenticator-card-1", "authenticator-card-2"]);
+    expect(listCredentials).toHaveBeenCalledTimes(2);
   });
 
   it("allows update and delete from last-known-good rows after refresh fails", async () => {
@@ -283,7 +276,6 @@ describe("passkeys mutation requests", () => {
   it("marks only normalized fields that actually changed", () => {
     const target = updateTarget();
     const request = buildCredentialUpdatePreviewRequest(
-      "authenticator-1",
       VerificationFlow.VerificationFlowPIN,
       target,
       { name: "", displayName: " Changed " },
@@ -291,7 +283,6 @@ describe("passkeys mutation requests", () => {
 
     expect(request.target).toBe(target);
     expect(request).toEqual({
-      selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowPIN,
       target: {
         record: {
@@ -315,14 +306,12 @@ describe("passkeys mutation requests", () => {
 
   it("does not include user ID fields in update requests", () => {
     const request = buildCredentialUpdatePreviewRequest(
-      "authenticator-1",
       VerificationFlow.VerificationFlowPIN,
       updateTarget(),
       { name: " user ", displayName: "Old name" },
     );
 
     expect(request).toEqual({
-      selectionId: "authenticator-1",
       verificationFlow: VerificationFlow.VerificationFlowPIN,
       target: {
         record: {

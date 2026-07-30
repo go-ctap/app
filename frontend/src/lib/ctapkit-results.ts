@@ -1,16 +1,12 @@
 import type {
-  AuthenticatorConfigOutput,
   AuthenticatorConfigPreview,
   AuthenticatorConfigResult,
-  BioEnrollOutput,
   BioEnrollPreview,
   BioEnrollResult,
   BioListReport,
-  BioMutationOutput,
   BioMutationPreview,
   BioMutationResult,
   BioSensorReport,
-  ResetFactoryOutput,
   ResetPreview,
   ResetResult,
   StatusReport,
@@ -21,13 +17,11 @@ import type {
   DeletePreview,
   DeleteResult,
   InventoryReport,
-  UpdateUserOutput as CredentialUpdateOutput,
   UpdateUserPreview,
   UpdateUserResult,
 } from "../../bindings/github.com/go-ctap/kit/model/credentials";
 import type {
   ListReport as LargeBlobListReport,
-  MutationOutput as LargeBlobMutationOutput,
   MutationPreview as LargeBlobMutationPreview,
   MutationResult as LargeBlobMutationResult,
   ReadReport as LargeBlobReadReport,
@@ -59,119 +53,77 @@ import type {
 } from "../../bindings/github.com/go-ctap/kit/model/webauthn";
 
 export function inspectResult(envelope: InspectEnvelope | null | undefined) {
-  if (!envelope?.result) return null;
-
-  return envelope.result;
+  return envelope?.result ?? null;
 }
 
 export function bioSensorReport(
   envelope: BioSensorEnvelope | null | undefined,
 ): BioSensorReport | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result;
+  return envelope?.result ?? null;
 }
 
 export function configStatusReport(
   envelope: ConfigStatusEnvelope | null | undefined,
 ): StatusReport | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result;
+  return envelope?.result ?? null;
 }
 
 export function bioListReport(envelope: BioListEnvelope | null | undefined): BioListReport | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result;
-}
-
-export function authenticatorConfigOutput(
-  envelope: AuthenticatorConfigEnvelope | null | undefined,
-): AuthenticatorConfigOutput | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result;
+  return envelope?.result ?? null;
 }
 
 export function authenticatorConfigPreview(
   envelope: AuthenticatorConfigEnvelope | null | undefined,
 ): AuthenticatorConfigPreview | null {
-  return authenticatorConfigOutput(envelope)?.preview ?? null;
+  return envelope?.result?.preview ?? null;
 }
 
 export function authenticatorConfigResult(
   envelope: AuthenticatorConfigEnvelope | null | undefined,
 ): AuthenticatorConfigResult | null {
-  return authenticatorConfigOutput(envelope)?.result ?? null;
-}
-
-export function bioEnrollOutput(
-  envelope: BioEnrollEnvelope | null | undefined,
-): BioEnrollOutput | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result;
+  return envelope?.result?.result ?? null;
 }
 
 export function bioEnrollPreview(
   envelope: BioEnrollEnvelope | null | undefined,
 ): BioEnrollPreview | null {
-  return bioEnrollOutput(envelope)?.preview ?? null;
+  return envelope?.result?.preview ?? null;
 }
 
 export function bioEnrollResult(
   envelope: BioEnrollEnvelope | null | undefined,
 ): BioEnrollResult | null {
-  return bioEnrollOutput(envelope)?.result ?? null;
-}
-
-export function bioMutationOutput(
-  envelope: BioMutationEnvelope | null | undefined,
-): BioMutationOutput | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result;
+  return envelope?.result?.result ?? null;
 }
 
 export function bioMutationPreview(
   envelope: BioMutationEnvelope | null | undefined,
 ): BioMutationPreview | null {
-  return bioMutationOutput(envelope)?.preview ?? null;
+  return envelope?.result?.preview ?? null;
 }
 
 export function bioMutationResult(
   envelope: BioMutationEnvelope | null | undefined,
 ): BioMutationResult | null {
-  return bioMutationOutput(envelope)?.result ?? null;
-}
-
-export function resetFactoryOutput(
-  envelope: ResetFactoryEnvelope | null | undefined,
-): ResetFactoryOutput | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result;
+  return envelope?.result?.result ?? null;
 }
 
 export function resetFactoryPreview(
   envelope: ResetFactoryEnvelope | null | undefined,
 ): ResetPreview | null {
-  return resetFactoryOutput(envelope)?.preview ?? null;
+  return envelope?.result?.preview ?? null;
 }
 
 export function resetFactoryResult(
   envelope: ResetFactoryEnvelope | null | undefined,
 ): ResetResult | null {
-  return resetFactoryOutput(envelope)?.result ?? null;
+  return envelope?.result?.result ?? null;
 }
 
 export function credentialsReport(
   envelope: CredentialsEnvelope | null | undefined,
 ): InventoryReport | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result;
+  return envelope?.result ?? null;
 }
 
 export function credentialTarget(
@@ -206,123 +158,85 @@ export function credentialTarget(
 export function credentialDeleteOutput(
   envelope: CredentialDeleteEnvelope | null | undefined,
 ): CredentialDeleteOutput | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result;
+  return envelope?.result ?? null;
 }
 
 export function credentialDeletePreview(
   envelope: CredentialDeleteEnvelope | null | undefined,
 ): DeletePreview | null {
-  const output = credentialDeleteOutput(envelope);
-
-  return output ? output.preview : null;
+  return envelope?.result?.preview ?? null;
 }
 
 export function credentialDeleteResult(
   envelope: CredentialDeleteEnvelope | null | undefined,
 ): DeleteResult | null {
-  const output = credentialDeleteOutput(envelope);
-
-  return output ? output.result : null;
-}
-
-export function credentialUpdateOutput(
-  envelope: CredentialUpdateEnvelope | null | undefined,
-): CredentialUpdateOutput | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result;
+  return envelope?.result?.result ?? null;
 }
 
 export function credentialUpdatePreview(
   envelope: CredentialUpdateEnvelope | null | undefined,
 ): UpdateUserPreview | null {
-  const output = credentialUpdateOutput(envelope);
-
-  return output ? output.preview : null;
+  return envelope?.result?.preview ?? null;
 }
 
 export function credentialUpdateResult(
   envelope: CredentialUpdateEnvelope | null | undefined,
 ): UpdateUserResult | null {
-  const output = credentialUpdateOutput(envelope);
-
-  return output ? output.result : null;
+  return envelope?.result?.result ?? null;
 }
 
 export function largeBlobListReport(
   envelope: LargeBlobListEnvelope | null | undefined,
 ): LargeBlobListReport | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result;
+  return envelope?.result ?? null;
 }
 
 export function largeBlobReadReport(
   envelope: LargeBlobReadEnvelope | null | undefined,
 ): LargeBlobReadReport | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result;
+  return envelope?.result ?? null;
 }
 
 export function largeBlobDecodeResult(envelope: LargeBlobDecodeEnvelope | null | undefined) {
   return envelope?.result ?? null;
 }
 
-export function largeBlobMutationOutput(
-  envelope: LargeBlobMutationEnvelope | null | undefined,
-): LargeBlobMutationOutput | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result;
-}
-
 export function largeBlobMutationPreview(
   envelope: LargeBlobMutationEnvelope | null | undefined,
 ): LargeBlobMutationPreview | null {
-  return largeBlobMutationOutput(envelope)?.preview ?? null;
+  return envelope?.result?.preview ?? null;
 }
 
 export function largeBlobMutationResult(
   envelope: LargeBlobMutationEnvelope | null | undefined,
 ): LargeBlobMutationResult | null {
-  return largeBlobMutationOutput(envelope)?.result ?? null;
+  return envelope?.result?.result ?? null;
 }
 
 /** Typed traversal for the WebAuthn Lab MakeCredential preview contract. */
 export function makeCredentialPreview(
   envelope: MakeCredentialEnvelope | null | undefined,
 ): MakeCredentialPreview | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result.preview;
+  return envelope?.result?.preview ?? null;
 }
 
 /** Typed traversal for a completed WebAuthn Lab MakeCredential operation. */
 export function makeCredentialResult(
   envelope: MakeCredentialEnvelope | null | undefined,
 ): MakeCredentialResult | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result.result;
+  return envelope?.result?.result ?? null;
 }
 
 /** Typed traversal for a completed WebAuthn Lab GetAssertion operation. */
 export function getAssertionResult(
   envelope: GetAssertionEnvelope | null | undefined,
 ): GetAssertionResult | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result.result;
+  return envelope?.result?.result ?? null;
 }
 
 /** Typed traversal for the WebAuthn Lab GetAssertion preview contract. */
 export function getAssertionPreview(
   envelope: GetAssertionEnvelope | null | undefined,
 ): GetAssertionPreview | null {
-  if (!envelope?.result) return null;
-
-  return envelope.result.preview;
+  return envelope?.result?.preview ?? null;
 }

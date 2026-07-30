@@ -13,11 +13,12 @@ import (
 	"github.com/go-ctap/kit/transport"
 )
 
-func TestInventoryIdentityEventKeepsAttachmentOrderAndSelection(t *testing.T) {
+func TestDiscoverAutoSelectsFirstAndIdentityKeepsSelection(t *testing.T) {
 	first := testDevice("device-1")
 	second := testDevice("device-2")
 	inventory := newFakeInventory([]report.DeviceReport{first, second})
-	service := New()
+	emitter := newCountingEmitter()
+	service := New(WithEventEmitter(emitter))
 
 	service.openInventory = func(context.Context, transport.Mode) (inventoryRuntime, error) {
 		return inventory, nil
@@ -31,13 +32,13 @@ func TestInventoryIdentityEventKeepsAttachmentOrderAndSelection(t *testing.T) {
 		return openedFor("device-1", &fakeAuthenticatorRuntime{}), nil
 	}
 
-	snapshot, err := service.Discover(t.Context(), DiscoverRequest{})
+	snapshot, err := service.Discover(t.Context())
 
-	if err != nil || len(snapshot.Devices) != 2 {
+	if err != nil || len(snapshot.Devices) != 2 || snapshot.Selection == nil {
 		t.Fatalf("Discover = (%#v, %v)", snapshot, err)
 	}
 
-	selected := mustSelect(t, service, "device-1")
+	selected := snapshot.Selection.ID
 
 	first.Identity = &report.DeviceIdentity{
 		Vendor: report.VendorToken2,
@@ -55,40 +56,30 @@ func TestInventoryIdentityEventKeepsAttachmentOrderAndSelection(t *testing.T) {
 		},
 	}
 
-	waitFor(t, func() bool {
-		service.mu.Lock()
-		defer service.mu.Unlock()
+	waitFor(t, func() bool { return emitter.count(EventDiscoveryChanged) == 1 })
 
-		return service.devices[0].Identity != nil
-	})
-	if service.devices[0].Attachment.ID != "device-1" ||
-		service.devices[1].Attachment.ID != "device-2" {
-		t.Fatalf("identity update reordered devices: %#v", service.devices)
-	}
-
-	if service.selected == nil || service.selected.id != selected.ID {
+	if service.selected == nil || service.selected.id != selected {
 		t.Fatalf("identity update changed selection: %#v", service.selected)
 	}
 
-	if err := service.Close(); err != nil {
+	if err := service.close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
 }
 
 func TestInventoryRemovalClosesSelectionBeforePublishingSnapshot(t *testing.T) {
 	inventory := newFakeInventory([]report.DeviceReport{testDevice("device-1")})
-	service := New()
+	runtime := &fakeAuthenticatorRuntime{}
+	emittedBeforeClose := atomic.Bool{}
+	service := New(WithEventEmitter(emitterFunc(func(name string, _ any) {
+		if name == EventDiscoveryChanged && !runtime.closed.Load() {
+			emittedBeforeClose.Store(true)
+		}
+	})))
 
 	service.openInventory = func(context.Context, transport.Mode) (inventoryRuntime, error) {
 		return inventory, nil
 	}
-
-	closedWhilePresent := atomic.Bool{}
-	runtime := &fakeAuthenticatorRuntime{onClose: func() {
-		service.mu.Lock()
-		defer service.mu.Unlock()
-		closedWhilePresent.Store(attachmentPresent(service.devices, "device-1"))
-	}}
 
 	service.openAuthenticator = func(
 		context.Context,
@@ -99,11 +90,10 @@ func TestInventoryRemovalClosesSelectionBeforePublishingSnapshot(t *testing.T) {
 		return openedFor("device-1", runtime), nil
 	}
 
-	if _, err := service.Discover(t.Context(), DiscoverRequest{}); err != nil {
+	if _, err := service.Discover(t.Context()); err != nil {
 		t.Fatalf("Discover: %v", err)
 	}
 
-	mustSelect(t, service, "device-1")
 	inventory.events <- ctapkit.InventoryEvent{
 		Trigger:  ctapkit.InventoryTriggerTopology,
 		Snapshot: ctapkit.InventorySnapshot{},
@@ -113,13 +103,13 @@ func TestInventoryRemovalClosesSelectionBeforePublishingSnapshot(t *testing.T) {
 		service.mu.Lock()
 		defer service.mu.Unlock()
 
-		return service.selected == nil && len(service.devices) == 0
+		return service.selected == nil && runtime.closed.Load()
 	})
-	if !runtime.closed.Load() || !closedWhilePresent.Load() {
-		t.Fatal("selected authenticator was not closed before attachment removal")
+	if emittedBeforeClose.Load() {
+		t.Fatal("removal snapshot was published before closing the authenticator")
 	}
 
-	if err := service.Close(); err != nil {
+	if err := service.close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
 }
@@ -128,7 +118,6 @@ type fakeInventory struct {
 	mu        sync.Mutex
 	snapshot  ctapkit.InventorySnapshot
 	events    chan ctapkit.InventoryEvent
-	refreshes atomic.Int32
 	closeOnce sync.Once
 }
 
@@ -150,18 +139,18 @@ func (i *fakeInventory) Events() <-chan ctapkit.InventoryEvent {
 	return i.events
 }
 
-func (i *fakeInventory) Refresh(context.Context) error {
-	i.refreshes.Add(1)
-
-	return nil
-}
-
 func (i *fakeInventory) OpenAuthenticator(
 	context.Context,
 	report.AttachmentID,
 	...ctapkit.AuthenticatorOption,
 ) (*ctapkit.Authenticator, error) {
 	return nil, errors.New("unexpected fake inventory open")
+}
+
+type emitterFunc func(string, any)
+
+func (emit emitterFunc) Emit(name string, payload any) {
+	emit(name, payload)
 }
 
 func (i *fakeInventory) Close() error {

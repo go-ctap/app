@@ -20,7 +20,6 @@ import type {
   ResetFactoryRequest,
 } from "../../../../bindings/telesma/service";
 import { isUnsupportedFailure } from "$lib/failure";
-import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import {
   idleConfirmedOperation,
   type ConfirmableMutation,
@@ -204,7 +203,3 @@ export function resetSecurityDeviceState() {
   securityEnrollments.set(emptySecurityResourceState());
   securityMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
 }
-
-deviceFeatureLifecycles.register("security", {
-  resetForAuthenticatorChange: resetSecurityDeviceState,
-});

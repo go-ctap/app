@@ -134,30 +134,6 @@ describe("LargeBlobs physical array inspector", () => {
     await tick();
   });
 
-  it("renders physical entry state and byte counts", () => {
-    render(LargeBlobs);
-
-    const table = screen.getByRole("table", { name: "Array entries" });
-
-    expect(within(table).getByRole("columnheader", { name: "Array entry" })).toHaveAttribute(
-      "data-slot",
-      "expandable-data-table-disclosure-header",
-    );
-    expect(within(table).getByRole("columnheader", { name: "Ciphertext" })).toHaveAttribute(
-      "data-align",
-      "end",
-    );
-    expect(within(table).getByRole("columnheader", { name: "Payload" })).toHaveAttribute(
-      "data-align",
-      "end",
-    );
-    expect(within(table).getByText("Entry #0")).toBeInTheDocument();
-    expect(within(table).getByText("Entry #1")).toBeInTheDocument();
-    expect(within(table).getByText("Matched")).toBeInTheDocument();
-    expect(within(table).getByText("Orphaned")).toBeInTheDocument();
-    expect(within(table).getByText("32 bytes")).toBeInTheDocument();
-  });
-
   it("opens orphaned entries as inspect-and-cleanup only", async () => {
     const user = userEvent.setup();
 

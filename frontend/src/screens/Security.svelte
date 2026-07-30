@@ -59,7 +59,7 @@
   );
 
   let authenticatorRecovering = $derived(
-    $authenticatorStatus.state === "opening" || $authenticatorStatus.state === "running",
+    $authenticatorStatus.state === "opening" || Boolean($statusBar.activeOperation),
   );
 
   let reloadDisabled = $derived(authenticatorRecovering || mutationBusy);

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { BadgeCheck, HardDrive, ScanFace, ShieldCheck, Touchpad } from "@lucide/svelte";
+  import { Award, BadgeCheck, HardDrive, ScanFace, ShieldCheck, Touchpad } from "@lucide/svelte";
 
   import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
   import { Badge } from "$lib/components/ui/badge";
@@ -37,6 +37,8 @@
     <ScanFace size={16} />
   {:else if id === "passkeys"}
     <HardDrive size={16} />
+  {:else if id === "certification"}
+    <Award size={16} />
   {:else}
     <BadgeCheck size={16} />
   {/if}

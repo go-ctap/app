@@ -12,7 +12,6 @@ import type {
   CredentialUpdateRequest,
 } from "../../../../bindings/telesma/service";
 
-import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import {
   idleConfirmedOperation,
   type ConfirmableMutation,
@@ -139,7 +138,3 @@ export function resetPasskeysStateForTest() {
   resetPasskeysDeviceState();
   passkeysVerificationFlow.set(VerificationFlow.VerificationFlowDefault);
 }
-
-deviceFeatureLifecycles.register("passkeys", {
-  resetForAuthenticatorChange: resetPasskeysDeviceState,
-});

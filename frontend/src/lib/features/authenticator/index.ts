@@ -14,8 +14,4 @@ export const authenticatorInspection = readonly(state.authenticatorInspection);
 
 export const authenticatorBusy = readonly(state.authenticatorBusy);
 
-export {
-  ensureActiveSelectionReady,
-  rediscoverAfterFactoryReset,
-  shutdownWorkbench,
-} from "$lib/authenticator-controller.js";
+export { rediscoverAfterFactoryReset, shutdownWorkbench } from "$lib/authenticator-controller.js";

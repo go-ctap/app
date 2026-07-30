@@ -37,18 +37,13 @@ import {
 } from "$lib/features/passkeys/state.js";
 import { selectedSelector, authenticatorStatus } from "$lib/features/authenticator/state.js";
 import { activeScreen } from "$lib/features/workbench/state.js";
-import { currentSelectionID } from "$lib/authenticator-boundary.js";
 import {
   editingConfirmedOperation,
   idleConfirmedOperation,
   runConfirmedExecution,
   runConfirmedPreview,
 } from "$lib/confirmed-operation.js";
-import {
-  completeOperation,
-  requestForCurrentSelection,
-  runOperation,
-} from "$lib/operation-lifecycle.js";
+import { completeOperation, runOperation } from "$lib/operation-lifecycle.js";
 
 function passkeysAutoLoadKey() {
   const selector = get(selectedSelector).trim();
@@ -100,12 +95,11 @@ export async function loadPasskeys() {
 
   const label = m.credential_inventory();
   const request: OperationRequest = {
-    selectionId: currentSelectionID(),
     verificationFlow: get(passkeysVerificationFlow),
   };
   const attempt = await runOperation({
     label,
-    call: () => api.listCredentials(requestForCurrentSelection(request)),
+    call: () => api.listCredentials(request),
     onRuntimeFailure: failPasskeysInventoryLoadAtRuntime,
   });
 
@@ -263,7 +257,6 @@ export function validateCredentialUpdate(
 }
 
 export function buildCredentialUpdatePreviewRequest(
-  selectionId: string,
   verificationFlow: VerificationFlow,
   target: CredentialTarget,
   form: CredentialUpdateForm,
@@ -274,7 +267,6 @@ export function buildCredentialUpdatePreviewRequest(
   const displayNameChanged = proposed.displayName !== current.displayName;
 
   return {
-    selectionId,
     verificationFlow,
     target,
     ...(nameChanged ? { name: proposed.name, nameProvided: true } : {}),
@@ -303,7 +295,6 @@ export async function previewCredentialUpdate(): Promise<boolean> {
   }
 
   const request = buildCredentialUpdatePreviewRequest(
-    currentSelectionID(),
     get(passkeysVerificationFlow),
     current.target,
     current.form,
@@ -357,9 +348,8 @@ async function previewCredentialDelete(credentialIDHex: string): Promise<boolean
     return false;
 
   const request: CredentialDeleteRequest = {
-    selectionId: currentSelectionID(),
     verificationFlow: get(passkeysVerificationFlow),
-    credentialIdHex: credentialIDHex,
+    credentialIDHex,
     dryRun: true,
   };
 

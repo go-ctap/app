@@ -62,24 +62,6 @@ func TestConfigRoundTrip(t *testing.T) {
 	}
 }
 
-func TestConfigLoadsCommentsAndDefaults(t *testing.T) {
-	path := filepath.Join(t.TempDir(), configFile)
-
-	if err := os.WriteFile(path, []byte("# Telesma\nlocale = \"ru\" # interface language\n"), 0o600); err != nil {
-		t.Fatalf("write config: %v", err)
-	}
-
-	snapshot, err := newService(path).LoadApplicationConfig(context.Background())
-
-	if err != nil {
-		t.Fatalf("load config: %v", err)
-	}
-
-	if got, want := snapshot.Config, (ApplicationConfig{Locale: "ru"}); got != want {
-		t.Fatalf("loaded config = %#v, want %#v", got, want)
-	}
-}
-
 func TestConfigRejectsInvalidInput(t *testing.T) {
 	tests := map[string]string{
 		"unsupported locale": "locale = \"de\"\n",

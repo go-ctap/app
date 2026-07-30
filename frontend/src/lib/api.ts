@@ -3,8 +3,7 @@ import type {
   ApplicationConfig,
   ApplicationConfigSnapshot,
 } from "../../bindings/telesma/appconfig";
-import * as service from "../../bindings/telesma/ctapservice/service";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import * as service from "../../bindings/telesma/service/service";
 import type { LogJournalBatch } from "../../bindings/github.com/go-ctap/kit/model";
 import type {
   GetAssertionVerification,
@@ -13,6 +12,7 @@ import type {
 import type { AttestationTrustAssessment } from "../../bindings/github.com/go-ctap/mds/model";
 import {
   type AlwaysUVRequest,
+  type AuthenticatorSessionSnapshot,
   type AuthenticatorConfigEnvelope,
   type BioEnrollEnvelope,
   type BioEnrollRequest,
@@ -28,7 +28,6 @@ import {
   type CredentialUpdateEnvelope,
   type CredentialUpdateRequest,
   type CredentialsEnvelope,
-  type DiscoverRequest,
   type EnableEnterpriseAttestationRequest,
   type EnableLongTouchForResetRequest,
   type GetAssertionEnvelope,
@@ -40,7 +39,8 @@ import {
   type LargeBlobGarbageCollectRequest,
   type LargeBlobListEnvelope,
   type LargeBlobMutationEnvelope,
-  type LargeBlobMutationRequest,
+  type LargeBlobDeleteRequest,
+  type LargeBlobWriteRequest,
   type LargeBlobReadEnvelope,
   type LargeBlobReadRequest,
   type LogCursor,
@@ -103,8 +103,8 @@ export const api = {
     return runtimeCall("ctapkit.logs.clear", () => service.ClearLogs());
   },
 
-  async discover(request: DiscoverRequest = {}): Promise<DeviceReport[]> {
-    return runtimeCall("ctapkit.discover", async () => (await service.Discover(request)).devices);
+  discover(): Promise<AuthenticatorSessionSnapshot> {
+    return runtimeCall("ctapkit.discover", () => service.Discover());
   },
 
   setSelection(request: SelectionRequest): Promise<SelectionSnapshot> {
@@ -155,11 +155,11 @@ export const api = {
     return runtimeCall("ctapkit.operation.listLargeBlobs", () => service.ListLargeBlobs(request));
   },
 
-  writeLargeBlob(request: LargeBlobMutationRequest): Promise<LargeBlobMutationEnvelope> {
+  writeLargeBlob(request: LargeBlobWriteRequest): Promise<LargeBlobMutationEnvelope> {
     return runtimeCall("ctapkit.operation.writeLargeBlob", () => service.WriteLargeBlob(request));
   },
 
-  deleteLargeBlob(request: LargeBlobMutationRequest): Promise<LargeBlobMutationEnvelope> {
+  deleteLargeBlob(request: LargeBlobDeleteRequest): Promise<LargeBlobMutationEnvelope> {
     return runtimeCall("ctapkit.operation.deleteLargeBlob", () => service.DeleteLargeBlob(request));
   },
 

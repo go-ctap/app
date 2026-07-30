@@ -7,9 +7,11 @@ import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { CredentialsEnvelope, InteractionPrompt } from "../../bindings/telesma/service";
 
 import { pendingInteraction } from "$lib/features/interaction/state.js";
-import { authenticatorStatus } from "$lib/features/authenticator/state.js";
 import { applyOperationAuthenticatorBoundary } from "$lib/authenticator-boundary.js";
 import { failureForCode } from "$lib/test-support/failure.js";
+import { seedSelectionForTest } from "$lib/test-support/store-utils.js";
+import { authenticatorInspection, authenticatorStatus } from "$lib/features/authenticator/state.js";
+import { readyLoadState } from "$lib/load-state.js";
 
 function envelope(authenticatorClosed: boolean, code: Code): CredentialsEnvelope {
   return {
@@ -23,7 +25,10 @@ function envelope(authenticatorClosed: boolean, code: Code): CredentialsEnvelope
 
 describe("operation authenticator boundary", () => {
   beforeEach(() => {
-    authenticatorStatus.set({ state: "running", selectionId: "authenticator-1" });
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      selectionId: "authenticator-1",
+    });
     pendingInteraction.set({
       operationId: "operation-1",
       selectionId: "authenticator-1",
@@ -35,16 +40,18 @@ describe("operation authenticator boundary", () => {
   it("clears a closed authenticator independently of the failure category", () => {
     const response = envelope(true, Code.CodeOperationCanceled);
 
+    authenticatorInspection.set(readyLoadState(response as never));
     applyOperationAuthenticatorBoundary(response);
 
     expect(get(authenticatorStatus)).toEqual({ state: "error", error: response.error });
+    expect(get(authenticatorInspection).state).toBe("idle");
     expect(get(pendingInteraction)).toBeNull();
   });
 
   it("keeps the authenticator after a non-closing transport failure", () => {
     applyOperationAuthenticatorBoundary(envelope(false, Code.CodeTransportFailure));
 
-    expect(get(authenticatorStatus)).toEqual({ state: "running", selectionId: "authenticator-1" });
+    expect(get(authenticatorStatus)).toEqual({ state: "ready", selectionId: "authenticator-1" });
     expect(get(pendingInteraction)?.interactionId).toBe("interaction-1");
   });
 });

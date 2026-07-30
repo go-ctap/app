@@ -24,7 +24,6 @@ import type {
 } from "../../../../bindings/telesma/service";
 
 import type { ConfirmedOperation } from "$lib/confirmed-operation";
-import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import {
   buildClientDataJSON,
   randomBase64URL,
@@ -324,7 +323,3 @@ export function resetLabDeviceState() {
 export function resetLabStateForTest(randomSource?: LabRandomSource) {
   labState.set(createLabState(randomSource));
 }
-
-deviceFeatureLifecycles.register("lab", {
-  resetForAuthenticatorChange: resetLabDeviceState,
-});

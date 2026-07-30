@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 
+	ctapkit "github.com/go-ctap/kit"
 	"github.com/go-ctap/kit/model/failure"
 	"github.com/go-ctap/mds"
 	"github.com/google/uuid"
@@ -53,6 +54,6 @@ func normalizeMDSError(err error) error {
 	case errors.Is(err, mds.ErrVerify):
 		return failure.Wrap(failure.CodeMDSVerificationFailed, err, failure.WithPhase(failure.PhaseMetadata))
 	default:
-		return normalizeServicePhaseError(err, failure.PhaseMetadata)
+		return ctapkit.NormalizeError(err, failure.PhaseMetadata)
 	}
 }

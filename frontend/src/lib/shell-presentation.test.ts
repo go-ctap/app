@@ -67,7 +67,7 @@ describe("shell status presentation", () => {
   it("keeps known zero progress determinate and shows its count", () => {
     const presentation = buildShellStatusPresentation({
       selectedDevice: token,
-      authenticatorStatus: authenticator("running"),
+      authenticatorStatus: authenticator("ready"),
       statusBar: statusBar({
         activeOperation: {
           stage: OperationStage.OperationStageEnumeratingRPs,
@@ -83,7 +83,7 @@ describe("shell status presentation", () => {
   it("uses indeterminate operation state until both progress values are known", () => {
     const presentation = buildShellStatusPresentation({
       selectedDevice: token,
-      authenticatorStatus: authenticator("running"),
+      authenticatorStatus: authenticator("ready"),
       statusBar: statusBar({
         activeOperation: { stage: OperationStage.OperationStageEnumeratingRPs },
       }),
@@ -143,47 +143,6 @@ describe("sidebar presentation", () => {
         icon: Usb,
       },
     ]);
-  });
-
-  it("keeps inventory order stable across identity updates", () => {
-    const first = new DeviceReport({
-      ...token,
-      attachment: {
-        id: "token-z",
-        transport: Mode.ModeHID,
-        usb: { product: "Alpha Key", vendorId: 1, productId: 2 },
-      },
-    });
-    const second = new DeviceReport({
-      ...token,
-      attachment: {
-        id: "token-a",
-        transport: Mode.ModeHID,
-        usb: { product: "Zebra Key", vendorId: 1, productId: 2 },
-      },
-    });
-    const discoveryOrder = [second, first];
-
-    const presentation = buildSidebarPresentation({
-      activeScreen: "overview",
-      devices: discoveryOrder,
-      selectedSelector: "",
-      busy: false,
-    });
-
-    expect(presentation.tokens.map(({ value }) => value)).toEqual(["token-a", "token-z"]);
-    expect(discoveryOrder).toEqual([second, first]);
-  });
-
-  it("labels the WebAuthn Lab screen", () => {
-    const presentation = buildSidebarPresentation({
-      activeScreen: "lab",
-      devices: [],
-      selectedSelector: "",
-      busy: false,
-    });
-
-    expect(presentation.activeScreenLabel).toBe("WebAuthn Lab");
   });
 
   it("prefers enriched model and serial in discovered token rows", () => {

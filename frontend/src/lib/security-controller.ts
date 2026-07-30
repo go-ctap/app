@@ -53,7 +53,6 @@ import { selectedSelector, authenticatorStatus } from "$lib/features/authenticat
 import { activeScreen } from "$lib/features/workbench/state.js";
 import { failureMessage } from "$lib/failure.js";
 import { invalidateOverviewCache } from "$lib/overview-controller.js";
-import { currentSelectionID } from "$lib/authenticator-boundary.js";
 import { rediscoverAfterFactoryReset } from "$lib/authenticator-controller.js";
 import {
   editingConfirmedOperation,
@@ -82,8 +81,8 @@ function currentStatusReport(): StatusReport | null {
   return configStatusReport(get(securityStatus).lastSuccessfulEnvelope);
 }
 
-function selectionIdForMutation(): string | null {
-  return get(authenticatorStatus).selectionId ?? null;
+function mutationAvailable() {
+  return Boolean(get(authenticatorStatus).selectionId);
 }
 
 function canAutoLoadSecurity() {
@@ -137,7 +136,7 @@ export async function loadSecurityStatus(): Promise<boolean> {
   const report = await loadSecurityResource(
     securityStatus,
     m.security_status_operation(),
-    () => api.configStatus({ selectionId: currentSelectionID() }),
+    () => api.configStatus({}),
     configStatusReport,
   );
 
@@ -164,7 +163,7 @@ export async function loadSecurityBioSensor(): Promise<boolean> {
   const sensor = await loadSecurityResource(
     securitySensor,
     m.security_bio_sensor_operation(),
-    () => api.bioSensorInfo({ selectionId: currentSelectionID() }),
+    () => api.bioSensorInfo({}),
     bioSensorReport,
   );
 
@@ -185,7 +184,7 @@ export async function loadSecurityEnrollments(): Promise<boolean> {
   const list = await loadSecurityResource(
     securityEnrollments,
     m.security_bio_list_operation(),
-    () => api.bioList({ selectionId: currentSelectionID() }),
+    () => api.bioList({}),
     bioListReport,
   );
 
@@ -224,7 +223,6 @@ export async function setAuthenticatorPIN(input: PINSetInput): Promise<boolean> 
   try {
     return await runPINOperation(label, () => {
       const request: PINSetRequest = {
-        selectionId: currentSelectionID(),
         newPIN: input.newPIN,
       };
 
@@ -248,7 +246,6 @@ export async function changeAuthenticatorPIN(input: PINChangeInput): Promise<boo
   try {
     return await runPINOperation(label, () => {
       const request: PINChangeRequest = {
-        selectionId: currentSelectionID(),
         currentPIN: input.currentPIN,
         newPIN: input.newPIN,
       };
@@ -370,11 +367,9 @@ export async function beginAlwaysUVChange(target: AlwaysUVTarget): Promise<boole
   if ((target === AlwaysUVTarget.AlwaysUVTargetEnable) === current) return false;
 
   const label = m.security_always_uv_preview_operation();
-  const selectionId = selectionIdForMutation();
+  if (!mutationAvailable()) return false;
 
-  if (!selectionId) return false;
-
-  const request: AlwaysUVRequest = { selectionId, target, dryRun: true };
+  const request: AlwaysUVRequest = { target, dryRun: true };
 
   return runConfirmedPreview({
     label,
@@ -396,11 +391,9 @@ export async function beginEnterpriseAttestation(): Promise<boolean> {
   if (!capability?.supported || capability.configured !== false) return false;
 
   const label = m.security_enterprise_attestation_preview_operation();
-  const selectionId = selectionIdForMutation();
+  if (!mutationAvailable()) return false;
 
-  if (!selectionId) return false;
-
-  const request: EnableEnterpriseAttestationRequest = { selectionId, dryRun: true };
+  const request: EnableEnterpriseAttestationRequest = { dryRun: true };
 
   return runConfirmedPreview({
     label,
@@ -421,11 +414,9 @@ export async function beginLongTouchForReset(): Promise<boolean> {
   if (!capability?.supported || capability.configured !== false) return false;
 
   const label = m.security_long_touch_preview_operation();
-  const selectionId = selectionIdForMutation();
+  if (!mutationAvailable()) return false;
 
-  if (!selectionId) return false;
-
-  const request: EnableLongTouchForResetRequest = { selectionId, dryRun: true };
+  const request: EnableLongTouchForResetRequest = { dryRun: true };
 
   return runConfirmedPreview({
     label,
@@ -455,12 +446,9 @@ export async function beginPINPolicyChange(draft: SecurityPINPolicyDraft): Promi
 
   const normalized = normalizedPINPolicyDraft(draft);
   const label = m.security_pin_policy_preview_operation();
-  const selectionId = selectionIdForMutation();
-
-  if (!selectionId) return false;
+  if (!mutationAvailable()) return false;
 
   const request: MinPINLengthRequest = {
-    selectionId,
     ...(normalized.minPINLength === null ? {} : { newMinPINLength: normalized.minPINLength }),
     minPinLengthRPIDs: normalized.rpIDs,
     forceChangePin: normalized.forceChangePin,
@@ -486,12 +474,9 @@ export async function beginBioEnrollment(): Promise<boolean> {
   if (!currentStatusReport()?.bio.supported) return false;
 
   const label = m.security_bio_enroll_preview_operation();
-  const selectionId = selectionIdForMutation();
-
-  if (!selectionId) return false;
+  if (!mutationAvailable()) return false;
 
   const request: BioEnrollRequest = {
-    selectionId,
     timeoutMilliseconds: BIO_ENROLL_TIMEOUT_MILLISECONDS,
     dryRun: true,
   };
@@ -516,13 +501,10 @@ export async function beginBioRename(
   if (friendlyNameTooLong(friendlyName)) return false;
 
   const label = m.security_bio_rename_preview_operation();
-  const selectionId = selectionIdForMutation();
-
-  if (!selectionId) return false;
+  if (!mutationAvailable()) return false;
 
   const request: BioRenameRequest = {
-    selectionId,
-    templateIdHex: templateIDHex,
+    templateIDHex,
     friendlyName,
     dryRun: true,
   };
@@ -544,11 +526,9 @@ export async function beginBioRename(
 
 export async function beginBioRemove(templateIDHex: string): Promise<boolean> {
   const label = m.security_bio_remove_preview_operation();
-  const selectionId = selectionIdForMutation();
+  if (!mutationAvailable()) return false;
 
-  if (!selectionId) return false;
-
-  const request: BioRemoveRequest = { selectionId, templateIdHex: templateIDHex, dryRun: true };
+  const request: BioRemoveRequest = { templateIDHex, dryRun: true };
 
   return runConfirmedPreview({
     label,
@@ -566,11 +546,9 @@ export async function beginBioRemove(templateIDHex: string): Promise<boolean> {
 
 export async function beginFactoryReset(): Promise<boolean> {
   const label = m.security_reset_preview_operation();
-  const selectionId = selectionIdForMutation();
+  if (!mutationAvailable()) return false;
 
-  if (!selectionId) return false;
-
-  const request: ResetFactoryRequest = { selectionId, dryRun: true };
+  const request: ResetFactoryRequest = { dryRun: true };
 
   return runConfirmedPreview({
     label,
@@ -667,7 +645,7 @@ function operationLabel(kind: NonIdleSecurityMutation["kind"]) {
 }
 
 async function runSecurityExecutionStage<
-  TRequest extends { selectionId: string; dryRun?: boolean },
+  TRequest extends { dryRun?: boolean },
   E extends OperationEnvelope,
   TValue,
 >(

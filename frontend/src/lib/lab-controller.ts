@@ -44,8 +44,6 @@ import {
   validateMakeCredentialDraft,
 } from "$lib/lab-input.js";
 import { runtimeFailureFrom } from "$lib/failure.js";
-import { currentSelectionID } from "$lib/authenticator-boundary.js";
-import { ensureActiveSelectionReady } from "$lib/authenticator-controller.js";
 import { runConfirmedExecution, runConfirmedPreview } from "$lib/confirmed-operation.js";
 import { setStatusOutcome } from "$lib/workbench-state.js";
 
@@ -254,10 +252,8 @@ export async function previewLabMakeCredential(): Promise<boolean> {
 
   if (!validation.valid) return false;
 
-  if (!(await ensureActiveSelectionReady())) return false;
-
   const previewRequest = new MakeCredentialRequest({
-    ...buildMakeCredentialRequest(currentSelectionID(), current.makeDraft),
+    ...buildMakeCredentialRequest(current.makeDraft),
     dryRun: true,
   });
 
@@ -366,10 +362,8 @@ export async function runLabGetAssertion(): Promise<boolean> {
 
   if (!validation.valid) return false;
 
-  if (!(await ensureActiveSelectionReady())) return false;
-
   const previewRequest = new GetAssertionRequest({
-    ...buildGetAssertionRequest(currentSelectionID(), current.getDraft),
+    ...buildGetAssertionRequest(current.getDraft),
     dryRun: true,
   });
 
@@ -391,8 +385,7 @@ export async function confirmLabGetAssertion(): Promise<boolean> {
   const current = get(labState);
   const step = current.getStep;
 
-  if ((step.phase !== "review" && step.phase !== "error") || !(await ensureActiveSelectionReady()))
-    return false;
+  if (step.phase !== "review" && step.phase !== "error") return false;
 
   const verificationMaterial = current.getDraft.verificationMaterial;
 

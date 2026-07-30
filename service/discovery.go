@@ -9,18 +9,36 @@ import (
 	"github.com/go-ctap/kit/transport"
 )
 
-func (s *Service) Discover(ctx context.Context, req DiscoverRequest) (ctapkit.InventorySnapshot, error) {
-	if err := s.ensureInventory(ctx, normalizedDiscoverMode(req.Mode)); err != nil {
-		return ctapkit.InventorySnapshot{}, err
+func (s *Service) Discover(ctx context.Context) (AuthenticatorSessionSnapshot, error) {
+	if err := s.ensureInventory(ctx); err != nil {
+		return AuthenticatorSessionSnapshot{}, err
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	unlock, err := s.lockSelection(ctx)
 
-	return ctapkit.InventorySnapshot{Devices: s.devices}, nil
+	if err != nil {
+		return AuthenticatorSessionSnapshot{}, err
+	}
+
+	defer unlock()
+
+	s.mu.Lock()
+	inventory := s.inventory
+	s.mu.Unlock()
+
+	inventorySnapshot := inventory.Snapshot()
+	var selectionErr error
+
+	if s.currentSelection() == nil && len(inventorySnapshot.Devices) > 0 {
+		_, selectionErr = s.setSelection(ctx, SelectionRequest{
+			AttachmentID: inventorySnapshot.Devices[0].Attachment.ID,
+		})
+	}
+
+	return s.sessionSnapshot(inventorySnapshot.Devices, selectionErr), nil
 }
 
-func (s *Service) ensureInventory(ctx context.Context, mode transport.Mode) error {
+func (s *Service) ensureInventory(ctx context.Context) error {
 	unlock, err := s.lockSelection(ctx)
 
 	if err != nil {
@@ -37,15 +55,7 @@ func (s *Service) ensureInventory(ctx context.Context, mode transport.Mode) erro
 	}
 
 	if s.inventory != nil {
-		currentMode := s.inventoryMode
-
 		s.mu.Unlock()
-		if currentMode != mode {
-			return failure.New(
-				failure.CodeTransportModeUnsupported,
-				failure.WithPhase(failure.PhaseDiscovery),
-			)
-		}
 
 		return nil
 	}
@@ -54,10 +64,10 @@ func (s *Service) ensureInventory(ctx context.Context, mode transport.Mode) erro
 
 	s.mu.Unlock()
 
-	inventory, err := open(ctx, mode)
+	inventory, err := open(ctx, transport.ModeAuto)
 
 	if err != nil {
-		return normalizeServicePhaseError(err, failure.PhaseDiscovery)
+		return ctapkit.NormalizeError(err, failure.PhaseDiscovery)
 	}
 
 	done := make(chan struct{})
@@ -71,9 +81,7 @@ func (s *Service) ensureInventory(ctx context.Context, mode transport.Mode) erro
 	}
 
 	s.inventory = inventory
-	s.inventoryMode = mode
 	s.inventoryDone = done
-	s.devices = inventory.Snapshot().Devices
 	s.mu.Unlock()
 
 	go s.forwardInventoryEvents(inventory, done)
@@ -108,21 +116,47 @@ func (s *Service) applyInventoryEvent(event ctapkit.InventoryEvent) {
 
 	if missing {
 		_ = s.closeSelection(selected)
+		s.retireSelection(selected)
 	}
 
-	s.mu.Lock()
-	if missing && s.selected == selected {
-		s.selected = nil
+	var selectionErr error
+
+	if s.currentSelection() == nil && len(event.Snapshot.Devices) > 0 {
+		_, selectionErr = s.setSelection(context.Background(), SelectionRequest{
+			AttachmentID: event.Snapshot.Devices[0].Attachment.ID,
+		})
 	}
 
-	s.devices = event.Snapshot.Devices
-	s.mu.Unlock()
+	snapshot := s.sessionSnapshot(event.Snapshot.Devices, selectionErr)
+	if snapshot.Error == nil {
+		snapshot.Error = event.Error
+	}
 
 	s.emit(EventDiscoveryChanged, DiscoveryChangedEnvelope{
 		Trigger:  event.Trigger,
-		Snapshot: event.Snapshot,
-		Error:    event.Error,
+		Snapshot: snapshot,
 	})
+}
+
+func (s *Service) sessionSnapshot(
+	devices []report.DeviceReport,
+	sessionErr error,
+) AuthenticatorSessionSnapshot {
+	s.mu.Lock()
+	selected := s.selected
+	s.mu.Unlock()
+
+	snapshot := AuthenticatorSessionSnapshot{
+		Devices: devices,
+		Error:   failure.Snapshot(sessionErr),
+	}
+
+	if selected != nil {
+		active := activeSelection(selected)
+		snapshot.Selection = &active
+	}
+
+	return snapshot
 }
 
 func attachmentPresent(devices []report.DeviceReport, id report.AttachmentID) bool {
@@ -143,14 +177,6 @@ func (s *Service) isClosed() bool {
 	s.mu.Unlock()
 
 	return closed
-}
-
-func normalizedDiscoverMode(mode transport.Mode) transport.Mode {
-	if mode == "" {
-		return transport.ModeAuto
-	}
-
-	return mode
 }
 
 func closedServiceError(phase failure.Phase) error {

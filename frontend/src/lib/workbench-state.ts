@@ -1,42 +1,85 @@
 import { get } from "svelte/store";
 
 import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import type { ActiveSelection, AuthenticatorSessionSnapshot } from "../../bindings/telesma/service";
 import { m } from "../paraglide/messages.js";
 import type { OperationEnvelope } from "$lib/api.js";
-import { deviceFeatureLifecycles } from "$lib/feature-lifecycle.js";
+import { resetDeviceState } from "$lib/device-state.js";
 import { pendingInteraction } from "$lib/features/interaction/state.js";
-import {
-  authenticatorInspection,
-  devices,
-  selectedDevice,
-  selectedSelector,
-  authenticatorStatus,
-} from "$lib/features/authenticator/state.js";
+import { authenticatorSession } from "$lib/features/authenticator/state.js";
 import {
   statusBar,
   type ActiveOperation,
   type StatusBarOutcome,
 } from "$lib/features/workbench/state.js";
 import { activeSelectionID } from "$lib/authenticator-boundary.js";
-import type { Discovery } from "$lib/authenticator-model.js";
 import { failureMessage, isCanceledFailure } from "$lib/failure.js";
-import { idleLoadState } from "$lib/load-state.js";
 
-export function applyDiscovery(response: Discovery): boolean {
-  const nextSelector = response.selectedSelector || "";
-  const previousSelector = get(selectedSelector);
-  const changed = nextSelector !== previousSelector;
+export function applyDiscovery(snapshot: AuthenticatorSessionSnapshot): boolean {
+  const nextSelector = snapshot.selection?.attachmentId ?? "";
+  const current = get(authenticatorSession);
+  const previousSelectionID = current.authenticator.selectionId ?? "";
+  const nextSelectionID = snapshot.selection?.id ?? "";
+  const changed =
+    nextSelector !== current.selectedAttachmentId || nextSelectionID !== previousSelectionID;
 
-  devices.set(response.devices);
-  selectedSelector.set(nextSelector);
-  selectedDevice.set(response.selectedDevice || null);
+  authenticatorSession.set({
+    devices: snapshot.devices,
+    selectedAttachmentId: nextSelector,
+    authenticator: snapshot.selection
+      ? { selectionId: snapshot.selection.id, state: "ready" }
+      : snapshot.error
+        ? { state: "error", error: snapshot.error }
+        : { state: "idle" },
+  });
+
   if (changed) {
     clearWorkbenchScreenCaches();
   }
 
-  authenticatorStatus.set(response.authenticator);
+  return changed;
+}
+
+export function applySelection(selection: ActiveSelection | null) {
+  const current = get(authenticatorSession);
+  const nextSelector = selection?.attachmentId ?? "";
+  const changed = nextSelector !== current.selectedAttachmentId;
+
+  authenticatorSession.set({
+    ...current,
+    selectedAttachmentId: nextSelector,
+    authenticator: selection ? { selectionId: selection.id, state: "ready" } : { state: "idle" },
+  });
+
+  if (changed) clearWorkbenchScreenCaches();
 
   return changed;
+}
+
+export function setAuthenticatorOpening(selectedAttachmentId: string) {
+  authenticatorSession.update((session) => ({
+    ...session,
+    selectedAttachmentId,
+    authenticator: { state: "opening" },
+  }));
+}
+
+export function setAuthenticatorError(error: Failure) {
+  authenticatorSession.update((session) => ({
+    ...session,
+    selectedAttachmentId: "",
+    authenticator: { state: "error", error },
+  }));
+  clearWorkbenchScreenCaches();
+}
+
+export function clearAuthenticatorSession() {
+  authenticatorSession.set({
+    devices: [],
+    selectedAttachmentId: "",
+    authenticator: { state: "idle" },
+  });
+  clearWorkbenchScreenCaches();
 }
 
 export function setStatusOperation(operation: ActiveOperation | null) {
@@ -48,19 +91,11 @@ export function beginOperation(label: string) {
     selectionId: activeSelectionID() || undefined,
     label,
   });
-  authenticatorStatus.update((state) =>
-    state.selectionId ? { ...state, state: "running" } : state,
-  );
 }
 
 export function finishOperation() {
   setStatusOperation(null);
   pendingInteraction.set(null);
-  authenticatorStatus.update((state) => {
-    if (state.state !== "running") return state;
-
-    return { ...state, state: "ready" };
-  });
 }
 
 export function setStatusOutcome(outcome: StatusBarOutcome | null) {
@@ -68,8 +103,7 @@ export function setStatusOutcome(outcome: StatusBarOutcome | null) {
 }
 
 export function clearWorkbenchScreenCaches() {
-  authenticatorInspection.set(idleLoadState());
-  deviceFeatureLifecycles.resetForAuthenticatorChange();
+  resetDeviceState();
 }
 
 export function summarizeEnvelope(label: string, envelope: OperationEnvelope) {

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { Kind as OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code, type Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
-import type { BioSensorEnvelope, ConfigStatusEnvelope } from "../../../../bindings/telesma/service";
+import type { ConfigStatusEnvelope } from "../../../../bindings/telesma/service";
 
 import { failureForCode } from "$lib/test-support/failure";
 
@@ -61,17 +61,5 @@ describe("security state", () => {
       responseEnvelope: null,
       runtimeError: error,
     });
-  });
-
-  it("types biometric sensor state with the generated envelope contract", () => {
-    const envelope = {
-      operationId: "sensor-1",
-      selectionId: "authenticator-1",
-      kind: OperationKind.BioSensorInfo,
-    } as BioSensorEnvelope;
-
-    securitySensor.update((current) => ({ ...current, responseEnvelope: envelope }));
-
-    expect(get(securitySensor).responseEnvelope).toBe(envelope);
   });
 });

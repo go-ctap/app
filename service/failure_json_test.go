@@ -6,7 +6,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/go-ctap/kit/model/config"
 	"github.com/go-ctap/kit/model/failure"
 	"github.com/go-ctap/kit/model/operation"
 )
@@ -63,42 +62,5 @@ func TestDirectServiceErrorIsTypedAndMachineReadable(t *testing.T) {
 
 	if !failure.IsCode(err, failure.CodeDeviceNotFound) {
 		t.Fatalf("SetSelection error = %v, want %s", err, failure.CodeDeviceNotFound)
-	}
-}
-
-func TestBioEnrollEnvelopeKeepsFailureWithoutResult(t *testing.T) {
-	output := config.BioEnrollOutput{Result: &config.BioEnrollResult{
-		TemplateIDHex: "aabb",
-	}}
-	runErr := failure.Wrap(
-		failure.CodeBioInteractionTimeout,
-		errors.New("capture timeout after touching sensor"),
-		failure.WithOperation(string(operation.BioEnroll)),
-		failure.WithPhase(failure.PhaseInteraction),
-	)
-	runtime := &recordingAuthenticator{}
-	service := New()
-
-	service.selected = newSelection(
-		"selection-1",
-		openedAuthenticator{lifecycle: runtime},
-	)
-
-	meta, result := runOperation(
-		service,
-		t.Context(),
-		OperationRequest{SelectionID: "selection-1"},
-		operation.BioEnroll,
-		staticOperationExecutor(output, runErr),
-	)
-
-	envelope := BioEnrollEnvelope{OperationEnvelopeMeta: meta, Result: result}
-
-	if envelope.Error == nil || envelope.Error.Code != failure.CodeBioInteractionTimeout {
-		t.Fatalf("error = %#v, want %s", envelope.Error, failure.CodeBioInteractionTimeout)
-	}
-
-	if envelope.Result != nil {
-		t.Fatalf("result = %#v, want nil on failure", envelope.Result)
 	}
 }

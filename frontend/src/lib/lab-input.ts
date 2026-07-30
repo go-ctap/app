@@ -17,11 +17,7 @@ import {
   HMACGetSecretInput,
 } from "../../bindings/github.com/go-ctap/ctap/webauthn";
 import { AuthenticatorOptions } from "../../bindings/github.com/go-ctap/kit/model/webauthn";
-import {
-  GetAssertionRequest,
-  MakeCredentialRequest,
-  type SelectionID,
-} from "../../bindings/telesma/service";
+import { GetAssertionRequest, MakeCredentialRequest } from "../../bindings/telesma/service";
 import { getDomain } from "tldts";
 
 import type {
@@ -744,7 +740,7 @@ function buildGetAssertionExtensions(draft: GetAssertionDraft) {
   });
 }
 
-export function buildMakeCredentialRequest(selectionId: SelectionID, draft: MakeCredentialDraft) {
+export function buildMakeCredentialRequest(draft: MakeCredentialDraft) {
   const excludeList = buildDescriptors(draft.excludeList);
   const options = buildAuthenticatorOptions(draft);
   const extensions = buildMakeCredentialExtensions(draft);
@@ -754,7 +750,6 @@ export function buildMakeCredentialRequest(selectionId: SelectionID, draft: Make
       : draft.verificationFlow;
 
   return new MakeCredentialRequest({
-    selectionId,
     ...(verificationFlow === undefined ? {} : { verificationFlow }),
     rp: new PublicKeyCredentialRpEntity({ id: draft.rpID, name: draft.rpName }),
     user: new PublicKeyCredentialUserEntity({
@@ -788,7 +783,7 @@ export function buildMakeCredentialRequest(selectionId: SelectionID, draft: Make
   });
 }
 
-export function buildGetAssertionRequest(selectionId: SelectionID, draft: GetAssertionDraft) {
+export function buildGetAssertionRequest(draft: GetAssertionDraft) {
   const allowList = buildDescriptors(draft.allowList);
   const options = buildGetAuthenticatorOptions(draft);
   const extensions = buildGetAssertionExtensions(draft);
@@ -798,7 +793,6 @@ export function buildGetAssertionRequest(selectionId: SelectionID, draft: GetAss
       : draft.verificationFlow;
 
   return new GetAssertionRequest({
-    selectionId,
     ...(verificationFlow === undefined ? {} : { verificationFlow }),
     rpID: draft.rpID,
     clientDataJSON: clientDataJSONBase64("get", draft.clientData),

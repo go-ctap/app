@@ -36,11 +36,8 @@ import {
 } from "$lib/features/passkeys/state.js";
 import { credentialsReport } from "$lib/ctapkit-results.js";
 import {
+  authenticatorSession,
   authenticatorInspection,
-  devices,
-  selectedDevice,
-  selectedSelector,
-  authenticatorStatus,
   resetAuthenticatorStateForTest,
 } from "$lib/features/authenticator/state.js";
 import { resetSecurityDeviceState } from "$lib/features/security/state.js";
@@ -66,7 +63,7 @@ export function seedActiveScreenForTest(screen: ActiveScreen) {
 }
 
 export function seedDevicesForTest(items: DeviceReport[]) {
-  devices.set(items);
+  authenticatorSession.update((session) => ({ ...session, devices: items }));
 }
 
 export function seedSelectionForTest(
@@ -74,9 +71,17 @@ export function seedSelectionForTest(
   device: DeviceReport | null,
   authenticator: AuthenticatorStatus,
 ) {
-  selectedSelector.set(selector);
-  selectedDevice.set(device);
-  authenticatorStatus.set(authenticator);
+  authenticatorSession.update((session) => ({
+    devices: device
+      ? session.devices.some((candidate) => candidate.attachment.id === device.attachment.id)
+        ? session.devices.map((candidate) =>
+            candidate.attachment.id === device.attachment.id ? device : candidate,
+          )
+        : [...session.devices, device]
+      : session.devices,
+    selectedAttachmentId: selector,
+    authenticator,
+  }));
 }
 
 export function seedPendingInteractionForTest(prompt: InteractionPrompt | null) {

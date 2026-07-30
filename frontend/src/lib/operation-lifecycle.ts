@@ -4,7 +4,6 @@ import type { OperationEnvelope } from "$lib/api.js";
 import {
   applyAuthenticatorClosedError,
   applyOperationAuthenticatorBoundary,
-  currentSelectionID,
 } from "$lib/authenticator-boundary.js";
 import { runtimeFailureFrom } from "$lib/failure.js";
 import { offerOperationRecovery } from "$lib/operation-recovery.js";
@@ -35,16 +34,6 @@ export type TypedOperationStageFailure<E extends OperationEnvelope> =
 
 export type TypedOperationStageOutcome<E extends OperationEnvelope, TValue> =
   { ok: true; envelope: E; value: TValue } | TypedOperationStageFailure<E>;
-
-/**
- * Rebinds a captured request to the authenticator selected for this attempt.
- * Mutation is intentional so feature history reflects the request actually sent.
- */
-export function requestForCurrentSelection<T extends { selectionId: string }>(request: T): T {
-  request.selectionId = currentSelectionID();
-
-  return request;
-}
 
 interface RunTypedOperationStageOptions<E extends OperationEnvelope, TValue> {
   label: string;

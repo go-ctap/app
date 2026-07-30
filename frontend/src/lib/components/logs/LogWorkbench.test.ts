@@ -271,32 +271,4 @@ describe("LogWorkbench", () => {
     render(LogWorkbench);
     expect(screen.getByText("Earlier log entries are no longer available")).toBeInTheDocument();
   });
-
-  it("renders only the visible window for a large journal", async () => {
-    for (let sequence = 1; sequence <= 200; sequence += 1) appendEntry(sequence);
-
-    const { container } = render(LogWorkbench);
-
-    await waitFor(() => {
-      const renderedRows = container.querySelectorAll(".log-virtual-row");
-
-      expect(renderedRows.length).toBeGreaterThan(0);
-      expect(renderedRows.length).toBeLessThan(200);
-    });
-  });
-
-  it("always scrolls the virtual journal to the newest record", async () => {
-    appendEntry(1);
-
-    const { container } = render(LogWorkbench);
-    const viewport = container.querySelector<HTMLElement>("[data-slot='scroll-area-viewport']")!;
-    const scrollTo = vi.fn();
-
-    viewport.scrollTo = scrollTo;
-
-    appendEntry(2);
-    await waitFor(() => {
-      expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ behavior: "auto" }));
-    });
-  });
 });

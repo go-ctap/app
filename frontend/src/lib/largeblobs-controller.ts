@@ -10,10 +10,11 @@ import type {
   LargeBlobDecodeEnvelope,
   LargeBlobDecodeRequest,
   LargeBlobGarbageCollectRequest,
+  LargeBlobDeleteRequest,
   LargeBlobMutationEnvelope,
-  LargeBlobMutationRequest,
   LargeBlobReadEnvelope,
   LargeBlobReadRequest,
+  LargeBlobWriteRequest,
   OperationRequest,
 } from "../../bindings/telesma/service";
 import { m } from "../paraglide/messages.js";
@@ -55,7 +56,6 @@ import {
 } from "$lib/largeblobs-payload.js";
 import { findLargeBlobEntry } from "$lib/largeblobs-presentation.js";
 import { runtimeFailureFrom } from "$lib/failure.js";
-import { currentSelectionID } from "$lib/authenticator-boundary.js";
 import {
   editingConfirmedOperation,
   idleConfirmedOperation,
@@ -65,11 +65,7 @@ import {
   type ConfirmedOperationExecuting,
   type ConfirmedOperationReview,
 } from "$lib/confirmed-operation.js";
-import {
-  completeOperation,
-  requestForCurrentSelection,
-  runOperation,
-} from "$lib/operation-lifecycle.js";
+import { completeOperation, runOperation } from "$lib/operation-lifecycle.js";
 import { setStatusOutcome } from "$lib/workbench-state.js";
 
 function largeBlobsAutoLoadKey() {
@@ -125,12 +121,11 @@ export async function loadLargeBlobs() {
 
   const label = m.large_blob_list();
   const request: OperationRequest = {
-    selectionId: currentSelectionID(),
     verificationFlow: get(largeBlobsVerificationFlow),
   };
   const attempt = await runOperation({
     label,
-    call: () => api.listLargeBlobs(requestForCurrentSelection(request)),
+    call: () => api.listLargeBlobs(request),
     onRuntimeFailure: failLargeBlobsInventoryLoadAtRuntime,
   });
 
@@ -348,9 +343,8 @@ export async function readLargeBlob(
   if (!entryHasTarget(entry)) return false;
 
   const request: LargeBlobReadRequest = {
-    selectionId: currentSelectionID(),
     verificationFlow: get(largeBlobsVerificationFlow),
-    credentialIdHex: entry.target.credentialIDHex,
+    credentialIDHex: entry.target.credentialIDHex,
   };
 
   largeBlobsSelectedEntryIndex.set(entryIndex);
@@ -360,7 +354,7 @@ export async function readLargeBlob(
   const label = m.large_blob_read();
   const attempt = await runOperation({
     label,
-    call: () => api.readLargeBlob(requestForCurrentSelection(request)),
+    call: () => api.readLargeBlob(request),
     onRuntimeFailure: (error) => readError(entryIndex, null, error),
   });
 
@@ -387,24 +381,20 @@ export async function readLargeBlob(
 }
 
 export function buildLargeBlobDeletePreviewRequest(
-  selectionId: string,
   verificationFlow: VerificationFlow,
   credentialIDHex: string,
-): LargeBlobMutationRequest {
+): LargeBlobDeleteRequest {
   return {
-    selectionId,
     verificationFlow,
-    credentialIdHex: credentialIDHex,
+    credentialIDHex,
     dryRun: true,
   };
 }
 
 export function buildLargeBlobCleanupPreviewRequest(
-  selectionId: string,
   verificationFlow: VerificationFlow,
 ): LargeBlobGarbageCollectRequest {
   return {
-    selectionId,
     verificationFlow,
     dryRun: true,
   };
@@ -505,10 +495,9 @@ export async function previewLargeBlobWrite(): Promise<boolean> {
     return false;
   }
 
-  const request: LargeBlobMutationRequest = {
-    selectionId: currentSelectionID(),
+  const request: LargeBlobWriteRequest = {
     verificationFlow: get(largeBlobsVerificationFlow),
-    credentialIdHex: current.credentialIDHex,
+    credentialIDHex: current.credentialIDHex,
     payload: payload.base64,
     dryRun: true,
   };
@@ -535,7 +524,6 @@ export async function beginLargeBlobDelete(
   const credentialIDHex = entry.target.credentialIDHex;
 
   const request = buildLargeBlobDeletePreviewRequest(
-    currentSelectionID(),
     get(largeBlobsVerificationFlow),
     credentialIDHex,
   );
@@ -570,10 +558,7 @@ export async function beginLargeBlobDelete(
 export async function beginLargeBlobCleanup(): Promise<boolean> {
   if (!reportForActions()) return false;
 
-  const request = buildLargeBlobCleanupPreviewRequest(
-    currentSelectionID(),
-    get(largeBlobsVerificationFlow),
-  );
+  const request = buildLargeBlobCleanupPreviewRequest(get(largeBlobsVerificationFlow));
 
   const base = cleanupMutationBase();
 
@@ -602,7 +587,8 @@ async function refreshAfterMutation() {
   await loadLargeBlobs();
 }
 
-type LargeBlobExecutionRequest = LargeBlobMutationRequest | LargeBlobGarbageCollectRequest;
+type LargeBlobExecutionRequest =
+  LargeBlobWriteRequest | LargeBlobDeleteRequest | LargeBlobGarbageCollectRequest;
 
 type LargeBlobExecutionOptions<TRequest extends LargeBlobExecutionRequest> = {
   label: string;

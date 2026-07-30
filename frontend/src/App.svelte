@@ -46,6 +46,13 @@
   } from "$lib/shell-presentation";
   import { toggleMaximizeWindow } from "$lib/window-controller.js";
   import { detectWindowPlatform, resolveWindowPlatform } from "$lib/window-platform";
+  import Lab from "./screens/Lab.svelte";
+  import LargeBlobs from "./screens/LargeBlobs.svelte";
+  import Logs from "./screens/Logs.svelte";
+  import Overview from "./screens/Overview.svelte";
+  import Passkeys from "./screens/Passkeys.svelte";
+  import Security from "./screens/Security.svelte";
+  import Settings from "./screens/Settings.svelte";
 
   let refreshing = $state(false);
 
@@ -208,39 +215,25 @@
         <main class="main-view">
           {#if $activeScreen === "logs"}
             <div class="main-view-content" data-fill="true">
-              {#await import("./screens/Logs.svelte") then { default: Logs }}
-                <Logs />
-              {/await}
+              <Logs />
             </div>
           {:else}
             <ScrollArea class="main-view-scroll">
               <div class="main-view-content">
                 {#if $activeScreen === "settings"}
-                  {#await import("./screens/Settings.svelte") then { default: Settings }}
-                    <Settings />
-                  {/await}
+                  <Settings />
                 {:else if noDevices}
                   <NoAuthenticatorState screenLabel={sidebarPresentation.activeScreenLabel} />
                 {:else if $activeScreen === "large-blobs"}
-                  {#await import("./screens/LargeBlobs.svelte") then { default: LargeBlobs }}
-                    <LargeBlobs />
-                  {/await}
+                  <LargeBlobs />
                 {:else if $activeScreen === "passkeys"}
-                  {#await import("./screens/Passkeys.svelte") then { default: Passkeys }}
-                    <Passkeys />
-                  {/await}
+                  <Passkeys />
                 {:else if $activeScreen === "lab"}
-                  {#await import("./screens/Lab.svelte") then { default: Lab }}
-                    <Lab />
-                  {/await}
+                  <Lab />
                 {:else if $activeScreen === "security"}
-                  {#await import("./screens/Security.svelte") then { default: Security }}
-                    <Security />
-                  {/await}
+                  <Security />
                 {:else}
-                  {#await import("./screens/Overview.svelte") then { default: Overview }}
-                    <Overview />
-                  {/await}
+                  <Overview />
                 {/if}
               </div>
             </ScrollArea>

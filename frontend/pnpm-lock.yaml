@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@tanstack/svelte-virtual':
-        specifier: ^3.13.32
-        version: 3.13.32(svelte@5.56.3)
       '@wailsio/runtime':
         specifier: file:../../wails/v3/internal/runtime/desktop/@wailsio/runtime
         version: file:../../wails/v3/internal/runtime/desktop/@wailsio/runtime
@@ -518,14 +515,6 @@ packages:
     resolution: {integrity: sha512-hItDHuIIlEV61R+faXu66s1K36aTurO/Qw0e45Vskz57gXl9pWOT6eg3zmcEui6CZXddbN7zd41bwmvag4JGwQ==}
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
-
-  '@tanstack/svelte-virtual@3.13.32':
-    resolution: {integrity: sha512-jA7zRXPAP6Duvdk1mHYAtBNHu5yQo43Wlf8iE3pJ+umj9GdE+dXMzIky3apFBZBP6MOmSr0wT/cHA4f/qHbA3w==}
-    peerDependencies:
-      svelte: ^3.48.0 || ^4.0.0 || ^5.0.0
-
-  '@tanstack/virtual-core@3.17.4':
-    resolution: {integrity: sha512-nGm5KteqxasUdThLc2izl6dHUqLv0LQj7Nuyo5gYalTPf/U8a9ermvsl7reT+6ioBW1l8WfpP/mcU338nLXpqw==}
 
   '@testing-library/dom@10.4.1':
     resolution: {integrity: sha512-o4PXJQidqJl82ckFaXUeoAW+XysPLauYI43Abki5hABd853iMhitooc6znOnczgbTYmEP6U6/y1ZyKAIsvMKGg==}
@@ -1783,13 +1772,6 @@ snapshots:
       '@tailwindcss/oxide': 4.3.1
       tailwindcss: 4.3.1
       vite: 8.0.16(jiti@2.7.0)
-
-  '@tanstack/svelte-virtual@3.13.32(svelte@5.56.3)':
-    dependencies:
-      '@tanstack/virtual-core': 3.17.4
-      svelte: 5.56.3
-
-  '@tanstack/virtual-core@3.17.4': {}
 
   '@testing-library/dom@10.4.1':
     dependencies:

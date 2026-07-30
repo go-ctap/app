@@ -1,6 +1,5 @@
 import { readonly } from "svelte/store";
 
-import { ensureActiveSelectionReady } from "$lib/authenticator-controller.js";
 import {
   loadOverview as loadOverviewOperation,
   loadOverviewMDS,
@@ -14,10 +13,8 @@ export const overviewBioSensor = readonly(state.overviewBioSensor);
 
 export const overviewMDS = readonly(state.overviewMDS);
 
-export async function reloadOverview(): Promise<void> {
-  if (!(await ensureActiveSelectionReady())) return;
-
-  await loadOverviewOperation();
-}
-
-export { loadOverviewMDS, loadOverviewOperation as loadOverview };
+export {
+  loadOverviewMDS,
+  loadOverviewOperation as loadOverview,
+  loadOverviewOperation as reloadOverview,
+};

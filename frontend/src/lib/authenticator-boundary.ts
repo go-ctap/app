@@ -3,20 +3,13 @@ import { get } from "svelte/store";
 import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 
 import type { OperationEnvelope } from "$lib/api.js";
+import { resetDeviceState } from "$lib/device-state.js";
 import { isAuthenticatorClosedFailure } from "$lib/failure.js";
 import { pendingInteraction } from "$lib/features/interaction/state.js";
-import { authenticatorStatus } from "$lib/features/authenticator/state.js";
+import { authenticatorSession } from "$lib/features/authenticator/state.js";
 
 export function activeSelectionID() {
-  return get(authenticatorStatus).selectionId || "";
-}
-
-export function currentSelectionID() {
-  const selectionId = activeSelectionID();
-
-  if (!selectionId) throw new Error("selected authenticator is required");
-
-  return selectionId;
+  return get(authenticatorSession).authenticator.selectionId || "";
 }
 
 export function applyAuthenticatorClosedError(error: Failure | null | undefined) {
@@ -37,15 +30,21 @@ export function applyOperationAuthenticatorBoundary(envelope: OperationEnvelope)
 
 function clearAuthenticator(error: Failure | null | undefined) {
   pendingInteraction.set(null);
-  authenticatorStatus.update((state) => {
+  resetDeviceState();
+  authenticatorSession.update((session) => {
+    const state = session.authenticator;
     const { selectionId: _selectionId, error: _error, ...rest } = state;
 
-    if (!error) return { ...rest, state: "idle" };
-
     return {
-      ...rest,
-      state: "error",
-      error,
+      ...session,
+      selectedAttachmentId: "",
+      authenticator: !error
+        ? { ...rest, state: "idle" }
+        : {
+            ...rest,
+            state: "error",
+            error,
+          },
     };
   });
 }

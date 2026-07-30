@@ -61,6 +61,10 @@ func (s *Service) SetSelection(ctx context.Context, req SelectionRequest) (Selec
 
 	defer unlock()
 
+	return s.setSelection(ctx, req)
+}
+
+func (s *Service) setSelection(ctx context.Context, req SelectionRequest) (SelectionSnapshot, error) {
 	if s.isClosed() {
 		return SelectionSnapshot{}, closedServiceError(failure.PhaseAuthenticator)
 	}
@@ -80,11 +84,10 @@ func (s *Service) SetSelection(ctx context.Context, req SelectionRequest) (Selec
 	s.mu.Lock()
 
 	inventory := s.inventory
-	present := attachmentPresent(s.devices, req.AttachmentID)
 	current := s.selected
 
 	s.mu.Unlock()
-	if inventory == nil || !present {
+	if inventory == nil {
 		return SelectionSnapshot{}, failure.New(
 			failure.CodeDeviceNotFound,
 			failure.WithPhase(failure.PhaseDiscovery),
@@ -92,7 +95,7 @@ func (s *Service) SetSelection(ctx context.Context, req SelectionRequest) (Selec
 	}
 
 	if current != nil && current.device.Attachment.ID == req.AttachmentID {
-		active := ActiveSelection{ID: current.id}
+		active := activeSelection(current)
 
 		return SelectionSnapshot{Selection: &active}, nil
 	}
@@ -129,12 +132,19 @@ func (s *Service) SetSelection(ctx context.Context, req SelectionRequest) (Selec
 	s.selected = selected
 	s.mu.Unlock()
 
-	active := ActiveSelection{ID: selected.id}
+	active := activeSelection(selected)
 
 	return SelectionSnapshot{Selection: &active}, nil
 }
 
-func (s *Service) Close() error {
+func activeSelection(selected *selection) ActiveSelection {
+	return ActiveSelection{
+		ID:           selected.id,
+		AttachmentID: selected.device.Attachment.ID,
+	}
+}
+
+func (s *Service) close() error {
 	s.selectionGate <- struct{}{}
 
 	s.mu.Lock()
@@ -187,7 +197,7 @@ func (s *Service) lockSelection(ctx context.Context) (func(), error) {
 	case s.selectionGate <- struct{}{}:
 		return func() { <-s.selectionGate }, nil
 	case <-ctx.Done():
-		return nil, normalizeServicePhaseError(ctx.Err(), failure.PhaseAuthenticator)
+		return nil, ctapkit.NormalizeError(ctx.Err(), failure.PhaseAuthenticator)
 	}
 }
 

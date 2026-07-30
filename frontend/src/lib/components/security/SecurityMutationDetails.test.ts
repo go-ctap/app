@@ -55,7 +55,7 @@ function erroredExecutionMutation(
       failedPhase: "executing",
       previewEnvelope,
       previewValue: previewEnvelope.result!.preview,
-      request: { selectionId: "authenticator-1", dryRun: false },
+      request: { dryRun: false },
       responseEnvelope,
       runtimeError: null,
     },

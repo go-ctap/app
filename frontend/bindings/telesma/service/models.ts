@@ -46,18 +46,19 @@ import * as report$0 from "../../github.com/go-ctap/kit/model/report/models.js";
 import * as webauthn$0 from "../../github.com/go-ctap/kit/model/webauthn/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as transport$0 from "../../github.com/go-ctap/kit/transport/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
 import * as model$1 from "../../github.com/go-ctap/mds/model/models.js";
 
 export class ActiveSelection {
     "id": SelectionID;
+    "attachmentId": report$0.AttachmentID;
 
     /** Creates a new ActiveSelection instance. */
     constructor($$source: Partial<ActiveSelection> = {}) {
         if (!("id" in $$source)) {
             this["id"] = "";
+        }
+        if (!("attachmentId" in $$source)) {
+            this["attachmentId"] = "";
         }
 
         Object.assign(this, $$source);
@@ -73,16 +74,12 @@ export class ActiveSelection {
 }
 
 export class AlwaysUVRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
     "target": config$0.AlwaysUVTarget;
     "dryRun"?: boolean;
 
     /** Creates a new AlwaysUVRequest instance. */
     constructor($$source: Partial<AlwaysUVRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
         if (!("target" in $$source)) {
             this["target"] = config$0.AlwaysUVTarget.$zero;
         }
@@ -142,6 +139,41 @@ export class AuthenticatorConfigEnvelope {
     }
 }
 
+export class AuthenticatorSessionSnapshot {
+    "devices": report$0.DeviceReport[];
+    "selection"?: ActiveSelection | null;
+    "error"?: failure$0.Failure | null;
+
+    /** Creates a new AuthenticatorSessionSnapshot instance. */
+    constructor($$source: Partial<AuthenticatorSessionSnapshot> = {}) {
+        if (!("devices" in $$source)) {
+            this["devices"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AuthenticatorSessionSnapshot instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AuthenticatorSessionSnapshot {
+        const $$createField0_0 = $$createType5;
+        const $$createField1_0 = $$createType7;
+        const $$createField2_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("devices" in $$parsedSource) {
+            $$parsedSource["devices"] = $$createField0_0($$parsedSource["devices"]);
+        }
+        if ("selection" in $$parsedSource) {
+            $$parsedSource["selection"] = $$createField1_0($$parsedSource["selection"]);
+        }
+        if ("error" in $$parsedSource) {
+            $$parsedSource["error"] = $$createField2_0($$parsedSource["error"]);
+        }
+        return new AuthenticatorSessionSnapshot($$parsedSource as Partial<AuthenticatorSessionSnapshot>);
+    }
+}
+
 export class BioEnrollEnvelope {
     "operationId": OperationID;
     "selectionId": SelectionID;
@@ -173,7 +205,7 @@ export class BioEnrollEnvelope {
      */
     static createFrom($$source: any = {}): BioEnrollEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType5;
+        const $$createField5_0 = $$createType9;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -186,16 +218,12 @@ export class BioEnrollEnvelope {
 }
 
 export class BioEnrollRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
     "timeoutMilliseconds"?: number;
     "dryRun"?: boolean;
 
     /** Creates a new BioEnrollRequest instance. */
     constructor($$source: Partial<BioEnrollRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
 
         Object.assign(this, $$source);
     }
@@ -240,7 +268,7 @@ export class BioListEnvelope {
      */
     static createFrom($$source: any = {}): BioListEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType7;
+        const $$createField5_0 = $$createType11;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -283,7 +311,7 @@ export class BioMutationEnvelope {
      */
     static createFrom($$source: any = {}): BioMutationEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType9;
+        const $$createField5_0 = $$createType13;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -296,18 +324,14 @@ export class BioMutationEnvelope {
 }
 
 export class BioRemoveRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
-    "templateIdHex": string;
+    "templateIDHex": string;
     "dryRun"?: boolean;
 
     /** Creates a new BioRemoveRequest instance. */
     constructor($$source: Partial<BioRemoveRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
-        if (!("templateIdHex" in $$source)) {
-            this["templateIdHex"] = "";
+        if (!("templateIDHex" in $$source)) {
+            this["templateIDHex"] = "";
         }
 
         Object.assign(this, $$source);
@@ -323,19 +347,15 @@ export class BioRemoveRequest {
 }
 
 export class BioRenameRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
-    "templateIdHex": string;
+    "templateIDHex": string;
     "friendlyName": string;
     "dryRun"?: boolean;
 
     /** Creates a new BioRenameRequest instance. */
     constructor($$source: Partial<BioRenameRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
-        if (!("templateIdHex" in $$source)) {
-            this["templateIdHex"] = "";
+        if (!("templateIDHex" in $$source)) {
+            this["templateIDHex"] = "";
         }
         if (!("friendlyName" in $$source)) {
             this["friendlyName"] = "";
@@ -384,7 +404,7 @@ export class BioSensorEnvelope {
      */
     static createFrom($$source: any = {}): BioSensorEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType11;
+        const $$createField5_0 = $$createType15;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -448,7 +468,7 @@ export class ConfigStatusEnvelope {
      */
     static createFrom($$source: any = {}): ConfigStatusEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType13;
+        const $$createField5_0 = $$createType17;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -491,7 +511,7 @@ export class CredentialDeleteEnvelope {
      */
     static createFrom($$source: any = {}): CredentialDeleteEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType15;
+        const $$createField5_0 = $$createType19;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -504,18 +524,14 @@ export class CredentialDeleteEnvelope {
 }
 
 export class CredentialDeleteRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
-    "credentialIdHex": string;
+    "credentialIDHex": string;
     "dryRun"?: boolean;
 
     /** Creates a new CredentialDeleteRequest instance. */
     constructor($$source: Partial<CredentialDeleteRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
-        if (!("credentialIdHex" in $$source)) {
-            this["credentialIdHex"] = "";
+        if (!("credentialIDHex" in $$source)) {
+            this["credentialIDHex"] = "";
         }
 
         Object.assign(this, $$source);
@@ -561,7 +577,7 @@ export class CredentialUpdateEnvelope {
      */
     static createFrom($$source: any = {}): CredentialUpdateEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType17;
+        const $$createField5_0 = $$createType21;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -574,7 +590,6 @@ export class CredentialUpdateEnvelope {
 }
 
 export class CredentialUpdateRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
     "target": credentials$0.CredentialTarget;
     "name"?: string;
@@ -585,9 +600,6 @@ export class CredentialUpdateRequest {
 
     /** Creates a new CredentialUpdateRequest instance. */
     constructor($$source: Partial<CredentialUpdateRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
         if (!("target" in $$source)) {
             this["target"] = (new credentials$0.CredentialTarget());
         }
@@ -599,10 +611,10 @@ export class CredentialUpdateRequest {
      * Creates a new CredentialUpdateRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): CredentialUpdateRequest {
-        const $$createField2_0 = $$createType18;
+        const $$createField1_0 = $$createType22;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("target" in $$parsedSource) {
-            $$parsedSource["target"] = $$createField2_0($$parsedSource["target"]);
+            $$parsedSource["target"] = $$createField1_0($$parsedSource["target"]);
         }
         return new CredentialUpdateRequest($$parsedSource as Partial<CredentialUpdateRequest>);
     }
@@ -639,7 +651,7 @@ export class CredentialsEnvelope {
      */
     static createFrom($$source: any = {}): CredentialsEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType20;
+        const $$createField5_0 = $$createType24;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -651,28 +663,9 @@ export class CredentialsEnvelope {
     }
 }
 
-export class DiscoverRequest {
-    "mode"?: transport$0.Mode;
-
-    /** Creates a new DiscoverRequest instance. */
-    constructor($$source: Partial<DiscoverRequest> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new DiscoverRequest instance from a string or object.
-     */
-    static createFrom($$source: any = {}): DiscoverRequest {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new DiscoverRequest($$parsedSource as Partial<DiscoverRequest>);
-    }
-}
-
 export class DiscoveryChangedEnvelope {
     "trigger": ctapkit$0.InventoryTrigger;
-    "snapshot": ctapkit$0.InventorySnapshot;
-    "error"?: failure$0.Failure | null;
+    "snapshot": AuthenticatorSessionSnapshot;
 
     /** Creates a new DiscoveryChangedEnvelope instance. */
     constructor($$source: Partial<DiscoveryChangedEnvelope> = {}) {
@@ -680,7 +673,7 @@ export class DiscoveryChangedEnvelope {
             this["trigger"] = ctapkit$0.InventoryTrigger.$zero;
         }
         if (!("snapshot" in $$source)) {
-            this["snapshot"] = (new ctapkit$0.InventorySnapshot());
+            this["snapshot"] = (new AuthenticatorSessionSnapshot());
         }
 
         Object.assign(this, $$source);
@@ -690,29 +683,21 @@ export class DiscoveryChangedEnvelope {
      * Creates a new DiscoveryChangedEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): DiscoveryChangedEnvelope {
-        const $$createField1_0 = $$createType21;
-        const $$createField2_0 = $$createType1;
+        const $$createField1_0 = $$createType25;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("snapshot" in $$parsedSource) {
             $$parsedSource["snapshot"] = $$createField1_0($$parsedSource["snapshot"]);
-        }
-        if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField2_0($$parsedSource["error"]);
         }
         return new DiscoveryChangedEnvelope($$parsedSource as Partial<DiscoveryChangedEnvelope>);
     }
 }
 
 export class EnableEnterpriseAttestationRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
     "dryRun"?: boolean;
 
     /** Creates a new EnableEnterpriseAttestationRequest instance. */
     constructor($$source: Partial<EnableEnterpriseAttestationRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
 
         Object.assign(this, $$source);
     }
@@ -727,15 +712,11 @@ export class EnableEnterpriseAttestationRequest {
 }
 
 export class EnableLongTouchForResetRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
     "dryRun"?: boolean;
 
     /** Creates a new EnableLongTouchForResetRequest instance. */
     constructor($$source: Partial<EnableLongTouchForResetRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
 
         Object.assign(this, $$source);
     }
@@ -780,7 +761,7 @@ export class GetAssertionEnvelope {
      */
     static createFrom($$source: any = {}): GetAssertionEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType23;
+        const $$createField5_0 = $$createType27;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -793,7 +774,6 @@ export class GetAssertionEnvelope {
 }
 
 export class GetAssertionRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
     "rpID": string;
     "clientDataJSON": string;
@@ -804,9 +784,6 @@ export class GetAssertionRequest {
 
     /** Creates a new GetAssertionRequest instance. */
     constructor($$source: Partial<GetAssertionRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
         if (!("rpID" in $$source)) {
             this["rpID"] = "";
         }
@@ -821,22 +798,22 @@ export class GetAssertionRequest {
      * Creates a new GetAssertionRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): GetAssertionRequest {
-        const $$createField3_0 = $Create.ByteSlice;
-        const $$createField4_0 = $$createType25;
-        const $$createField5_0 = $$createType26;
-        const $$createField6_0 = $$createType28;
+        const $$createField2_0 = $Create.ByteSlice;
+        const $$createField3_0 = $$createType29;
+        const $$createField4_0 = $$createType30;
+        const $$createField5_0 = $$createType32;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("clientDataJSON" in $$parsedSource) {
-            $$parsedSource["clientDataJSON"] = $$createField3_0($$parsedSource["clientDataJSON"]);
+            $$parsedSource["clientDataJSON"] = $$createField2_0($$parsedSource["clientDataJSON"]);
         }
         if ("allowList" in $$parsedSource) {
-            $$parsedSource["allowList"] = $$createField4_0($$parsedSource["allowList"]);
+            $$parsedSource["allowList"] = $$createField3_0($$parsedSource["allowList"]);
         }
         if ("options" in $$parsedSource) {
-            $$parsedSource["options"] = $$createField5_0($$parsedSource["options"]);
+            $$parsedSource["options"] = $$createField4_0($$parsedSource["options"]);
         }
         if ("extensions" in $$parsedSource) {
-            $$parsedSource["extensions"] = $$createField6_0($$parsedSource["extensions"]);
+            $$parsedSource["extensions"] = $$createField5_0($$parsedSource["extensions"]);
         }
         return new GetAssertionRequest($$parsedSource as Partial<GetAssertionRequest>);
     }
@@ -863,9 +840,9 @@ export class GetAssertionVerificationRequest {
      * Creates a new GetAssertionVerificationRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): GetAssertionVerificationRequest {
-        const $$createField0_0 = $$createType29;
-        const $$createField1_0 = $$createType30;
-        const $$createField2_0 = $$createType32;
+        const $$createField0_0 = $$createType33;
+        const $$createField1_0 = $$createType34;
+        const $$createField2_0 = $$createType36;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("input" in $$parsedSource) {
             $$parsedSource["input"] = $$createField0_0($$parsedSource["input"]);
@@ -911,7 +888,7 @@ export class InspectEnvelope {
      */
     static createFrom($$source: any = {}): InspectEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType34;
+        const $$createField5_0 = $$createType38;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -976,7 +953,7 @@ export class InteractionPrompt {
      * Creates a new InteractionPrompt instance from a string or object.
      */
     static createFrom($$source: any = {}): InteractionPrompt {
-        const $$createField3_0 = $$createType35;
+        const $$createField3_0 = $$createType39;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("request" in $$parsedSource) {
             $$parsedSource["request"] = $$createField3_0($$parsedSource["request"]);
@@ -999,7 +976,7 @@ export class LargeBlobDecodeEnvelope {
      * Creates a new LargeBlobDecodeEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): LargeBlobDecodeEnvelope {
-        const $$createField0_0 = $$createType37;
+        const $$createField0_0 = $$createType41;
         const $$createField1_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("result" in $$parsedSource) {
@@ -1037,16 +1014,35 @@ export class LargeBlobDecodeRequest {
     }
 }
 
+export class LargeBlobDeleteRequest {
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
+    "credentialIDHex": string;
+    "dryRun"?: boolean;
+
+    /** Creates a new LargeBlobDeleteRequest instance. */
+    constructor($$source: Partial<LargeBlobDeleteRequest> = {}) {
+        if (!("credentialIDHex" in $$source)) {
+            this["credentialIDHex"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LargeBlobDeleteRequest instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LargeBlobDeleteRequest {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new LargeBlobDeleteRequest($$parsedSource as Partial<LargeBlobDeleteRequest>);
+    }
+}
+
 export class LargeBlobGarbageCollectRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
     "dryRun"?: boolean;
 
     /** Creates a new LargeBlobGarbageCollectRequest instance. */
     constructor($$source: Partial<LargeBlobGarbageCollectRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
 
         Object.assign(this, $$source);
     }
@@ -1091,7 +1087,7 @@ export class LargeBlobListEnvelope {
      */
     static createFrom($$source: any = {}): LargeBlobListEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType39;
+        const $$createField5_0 = $$createType43;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -1134,7 +1130,7 @@ export class LargeBlobMutationEnvelope {
      */
     static createFrom($$source: any = {}): LargeBlobMutationEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType41;
+        const $$createField5_0 = $$createType45;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -1143,38 +1139,6 @@ export class LargeBlobMutationEnvelope {
             $$parsedSource["result"] = $$createField5_0($$parsedSource["result"]);
         }
         return new LargeBlobMutationEnvelope($$parsedSource as Partial<LargeBlobMutationEnvelope>);
-    }
-}
-
-export class LargeBlobMutationRequest {
-    "selectionId": SelectionID;
-    "verificationFlow"?: ctapkit$0.VerificationFlow;
-    "credentialIdHex": string;
-    "payload"?: string;
-    "dryRun"?: boolean;
-
-    /** Creates a new LargeBlobMutationRequest instance. */
-    constructor($$source: Partial<LargeBlobMutationRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
-        if (!("credentialIdHex" in $$source)) {
-            this["credentialIdHex"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new LargeBlobMutationRequest instance from a string or object.
-     */
-    static createFrom($$source: any = {}): LargeBlobMutationRequest {
-        const $$createField3_0 = $Create.ByteSlice;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("payload" in $$parsedSource) {
-            $$parsedSource["payload"] = $$createField3_0($$parsedSource["payload"]);
-        }
-        return new LargeBlobMutationRequest($$parsedSource as Partial<LargeBlobMutationRequest>);
     }
 }
 
@@ -1209,7 +1173,7 @@ export class LargeBlobReadEnvelope {
      */
     static createFrom($$source: any = {}): LargeBlobReadEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType43;
+        const $$createField5_0 = $$createType47;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -1222,17 +1186,13 @@ export class LargeBlobReadEnvelope {
 }
 
 export class LargeBlobReadRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
-    "credentialIdHex": string;
+    "credentialIDHex": string;
 
     /** Creates a new LargeBlobReadRequest instance. */
     constructor($$source: Partial<LargeBlobReadRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
-        if (!("credentialIdHex" in $$source)) {
-            this["credentialIdHex"] = "";
+        if (!("credentialIDHex" in $$source)) {
+            this["credentialIDHex"] = "";
         }
 
         Object.assign(this, $$source);
@@ -1244,6 +1204,34 @@ export class LargeBlobReadRequest {
     static createFrom($$source: any = {}): LargeBlobReadRequest {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new LargeBlobReadRequest($$parsedSource as Partial<LargeBlobReadRequest>);
+    }
+}
+
+export class LargeBlobWriteRequest {
+    "verificationFlow"?: ctapkit$0.VerificationFlow;
+    "credentialIDHex": string;
+    "payload"?: string;
+    "dryRun"?: boolean;
+
+    /** Creates a new LargeBlobWriteRequest instance. */
+    constructor($$source: Partial<LargeBlobWriteRequest> = {}) {
+        if (!("credentialIDHex" in $$source)) {
+            this["credentialIDHex"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LargeBlobWriteRequest instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LargeBlobWriteRequest {
+        const $$createField2_0 = $Create.ByteSlice;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("payload" in $$parsedSource) {
+            $$parsedSource["payload"] = $$createField2_0($$parsedSource["payload"]);
+        }
+        return new LargeBlobWriteRequest($$parsedSource as Partial<LargeBlobWriteRequest>);
     }
 }
 
@@ -1284,7 +1272,7 @@ export class MDSLookupEnvelope {
      * Creates a new MDSLookupEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): MDSLookupEnvelope {
-        const $$createField0_0 = $$createType44;
+        const $$createField0_0 = $$createType48;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("result" in $$parsedSource) {
             $$parsedSource["result"] = $$createField0_0($$parsedSource["result"]);
@@ -1341,9 +1329,9 @@ export class MakeCredentialAttestationAssessmentRequest {
      * Creates a new MakeCredentialAttestationAssessmentRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): MakeCredentialAttestationAssessmentRequest {
-        const $$createField0_0 = $$createType45;
-        const $$createField1_0 = $$createType46;
-        const $$createField2_0 = $$createType44;
+        const $$createField0_0 = $$createType49;
+        const $$createField1_0 = $$createType50;
+        const $$createField2_0 = $$createType48;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("input" in $$parsedSource) {
             $$parsedSource["input"] = $$createField0_0($$parsedSource["input"]);
@@ -1389,7 +1377,7 @@ export class MakeCredentialEnvelope {
      */
     static createFrom($$source: any = {}): MakeCredentialEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType48;
+        const $$createField5_0 = $$createType52;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -1402,7 +1390,6 @@ export class MakeCredentialEnvelope {
 }
 
 export class MakeCredentialRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
     "rp": credential$0.PublicKeyCredentialRpEntity;
     "user": credential$0.PublicKeyCredentialUserEntity;
@@ -1417,9 +1404,6 @@ export class MakeCredentialRequest {
 
     /** Creates a new MakeCredentialRequest instance. */
     constructor($$source: Partial<MakeCredentialRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
         if (!("rp" in $$source)) {
             this["rp"] = (new credential$0.PublicKeyCredentialRpEntity());
         }
@@ -1440,38 +1424,38 @@ export class MakeCredentialRequest {
      * Creates a new MakeCredentialRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): MakeCredentialRequest {
-        const $$createField2_0 = $$createType49;
-        const $$createField3_0 = $$createType50;
-        const $$createField4_0 = $Create.ByteSlice;
-        const $$createField5_0 = $$createType52;
-        const $$createField6_0 = $$createType25;
-        const $$createField7_0 = $$createType26;
-        const $$createField8_0 = $$createType54;
-        const $$createField10_0 = $$createType55;
+        const $$createField1_0 = $$createType53;
+        const $$createField2_0 = $$createType54;
+        const $$createField3_0 = $Create.ByteSlice;
+        const $$createField4_0 = $$createType56;
+        const $$createField5_0 = $$createType29;
+        const $$createField6_0 = $$createType30;
+        const $$createField7_0 = $$createType58;
+        const $$createField9_0 = $$createType59;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("rp" in $$parsedSource) {
-            $$parsedSource["rp"] = $$createField2_0($$parsedSource["rp"]);
+            $$parsedSource["rp"] = $$createField1_0($$parsedSource["rp"]);
         }
         if ("user" in $$parsedSource) {
-            $$parsedSource["user"] = $$createField3_0($$parsedSource["user"]);
+            $$parsedSource["user"] = $$createField2_0($$parsedSource["user"]);
         }
         if ("clientDataJSON" in $$parsedSource) {
-            $$parsedSource["clientDataJSON"] = $$createField4_0($$parsedSource["clientDataJSON"]);
+            $$parsedSource["clientDataJSON"] = $$createField3_0($$parsedSource["clientDataJSON"]);
         }
         if ("pubKeyCredParams" in $$parsedSource) {
-            $$parsedSource["pubKeyCredParams"] = $$createField5_0($$parsedSource["pubKeyCredParams"]);
+            $$parsedSource["pubKeyCredParams"] = $$createField4_0($$parsedSource["pubKeyCredParams"]);
         }
         if ("excludeList" in $$parsedSource) {
-            $$parsedSource["excludeList"] = $$createField6_0($$parsedSource["excludeList"]);
+            $$parsedSource["excludeList"] = $$createField5_0($$parsedSource["excludeList"]);
         }
         if ("options" in $$parsedSource) {
-            $$parsedSource["options"] = $$createField7_0($$parsedSource["options"]);
+            $$parsedSource["options"] = $$createField6_0($$parsedSource["options"]);
         }
         if ("extensions" in $$parsedSource) {
-            $$parsedSource["extensions"] = $$createField8_0($$parsedSource["extensions"]);
+            $$parsedSource["extensions"] = $$createField7_0($$parsedSource["extensions"]);
         }
         if ("attestationFormatsPreference" in $$parsedSource) {
-            $$parsedSource["attestationFormatsPreference"] = $$createField10_0($$parsedSource["attestationFormatsPreference"]);
+            $$parsedSource["attestationFormatsPreference"] = $$createField9_0($$parsedSource["attestationFormatsPreference"]);
         }
         return new MakeCredentialRequest($$parsedSource as Partial<MakeCredentialRequest>);
     }
@@ -1497,8 +1481,8 @@ export class MakeCredentialVerificationRequest {
      * Creates a new MakeCredentialVerificationRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): MakeCredentialVerificationRequest {
-        const $$createField0_0 = $$createType45;
-        const $$createField1_0 = $$createType46;
+        const $$createField0_0 = $$createType49;
+        const $$createField1_0 = $$createType50;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("input" in $$parsedSource) {
             $$parsedSource["input"] = $$createField0_0($$parsedSource["input"]);
@@ -1511,7 +1495,6 @@ export class MakeCredentialVerificationRequest {
 }
 
 export class MinPINLengthRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
     "newMinPINLength"?: number | null;
     "minPinLengthRPIDs"?: string[];
@@ -1521,9 +1504,6 @@ export class MinPINLengthRequest {
 
     /** Creates a new MinPINLengthRequest instance. */
     constructor($$source: Partial<MinPINLengthRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
 
         Object.assign(this, $$source);
     }
@@ -1532,10 +1512,10 @@ export class MinPINLengthRequest {
      * Creates a new MinPINLengthRequest instance from a string or object.
      */
     static createFrom($$source: any = {}): MinPINLengthRequest {
-        const $$createField3_0 = $$createType56;
+        const $$createField2_0 = $$createType60;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("minPinLengthRPIDs" in $$parsedSource) {
-            $$parsedSource["minPinLengthRPIDs"] = $$createField3_0($$parsedSource["minPinLengthRPIDs"]);
+            $$parsedSource["minPinLengthRPIDs"] = $$createField2_0($$parsedSource["minPinLengthRPIDs"]);
         }
         return new MinPINLengthRequest($$parsedSource as Partial<MinPINLengthRequest>);
     }
@@ -1562,7 +1542,7 @@ export class OperationEventEnvelope {
      * Creates a new OperationEventEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): OperationEventEnvelope {
-        const $$createField2_0 = $$createType57;
+        const $$createField2_0 = $$createType61;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("event" in $$parsedSource) {
             $$parsedSource["event"] = $$createField2_0($$parsedSource["event"]);
@@ -1574,14 +1554,10 @@ export class OperationEventEnvelope {
 export type OperationID = string;
 
 export class OperationRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
 
     /** Creates a new OperationRequest instance. */
     constructor($$source: Partial<OperationRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
 
         Object.assign(this, $$source);
     }
@@ -1596,7 +1572,6 @@ export class OperationRequest {
 }
 
 export class PINChangeRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
 
     /**
@@ -1609,9 +1584,6 @@ export class PINChangeRequest {
 
     /** Creates a new PINChangeRequest instance. */
     constructor($$source: Partial<PINChangeRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
         if (!("currentPIN" in $$source)) {
             this["currentPIN"] = "";
         }
@@ -1662,7 +1634,7 @@ export class PINEnvelope {
      */
     static createFrom($$source: any = {}): PINEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType59;
+        const $$createField5_0 = $$createType63;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -1675,7 +1647,6 @@ export class PINEnvelope {
 }
 
 export class PINSetRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
 
     /**
@@ -1687,9 +1658,6 @@ export class PINSetRequest {
 
     /** Creates a new PINSetRequest instance. */
     constructor($$source: Partial<PINSetRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
         if (!("newPIN" in $$source)) {
             this["newPIN"] = "";
         }
@@ -1755,7 +1723,7 @@ export class ResetFactoryEnvelope {
      */
     static createFrom($$source: any = {}): ResetFactoryEnvelope {
         const $$createField4_0 = $$createType1;
-        const $$createField5_0 = $$createType61;
+        const $$createField5_0 = $$createType65;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("error" in $$parsedSource) {
             $$parsedSource["error"] = $$createField4_0($$parsedSource["error"]);
@@ -1768,15 +1736,11 @@ export class ResetFactoryEnvelope {
 }
 
 export class ResetFactoryRequest {
-    "selectionId": SelectionID;
     "verificationFlow"?: ctapkit$0.VerificationFlow;
     "dryRun"?: boolean;
 
     /** Creates a new ResetFactoryRequest instance. */
     constructor($$source: Partial<ResetFactoryRequest> = {}) {
-        if (!("selectionId" in $$source)) {
-            this["selectionId"] = "";
-        }
 
         Object.assign(this, $$source);
     }
@@ -1823,7 +1787,7 @@ export class SelectionSnapshot {
      * Creates a new SelectionSnapshot instance from a string or object.
      */
     static createFrom($$source: any = {}): SelectionSnapshot {
-        const $$createField0_0 = $$createType63;
+        const $$createField0_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("selection" in $$parsedSource) {
             $$parsedSource["selection"] = $$createField0_0($$parsedSource["selection"]);
@@ -1837,63 +1801,65 @@ const $$createType0 = failure$0.Failure.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
 const $$createType2 = config$0.AuthenticatorConfigOutput.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
-const $$createType4 = config$0.BioEnrollOutput.createFrom;
-const $$createType5 = $Create.Nullable($$createType4);
-const $$createType6 = config$0.BioListReport.createFrom;
+const $$createType4 = report$0.DeviceReport.createFrom;
+const $$createType5 = $Create.Array($$createType4);
+const $$createType6 = ActiveSelection.createFrom;
 const $$createType7 = $Create.Nullable($$createType6);
-const $$createType8 = config$0.BioMutationOutput.createFrom;
+const $$createType8 = config$0.BioEnrollOutput.createFrom;
 const $$createType9 = $Create.Nullable($$createType8);
-const $$createType10 = config$0.BioSensorReport.createFrom;
+const $$createType10 = config$0.BioListReport.createFrom;
 const $$createType11 = $Create.Nullable($$createType10);
-const $$createType12 = config$0.StatusReport.createFrom;
+const $$createType12 = config$0.BioMutationOutput.createFrom;
 const $$createType13 = $Create.Nullable($$createType12);
-const $$createType14 = credentials$0.DeleteOutput.createFrom;
+const $$createType14 = config$0.BioSensorReport.createFrom;
 const $$createType15 = $Create.Nullable($$createType14);
-const $$createType16 = credentials$0.UpdateUserOutput.createFrom;
+const $$createType16 = config$0.StatusReport.createFrom;
 const $$createType17 = $Create.Nullable($$createType16);
-const $$createType18 = credentials$0.CredentialTarget.createFrom;
-const $$createType19 = credentials$0.InventoryReport.createFrom;
-const $$createType20 = $Create.Nullable($$createType19);
-const $$createType21 = ctapkit$0.InventorySnapshot.createFrom;
-const $$createType22 = webauthn$0.GetAssertionOutput.createFrom;
-const $$createType23 = $Create.Nullable($$createType22);
-const $$createType24 = credential$0.PublicKeyCredentialDescriptor.createFrom;
-const $$createType25 = $Create.Array($$createType24);
-const $$createType26 = webauthn$0.AuthenticatorOptions.createFrom;
-const $$createType27 = webauthn$1.GetAuthenticationExtensionsClientInputs.createFrom;
-const $$createType28 = $Create.Nullable($$createType27);
-const $$createType29 = webauthn$0.GetAssertionInput.createFrom;
-const $$createType30 = webauthn$0.GetAssertionResult.createFrom;
-const $$createType31 = webauthn$0.CredentialVerificationMaterial.createFrom;
-const $$createType32 = $Create.Array($$createType31);
-const $$createType33 = inspect$0.Result.createFrom;
-const $$createType34 = $Create.Nullable($$createType33);
-const $$createType35 = model$0.InteractionRequest.createFrom;
-const $$createType36 = largeblobs$0.DecodeResult.createFrom;
-const $$createType37 = $Create.Nullable($$createType36);
-const $$createType38 = largeblobs$0.ListReport.createFrom;
-const $$createType39 = $Create.Nullable($$createType38);
-const $$createType40 = largeblobs$0.MutationOutput.createFrom;
+const $$createType18 = credentials$0.DeleteOutput.createFrom;
+const $$createType19 = $Create.Nullable($$createType18);
+const $$createType20 = credentials$0.UpdateUserOutput.createFrom;
+const $$createType21 = $Create.Nullable($$createType20);
+const $$createType22 = credentials$0.CredentialTarget.createFrom;
+const $$createType23 = credentials$0.InventoryReport.createFrom;
+const $$createType24 = $Create.Nullable($$createType23);
+const $$createType25 = AuthenticatorSessionSnapshot.createFrom;
+const $$createType26 = webauthn$0.GetAssertionOutput.createFrom;
+const $$createType27 = $Create.Nullable($$createType26);
+const $$createType28 = credential$0.PublicKeyCredentialDescriptor.createFrom;
+const $$createType29 = $Create.Array($$createType28);
+const $$createType30 = webauthn$0.AuthenticatorOptions.createFrom;
+const $$createType31 = webauthn$1.GetAuthenticationExtensionsClientInputs.createFrom;
+const $$createType32 = $Create.Nullable($$createType31);
+const $$createType33 = webauthn$0.GetAssertionInput.createFrom;
+const $$createType34 = webauthn$0.GetAssertionResult.createFrom;
+const $$createType35 = webauthn$0.CredentialVerificationMaterial.createFrom;
+const $$createType36 = $Create.Array($$createType35);
+const $$createType37 = inspect$0.Result.createFrom;
+const $$createType38 = $Create.Nullable($$createType37);
+const $$createType39 = model$0.InteractionRequest.createFrom;
+const $$createType40 = largeblobs$0.DecodeResult.createFrom;
 const $$createType41 = $Create.Nullable($$createType40);
-const $$createType42 = largeblobs$0.ReadReport.createFrom;
+const $$createType42 = largeblobs$0.ListReport.createFrom;
 const $$createType43 = $Create.Nullable($$createType42);
-const $$createType44 = model$1.LookupResult.createFrom;
-const $$createType45 = webauthn$0.MakeCredentialInput.createFrom;
-const $$createType46 = webauthn$0.MakeCredentialResult.createFrom;
-const $$createType47 = webauthn$0.MakeCredentialOutput.createFrom;
-const $$createType48 = $Create.Nullable($$createType47);
-const $$createType49 = credential$0.PublicKeyCredentialRpEntity.createFrom;
-const $$createType50 = credential$0.PublicKeyCredentialUserEntity.createFrom;
-const $$createType51 = credential$0.PublicKeyCredentialParameters.createFrom;
-const $$createType52 = $Create.Array($$createType51);
-const $$createType53 = webauthn$1.CreateAuthenticationExtensionsClientInputs.createFrom;
-const $$createType54 = $Create.Nullable($$createType53);
-const $$createType55 = $Create.Array($Create.Any);
-const $$createType56 = $Create.Array($Create.Any);
-const $$createType57 = model$0.OperationEvent.createFrom;
-const $$createType58 = config$0.PINOutput.createFrom;
-const $$createType59 = $Create.Nullable($$createType58);
-const $$createType60 = config$0.ResetFactoryOutput.createFrom;
-const $$createType61 = $Create.Nullable($$createType60);
-const $$createType62 = ActiveSelection.createFrom;
+const $$createType44 = largeblobs$0.MutationOutput.createFrom;
+const $$createType45 = $Create.Nullable($$createType44);
+const $$createType46 = largeblobs$0.ReadReport.createFrom;
+const $$createType47 = $Create.Nullable($$createType46);
+const $$createType48 = model$1.LookupResult.createFrom;
+const $$createType49 = webauthn$0.MakeCredentialInput.createFrom;
+const $$createType50 = webauthn$0.MakeCredentialResult.createFrom;
+const $$createType51 = webauthn$0.MakeCredentialOutput.createFrom;
+const $$createType52 = $Create.Nullable($$createType51);
+const $$createType53 = credential$0.PublicKeyCredentialRpEntity.createFrom;
+const $$createType54 = credential$0.PublicKeyCredentialUserEntity.createFrom;
+const $$createType55 = credential$0.PublicKeyCredentialParameters.createFrom;
+const $$createType56 = $Create.Array($$createType55);
+const $$createType57 = webauthn$1.CreateAuthenticationExtensionsClientInputs.createFrom;
+const $$createType58 = $Create.Nullable($$createType57);
+const $$createType59 = $Create.Array($Create.Any);
+const $$createType60 = $Create.Array($Create.Any);
+const $$createType61 = model$0.OperationEvent.createFrom;
+const $$createType62 = config$0.PINOutput.createFrom;
 const $$createType63 = $Create.Nullable($$createType62);
+const $$createType64 = config$0.ResetFactoryOutput.createFrom;
+const $$createType65 = $Create.Nullable($$createType64);

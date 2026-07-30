@@ -3,7 +3,6 @@ import { writable } from "svelte/store";
 import type { LookupResult } from "../../../../bindings/github.com/go-ctap/mds/model";
 import type { BioSensorEnvelope } from "../../../../bindings/telesma/service";
 
-import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import { idleLoadState, type LoadState } from "$lib/load-state";
 export {
   errorLoadState,
@@ -21,7 +20,3 @@ export function resetOverviewDeviceState() {
   overviewBioSensor.set(idleLoadState());
   overviewMDS.set(idleLoadState());
 }
-
-deviceFeatureLifecycles.register("overview", {
-  resetForAuthenticatorChange: resetOverviewDeviceState,
-});

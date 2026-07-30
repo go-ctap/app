@@ -115,6 +115,10 @@ describe("buildOverviewStandardPresentation", () => {
     expect(presentation.facts.find((fact) => fact.id === "passkeys")?.value).toBe(
       "Storage and management",
     );
+    expect(presentation.facts.find((fact) => fact.id === "certification")).toMatchObject({
+      value: "FIDO L2 · FIPS 140-3 L2",
+      tone: "positive",
+    });
     expect(presentation.capabilities.find((capability) => capability.id === "fido2")?.value).toBe(
       "FIDO 2.1",
     );
@@ -213,6 +217,14 @@ describe("buildOverviewStandardPresentation", () => {
     expect(listed.description).toContain("Information about this model is published");
     expect(listed.description).not.toContain("passed FIDO certification");
     expect(warning.description).toContain("contains a security warning");
+    expect(listed.facts.find((fact) => fact.id === "certification")).toMatchObject({
+      value: "Not confirmed in metadata",
+      tone: "muted",
+    });
+    expect(warning.facts.find((fact) => fact.id === "certification")).toMatchObject({
+      value: "Security warning",
+      tone: "warning",
+    });
   });
 
   it("describes an authoritative FIPS status even without FIDO certification", () => {
@@ -264,6 +276,10 @@ describe("buildOverviewStandardPresentation", () => {
     });
 
     expect(presentation.description).not.toContain("FIPS");
+    expect(presentation.facts.find((fact) => fact.id === "certification")).toMatchObject({
+      value: "Not confirmed in metadata",
+      tone: "muted",
+    });
   });
 });
 

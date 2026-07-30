@@ -7,7 +7,6 @@ import { m } from "../paraglide/messages.js";
 import { api } from "$lib/api.js";
 import { runtimeFailureFrom } from "$lib/failure.js";
 import { pendingInteraction } from "$lib/features/interaction/state.js";
-import { authenticatorStatus } from "$lib/features/authenticator/state.js";
 import { statusBar } from "$lib/features/workbench/state.js";
 import { applyAuthenticatorClosedError } from "$lib/authenticator-boundary.js";
 import { setStatusOperation, summarizeOperationFailure } from "$lib/workbench-state.js";
@@ -56,9 +55,4 @@ export function handleInteractionRequested(data: InteractionPrompt) {
     selectionId: data.selectionId,
     stage: OperationStage.OperationStageInteractionRequired,
   });
-  authenticatorStatus.update((authenticator) =>
-    authenticator.selectionId === data.selectionId && authenticator.state !== "error"
-      ? { ...authenticator, state: "running" }
-      : authenticator,
-  );
 }

@@ -127,7 +127,8 @@ export type OverviewHeroPresentation = {
 
 export type OverviewStandardTone = "positive" | "neutral" | "muted" | "warning";
 
-export type OverviewStandardFactId = "presence" | "owner-verification" | "passkeys" | "metadata";
+export type OverviewStandardFactId =
+  "presence" | "owner-verification" | "passkeys" | "certification" | "metadata";
 
 export type OverviewStandardCapabilityId =
   | "fido2"

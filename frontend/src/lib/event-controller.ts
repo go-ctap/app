@@ -2,7 +2,6 @@ import { get } from "svelte/store";
 
 import type { OperationEventEnvelope } from "../../bindings/telesma/service";
 
-import { authenticatorStatus } from "$lib/features/authenticator/state.js";
 import { statusBar } from "$lib/features/workbench/state.js";
 import { setStatusOperation } from "$lib/workbench-state.js";
 
@@ -27,9 +26,4 @@ export function handleOperationProgress(data: OperationEventEnvelope) {
     total: data.event.total,
     sampleStatus: data.event.sampleStatus,
   });
-  authenticatorStatus.update((authenticator) =>
-    authenticator.selectionId === data.selectionId && authenticator.state !== "error"
-      ? { ...authenticator, state: "running" }
-      : authenticator,
-  );
 }

@@ -1,6 +1,5 @@
 import { readonly } from "svelte/store";
 
-import { ensureActiveSelectionReady } from "$lib/authenticator-controller.js";
 import {
   beginCredentialDelete as beginCredentialDeleteOperation,
   loadPasskeys as loadPasskeysOperation,
@@ -29,25 +28,12 @@ export type {
   PasskeysStatusFilter,
 } from "$lib/features/passkeys/state.js";
 
-export async function reloadPasskeys(): Promise<boolean> {
-  if (!(await ensureActiveSelectionReady())) return false;
-
-  return loadPasskeysOperation();
-}
-
-export async function previewCredentialUpdate(): Promise<boolean> {
-  if (!(await ensureActiveSelectionReady())) return false;
-
-  return previewCredentialUpdateOperation();
-}
-
-export async function beginCredentialDelete(credentialIDHex?: string): Promise<boolean> {
-  if (!(await ensureActiveSelectionReady())) return false;
-
-  return beginCredentialDeleteOperation(credentialIDHex);
-}
-
-export { loadPasskeysOperation as loadPasskeys };
+export {
+  beginCredentialDeleteOperation as beginCredentialDelete,
+  loadPasskeysOperation as loadPasskeys,
+  loadPasskeysOperation as reloadPasskeys,
+  previewCredentialUpdateOperation as previewCredentialUpdate,
+};
 
 export {
   beginCredentialUpdate,

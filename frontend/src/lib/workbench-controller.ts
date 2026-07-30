@@ -5,34 +5,30 @@ import {
   selectAuthenticatorSession,
 } from "$lib/authenticator-controller.js";
 import { activeScreen, type ActiveScreen } from "$lib/features/workbench/state.js";
+import { maybeLoadLargeBlobs } from "$lib/largeblobs-controller.js";
+import { maybeLoadOverview } from "$lib/overview-controller.js";
+import { maybeLoadPasskeys } from "$lib/passkeys-controller.js";
+import { maybeLoadSecurity } from "$lib/security-controller.js";
 
 async function loadActiveScreen(screen = get(activeScreen)) {
   switch (screen) {
     case "overview":
     case "lab": {
-      const { maybeLoadOverview } = await import("$lib/overview-controller.js");
-
       await maybeLoadOverview();
 
       return;
     }
     case "passkeys": {
-      const { maybeLoadPasskeys } = await import("$lib/passkeys-controller.js");
-
       await maybeLoadPasskeys();
 
       return;
     }
     case "large-blobs": {
-      const { maybeLoadLargeBlobs } = await import("$lib/largeblobs-controller.js");
-
       await maybeLoadLargeBlobs();
 
       return;
     }
     case "security": {
-      const { maybeLoadSecurity } = await import("$lib/security-controller.js");
-
       await maybeLoadSecurity();
     }
   }

@@ -30,6 +30,7 @@ import {
   seedOverviewEnvelopeForTest,
   seedSelectionForTest,
 } from "$lib/test-support/store-utils";
+import { setStatusOperation } from "$lib/workbench-state";
 
 import Lab from "./Lab.svelte";
 
@@ -559,9 +560,10 @@ describe("WebAuthn Lab screen", () => {
     const user = userEvent.setup();
 
     seedSelectionForTest(token.attachment.id, token, {
-      state: "running",
+      state: "ready",
       selectionId: "authenticator-1",
     });
+    setStatusOperation({ selectionId: "authenticator-1", label: "MakeCredential" });
     render(Lab);
 
     const make = stepLayout("MakeCredential");
@@ -581,7 +583,6 @@ describe("WebAuthn Lab screen", () => {
 
     const current = get(mutableLabState);
     const previewRequest = new MakeCredentialRequest({
-      selectionId: "authenticator-1",
       rp: { id: "example.com", name: "Example" },
       user: { id: "AA==", name: "alice@example.com", displayName: "Alice" },
       clientDataJSON: "e30=",
@@ -655,7 +656,6 @@ describe("WebAuthn Lab screen", () => {
 
     const current = get(mutableLabState);
     const previewRequest = new MakeCredentialRequest({
-      selectionId: "authenticator-1",
       rp: { id: "example.com", name: "Example" },
       user: { id: "AA==", name: "alice@example.com", displayName: "Alice" },
       clientDataJSON: "e30=",

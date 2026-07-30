@@ -1,20 +1,12 @@
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { SelectionID } from "../../bindings/telesma/service";
+import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 
-export type AuthenticatorState = "idle" | "opening" | "ready" | "running" | "error";
+export type AuthenticatorState = "idle" | "opening" | "ready" | "error";
 
 export type AuthenticatorStatus = {
   selectionId?: SelectionID;
   state: AuthenticatorState;
-  error?: Failure | null;
-};
-
-export type Discovery = {
-  devices: DeviceReport[];
-  selectedSelector: string;
-  selectedDevice: DeviceReport | null;
-  authenticator: AuthenticatorStatus;
   error?: Failure | null;
 };
 

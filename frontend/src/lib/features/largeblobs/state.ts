@@ -12,15 +12,15 @@ import type {
   LargeBlobGarbageCollectRequest,
   LargeBlobListEnvelope,
   LargeBlobMutationEnvelope,
-  LargeBlobMutationRequest,
+  LargeBlobDeleteRequest,
   LargeBlobReadEnvelope,
+  LargeBlobWriteRequest,
 } from "../../../../bindings/telesma/service";
 
 import type {
   LargeBlobPayloadEncoding,
   LargeBlobPayloadValidationError,
 } from "$lib/largeblobs-payload";
-import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import {
   idleConfirmedOperation,
   type ConfirmableMutation,
@@ -115,13 +115,13 @@ export type LargeBlobMutationState =
   | { kind: "idle"; operation: ConfirmedOperationIdle }
   | ConfirmableMutation<
       WriteMutationBase,
-      LargeBlobMutationRequest,
+      LargeBlobWriteRequest,
       LargeBlobMutationEnvelope,
       LargeBlobPayloadValidationError
     >
   | NonEditableConfirmedMutation<
       DeleteMutationBase,
-      LargeBlobMutationRequest,
+      LargeBlobDeleteRequest,
       LargeBlobMutationEnvelope
     >
   | NonEditableConfirmedMutation<
@@ -208,7 +208,3 @@ export function resetLargeBlobsStateForTest() {
   largeBlobsPayloadEncoding.set("utf8");
   largeBlobsDecodeMode.set(DecodeMode.DecodeModeJSON);
 }
-
-deviceFeatureLifecycles.register("large-blobs", {
-  resetForAuthenticatorChange: resetLargeBlobsDeviceState,
-});

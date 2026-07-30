@@ -91,7 +91,7 @@ describe("WebAuthn Lab default state", () => {
     );
     expect(state.makeDraft.clientData.challenge).not.toBe(state.getDraft.clientData.challenge);
     expect(buildAuthenticatorOptions(state.makeDraft)).toBeUndefined();
-    expect(buildGetAssertionRequest("authenticator-1", state.getDraft).options).toBeUndefined();
+    expect(buildGetAssertionRequest(state.getDraft).options).toBeUndefined();
     expect(
       Object.values(state.makeDraft.extensions).every((extension) => !extension.included),
     ).toBe(true);
@@ -193,7 +193,7 @@ describe("WebAuthn Lab client data and validation", () => {
       { field: "get.clientData.rawJSON", code: "invalid-json" },
     ]);
 
-    const request = buildGetAssertionRequest("authenticator-1", state.getDraft);
+    const request = buildGetAssertionRequest(state.getDraft);
 
     expect(base64ToUTF8(request.clientDataJSON)).toBe("{not JSON}\nПривет");
   });
@@ -205,7 +205,7 @@ describe("WebAuthn Lab request builders", () => {
 
     state.makeDraft.algorithms = ["-7", "-257", "42"];
 
-    const request = buildMakeCredentialRequest("authenticator-1", state.makeDraft);
+    const request = buildMakeCredentialRequest(state.makeDraft);
 
     expect(request.pubKeyCredParams.map(({ alg }) => alg)).toEqual([-7, -257, 42]);
     expect(request.pubKeyCredParams.map(({ type }) => type)).toEqual([
@@ -230,7 +230,7 @@ describe("WebAuthn Lab request builders", () => {
       { credentialIDHex: "00ff" },
     ];
 
-    const request = buildGetAssertionRequest("authenticator-1", state.getDraft);
+    const request = buildGetAssertionRequest(state.getDraft);
 
     expect(request.verificationFlow).toBe("pin");
     expect(request.options).toEqual({ userPresence: false });
@@ -280,7 +280,7 @@ describe("WebAuthn Lab request builders", () => {
     state.makeDraft.attestationFormatsPreference = ["packed", "none"];
     state.makeDraft.enterpriseAttestation = 2;
 
-    const request = buildMakeCredentialRequest("authenticator-1", state.makeDraft);
+    const request = buildMakeCredentialRequest(state.makeDraft);
 
     expect(request.attestationFormatsPreference).toEqual(["packed", "none"]);
     expect(request.enterpriseAttestation).toBe(2);
@@ -328,7 +328,7 @@ describe("WebAuthn Lab request builders", () => {
       salt2Hex: "",
     };
 
-    const request = buildMakeCredentialRequest("authenticator-1", state.makeDraft);
+    const request = buildMakeCredentialRequest(state.makeDraft);
 
     expect(request.extensions).toBeInstanceOf(CreateAuthenticationExtensionsClientInputs);
     expect(request.extensions?.credProps).toBe(true);
@@ -350,7 +350,7 @@ describe("WebAuthn Lab request builders", () => {
       second: { mode: "hex", value: "" },
     };
 
-    const request = buildMakeCredentialRequest("authenticator-1", state.makeDraft);
+    const request = buildMakeCredentialRequest(state.makeDraft);
 
     expect(request.extensions?.prf).toBeInstanceOf(AuthenticationExtensionsPRFInputs);
     expect(request.extensions?.prf?.eval).toBeInstanceOf(AuthenticationExtensionsPRFValues);
@@ -381,7 +381,7 @@ describe("WebAuthn Lab request builders", () => {
       },
     ];
 
-    const request = buildGetAssertionRequest("authenticator-1", state.getDraft);
+    const request = buildGetAssertionRequest(state.getDraft);
 
     expect(request.extensions?.prf).toBeInstanceOf(AuthenticationExtensionsPRFInputs);
     expect(base64ToUTF8(request.extensions!.prf!.eval!.first)).toBe("global");
@@ -395,8 +395,8 @@ describe("WebAuthn Lab request builders", () => {
     state.makeDraft.extensions.prf.included = true;
     state.getDraft.extensions.prf.included = true;
 
-    const makePRF = buildMakeCredentialRequest("authenticator-1", state.makeDraft).extensions?.prf;
-    const getPRF = buildGetAssertionRequest("authenticator-1", state.getDraft).extensions?.prf;
+    const makePRF = buildMakeCredentialRequest(state.makeDraft).extensions?.prf;
+    const getPRF = buildGetAssertionRequest(state.getDraft).extensions?.prf;
 
     expect(makePRF).toBeInstanceOf(AuthenticationExtensionsPRFInputs);
     expect(getPRF).toBeInstanceOf(AuthenticationExtensionsPRFInputs);
@@ -420,11 +420,8 @@ describe("WebAuthn Lab request builders", () => {
     };
     state.getDraft.extensions.payment.included = true;
 
-    const makeExtensions = buildMakeCredentialRequest(
-      "authenticator-1",
-      state.makeDraft,
-    ).extensions;
-    const getExtensions = buildGetAssertionRequest("authenticator-1", state.getDraft).extensions;
+    const makeExtensions = buildMakeCredentialRequest(state.makeDraft).extensions;
+    const getExtensions = buildGetAssertionRequest(state.getDraft).extensions;
 
     expect(makeExtensions?.largeBlob).toBeInstanceOf(AuthenticationExtensionsLargeBlobInputs);
     expect(makeExtensions?.largeBlob?.support).toBe(LargeBlobSupport.LargeBlobSupportRequired);
@@ -478,7 +475,7 @@ describe("WebAuthn Lab extension validation", () => {
     state.getDraft.extensions.hmacSecret.salt2Hex = "22".repeat(32);
     expect(validateGetAssertionDraft(state.getDraft).valid).toBe(true);
 
-    const extensions = buildGetAssertionRequest("authenticator-1", state.getDraft).extensions;
+    const extensions = buildGetAssertionRequest(state.getDraft).extensions;
 
     expect(extensions).toBeInstanceOf(GetAuthenticationExtensionsClientInputs);
     expect(extensions?.hmacGetSecret).toBeInstanceOf(HMACGetSecretInput);

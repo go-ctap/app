@@ -55,29 +55,6 @@ describe("AppSidebar", () => {
     expect(onNavigate).toHaveBeenCalledWith("settings");
   });
 
-  it("reserves native titlebar space above the brand on macOS", () => {
-    const { container } = render(AppSidebar, {
-      props: {
-        presentation: {
-          activeScreen: "overview",
-          activeScreenLabel: "Overview",
-          tokens: [],
-          selectedValue: "",
-          busy: false,
-        },
-        nativeWindowTitlebar: true,
-        onNavigate: vi.fn(),
-        onSelectToken: vi.fn(),
-      },
-    });
-
-    const sidebar = container.querySelector(".app-sidebar");
-
-    expect(sidebar).toHaveAttribute("data-native-titlebar", "true");
-    expect(sidebar?.firstElementChild).toHaveClass("sidebar-titlebar-space");
-    expect(sidebar?.children[1]).toHaveClass("sidebar-brand");
-  });
-
   it("selects a discovered token from the persistent token section", async () => {
     const user = userEvent.setup();
     const onSelectToken = vi.fn();

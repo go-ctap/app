@@ -11,15 +11,13 @@ import (
 	"github.com/go-ctap/kit/model/operation"
 )
 
-func TestListCredentialsInvalidSelectionReturnsTypedErrorEnvelope(t *testing.T) {
+func TestListCredentialsWithoutSelectionReturnsTypedErrorEnvelope(t *testing.T) {
 	service := New()
 
-	envelope := service.ListCredentials(context.Background(), OperationRequest{
-		SelectionID: "missing-selection",
-	})
+	envelope := service.ListCredentials(context.Background(), OperationRequest{})
 
-	if envelope.SelectionID != "missing-selection" {
-		t.Fatalf("envelope selection ID = %q, want missing-selection", envelope.SelectionID)
+	if envelope.SelectionID != "" {
+		t.Fatalf("envelope selection ID = %q, want empty", envelope.SelectionID)
 	}
 
 	if envelope.Kind != operation.ListCredentials {
@@ -49,7 +47,7 @@ func TestListCredentialsFailureUsesOnlyTheTypedEnvelopeError(t *testing.T) {
 	meta, result := runOperation(
 		service,
 		context.Background(),
-		OperationRequest{SelectionID: "selection-1"},
+		OperationRequest{},
 		operation.ListCredentials,
 		staticOperationExecutor(credentials.InventoryReport{}, runErr),
 	)
@@ -72,7 +70,7 @@ func TestListCredentialsFailureUsesOnlyTheTypedEnvelopeError(t *testing.T) {
 		t.Fatal("envelope authenticatorClosed = true, want false")
 	}
 
-	if _, ok := service.selectionFor("selection-1"); !ok {
+	if service.currentSelection() == nil {
 		t.Fatal("selected selection was retired")
 	}
 }
@@ -93,7 +91,7 @@ func TestOperationEnvelopeReportsAndRetiresClosedSelection(t *testing.T) {
 	meta, result := runOperation(
 		service,
 		context.Background(),
-		OperationRequest{SelectionID: "selection-1"},
+		OperationRequest{},
 		operation.ListCredentials,
 		staticOperationExecutor(credentials.InventoryReport{}, runErr),
 	)
@@ -108,7 +106,7 @@ func TestOperationEnvelopeReportsAndRetiresClosedSelection(t *testing.T) {
 		t.Fatalf("envelope error = %#v, want %s", envelope.Error, failure.CodeOperationCanceled)
 	}
 
-	if _, ok := service.selectionFor("selection-1"); ok {
+	if service.currentSelection() != nil {
 		t.Fatal("closed selected selection was retained")
 	}
 }
@@ -116,11 +114,11 @@ func TestOperationEnvelopeReportsAndRetiresClosedSelection(t *testing.T) {
 func TestPINRequestsRoundTripSecrets(t *testing.T) {
 	var setPIN PINSetRequest
 
-	if err := json.Unmarshal([]byte(`{"selectionId":"selection-1","newPIN":"123456"}`), &setPIN); err != nil {
+	if err := json.Unmarshal([]byte(`{"newPIN":"123456"}`), &setPIN); err != nil {
 		t.Fatalf("unmarshal set PIN request: %v", err)
 	}
 
-	if setPIN.SelectionID != "selection-1" || setPIN.NewPIN != "123456" {
+	if setPIN.NewPIN != "123456" {
 		t.Fatalf("unexpected set PIN request: %#v", setPIN)
 	}
 
@@ -142,11 +140,11 @@ func TestPINRequestsRoundTripSecrets(t *testing.T) {
 
 	var changePIN PINChangeRequest
 
-	if err := json.Unmarshal([]byte(`{"selectionId":"selection-1","currentPIN":"123456","newPIN":"654321","dryRun":true}`), &changePIN); err != nil {
+	if err := json.Unmarshal([]byte(`{"currentPIN":"123456","newPIN":"654321","dryRun":true}`), &changePIN); err != nil {
 		t.Fatalf("unmarshal change PIN request: %v", err)
 	}
 
-	if changePIN.SelectionID != "selection-1" || changePIN.CurrentPIN != "123456" || changePIN.NewPIN != "654321" || !changePIN.DryRun {
+	if changePIN.CurrentPIN != "123456" || changePIN.NewPIN != "654321" || !changePIN.DryRun {
 		t.Fatalf("unexpected change PIN request: %#v", changePIN)
 	}
 

@@ -10,11 +10,10 @@
   type Props = {
     record: LogRecord;
     selected: boolean;
-    onSelect: (id: string) => void;
-    onOpen?: (id: string) => void;
+    onOpen: (id: string) => void;
   };
 
-  let { record, selected, onSelect, onOpen = onSelect }: Props = $props();
+  let { record, selected, onOpen }: Props = $props();
 
   let outcome = $derived(logOutcome(record));
 </script>
