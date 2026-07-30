@@ -6,19 +6,19 @@
   } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
   import type { AttestationTrustAssessment } from "../../../../bindings/github.com/go-ctap/mds/model";
 
-  import { Badge } from "$lib/components/ui/badge/index.js";
+  import { Badge } from "$lib/components/ui/badge";
   import type { LabVerificationState } from "$lib/features/lab/state";
   import { base64ToHex, base64ToUTF8 } from "$lib/lab-input";
   import { sanitizedJson } from "$lib/redaction";
 
   import { m } from "../../../paraglide/messages.js";
 
-  import LabHexValue from "./LabHexValue.svelte";
-  import LabSecretValue from "./LabSecretValue.svelte";
+  import LabHexValue from "$lib/components/lab/LabHexValue.svelte";
+  import LabSecretValue from "$lib/components/lab/LabSecretValue.svelte";
   import LabTechnicalDataViewer, {
     type LabTechnicalDataItem,
-  } from "./LabTechnicalDataViewer.svelte";
-  import LabVerificationRoute from "./LabVerificationRoute.svelte";
+  } from "$lib/components/lab/LabTechnicalDataViewer.svelte";
+  import LabVerificationRoute from "$lib/components/lab/LabVerificationRoute.svelte";
 
   type Props = {
     preview: MakeCredentialPreview;
@@ -37,23 +37,32 @@
     onRetryAttestationTrust = () => undefined,
     onRetryVerification = () => undefined,
   }: Props = $props();
+
   let clientExtensions = $derived(result.extensionResults?.client);
+
   let authenticatorExtensions = $derived(result.extensionResults?.authenticator);
-  let hasWebAuthnOutputs = $derived(Boolean(
-    clientExtensions?.credProps || clientExtensions?.prf || clientExtensions?.largeBlob,
-  ));
-  let hasCTAPOutputs = $derived(Boolean(
-    clientExtensions?.credBlob
-    || clientExtensions?.["hmac-secret"]
-    || clientExtensions?.["hmac-secret-mc"]
-    || authenticatorExtensions?.credProtect
-    || authenticatorExtensions?.minPinLength
-    || authenticatorExtensions?.pinComplexityPolicy,
-  ));
+
+  let hasWebAuthnOutputs = $derived(
+    Boolean(clientExtensions?.credProps || clientExtensions?.prf || clientExtensions?.largeBlob),
+  );
+
+  let hasCTAPOutputs = $derived(
+    Boolean(
+      clientExtensions?.credBlob ||
+      clientExtensions?.["hmac-secret"] ||
+      clientExtensions?.["hmac-secret-mc"] ||
+      authenticatorExtensions?.credProtect ||
+      authenticatorExtensions?.minPinLength ||
+      authenticatorExtensions?.pinComplexityPolicy,
+    ),
+  );
+
   let hasExtensionOutputs = $derived(hasWebAuthnOutputs || hasCTAPOutputs);
+
   let technicalDetails = $derived.by((): LabTechnicalDataItem[] => {
     const clientDataJSON = base64ToUTF8(preview.input.clientDataJSON);
     const resultJSON = sanitizedJson(result) ?? "null";
+
     return [
       {
         id: "client-data-json",
@@ -126,45 +135,101 @@
       <dt>{m.lab_credential_id()}</dt>
       <dd><LabHexValue label={m.lab_credential_id()} value={result.credentialIDHex} /></dd>
     </div>
-    <div><dt>{m.lab_format()}</dt><dd><code>{result.fmt}</code></dd></div>
-    <div><dt>{m.lab_aaguid()}</dt><dd><code>{result.aaguid || m.lab_not_reported()}</code></dd></div>
-    <div><dt>{m.lab_sign_count()}</dt><dd>{result.signCount}</dd></div>
-    <div><dt>{m.lab_user_present()}</dt><dd><Badge variant="outline">{booleanLabel(result.userPresent)}</Badge></dd></div>
-    <div><dt>{m.lab_user_verified()}</dt><dd><Badge variant="outline">{booleanLabel(result.userVerified)}</Badge></dd></div>
+
+    <div>
+      <dt>{m.lab_format()}</dt>
+      <dd><code>{result.fmt}</code></dd>
+    </div>
+
+    <div>
+      <dt>{m.lab_aaguid()}</dt>
+      <dd><code>{result.aaguid || m.lab_not_reported()}</code></dd>
+    </div>
+
+    <div>
+      <dt>{m.lab_sign_count()}</dt>
+      <dd>{result.signCount}</dd>
+    </div>
+
+    <div>
+      <dt>{m.lab_user_present()}</dt>
+      <dd><Badge variant="outline">{booleanLabel(result.userPresent)}</Badge></dd>
+    </div>
+
+    <div>
+      <dt>{m.lab_user_verified()}</dt>
+      <dd><Badge variant="outline">{booleanLabel(result.userVerified)}</Badge></dd>
+    </div>
+
     <div>
       <dt>{m.lab_enterprise_attestation()}</dt>
-      <dd><Badge variant="outline">{result.enterpriseAttestation === undefined ? m.lab_not_reported() : booleanLabel(result.enterpriseAttestation)}</Badge></dd>
+      <dd>
+        <Badge variant="outline"
+          >{result.enterpriseAttestation === undefined
+            ? m.lab_not_reported()
+            : booleanLabel(result.enterpriseAttestation)}</Badge
+        >
+      </dd>
     </div>
   </dl>
 
   <section class="lab-extension-results" aria-labelledby="lab-make-extension-results-title">
     <h4 id="lab-make-extension-results-title">{m.lab_extension_outputs()}</h4>
+
     {#if hasExtensionOutputs}
       {#if hasWebAuthnOutputs}
-        <section class="lab-extension-result-group" aria-labelledby="lab-make-webauthn-outputs-title">
+        <section
+          class="lab-extension-result-group"
+          aria-labelledby="lab-make-webauthn-outputs-title"
+        >
           <h5 id="lab-make-webauthn-outputs-title">{m.lab_webauthn_extension_outputs()}</h5>
+
           <dl class="lab-extension-result-list">
             {#if clientExtensions?.credProps}
-              <div><dt>credProps · rk</dt><dd>{nullableBooleanLabel(clientExtensions.credProps.rk)}</dd></div>
+              <div>
+                <dt>credProps · rk</dt>
+                <dd>{nullableBooleanLabel(clientExtensions.credProps.rk)}</dd>
+              </div>
             {/if}
+
             {#if clientExtensions?.largeBlob}
-              <div><dt>largeBlob · supported</dt><dd>{booleanLabel(clientExtensions.largeBlob.supported)}</dd></div>
+              <div>
+                <dt>largeBlob · supported</dt>
+                <dd>{booleanLabel(clientExtensions.largeBlob.supported)}</dd>
+              </div>
             {/if}
+
             {#if clientExtensions?.prf}
-              <div><dt>prf · enabled</dt><dd>{booleanLabel(clientExtensions.prf.enabled)}</dd></div>
+              <div>
+                <dt>prf · enabled</dt>
+                <dd>{booleanLabel(clientExtensions.prf.enabled)}</dd>
+              </div>
+
               {#if clientExtensions.prf.results}
                 <div>
                   <dt>prf · first</dt>
-                  <dd>{#key clientExtensions.prf.results.first}<LabSecretValue valueHex={base64ToHex(clientExtensions.prf.results.first)} />{/key}</dd>
+                  <dd>
+                    {#key clientExtensions.prf.results.first}<LabSecretValue
+                        valueHex={base64ToHex(clientExtensions.prf.results.first)}
+                      />{/key}
+                  </dd>
                 </div>
+
                 {#if clientExtensions.prf.results.second !== undefined && clientExtensions.prf.results.second !== null}
                   <div>
                     <dt>prf · second</dt>
-                    <dd>{#key clientExtensions.prf.results.second}<LabSecretValue valueHex={base64ToHex(clientExtensions.prf.results.second)} />{/key}</dd>
+                    <dd>
+                      {#key clientExtensions.prf.results.second}<LabSecretValue
+                          valueHex={base64ToHex(clientExtensions.prf.results.second)}
+                        />{/key}
+                    </dd>
                   </div>
                 {/if}
               {:else}
-                <div><dt>prf · results</dt><dd>{m.lab_not_reported()}</dd></div>
+                <div>
+                  <dt>prf · results</dt>
+                  <dd>{m.lab_not_reported()}</dd>
+                </div>
               {/if}
             {/if}
           </dl>
@@ -174,33 +239,63 @@
       {#if hasCTAPOutputs}
         <section class="lab-extension-result-group" aria-labelledby="lab-make-ctap-outputs-title">
           <h5 id="lab-make-ctap-outputs-title">{m.lab_ctap_extension_outputs()}</h5>
+
           <dl class="lab-extension-result-list">
             {#if authenticatorExtensions?.credProtect}
-              <div><dt>credProtect</dt><dd><code>{authenticatorExtensions.credProtect.policy}</code></dd></div>
+              <div>
+                <dt>credProtect</dt>
+                <dd><code>{authenticatorExtensions.credProtect.policy}</code></dd>
+              </div>
             {/if}
+
             {#if clientExtensions?.credBlob}
-              <div><dt>credBlob</dt><dd>{m.lab_accepted()}: {booleanLabel(clientExtensions.credBlob.accepted)}</dd></div>
+              <div>
+                <dt>credBlob</dt>
+                <dd>{m.lab_accepted()}: {booleanLabel(clientExtensions.credBlob.accepted)}</dd>
+              </div>
             {/if}
+
             {#if clientExtensions?.["hmac-secret"]}
-              <div><dt>hmac-secret</dt><dd>{m.lab_enabled()}: {booleanLabel(clientExtensions["hmac-secret"].enabled)}</dd></div>
+              <div>
+                <dt>hmac-secret</dt>
+                <dd>{m.lab_enabled()}: {booleanLabel(clientExtensions["hmac-secret"].enabled)}</dd>
+              </div>
             {/if}
+
             {#if clientExtensions?.["hmac-secret-mc"]}
               <div>
                 <dt>hmac-secret-mc · output1</dt>
-                <dd>{#key clientExtensions["hmac-secret-mc"].output1Hex}<LabSecretValue valueHex={clientExtensions["hmac-secret-mc"].output1Hex} />{/key}</dd>
+                <dd>
+                  {#key clientExtensions["hmac-secret-mc"].output1Hex}<LabSecretValue
+                      valueHex={clientExtensions["hmac-secret-mc"].output1Hex}
+                    />{/key}
+                </dd>
               </div>
+
               {#if clientExtensions["hmac-secret-mc"].output2Hex}
                 <div>
                   <dt>hmac-secret-mc · output2</dt>
-                  <dd>{#key clientExtensions["hmac-secret-mc"].output2Hex}<LabSecretValue valueHex={clientExtensions["hmac-secret-mc"].output2Hex} />{/key}</dd>
+                  <dd>
+                    {#key clientExtensions["hmac-secret-mc"].output2Hex}<LabSecretValue
+                        valueHex={clientExtensions["hmac-secret-mc"].output2Hex}
+                      />{/key}
+                  </dd>
                 </div>
               {/if}
             {/if}
+
             {#if authenticatorExtensions?.minPinLength}
-              <div><dt>minPinLength</dt><dd>{authenticatorExtensions.minPinLength.value}</dd></div>
+              <div>
+                <dt>minPinLength</dt>
+                <dd>{authenticatorExtensions.minPinLength.value}</dd>
+              </div>
             {/if}
+
             {#if authenticatorExtensions?.pinComplexityPolicy}
-              <div><dt>pinComplexityPolicy</dt><dd>{booleanLabel(authenticatorExtensions.pinComplexityPolicy.enabled)}</dd></div>
+              <div>
+                <dt>pinComplexityPolicy</dt>
+                <dd>{booleanLabel(authenticatorExtensions.pinComplexityPolicy.enabled)}</dd>
+              </div>
             {/if}
           </dl>
         </section>
@@ -222,87 +317,87 @@
 </section>
 
 <style>
-@layer blocks {
-  .lab-operation-result,
-  .lab-extension-results,
-  .lab-extension-result-group {
-    display: grid;
-    gap: var(--space-3);
-    min-width: 0;
-  }
+  @layer blocks {
+    .lab-operation-result,
+    .lab-extension-results,
+    .lab-extension-result-group {
+      display: grid;
+      gap: var(--space-3);
+      min-width: 0;
+    }
 
-  .lab-operation-result-header {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-2);
-  }
+    .lab-operation-result-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+    }
 
-  .lab-operation-result h3,
-  .lab-operation-result h4,
-  .lab-operation-result h5 {
-    margin: 0;
-    font-size: 0.9rem;
-  }
+    .lab-operation-result h3,
+    .lab-operation-result h4,
+    .lab-operation-result h5 {
+      margin: 0;
+      font-size: 0.9rem;
+    }
 
-  .lab-result-list,
-  .lab-extension-result-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1px;
-    min-width: 0;
-    margin: 0;
-    overflow: hidden;
-    border: 1px solid var(--border);
-    background: var(--border);
-  }
-
-  .lab-result-list > div,
-  .lab-extension-result-list > div {
-    display: grid;
-    align-content: start;
-    gap: var(--space-1);
-    min-width: 0;
-    padding: var(--space-3);
-    background: var(--card);
-  }
-
-  .lab-result-list dt,
-  .lab-extension-result-list dt {
-    color: var(--muted-foreground);
-    font-size: 0.7rem;
-  }
-
-  .lab-result-list dd,
-  .lab-extension-result-list dd {
-    min-width: 0;
-    margin: 0;
-    overflow-wrap: anywhere;
-    font-size: 0.78rem;
-  }
-
-  .lab-result-wide {
-    grid-column: 1 / -1;
-  }
-
-  .lab-extension-results > p {
-    margin: 0;
-    padding: var(--space-3);
-    border: 1px dashed var(--border);
-    color: var(--muted-foreground);
-    font-size: 0.75rem;
-  }
-
-  @media (max-width: 42rem) {
     .lab-result-list,
     .lab-extension-result-list {
-      grid-template-columns: minmax(0, 1fr);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      min-width: 0;
+      margin: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--border);
+    }
+
+    .lab-result-list > div,
+    .lab-extension-result-list > div {
+      display: grid;
+      align-content: start;
+      gap: var(--space-1);
+      min-width: 0;
+      padding: var(--space-3);
+      background: var(--card);
+    }
+
+    .lab-result-list dt,
+    .lab-extension-result-list dt {
+      color: var(--muted-foreground);
+      font-size: 0.7rem;
+    }
+
+    .lab-result-list dd,
+    .lab-extension-result-list dd {
+      min-width: 0;
+      margin: 0;
+      overflow-wrap: anywhere;
+      font-size: 0.78rem;
     }
 
     .lab-result-wide {
-      grid-column: auto;
+      grid-column: 1 / -1;
+    }
+
+    .lab-extension-results > p {
+      margin: 0;
+      padding: var(--space-3);
+      border: 1px dashed var(--border);
+      color: var(--muted-foreground);
+      font-size: 0.75rem;
+    }
+
+    @media (max-width: 42rem) {
+      .lab-result-list,
+      .lab-extension-result-list {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .lab-result-wide {
+        grid-column: auto;
+      }
     }
   }
-}
 </style>

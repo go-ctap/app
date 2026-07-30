@@ -16,10 +16,6 @@ type OperationRequest struct {
 	VerificationFlow ctapkit.VerificationFlow `json:"verificationFlow,omitempty"`
 }
 
-type CredentialListRequest struct {
-	OperationRequest
-}
-
 type CredentialDeleteRequest struct {
 	OperationRequest
 	CredentialIDHex string `json:"credentialIdHex"`
@@ -38,12 +34,7 @@ type CredentialUpdateRequest struct {
 
 type LargeBlobReadRequest struct {
 	OperationRequest
-	CredentialIDHex string                `json:"credentialIdHex"`
-	DecodeMode      largeblobs.DecodeMode `json:"decodeMode,omitempty"`
-}
-
-type LargeBlobListRequest struct {
-	OperationRequest
+	CredentialIDHex string `json:"credentialIdHex"`
 }
 
 type LargeBlobMutationRequest struct {
@@ -79,6 +70,11 @@ type AlwaysUVRequest struct {
 	OperationRequest
 	Target config.AlwaysUVTarget `json:"target"`
 	DryRun bool                  `json:"dryRun,omitempty"`
+}
+
+type EnableEnterpriseAttestationRequest struct {
+	OperationRequest
+	DryRun bool `json:"dryRun,omitempty"`
 }
 
 type MinPINLengthRequest struct {
@@ -131,45 +127,38 @@ type GetAssertionRequest struct {
 	DryRun bool `json:"dryRun,omitempty"`
 }
 
-func (s *Service) Inspect(ctx context.Context, req OperationRequest) (InspectEnvelope, error) {
-	meta, result, err := runInputlessOperation(
+func (s *Service) Inspect(ctx context.Context, req OperationRequest) InspectEnvelope {
+	meta, result := runInputlessOperation(
 		s, ctx, req, appoperation.Inspect,
 		(*ctapkit.Authenticator).Inspect,
 	)
 
-	return InspectEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+	return InspectEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) ListCredentials(ctx context.Context, req CredentialListRequest) (CredentialsEnvelope, error) {
-	meta, result, err := runInputlessOperation(
-		s, ctx, req.OperationRequest, appoperation.ListCredentials,
+func (s *Service) ListCredentials(ctx context.Context, req OperationRequest) CredentialsEnvelope {
+	meta, result := runInputlessOperation(
+		s, ctx, req, appoperation.ListCredentials,
 		(*ctapkit.Authenticator).ListCredentials,
 	)
-	return CredentialsEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return CredentialsEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) CredentialStoreState(ctx context.Context, req OperationRequest) (CredentialStoreStateEnvelope, error) {
-	meta, result, err := runInputlessOperation(
-		s, ctx, req, appoperation.CredentialStoreState,
-		(*ctapkit.Authenticator).CredentialStoreState,
-	)
-
-	return CredentialStoreStateEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
-}
-
-func (s *Service) DeleteCredential(ctx context.Context, req CredentialDeleteRequest) (CredentialDeleteEnvelope, error) {
+func (s *Service) DeleteCredential(ctx context.Context, req CredentialDeleteRequest) CredentialDeleteEnvelope {
 	operation := credentials.DeleteOperation{
 		CredentialIDHex: req.CredentialIDHex,
 		DryRun:          req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.DeleteCredential,
 		operation, (*ctapkit.Authenticator).DeleteCredential,
 	)
-	return CredentialDeleteEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return CredentialDeleteEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) UpdateCredentialUser(ctx context.Context, req CredentialUpdateRequest) (CredentialUpdateEnvelope, error) {
+func (s *Service) UpdateCredentialUser(ctx context.Context, req CredentialUpdateRequest) CredentialUpdateEnvelope {
 	operation := credentials.UpdateUserOperation{
 		Target:          req.Target,
 		Name:            req.Name,
@@ -178,115 +167,136 @@ func (s *Service) UpdateCredentialUser(ctx context.Context, req CredentialUpdate
 		DisplayProvided: req.DisplayProvided,
 		DryRun:          req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.UpdateCredentialUser,
 		operation, (*ctapkit.Authenticator).UpdateCredentialUser,
 	)
-	return CredentialUpdateEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return CredentialUpdateEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) ReadLargeBlob(ctx context.Context, req LargeBlobReadRequest) (LargeBlobReadEnvelope, error) {
+func (s *Service) ReadLargeBlob(ctx context.Context, req LargeBlobReadRequest) LargeBlobReadEnvelope {
 	operation := largeblobs.ReadOperation{
 		CredentialIDHex: req.CredentialIDHex,
-		DecodeMode:      req.DecodeMode,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.ReadLargeBlob,
 		operation, (*ctapkit.Authenticator).ReadLargeBlob,
 	)
-	return LargeBlobReadEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return LargeBlobReadEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) ListLargeBlobs(ctx context.Context, req LargeBlobListRequest) (LargeBlobListEnvelope, error) {
-	meta, result, err := runInputlessOperation(
-		s, ctx, req.OperationRequest, appoperation.ListLargeBlobs,
+func (s *Service) ListLargeBlobs(ctx context.Context, req OperationRequest) LargeBlobListEnvelope {
+	meta, result := runInputlessOperation(
+		s, ctx, req, appoperation.ListLargeBlobs,
 		(*ctapkit.Authenticator).ListLargeBlobs,
 	)
-	return LargeBlobListEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return LargeBlobListEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) WriteLargeBlob(ctx context.Context, req LargeBlobMutationRequest) (LargeBlobMutationEnvelope, error) {
+func (s *Service) WriteLargeBlob(ctx context.Context, req LargeBlobMutationRequest) LargeBlobMutationEnvelope {
 	operation := largeblobs.WriteOperation{
 		CredentialIDHex: req.CredentialIDHex,
 		Payload:         req.Payload,
 		DryRun:          req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.WriteLargeBlob,
 		operation, (*ctapkit.Authenticator).WriteLargeBlob,
 	)
-	return LargeBlobMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return LargeBlobMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) DeleteLargeBlob(ctx context.Context, req LargeBlobMutationRequest) (LargeBlobMutationEnvelope, error) {
+func (s *Service) DeleteLargeBlob(ctx context.Context, req LargeBlobMutationRequest) LargeBlobMutationEnvelope {
 	operation := largeblobs.DeleteOperation{
 		CredentialIDHex: req.CredentialIDHex,
 		DryRun:          req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.DeleteLargeBlob,
 		operation, (*ctapkit.Authenticator).DeleteLargeBlob,
 	)
-	return LargeBlobMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return LargeBlobMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) GarbageCollectLargeBlobs(ctx context.Context, req LargeBlobGarbageCollectRequest) (LargeBlobMutationEnvelope, error) {
+func (s *Service) GarbageCollectLargeBlobs(ctx context.Context, req LargeBlobGarbageCollectRequest) LargeBlobMutationEnvelope {
 	operation := largeblobs.GarbageCollectOperation{
 		DryRun: req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.GarbageCollectLargeBlobs,
 		operation, (*ctapkit.Authenticator).GarbageCollectLargeBlobs,
 	)
-	return LargeBlobMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return LargeBlobMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) ConfigStatus(ctx context.Context, req OperationRequest) (ConfigStatusEnvelope, error) {
-	meta, result, err := runInputlessOperation(
+func (s *Service) ConfigStatus(ctx context.Context, req OperationRequest) ConfigStatusEnvelope {
+	meta, result := runInputlessOperation(
 		s, ctx, req, appoperation.ConfigStatus,
 		(*ctapkit.Authenticator).ConfigStatus,
 	)
-	return ConfigStatusEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return ConfigStatusEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) SetPIN(ctx context.Context, req PINSetRequest) (PINEnvelope, error) {
+func (s *Service) SetPIN(ctx context.Context, req PINSetRequest) PINEnvelope {
 	operation := config.SetPINOperation{
 		NewPIN: req.NewPIN,
 		DryRun: req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.SetPIN,
 		operation, (*ctapkit.Authenticator).SetPIN,
 	)
-	return PINEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return PINEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) ChangePIN(ctx context.Context, req PINChangeRequest) (PINEnvelope, error) {
+func (s *Service) ChangePIN(ctx context.Context, req PINChangeRequest) PINEnvelope {
 	operation := config.ChangePINOperation{
 		CurrentPIN: req.CurrentPIN,
 		NewPIN:     req.NewPIN,
 		DryRun:     req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.ChangePIN,
 		operation, (*ctapkit.Authenticator).ChangePIN,
 	)
-	return PINEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return PINEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) SetAlwaysUV(ctx context.Context, req AlwaysUVRequest) (AuthenticatorConfigEnvelope, error) {
+func (s *Service) SetAlwaysUV(ctx context.Context, req AlwaysUVRequest) AuthenticatorConfigEnvelope {
 	operation := config.SetAlwaysUVOperation{
 		Target: req.Target,
 		DryRun: req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.SetAlwaysUV,
 		operation, (*ctapkit.Authenticator).SetAlwaysUV,
 	)
-	return AuthenticatorConfigEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return AuthenticatorConfigEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) SetMinPINLength(ctx context.Context, req MinPINLengthRequest) (AuthenticatorConfigEnvelope, error) {
+func (s *Service) EnableEnterpriseAttestation(ctx context.Context, req EnableEnterpriseAttestationRequest) AuthenticatorConfigEnvelope {
+	operation := config.EnableEnterpriseAttestationOperation{
+		DryRun: req.DryRun,
+	}
+	meta, result := runAuthenticatorOperation(
+		s, ctx, req.OperationRequest, appoperation.EnableEnterpriseAttestation,
+		operation, (*ctapkit.Authenticator).EnableEnterpriseAttestation,
+	)
+
+	return AuthenticatorConfigEnvelope{OperationEnvelopeMeta: meta, Result: result}
+}
+
+func (s *Service) SetMinPINLength(ctx context.Context, req MinPINLengthRequest) AuthenticatorConfigEnvelope {
 	operation := config.SetMinPINLengthOperation{
 		NewMinPINLength:     req.NewMinPINLength,
 		MinPINLengthRPIDs:   req.MinPINLengthRPIDs,
@@ -294,109 +304,118 @@ func (s *Service) SetMinPINLength(ctx context.Context, req MinPINLengthRequest) 
 		PINComplexityPolicy: req.PINComplexityPolicy,
 		DryRun:              req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.SetMinPINLength,
 		operation, (*ctapkit.Authenticator).SetMinPINLength,
 	)
-	return AuthenticatorConfigEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return AuthenticatorConfigEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) EnableLongTouchForReset(ctx context.Context, req EnableLongTouchForResetRequest) (AuthenticatorConfigEnvelope, error) {
+func (s *Service) EnableLongTouchForReset(ctx context.Context, req EnableLongTouchForResetRequest) AuthenticatorConfigEnvelope {
 	operation := config.EnableLongTouchForResetOperation{
 		DryRun: req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.EnableLongTouchForReset,
 		operation, (*ctapkit.Authenticator).EnableLongTouchForReset,
 	)
 
-	return AuthenticatorConfigEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+	return AuthenticatorConfigEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) BioSensorInfo(ctx context.Context, req OperationRequest) (BioSensorEnvelope, error) {
-	meta, result, err := runInputlessOperation(
+func (s *Service) BioSensorInfo(ctx context.Context, req OperationRequest) BioSensorEnvelope {
+	meta, result := runInputlessOperation(
 		s, ctx, req, appoperation.BioSensorInfo,
 		(*ctapkit.Authenticator).BioSensorInfo,
 	)
-	return BioSensorEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return BioSensorEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) BioList(ctx context.Context, req OperationRequest) (BioListEnvelope, error) {
-	meta, result, err := runInputlessOperation(
+func (s *Service) BioList(ctx context.Context, req OperationRequest) BioListEnvelope {
+	meta, result := runInputlessOperation(
 		s, ctx, req, appoperation.BioList,
 		(*ctapkit.Authenticator).BioList,
 	)
-	return BioListEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return BioListEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) BioEnroll(ctx context.Context, req BioEnrollRequest) (BioEnrollEnvelope, error) {
+func (s *Service) BioEnroll(ctx context.Context, req BioEnrollRequest) BioEnrollEnvelope {
 	operation := config.BioEnrollOperation{
 		TimeoutMilliseconds: req.TimeoutMilliseconds,
 		DryRun:              req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.BioEnroll,
 		operation, (*ctapkit.Authenticator).BioEnroll,
 	)
-	return BioEnrollEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return BioEnrollEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) BioRename(ctx context.Context, req BioRenameRequest) (BioMutationEnvelope, error) {
+func (s *Service) BioRename(ctx context.Context, req BioRenameRequest) BioMutationEnvelope {
 	operation := config.BioRenameOperation{
 		TemplateIDHex: req.TemplateIDHex,
 		FriendlyName:  req.FriendlyName,
 		DryRun:        req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.BioRename,
 		operation, (*ctapkit.Authenticator).BioRename,
 	)
-	return BioMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return BioMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) BioRemove(ctx context.Context, req BioRemoveRequest) (BioMutationEnvelope, error) {
+func (s *Service) BioRemove(ctx context.Context, req BioRemoveRequest) BioMutationEnvelope {
 	operation := config.BioRemoveOperation{
 		TemplateIDHex: req.TemplateIDHex,
 		DryRun:        req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.BioRemove,
 		operation, (*ctapkit.Authenticator).BioRemove,
 	)
-	return BioMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return BioMutationEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) ResetFactory(ctx context.Context, req ResetFactoryRequest) (ResetFactoryEnvelope, error) {
+func (s *Service) ResetFactory(ctx context.Context, req ResetFactoryRequest) ResetFactoryEnvelope {
 	operation := config.ResetFactoryOperation{
 		DryRun: req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.ResetFactory,
 		operation, (*ctapkit.Authenticator).ResetFactory,
 	)
-	return ResetFactoryEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return ResetFactoryEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) MakeCredential(ctx context.Context, req MakeCredentialRequest) (MakeCredentialEnvelope, error) {
+func (s *Service) MakeCredential(ctx context.Context, req MakeCredentialRequest) MakeCredentialEnvelope {
 	operation := webauthn.MakeCredentialOperation{
 		MakeCredentialInput: req.MakeCredentialInput,
 		DryRun:              req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.MakeCredential,
 		operation, (*ctapkit.Authenticator).MakeCredential,
 	)
-	return MakeCredentialEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return MakeCredentialEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }
 
-func (s *Service) GetAssertion(ctx context.Context, req GetAssertionRequest) (GetAssertionEnvelope, error) {
+func (s *Service) GetAssertion(ctx context.Context, req GetAssertionRequest) GetAssertionEnvelope {
 	operation := webauthn.GetAssertionOperation{
 		GetAssertionInput: req.GetAssertionInput,
 		DryRun:            req.DryRun,
 	}
-	meta, result, err := runAuthenticatorOperation(
+	meta, result := runAuthenticatorOperation(
 		s, ctx, req.OperationRequest, appoperation.GetAssertion,
 		operation, (*ctapkit.Authenticator).GetAssertion,
 	)
-	return GetAssertionEnvelope{OperationEnvelopeMeta: meta, Result: result}, err
+
+	return GetAssertionEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }

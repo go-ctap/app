@@ -249,7 +249,7 @@ export enum OperationStage {
 };
 
 export class PINInteractionState {
-    "failure"?: failure$0.Failure | null;
+    "previousAttemptInvalid"?: boolean;
     "retriesRemaining"?: number | null;
     "powerCycleState"?: boolean | null;
 
@@ -263,11 +263,7 @@ export class PINInteractionState {
      * Creates a new PINInteractionState instance from a string or object.
      */
     static createFrom($$source: any = {}): PINInteractionState {
-        const $$createField0_0 = $$createType5;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("failure" in $$parsedSource) {
-            $$parsedSource["failure"] = $$createField0_0($$parsedSource["failure"]);
-        }
         return new PINInteractionState($$parsedSource as Partial<PINInteractionState>);
     }
 }

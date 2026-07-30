@@ -6,21 +6,21 @@
     GetAssertionVerification,
   } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
 
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import * as Tabs from "$lib/components/ui/tabs/index.js";
+  import { Badge } from "$lib/components/ui/badge";
+  import * as Tabs from "$lib/components/ui/tabs";
   import type { LabVerificationState } from "$lib/features/lab/state";
   import { base64ToHex, base64ToUTF8 } from "$lib/lab-input";
   import { sanitizedJson } from "$lib/redaction";
 
   import { m } from "../../../paraglide/messages.js";
 
-  import LabHexValue from "./LabHexValue.svelte";
-  import LabSecretValue from "./LabSecretValue.svelte";
+  import LabHexValue from "$lib/components/lab/LabHexValue.svelte";
+  import LabSecretValue from "$lib/components/lab/LabSecretValue.svelte";
   import LabTechnicalDataViewer, {
     type LabTechnicalDataItem,
-  } from "./LabTechnicalDataViewer.svelte";
-  import LabVerificationMaterialEditor from "./LabVerificationMaterialEditor.svelte";
-  import LabVerificationRoute from "./LabVerificationRoute.svelte";
+  } from "$lib/components/lab/LabTechnicalDataViewer.svelte";
+  import LabVerificationMaterialEditor from "$lib/components/lab/LabVerificationMaterialEditor.svelte";
+  import LabVerificationRoute from "$lib/components/lab/LabVerificationRoute.svelte";
 
   type Props = {
     preview: GetAssertionPreview;
@@ -39,24 +39,37 @@
     onVerificationMaterialChange = () => undefined,
     onRetryVerification = () => undefined,
   }: Props = $props();
+
   let assertions = $derived(result.assertions ?? []);
+
   let selectedValue = $state("");
+
   let selectedAssertion = $derived(
     assertions.find((assertion) => String(assertion.index) === selectedValue) ?? assertions[0],
   );
+
   let clientExtensions = $derived(selectedAssertion?.extensionResults?.client);
+
   let authenticatorExtensions = $derived(selectedAssertion?.extensionResults?.authenticator);
+
   let hasWebAuthnOutputs = $derived(Boolean(clientExtensions?.prf || clientExtensions?.largeBlob));
-  let hasCTAPOutputs = $derived(Boolean(
-    clientExtensions?.getCredBlob
-    || clientExtensions?.["hmac-secret"]
-    || authenticatorExtensions?.thirdPartyPayment !== undefined,
-  ));
+
+  let hasCTAPOutputs = $derived(
+    Boolean(
+      clientExtensions?.getCredBlob ||
+      clientExtensions?.["hmac-secret"] ||
+      authenticatorExtensions?.thirdPartyPayment !== undefined,
+    ),
+  );
+
   let hasExtensionOutputs = $derived(hasWebAuthnOutputs || hasCTAPOutputs);
+
   let technicalDetails = $derived.by((): LabTechnicalDataItem[] => {
     if (!selectedAssertion) return [];
+
     const clientDataJSON = base64ToUTF8(preview.input.clientDataJSON);
     const resultJSON = sanitizedJson(result) ?? "null";
+
     return [
       {
         id: "client-data-json",
@@ -144,8 +157,14 @@
     <dl class="lab-assertion-fields">
       <div class="lab-result-wide">
         <dt>{m.lab_credential_id()}</dt>
-        <dd><LabHexValue label={m.lab_credential_id()} value={base64ToHex(selectedAssertion.credential.id)} /></dd>
+        <dd>
+          <LabHexValue
+            label={m.lab_credential_id()}
+            value={base64ToHex(selectedAssertion.credential.id)}
+          />
+        </dd>
       </div>
+
       <div>
         <dt>{m.lab_user_id()}</dt>
         <dd>
@@ -156,43 +175,89 @@
           {/if}
         </dd>
       </div>
-      <div><dt>{m.lab_number_of_credentials()}</dt><dd>{selectedAssertion.numberOfCredentials ?? m.lab_not_reported()}</dd></div>
-      <div><dt>{m.lab_user_selected()}</dt><dd><Badge variant="outline">{nullableBooleanLabel(selectedAssertion.userSelected)}</Badge></dd></div>
-      <div><dt>{m.lab_sign_count()}</dt><dd>{selectedAssertion.signCount}</dd></div>
-      <div><dt>{m.lab_user_present()}</dt><dd><Badge variant="outline">{booleanLabel(selectedAssertion.userPresent)}</Badge></dd></div>
-      <div><dt>{m.lab_user_verified()}</dt><dd><Badge variant="outline">{booleanLabel(selectedAssertion.userVerified)}</Badge></dd></div>
+
+      <div>
+        <dt>{m.lab_number_of_credentials()}</dt>
+        <dd>{selectedAssertion.numberOfCredentials ?? m.lab_not_reported()}</dd>
+      </div>
+
+      <div>
+        <dt>{m.lab_user_selected()}</dt>
+        <dd>
+          <Badge variant="outline">{nullableBooleanLabel(selectedAssertion.userSelected)}</Badge>
+        </dd>
+      </div>
+
+      <div>
+        <dt>{m.lab_sign_count()}</dt>
+        <dd>{selectedAssertion.signCount}</dd>
+      </div>
+
+      <div>
+        <dt>{m.lab_user_present()}</dt>
+        <dd><Badge variant="outline">{booleanLabel(selectedAssertion.userPresent)}</Badge></dd>
+      </div>
+
+      <div>
+        <dt>{m.lab_user_verified()}</dt>
+        <dd><Badge variant="outline">{booleanLabel(selectedAssertion.userVerified)}</Badge></dd>
+      </div>
     </dl>
 
     <section class="lab-extension-results" aria-labelledby="lab-get-extension-results-title">
       <h4 id="lab-get-extension-results-title">{m.lab_extension_outputs()}</h4>
+
       {#if hasExtensionOutputs}
         {#if hasWebAuthnOutputs}
-          <section class="lab-extension-result-group" aria-labelledby="lab-get-webauthn-outputs-title">
+          <section
+            class="lab-extension-result-group"
+            aria-labelledby="lab-get-webauthn-outputs-title"
+          >
             <h5 id="lab-get-webauthn-outputs-title">{m.lab_webauthn_extension_outputs()}</h5>
+
             <dl class="lab-extension-result-list">
               {#if clientExtensions?.prf?.results}
                 <div>
                   <dt>prf · first</dt>
-                  <dd>{#key clientExtensions.prf.results.first}<LabSecretValue valueHex={base64ToHex(clientExtensions.prf.results.first)} />{/key}</dd>
+                  <dd>
+                    {#key clientExtensions.prf.results.first}<LabSecretValue
+                        valueHex={base64ToHex(clientExtensions.prf.results.first)}
+                      />{/key}
+                  </dd>
                 </div>
+
                 {#if clientExtensions.prf.results.second !== undefined && clientExtensions.prf.results.second !== null}
                   <div>
                     <dt>prf · second</dt>
-                    <dd>{#key clientExtensions.prf.results.second}<LabSecretValue valueHex={base64ToHex(clientExtensions.prf.results.second)} />{/key}</dd>
+                    <dd>
+                      {#key clientExtensions.prf.results.second}<LabSecretValue
+                          valueHex={base64ToHex(clientExtensions.prf.results.second)}
+                        />{/key}
+                    </dd>
                   </div>
                 {/if}
               {:else}
-                <div><dt>prf · results</dt><dd>{m.lab_not_reported()}</dd></div>
+                <div>
+                  <dt>prf · results</dt>
+                  <dd>{m.lab_not_reported()}</dd>
+                </div>
               {/if}
+
               {#if clientExtensions?.largeBlob}
                 {#if clientExtensions.largeBlob.blobHex !== undefined && clientExtensions.largeBlob.blobHex !== null}
                   <div>
                     <dt>largeBlob · blob</dt>
-                    <dd><LabHexValue label="largeBlob" value={clientExtensions.largeBlob.blobHex} /></dd>
+                    <dd>
+                      <LabHexValue label="largeBlob" value={clientExtensions.largeBlob.blobHex} />
+                    </dd>
                   </div>
                 {/if}
+
                 {#if clientExtensions.largeBlob.written !== undefined && clientExtensions.largeBlob.written !== null}
-                  <div><dt>largeBlob · written</dt><dd>{booleanLabel(clientExtensions.largeBlob.written)}</dd></div>
+                  <div>
+                    <dt>largeBlob · written</dt>
+                    <dd>{booleanLabel(clientExtensions.largeBlob.written)}</dd>
+                  </div>
                 {/if}
               {/if}
             </dl>
@@ -202,25 +267,39 @@
         {#if hasCTAPOutputs}
           <section class="lab-extension-result-group" aria-labelledby="lab-get-ctap-outputs-title">
             <h5 id="lab-get-ctap-outputs-title">{m.lab_ctap_extension_outputs()}</h5>
+
             <dl class="lab-extension-result-list">
               {#if clientExtensions?.getCredBlob}
                 <div>
                   <dt>credBlob</dt>
-                  <dd><LabHexValue label="credBlob" value={clientExtensions.getCredBlob.valueHex} /></dd>
+                  <dd>
+                    <LabHexValue label="credBlob" value={clientExtensions.getCredBlob.valueHex} />
+                  </dd>
                 </div>
               {/if}
+
               {#if clientExtensions?.["hmac-secret"]}
                 <div>
                   <dt>hmac-secret · output1</dt>
-                  <dd>{#key clientExtensions["hmac-secret"].output1Hex}<LabSecretValue valueHex={clientExtensions["hmac-secret"].output1Hex} />{/key}</dd>
+                  <dd>
+                    {#key clientExtensions["hmac-secret"].output1Hex}<LabSecretValue
+                        valueHex={clientExtensions["hmac-secret"].output1Hex}
+                      />{/key}
+                  </dd>
                 </div>
+
                 {#if clientExtensions["hmac-secret"].output2Hex}
                   <div>
                     <dt>hmac-secret · output2</dt>
-                    <dd>{#key clientExtensions["hmac-secret"].output2Hex}<LabSecretValue valueHex={clientExtensions["hmac-secret"].output2Hex} />{/key}</dd>
+                    <dd>
+                      {#key clientExtensions["hmac-secret"].output2Hex}<LabSecretValue
+                          valueHex={clientExtensions["hmac-secret"].output2Hex}
+                        />{/key}
+                    </dd>
                   </div>
                 {/if}
               {/if}
+
               {#if authenticatorExtensions?.thirdPartyPayment !== undefined && authenticatorExtensions.thirdPartyPayment !== null}
                 <div>
                   <dt>thirdPartyPayment</dt>
@@ -240,110 +319,106 @@
       onChange={onVerificationMaterialChange}
     />
 
-    <LabVerificationRoute
-      mode="get"
-      state={verification}
-      {onRetryVerification}
-    />
+    <LabVerificationRoute mode="get" state={verification} {onRetryVerification} />
 
     <LabTechnicalDataViewer items={technicalDetails} />
   {/if}
 </section>
 
 <style>
-@layer blocks {
-  .lab-assertion-result,
-  .lab-extension-results,
-  .lab-extension-result-group {
-    display: grid;
-    gap: var(--space-3);
-    min-width: 0;
-  }
+  @layer blocks {
+    .lab-assertion-result,
+    .lab-extension-results,
+    .lab-extension-result-group {
+      display: grid;
+      gap: var(--space-3);
+      min-width: 0;
+    }
 
-  .lab-assertion-result-header {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-2);
-  }
+    .lab-assertion-result-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+    }
 
-  .lab-assertion-result h3,
-  .lab-assertion-result h4,
-  .lab-assertion-result h5 {
-    margin: 0;
-    font-size: 0.9rem;
-  }
+    .lab-assertion-result h3,
+    .lab-assertion-result h4,
+    .lab-assertion-result h5 {
+      margin: 0;
+      font-size: 0.9rem;
+    }
 
-  :global(.lab-assertion-selector [data-slot="tabs-list"]) {
-    width: 100%;
-  }
+    :global(.lab-assertion-selector [data-slot="tabs-list"]) {
+      width: 100%;
+    }
 
-  .lab-no-assertions {
-    margin: 0;
-    padding: var(--space-4);
-    border: 1px dashed var(--border);
-    color: var(--muted-foreground);
-    text-align: center;
-  }
+    .lab-no-assertions {
+      margin: 0;
+      padding: var(--space-4);
+      border: 1px dashed var(--border);
+      color: var(--muted-foreground);
+      text-align: center;
+    }
 
-  .lab-assertion-fields,
-  .lab-extension-result-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1px;
-    min-width: 0;
-    margin: 0;
-    overflow: hidden;
-    border: 1px solid var(--border);
-    background: var(--border);
-  }
-
-  .lab-assertion-fields > div,
-  .lab-extension-result-list > div {
-    display: grid;
-    align-content: start;
-    gap: var(--space-1);
-    min-width: 0;
-    padding: var(--space-3);
-    background: var(--card);
-  }
-
-  .lab-assertion-fields dt,
-  .lab-extension-result-list dt {
-    color: var(--muted-foreground);
-    font-size: 0.7rem;
-  }
-
-  .lab-assertion-fields dd,
-  .lab-extension-result-list dd {
-    min-width: 0;
-    margin: 0;
-    overflow-wrap: anywhere;
-    font-size: 0.78rem;
-  }
-
-  .lab-result-wide {
-    grid-column: 1 / -1;
-  }
-
-  .lab-extension-results > p {
-    margin: 0;
-    padding: var(--space-3);
-    border: 1px dashed var(--border);
-    color: var(--muted-foreground);
-    font-size: 0.75rem;
-  }
-
-  @media (max-width: 42rem) {
     .lab-assertion-fields,
     .lab-extension-result-list {
-      grid-template-columns: minmax(0, 1fr);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      min-width: 0;
+      margin: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--border);
+    }
+
+    .lab-assertion-fields > div,
+    .lab-extension-result-list > div {
+      display: grid;
+      align-content: start;
+      gap: var(--space-1);
+      min-width: 0;
+      padding: var(--space-3);
+      background: var(--card);
+    }
+
+    .lab-assertion-fields dt,
+    .lab-extension-result-list dt {
+      color: var(--muted-foreground);
+      font-size: 0.7rem;
+    }
+
+    .lab-assertion-fields dd,
+    .lab-extension-result-list dd {
+      min-width: 0;
+      margin: 0;
+      overflow-wrap: anywhere;
+      font-size: 0.78rem;
     }
 
     .lab-result-wide {
-      grid-column: auto;
+      grid-column: 1 / -1;
+    }
+
+    .lab-extension-results > p {
+      margin: 0;
+      padding: var(--space-3);
+      border: 1px dashed var(--border);
+      color: var(--muted-foreground);
+      font-size: 0.75rem;
+    }
+
+    @media (max-width: 42rem) {
+      .lab-assertion-fields,
+      .lab-extension-result-list {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .lab-result-wide {
+        grid-column: auto;
+      }
     }
   }
-}
 </style>

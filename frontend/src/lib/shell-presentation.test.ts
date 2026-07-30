@@ -3,14 +3,18 @@ import { CreditCard, Nfc, Usb } from "@lucide/svelte";
 
 import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { DeviceIdentity, DeviceReport, Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
+import {
+  DeviceIdentity,
+  DeviceReport,
+  Vendor,
+} from "../../bindings/github.com/go-ctap/kit/model/report";
 import { Mode, SmartCardInterface } from "../../bindings/github.com/go-ctap/kit/transport";
 
-import { setAppLocale } from "./i18n.js";
-import { failureForCode } from "./test-failure.js";
-import { buildShellStatusPresentation, buildSidebarPresentation } from "./shell-presentation.js";
-import type { AuthenticatorStatus } from "./authenticator-model.js";
-import type { StatusBarState } from "./features/workbench/index.js";
+import { setAppLocale } from "$lib/i18n.js";
+import { failureForCode } from "$lib/test-support/failure.js";
+import { buildShellStatusPresentation, buildSidebarPresentation } from "$lib/shell-presentation.js";
+import type { AuthenticatorStatus } from "$lib/authenticator-model.js";
+import type { StatusBarState } from "$lib/features/workbench";
 
 const token = new DeviceReport({
   attachment: {
@@ -65,7 +69,11 @@ describe("shell status presentation", () => {
       selectedDevice: token,
       authenticatorStatus: authenticator("running"),
       statusBar: statusBar({
-        activeOperation: { stage: OperationStage.OperationStageEnumeratingRPs, completed: 0, total: 0 },
+        activeOperation: {
+          stage: OperationStage.OperationStageEnumeratingRPs,
+          completed: 0,
+          total: 0,
+        },
       }),
     });
 
@@ -89,10 +97,17 @@ describe("shell status presentation", () => {
 
   it("prioritizes opening and authenticator errors over the last outcome", () => {
     const outcome = statusBar({ lastOutcome: { tone: "success", title: "Old success" } });
-    const opening = buildShellStatusPresentation({ selectedDevice: token, authenticatorStatus: authenticator("opening"), statusBar: outcome });
+    const opening = buildShellStatusPresentation({
+      selectedDevice: token,
+      authenticatorStatus: authenticator("opening"),
+      statusBar: outcome,
+    });
     const errored = buildShellStatusPresentation({
       selectedDevice: token,
-      authenticatorStatus: { ...authenticator("error"), error: failureForCode(Code.CodeAuthenticatorClosed) },
+      authenticatorStatus: {
+        ...authenticator("error"),
+        error: failureForCode(Code.CodeAuthenticatorClosed),
+      },
       statusBar: outcome,
     });
 

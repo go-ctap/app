@@ -16,7 +16,7 @@ import type {
   OverviewConformanceStatus,
 } from "$lib/overview-rules";
 
-import OverviewConformance from "./OverviewConformance.svelte";
+import OverviewConformance from "$lib/components/overview/OverviewConformance.svelte";
 
 const target = new Target({
   profile: Profile.ProfileFIDO23,
@@ -39,9 +39,8 @@ function assessment(kind: OverviewConformanceAssessment["kind"]): OverviewConfor
 }
 
 function presentation(status: OverviewConformanceStatus): OverviewConformancePresentation {
-  const assessments = status === "passed"
-    ? []
-    : [assessment(status === "findings" ? "finding" : status)];
+  const assessments =
+    status === "passed" ? [] : [assessment(status === "findings" ? "finding" : status)];
 
   return {
     status,
@@ -72,19 +71,24 @@ describe("OverviewConformance", () => {
     expect(screen.getByText(SpecificationID.SpecificationCTAP23)).toBeInTheDocument();
 
     const expand = screen.getByRole("button", { name: "Expand conformance details" });
+
     expect(expand).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
 
     await user.click(expand);
 
     const collapse = screen.getByRole("button", { name: "Collapse conformance details" });
+
     expect(collapse).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("status")).toHaveTextContent("No issues found");
 
     collapse.focus();
     await user.keyboard("{Enter}");
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Expand conformance details" })).toHaveAttribute("aria-expanded", "false");
+      expect(screen.getByRole("button", { name: "Expand conformance details" })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      );
       expect(screen.queryByRole("status")).not.toBeInTheDocument();
     });
   });
@@ -93,13 +97,16 @@ describe("OverviewConformance", () => {
     ["findings", "Findings: 1", "Versions required"],
     ["inconclusive", "Inconclusive: 1", "Versions required"],
     ["unresolved", "Not evaluated", "Conformance target unresolved"],
-  ] satisfies Array<[OverviewConformanceStatus, string, string]>) (
+  ] satisfies Array<[OverviewConformanceStatus, string, string]>)(
     "opens %s details by default",
     (status, label, assessmentName) => {
       render(OverviewConformance, { props: { presentation: presentation(status) } });
 
       expect(screen.getAllByText(label).length).toBeGreaterThan(0);
-      expect(screen.getByRole("button", { name: "Collapse conformance details" })).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByRole("button", { name: "Collapse conformance details" })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
       expect(screen.getByRole("article")).toBeInTheDocument();
       expect(screen.getByText(assessmentName)).toBeInTheDocument();
     },

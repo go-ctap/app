@@ -3,10 +3,10 @@
 
   import type { LabHMACSecretDraft } from "$lib/features/lab/state";
   import { randomHex } from "$lib/lab-input";
-  import * as Field from "$lib/components/ui/field/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Switch } from "$lib/components/ui/switch/index.js";
+  import * as Field from "$lib/components/ui/field";
+  import { Input } from "$lib/components/ui/input";
+  import { Button } from "$lib/components/ui/button";
+  import { Switch } from "$lib/components/ui/switch";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -93,23 +93,23 @@
 </div>
 
 <style>
-@layer blocks {
-  .lab-hmac-editor {
-    display: grid;
-    gap: var(--space-3);
-  }
+  @layer blocks {
+    .lab-hmac-editor {
+      display: grid;
+      gap: var(--space-3);
+    }
 
-  .lab-hmac-heading,
-  .lab-hmac-second-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-2);
-  }
+    .lab-hmac-heading,
+    .lab-hmac-second-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+    }
 
-  .lab-hmac-second-toggle {
-    justify-content: flex-start;
-    font-size: 0.72rem;
+    .lab-hmac-second-toggle {
+      justify-content: flex-start;
+      font-size: 0.72rem;
+    }
   }
-}
 </style>

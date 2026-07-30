@@ -3,14 +3,14 @@
   import CopyIcon from "@lucide/svelte/icons/copy";
 
   import { copyToClipboard } from "$lib/clipboard";
-  import { Button, buttonVariants } from "$lib/components/ui/button/index.js";
-  import * as Collapsible from "$lib/components/ui/collapsible/index.js";
-  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+  import { Button, buttonVariants } from "$lib/components/ui/button";
+  import * as Collapsible from "$lib/components/ui/collapsible";
+  import * as Tooltip from "$lib/components/ui/tooltip";
   import { advancedMode } from "$lib/preferences";
   import { sanitizedJson } from "$lib/redaction";
 
   import { m } from "../../../paraglide/messages.js";
-  import JsonView from "./JsonView.svelte";
+  import JsonView from "$lib/components/shared/JsonView.svelte";
 
   type Props = {
     value: unknown;
@@ -19,12 +19,7 @@
     open?: boolean;
   };
 
-  let {
-    value,
-    title = m.raw_json(),
-    description,
-    open = $bindable(false),
-  }: Props = $props();
+  let { value, title = m.raw_json(), description, open = $bindable(false) }: Props = $props();
 
   let source = $derived(sanitizedJson(value) ?? "null");
 
@@ -51,7 +46,11 @@
               <span class="json-disclosure-description">{description}</span>
             {/if}
           </span>
-          <ChevronDownIcon class="json-disclosure-chevron" data-icon="inline-end" aria-hidden="true" />
+          <ChevronDownIcon
+            class="json-disclosure-chevron"
+            data-icon="inline-end"
+            aria-hidden="true"
+          />
         </Collapsible.Trigger>
 
         <Tooltip.Root>
@@ -81,79 +80,79 @@
 {/if}
 
 <style>
-@layer blocks {
-  :global(.json-disclosure) {
-    display: grid;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    overflow: hidden;
-    border: 1px solid var(--border);
-    background: var(--card);
+  @layer blocks {
+    :global(.json-disclosure) {
+      display: grid;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+
+    .json-disclosure-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      min-width: 0;
+      padding-right: var(--space-3);
+    }
+
+    :global(.json-disclosure-trigger) {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      height: auto;
+      min-width: 0;
+      padding: var(--space-3);
+      text-align: left;
+    }
+
+    .json-disclosure-heading {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .json-disclosure-title,
+    .json-disclosure-description {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .json-disclosure-description {
+      color: var(--muted-foreground);
+      font-size: 0.72rem;
+      font-weight: 400;
+    }
+
+    :global(.json-disclosure-chevron) {
+      transition: transform 120ms ease;
+    }
+
+    :global(.json-disclosure-content) {
+      display: grid;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      border-top: 1px solid var(--border);
+      padding: var(--space-3);
+    }
   }
 
-  .json-disclosure-header {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    min-width: 0;
-    padding-right: var(--space-3);
-  }
+  @layer exceptions {
+    .json-disclosure-header:hover,
+    .json-disclosure-header:focus-within,
+    :global(.json-disclosure[data-state="open"]) .json-disclosure-header {
+      background: var(--muted);
+    }
 
-  :global(.json-disclosure-trigger) {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    height: auto;
-    min-width: 0;
-    padding: var(--space-3);
-    text-align: left;
+    :global(.json-disclosure[data-state="open"] .json-disclosure-chevron) {
+      transform: rotate(180deg);
+    }
   }
-
-  .json-disclosure-heading {
-    display: grid;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .json-disclosure-title,
-  .json-disclosure-description {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .json-disclosure-description {
-    color: var(--muted-foreground);
-    font-size: 0.72rem;
-    font-weight: 400;
-  }
-
-  :global(.json-disclosure-chevron) {
-    transition: transform 120ms ease;
-  }
-
-  :global(.json-disclosure-content) {
-    display: grid;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    border-top: 1px solid var(--border);
-    padding: var(--space-3);
-  }
-}
-
-@layer exceptions {
-  .json-disclosure-header:hover,
-  .json-disclosure-header:focus-within,
-  :global(.json-disclosure[data-state="open"]) .json-disclosure-header {
-    background: var(--muted);
-  }
-
-  :global(.json-disclosure[data-state="open"] .json-disclosure-chevron) {
-    transform: rotate(180deg);
-  }
-}
 </style>

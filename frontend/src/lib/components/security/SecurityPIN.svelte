@@ -4,16 +4,21 @@
 
   import type { PINStatus } from "../../../../bindings/github.com/go-ctap/kit/model/config";
 
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import * as Field from "$lib/components/ui/field/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
+  import * as Alert from "$lib/components/ui/alert";
+  import { Badge } from "$lib/components/ui/badge";
+  import { Button } from "$lib/components/ui/button";
+  import * as Card from "$lib/components/ui/card";
+  import * as Dialog from "$lib/components/ui/dialog";
+  import * as Field from "$lib/components/ui/field";
+  import { Input } from "$lib/components/ui/input";
 
   import { m } from "../../../paraglide/messages.js";
-  import { booleanState, reportedNumber, retryValue, stateLabel } from "./security-ui.js";
+  import {
+    booleanState,
+    reportedNumber,
+    retryValue,
+    stateLabel,
+  } from "$lib/components/security/security-ui.js";
 
   type Props = {
     pin: PINStatus;
@@ -25,13 +30,21 @@
   let { pin, disabled, onSetPIN, onChangePIN }: Props = $props();
 
   let open = $state(false);
+
   let triggerRef = $state<HTMLElement | null>(null);
+
   let currentPIN = $state("");
+
   let newPIN = $state("");
+
   let confirmation = $state("");
-  let validationError = $state<"current-required" | "new-required" | "confirmation-required" | "mismatch" | null>(null);
+
+  let validationError = $state<
+    "current-required" | "new-required" | "confirmation-required" | "mismatch" | null
+  >(null);
 
   let configured = $derived(pin.configured === true);
+
   let actionDisabled = $derived(disabled || !pin.supported || !pin.protocolSupported);
 
   function clearSecrets() {
@@ -55,24 +68,33 @@
 
     if (configured && !currentPIN) {
       validationError = "current-required";
+
       return;
     }
+
     if (!newPIN) {
       validationError = "new-required";
+
       return;
     }
+
     if (!confirmation) {
       validationError = "confirmation-required";
+
       return;
     }
+
     if (newPIN !== confirmation) {
       validationError = "mismatch";
+
       return;
     }
 
     let operation: boolean | Promise<boolean>;
+
     if (configured) {
       const input = { currentPIN, newPIN };
+
       try {
         operation = onChangePIN(input);
       } finally {
@@ -82,6 +104,7 @@
       }
     } else {
       const input = { newPIN };
+
       try {
         operation = onSetPIN(input);
       } finally {
@@ -100,25 +123,61 @@
   <Card.Header>
     <Card.Title><h2 id="security-pin-title" class="security-card-title">{m.pin()}</h2></Card.Title>
     <Card.Action>
-      <Button bind:ref={triggerRef} type="button" disabled={actionDisabled} onclick={() => (open = true)}>
+      <Button
+        bind:ref={triggerRef}
+        type="button"
+        disabled={actionDisabled}
+        onclick={() => (open = true)}
+      >
         <KeyRound data-icon="inline-start" aria-hidden="true" />
         {configured ? m.security_change_pin() : m.security_set_pin()}
       </Button>
     </Card.Action>
   </Card.Header>
+
   <Card.Content>
     <dl class="pin-facts">
       <div>
         <dt>{m.status()}</dt>
-        <dd><Badge variant={configured ? "default" : "secondary"}>{stateLabel(pin.state)}</Badge></dd>
+        <dd>
+          <Badge variant={configured ? "default" : "secondary"}>{stateLabel(pin.state)}</Badge>
+        </dd>
       </div>
-      <div><dt>{m.security_pin_protocol()}</dt><dd>{pin.protocolSupported ? m.status_supported() : m.status_unsupported()}</dd></div>
-      <div><dt>{m.security_pin_retries()}</dt><dd>{retryValue(pin.retries)}</dd></div>
-      <div><dt>{m.security_power_cycle_required()}</dt><dd>{booleanState(pin.retries.powerCycleState)}</dd></div>
-      <div><dt>{m.security_minimum_pin_length()}</dt><dd>{reportedNumber(pin.minPINLength)}</dd></div>
-      <div><dt>{m.security_maximum_pin_length()}</dt><dd>{reportedNumber(pin.maxPINLength)}</dd></div>
-      <div><dt>{m.security_force_pin_change()}</dt><dd>{booleanState(pin.forcePINChange)}</dd></div>
-      <div><dt>{m.security_pin_complexity()}</dt><dd>{booleanState(pin.pinComplexityPolicy)}</dd></div>
+
+      <div>
+        <dt>{m.security_pin_protocol()}</dt>
+        <dd>{pin.protocolSupported ? m.status_supported() : m.status_unsupported()}</dd>
+      </div>
+
+      <div>
+        <dt>{m.security_pin_retries()}</dt>
+        <dd>{retryValue(pin.retries)}</dd>
+      </div>
+
+      <div>
+        <dt>{m.security_power_cycle_required()}</dt>
+        <dd>{booleanState(pin.retries.powerCycleState)}</dd>
+      </div>
+
+      <div>
+        <dt>{m.security_minimum_pin_length()}</dt>
+        <dd>{reportedNumber(pin.minPINLength)}</dd>
+      </div>
+
+      <div>
+        <dt>{m.security_maximum_pin_length()}</dt>
+        <dd>{reportedNumber(pin.maxPINLength)}</dd>
+      </div>
+
+      <div>
+        <dt>{m.security_force_pin_change()}</dt>
+        <dd>{booleanState(pin.forcePINChange)}</dd>
+      </div>
+
+      <div>
+        <dt>{m.security_pin_complexity()}</dt>
+        <dd>{booleanState(pin.pinComplexityPolicy)}</dd>
+      </div>
     </dl>
   </Card.Content>
 </Card.Root>
@@ -151,7 +210,11 @@
           </Field.Field>
         {/if}
 
-        <Field.Field data-invalid={validationError === "new-required" || validationError === "mismatch" ? "true" : undefined}>
+        <Field.Field
+          data-invalid={validationError === "new-required" || validationError === "mismatch"
+            ? "true"
+            : undefined}
+        >
           <Field.Label for="security-new-pin">{m.security_new_pin()}</Field.Label>
           <Input
             id="security-new-pin"
@@ -171,7 +234,12 @@
           {/if}
         </Field.Field>
 
-        <Field.Field data-invalid={validationError === "confirmation-required" || validationError === "mismatch" ? "true" : undefined}>
+        <Field.Field
+          data-invalid={validationError === "confirmation-required" ||
+          validationError === "mismatch"
+            ? "true"
+            : undefined}
+        >
           <Field.Label for="security-confirm-pin">{m.security_confirm_new_pin()}</Field.Label>
           <Input
             id="security-confirm-pin"
@@ -181,7 +249,8 @@
             spellcheck={false}
             minlength={pin.minPINLength}
             value={confirmation}
-            aria-invalid={validationError === "confirmation-required" || validationError === "mismatch"}
+            aria-invalid={validationError === "confirmation-required" ||
+              validationError === "mismatch"}
             oninput={(event) => (confirmation = event.currentTarget.value)}
           />
           {#if validationError === "confirmation-required"}
@@ -201,68 +270,72 @@
       </Alert.Root>
 
       <Dialog.Footer>
-        <Button type="submit" disabled={actionDisabled}>{configured ? m.security_change_pin() : m.security_set_pin()}</Button>
-        <Button variant="outline" type="button" onclick={() => handleOpenChange(false)}>{m.cancel()}</Button>
+        <Button type="submit" disabled={actionDisabled}
+          >{configured ? m.security_change_pin() : m.security_set_pin()}</Button
+        >
+        <Button variant="outline" type="button" onclick={() => handleOpenChange(false)}
+          >{m.cancel()}</Button
+        >
       </Dialog.Footer>
     </form>
   </Dialog.Content>
 </Dialog.Root>
 
 <style>
-@layer blocks {
-  .security-card-title,
-  .pin-facts,
-  .pin-facts dt,
-  .pin-facts dd {
-    margin: 0;
-  }
+  @layer blocks {
+    .security-card-title,
+    .pin-facts,
+    .pin-facts dt,
+    .pin-facts dd {
+      margin: 0;
+    }
 
-  .security-card-title {
-    font: inherit;
-  }
+    .security-card-title {
+      font: inherit;
+    }
 
-  .pin-facts {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-2) var(--space-5);
-    min-width: 0;
-  }
-
-  .pin-facts > div {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: var(--space-2);
-    min-width: 0;
-    border-top: 1px solid var(--border);
-    padding-top: var(--space-2);
-  }
-
-  .pin-facts dt {
-    color: var(--muted-foreground);
-    font-size: 0.78rem;
-  }
-
-  .pin-facts dd {
-    font-weight: 650;
-    text-align: end;
-  }
-
-  :global(.security-pin-dialog) {
-    width: min(31rem, calc(100vw - 2rem));
-    max-width: none;
-  }
-
-  .security-pin-form {
-    display: grid;
-    gap: var(--space-4);
-    min-width: 0;
-  }
-
-  @container workspace (max-width: 40rem) {
     .pin-facts {
-      grid-template-columns: minmax(0, 1fr);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-2) var(--space-5);
+      min-width: 0;
+    }
+
+    .pin-facts > div {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: var(--space-2);
+      min-width: 0;
+      border-top: 1px solid var(--border);
+      padding-top: var(--space-2);
+    }
+
+    .pin-facts dt {
+      color: var(--muted-foreground);
+      font-size: 0.78rem;
+    }
+
+    .pin-facts dd {
+      font-weight: 650;
+      text-align: end;
+    }
+
+    :global(.security-pin-dialog) {
+      width: min(31rem, calc(100vw - 2rem));
+      max-width: none;
+    }
+
+    .security-pin-form {
+      display: grid;
+      gap: var(--space-4);
+      min-width: 0;
+    }
+
+    @container workspace (max-width: 40rem) {
+      .pin-facts {
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
   }
-}
 </style>

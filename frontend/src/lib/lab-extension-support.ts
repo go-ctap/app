@@ -7,13 +7,15 @@ export function authenticatorSupportsLabExtension(
   identifier: ExtensionIdentifier,
 ): boolean {
   const extensions = info.extensions ?? [];
+
   if (identifier !== ExtensionIdentifier.ExtensionIdentifierLargeBlob) {
     return extensions.includes(identifier);
   }
 
   const direct = extensions.includes(ExtensionIdentifier.ExtensionIdentifierLargeBlob);
-  const arrayBacked = extensions.includes(ExtensionIdentifier.ExtensionIdentifierLargeBlobKey)
-    && info.options?.[Option.OptionLargeBlobs] === true;
+  const arrayBacked =
+    extensions.includes(ExtensionIdentifier.ExtensionIdentifierLargeBlobKey) &&
+    info.options?.[Option.OptionLargeBlobs] === true;
 
   return direct || arrayBacked;
 }

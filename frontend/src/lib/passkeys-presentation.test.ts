@@ -5,12 +5,21 @@ import type { CredentialsEnvelope } from "../../bindings/telesma/service";
 import { testHIDDevice } from "../test/device.js";
 
 import { setAppLocale } from "$lib/i18n";
-import { emptyPasskeysInventoryState, type PasskeysInventoryState } from "$lib/features/passkeys/state";
+import {
+  emptyPasskeysInventoryState,
+  type PasskeysInventoryState,
+} from "$lib/features/passkeys/state";
 
-import { buildPasskeyRows, buildPasskeysPresentation } from "./passkeys-presentation";
+import { buildPasskeyRows, buildPasskeysPresentation } from "$lib/passkeys-presentation";
 
-function envelope(groups: NonNullable<CredentialsEnvelope["result"]>["groups"] = []): CredentialsEnvelope {
-  const totalCredentials = groups.reduce((count, group) => count + (group.credentials?.length ?? 0), 0);
+function envelope(
+  groups: NonNullable<CredentialsEnvelope["result"]>["groups"] = [],
+): CredentialsEnvelope {
+  const totalCredentials = groups.reduce(
+    (count, group) => count + (group.credentials?.length ?? 0),
+    0,
+  );
+
   return {
     operationId: "operation-1",
     selectionId: "authenticator-1",
@@ -70,22 +79,26 @@ describe("buildPasskeysPresentation", () => {
   });
 
   it("builds flat credential rows", () => {
-    const credentials = envelope([{
-      rpID: "example.com",
-      rpName: "Example",
-      rpIDHashHex: "abcd",
-      credentials: [{
-        credentialIDHex: "cafe",
-        credentialType: "public-key",
-        credentialTransports: ["usb", "nfc"],
-        userIDHex: "01",
-        userName: "user@example.com",
-        displayName: "Example User",
-        largeBlobKeyState: "available",
-        credProtect: 2,
-        thirdPartyPayment: true,
-      }],
-    }]);
+    const credentials = envelope([
+      {
+        rpID: "example.com",
+        rpName: "Example",
+        rpIDHashHex: "abcd",
+        credentials: [
+          {
+            credentialIDHex: "cafe",
+            credentialType: "public-key",
+            credentialTransports: ["usb", "nfc"],
+            userIDHex: "01",
+            userName: "user@example.com",
+            displayName: "Example User",
+            largeBlobKeyState: "available",
+            credProtect: 2,
+            thirdPartyPayment: true,
+          },
+        ],
+      },
+    ]);
     const presentation = buildPasskeysPresentation({
       ...defaultView,
       selectedSelector: "token-1",
@@ -111,20 +124,24 @@ describe("buildPasskeysPresentation", () => {
   });
 
   it("searches every RP and credential identity field and applies status filters", () => {
-    const credentials = envelope([{
-      rpID: "payments.example",
-      rpName: "Payments",
-      rpIDHashHex: "AABB",
-      credentials: [{
-        credentialIDHex: "CAFE",
-        userIDHex: "0102",
-        userName: "billing@example.com",
-        displayName: "Billing Admin",
-        largeBlobKeyState: "available",
-        credProtect: 3,
-        thirdPartyPayment: true,
-      }],
-    }]);
+    const credentials = envelope([
+      {
+        rpID: "payments.example",
+        rpName: "Payments",
+        rpIDHashHex: "AABB",
+        credentials: [
+          {
+            credentialIDHex: "CAFE",
+            userIDHex: "0102",
+            userName: "billing@example.com",
+            displayName: "Billing Admin",
+            largeBlobKeyState: "available",
+            credProtect: 3,
+            thirdPartyPayment: true,
+          },
+        ],
+      },
+    ]);
 
     for (const query of [
       "payments",
@@ -145,7 +162,11 @@ describe("buildPasskeysPresentation", () => {
         query,
         statusFilter: "cred-protect-3",
       });
-      expect(match.rows.map((row) => row.id), query).toEqual(["CAFE"]);
+
+      expect(
+        match.rows.map((row) => row.id),
+        query,
+      ).toEqual(["CAFE"]);
     }
 
     const missingBlob = buildPasskeysPresentation({
@@ -157,13 +178,16 @@ describe("buildPasskeysPresentation", () => {
       inventoryState: inventoryState(credentials),
       statusFilter: "large-blob-missing",
     });
+
     expect(missingBlob.emptyFilteredResult).toBe(true);
   });
 
   it("calculates capacity as an explicitly estimated upper bound", () => {
     const credentials = envelope([]);
+
     credentials.result!.summary.existingResidentCredentialsCount = 3;
     credentials.result!.summary.maxPossibleRemainingResidentCredentialsCount = 9;
+
     const presentation = buildPasskeysPresentation({
       ...defaultView,
       selectedSelector: "token-1",
@@ -172,27 +196,29 @@ describe("buildPasskeysPresentation", () => {
       authenticatorReady: true,
       inventoryState: inventoryState(credentials),
     });
+
     expect(presentation.capacity).toEqual({
       stored: 3,
       remainingUpperBound: 9,
-      estimatedTotal: 12,
       percentage: 25,
     });
   });
 
   it("implements every status filter against generated credential fields", () => {
-    const credentials = envelope([{
-      rpID: "example.test",
-      credentials: [
-        { credentialIDHex: "one", largeBlobKeyState: "available", credProtect: 1 },
-        { credentialIDHex: "two", largeBlobKeyState: "missing", credProtect: 2 },
-        { credentialIDHex: "three", credProtect: 3, thirdPartyPayment: true },
-        { credentialIDHex: "none" },
-      ],
-    }]);
+    const credentials = envelope([
+      {
+        rpID: "example.test",
+        credentials: [
+          { credentialIDHex: "one", largeBlobKeyState: "available", credProtect: 1 },
+          { credentialIDHex: "two", largeBlobKeyState: "missing", credProtect: 2 },
+          { credentialIDHex: "three", credProtect: 3, thirdPartyPayment: true },
+          { credentialIDHex: "none" },
+        ],
+      },
+    ]);
     const report = credentials.result!;
-    const ids = (filter: Parameters<typeof buildPasskeyRows>[2]) => buildPasskeyRows(report, "", filter)
-      .map((row) => row.id);
+    const ids = (filter: Parameters<typeof buildPasskeyRows>[2]) =>
+      buildPasskeyRows(report, "", filter).map((row) => row.id);
 
     expect(ids("all")).toEqual(["one", "two", "three", "none"]);
     expect(ids("large-blob-available")).toEqual(["one"]);
@@ -205,10 +231,12 @@ describe("buildPasskeysPresentation", () => {
   });
 
   it("keeps the selected credential while filters temporarily hide its row", () => {
-    const credentials = envelope([{
-      rpID: "example.test",
-      credentials: [{ credentialIDHex: "one", displayName: "Selected User" }],
-    }]);
+    const credentials = envelope([
+      {
+        rpID: "example.test",
+        credentials: [{ credentialIDHex: "one", displayName: "Selected User" }],
+      },
+    ]);
     const filtered = buildPasskeysPresentation({
       ...defaultView,
       selectedSelector: "token-1",
@@ -237,10 +265,12 @@ describe("buildPasskeysPresentation", () => {
   });
 
   it("gates preview-only updates without treating read-only listing permission as mutation blocking", () => {
-    const credentials = envelope([{
-      rpID: "example.test",
-      credentials: [{ credentialIDHex: "one" }],
-    }]);
+    const credentials = envelope([
+      {
+        rpID: "example.test",
+        credentials: [{ credentialIDHex: "one" }],
+      },
+    ]);
     const previewOnly = buildPasskeysPresentation({
       ...defaultView,
       selectedSelector: "token-1",
@@ -255,6 +285,7 @@ describe("buildPasskeysPresentation", () => {
 
     credentials.result!.support.previewOnly = false;
     credentials.result!.support.readOnlyPermission = true;
+
     const readOnlyListing = buildPasskeysPresentation({
       ...defaultView,
       selectedSelector: "token-1",
@@ -263,15 +294,19 @@ describe("buildPasskeysPresentation", () => {
       authenticatorReady: true,
       inventoryState: inventoryState(credentials),
     });
+
     expect(readOnlyListing.updateDisabled).toBe(false);
     expect(readOnlyListing.deleteDisabled).toBe(false);
   });
 
   it("keeps reload available for authenticator recovery while blocking mutations", () => {
-    const credentials = envelope([{
-      rpID: "example.test",
-      credentials: [{ credentialIDHex: "one" }],
-    }]);
+    const credentials = envelope([
+      {
+        rpID: "example.test",
+        credentials: [{ credentialIDHex: "one" }],
+      },
+    ]);
+
     credentials.result!.support.previewOnly = false;
 
     const presentation = buildPasskeysPresentation({
@@ -290,11 +325,15 @@ describe("buildPasskeysPresentation", () => {
   });
 
   it("keeps last-known-good rows and actions available after a failed refresh", () => {
-    const credentials = envelope([{
-      rpID: "example.test",
-      credentials: [{ credentialIDHex: "one" }],
-    }]);
+    const credentials = envelope([
+      {
+        rpID: "example.test",
+        credentials: [{ credentialIDHex: "one" }],
+      },
+    ]);
+
     credentials.result!.support.previewOnly = false;
+
     const state: PasskeysInventoryState = {
       ...inventoryState(credentials),
       phase: "error",

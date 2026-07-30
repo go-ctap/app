@@ -8,11 +8,15 @@ import {
   PayloadEntry,
   StatusReport,
 } from "../../bindings/github.com/go-ctap/mds/model";
-import { DeviceIdentity, DeviceReport, Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
+import {
+  DeviceIdentity,
+  DeviceReport,
+  Vendor,
+} from "../../bindings/github.com/go-ctap/kit/model/report";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
-import { setAppLocale } from "./i18n";
-import { buildOverviewHero } from "./overview-hero";
+import { setAppLocale } from "$lib/i18n";
+import { buildOverviewHero } from "$lib/overview-hero";
 
 describe("buildOverviewHero", () => {
   beforeEach(() => setAppLocale("en"));
@@ -42,10 +46,20 @@ describe("buildOverviewHero", () => {
 
     const facts = buildOverviewHero({ mds }).mdsStatusFacts;
 
-    expect(facts).toEqual(expect.arrayContaining([
-      expect.objectContaining({ label: "FIDO validation", value: "FIDO_CERTIFIED_L2", tone: "success" }),
-      expect.objectContaining({ label: "FIPS validation", value: "FIPS-CMVP-3: L2\nFIPS-CMVP-3-PHY: L3", tone: "success" }),
-    ]));
+    expect(facts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: "FIDO validation",
+          value: "FIDO_CERTIFIED_L2",
+          tone: "success",
+        }),
+        expect.objectContaining({
+          label: "FIPS validation",
+          value: "FIPS-CMVP-3: L2\nFIPS-CMVP-3-PHY: L3",
+          tone: "success",
+        }),
+      ]),
+    );
   });
 
   it("prefers the normalized vendor model over the discovery product", () => {
@@ -66,7 +80,11 @@ describe("buildOverviewHero", () => {
       identity: new DeviceIdentity({ vendor: Vendor.VendorYubico, firmware: "5.7.1" }),
     });
     const token2 = new DeviceReport({
-      identity: new DeviceIdentity({ vendor: Vendor.VendorToken2, model: "Token2 Bio3 Dual A+C PIN+", firmware: "R3.2" }),
+      identity: new DeviceIdentity({
+        vendor: Vendor.VendorToken2,
+        model: "Token2 Bio3 Dual A+C PIN+",
+        firmware: "R3.2",
+      }),
     });
     const other = new DeviceReport({
       identity: new DeviceIdentity({ vendor: Vendor.VendorUnknown, firmware: "1.0" }),

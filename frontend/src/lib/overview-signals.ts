@@ -5,13 +5,13 @@ import {
   overviewFact,
   overviewFactStatus,
   type OverviewFactLookup,
-} from "./overview-facts.js";
-import { m, overviewStatusLabel } from "./overview-i18n.js";
+} from "$lib/overview-facts.js";
+import { m, overviewStatusLabel } from "$lib/overview-i18n.js";
 import type {
   OverviewHeroSignal,
   OverviewHeroSignalGroup,
   OverviewHeroSignalId,
-} from "./overview-types.js";
+} from "$lib/overview-types.js";
 
 type SignalConfig = {
   id: OverviewHeroSignalId;
@@ -21,7 +21,9 @@ type SignalConfig = {
   defaultNote?: string;
 };
 
-export function buildOverviewHeroSignalGroups(facts: OverviewFactLookup): OverviewHeroSignalGroup[] {
+export function buildOverviewHeroSignalGroups(
+  facts: OverviewFactLookup,
+): OverviewHeroSignalGroup[] {
   return [
     {
       id: "authentication",

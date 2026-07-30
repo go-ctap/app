@@ -5,42 +5,39 @@ export {
   devices,
   selectedDevice,
   selectedSelector,
-} from "../features/authenticator/index.js";
-export { pendingInteraction } from "../features/interaction/index.js";
-export { labState } from "../features/lab/index.js";
+} from "$lib/features/authenticator";
+export { pendingInteraction } from "$lib/features/interaction";
+export { labState } from "$lib/features/lab";
 export {
   largeBlobsDecodeMode,
+  largeBlobsDecodeState,
   largeBlobsInventoryState,
   largeBlobsMutation,
-  largeBlobsPayloadEncoding,
   largeBlobsQuery,
   largeBlobsReadState,
-  largeBlobsSelectedCredentialID,
+  largeBlobsSelectedEntryIndex,
   largeBlobsStatusFilter,
   largeBlobsVerificationFlow,
-} from "../features/largeblobs/index.js";
+} from "$lib/features/largeblobs";
+export { largeBlobsPayloadEncoding } from "$lib/features/largeblobs/state";
+export { overviewBioSensor, overviewMDS } from "$lib/features/overview";
 export {
-  overviewBioSensor,
-  overviewMDS,
-} from "../features/overview/index.js";
-export {
-  credentialStoreStateState,
   passkeysInventoryState,
   passkeysMutation,
   passkeysQuery,
   passkeysSelectedCredentialID,
   passkeysStatusFilter,
   passkeysVerificationFlow,
-} from "../features/passkeys/index.js";
+} from "$lib/features/passkeys";
 export {
   securityEnrollments,
   securityMutation,
   securitySensor,
   securityStatus,
-} from "../features/security/index.js";
+} from "$lib/features/security";
 export {
   activeScreen,
   statusBar,
   type ActiveScreen,
   type StatusBarState,
-} from "../features/workbench/index.js";
+} from "$lib/features/workbench";

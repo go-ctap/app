@@ -1,4 +1,4 @@
-import { value } from "./overview-i18n.js";
+import { value } from "$lib/overview-i18n.js";
 
 type InlineValue = string | number | boolean;
 

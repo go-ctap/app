@@ -8,7 +8,12 @@ import {
   LogPayload,
 } from "../../../../bindings/github.com/go-ctap/kit/model";
 
-import { LogController, logController, recordID, runtimeCall } from "./state.svelte.js";
+import {
+  LogController,
+  logController,
+  recordID,
+  runtimeCall,
+} from "$lib/features/logs/state.svelte.js";
 
 function journalRecord(
   sequence: number,
@@ -35,6 +40,7 @@ function journalRecord(
 describe("LogController", () => {
   it("appends immutable kit records by journal sequence", () => {
     const controller = new LogController();
+
     controller.append(journalRecord(1));
     controller.append(journalRecord(2, LogOutcome.LogOutcomeFailed));
 
@@ -44,22 +50,27 @@ describe("LogController", () => {
 
   it("evicts the oldest entries by count and by stored bytes", () => {
     const countLimited = new LogController({ entryLimit: 2 });
+
     countLimited.append(journalRecord(1));
     countLimited.append(journalRecord(2));
     countLimited.append(journalRecord(3));
     expect(countLimited.records.map(recordID)).toEqual(["kit:2", "kit:3"]);
 
     const probe = new LogController();
-    probe.append(journalRecord(1, LogOutcome.LogOutcomeSucceeded, "{1: \"payload\"}"));
+
+    probe.append(journalRecord(1, LogOutcome.LogOutcomeSucceeded, '{1: "payload"}'));
+
     const byteSize = probe.records[0].byteSize;
     const byteLimited = new LogController({ byteLimit: byteSize * 2 - 1 });
-    byteLimited.append(journalRecord(1, LogOutcome.LogOutcomeSucceeded, "{1: \"payload\"}"));
-    byteLimited.append(journalRecord(2, LogOutcome.LogOutcomeSucceeded, "{1: \"payload\"}"));
+
+    byteLimited.append(journalRecord(1, LogOutcome.LogOutcomeSucceeded, '{1: "payload"}'));
+    byteLimited.append(journalRecord(2, LogOutcome.LogOutcomeSucceeded, '{1: "payload"}'));
     expect(byteLimited.records.map(recordID)).toEqual(["kit:2"]);
   });
 
   it("keeps an explicit selection stable when new records arrive", () => {
     const controller = new LogController();
+
     controller.append(journalRecord(1));
     controller.append(journalRecord(2));
     expect(controller.selectedId).toBe("kit:2");
@@ -71,6 +82,7 @@ describe("LogController", () => {
 
   it("clears only on an explicit clear action", () => {
     const controller = new LogController();
+
     controller.append(journalRecord(1));
     controller.setQuery("authenticatorGetInfo");
     controller.clear();
@@ -81,15 +93,20 @@ describe("LogController", () => {
 
   it("advances the cursor, ignores overlap, and rejects batches from before clear", () => {
     const controller = new LogController();
-    controller.applyBatch(new LogJournalBatch({
-      entries: [journalRecord(1), journalRecord(2)],
-      cursor: 2,
-      truncated: true,
-    }));
-    controller.applyBatch(new LogJournalBatch({
-      entries: [journalRecord(2), journalRecord(3)],
-      cursor: 3,
-    }));
+
+    controller.applyBatch(
+      new LogJournalBatch({
+        entries: [journalRecord(1), journalRecord(2)],
+        cursor: 2,
+        truncated: true,
+      }),
+    );
+    controller.applyBatch(
+      new LogJournalBatch({
+        entries: [journalRecord(2), journalRecord(3)],
+        cursor: 3,
+      }),
+    );
 
     expect(controller.records.map(recordID)).toEqual(["kit:1", "kit:2", "kit:3"]);
     expect(controller.historyTruncated).toBe(true);
@@ -105,7 +122,9 @@ describe("LogController", () => {
 describe("runtimeCall", () => {
   it("rethrows the original runtime error after recording a safe local failure", async () => {
     logController.clear();
+
     const cause = new Error("private bridge detail");
+
     await expect(runtimeCall("test.bridge", () => Promise.reject(cause))).rejects.toBe(cause);
     expect(logController.records).toHaveLength(1);
     expect(JSON.stringify(logController.records[0])).not.toContain("private bridge detail");

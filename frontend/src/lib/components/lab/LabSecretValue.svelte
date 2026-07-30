@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Eye, EyeOff } from "@lucide/svelte";
 
-  import { Button } from "$lib/components/ui/button/index.js";
+  import { Button } from "$lib/components/ui/button";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -10,7 +10,9 @@
   };
 
   let { valueHex }: Props = $props();
+
   let revealed = $state(false);
+
   let byteCount = $derived(Math.floor(valueHex.length / 2));
 </script>
 
@@ -22,7 +24,9 @@
       variant="ghost"
       size="icon-xs"
       aria-label={m.lab_hide_secret()}
-      onclick={() => { revealed = false; }}
+      onclick={() => {
+        revealed = false;
+      }}
     >
       <EyeOff aria-hidden="true" />
     </Button>
@@ -34,7 +38,9 @@
       variant="ghost"
       size="icon-xs"
       aria-label={m.lab_reveal_secret()}
-      onclick={() => { revealed = true; }}
+      onclick={() => {
+        revealed = true;
+      }}
     >
       <Eye aria-hidden="true" />
     </Button>
@@ -42,22 +48,22 @@
 </span>
 
 <style>
-@layer blocks {
-  .lab-secret-value {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    min-width: 0;
-  }
+  @layer blocks {
+    .lab-secret-value {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      min-width: 0;
+    }
 
-  .lab-secret-value code {
-    min-width: 0;
-    overflow-wrap: anywhere;
-  }
+    .lab-secret-value code {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
 
-  .lab-secret-count {
-    color: var(--muted-foreground);
-    font-size: 0.68rem;
+    .lab-secret-count {
+      color: var(--muted-foreground);
+      font-size: 0.68rem;
+    }
   }
-}
 </style>

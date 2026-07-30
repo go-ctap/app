@@ -1,7 +1,7 @@
 <script lang="ts">
-  import * as Field from "$lib/components/ui/field/index.js";
-  import * as InputGroup from "$lib/components/ui/input-group/index.js";
-  import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
+  import * as Field from "$lib/components/ui/field";
+  import * as InputGroup from "$lib/components/ui/input-group";
+  import * as ToggleGroup from "$lib/components/ui/toggle-group";
   import type { LabEnterpriseAttestation } from "$lib/features/lab/state";
 
   import { m } from "../../../paraglide/messages.js";
@@ -28,12 +28,15 @@
 
   function handleFormatsInput(event: Event) {
     const value = (event.currentTarget as HTMLTextAreaElement).value;
+
     onFormatsChange(value === "" ? [] : value.split(/\r?\n/));
   }
 
   function handleEnterpriseAttestationChange(next: string | string[]) {
     if (Array.isArray(next) || !next) return;
+
     const value = Number(next);
+
     if (value === 0 || value === 1 || value === 2) onEnterpriseAttestationChange(value);
   }
 </script>
@@ -80,13 +83,13 @@
 </Field.Set>
 
 <style>
-@layer blocks {
-  :global(.lab-enterprise-attestation) {
-    width: 100%;
-  }
+  @layer blocks {
+    :global(.lab-enterprise-attestation) {
+      width: 100%;
+    }
 
-  :global(.lab-enterprise-attestation [data-slot="toggle-group-item"]) {
-    flex: 1 1 33.333%;
+    :global(.lab-enterprise-attestation [data-slot="toggle-group-item"]) {
+      flex: 1 1 33.333%;
+    }
   }
-}
 </style>

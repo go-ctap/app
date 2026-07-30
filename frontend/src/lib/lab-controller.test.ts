@@ -28,9 +28,9 @@ import type {
 } from "../../bindings/telesma/service";
 import { testHIDDevice, testSmartCardDevice } from "../test/device.js";
 
-import { api } from "./api";
-import { failureForCode } from "./test-failure";
-import { labState, resetLabStateForTest } from "./features/lab/state";
+import { api } from "$lib/api";
+import { failureForCode } from "$lib/test-support/failure";
+import { labState, resetLabStateForTest } from "$lib/features/lab/state";
 import {
   completeLargeBlobsInventoryLoad,
   largeBlobsDecodeMode,
@@ -39,28 +39,28 @@ import {
   largeBlobsQuery,
   largeBlobsStatusFilter,
   largeBlobsVerificationFlow,
-} from "./features/largeblobs/state";
+} from "$lib/features/largeblobs/state";
 import {
   completePasskeysInventoryLoad,
   passkeysInventoryState,
   passkeysQuery,
   passkeysStatusFilter,
   passkeysVerificationFlow,
-} from "./features/passkeys/state";
+} from "$lib/features/passkeys/state";
 import {
   devices,
   resetAuthenticatorStateForTest,
   selectedDevice,
   selectedSelector,
   authenticatorStatus,
-} from "./features/authenticator/state";
-import { resetWorkbenchStateForTest, statusBar } from "./features/workbench/state";
-import { setAppLocale } from "./i18n";
+} from "$lib/features/authenticator/state";
+import { resetWorkbenchStateForTest, statusBar } from "$lib/features/workbench/state";
+import { setAppLocale } from "$lib/i18n";
 import {
   cancelOperationRecovery,
   operationRecovery,
   retryOperationRecovery,
-} from "./operation-recovery.js";
+} from "$lib/operation-recovery.js";
 import {
   cancelLabHandoff,
   confirmLabHandoff,
@@ -75,11 +75,8 @@ import {
   selectLabOperation,
   updateLabGetAssertionDraft,
   updateLabMakeCredentialDraft,
-} from "./lab-controller";
-import {
-  buildGetAssertionRequest,
-  buildMakeCredentialRequest,
-} from "./lab-input";
+} from "$lib/lab-controller";
+import { buildGetAssertionRequest, buildMakeCredentialRequest } from "$lib/lab-input";
 
 const toastMocks = vi.hoisted(() => ({
   error: vi.fn(),
@@ -99,10 +96,12 @@ function makePreviewEnvelope(): MakeCredentialEnvelope {
         device: testHIDDevice(),
         rp: { id: "lab.example", name: "Lab" },
         user: { id: "AAECAw==", name: "alice", displayName: "Alice" },
-        pubKeyCredParams: [{
-          type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
-          alg: -7,
-        }],
+        pubKeyCredParams: [
+          {
+            type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
+            alg: -7,
+          },
+        ],
         warnings: [],
       },
       result: null,
@@ -115,6 +114,7 @@ function makeResultEnvelope(
   credentialIDHex = "cafe",
 ): MakeCredentialEnvelope {
   const envelope = makePreviewEnvelope();
+
   envelope.operationId = "make-result-1";
   envelope.result!.result = {
     attachmentId: "token-1",
@@ -130,6 +130,7 @@ function makeResultEnvelope(
     userVerified: false,
     enterpriseAttestation: false,
   };
+
   return envelope;
 }
 
@@ -170,14 +171,17 @@ function seedSuccessfulMake(rpID = "example.com", credentialIDHex = "cafe") {
     ...previewRequest,
     dryRun: false,
   };
+  const responseEnvelope = makeResultEnvelope(rpID, credentialIDHex);
+
   labState.set({
     ...current,
     makeStep: {
       phase: "success",
-      previewRequest,
       previewEnvelope,
+      previewValue: previewEnvelope.result!.preview,
       request,
-      responseEnvelope: makeResultEnvelope(rpID, credentialIDHex),
+      responseEnvelope,
+      value: responseEnvelope.result!.result!,
     },
   });
 }
@@ -209,18 +213,23 @@ afterEach(() => {
 describe("WebAuthn Lab request lifecycle", () => {
   it("fills required demo fields without replacing optional configuration", () => {
     const before = get(labState);
-    expect(updateLabMakeCredentialDraft({
-      rpID: "edited.example",
-      rpName: "Edited",
-      residentKey: "true",
-      extensions: {
-        ...before.makeDraft.extensions,
-        credentialProperties: { included: true },
-      },
-    })).toBe(true);
+
+    expect(
+      updateLabMakeCredentialDraft({
+        rpID: "edited.example",
+        rpName: "Edited",
+        residentKey: "true",
+        extensions: {
+          ...before.makeDraft.extensions,
+          credentialProperties: { included: true },
+        },
+      }),
+    ).toBe(true);
 
     expect(fillLabDemoValues()).toBe(true);
+
     const after = get(labState);
+
     expect(after.makeDraft).toMatchObject({
       rpID: "example.com",
       rpName: "Example",
@@ -237,19 +246,26 @@ describe("WebAuthn Lab request lifecycle", () => {
 
   it("fills demo values only in the selected GetAssertion draft", () => {
     selectLabOperation("get");
+
     const initial = get(labState);
-    expect(updateLabGetAssertionDraft({
-      rpID: "edited.example",
-      userPresence: "false",
-      extensions: {
-        ...initial.getDraft.extensions,
-        getCredentialBlob: { included: true, value: true },
-      },
-    })).toBe(true);
+
+    expect(
+      updateLabGetAssertionDraft({
+        rpID: "edited.example",
+        userPresence: "false",
+        extensions: {
+          ...initial.getDraft.extensions,
+          getCredentialBlob: { included: true, value: true },
+        },
+      }),
+    ).toBe(true);
+
     const before = get(labState);
 
     expect(fillLabDemoValues()).toBe(true);
+
     const after = get(labState);
+
     expect(after.getDraft).toMatchObject({
       rpID: "example.com",
       userPresence: "false",
@@ -276,28 +292,32 @@ describe("WebAuthn Lab request lifecycle", () => {
 
   it("executes the exact reviewed MakeCredential snapshot with only confirmation fields changed", async () => {
     const initial = get(labState);
-    expect(updateLabMakeCredentialDraft({
-      rpID: "lab.example",
-      rpName: "Lab",
-      userIDHex: "00010203",
-      userName: "alice",
-      userDisplayName: "Alice",
-      clientData: {
-        ...initial.makeDraft.clientData,
-        origin: "https://lab.example",
-        challenge: "AQID",
-      },
-      algorithms: ["-7", "-257"],
-      attestationFormatsPreference: ["packed", "none"],
-      enterpriseAttestation: 2,
-      excludeList: [{ credentialIDHex: "deadbeef" }],
-      residentKey: "auto",
-      userPresence: "true",
-      userVerification: "true",
-      verificationFlow: VerificationFlow.VerificationFlowPIN,
-    })).toBe(true);
 
-    const makeCredential = vi.spyOn(api, "makeCredential")
+    expect(
+      updateLabMakeCredentialDraft({
+        rpID: "lab.example",
+        rpName: "Lab",
+        userIDHex: "00010203",
+        userName: "alice",
+        userDisplayName: "Alice",
+        clientData: {
+          ...initial.makeDraft.clientData,
+          origin: "https://lab.example",
+          challenge: "AQID",
+        },
+        algorithms: ["-7", "-257"],
+        attestationFormatsPreference: ["packed", "none"],
+        enterpriseAttestation: 2,
+        excludeList: [{ credentialIDHex: "deadbeef" }],
+        residentKey: "auto",
+        userPresence: "true",
+        userVerification: "true",
+        verificationFlow: VerificationFlow.VerificationFlowPIN,
+      }),
+    ).toBe(true);
+
+    const makeCredential = vi
+      .spyOn(api, "makeCredential")
       .mockResolvedValueOnce(makePreviewEnvelope())
       .mockResolvedValueOnce(makeResultEnvelope());
 
@@ -307,29 +327,34 @@ describe("WebAuthn Lab request lifecycle", () => {
       verificationFlow: VerificationFlow.VerificationFlowPIN,
       rp: { id: "lab.example", name: "Lab" },
       user: { id: "AAECAw==", name: "alice", displayName: "Alice" },
-      clientDataJSON: "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiQVFJRCIsIm9yaWdpbiI6Imh0dHBzOi8vbGFiLmV4YW1wbGUiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+      clientDataJSON:
+        "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiQVFJRCIsIm9yaWdpbiI6Imh0dHBzOi8vbGFiLmV4YW1wbGUiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
       pubKeyCredParams: [
         { type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 },
         { type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -257 },
       ],
       enterpriseAttestation: 2,
       attestationFormatsPreference: ["packed", "none"],
-      excludeList: [{
-        type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
-        id: "3q2+7w==",
-      }],
+      excludeList: [
+        {
+          type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
+          id: "3q2+7w==",
+        },
+      ],
       options: { userPresence: true, userVerification: true },
       dryRun: true,
     });
     expect(makeCredential.mock.calls[0][0].options?.residentKey).toBeUndefined();
 
     const review = get(labState).makeStep;
+
     expect(review.phase).toBe("review");
     expect(updateLabMakeCredentialDraft({ rpName: "Changed after review" })).toBe(false);
     expect(await confirmLabMakeCredential()).toBe(true);
 
     const reviewedRequest = makeCredential.mock.calls[0][0];
     const executionRequest = makeCredential.mock.calls[1][0];
+
     expect(executionRequest).toEqual({
       ...reviewedRequest,
       dryRun: false,
@@ -344,9 +369,12 @@ describe("WebAuthn Lab request lifecycle", () => {
 
   it("publishes the CTAP result while local verification loads and supports retry", async () => {
     let resolveVerification!: (verification: MakeCredentialVerification) => void;
-    vi.mocked(api.verifyMakeCredential).mockReturnValueOnce(new Promise((resolve) => {
-      resolveVerification = resolve;
-    }));
+
+    vi.mocked(api.verifyMakeCredential).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveVerification = resolve;
+      }),
+    );
     vi.spyOn(api, "makeCredential")
       .mockResolvedValueOnce(makePreviewEnvelope())
       .mockResolvedValueOnce(makeResultEnvelope("lab.example", "cafe"));
@@ -357,19 +385,22 @@ describe("WebAuthn Lab request lifecycle", () => {
       makeStep: { phase: "success" },
       makeVerification: { phase: "loading" },
     });
-    expect(api.verifyMakeCredential).toHaveBeenCalledWith(expect.objectContaining({
-      input: expect.objectContaining({
-        rp: expect.objectContaining({ id: "example.com" }),
+    expect(api.verifyMakeCredential).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({
+          rp: expect.objectContaining({ id: "example.com" }),
+        }),
+        result: expect.objectContaining({
+          rpID: "lab.example",
+          attestationObjectCBORHex: "a363666d74",
+        }),
       }),
-      result: expect.objectContaining({
-        rpID: "lab.example",
-        attestationObjectCBORHex: "a363666d74",
-      }),
-    }));
+    );
 
     const verification = new MakeCredentialVerification({
       status: VerificationStatus.VerificationStatusVerified,
     });
+
     resolveVerification(verification);
     await vi.waitFor(() => {
       expect(get(labState).makeVerification).toEqual({ phase: "ready", verification });
@@ -385,21 +416,29 @@ describe("WebAuthn Lab request lifecycle", () => {
   it("uses shared card recovery without Lab-specific replay state", async () => {
     const firstCard = testSmartCardDevice("card-1");
     const secondCard = testSmartCardDevice("card-2");
+
     devices.set([firstCard]);
     selectedSelector.set(firstCard.attachment.id);
     selectedDevice.set(firstCard);
     authenticatorStatus.set({ state: "ready", selectionId: "authenticator-card-1" });
+
     const denied = makePreviewEnvelope();
+
     denied.error = failureForCode(Code.CodeUserPresenceRequired);
+
     const responses = [makePreviewEnvelope(), denied, makeResultEnvelope()];
     const sentSelectionIds: string[] = [];
+
     vi.spyOn(api, "makeCredential").mockImplementation((request) => {
       sentSelectionIds.push(request.selectionId);
+
       return Promise.resolve(responses.shift()!);
     });
 
     expect(await previewLabMakeCredential()).toBe(true);
+
     const executing = confirmLabMakeCredential();
+
     await vi.waitFor(() => expect(get(operationRecovery)).not.toBeNull());
     devices.set([]);
     selectedSelector.set("");
@@ -421,7 +460,9 @@ describe("WebAuthn Lab request lifecycle", () => {
   });
 
   it("keeps a successful CTAP result when the independent verification call fails", async () => {
-    vi.mocked(api.verifyMakeCredential).mockRejectedValueOnce(new Error("verification unavailable"));
+    vi.mocked(api.verifyMakeCredential).mockRejectedValueOnce(
+      new Error("verification unavailable"),
+    );
     vi.spyOn(api, "makeCredential")
       .mockResolvedValueOnce(makePreviewEnvelope())
       .mockResolvedValueOnce(makeResultEnvelope());
@@ -436,8 +477,11 @@ describe("WebAuthn Lab request lifecycle", () => {
 
   it("reconfirms directly after any execution failure without rebuilding the preview", async () => {
     const executionFailure = makePreviewEnvelope();
+
     executionFailure.error = failureForCode(Code.CodeTransportFailure);
-    const makeCredential = vi.spyOn(api, "makeCredential")
+
+    const makeCredential = vi
+      .spyOn(api, "makeCredential")
       .mockResolvedValueOnce(makePreviewEnvelope())
       .mockResolvedValueOnce(executionFailure)
       .mockResolvedValueOnce(makeResultEnvelope());
@@ -462,22 +506,31 @@ describe("WebAuthn Lab request lifecycle", () => {
 
   it("retries GetAssertion with the exact frozen request, including raw client-data bytes", async () => {
     const initial = get(labState);
-    expect(updateLabGetAssertionDraft({
-      clientData: {
-        ...initial.getDraft.clientData,
-        mode: "raw",
-        rawJSON: "{not-json\n",
-      },
-    })).toBe(true);
+
+    expect(
+      updateLabGetAssertionDraft({
+        clientData: {
+          ...initial.getDraft.clientData,
+          mode: "raw",
+          rawJSON: "{not-json\n",
+        },
+      }),
+    ).toBe(true);
+
     const failure = getResultEnvelope();
+
     failure.error = failureForCode(Code.CodeTransportFailure);
-    const getAssertion = vi.spyOn(api, "getAssertion")
+
+    const getAssertion = vi
+      .spyOn(api, "getAssertion")
       .mockResolvedValueOnce(failure)
       .mockResolvedValueOnce(getResultEnvelope())
       .mockResolvedValueOnce(getResultEnvelope());
 
     expect(await runLabGetAssertion()).toBe(false);
+
     const frozenRequest = getAssertion.mock.calls[0][0];
+
     expect(frozenRequest).toMatchObject({
       selectionId: "authenticator-1",
       rpID: "example.com",
@@ -486,8 +539,6 @@ describe("WebAuthn Lab request lifecycle", () => {
     });
     expect(get(labState).getStep).toMatchObject({
       phase: "error",
-      previewRequest: frozenRequest,
-      request: null,
     });
 
     expect(await rerunLabGetAssertion()).toBe(true);
@@ -507,55 +558,68 @@ describe("WebAuthn Lab request lifecycle", () => {
 
   it("verifies the full assertion result with local material matched by credential ID", async () => {
     const envelope = getResultEnvelope("example.com");
-    envelope.result!.result!.assertions = [{
-      index: 0,
-      credential: {
-        type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
-        id: "yv4=",
+
+    envelope.result!.result!.assertions = [
+      {
+        index: 0,
+        credential: {
+          type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
+          id: "yv4=",
+        },
+        authenticatorDataHex: "11".repeat(37),
+        signatureHex: "22".repeat(64),
+        signCount: 8,
+        userPresent: true,
+        userVerified: false,
       },
-      authenticatorDataHex: "11".repeat(37),
-      signatureHex: "22".repeat(64),
-      signCount: 8,
-      userPresent: true,
-      userVerified: false,
-    }];
-    expect(updateLabGetAssertionDraft({
-      verificationMaterial: [new CredentialVerificationMaterial({
-        credentialIDHex: "cafe",
-        publicKeyCOSEHex: "a5010203",
-        previousSignCount: 7,
-      })],
-    })).toBe(true);
-    vi.spyOn(api, "getAssertion")
-      .mockResolvedValueOnce(envelope)
-      .mockResolvedValueOnce(envelope);
+    ];
+    expect(
+      updateLabGetAssertionDraft({
+        verificationMaterial: [
+          new CredentialVerificationMaterial({
+            credentialIDHex: "cafe",
+            publicKeyCOSEHex: "a5010203",
+            previousSignCount: 7,
+          }),
+        ],
+      }),
+    ).toBe(true);
+    vi.spyOn(api, "getAssertion").mockResolvedValueOnce(envelope).mockResolvedValueOnce(envelope);
 
     expect(await runLabGetAssertion()).toBe(true);
     expect(await confirmLabGetAssertion()).toBe(true);
     await vi.waitFor(() => {
-      expect(api.verifyGetAssertion).toHaveBeenCalledWith(expect.objectContaining({
-        input: expect.objectContaining({ rpID: "example.com" }),
-        result: expect.objectContaining({
-          rpID: "example.com",
-          assertions: [expect.objectContaining({
-            authenticatorDataHex: "11".repeat(37),
-            signatureHex: "22".repeat(64),
-          })],
+      expect(api.verifyGetAssertion).toHaveBeenCalledWith(
+        expect.objectContaining({
+          input: expect.objectContaining({ rpID: "example.com" }),
+          result: expect.objectContaining({
+            rpID: "example.com",
+            assertions: [
+              expect.objectContaining({
+                authenticatorDataHex: "11".repeat(37),
+                signatureHex: "22".repeat(64),
+              }),
+            ],
+          }),
+          verificationMaterial: [
+            expect.objectContaining({
+              credentialIDHex: "cafe",
+              publicKeyCOSEHex: "a5010203",
+              previousSignCount: 7,
+            }),
+          ],
         }),
-        verificationMaterial: [expect.objectContaining({
-          credentialIDHex: "cafe",
-          publicKeyCOSEHex: "a5010203",
-          previousSignCount: 7,
-        })],
-      }));
+      );
     });
     expect(get(labState).getStep.phase).toBe("success");
   });
 
   it("keeps a real error envelope separate from a thrown runtime failure", async () => {
     const responseFailure = makePreviewEnvelope();
+
     responseFailure.error = failureForCode(Code.CodeTransportFailure);
-    const makeCredential = vi.spyOn(api, "makeCredential")
+
+    vi.spyOn(api, "makeCredential")
       .mockResolvedValueOnce(responseFailure)
       .mockRejectedValueOnce(new Error("Wails bridge unavailable"));
 
@@ -563,31 +627,37 @@ describe("WebAuthn Lab request lifecycle", () => {
     expect(get(labState).makeStep).toMatchObject({
       phase: "error",
       responseEnvelope: responseFailure,
-      previewEnvelope: null,
       runtimeError: null,
     });
 
     resetLabStateForTest((target) => target.fill(0x22));
     expect(await previewLabMakeCredential()).toBe(false);
+
     const runtimeState = get(labState).makeStep;
+
     expect(runtimeState).toMatchObject({
       phase: "error",
       responseEnvelope: null,
-      previewEnvelope: null,
       runtimeError: failureForCode(Code.CodeInternalError),
     });
   });
 
   it("reopens an invalid authenticator before starting a fresh MakeCredential preview", async () => {
     const token = testHIDDevice("token-1", "Test authenticator");
+
     devices.set([token]);
     selectedSelector.set("token-1");
     selectedDevice.set(token);
+
     const invalidSelection = makePreviewEnvelope();
+
     invalidSelection.error = failureForCode(Code.CodeAuthenticatorClosed);
-    const makeCredential = vi.spyOn(api, "makeCredential")
+
+    const makeCredential = vi
+      .spyOn(api, "makeCredential")
       .mockResolvedValueOnce(invalidSelection)
       .mockResolvedValueOnce(makePreviewEnvelope());
+
     vi.spyOn(api, "setSelection").mockResolvedValue({
       selection: {
         id: "authenticator-2",
@@ -606,25 +676,37 @@ describe("WebAuthn Lab request lifecycle", () => {
 
   it("reopens an invalid authenticator and reruns GetAssertion with the same client-data bytes", async () => {
     const initial = get(labState);
-    expect(updateLabGetAssertionDraft({
-      clientData: {
-        ...initial.getDraft.clientData,
-        mode: "raw",
-        rawJSON: "{not-json\n",
-      },
-    })).toBe(true);
+
+    expect(
+      updateLabGetAssertionDraft({
+        clientData: {
+          ...initial.getDraft.clientData,
+          mode: "raw",
+          rawJSON: "{not-json\n",
+        },
+      }),
+    ).toBe(true);
+
     const token = testHIDDevice("token-1", "Test authenticator");
+
     devices.set([token]);
     selectedSelector.set("token-1");
     selectedDevice.set(token);
+
     const invalidSelection = getResultEnvelope();
+
     invalidSelection.error = failureForCode(Code.CodeAuthenticatorClosed);
+
     const success = getResultEnvelope();
+
     success.selectionId = "authenticator-2";
-    const getAssertion = vi.spyOn(api, "getAssertion")
+
+    const getAssertion = vi
+      .spyOn(api, "getAssertion")
       .mockResolvedValueOnce(invalidSelection)
       .mockResolvedValueOnce(success)
       .mockResolvedValueOnce(success);
+
     vi.spyOn(api, "setSelection").mockResolvedValue({
       selection: {
         id: "authenticator-2",
@@ -632,7 +714,9 @@ describe("WebAuthn Lab request lifecycle", () => {
     });
 
     expect(await runLabGetAssertion()).toBe(false);
+
     const firstRequest = getAssertion.mock.calls[0][0];
+
     expect(get(labState).getStep).toMatchObject({
       phase: "error",
       responseEnvelope: invalidSelection,
@@ -653,20 +737,29 @@ describe("WebAuthn Lab request lifecycle", () => {
     expect(get(labState).getStep.phase).toBe("review");
     expect(await confirmLabGetAssertion()).toBe(true);
     expect(getAssertion).toHaveBeenCalledTimes(3);
-    expect(getAssertion.mock.calls[2][0]).toMatchObject({ selectionId: "authenticator-2", dryRun: false });
+    expect(getAssertion.mock.calls[2][0]).toMatchObject({
+      selectionId: "authenticator-2",
+      dryRun: false,
+    });
     expect(getAssertion.mock.calls[2][0].clientDataJSON).toBe(firstRequest.clientDataJSON);
     expect(get(labState).getStep.phase).toBe("success");
   });
 
   it("invalidates Passkeys and Large Blobs after success without losing UI preferences", async () => {
-    completePasskeysInventoryLoad({} as NonNullable<CredentialsEnvelope["result"]>, "2026-07-13T00:00:00.000Z");
+    completePasskeysInventoryLoad(
+      {} as NonNullable<CredentialsEnvelope["result"]>,
+      "2026-07-13T00:00:00.000Z",
+    );
     passkeysQuery.set("alice");
     passkeysStatusFilter.set("large-blob-available");
     passkeysVerificationFlow.set(VerificationFlow.VerificationFlowPIN);
 
-    completeLargeBlobsInventoryLoad({} as LargeBlobListEnvelope, "2026-07-13T00:00:00.000Z");
+    completeLargeBlobsInventoryLoad(
+      {} as NonNullable<LargeBlobListEnvelope["result"]>,
+      "2026-07-13T00:00:00.000Z",
+    );
     largeBlobsQuery.set("example.com");
-    largeBlobsStatusFilter.set("present");
+    largeBlobsStatusFilter.set("matched");
     largeBlobsVerificationFlow.set(VerificationFlow.VerificationFlowPIN);
     largeBlobsPayloadEncoding.set("hex");
     largeBlobsDecodeMode.set(DecodeMode.DecodeModeCBOR);
@@ -689,13 +782,11 @@ describe("WebAuthn Lab request lifecycle", () => {
 
     expect(get(largeBlobsInventoryState)).toEqual({
       phase: "idle",
-      lastSuccessfulEnvelope: null,
-      responseEnvelope: null,
-      runtimeError: null,
+      report: null,
       lastSuccessfulAt: null,
     });
     expect(get(largeBlobsQuery)).toBe("example.com");
-    expect(get(largeBlobsStatusFilter)).toBe("present");
+    expect(get(largeBlobsStatusFilter)).toBe("matched");
     expect(get(largeBlobsVerificationFlow)).toBe(VerificationFlow.VerificationFlowPIN);
     expect(get(largeBlobsPayloadEncoding)).toBe("hex");
     expect(get(largeBlobsDecodeMode)).toBe(DecodeMode.DecodeModeCBOR);
@@ -705,25 +796,23 @@ describe("WebAuthn Lab request lifecycle", () => {
 describe("WebAuthn Lab credential handoff", () => {
   it("preserves existing entries and does not duplicate a matching credential for the same RP", () => {
     seedSuccessfulMake("example.com", "cafe");
-    expect(updateLabGetAssertionDraft({
-      allowList: [
-        { credentialIDHex: "beef" },
-        { credentialIDHex: "CAFE" },
-      ],
-    })).toBe(true);
+    expect(
+      updateLabGetAssertionDraft({
+        allowList: [{ credentialIDHex: "beef" }, { credentialIDHex: "CAFE" }],
+      }),
+    ).toBe(true);
 
     expect(handoffLabCredential()).toBe(true);
     expect(get(labState).getDraft).toMatchObject({
       rpID: "example.com",
-      allowList: [
-        { credentialIDHex: "beef" },
-        { credentialIDHex: "CAFE" },
+      allowList: [{ credentialIDHex: "beef" }, { credentialIDHex: "CAFE" }],
+      verificationMaterial: [
+        {
+          credentialIDHex: "cafe",
+          publicKeyCOSEHex: "a5010203262001215820",
+          previousSignCount: 0,
+        },
       ],
-      verificationMaterial: [{
-        credentialIDHex: "cafe",
-        publicKeyCOSEHex: "a5010203262001215820",
-        previousSignCount: 0,
-      }],
     });
     expect(get(labState).pendingHandoff).toBeNull();
     expect(toastMocks.success).toHaveBeenCalledOnce();
@@ -735,33 +824,36 @@ describe("WebAuthn Lab credential handoff", () => {
 
   it("fills an empty RP and appends the created credential while preserving other entries", () => {
     seedSuccessfulMake("created.example", "cafe");
-    expect(updateLabGetAssertionDraft({
-      rpID: "",
-      allowList: [{ credentialIDHex: "beef" }],
-    })).toBe(true);
+    expect(
+      updateLabGetAssertionDraft({
+        rpID: "",
+        allowList: [{ credentialIDHex: "beef" }],
+      }),
+    ).toBe(true);
 
     expect(handoffLabCredential()).toBe(true);
     expect(get(labState).getDraft).toMatchObject({
       rpID: "created.example",
-      allowList: [
-        { credentialIDHex: "beef" },
-        { credentialIDHex: "cafe" },
+      allowList: [{ credentialIDHex: "beef" }, { credentialIDHex: "cafe" }],
+      verificationMaterial: [
+        {
+          credentialIDHex: "cafe",
+          publicKeyCOSEHex: "a5010203262001215820",
+          previousSignCount: 0,
+        },
       ],
-      verificationMaterial: [{
-        credentialIDHex: "cafe",
-        publicKeyCOSEHex: "a5010203262001215820",
-        previousSignCount: 0,
-      }],
     });
     expect(get(labState).getStep.phase).toBe("editing");
   });
 
   it("requires confirmation for an RP mismatch; cancel is inert and confirm replaces the scenario", () => {
     seedSuccessfulMake("created.example", "cafe");
-    expect(updateLabGetAssertionDraft({
-      rpID: "other.example",
-      allowList: [{ credentialIDHex: "beef" }],
-    })).toBe(true);
+    expect(
+      updateLabGetAssertionDraft({
+        rpID: "other.example",
+        allowList: [{ credentialIDHex: "beef" }],
+      }),
+    ).toBe(true);
 
     expect(handoffLabCredential()).toBe(false);
     expect(get(labState).pendingHandoff).toEqual({
@@ -783,30 +875,40 @@ describe("WebAuthn Lab credential handoff", () => {
     expect(get(labState).getDraft).toMatchObject({
       rpID: "created.example",
       allowList: [{ credentialIDHex: "cafe" }],
-      verificationMaterial: [{
-        credentialIDHex: "cafe",
-        publicKeyCOSEHex: "a5010203262001215820",
-        previousSignCount: 0,
-      }],
+      verificationMaterial: [
+        {
+          credentialIDHex: "cafe",
+          publicKeyCOSEHex: "a5010203262001215820",
+          previousSignCount: 0,
+        },
+      ],
     });
     expect(get(labState).getStep.phase).toBe("editing");
   });
 
   it("requires confirmation when GetAssertion has a fixed result even for the same RP", () => {
     seedSuccessfulMake("example.com", "cafe");
-    expect(updateLabGetAssertionDraft({
-      allowList: [{ credentialIDHex: "beef" }],
-    })).toBe(true);
+    expect(
+      updateLabGetAssertionDraft({
+        allowList: [{ credentialIDHex: "beef" }],
+      }),
+    ).toBe(true);
+
     const current = get(labState);
-    const request: GetAssertionRequest = buildGetAssertionRequest("authenticator-1", current.getDraft);
+    const request: GetAssertionRequest = buildGetAssertionRequest(
+      "authenticator-1",
+      current.getDraft,
+    );
+
     labState.set({
       ...current,
       getStep: {
         phase: "success",
-        previewRequest: request,
         previewEnvelope: getResultEnvelope("example.com"),
+        previewValue: getResultEnvelope("example.com").result!.preview,
         request,
         responseEnvelope: getResultEnvelope("example.com"),
+        value: getResultEnvelope("example.com").result!.result!,
       },
     });
 
@@ -818,9 +920,7 @@ describe("WebAuthn Lab credential handoff", () => {
       previousSignCount: 0,
     });
     expect(confirmLabHandoff()).toBe(true);
-    expect(get(labState).getDraft.allowList).toEqual([
-      { credentialIDHex: "cafe" },
-    ]);
+    expect(get(labState).getDraft.allowList).toEqual([{ credentialIDHex: "cafe" }]);
     expect(get(labState).getDraft.verificationMaterial).toEqual([
       expect.objectContaining({
         credentialIDHex: "cafe",

@@ -1,11 +1,11 @@
 <script lang="ts">
   import { copyToClipboard } from "$lib/clipboard";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
+  import { Button } from "$lib/components/ui/button";
+  import { ScrollArea } from "$lib/components/ui/scroll-area";
   import { sanitizedJson } from "$lib/redaction";
 
   import { m } from "../../../paraglide/messages.js";
-  import JsonCode from "./JsonCode.svelte";
+  import JsonCode from "$lib/components/shared/JsonCode.svelte";
 
   type Props = {
     value: unknown;
@@ -14,6 +14,7 @@
   };
 
   let { value, title = m.raw_json(), variant = "bare" }: Props = $props();
+
   let source = $derived(sanitizedJson(value) ?? "null");
 
   async function copy() {
@@ -27,6 +28,7 @@
     <Button variant="outline" type="button" onclick={copy}>{m.copy()}</Button>
   </div>
 {/if}
+
 <ScrollArea
   class="json-frame"
   orientation="both"
@@ -36,31 +38,30 @@
 </ScrollArea>
 
 <style>
-@layer blocks {
-  .json-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-  }
+  @layer blocks {
+    .json-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+    }
 
-  h3 {
-    margin: 0;
-    font-size: 0.95rem;
-  }
+    h3 {
+      margin: 0;
+      font-size: 0.95rem;
+    }
 
-  :global(.json-frame),
-  :global(.json-frame > [data-scroll-area-viewport]) {
-    inline-size: 100%;
-    max-inline-size: 100%;
-    max-block-size: var(--json-view-max-block-size, min(26rem, 44dvh));
-    min-inline-size: 0;
-  }
+    :global(.json-frame),
+    :global(.json-frame > [data-scroll-area-viewport]) {
+      inline-size: 100%;
+      max-inline-size: 100%;
+      max-block-size: var(--json-view-max-block-size, min(26rem, 44dvh));
+      min-inline-size: 0;
+    }
 
-  :global(.json-frame) {
-    border: 1px solid var(--border);
-    background: var(--muted);
+    :global(.json-frame) {
+      border: 1px solid var(--border);
+      background: var(--muted);
+    }
   }
-
-}
 </style>

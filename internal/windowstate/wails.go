@@ -7,6 +7,7 @@ import (
 
 func RecordCurrent(window *application.WebviewWindow, tracker *Tracker) {
 	width, height := window.Size()
+
 	tracker.RecordResize(
 		width,
 		height,

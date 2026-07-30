@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Badge, type BadgeVariant } from "$lib/components/ui/badge/index.js";
+  import { Badge, type BadgeVariant } from "$lib/components/ui/badge";
 
   type Props = {
     label: string;
@@ -11,8 +11,11 @@
 
   let badgeVariant: BadgeVariant = $derived.by(() => {
     if (tone === "bad") return "destructive";
+
     if (tone === "warn") return "warning";
+
     if (tone === "ok") return "default";
+
     return "outline";
   });
 </script>
@@ -23,12 +26,12 @@
 </Badge>
 
 <style>
-@layer blocks {
+  @layer blocks {
     .dot {
       width: 6px;
       height: 6px;
       border-radius: 999px;
       background: currentColor;
     }
-}
+  }
 </style>

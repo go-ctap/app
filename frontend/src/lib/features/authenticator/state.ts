@@ -7,12 +7,20 @@ import { idleLoadState, type LoadState } from "$lib/load-state";
 import type { AuthenticatorStatus } from "$lib/authenticator-model";
 
 export const devices = writable<DeviceReport[]>([]);
+
 export const selectedSelector = writable("");
+
 export const selectedDevice = writable<DeviceReport | null>(null);
+
 export const authenticatorStatus = writable<AuthenticatorStatus>({ state: "idle" });
+
 export const authenticatorInspection = writable<LoadState<InspectEnvelope>>(idleLoadState());
 
-export const authenticatorBusy = derived(authenticatorStatus, ($authenticatorStatus) => $authenticatorStatus.state === "opening" || $authenticatorStatus.state === "running");
+export const authenticatorBusy = derived(
+  authenticatorStatus,
+  ($authenticatorStatus) =>
+    $authenticatorStatus.state === "opening" || $authenticatorStatus.state === "running",
+);
 
 export function resetAuthenticatorStateForTest() {
   devices.set([]);

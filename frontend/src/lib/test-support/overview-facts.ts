@@ -10,22 +10,35 @@ import {
 
 const factKinds = new Map<FactID, FactValueKind>([
   ...withKind(FactValueKind.FactValueText, [
-    FactID.FactIDAAGUID, FactID.FactIDEncryptedDeviceIdentifier,
-    FactID.FactIDEncryptedCredentialStoreState, FactID.FactIDPINComplexityPolicyURL,
+    FactID.FactIDAAGUID,
+    FactID.FactIDEncryptedDeviceIdentifier,
+    FactID.FactIDEncryptedCredentialStoreState,
+    FactID.FactIDPINComplexityPolicyURL,
   ]),
   ...withKind(FactValueKind.FactValueList, [
-    FactID.FactIDTransports, FactID.FactIDVersions, FactID.FactIDAlgorithms,
-    FactID.FactIDPinUvAuthProtocols, FactID.FactIDAuthenticatorConfigCommands,
-    FactID.FactIDVendorPrototypeConfigCommands, FactID.FactIDTransportsForReset,
-    FactID.FactIDAttestationFormats, FactID.FactIDCertifications,
+    FactID.FactIDTransports,
+    FactID.FactIDVersions,
+    FactID.FactIDAlgorithms,
+    FactID.FactIDPinUvAuthProtocols,
+    FactID.FactIDAuthenticatorConfigCommands,
+    FactID.FactIDVendorPrototypeConfigCommands,
+    FactID.FactIDTransportsForReset,
+    FactID.FactIDAttestationFormats,
+    FactID.FactIDCertifications,
   ]),
   ...withKind(FactValueKind.FactValueInteger, [
-    FactID.FactIDUvModality, FactID.FactIDPreferredPlatformUVAttempts,
-    FactID.FactIDUVCountSinceLastPINEntry, FactID.FactIDMaxSerializedLargeBlobArray,
-    FactID.FactIDMaxCredBlobLength, FactID.FactIDMaxRPIDsForSetMinPINLength,
-    FactID.FactIDEffectiveMaxMessageSize, FactID.FactIDMaxCredentialCountInList,
-    FactID.FactIDMaxCredentialIDLength, FactID.FactIDEffectiveMinPINLength,
-    FactID.FactIDEffectiveMaxPINLength, FactID.FactIDRemainingDiscoverableCredentials,
+    FactID.FactIDUvModality,
+    FactID.FactIDPreferredPlatformUVAttempts,
+    FactID.FactIDUVCountSinceLastPINEntry,
+    FactID.FactIDMaxSerializedLargeBlobArray,
+    FactID.FactIDMaxCredBlobLength,
+    FactID.FactIDMaxRPIDsForSetMinPINLength,
+    FactID.FactIDEffectiveMaxMessageSize,
+    FactID.FactIDMaxCredentialCountInList,
+    FactID.FactIDMaxCredentialIDLength,
+    FactID.FactIDEffectiveMinPINLength,
+    FactID.FactIDEffectiveMaxPINLength,
+    FactID.FactIDRemainingDiscoverableCredentials,
     FactID.FactIDFirmwareVersion,
   ]),
 ]);
@@ -43,6 +56,7 @@ export function testOverviewFact(
 export function testOverviewAssessment(overrides: readonly Fact[] = []) {
   const byID = new Map(overrides.map((fact) => [fact.id, fact]));
   const facts = allFactIDs().map((id) => byID.get(id) ?? unknownFact(id));
+
   return new Assessment({ facts });
 }
 

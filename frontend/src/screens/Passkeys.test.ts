@@ -23,8 +23,12 @@ import {
 } from "$lib/features/passkeys/state";
 import { setAppLocale } from "$lib/i18n";
 import { setAdvancedMode } from "$lib/preferences";
-import { failureForCode } from "$lib/test-failure";
-import { resetAppStateForTest, seedPasskeysEnvelopeForTest, seedSelectionForTest } from "$lib/store-test-utils";
+import { failureForCode } from "$lib/test-support/failure";
+import {
+  resetAppStateForTest,
+  seedPasskeysEnvelopeForTest,
+  seedSelectionForTest,
+} from "$lib/test-support/store-utils";
 import { testHIDDevice } from "../test/device.js";
 
 import Passkeys from "./Passkeys.svelte";
@@ -32,10 +36,13 @@ import Passkeys from "./Passkeys.svelte";
 const controllerMocks = vi.hoisted(() => ({
   reloadPasskeys: vi.fn(() => Promise.resolve(true)),
 }));
+
 const workbenchMocks = vi.hoisted(() => ({
   navigateToScreen: vi.fn(() => Promise.resolve()),
 }));
+
 const toastMocks = vi.hoisted(() => ({ success: vi.fn() }));
+
 const clipboardSetText = vi.spyOn(Clipboard, "SetText");
 
 vi.mock("$lib/features/passkeys", async (importOriginal) => ({
@@ -66,29 +73,35 @@ function credentialsEnvelope(readOnlyPermission = false): CredentialsEnvelope {
         totalRPs: 1,
         totalCredentials: 1,
       },
-      groups: [{
-        rpID: "example.com",
-        rpName: "Example",
-        rpIDHashHex: "abcd",
-        credentials: [{
-          credentialIDHex: "cafe",
-          credentialType: "public-key",
-          userIDHex: "01",
-          userName: "user@example.com",
-          displayName: "Example User",
-          credProtect: 2,
-        }],
-      }],
+      groups: [
+        {
+          rpID: "example.com",
+          rpName: "Example",
+          rpIDHashHex: "abcd",
+          credentials: [
+            {
+              credentialIDHex: "cafe",
+              credentialType: "public-key",
+              userIDHex: "01",
+              userName: "user@example.com",
+              displayName: "Example User",
+              credProtect: 2,
+            },
+          ],
+        },
+      ],
     },
   } as CredentialsEnvelope;
 }
 
 function emptyCredentialsEnvelope(): CredentialsEnvelope {
   const envelope = credentialsEnvelope();
+
   envelope.result!.summary.existingResidentCredentialsCount = 0;
   envelope.result!.summary.totalRPs = 0;
   envelope.result!.summary.totalCredentials = 0;
   envelope.result!.groups = [];
+
   return envelope;
 }
 
@@ -109,6 +122,7 @@ function credentialUpdateTarget(): CredentialTarget {
 
 function mixedRelyingPartyEnvelope(): CredentialsEnvelope {
   const envelope = credentialsEnvelope();
+
   envelope.result!.summary.existingResidentCredentialsCount = 3;
   envelope.result!.summary.totalRPs = 2;
   envelope.result!.summary.totalCredentials = 3;
@@ -117,13 +131,15 @@ function mixedRelyingPartyEnvelope(): CredentialsEnvelope {
       rpID: "solo.example",
       rpName: "Solo",
       rpIDHashHex: "aaaa",
-      credentials: [{
-        credentialIDHex: "a1",
-        userIDHex: "01",
-        userName: "solo@example.com",
-        displayName: "Solo User",
-        credProtect: 2,
-      }],
+      credentials: [
+        {
+          credentialIDHex: "a1",
+          userIDHex: "01",
+          userName: "solo@example.com",
+          displayName: "Solo User",
+          credProtect: 2,
+        },
+      ],
     },
     {
       rpID: "team.example",
@@ -147,6 +163,7 @@ function mixedRelyingPartyEnvelope(): CredentialsEnvelope {
       ],
     },
   ];
+
   return envelope;
 }
 
@@ -182,6 +199,7 @@ describe("Passkeys", () => {
 
   it("keeps an empty inventory in context and offers useful next actions", async () => {
     const user = userEvent.setup();
+
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -191,8 +209,11 @@ describe("Passkeys", () => {
     render(Passkeys);
 
     const table = screen.getByRole("table", { name: "Discoverable passkeys" });
+
     expect(within(table).getByRole("columnheader", { name: "RP name" })).toBeInTheDocument();
-    expect(within(table).getByText("This authenticator has no discoverable passkeys")).toBeInTheDocument();
+    expect(
+      within(table).getByText("This authenticator has no discoverable passkeys"),
+    ).toBeInTheDocument();
     expect(within(table).getByText(/The inventory loaded successfully\./)).toBeInTheDocument();
 
     await user.click(within(table).getByRole("button", { name: "Open WebAuthn Lab" }));
@@ -237,7 +258,9 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(screen.getByText("Load discoverable passkeys from the selected authenticator.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Load discoverable passkeys from the selected authenticator."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("The PIN is invalid.")).not.toBeInTheDocument();
   });
 
@@ -250,13 +273,18 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    expect(screen.getByText("Load discoverable passkeys from the selected authenticator.")).toBeInTheDocument();
-    expect(screen.queryByText("The requested verification flow is not supported.")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Load discoverable passkeys from the selected authenticator."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("The requested verification flow is not supported."),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("Passkey management unavailable")).not.toBeInTheDocument();
   });
 
   it("opens credential details immediately after the selected table row", async () => {
     const user = userEvent.setup();
+
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -267,6 +295,7 @@ describe("Passkeys", () => {
 
     const credential = screen.getByRole("button", { name: /Example User, user@example.com/ });
     const record = credential.closest("tr");
+
     expect(record).not.toBeNull();
     expect(credential.closest("td")).toBe(record?.cells[0]);
     expect(within(record!.cells[1]).queryByRole("button")).not.toBeInTheDocument();
@@ -275,12 +304,19 @@ describe("Passkeys", () => {
     await user.click(credential);
 
     const details = record?.nextElementSibling as HTMLElement;
+
     expect(details).toHaveAttribute("id", "passkey-row-details-cafe");
-    expect(details.closest("table")).toBe(screen.getByRole("table", { name: "Discoverable passkeys" }));
-    expect(within(screen.getByRole("table", { name: "Discoverable passkeys" })).getAllByRole("row")).toHaveLength(3);
+    expect(details.closest("table")).toBe(
+      screen.getByRole("table", { name: "Discoverable passkeys" }),
+    );
+    expect(
+      within(screen.getByRole("table", { name: "Discoverable passkeys" })).getAllByRole("row"),
+    ).toHaveLength(3);
     expect(within(details).getByText("public-key")).toBeInTheDocument();
     expect(within(details).getAllByText("01").length).toBeGreaterThan(0);
+
     const copyJson = within(details).getByRole("button", { name: "Copy JSON" });
+
     expect(copyJson).toBeInTheDocument();
     await user.click(copyJson);
     await waitFor(() => expect(clipboardSetText).toHaveBeenCalledOnce());
@@ -291,6 +327,7 @@ describe("Passkeys", () => {
 
   it("removes the raw JSON region and its divider when Advanced Mode is disabled", async () => {
     const user = userEvent.setup();
+
     setAdvancedMode(false);
     seedSelectionForTest("token-1", null, {
       state: "ready",
@@ -302,9 +339,11 @@ describe("Passkeys", () => {
 
     const credential = screen.getByRole("button", { name: /Example User, user@example.com/ });
     const record = credential.closest("tr") as HTMLElement;
+
     await user.click(credential);
 
     const details = record.nextElementSibling as HTMLElement;
+
     expect(details.querySelector(".passkey-raw-separator")).not.toBeInTheDocument();
     expect(details.querySelector(".passkey-raw")).not.toBeInTheDocument();
     expect(within(details).queryByRole("button", { name: "Copy JSON" })).not.toBeInTheDocument();
@@ -312,6 +351,7 @@ describe("Passkeys", () => {
 
   it("collapses inline credential details when the selected row is clicked again", async () => {
     const user = userEvent.setup();
+
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -319,11 +359,14 @@ describe("Passkeys", () => {
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
     render(Passkeys);
+
     const credential = screen.getByRole("button", { name: /Example User, user@example.com/ });
     const record = credential.closest("tr") as HTMLElement;
 
     await user.click(credential);
+
     const details = record.nextElementSibling as HTMLElement;
+
     expect(within(details).getByText("public-key")).toBeInTheDocument();
     await user.click(credential);
     await tick();
@@ -335,6 +378,7 @@ describe("Passkeys", () => {
 
   it("supports keyboard selection through semantic credential buttons", async () => {
     const user = userEvent.setup();
+
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -342,7 +386,9 @@ describe("Passkeys", () => {
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
     render(Passkeys);
+
     const credential = screen.getByRole("button", { name: /Example User, user@example.com/ });
+
     credential.focus();
     await user.keyboard("{Enter}");
 
@@ -351,6 +397,7 @@ describe("Passkeys", () => {
 
   it("hides inline details with a filtered row and restores them when filters are cleared", async () => {
     const user = userEvent.setup();
+
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -361,7 +408,10 @@ describe("Passkeys", () => {
     await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
     expect(screen.getByText("public-key")).toBeInTheDocument();
 
-    await user.type(screen.getByPlaceholderText("Search RP, user, passkey ID, or hash"), "does-not-exist");
+    await user.type(
+      screen.getByPlaceholderText("Search RP, user, passkey ID, or hash"),
+      "does-not-exist",
+    );
     await tick();
 
     expect(screen.getByText("No matching passkeys")).toBeInTheDocument();
@@ -373,6 +423,7 @@ describe("Passkeys", () => {
 
   it("uses a compact UV badge without dropping the full credProtect explanation", async () => {
     const user = userEvent.setup();
+
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -380,7 +431,9 @@ describe("Passkeys", () => {
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
     render(Passkeys);
+
     const compact = screen.getByText("UV 2");
+
     expect(compact).toHaveAttribute("title", "Level 2 · UV optional with passkey list");
     expect(screen.queryByText("Level 2 · UV optional with passkey list")).not.toBeInTheDocument();
 
@@ -398,16 +451,19 @@ describe("Passkeys", () => {
     render(Passkeys);
 
     const inventory = screen.getByRole("region", { name: "Passkey inventory" });
+
     expect(within(inventory).getByText("1 passkeys")).toBeInTheDocument();
     expect(within(inventory).getByText("1 relying parties")).toBeInTheDocument();
 
     const capacity = screen.getByRole("region", { name: "Remaining discoverable capacity" });
+
     expect(within(capacity).getByText("4")).toBeInTheDocument();
     expect(within(capacity).queryByText("1 stored · up to 4 remaining")).not.toBeInTheDocument();
   });
 
   it("renders every passkey as a flat table row without RP collapsibles", async () => {
     const user = userEvent.setup();
+
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -417,20 +473,32 @@ describe("Passkeys", () => {
     render(Passkeys);
 
     const table = screen.getByRole("table", { name: "Discoverable passkeys" });
-    expect(within(table).getByRole("columnheader", { name: "RP name" })).toBeInTheDocument();
+
+    expect(within(table).getByRole("columnheader", { name: "RP name" })).toHaveAttribute(
+      "data-slot",
+      "expandable-data-table-disclosure-header",
+    );
     expect(within(table).getByRole("columnheader", { name: "User name" })).toBeInTheDocument();
     expect(within(table).getByRole("columnheader", { name: "Passkey ID" })).toBeInTheDocument();
-    expect(within(table).getByRole("columnheader", { name: "UV" })).toBeInTheDocument();
+    expect(within(table).getByRole("columnheader", { name: "UV" })).toHaveAttribute(
+      "data-align",
+      "end",
+    );
     expect(within(table).getAllByRole("row")).toHaveLength(4);
 
-    expect(screen.getByRole("button", { name: /Solo User, solo@example\.com, Solo/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Solo User, solo@example\.com, Solo/ }),
+    ).toBeInTheDocument();
+
     const alice = screen.getByRole("button", { name: /Alice, alice@team\.example/ });
     const bob = screen.getByRole("button", { name: /Bob, bob@team\.example/ });
+
     expect(alice).toHaveAttribute("aria-expanded", "false");
     expect(bob).toBeInTheDocument();
     expect(screen.queryByText("2 passkeys")).not.toBeInTheDocument();
 
     const aliceRow = alice.closest("tr") as HTMLElement;
+
     await user.click(alice);
     expect(alice).toHaveAttribute("aria-expanded", "true");
     expect(aliceRow).toHaveAttribute("aria-selected", "true");
@@ -448,6 +516,7 @@ describe("Passkeys", () => {
 
   it("confirms a successful forced reload immediately", async () => {
     const user = userEvent.setup();
+
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -463,6 +532,7 @@ describe("Passkeys", () => {
 
   it("opens the typed update dialog from the inspector", async () => {
     const user = userEvent.setup();
+
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -474,6 +544,7 @@ describe("Passkeys", () => {
     await user.click(screen.getByRole("button", { name: "Edit" }));
 
     const dialog = screen.getByRole("dialog", { name: "Edit passkey user" });
+
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getByLabelText("User name")).toHaveValue("user@example.com");
     expect(within(dialog).getByLabelText("Display name")).toHaveValue("Example User");
@@ -482,6 +553,7 @@ describe("Passkeys", () => {
 
   it("keeps exactly one verification mode selected when the active mode is clicked again", async () => {
     const user = userEvent.setup();
+
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -489,6 +561,7 @@ describe("Passkeys", () => {
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
     render(Passkeys);
+
     const auto = screen.getByRole("radio", { name: "Auto" });
     const pin = screen.getByRole("radio", { name: "PIN" });
 
@@ -509,6 +582,7 @@ describe("Passkeys", () => {
 
   it("keeps stale rows actionable while showing the failed refresh warning", async () => {
     const user = userEvent.setup();
+
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -519,8 +593,14 @@ describe("Passkeys", () => {
     render(Passkeys);
 
     expect(screen.getByText("Passkey inventory could not be refreshed")).toBeInTheDocument();
-    expect(screen.getByText(/The last successfully loaded data remains visible\. Reload passkeys to try again\./)).toBeInTheDocument();
-    expect(screen.queryByText(/Communication with the authenticator failed\./)).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /The last successfully loaded data remains visible\. Reload passkeys to try again\./,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Communication with the authenticator failed\./),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reload passkeys" })).toBeEnabled();
     await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
     expect(screen.getByRole("button", { name: "Edit" })).toBeEnabled();
@@ -532,6 +612,7 @@ describe("Passkeys", () => {
 
   it("renders unsupported credential management as a non-retry state", () => {
     const unsupported = credentialsEnvelope();
+
     unsupported.result!.support.credentialManagement = false;
     seedSelectionForTest("token-1", null, {
       state: "ready",
@@ -547,6 +628,7 @@ describe("Passkeys", () => {
 
   it("distinguishes an authenticator's real empty inventory", () => {
     const empty = credentialsEnvelope();
+
     empty.result!.groups = [];
     empty.result!.summary.existingResidentCredentialsCount = 0;
     empty.result!.summary.totalRPs = 0;
@@ -565,11 +647,13 @@ describe("Passkeys", () => {
 
   it("closes the update dialog during work and restores it for review or error", async () => {
     const envelope = credentialsEnvelope();
+
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(envelope);
+
     const previewEnvelope = {
       operationId: "update-preview-1",
       selectionId: "authenticator-1",
@@ -580,11 +664,13 @@ describe("Passkeys", () => {
           rpID: "example.com",
           current: { userIDHex: "01", name: "user@example.com", displayName: "Example User" },
           proposed: { userIDHex: "01", name: "updated@example.com", displayName: "Example User" },
-          warnings: [{
-            severity: "warning",
-            code: "credential.update_user.mutation",
-            message: "toolkit fallback",
-          }],
+          warnings: [
+            {
+              severity: "warning",
+              code: "credential.update_user.mutation",
+              message: "toolkit fallback",
+            },
+          ],
         },
         result: null,
       },
@@ -600,64 +686,94 @@ describe("Passkeys", () => {
       kind: "update",
       target: credentialUpdateTarget(),
       form: { name: "updated@example.com", displayName: "Example User" },
-      previewRequest,
-      previewEnvelope,
     } as const;
+
     mutablePasskeysMutation.set({
-      kind: "update",
-      phase: "previewing",
-      target: mutation.target,
-      form: mutation.form,
-      previewRequest,
+      ...mutation,
+      operation: { phase: "previewing" },
     });
 
     render(Passkeys);
 
     expect(screen.queryByRole("dialog", { name: "Edit passkey user" })).not.toBeInTheDocument();
 
-    mutablePasskeysMutation.set({ ...mutation, phase: "review" });
+    mutablePasskeysMutation.set({
+      ...mutation,
+      operation: {
+        phase: "review",
+        previewRequest,
+        previewEnvelope,
+        previewValue: previewEnvelope.result!.preview,
+      },
+    });
+
     const dialog = await screen.findByRole("dialog", { name: "Edit passkey user" });
+
     expect(dialog).toBeInTheDocument();
-    expect(screen.getByText("Changing this information may prevent you from signing in with this passkey.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Changing this information may prevent you from signing in with this passkey.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByText("credential.update_user.mutation")).not.toBeInTheDocument();
     expect(screen.getByText("Current value")).toBeInTheDocument();
     expect(screen.getByText("Proposed value")).toBeInTheDocument();
     expect(within(dialog).queryByRole("textbox")).not.toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: "Preview JSON" })).toHaveAttribute("aria-expanded", "false");
+    expect(within(dialog).getByRole("button", { name: "Preview JSON" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
     expect(within(dialog).getByRole("button", { name: "Confirm update" })).toBeEnabled();
 
-    mutablePasskeysMutation.set({ ...mutation, phase: "executing" });
+    mutablePasskeysMutation.set({
+      ...mutation,
+      operation: {
+        phase: "executing",
+        previewEnvelope,
+        previewValue: previewEnvelope.result!.preview,
+        request: { ...previewRequest, dryRun: false },
+      },
+    });
     await waitFor(() => {
       expect(screen.queryByRole("dialog", { name: "Edit passkey user" })).not.toBeInTheDocument();
     });
 
     mutablePasskeysMutation.set({
       ...mutation,
-      phase: "error",
-      failedPhase: "executing",
-      responseEnvelope: {
-        operationId: "update-error-1",
-        selectionId: "authenticator-1",
-        kind: OperationKind.UpdateCredentialUser,
-        error: failureForCode(Code.CodeTransportFailure),
-      } as CredentialUpdateEnvelope,
-      runtimeError: null,
-      failureReason: "response-error",
-      validationError: null,
+      operation: {
+        phase: "error",
+        failedPhase: "executing",
+        previewEnvelope,
+        previewValue: previewEnvelope.result!.preview,
+        request: { ...previewRequest, dryRun: false },
+        responseEnvelope: {
+          operationId: "update-error-1",
+          selectionId: "authenticator-1",
+          kind: OperationKind.UpdateCredentialUser,
+          error: failureForCode(Code.CodeTransportFailure),
+        } as CredentialUpdateEnvelope,
+        runtimeError: null,
+      },
     });
+
     const errorDialog = await screen.findByRole("dialog", { name: "Edit passkey user" });
-    expect(within(errorDialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
+
+    expect(
+      within(errorDialog).getByText("Communication with the authenticator failed."),
+    ).toBeInTheDocument();
     expect(within(errorDialog).getByRole("button", { name: "Confirm update" })).toBeEnabled();
     expect(within(errorDialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
   });
 
   it("renders the typed delete preview in an accessible alert dialog", async () => {
     const user = userEvent.setup();
+
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
+
     const previewEnvelope = {
       operationId: "delete-preview-1",
       selectionId: "authenticator-1",
@@ -671,31 +787,43 @@ describe("Passkeys", () => {
           userIDHex: "01",
           userName: "user@example.com",
           displayName: "Example User",
-          warnings: [{
-            severity: "destructive",
-            code: "credential.delete.destructive",
-            message: "toolkit fallback",
-          }],
+          warnings: [
+            {
+              severity: "destructive",
+              code: "credential.delete.destructive",
+              message: "toolkit fallback",
+            },
+          ],
         },
         result: null,
       },
     } as CredentialDeleteEnvelope;
+
     mutablePasskeysMutation.set({
       kind: "delete",
-      phase: "review",
       credentialIDHex: "cafe",
-      previewRequest: { selectionId: "authenticator-1", credentialIdHex: "cafe", dryRun: true },
-      previewEnvelope,
+      operation: {
+        phase: "review",
+        previewRequest: { selectionId: "authenticator-1", credentialIdHex: "cafe", dryRun: true },
+        previewEnvelope,
+        previewValue: previewEnvelope.result!.preview,
+      },
     });
 
     render(Passkeys);
 
     const dialog = screen.getByRole("alertdialog", { name: "Confirm delete" });
+
     expect(dialog).toBeInTheDocument();
-    expect(screen.getByText("Deleting this discoverable passkey is destructive and cannot be undone.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Deleting this discoverable passkey is destructive and cannot be undone."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("credential.delete.destructive")).not.toBeInTheDocument();
     expect(screen.getAllByText("cafe").length).toBeGreaterThan(0);
-    expect(within(dialog).getByRole("button", { name: "Preview JSON" })).toHaveAttribute("aria-expanded", "false");
+    expect(within(dialog).getByRole("button", { name: "Preview JSON" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
     await user.click(screen.getByRole("button", { name: "Cancel" }));
   });
 
@@ -705,6 +833,7 @@ describe("Passkeys", () => {
       selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
+
     const previewEnvelope = {
       operationId: "delete-preview-1",
       selectionId: "authenticator-1",
@@ -736,28 +865,56 @@ describe("Passkeys", () => {
       previewRequest: { selectionId: "authenticator-1", credentialIdHex: "cafe", dryRun: true },
       previewEnvelope,
     } as const;
-    mutablePasskeysMutation.set({ ...mutation, phase: "review" });
+    const { previewRequest } = mutation;
+
+    mutablePasskeysMutation.set({
+      kind: mutation.kind,
+      credentialIDHex: mutation.credentialIDHex,
+      operation: {
+        phase: "review",
+        previewRequest,
+        previewEnvelope,
+        previewValue: previewEnvelope.result!.preview,
+      },
+    });
 
     render(Passkeys);
 
     expect(screen.getByRole("alertdialog", { name: "Confirm delete" })).toBeInTheDocument();
 
-    mutablePasskeysMutation.set({ ...mutation, phase: "executing" });
+    mutablePasskeysMutation.set({
+      kind: mutation.kind,
+      credentialIDHex: mutation.credentialIDHex,
+      operation: {
+        phase: "executing",
+        previewEnvelope,
+        previewValue: previewEnvelope.result!.preview,
+        request: { ...previewRequest, dryRun: false },
+      },
+    });
     await waitFor(() => {
       expect(screen.queryByRole("alertdialog", { name: "Confirm delete" })).not.toBeInTheDocument();
     });
 
     mutablePasskeysMutation.set({
-      ...mutation,
-      phase: "error",
-      failedPhase: "executing",
-      responseEnvelope: errorEnvelope,
-      runtimeError: null,
-      failureReason: "response-error",
+      kind: mutation.kind,
+      credentialIDHex: mutation.credentialIDHex,
+      operation: {
+        phase: "error",
+        failedPhase: "executing",
+        previewEnvelope,
+        previewValue: previewEnvelope.result!.preview,
+        request: { ...previewRequest, dryRun: false },
+        responseEnvelope: errorEnvelope,
+        runtimeError: null,
+      },
     });
 
     const dialog = await screen.findByRole("alertdialog", { name: "Confirm delete" });
-    expect(within(dialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
+
+    expect(
+      within(dialog).getByText("Communication with the authenticator failed."),
+    ).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Confirm delete" })).toBeEnabled();
     expect(within(dialog).getByRole("button", { name: "Cancel" })).toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
@@ -769,6 +926,7 @@ describe("Passkeys", () => {
       selectionId: "authenticator-1",
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
+
     const errorEnvelope = {
       operationId: "delete-preview-1",
       selectionId: "authenticator-1",
@@ -776,23 +934,27 @@ describe("Passkeys", () => {
       authenticatorClosed: false,
       error: failureForCode(Code.CodeTransportFailure),
     } as CredentialDeleteEnvelope;
+
     mutablePasskeysMutation.set({
       kind: "delete",
-      phase: "error",
       credentialIDHex: "cafe",
-      failedPhase: "previewing",
-      previewRequest: { selectionId: "authenticator-1", credentialIdHex: "cafe", dryRun: true },
-      previewEnvelope: null,
-      responseEnvelope: errorEnvelope,
-      runtimeError: null,
-      failureReason: "response-error",
+      operation: {
+        phase: "error",
+        failedPhase: "previewing",
+        responseEnvelope: errorEnvelope,
+        runtimeError: null,
+      },
     });
 
     render(Passkeys);
 
     expect(screen.queryByRole("alertdialog", { name: "Confirm delete" })).not.toBeInTheDocument();
+
     const dialog = screen.getByRole("dialog", { name: "Passkey deletion preview" });
-    expect(within(dialog).getByText("Communication with the authenticator failed.")).toBeInTheDocument();
+
+    expect(
+      within(dialog).getByText("Communication with the authenticator failed."),
+    ).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Delete" })).toBeEnabled();
     expect(within(dialog).queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
   });

@@ -5,20 +5,32 @@ import { InteractionKind } from "../../bindings/github.com/go-ctap/kit/model";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import type { CredentialsEnvelope, InteractionPrompt, OperationEventEnvelope } from "../../bindings/telesma/service";
+import type {
+  CredentialsEnvelope,
+  InteractionPrompt,
+  OperationEventEnvelope,
+} from "../../bindings/telesma/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
-import { pendingInteraction } from "./features/interaction/state.js";
-import { failureForCode } from "./test-failure.js";
-import { statusBar as mutableStatusBar } from "./features/workbench/state.js";
-import { setAppLocale } from "./i18n.js";
-import { resetAppStateForTest, seedPendingInteractionForTest, seedSelectionForTest } from "./store-test-utils.js";
+import { pendingInteraction } from "$lib/features/interaction/state.js";
+import { failureForCode } from "$lib/test-support/failure.js";
+import { statusBar as mutableStatusBar } from "$lib/features/workbench/state.js";
+import { setAppLocale } from "$lib/i18n.js";
+import {
+  resetAppStateForTest,
+  seedPendingInteractionForTest,
+  seedSelectionForTest,
+} from "$lib/test-support/store-utils.js";
 import {
   authenticatorStatus,
   pendingInteraction as readonlyPendingInteraction,
   statusBar,
-} from "./test-support/stores.js";
-import { setStatusOperation, summarizeEnvelope, summarizeOperationFailure } from "./workbench-state.js";
+} from "$lib/test-support/stores.js";
+import {
+  setStatusOperation,
+  summarizeEnvelope,
+  summarizeOperationFailure,
+} from "$lib/workbench-state.js";
 
 const serviceMocks = vi.hoisted(() => ({
   CancelOperation: vi.fn(),
@@ -43,7 +55,11 @@ function seedAuthenticator(state: "ready" | "running" = "running") {
 }
 
 function seedOperation() {
-  setStatusOperation({ operationId: "operation-1", selectionId: "authenticator-1", label: "Inventory" });
+  setStatusOperation({
+    operationId: "operation-1",
+    selectionId: "authenticator-1",
+    label: "Inventory",
+  });
   seedPendingInteractionForTest({
     operationId: "operation-1",
     selectionId: "authenticator-1",
@@ -63,7 +79,8 @@ describe("operation controller", () => {
     seedAuthenticator();
     seedOperation();
     serviceMocks.CancelOperation.mockResolvedValue(true);
-    const { cancelActiveOperation } = await import("./operation-controller.js");
+
+    const { cancelActiveOperation } = await import("$lib/operation-controller.js");
 
     await expect(cancelActiveOperation()).resolves.toBe("accepted");
 
@@ -81,20 +98,25 @@ describe("operation controller", () => {
     seedAuthenticator();
     seedOperation();
     serviceMocks.CancelOperation.mockResolvedValue(false);
-    const { cancelActiveOperation } = await import("./operation-controller.js");
+
+    const { cancelActiveOperation } = await import("$lib/operation-controller.js");
 
     await expect(cancelActiveOperation()).resolves.toBe("already-finished");
 
     expect(get(statusBar).activeOperation).toBeNull();
     expect(get(authenticatorStatus).state).toBe("ready");
-    expect(get(statusBar).lastOutcome).toMatchObject({ tone: "info", title: "Operation already finished" });
+    expect(get(statusBar).lastOutcome).toMatchObject({
+      tone: "info",
+      title: "Operation already finished",
+    });
   });
 
   it("preserves the operation and interaction after a thrown cancel failure", async () => {
     seedAuthenticator();
     seedOperation();
     serviceMocks.CancelOperation.mockRejectedValue(new Error("bridge offline"));
-    const { cancelActiveOperation } = await import("./operation-controller.js");
+
+    const { cancelActiveOperation } = await import("$lib/operation-controller.js");
 
     await expect(cancelActiveOperation()).resolves.toBe("failed");
 
@@ -104,7 +126,10 @@ describe("operation controller", () => {
       cancelError: failureForCode(Code.CodeInternalError),
     });
     expect(get(readonlyPendingInteraction)?.interactionId).toBe("interaction-1");
-    expect(get(statusBar).lastOutcome).toMatchObject({ tone: "error", title: "Could not cancel operation" });
+    expect(get(statusBar).lastOutcome).toMatchObject({
+      tone: "error",
+      title: "Could not cancel operation",
+    });
   });
 
   it("presents canceled operation errors as informational", () => {
@@ -172,7 +197,8 @@ describe("runtime operation events", () => {
   });
 
   it("captures operation ids and determinate progress from progress events", async () => {
-    const { handleOperationProgress } = await import("./event-controller.js");
+    const { handleOperationProgress } = await import("$lib/event-controller.js");
+
     handleOperationProgress({
       operationId: "operation-1",
       selectionId: "authenticator-1",
@@ -194,7 +220,8 @@ describe("runtime operation events", () => {
   });
 
   it("captures an operation id from an interaction before any progress event", async () => {
-    const { handleInteractionRequested } = await import("./interaction-controller.js");
+    const { handleInteractionRequested } = await import("$lib/interaction-controller.js");
+
     handleInteractionRequested({
       operationId: "operation-2",
       selectionId: "authenticator-1",

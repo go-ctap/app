@@ -8,36 +8,40 @@ import {
 } from "../../bindings/github.com/go-ctap/kit/model";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 
-import { LogController } from "./features/logs/state.svelte.js";
-import { setAppLocale } from "./i18n.js";
-import { filterLogs, logSummary, operationKindLabel } from "./log-presentation.js";
+import { LogController } from "$lib/features/logs/state.svelte.js";
+import { setAppLocale } from "$lib/i18n.js";
+import { filterLogs, logSummary, operationKindLabel } from "$lib/log-presentation.js";
 
 function ctapRecord() {
   const controller = new LogController();
-  controller.append(new LogJournalRecord({
-    sequence: 18,
-    entry: new LogEntry({
-      timestamp: "2026-07-15T10:00:01.000Z",
-      outcome: LogOutcome.LogOutcomeFailed,
-      operationKind: OperationKind.ListCredentials,
-      command: "authenticatorClientPIN",
-      commandCode: 6,
-      subCommand: "getPinUvAuthTokenUsingPinWithPermissions",
-      subCommandCode: 9,
-      request: new LogPayload({
-        cborDiagnostic: `{10: "engineers.example"}`,
-        originalBytes: 24,
-        storedBytes: 25,
-        truncated: false,
-      }),
-      response: new LogPayload({
-        diagnosticError: "diagnostic schema unavailable",
-        originalBytes: 2,
-        storedBytes: 0,
-        truncated: false,
+
+  controller.append(
+    new LogJournalRecord({
+      sequence: 18,
+      entry: new LogEntry({
+        timestamp: "2026-07-15T10:00:01.000Z",
+        outcome: LogOutcome.LogOutcomeFailed,
+        operationKind: OperationKind.ListCredentials,
+        command: "authenticatorClientPIN",
+        commandCode: 6,
+        subCommand: "getPinUvAuthTokenUsingPinWithPermissions",
+        subCommandCode: 9,
+        request: new LogPayload({
+          cborDiagnostic: `{10: "engineers.example"}`,
+          originalBytes: 24,
+          storedBytes: 25,
+          truncated: false,
+        }),
+        response: new LogPayload({
+          diagnosticError: "diagnostic schema unavailable",
+          originalBytes: 2,
+          storedBytes: 0,
+          truncated: false,
+        }),
       }),
     }),
-  }));
+  );
+
   return controller.records[0];
 }
 
@@ -46,11 +50,16 @@ describe("log presentation", () => {
 
   it("localizes CTAP summaries and operation kinds", () => {
     const record = ctapRecord();
-    expect(logSummary(record)).toBe("CTAP command: authenticatorClientPIN · getPinUvAuthTokenUsingPinWithPermissions");
+
+    expect(logSummary(record)).toBe(
+      "CTAP command: authenticatorClientPIN · getPinUvAuthTokenUsingPinWithPermissions",
+    );
     expect(operationKindLabel(OperationKind.ListCredentials)).toBe("Passkey inventory");
 
     setAppLocale("ru");
-    expect(logSummary(record)).toBe("CTAP-команда: authenticatorClientPIN · getPinUvAuthTokenUsingPinWithPermissions");
+    expect(logSummary(record)).toBe(
+      "CTAP-команда: authenticatorClientPIN · getPinUvAuthTokenUsingPinWithPermissions",
+    );
     expect(operationKindLabel(OperationKind.ListCredentials)).toBe("Список ключей доступа");
   });
 

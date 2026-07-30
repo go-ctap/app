@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { sanitizedJson } from "./redaction";
+import { sanitizedJson } from "$lib/redaction";
 
 describe("sensitive output redaction", () => {
   it("redacts persistent credential-store identifiers from general JSON", () => {

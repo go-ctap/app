@@ -10,6 +10,7 @@ import App from "./App.svelte";
 async function syncTheme() {
   try {
     const dark = await System.IsDarkMode();
+
     document.documentElement.classList.toggle("dark", dark);
     document.documentElement.style.colorScheme = dark ? "dark" : "light";
   } catch {

@@ -1,24 +1,25 @@
 <script lang="ts">
-  import { ChevronRight, FlaskConical, KeyRound, RefreshCw } from "@lucide/svelte";
+  import { ChevronRight, Database, FlaskConical, RefreshCw } from "@lucide/svelte";
 
-  import type { DecodeMode } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
+  import {
+    EntryState,
+    type DecodeMode,
+  } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
 
   import LargeBlobInspector from "$lib/components/largeblobs/LargeBlobInspector.svelte";
   import CredentialInventoryToolbar from "$lib/components/shared/CredentialInventoryToolbar.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
-  import * as ExpandableDataTable from "$lib/components/shared/expandable-data-table/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
+  import * as ExpandableDataTable from "$lib/components/shared/expandable-data-table";
+  import { Badge } from "$lib/components/ui/badge";
+  import { Button } from "$lib/components/ui/button";
+  import { Skeleton } from "$lib/components/ui/skeleton";
   import type {
+    LargeBlobDecodeState,
     LargeBlobMutationState,
     LargeBlobReadState,
     LargeBlobsStatusFilter,
   } from "$lib/features/largeblobs/state";
-  import type {
-    LargeBlobCredentialRow,
-    LargeBlobsPresentation,
-  } from "$lib/largeblobs-presentation";
+  import type { LargeBlobEntryRow, LargeBlobsPresentation } from "$lib/largeblobs-presentation";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -27,14 +28,15 @@
   type Props = {
     presentation: LargeBlobsPresentation;
     readState: LargeBlobReadState;
+    decodeState: LargeBlobDecodeState;
     mutation: LargeBlobMutationState;
     decodeMode: DecodeMode;
     onQueryChange: (query: string) => void;
     onFilterChange: (filter: LargeBlobsStatusFilter) => void;
-    onSelect: (credentialIDHex: string) => void | Promise<boolean>;
+    onSelect: (entryIndex: number | null) => void | Promise<boolean>;
     onDecodeModeChange: (mode: DecodeMode) => void | Promise<boolean>;
-    onWrite: (credentialIDHex: string) => void;
-    onDelete: (credentialIDHex: string) => void | Promise<boolean>;
+    onWrite: (entryIndex: number) => void;
+    onDelete: (entryIndex: number) => void | Promise<boolean>;
     onOpenLab: () => void;
     onReload: () => void | Promise<boolean>;
   };
@@ -42,6 +44,7 @@
   let {
     presentation,
     readState,
+    decodeState,
     mutation,
     decodeMode,
     onQueryChange,
@@ -56,10 +59,12 @@
 
   let filters = $derived([
     { value: "all" as const, label: m.large_blob_filter_all() },
-    { value: "present" as const, label: m.large_blob_filter_present() },
-    { value: "missing" as const, label: m.large_blob_filter_missing() },
-    { value: "key-unavailable" as const, label: m.large_blob_filter_key_unavailable() },
+    { value: "matched" as const, label: m.large_blob_filter_matched() },
+    { value: "orphaned" as const, label: m.large_blob_filter_orphaned() },
+    { value: "nonconforming" as const, label: m.large_blob_filter_nonconforming() },
+    { value: "corrupt" as const, label: m.large_blob_filter_corrupt() },
   ] satisfies { value: LargeBlobsStatusFilter; label: string }[]);
+
   let selectionDisabled = $derived(
     presentation.loading || readState.phase === "loading" || mutation.kind !== "idle",
   );
@@ -69,32 +74,41 @@
     onFilterChange("all");
   }
 
-  function credentialDetailsID(credentialIDHex: string) {
-    return `large-blob-row-details-${credentialIDHex}`;
+  function entryStateLabel(row: LargeBlobEntryRow) {
+    switch (row.state) {
+      case EntryState.EntryStateMatched:
+        return m.large_blob_entry_matched();
+      case EntryState.EntryStateOrphaned:
+        return m.large_blob_entry_orphaned();
+      case EntryState.EntryStateNonconforming:
+        return m.large_blob_entry_nonconforming();
+      case EntryState.EntryStateCorrupt:
+        return m.large_blob_entry_corrupt();
+      default:
+        return row.state;
+    }
   }
 
-  function blobStateLabel(row: LargeBlobCredentialRow) {
-    if (!row.largeBlobKeyAvailable) return m.large_blob_state_key_unavailable();
-    return row.blobPresent ? m.large_blob_state_present() : m.large_blob_state_missing();
-  }
-
-  function keyStateLabel(row: LargeBlobCredentialRow) {
-    return row.largeBlobKeyAvailable
-      ? m.large_blob_key_available()
-      : m.large_blob_key_missing();
-  }
-
-  function compactKeyStateLabel(row: LargeBlobCredentialRow) {
-    return row.largeBlobKeyAvailable ? m.state_available() : m.state_not_available();
+  function entryStateVariant(row: LargeBlobEntryRow) {
+    return row.state === EntryState.EntryStateMatched
+      ? "secondary"
+      : row.state === EntryState.EntryStateCorrupt ||
+          row.state === EntryState.EntryStateNonconforming
+        ? "destructive"
+        : "outline";
   }
 </script>
 
 {#snippet largeBlobsTableHeader()}
-  <th scope="col">{m.rp_name()}</th>
-  <th scope="col">{m.user_name()}</th>
+  <th scope="col" data-slot="expandable-data-table-disclosure-header">
+    {m.large_blob_entry()}
+  </th>
+  <th scope="col">{m.large_blob_target()}</th>
   <th scope="col" class="large-blobs-table-state">{m.status()}</th>
-  <th scope="col" class="large-blobs-table-bytes">{m.payload()}</th>
-  <th scope="col" class="large-blobs-table-key">{m.matrix_name_large_blob_key()}</th>
+  <th scope="col" class="large-blobs-table-bytes" data-align="end">
+    {m.large_blob_ciphertext()}
+  </th>
+  <th scope="col" class="large-blobs-table-payload" data-align="end">{m.payload()}</th>
 {/snippet}
 
 <section class="large-blobs-inventory">
@@ -132,22 +146,16 @@
         <tr data-slot="expandable-data-table-summary-row">
           <td><Skeleton class="large-blobs-cell-skeleton" /></td>
           <td><Skeleton class="large-blobs-cell-skeleton" /></td>
-          <td class="large-blobs-table-state">
-            <Skeleton class="large-blobs-badge-skeleton" />
-          </td>
-          <td class="large-blobs-table-bytes">
-            <Skeleton class="large-blobs-badge-skeleton" />
-          </td>
-          <td class="large-blobs-table-key">
-            <Skeleton class="large-blobs-badge-skeleton" />
-          </td>
+          <td class="large-blobs-table-state"><Skeleton class="large-blobs-badge-skeleton" /></td>
+          <td class="large-blobs-table-bytes"><Skeleton class="large-blobs-badge-skeleton" /></td>
+          <td class="large-blobs-table-payload"><Skeleton class="large-blobs-badge-skeleton" /></td>
         </tr>
       {/each}
     </ExpandableDataTable.Root>
   {:else if presentation.emptyInventory}
     <ExpandableDataTable.Root
       class="large-blobs-table"
-      aria-label={m.blob_credentials()}
+      aria-label={m.large_blob_entries()}
       header={largeBlobsTableHeader}
     >
       <tr class="large-blobs-empty-row">
@@ -157,7 +165,8 @@
             message={m.large_blobs_empty_message()}
             variant="compact"
           >
-            {#snippet icon()}<KeyRound aria-hidden="true" />{/snippet}
+            {#snippet icon()}<Database aria-hidden="true" />{/snippet}
+
             {#snippet actions()}
               <Button type="button" onclick={onOpenLab}>
                 <FlaskConical data-icon="inline-start" aria-hidden="true" />
@@ -190,17 +199,17 @@
   {:else if presentation.hasReport}
     <ExpandableDataTable.Root
       class="large-blobs-table"
-      aria-label={m.blob_credentials()}
+      aria-label={m.large_blob_entries()}
       header={largeBlobsTableHeader}
     >
       {#each presentation.rows as row (row.id)}
-        {@const selected = presentation.selectedCredentialID === row.id}
+        {@const selected = presentation.selectedEntryIndex === row.index}
         <ExpandableDataTable.Row
-          detailsId={credentialDetailsID(row.id)}
+          detailsId={`large-blob-row-details-${row.index}`}
           open={selected}
           disabled={selectionDisabled}
           columnCount={5}
-          onOpenChange={(open) => onSelect(open ? row.id : "")}
+          onOpenChange={(open) => onSelect(open ? row.index : null)}
         >
           {#snippet summary(triggerProps)}
             <td>
@@ -209,7 +218,7 @@
                   variant="ghost"
                   size="icon-xs"
                   type="button"
-                  aria-label={`${row.displayName}, ${row.userName}, ${row.rpName}`}
+                  aria-label={m.large_blob_entry_number({ index: row.index })}
                   title={selected ? m.close() : m.large_blob_details()}
                   {...triggerProps}
                 >
@@ -220,40 +229,40 @@
                   />
                 </Button>
                 <span class="large-blobs-row-copy">
-                  <strong>{row.rpName}</strong>
-                  <code title={row.rpID}>{row.rpID}</code>
+                  <strong>{m.large_blob_entry_number({ index: row.index })}</strong>
+                  <code>{row.credentialIDHex || "—"}</code>
                 </span>
               </div>
             </td>
             <td>
               <span class="large-blobs-row-copy">
-                <strong>{row.displayName}</strong>
-                <span title={row.userName}>{row.userName}</span>
+                <strong>{row.hasTarget ? row.rpName : m.large_blob_no_target()}</strong>
+                <span>{row.hasTarget ? row.displayName : m.large_blob_cleanup_only()}</span>
               </span>
             </td>
             <td class="large-blobs-table-state">
-              <Badge variant={row.blobPresent ? "secondary" : "outline"}>{blobStateLabel(row)}</Badge>
+              <Badge variant={entryStateVariant(row)}>{entryStateLabel(row)}</Badge>
             </td>
             <td class="large-blobs-table-bytes">
-              <span>{row.blobPresent ? m.bytes_count({ count: row.blobByteCount }) : "—"}</span>
+              {m.bytes_count({ count: row.ciphertextByteCount })}
             </td>
-            <td class="large-blobs-table-key">
-              <Badge
-                variant="outline"
-                aria-label={keyStateLabel(row)}
-                title={keyStateLabel(row)}
-              >
-                {compactKeyStateLabel(row)}
-              </Badge>
+            <td class="large-blobs-table-payload">
+              {#if row.payloadByteCount !== null}
+                {m.bytes_count({ count: row.payloadByteCount })}
+              {:else}
+                {m.large_blob_declared_bytes({
+                  count: row.declaredPayloadByteCount,
+                })}
+              {/if}
             </td>
           {/snippet}
           {#snippet details()}
             <LargeBlobInspector
               {row}
               {readState}
+              {decodeState}
               {decodeMode}
-              writeDisabled={presentation.writeDisabled}
-              deleteDisabled={presentation.deleteDisabled}
+              mutationDisabled={presentation.mutationDisabled}
               {onDecodeModeChange}
               {onWrite}
               {onDelete}
@@ -266,136 +275,107 @@
 </section>
 
 <style>
-@layer blocks {
-  .large-blobs-inventory {
-    display: grid;
-    gap: var(--space-3);
-    min-width: 0;
-  }
-
-  :global(.large-blobs-table) {
-    min-width: 52rem;
-    table-layout: fixed;
-  }
-
-  :global(.large-blobs-empty-row > td) {
-    padding: 0;
-    white-space: normal;
-  }
-
-  :global(.large-blobs-table th:first-child),
-  :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"] > td:first-child) {
-    width: 24%;
-  }
-
-  :global(.large-blobs-table th:nth-child(2)),
-  :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"] > td:nth-child(2)) {
-    width: 30%;
-  }
-
-  :global(.large-blobs-table-state) {
-    width: 16%;
-  }
-
-  :global(.large-blobs-table-bytes) {
-    width: 12%;
-  }
-
-  :global(.large-blobs-table-key) {
-    width: 18%;
-    text-align: end;
-  }
-
-  .large-blobs-row-copy {
-    display: grid;
-    min-width: 0;
-    gap: var(--space-1);
-  }
-
-  .large-blobs-row-primary {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: var(--space-2);
-    min-width: 0;
-  }
-
-  .large-blobs-row-copy strong,
-  .large-blobs-row-copy span,
-  .large-blobs-row-copy code {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .large-blobs-row-copy span,
-  .large-blobs-row-copy code,
-  :global(.large-blobs-table-bytes) {
-    color: var(--muted-foreground);
-    font-size: 0.72rem;
-  }
-
-  :global(.large-blobs-row-chevron) {
-    transition: transform 120ms ease;
-  }
-
-  :global(.large-blobs-cell-skeleton) {
-    width: 78%;
-    height: 0.75rem;
-  }
-
-  :global(.large-blobs-badge-skeleton) {
-    width: 4.5rem;
-    height: 1.25rem;
-  }
-
-  @container workspace (max-width: 45rem) {
-    :global(.large-blobs-table) {
-      min-width: 32rem;
+  @layer blocks {
+    .large-blobs-inventory {
+      display: grid;
+      gap: var(--space-3);
+      min-width: 0;
     }
 
-    :global(.large-blobs-table-bytes),
-    :global(.large-blobs-table-key) {
-      display: none;
+    :global(.large-blobs-table) {
+      min-width: 52rem;
+      table-layout: fixed;
+    }
+
+    :global(.large-blobs-empty-row > td) {
+      padding: 0;
+      white-space: normal;
     }
 
     :global(.large-blobs-table th:first-child),
     :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"] > td:first-child) {
-      width: 34%;
+      width: 22%;
     }
 
     :global(.large-blobs-table th:nth-child(2)),
     :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"] > td:nth-child(2)) {
-      width: 44%;
+      width: 30%;
     }
 
     :global(.large-blobs-table-state) {
-      width: 22%;
+      width: 18%;
     }
-  }
 
-  @container workspace (max-width: 32.5rem) {
-    :global(.large-blobs-table) {
+    :global(.large-blobs-table-bytes),
+    :global(.large-blobs-table-payload) {
+      width: 15%;
+      color: var(--muted-foreground);
+      font-size: 0.72rem;
+      text-align: end;
+    }
+
+    .large-blobs-row-copy {
+      display: grid;
+      min-width: 0;
+      gap: var(--space-1);
+    }
+
+    .large-blobs-row-primary {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: var(--space-2);
       min-width: 0;
     }
 
-    :global(.large-blobs-table-state) {
-      display: none;
+    .large-blobs-row-copy strong,
+    .large-blobs-row-copy span,
+    .large-blobs-row-copy code {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    :global(.large-blobs-table th:first-child),
-    :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"] > td:first-child),
-    :global(.large-blobs-table th:nth-child(2)),
-    :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"] > td:nth-child(2)) {
-      width: 50%;
+    .large-blobs-row-copy span,
+    .large-blobs-row-copy code {
+      color: var(--muted-foreground);
+      font-size: 0.72rem;
+    }
+
+    :global(.large-blobs-row-chevron) {
+      transition: transform 120ms ease;
+    }
+
+    :global(.large-blobs-cell-skeleton) {
+      width: 78%;
+      height: 0.75rem;
+    }
+
+    :global(.large-blobs-badge-skeleton) {
+      width: 4.5rem;
+      height: 1.25rem;
+    }
+
+    @container workspace (max-width: 45rem) {
+      :global(.large-blobs-table) {
+        min-width: 32rem;
+      }
+
+      :global(.large-blobs-table-bytes),
+      :global(.large-blobs-table-payload) {
+        display: none;
+      }
     }
   }
-}
 
-@layer exceptions {
-  :global(.large-blobs-table [data-slot="expandable-data-table-summary-row"][data-open="true"] .large-blobs-row-chevron) {
-    transform: rotate(90deg);
+  @layer exceptions {
+    :global(
+      .large-blobs-table
+        [data-slot="expandable-data-table-summary-row"][data-open="true"]
+        .large-blobs-row-chevron
+    ) {
+      transform: rotate(90deg);
+    }
   }
-}
 </style>

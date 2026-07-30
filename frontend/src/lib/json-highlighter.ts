@@ -6,6 +6,7 @@ import { createJavaScriptRegexEngine } from "shiki/engine/javascript";
 import type { ThemedTokenWithVariants } from "shiki/types";
 
 const lightTheme = "github-light-default";
+
 const darkTheme = "github-dark-default";
 
 const highlighter = createHighlighterCore({

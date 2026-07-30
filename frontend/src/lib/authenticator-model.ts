@@ -2,8 +2,6 @@ import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/r
 import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { SelectionID } from "../../bindings/telesma/service";
 
-import { deviceName } from "./format.js";
-
 export type AuthenticatorState = "idle" | "opening" | "ready" | "running" | "error";
 
 export type AuthenticatorStatus = {
@@ -26,17 +24,19 @@ export function selectorFromDevice(device: DeviceReport | null | undefined) {
 
 export function reportForSelector(devices: DeviceReport[], selector: string) {
   const requestedSelector = selector.trim();
+
   if (!requestedSelector) return null;
+
   return devices.find((device) => device.attachment.id === requestedSelector) ?? null;
 }
 
-export function labelForDevice(device: DeviceReport) {
-  const name = deviceName(device);
-  return [name, device.identity?.serial].filter(Boolean).join(" · ");
-}
-
-export function idleAuthenticatorStatus(state: AuthenticatorState = "idle", error?: Failure | null): AuthenticatorStatus {
+export function idleAuthenticatorStatus(
+  state: AuthenticatorState = "idle",
+  error?: Failure | null,
+): AuthenticatorStatus {
   const status: AuthenticatorStatus = { state };
+
   if (error) status.error = error;
+
   return status;
 }

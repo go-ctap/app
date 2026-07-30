@@ -16,10 +16,12 @@ import Settings from "./Settings.svelte";
 
 describe("Settings", () => {
   beforeEach(async () => {
-    applicationServiceMocks.LoadApplicationConfig.mockResolvedValue(new ApplicationConfigSnapshot({
-      config: new ApplicationConfig({ locale: "en", advancedMode: false }),
-      exists: true,
-    }));
+    applicationServiceMocks.LoadApplicationConfig.mockResolvedValue(
+      new ApplicationConfigSnapshot({
+        config: new ApplicationConfig({ locale: "en", advancedMode: false }),
+        exists: true,
+      }),
+    );
     applicationServiceMocks.SaveApplicationConfig.mockResolvedValue(undefined);
     await initializeApplicationConfig();
     vi.clearAllMocks();
@@ -38,9 +40,11 @@ describe("Settings", () => {
     await user.click(screen.getByRole("button", { name: "Language" }));
     await user.click(screen.getByText("Russian"));
 
-    await waitFor(() => expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledWith(
-      expect.objectContaining({ locale: "ru", advancedMode: false }),
-    ));
+    await waitFor(() =>
+      expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledWith(
+        expect.objectContaining({ locale: "ru", advancedMode: false }),
+      ),
+    );
     expect(document.documentElement.lang).toBe("ru");
   });
 
@@ -50,13 +54,16 @@ describe("Settings", () => {
     render(Settings);
 
     const advancedMode = screen.getByRole("switch", { name: "Advanced Mode" });
+
     expect(advancedMode).not.toBeChecked();
 
     await user.click(advancedMode);
 
     expect(advancedMode).toBeChecked();
-    await waitFor(() => expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledWith(
-      expect.objectContaining({ locale: "en", advancedMode: true }),
-    ));
+    await waitFor(() =>
+      expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledWith(
+        expect.objectContaining({ locale: "en", advancedMode: true }),
+      ),
+    );
   });
 });

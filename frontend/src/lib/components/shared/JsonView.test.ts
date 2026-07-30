@@ -2,7 +2,7 @@ import { Clipboard } from "@wailsio/runtime";
 import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import JsonView from "./JsonView.svelte";
+import JsonView from "$lib/components/shared/JsonView.svelte";
 
 describe("JsonView", () => {
   const setText = vi.spyOn(Clipboard, "SetText");
@@ -31,7 +31,9 @@ describe("JsonView", () => {
     expect(screen.queryByText("123456")).not.toBeInTheDocument();
     expect(screen.queryByText(/0011223344556677/)).not.toBeInTheDocument();
     expect(screen.queryByText(/ffeeddccbbaa9988/)).not.toBeInTheDocument();
+
     const region = screen.getByRole("region", { name: "Raw JSON" });
+
     await waitFor(() => expect(region.querySelector("pre.shiki")).toBeInTheDocument());
     expect(region).toHaveTextContent(/"pin": "\[redacted\]"/);
     expect(region).toHaveTextContent(/"encIdentifier": "\[redacted\]"/);
@@ -41,11 +43,19 @@ describe("JsonView", () => {
 
     screen.getByRole("button", { name: "Copy" }).click();
 
-    await waitFor(() => expect(setText).toHaveBeenCalledWith(JSON.stringify({
-      pin: "[redacted]",
-      encIdentifier: "[redacted]",
-      encCredStoreState: "[redacted]",
-      options: { pinUvAuthToken: true },
-    }, null, 2)));
+    await waitFor(() =>
+      expect(setText).toHaveBeenCalledWith(
+        JSON.stringify(
+          {
+            pin: "[redacted]",
+            encIdentifier: "[redacted]",
+            encCredStoreState: "[redacted]",
+            options: { pinUvAuthToken: true },
+          },
+          null,
+          2,
+        ),
+      ),
+    );
   });
 });

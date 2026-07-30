@@ -11,7 +11,9 @@
   };
 
   let { label, region, action, onclick = () => {}, children }: Props = $props();
+
   const showNativeTitle = !System.IsWindows();
+
   let nativeTitle = $derived(showNativeTitle ? label : undefined);
 </script>
 
@@ -29,7 +31,7 @@
 </button>
 
 <style>
-@layer blocks {
+  @layer blocks {
     .window-control-button {
       display: grid;
       place-items: center;
@@ -56,5 +58,5 @@
     .window-control-button :global(svg) {
       display: block;
     }
-}
+  }
 </style>

@@ -1,10 +1,10 @@
-export * from "../features/interaction/index.js";
-export * from "../features/lab/index.js";
-export * from "../features/largeblobs/index.js";
-export * from "../features/overview/index.js";
-export * from "../features/passkeys/index.js";
-export * from "../features/security/index.js";
-export * from "../features/workbench/index.js";
+export * from "$lib/features/interaction";
+export * from "$lib/features/lab";
+export * from "$lib/features/largeblobs";
+export * from "$lib/features/overview";
+export * from "$lib/features/passkeys";
+export * from "$lib/features/security";
+export * from "$lib/features/workbench";
 
-export { handleDiscoveryChanged } from "../discovery-controller.js";
-export { handleOperationProgress } from "../event-controller.js";
+export { handleDiscoveryChanged } from "$lib/discovery-controller.js";
+export { handleOperationProgress } from "$lib/event-controller.js";

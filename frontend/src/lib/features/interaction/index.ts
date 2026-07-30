@@ -1,10 +1,10 @@
 import { readonly } from "svelte/store";
 
-import * as state from "./state.js";
+import * as state from "$lib/features/interaction/state.js";
 
 export const pendingInteraction = readonly(state.pendingInteraction);
 
 export {
   answerPendingInteraction,
   handleInteractionRequested,
-} from "../../interaction-controller.js";
+} from "$lib/interaction-controller.js";

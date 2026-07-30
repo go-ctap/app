@@ -1,29 +1,27 @@
 <script lang="ts">
-  import * as Field from "$lib/components/ui/field/index.js";
-  import * as Select from "$lib/components/ui/select/index.js";
-  import { Switch } from "$lib/components/ui/switch/index.js";
+  import * as Field from "$lib/components/ui/field";
+  import * as Select from "$lib/components/ui/select";
+  import { Switch } from "$lib/components/ui/switch";
   import { availableLocales, currentLocale, localeLabel, setAppLocale } from "$lib/i18n";
   import { advancedMode, setAdvancedMode } from "$lib/preferences";
 
   import { m } from "../paraglide/messages.js";
-
-  function handleLocaleChange(value: string | string[]) {
-    if (!Array.isArray(value)) setAppLocale(value);
-  }
 </script>
 
 <section class="settings-screen flow" aria-label={m.settings()}>
-  <section
-    class="settings-section"
-    data-control="wide"
-    aria-labelledby="settings-language-title"
-  >
+  <section class="settings-section" data-control="wide" aria-labelledby="settings-language-title">
     <div class="settings-copy">
       <h2 id="settings-language-title">{m.language()}</h2>
     </div>
 
     <Field.Field>
-      <Select.Root type="single" value={$currentLocale} onValueChange={handleLocaleChange}>
+      <Select.Root
+        type="single"
+        value={$currentLocale}
+        onValueChange={(value) => {
+          if (!Array.isArray(value)) setAppLocale(value);
+        }}
+      >
         <Select.Trigger
           id="settings-language"
           class="settings-language-trigger"
@@ -61,7 +59,7 @@
 </section>
 
 <style>
-@layer blocks {
+  @layer blocks {
     .settings-screen {
       max-width: 48rem;
       min-width: 0;
@@ -113,5 +111,5 @@
       justify-content: flex-end;
       min-height: 38px;
     }
-}
+  }
 </style>

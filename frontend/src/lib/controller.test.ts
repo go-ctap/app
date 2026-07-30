@@ -1,20 +1,22 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-	InteractionKind,
-} from "../../bindings/github.com/go-ctap/kit/model";
+import { InteractionKind } from "../../bindings/github.com/go-ctap/kit/model";
 import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { Assessment } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import {
+  EntryState,
   MutationOutput as LargeBlobMutationOutput,
   MutationOperation,
   MutationPreview,
 } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
-import { IdentityResolutionState, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import {
+  IdentityResolutionState,
+  type DeviceReport,
+} from "../../bindings/github.com/go-ctap/kit/model/report";
 import {
   InteractionAnswer,
   LargeBlobMutationEnvelope,
@@ -31,7 +33,7 @@ import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import { setAppLocale } from "$lib/i18n";
 import { logController } from "$lib/features/logs/state.svelte.js";
 import { failPasskeysInventoryLoadAtRuntime } from "$lib/features/passkeys/state";
-import { failureForCode } from "$lib/test-failure";
+import { failureForCode } from "$lib/test-support/failure";
 
 import {
   resetAppStateForTest,
@@ -44,14 +46,14 @@ import {
   seedPasskeysEnvelopeForTest,
   seedPendingInteractionForTest,
   seedSelectionForTest,
-} from "./store-test-utils";
+} from "$lib/test-support/store-utils";
 import {
   activeScreen,
   largeBlobsInventoryState,
   largeBlobsMutation,
   largeBlobsPayloadEncoding,
   largeBlobsQuery,
-  largeBlobsSelectedCredentialID,
+  largeBlobsSelectedEntryIndex,
   largeBlobsStatusFilter,
   largeBlobsVerificationFlow,
   overviewBioSensor,
@@ -67,7 +69,7 @@ import {
   selectedSelector,
   authenticatorStatus,
   statusBar,
-} from "./test-support/stores";
+} from "$lib/test-support/stores";
 
 const serviceMocks = vi.hoisted(() => ({
   BioSensorInfo: vi.fn(),
@@ -96,7 +98,10 @@ function device(id: string): DeviceReport {
   };
 }
 
-function snapshot(item: DeviceReport, selectionId = `authenticator-${item.attachment.id}`): ActiveSelection {
+function snapshot(
+  item: DeviceReport,
+  selectionId = `authenticator-${item.attachment.id}`,
+): ActiveSelection {
   return {
     id: selectionId,
   } as ActiveSelection;
@@ -134,7 +139,11 @@ function bioSensorEnvelope(item: DeviceReport): BioSensorEnvelope {
   } as BioSensorEnvelope;
 }
 
-function credentialsEnvelope(item: DeviceReport, selectionId = `authenticator-${item.attachment.id}`, credentialIDHex = "cafe"): CredentialsEnvelope {
+function credentialsEnvelope(
+  item: DeviceReport,
+  selectionId = `authenticator-${item.attachment.id}`,
+  credentialIDHex = "cafe",
+): CredentialsEnvelope {
   return {
     operationId: `credentials-${item.attachment.id}`,
     selectionId,
@@ -152,18 +161,22 @@ function credentialsEnvelope(item: DeviceReport, selectionId = `authenticator-${
         totalRPs: 1,
         totalCredentials: 1,
       },
-      groups: [{
-        rpID: "example.com",
-        rpName: "Example",
-        rpIDHashHex: "abcd",
-        credentials: [{
-          credentialIDHex,
-          credentialType: "public-key",
-          userIDHex: "01",
-          userName: "user@example.com",
-          displayName: "Example User",
-        }],
-      }],
+      groups: [
+        {
+          rpID: "example.com",
+          rpName: "Example",
+          rpIDHashHex: "abcd",
+          credentials: [
+            {
+              credentialIDHex,
+              credentialType: "public-key",
+              userIDHex: "01",
+              userName: "user@example.com",
+              displayName: "Example User",
+            },
+          ],
+        },
+      ],
     },
   } as CredentialsEnvelope;
 }
@@ -182,11 +195,15 @@ function credentialUpdateTarget(credentialIDHex = "cafe") {
   };
 }
 
-function largeBlobListEnvelope(item: DeviceReport, selectionId = `authenticator-${item.attachment.id}`): LargeBlobListEnvelope {
+function largeBlobListEnvelope(
+  item: DeviceReport,
+  selectionId = `authenticator-${item.attachment.id}`,
+): LargeBlobListEnvelope {
   return {
     operationId: `large-blobs-${item.attachment.id}`,
     selectionId,
     kind: OperationKind.ListLargeBlobs,
+    authenticatorClosed: false,
     result: {
       device: item,
       support: {
@@ -196,18 +213,31 @@ function largeBlobListEnvelope(item: DeviceReport, selectionId = `authenticator-
       array: {
         read: true,
         blobCount: 0,
-        matchedBlobCount: 0,
-        unmatchedBlobCount: 0,
+        matchedBlobCount: 1,
+        orphanedBlobCount: 1,
+        nonconformingBlobCount: 0,
+        corruptBlobCount: 0,
       },
-      credentials: [{
-        credentialIDHex: "cafe",
-        rp: { id: "example.com", name: "Example" },
-        user: { userIDHex: "01", name: "user@example.com", displayName: "Example User" },
-        largeBlobKeyState: "available",
-        blobPresent: false,
-        blobState: "missing",
-        blobByteCount: 0,
-      }],
+      entries: [
+        {
+          index: 0,
+          state: EntryState.EntryStateMatched,
+          target: {
+            credentialIDHex: "cafe",
+            rp: { id: "example.com", name: "Example" },
+            user: { userIDHex: "01", name: "user@example.com", displayName: "Example User" },
+          },
+          ciphertextByteCount: 32,
+          declaredPayloadByteCount: 0,
+          payloadByteCount: 0,
+        },
+        {
+          index: 1,
+          state: EntryState.EntryStateOrphaned,
+          ciphertextByteCount: 24,
+          declaredPayloadByteCount: 0,
+        },
+      ],
     },
   } as LargeBlobListEnvelope;
 }
@@ -227,7 +257,8 @@ describe("controller lifecycle", () => {
 
   it("auto-selects one discovered authenticator and loads overview once", async () => {
     const token = device("token-1");
-    const { bootstrap } = await import("./test-support/controller");
+    const { bootstrap } = await import("$lib/test-support/controller");
+
     serviceMocks.Discover.mockResolvedValue({ devices: [token] });
     serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token) });
     serviceMocks.Inspect.mockResolvedValue(inspectEnvelope(token));
@@ -241,8 +272,9 @@ describe("controller lifecycle", () => {
   });
 
   it("auto-selects the first authenticator when discovery returns several", async () => {
-    const { bootstrap } = await import("./test-support/controller");
+    const { bootstrap } = await import("$lib/test-support/controller");
     const first = device("token-1");
+
     serviceMocks.Discover.mockResolvedValue({ devices: [first, device("token-2")] });
     serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(first) });
     serviceMocks.Inspect.mockResolvedValue(inspectEnvelope(first));
@@ -256,9 +288,13 @@ describe("controller lifecycle", () => {
 
   it("loads overview once when navigating back to overview with an existing selected authenticator", async () => {
     const token = device("token-1");
-    const { navigateToScreen } = await import("./test-support/controller");
+    const { navigateToScreen } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([token]);
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedActiveScreenForTest("settings");
     serviceMocks.Inspect.mockResolvedValue(inspectEnvelope(token));
 
@@ -273,11 +309,17 @@ describe("controller lifecycle", () => {
     const token = device("token-1");
     const cached = inspectEnvelope(token);
     const refreshed = inspectEnvelope(token);
+
     refreshed.operationId = "inspect-refreshed";
-    const { navigateToScreen } = await import("./test-support/controller");
-    const { invalidateOverviewCache } = await import("./overview-controller");
+
+    const { navigateToScreen } = await import("$lib/test-support/controller");
+    const { invalidateOverviewCache } = await import("$lib/overview-controller");
+
     seedDevicesForTest([token]);
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedOverviewEnvelopeForTest(cached);
     seedActiveScreenForTest("security");
     serviceMocks.Inspect.mockResolvedValue(refreshed);
@@ -294,9 +336,13 @@ describe("controller lifecycle", () => {
 
   it("loads passkeys once when navigating to passkeys with an existing selected authenticator", async () => {
     const token = device("token-1");
-    const { navigateToScreen } = await import("./test-support/controller");
+    const { navigateToScreen } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([token]);
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedActiveScreenForTest("settings");
     serviceMocks.ListCredentials.mockResolvedValue(credentialsEnvelope(token));
 
@@ -313,9 +359,13 @@ describe("controller lifecycle", () => {
 
   it("loads large blobs once when navigating to the screen with an existing selected authenticator", async () => {
     const token = device("token-1");
-    const { navigateToScreen } = await import("./test-support/controller");
+    const { navigateToScreen } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([token]);
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedActiveScreenForTest("settings");
     serviceMocks.ListLargeBlobs.mockResolvedValue(largeBlobListEnvelope(token));
 
@@ -332,8 +382,13 @@ describe("controller lifecycle", () => {
 
   it("passes forced refresh and PIN verification through large blobs Reload", async () => {
     const token = device("token-1");
-    const { reloadLargeBlobs, setLargeBlobsVerificationFlow } = await import("./test-support/controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    const { reloadLargeBlobs, setLargeBlobsVerificationFlow } =
+      await import("$lib/test-support/controller");
+
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     serviceMocks.ListLargeBlobs.mockResolvedValue(largeBlobListEnvelope(token));
     setLargeBlobsVerificationFlow(VerificationFlow.VerificationFlowPIN);
 
@@ -347,8 +402,13 @@ describe("controller lifecycle", () => {
 
   it("returns success and passes forced refresh plus PIN verification through Reload", async () => {
     const token = device("token-1");
-    const { reloadPasskeys, setPasskeysVerificationFlow } = await import("./test-support/controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    const { reloadPasskeys, setPasskeysVerificationFlow } =
+      await import("$lib/test-support/controller");
+
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     serviceMocks.ListCredentials.mockResolvedValue(credentialsEnvelope(token));
     setPasskeysVerificationFlow(VerificationFlow.VerificationFlowPIN);
 
@@ -362,9 +422,10 @@ describe("controller lifecycle", () => {
 
   it("reopens an errored selected authenticator and preserves stale inventory until forced refresh succeeds", async () => {
     const token = device("token-1");
-    const { reloadPasskeys } = await import("./test-support/controller");
+    const { reloadPasskeys } = await import("$lib/test-support/controller");
     const previous = credentialsEnvelope(token, "authenticator-expired", "cafe");
     const refreshed = credentialsEnvelope(token, "authenticator-reopened", "bead");
+
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
@@ -372,15 +433,19 @@ describe("controller lifecycle", () => {
     });
     seedPasskeysEnvelopeForTest(previous);
     failPasskeysInventoryLoadAtRuntime();
-    serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token, "authenticator-reopened") });
+    serviceMocks.SetSelection.mockResolvedValue({
+      selection: snapshot(token, "authenticator-reopened"),
+    });
 
     let resolveRefresh!: (envelope: CredentialsEnvelope) => void;
     const pendingRefresh = new Promise<CredentialsEnvelope>((resolve) => {
       resolveRefresh = resolve;
     });
+
     serviceMocks.ListCredentials.mockReturnValueOnce(pendingRefresh);
 
     const recovery = reloadPasskeys();
+
     await vi.waitFor(() => expect(serviceMocks.ListCredentials).toHaveBeenCalledTimes(1));
 
     expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
@@ -396,7 +461,10 @@ describe("controller lifecycle", () => {
 
     resolveRefresh(refreshed);
     await expect(recovery).resolves.toBe(true);
-    expect(get(authenticatorStatus)).toMatchObject({ state: "ready", selectionId: "authenticator-reopened" });
+    expect(get(authenticatorStatus)).toMatchObject({
+      state: "ready",
+      selectionId: "authenticator-reopened",
+    });
     expect(get(passkeysInventoryState)).toMatchObject({
       phase: "ready",
       report: refreshed.result,
@@ -406,8 +474,9 @@ describe("controller lifecycle", () => {
 
   it("preserves last-known-good inventory when reopening the selected authenticator fails", async () => {
     const token = device("token-1");
-    const { reloadPasskeys } = await import("./test-support/controller");
+    const { reloadPasskeys } = await import("$lib/test-support/controller");
     const previous = credentialsEnvelope(token, "authenticator-expired", "cafe");
+
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
@@ -435,7 +504,7 @@ describe("controller lifecycle", () => {
 
   it("keeps recovered inventory stale when its forced refresh returns an error envelope", async () => {
     const token = device("token-1");
-    const { reloadPasskeys } = await import("./test-support/controller");
+    const { reloadPasskeys } = await import("$lib/test-support/controller");
     const previous = credentialsEnvelope(token, "authenticator-expired", "cafe");
     const refreshError = {
       operationId: "refresh-1",
@@ -443,6 +512,7 @@ describe("controller lifecycle", () => {
       kind: OperationKind.ListCredentials,
       error: failureForCode(Code.CodeTransportFailure),
     } as CredentialsEnvelope;
+
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
@@ -450,7 +520,9 @@ describe("controller lifecycle", () => {
     });
     seedPasskeysEnvelopeForTest(previous);
     failPasskeysInventoryLoadAtRuntime();
-    serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token, "authenticator-reopened") });
+    serviceMocks.SetSelection.mockResolvedValue({
+      selection: snapshot(token, "authenticator-reopened"),
+    });
     serviceMocks.ListCredentials.mockResolvedValue(refreshError);
 
     await expect(reloadPasskeys()).resolves.toBe(false);
@@ -464,16 +536,25 @@ describe("controller lifecycle", () => {
       report: previous.result,
     });
     expect(get(passkeysInventoryState).report).toBe(previous.result);
-    expect(get(authenticatorStatus)).toMatchObject({ state: "ready", selectionId: "authenticator-reopened" });
+    expect(get(authenticatorStatus)).toMatchObject({
+      state: "ready",
+      selectionId: "authenticator-reopened",
+    });
   });
 
   it("reconciles credential selection after a successful refresh", async () => {
     const token = device("token-1");
-    const { loadPasskeys, selectPasskeyCredential } = await import("./test-support/controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    const { loadPasskeys, selectPasskeyCredential } = await import("$lib/test-support/controller");
+
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token, "authenticator-token-1", "cafe"));
     selectPasskeyCredential("cafe");
-    serviceMocks.ListCredentials.mockResolvedValue(credentialsEnvelope(token, "authenticator-token-1", "bead"));
+    serviceMocks.ListCredentials.mockResolvedValue(
+      credentialsEnvelope(token, "authenticator-token-1", "bead"),
+    );
 
     await loadPasskeys();
 
@@ -482,8 +563,13 @@ describe("controller lifecycle", () => {
 
   it("passes PIN verification into credential delete dry-runs", async () => {
     const token = device("token-1");
-    const { beginCredentialDelete, setPasskeysVerificationFlow } = await import("./test-support/controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    const { beginCredentialDelete, setPasskeysVerificationFlow } =
+      await import("$lib/test-support/controller");
+
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     setPasskeysVerificationFlow(VerificationFlow.VerificationFlowPIN);
     serviceMocks.DeleteCredential.mockResolvedValue({
@@ -503,19 +589,25 @@ describe("controller lifecycle", () => {
       credentialIdHex: "cafe",
       dryRun: true,
     });
-    expect(get(passkeysMutation)).toMatchObject({ kind: "delete", phase: "review" });
+    expect(get(passkeysMutation)).toMatchObject({
+      kind: "delete",
+      operation: { phase: "review" },
+    });
   });
 
   it("reopens an invalid selected authenticator before repeating a credential delete preview", async () => {
     const token = device("token-1");
-    const { beginCredentialDelete } = await import("./test-support/controller");
+    const { beginCredentialDelete } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
       error: failureForCode(Code.CodeAuthenticatorClosed),
     });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token, "authenticator-expired"));
-    serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token, "authenticator-reopened") });
+    serviceMocks.SetSelection.mockResolvedValue({
+      selection: snapshot(token, "authenticator-reopened"),
+    });
     serviceMocks.DeleteCredential.mockResolvedValue({
       operationId: "delete-preview-1",
       selectionId: "authenticator-reopened",
@@ -538,27 +630,32 @@ describe("controller lifecycle", () => {
 
   it("reopens an invalid selected authenticator before repeating a large-blob delete preview", async () => {
     const token = device("token-1");
-    const { beginLargeBlobDelete } = await import("./test-support/controller");
+    const { beginLargeBlobDelete } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "error",
       error: failureForCode(Code.CodeAuthenticatorClosed),
     });
     seedLargeBlobsEnvelopeForTest(largeBlobListEnvelope(token, "authenticator-expired"));
-    serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token, "authenticator-reopened") });
-    serviceMocks.DeleteLargeBlob.mockResolvedValue(new LargeBlobMutationEnvelope({
-      operationId: "large-blob-delete-preview-1",
-      selectionId: "authenticator-reopened",
-      kind: OperationKind.DeleteLargeBlob,
-      result: new LargeBlobMutationOutput({
-        preview: new MutationPreview({
-          operation: MutationOperation.MutationDelete,
+    serviceMocks.SetSelection.mockResolvedValue({
+      selection: snapshot(token, "authenticator-reopened"),
+    });
+    serviceMocks.DeleteLargeBlob.mockResolvedValue(
+      new LargeBlobMutationEnvelope({
+        operationId: "large-blob-delete-preview-1",
+        selectionId: "authenticator-reopened",
+        kind: OperationKind.DeleteLargeBlob,
+        result: new LargeBlobMutationOutput({
+          preview: new MutationPreview({
+            operation: MutationOperation.MutationDelete,
+          }),
+          result: null,
         }),
-        result: null,
       }),
-    }));
+    );
 
-    expect(await beginLargeBlobDelete("cafe")).toBe(true);
+    expect(await beginLargeBlobDelete(0)).toBe(true);
     expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
     expect(serviceMocks.DeleteLargeBlob).toHaveBeenCalledWith({
       selectionId: "authenticator-reopened",
@@ -575,9 +672,14 @@ describe("controller lifecycle", () => {
       confirmCredentialUpdate,
       previewCredentialUpdate,
       updateCredentialDraft,
-    } = await import("./test-support/controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    } = await import("$lib/test-support/controller");
+
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
+
     const preview = {
       credentialIDHex: "cafe",
       rpID: "example.com",
@@ -585,33 +687,33 @@ describe("controller lifecycle", () => {
       proposed: { userIDHex: "01", name: "", displayName: "Example User" },
       warnings: [],
     };
-    serviceMocks.UpdateCredentialUser
-      .mockResolvedValueOnce({
-        operationId: "update-preview-1",
-        selectionId: "authenticator-token-1",
-        kind: OperationKind.UpdateCredentialUser,
-        result: { preview, result: null },
-      })
-      .mockResolvedValueOnce({
-        operationId: "update-1",
-        selectionId: "authenticator-token-1",
-        kind: OperationKind.UpdateCredentialUser,
+
+    serviceMocks.UpdateCredentialUser.mockResolvedValueOnce({
+      operationId: "update-preview-1",
+      selectionId: "authenticator-token-1",
+      kind: OperationKind.UpdateCredentialUser,
+      result: { preview, result: null },
+    }).mockResolvedValueOnce({
+      operationId: "update-1",
+      selectionId: "authenticator-token-1",
+      kind: OperationKind.UpdateCredentialUser,
+      result: {
+        preview,
         result: {
-          preview,
-          result: {
-            attachmentId: "token-1",
-            credentialIDHex: "cafe",
-            rpID: "example.com",
-            previous: preview.current,
-            current: preview.proposed,
-          },
+          attachmentId: "token-1",
+          credentialIDHex: "cafe",
+          rpID: "example.com",
+          previous: preview.current,
+          current: preview.proposed,
         },
-      });
+      },
+    });
     serviceMocks.ListCredentials.mockResolvedValue(credentialsEnvelope(token));
 
     expect(beginCredentialUpdate("cafe")).toBe(true);
     expect(updateCredentialDraft({ name: "" })).toBe(true);
     expect(await previewCredentialUpdate()).toBe(true);
+
     const previewRequest = {
       selectionId: "authenticator-token-1",
       verificationFlow: "",
@@ -620,6 +722,7 @@ describe("controller lifecycle", () => {
       nameProvided: true,
       dryRun: true,
     };
+
     expect(serviceMocks.UpdateCredentialUser).toHaveBeenNthCalledWith(1, previewRequest);
 
     expect(await confirmCredentialUpdate()).toBe(true);
@@ -632,7 +735,7 @@ describe("controller lifecycle", () => {
       verificationFlow: "",
     });
     expect(get(passkeysSelectedCredentialID)).toBe("cafe");
-    expect(get(passkeysMutation)).toEqual({ kind: "idle", phase: "idle" });
+    expect(get(passkeysMutation)).toEqual({ kind: "idle", operation: { phase: "idle" } });
   });
 
   it("keeps mutation confirmation pending until its forced refresh completes", async () => {
@@ -642,9 +745,14 @@ describe("controller lifecycle", () => {
       confirmCredentialUpdate,
       previewCredentialUpdate,
       updateCredentialDraft,
-    } = await import("./test-support/controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    } = await import("$lib/test-support/controller");
+
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
+
     const preview = {
       credentialIDHex: "cafe",
       rpID: "example.com",
@@ -652,33 +760,33 @@ describe("controller lifecycle", () => {
       proposed: { userIDHex: "01", name: "updated@example.com", displayName: "Example User" },
       warnings: [],
     };
-    serviceMocks.UpdateCredentialUser
-      .mockResolvedValueOnce({
-        operationId: "update-preview-1",
-        selectionId: "authenticator-token-1",
-        kind: OperationKind.UpdateCredentialUser,
-        result: { preview, result: null },
-      })
-      .mockResolvedValueOnce({
-        operationId: "update-1",
-        selectionId: "authenticator-token-1",
-        kind: OperationKind.UpdateCredentialUser,
+
+    serviceMocks.UpdateCredentialUser.mockResolvedValueOnce({
+      operationId: "update-preview-1",
+      selectionId: "authenticator-token-1",
+      kind: OperationKind.UpdateCredentialUser,
+      result: { preview, result: null },
+    }).mockResolvedValueOnce({
+      operationId: "update-1",
+      selectionId: "authenticator-token-1",
+      kind: OperationKind.UpdateCredentialUser,
+      result: {
+        preview,
         result: {
-          preview,
-          result: {
-            attachmentId: "token-1",
-            credentialIDHex: "cafe",
-            rpID: "example.com",
-            previous: preview.current,
-            current: preview.proposed,
-          },
+          attachmentId: "token-1",
+          credentialIDHex: "cafe",
+          rpID: "example.com",
+          previous: preview.current,
+          current: preview.proposed,
         },
-      });
+      },
+    });
 
     let resolveRefresh!: (envelope: CredentialsEnvelope) => void;
     const refresh = new Promise<CredentialsEnvelope>((resolve) => {
       resolveRefresh = resolve;
     });
+
     serviceMocks.ListCredentials.mockImplementationOnce(() => {
       return refresh;
     });
@@ -688,8 +796,11 @@ describe("controller lifecycle", () => {
     expect(await previewCredentialUpdate()).toBe(true);
 
     const confirmation = confirmCredentialUpdate();
+
     await vi.waitFor(() => expect(serviceMocks.ListCredentials).toHaveBeenCalledTimes(1));
+
     let completed = false;
+
     void confirmation.then(() => {
       completed = true;
     });
@@ -703,10 +814,16 @@ describe("controller lifecycle", () => {
 
   it("executes the exact reviewed delete request and keeps stale rows when its forced refresh fails", async () => {
     const token = device("token-1");
-    const { beginCredentialDelete, confirmCredentialDelete } = await import("./test-support/controller");
+    const { beginCredentialDelete, confirmCredentialDelete } =
+      await import("$lib/test-support/controller");
     const inventory = credentialsEnvelope(token);
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedPasskeysEnvelopeForTest(inventory);
+
     const preview = {
       credentialIDHex: "cafe",
       rpID: "example.com",
@@ -716,39 +833,40 @@ describe("controller lifecycle", () => {
       displayName: "Example User",
       warnings: [],
     };
-    serviceMocks.DeleteCredential
-      .mockResolvedValueOnce({
-        operationId: "delete-preview-1",
-        selectionId: "authenticator-token-1",
-        kind: OperationKind.DeleteCredential,
-        result: { preview, result: null },
-      })
-      .mockResolvedValueOnce({
-        operationId: "delete-1",
-        selectionId: "authenticator-token-1",
-        kind: OperationKind.DeleteCredential,
+
+    serviceMocks.DeleteCredential.mockResolvedValueOnce({
+      operationId: "delete-preview-1",
+      selectionId: "authenticator-token-1",
+      kind: OperationKind.DeleteCredential,
+      result: { preview, result: null },
+    }).mockResolvedValueOnce({
+      operationId: "delete-1",
+      selectionId: "authenticator-token-1",
+      kind: OperationKind.DeleteCredential,
+      result: {
+        preview,
         result: {
-          preview,
-          result: {
-            attachmentId: "token-1",
-            credentialIDHex: "cafe",
-            rpID: "example.com",
-            rpName: "Example",
-            userIDHex: "01",
-            userName: "user@example.com",
-            displayName: "Example User",
-          },
+          attachmentId: "token-1",
+          credentialIDHex: "cafe",
+          rpID: "example.com",
+          rpName: "Example",
+          userIDHex: "01",
+          userName: "user@example.com",
+          displayName: "Example User",
         },
-      });
+      },
+    });
     serviceMocks.ListCredentials.mockRejectedValue(new Error("refresh bridge offline"));
 
     expect(await beginCredentialDelete("cafe")).toBe(true);
+
     const previewRequest = {
       selectionId: "authenticator-token-1",
       verificationFlow: "",
       credentialIdHex: "cafe",
       dryRun: true,
     };
+
     expect(serviceMocks.DeleteCredential).toHaveBeenNthCalledWith(1, previewRequest);
 
     expect(await confirmCredentialDelete()).toBe(true);
@@ -761,7 +879,7 @@ describe("controller lifecycle", () => {
       verificationFlow: "",
     });
     expect(get(passkeysSelectedCredentialID)).toBe("");
-    expect(get(passkeysMutation)).toEqual({ kind: "idle", phase: "idle" });
+    expect(get(passkeysMutation)).toEqual({ kind: "idle", operation: { phase: "idle" } });
     expect(get(passkeysInventoryState)).toMatchObject({
       phase: "error",
       report: inventory.result,
@@ -775,9 +893,14 @@ describe("controller lifecycle", () => {
       confirmCredentialUpdate,
       previewCredentialUpdate,
       updateCredentialDraft,
-    } = await import("./test-support/controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    } = await import("$lib/test-support/controller");
+
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
+
     const preview = {
       credentialIDHex: "cafe",
       rpID: "example.com",
@@ -791,14 +914,13 @@ describe("controller lifecycle", () => {
       kind: OperationKind.UpdateCredentialUser,
       error: failureForCode(Code.CodeTransportFailure),
     };
-    serviceMocks.UpdateCredentialUser
-      .mockResolvedValueOnce({
-        operationId: "update-preview-1",
-        selectionId: "authenticator-token-1",
-        kind: OperationKind.UpdateCredentialUser,
-        result: { preview, result: null },
-      })
-      .mockResolvedValueOnce(errorEnvelope);
+
+    serviceMocks.UpdateCredentialUser.mockResolvedValueOnce({
+      operationId: "update-preview-1",
+      selectionId: "authenticator-token-1",
+      kind: OperationKind.UpdateCredentialUser,
+      result: { preview, result: null },
+    }).mockResolvedValueOnce(errorEnvelope);
 
     expect(beginCredentialUpdate("cafe")).toBe(true);
     expect(updateCredentialDraft({ name: "updated@example.com" })).toBe(true);
@@ -807,11 +929,12 @@ describe("controller lifecycle", () => {
 
     expect(get(passkeysMutation)).toMatchObject({
       kind: "update",
-      phase: "error",
-      failedPhase: "executing",
-      failureReason: "response-error",
-      responseEnvelope: errorEnvelope,
-      runtimeError: null,
+      operation: {
+        phase: "error",
+        failedPhase: "executing",
+        responseEnvelope: errorEnvelope,
+        runtimeError: null,
+      },
     });
     expect(serviceMocks.UpdateCredentialUser).toHaveBeenCalledTimes(2);
   });
@@ -823,9 +946,14 @@ describe("controller lifecycle", () => {
       confirmCredentialUpdate,
       previewCredentialUpdate,
       updateCredentialDraft,
-    } = await import("./test-support/controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    } = await import("$lib/test-support/controller");
+
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
+
     const preview = {
       credentialIDHex: "cafe",
       rpID: "example.com",
@@ -839,14 +967,13 @@ describe("controller lifecycle", () => {
       kind: OperationKind.UpdateCredentialUser,
       error: failureForCode(Code.CodeAuthenticatorClosed),
     };
-    serviceMocks.UpdateCredentialUser
-      .mockResolvedValueOnce({
-        operationId: "update-preview-1",
-        selectionId: "authenticator-token-1",
-        kind: OperationKind.UpdateCredentialUser,
-        result: { preview, result: null },
-      })
-      .mockResolvedValueOnce(invalidSelectionEnvelope);
+
+    serviceMocks.UpdateCredentialUser.mockResolvedValueOnce({
+      operationId: "update-preview-1",
+      selectionId: "authenticator-token-1",
+      kind: OperationKind.UpdateCredentialUser,
+      result: { preview, result: null },
+    }).mockResolvedValueOnce(invalidSelectionEnvelope);
 
     expect(beginCredentialUpdate("cafe")).toBe(true);
     expect(updateCredentialDraft({ name: "updated@example.com" })).toBe(true);
@@ -860,9 +987,11 @@ describe("controller lifecycle", () => {
     expect(get(authenticatorStatus).selectionId).toBeUndefined();
     expect(get(passkeysMutation)).toMatchObject({
       kind: "update",
-      phase: "error",
-      failedPhase: "executing",
-      responseEnvelope: invalidSelectionEnvelope,
+      operation: {
+        phase: "error",
+        failedPhase: "executing",
+        responseEnvelope: invalidSelectionEnvelope,
+      },
     });
 
     expect(serviceMocks.UpdateCredentialUser).toHaveBeenCalledTimes(2);
@@ -871,8 +1000,13 @@ describe("controller lifecycle", () => {
 
   it("stores a null response and a separate runtime error when mutation preview throws", async () => {
     const token = device("token-1");
-    const { beginCredentialUpdate, previewCredentialUpdate, updateCredentialDraft } = await import("./test-support/controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    const { beginCredentialUpdate, previewCredentialUpdate, updateCredentialDraft } =
+      await import("$lib/test-support/controller");
+
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
     serviceMocks.UpdateCredentialUser.mockRejectedValue(new Error("mutation bridge offline"));
 
@@ -882,115 +1016,52 @@ describe("controller lifecycle", () => {
 
     expect(get(passkeysMutation)).toMatchObject({
       kind: "update",
-      phase: "error",
-      failedPhase: "previewing",
-      failureReason: "runtime-error",
-      responseEnvelope: null,
-      runtimeError: failureForCode(Code.CodeInternalError),
-    });
-  });
-
-  it("reports a successful mutation envelope with no execution result as a typed missing-result error", async () => {
-    const token = device("token-1");
-    const {
-      beginCredentialUpdate,
-      confirmCredentialUpdate,
-      previewCredentialUpdate,
-      updateCredentialDraft,
-    } = await import("./test-support/controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
-    seedPasskeysEnvelopeForTest(credentialsEnvelope(token));
-    const preview = {
-      credentialIDHex: "cafe",
-      rpID: "example.com",
-      current: { userIDHex: "01", name: "user@example.com", displayName: "Example User" },
-      proposed: { userIDHex: "01", name: "updated@example.com", displayName: "Example User" },
-      warnings: [],
-    };
-    const noResultEnvelope = {
-      operationId: "update-1",
-      selectionId: "authenticator-token-1",
-      kind: OperationKind.UpdateCredentialUser,
-      result: { preview, result: null },
-    };
-    serviceMocks.UpdateCredentialUser
-      .mockResolvedValueOnce({
-        operationId: "update-preview-1",
-        selectionId: "authenticator-token-1",
-        kind: OperationKind.UpdateCredentialUser,
-        result: { preview, result: null },
-      })
-      .mockResolvedValueOnce(noResultEnvelope);
-
-    expect(beginCredentialUpdate("cafe")).toBe(true);
-    expect(updateCredentialDraft({ name: "updated@example.com" })).toBe(true);
-    expect(await previewCredentialUpdate()).toBe(true);
-    expect(await confirmCredentialUpdate()).toBe(false);
-
-    expect(get(passkeysMutation)).toMatchObject({
-      kind: "update",
-      phase: "error",
-      failedPhase: "executing",
-      failureReason: "missing-result",
-      responseEnvelope: noResultEnvelope,
-      runtimeError: null,
-    });
-    expect(get(statusBar).lastOutcome).toMatchObject({
-      tone: "error",
-      message: "The operation returned an unexpected result type.",
+      operation: {
+        phase: "error",
+        failedPhase: "previewing",
+        responseEnvelope: null,
+        runtimeError: failureForCode(Code.CodeInternalError),
+      },
     });
   });
 
   it("keeps passkeys transport failures as load errors without synthetic credentials envelopes", async () => {
     const token = device("token-1");
-    const { loadPasskeys } = await import("./test-support/controller");
+    const { loadPasskeys } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([token]);
     seedActiveScreenForTest("passkeys");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     serviceMocks.ListCredentials.mockRejectedValue(new Error("bridge offline"));
 
     await loadPasskeys();
 
     const inventory = get(passkeysInventoryState);
+
     expect(inventory).toEqual({
       phase: "error",
       report: null,
       lastSuccessfulAt: null,
     });
     expect(get(statusBar).activeOperation).toBeNull();
-    expect(get(statusBar).lastOutcome?.message).toBe("The operation failed because of an internal error.");
-  });
-
-  it("reports a result-less credential-list envelope without storing it as inventory", async () => {
-    const token = device("token-1");
-    const { loadPasskeys } = await import("./test-support/controller");
-    const envelope = {
-      operationId: "credentials-token-1",
-      selectionId: "authenticator-token-1",
-      kind: OperationKind.ListCredentials,
-    } as CredentialsEnvelope;
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
-    serviceMocks.ListCredentials.mockResolvedValue(envelope);
-
-    await loadPasskeys();
-
-    expect(get(passkeysInventoryState)).toEqual({
-      phase: "error",
-      report: null,
-      lastSuccessfulAt: null,
-    });
-    expect(get(statusBar).lastOutcome).toMatchObject({
-      tone: "error",
-      message: "The operation returned an unexpected result type.",
-    });
+    expect(get(statusBar).lastOutcome?.message).toBe(
+      "The operation failed because of an internal error.",
+    );
   });
 
   it("turns invalid authenticator responses into a authenticator error without retaining the expired authenticator id", async () => {
     const token = device("token-1");
-    const { loadPasskeys } = await import("./test-support/controller");
+    const { loadPasskeys } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([token]);
     seedActiveScreenForTest("passkeys");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedPendingInteractionForTest({
       interactionId: "interaction-1",
       operationId: "operation-1",
@@ -1017,17 +1088,23 @@ describe("controller lifecycle", () => {
 
   it("honors a closed-authenticator postcondition on the first transport failure", async () => {
     const token = device("token-1");
-    const { loadPasskeys } = await import("./test-support/controller");
+    const { loadPasskeys } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([token]);
     seedActiveScreenForTest("passkeys");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedPendingInteractionForTest({
       interactionId: "interaction-1",
       operationId: "operation-1",
       selectionId: "authenticator-token-1",
       request: { kind: InteractionKind.InteractionKindTouch },
     } as InteractionPrompt);
+
     const transportFailure = failureForCode(Code.CodeTransportFailure);
+
     serviceMocks.ListCredentials.mockResolvedValue({
       operationId: "credentials-token-1",
       selectionId: "authenticator-token-1",
@@ -1045,9 +1122,8 @@ describe("controller lifecycle", () => {
   it("clearing selection clears per-device state and pending interaction", async () => {
     const token = device("token-1");
     const {
-      beginLargeBlobWrite,
       beginCredentialUpdate,
-      selectLargeBlobCredential,
+      selectLargeBlobEntry,
       selectPasskeyCredential,
       selectToken,
       setLargeBlobsPayloadEncoding,
@@ -1057,9 +1133,13 @@ describe("controller lifecycle", () => {
       setPasskeysQuery,
       setPasskeysStatusFilter,
       setPasskeysVerificationFlow,
-    } = await import("./test-support/controller");
+    } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([token]);
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedOverviewEnvelopeForTest(inspectEnvelope(token));
     seedOverviewBioSensorEnvelopeForTest(bioSensorEnvelope(token));
     seedOverviewMDSForTest(null);
@@ -1070,19 +1150,18 @@ describe("controller lifecycle", () => {
     setPasskeysStatusFilter("large-blob-missing");
     setPasskeysVerificationFlow(VerificationFlow.VerificationFlowPIN);
     expect(beginCredentialUpdate("cafe")).toBe(true);
-    await selectLargeBlobCredential("cafe");
+    await selectLargeBlobEntry(1);
     setLargeBlobsQuery("example");
-    setLargeBlobsStatusFilter("present");
+    setLargeBlobsStatusFilter("orphaned");
     setLargeBlobsVerificationFlow(VerificationFlow.VerificationFlowPIN);
     setLargeBlobsPayloadEncoding("hex");
-    expect(beginLargeBlobWrite("cafe")).toBe(true);
     seedPendingInteractionForTest({
       interactionId: "interaction-1",
       operationId: "operation-1",
       selectionId: "authenticator-token-1",
       request: { kind: InteractionKind.InteractionKindTouch },
     } as InteractionPrompt);
-	logController.recordRuntimeFailure("selection-survivor", new Error("not persisted"));
+    logController.recordRuntimeFailure("selection-survivor", new Error("not persisted"));
 
     await selectToken("");
 
@@ -1094,17 +1173,21 @@ describe("controller lifecycle", () => {
     expect(get(passkeysQuery)).toBe("");
     expect(get(passkeysStatusFilter)).toBe("all");
     expect(get(passkeysSelectedCredentialID)).toBe("");
-    expect(get(passkeysMutation)).toEqual({ kind: "idle", phase: "idle" });
+    expect(get(passkeysMutation)).toEqual({ kind: "idle", operation: { phase: "idle" } });
     expect(get(passkeysVerificationFlow)).toBe(VerificationFlow.VerificationFlowPIN);
-    expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).toBeNull();
+    expect(get(largeBlobsInventoryState).report).toBeNull();
     expect(get(largeBlobsQuery)).toBe("");
     expect(get(largeBlobsStatusFilter)).toBe("all");
-    expect(get(largeBlobsSelectedCredentialID)).toBe("");
-    expect(get(largeBlobsMutation)).toEqual({ kind: "idle", phase: "idle" });
+    expect(get(largeBlobsSelectedEntryIndex)).toBeNull();
+    expect(get(largeBlobsMutation)).toEqual({ kind: "idle", operation: { phase: "idle" } });
     expect(get(largeBlobsVerificationFlow)).toBe(VerificationFlow.VerificationFlowPIN);
     expect(get(largeBlobsPayloadEncoding)).toBe("hex");
     expect(get(pendingInteraction)).toBeNull();
-    expect(logController.records.some((record) => record.source === "app/runtime" && record.context === "selection-survivor")).toBe(true);
+    expect(
+      logController.records.some(
+        (record) => record.source === "app/runtime" && record.context === "selection-survivor",
+      ),
+    ).toBe(true);
     expect(serviceMocks.ResolveInteraction).not.toHaveBeenCalled();
   });
 
@@ -1117,7 +1200,8 @@ describe("controller lifecycle", () => {
       selectToken,
       setPasskeysQuery,
       setPasskeysVerificationFlow,
-    } = await import("./test-support/controller");
+    } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([first, second]);
     seedActiveScreenForTest("settings");
     seedSelectionForTest("token-1", first, {
@@ -1137,7 +1221,7 @@ describe("controller lifecycle", () => {
     expect(get(passkeysInventoryState).report).toBeNull();
     expect(get(passkeysQuery)).toBe("");
     expect(get(passkeysSelectedCredentialID)).toBe("");
-    expect(get(passkeysMutation)).toEqual({ kind: "idle", phase: "idle" });
+    expect(get(passkeysMutation)).toEqual({ kind: "idle", operation: { phase: "idle" } });
     expect(get(passkeysVerificationFlow)).toBe(VerificationFlow.VerificationFlowPIN);
     expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-2" });
   });
@@ -1145,7 +1229,8 @@ describe("controller lifecycle", () => {
   it("switches authenticators with one atomic selection call", async () => {
     const first = device("token-1");
     const second = device("token-2");
-    const { selectToken } = await import("./test-support/controller");
+    const { selectToken } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([first, second]);
     seedSelectionForTest("token-1", first, {
       state: "ready",
@@ -1166,7 +1251,8 @@ describe("controller lifecycle", () => {
   it("reports an atomic selection failure", async () => {
     const first = device("token-1");
     const second = device("token-2");
-    const { selectToken } = await import("./test-support/controller");
+    const { selectToken } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([first, second]);
     seedSelectionForTest("token-1", first, {
       state: "ready",
@@ -1185,7 +1271,8 @@ describe("controller lifecycle", () => {
 
   it("delegates repeated selection to the runtime singleton", async () => {
     const token = device("token-1");
-    const { selectToken } = await import("./test-support/controller");
+    const { selectToken } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([token]);
     seedSelectionForTest("token-1", token, {
       state: "running",
@@ -1206,11 +1293,14 @@ describe("controller lifecycle", () => {
 
   it("reports the concrete authenticator-open failure when device selection cannot open", async () => {
     const token = device("token-1");
-    const { selectToken } = await import("./test-support/controller");
+    const { selectToken } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([token]);
-    serviceMocks.SetSelection.mockRejectedValue(new Error("authenticator open failed", {
-      cause: failureForCode(Code.CodeDeviceNotFound),
-    }));
+    serviceMocks.SetSelection.mockRejectedValue(
+      new Error("authenticator open failed", {
+        cause: failureForCode(Code.CodeDeviceNotFound),
+      }),
+    );
 
     await selectToken("token-1");
 
@@ -1222,27 +1312,39 @@ describe("controller lifecycle", () => {
 
   it("keeps overview transport failures as load errors without synthetic inspect envelopes", async () => {
     const token = device("token-1");
-    const { loadOverview } = await import("./test-support/controller");
+    const { loadOverview } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([token]);
     seedActiveScreenForTest("overview");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     serviceMocks.Inspect.mockRejectedValue(new Error("inspect bridge offline"));
 
     await loadOverview();
 
     expect(get(authenticatorInspection).data).toBeNull();
     expect(get(statusBar).activeOperation).toBeNull();
-    expect(get(statusBar).lastOutcome?.message).toBe("The operation failed because of an internal error.");
+    expect(get(statusBar).lastOutcome?.message).toBe(
+      "The operation failed because of an internal error.",
+    );
   });
 
   it("loads authenticator inspection on Lab entry without starting Overview-only subloads", async () => {
     const token = device("token-1");
     const envelope = inspectEnvelope(token);
+
     envelope.result.info.options = { bioEnroll: true };
-    const { maybeLoadOverview } = await import("./overview-controller");
+
+    const { maybeLoadOverview } = await import("$lib/overview-controller");
+
     seedDevicesForTest([token]);
     seedActiveScreenForTest("lab");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     serviceMocks.Inspect.mockResolvedValue(envelope);
 
     await maybeLoadOverview();
@@ -1256,19 +1358,27 @@ describe("controller lifecycle", () => {
   it("reuses Lab inspection when Overview only needs biometric and MDS details", async () => {
     const token = device("token-1");
     const envelope = inspectEnvelope(token);
+
     envelope.result.info.aaguid = "00112233-4455-6677-8899-aabbccddeeff";
     envelope.result.info.options = { bioEnroll: true };
-    const { maybeLoadOverview } = await import("./overview-controller");
+
+    const { maybeLoadOverview } = await import("$lib/overview-controller");
+
     seedDevicesForTest([token]);
     seedActiveScreenForTest("overview");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     seedOverviewEnvelopeForTest(envelope);
     serviceMocks.BioSensorInfo.mockResolvedValue(bioSensorEnvelope(token));
 
     await maybeLoadOverview();
 
     expect(serviceMocks.Inspect).not.toHaveBeenCalled();
-    expect(serviceMocks.BioSensorInfo).toHaveBeenCalledWith({ selectionId: "authenticator-token-1" });
+    expect(serviceMocks.BioSensorInfo).toHaveBeenCalledWith({
+      selectionId: "authenticator-token-1",
+    });
     expect(serviceMocks.LookupMDS).toHaveBeenCalledWith({
       aaguid: "00112233-4455-6677-8899-aabbccddeeff",
       refresh: false,
@@ -1278,35 +1388,45 @@ describe("controller lifecycle", () => {
 
   it("reopens an invalid selected authenticator before reloading overview", async () => {
     const token = device("token-1");
-    const { reloadOverview } = await import("./test-support/controller");
+    const { reloadOverview } = await import("$lib/test-support/controller");
+
     seedDevicesForTest([token]);
     seedActiveScreenForTest("overview");
     seedSelectionForTest("token-1", token, {
       state: "error",
       error: failureForCode(Code.CodeAuthenticatorClosed),
     });
-    serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token, "authenticator-reopened") });
+    serviceMocks.SetSelection.mockResolvedValue({
+      selection: snapshot(token, "authenticator-reopened"),
+    });
     serviceMocks.Inspect.mockResolvedValue(inspectEnvelope(token));
 
     await reloadOverview();
 
     expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
     expect(serviceMocks.Inspect).toHaveBeenCalledWith({ selectionId: "authenticator-reopened" });
-    expect(get(authenticatorStatus)).toMatchObject({ state: "ready", selectionId: "authenticator-reopened" });
+    expect(get(authenticatorStatus)).toMatchObject({
+      state: "ready",
+      selectionId: "authenticator-reopened",
+    });
   });
 
   it("keeps a failed Inspect response as its typed envelope and exact kit error", async () => {
     const token = device("token-1");
-    const { loadOverview } = await import("./test-support/controller");
+    const { loadOverview } = await import("$lib/test-support/controller");
     const envelope = {
       operationId: "inspect-error",
       selectionId: "authenticator-token-1",
       kind: OperationKind.Inspect,
       error: failureForCode(Code.CodeAuthenticatorBusy),
     };
+
     seedDevicesForTest([token]);
     seedActiveScreenForTest("overview");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     serviceMocks.Inspect.mockResolvedValue(envelope);
 
     await loadOverview();
@@ -1316,24 +1436,32 @@ describe("controller lifecycle", () => {
       data: envelope,
       error: failureForCode(Code.CodeAuthenticatorBusy),
     });
-    expect(get(statusBar).lastOutcome?.message).toBe("The authenticator is busy processing another request.");
+    expect(get(statusBar).lastOutcome?.message).toBe(
+      "The authenticator is busy processing another request.",
+    );
   });
 
   it("keeps a biometric sub-load failure visible instead of overwriting it with inspect success", async () => {
     const token = device("token-1");
-    const { loadOverview } = await import("./test-support/controller");
+    const { loadOverview } = await import("$lib/test-support/controller");
     const envelope = inspectEnvelope(token);
+
     envelope.result.info.options = { bioEnroll: true };
     seedDevicesForTest([token]);
     seedActiveScreenForTest("overview");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
     serviceMocks.Inspect.mockResolvedValue(envelope);
-    serviceMocks.BioSensorInfo.mockRejectedValue(new Error("BioSensorInfo failed", {
-      cause: {
-        code: Code.CodeTransportFailure,
-        category: "transport-failure",
-      },
-    }));
+    serviceMocks.BioSensorInfo.mockRejectedValue(
+      new Error("BioSensorInfo failed", {
+        cause: {
+          code: Code.CodeTransportFailure,
+          category: "transport-failure",
+        },
+      }),
+    );
 
     await loadOverview();
 
@@ -1346,8 +1474,12 @@ describe("controller lifecycle", () => {
 
   it("records operation events from the runtime", async () => {
     const token = device("token-1");
-    const { handleOperationProgress } = await import("./test-support/controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    const { handleOperationProgress } = await import("$lib/test-support/controller");
+
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
 
     handleOperationProgress({
       operationId: "operation-current",
@@ -1360,8 +1492,12 @@ describe("controller lifecycle", () => {
 
   it("exposes interaction prompts from the runtime", async () => {
     const token = device("token-1");
-    const { handleInteractionRequested } = await import("./test-support/controller");
-    seedSelectionForTest("token-1", token, { state: "ready", selectionId: "authenticator-token-1" });
+    const { handleInteractionRequested } = await import("$lib/test-support/controller");
+
+    seedSelectionForTest("token-1", token, {
+      state: "ready",
+      selectionId: "authenticator-token-1",
+    });
 
     handleInteractionRequested({
       interactionId: "interaction-current",
@@ -1375,14 +1511,21 @@ describe("controller lifecycle", () => {
   });
 
   it("keeps the interaction pending until Wails resolves it and clears the typed PIN DTO", async () => {
-    const { answerPendingInteraction } = await import("./test-support/controller");
+    const { answerPendingInteraction } = await import("$lib/test-support/controller");
+
     seedPendingInteractionForTest({ interactionId: "interaction-current" } as InteractionPrompt);
+
     let receivedPIN = "";
     let resolveInteraction!: (value: boolean) => void;
+
     serviceMocks.ResolveInteraction.mockImplementationOnce((received: InteractionAnswer) => {
       receivedPIN = received.pin ?? "";
-      return new Promise<boolean>((resolve) => { resolveInteraction = resolve; });
+
+      return new Promise<boolean>((resolve) => {
+        resolveInteraction = resolve;
+      });
     });
+
     const answer = new InteractionAnswer({
       interactionId: "interaction-current",
       pin: "123456",
@@ -1399,7 +1542,9 @@ describe("controller lifecycle", () => {
   });
 
   it("does not clear a retry prompt emitted while the previous answer resolves", async () => {
-    const { answerPendingInteraction, handleInteractionRequested } = await import("./test-support/controller");
+    const { answerPendingInteraction, handleInteractionRequested } =
+      await import("$lib/test-support/controller");
+
     seedPendingInteractionForTest({ interactionId: "interaction-1" } as InteractionPrompt);
     serviceMocks.ResolveInteraction.mockImplementationOnce(async () => {
       handleInteractionRequested({
@@ -1408,32 +1553,42 @@ describe("controller lifecycle", () => {
         selectionId: "authenticator-1",
         request: { kind: "pin" },
       } as InteractionPrompt);
+
       return true;
     });
 
-    await answerPendingInteraction(new InteractionAnswer({
-      interactionId: "interaction-1",
-      pin: "1234",
-    }));
+    await answerPendingInteraction(
+      new InteractionAnswer({
+        interactionId: "interaction-1",
+        pin: "1234",
+      }),
+    );
 
     expect(get(pendingInteraction)?.interactionId).toBe("interaction-2");
   });
 
   it("preserves a typed interaction failure code in the UI outcome", async () => {
-    const { answerPendingInteraction } = await import("./test-support/controller");
-    seedPendingInteractionForTest({ interactionId: "interaction-current" } as InteractionPrompt);
-    serviceMocks.ResolveInteraction.mockRejectedValueOnce(new Error("ResolveInteraction failed", {
-      cause: {
-        code: Code.CodePINInvalid,
-        category: "invalid-state",
-        operation: "interaction.resolve",
-      },
-    }));
+    const { answerPendingInteraction } = await import("$lib/test-support/controller");
 
-    await expect(answerPendingInteraction(new InteractionAnswer({
-      interactionId: "interaction-current",
-      pin: "123456",
-    }))).resolves.toBe(false);
+    seedPendingInteractionForTest({ interactionId: "interaction-current" } as InteractionPrompt);
+    serviceMocks.ResolveInteraction.mockRejectedValueOnce(
+      new Error("ResolveInteraction failed", {
+        cause: {
+          code: Code.CodePINInvalid,
+          category: "invalid-state",
+          operation: "interaction.resolve",
+        },
+      }),
+    );
+
+    await expect(
+      answerPendingInteraction(
+        new InteractionAnswer({
+          interactionId: "interaction-current",
+          pin: "123456",
+        }),
+      ),
+    ).resolves.toBe(false);
 
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "error",

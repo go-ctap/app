@@ -1,179 +1,109 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { BlobState, LargeBlobKeyState } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
-import type { LargeBlobListEnvelope } from "../../bindings/telesma/service";
-import { testHIDDevice } from "../test/device.js";
-
-import { setAppLocale } from "./i18n";
-import { failureForCode } from "./test-failure";
 import {
-  emptyLargeBlobsInventoryState,
-  type LargeBlobsInventoryState,
-} from "./features/largeblobs/state";
+  EntryState,
+  type ListReport,
+} from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
+
 import {
   buildLargeBlobRows,
   buildLargeBlobsPresentation,
-} from "./largeblobs-presentation";
+  findLargeBlobEntry,
+} from "$lib/largeblobs-presentation";
+import { testHIDDevice } from "../test/device";
 
-function envelope(): LargeBlobListEnvelope {
-  return {
-    operationId: "list-1",
-    selectionId: "authenticator-1",
-    kind: OperationKind.ListLargeBlobs,
-    authenticatorClosed: false,
-    result: {
-      device: testHIDDevice(),
-      support: {
-          largeBlobs: true,
-          largeBlobKeyExtension: true,
-          maxSerializedLargeBlobArray: 0,
+const report: ListReport = {
+  device: testHIDDevice(),
+  support: { largeBlobs: true, largeBlobKeyExtension: true },
+  array: {
+    read: true,
+    blobCount: 4,
+    matchedBlobCount: 1,
+    orphanedBlobCount: 1,
+    nonconformingBlobCount: 1,
+    corruptBlobCount: 1,
+  },
+  entries: [
+    {
+      index: 0,
+      state: EntryState.EntryStateMatched,
+      target: {
+        credentialIDHex: "cafe",
+        rp: { id: "example.test", name: "Example" },
+        user: { userIDHex: "01", name: "alice", displayName: "Alice" },
       },
-      array: {
-          read: true,
-          blobCount: 2,
-          matchedBlobCount: 2,
-          unmatchedBlobCount: 0,
-      },
-      credentials: [
-          {
-            credentialIDHex: "zero",
-            rp: { id: "example.test", name: "Example", idHashHex: "aa" },
-            user: { userIDHex: "01", name: "zero@example.test", displayName: "Zero Blob" },
-            largeBlobKeyState: LargeBlobKeyState.LargeBlobKeyAvailable,
-            blobPresent: true,
-            blobState: BlobState.BlobStatePresent,
-            blobByteCount: 0,
-          },
-          {
-            credentialIDHex: "missing",
-            rp: { id: "missing.test" },
-            user: { name: "missing" },
-            largeBlobKeyState: LargeBlobKeyState.LargeBlobKeyAvailable,
-            blobPresent: false,
-            blobState: BlobState.BlobStateMissing,
-            blobByteCount: 0,
-          },
-          {
-            credentialIDHex: "no-key",
-            rp: { id: "unknown.test" },
-            user: {},
-            largeBlobKeyState: LargeBlobKeyState.LargeBlobKeyMissing,
-            blobPresent: false,
-            blobState: BlobState.BlobStateUnknownKeyMissing,
-            blobByteCount: 0,
-          },
-      ],
+      ciphertextByteCount: 32,
+      declaredPayloadByteCount: 5,
+      payloadByteCount: 5,
     },
-  };
-}
-
-function state(value: LargeBlobListEnvelope): LargeBlobsInventoryState {
-  return {
-    ...emptyLargeBlobsInventoryState(),
-    phase: "ready",
-    lastSuccessfulEnvelope: value,
-    responseEnvelope: value,
-    lastSuccessfulAt: "2026-07-11T00:00:00.000Z",
-  };
-}
-
-const defaultView = {
-  query: "",
-  statusFilter: "all" as const,
-  selectedCredentialID: "",
+    {
+      index: 1,
+      state: EntryState.EntryStateOrphaned,
+      ciphertextByteCount: 24,
+      declaredPayloadByteCount: 4,
+    },
+    {
+      index: 2,
+      state: EntryState.EntryStateNonconforming,
+      ciphertextByteCount: 7,
+      declaredPayloadByteCount: 0,
+    },
+    {
+      index: 3,
+      state: EntryState.EntryStateCorrupt,
+      target: {
+        credentialIDHex: "beef",
+        rp: { id: "broken.test" },
+        user: { userIDHex: "02" },
+      },
+      ciphertextByteCount: 40,
+      declaredPayloadByteCount: 20,
+    },
+  ],
 };
 
-beforeEach(() => {
-  setAppLocale("en");
-});
+describe("large blob entry presentation", () => {
+  it("builds physical rows from generated array entries", () => {
+    const rows = buildLargeBlobRows(report);
 
-describe("large blob presentation", () => {
-  it("treats an explicit zero-byte blob as present and preserves a zero capacity", () => {
+    expect(rows[0]).toMatchObject({
+      credentialIDHex: "cafe",
+      ciphertextByteCount: 32,
+      payloadByteCount: 5,
+    });
+    expect(rows[1]).toMatchObject({ hasTarget: false, payloadByteCount: null });
+  });
+
+  it("filters and searches generated entry fields", () => {
+    expect(buildLargeBlobRows(report, "", "orphaned").map((row) => row.index)).toEqual([1]);
+    expect(buildLargeBlobRows(report, "broken").map((row) => row.index)).toEqual([3]);
+    expect(buildLargeBlobRows(report, "nonconforming").map((row) => row.index)).toEqual([2]);
+    expect(findLargeBlobEntry(report, 3)?.target?.credentialIDHex).toBe("beef");
+  });
+
+  it("exposes the four generated summary counts", () => {
     const presentation = buildLargeBlobsPresentation({
-      ...defaultView,
       selectedSelector: "token-1",
       selectedDevice: null,
       authenticatorBusy: false,
       authenticatorReady: true,
-      inventoryState: state(envelope()),
-      selectedCredentialID: "zero",
+      inventoryState: {
+        phase: "ready",
+        report,
+        lastSuccessfulAt: "now",
+      },
+      query: "",
+      statusFilter: "all",
+      selectedEntryIndex: 0,
     });
 
-    expect(presentation.rows.find((row) => row.id === "zero")).toMatchObject({ blobPresent: true, blobByteCount: 0 });
-    expect(presentation.maxSerializedLargeBlobArray).toBe(0);
-    expect(presentation.blobCount).toBe(2);
-    expect(presentation.writeDisabled).toBe(false);
-  });
-
-  it("searches generated RP/user identity and implements every blob filter", () => {
-    const report = envelope().result!;
-    for (const query of ["example", "example.test", "aa", "zero", "01", "zero@example", "zero blob"]) {
-      expect(buildLargeBlobRows(report, query).map((row) => row.id), query).toEqual(["zero"]);
-    }
-
-    expect(buildLargeBlobRows(report, "", "present").map((row) => row.id)).toEqual(["zero"]);
-    expect(buildLargeBlobRows(report, "", "missing").map((row) => row.id)).toEqual(["missing"]);
-    expect(buildLargeBlobRows(report, "", "key-unavailable").map((row) => row.id)).toEqual(["no-key"]);
-  });
-
-  it("blocks mutations for credentials with missing large-blob keys", () => {
-    const presentation = buildLargeBlobsPresentation({
-      ...defaultView,
-      selectedSelector: "token-1",
-      selectedDevice: null,
-      authenticatorBusy: false,
-      authenticatorReady: true,
-      inventoryState: state(envelope()),
-      selectedCredentialID: "no-key",
+    expect(presentation).toMatchObject({
+      blobCount: 4,
+      matchedBlobCount: 1,
+      orphanedBlobCount: 1,
+      nonconformingBlobCount: 1,
+      corruptBlobCount: 1,
+      selectedEntryIndex: 0,
     });
-
-    expect(presentation.writeDisabled).toBe(true);
-    expect(presentation.deleteDisabled).toBe(true);
-  });
-
-  it("blocks deletion when the selected credential has no blob", () => {
-    const presentation = buildLargeBlobsPresentation({
-      ...defaultView,
-      selectedSelector: "token-1",
-      selectedDevice: null,
-      authenticatorBusy: false,
-      authenticatorReady: true,
-      inventoryState: state(envelope()),
-      selectedCredentialID: "missing",
-    });
-
-    expect(presentation.writeDisabled).toBe(false);
-    expect(presentation.deleteDisabled).toBe(true);
-  });
-
-  it("keeps last-known-good rows and their actions available when stale", () => {
-    const successful = envelope();
-    const stale: LargeBlobsInventoryState = {
-      ...state(successful),
-      phase: "error",
-      responseEnvelope: {
-        operationId: "failed-list",
-        selectionId: "authenticator-1",
-        kind: OperationKind.ListLargeBlobs,
-        error: failureForCode(Code.CodeTransportFailure),
-      } as LargeBlobListEnvelope,
-    };
-    const presentation = buildLargeBlobsPresentation({
-      ...defaultView,
-      selectedSelector: "token-1",
-      selectedDevice: null,
-      authenticatorBusy: false,
-      authenticatorReady: true,
-      inventoryState: stale,
-      selectedCredentialID: "zero",
-    });
-
-    expect(presentation.rows).toHaveLength(3);
-    expect(presentation.stale).toBe(true);
-    expect(presentation.writeDisabled).toBe(false);
-    expect(presentation.deleteDisabled).toBe(false);
-    expect(presentation.cleanupDisabled).toBe(false);
   });
 });

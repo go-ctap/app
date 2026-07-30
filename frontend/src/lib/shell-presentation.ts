@@ -15,20 +15,28 @@ import {
 } from "@lucide/svelte";
 import type { Component } from "svelte";
 
-import { InteractionKind, type PINInteractionState } from "../../bindings/github.com/go-ctap/kit/model";
+import {
+  InteractionKind,
+  type PINInteractionState,
+} from "../../bindings/github.com/go-ctap/kit/model";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { Mode, SmartCardInterface } from "../../bindings/github.com/go-ctap/kit/transport";
 import { UserVerify } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import type { InteractionPrompt } from "../../bindings/telesma/service";
 
 import { m } from "../paraglide/messages.js";
-import { bioSampleStatusLabel, deviceDetail, deviceName, labelDevice, operationStageLabel, permissionLabel, authenticatorStateLabel } from "./format.js";
-import { failureMessage } from "./failure.js";
-import { selectorFromDevice, type AuthenticatorStatus } from "./authenticator-model.js";
-import type {
-  ActiveScreen,
-  StatusBarState,
-} from "./features/workbench/index.js";
+import {
+  bioSampleStatusLabel,
+  deviceDetail,
+  deviceName,
+  labelDevice,
+  operationStageLabel,
+  permissionLabel,
+  authenticatorStateLabel,
+} from "$lib/format.js";
+import { failureMessage } from "$lib/failure.js";
+import { selectorFromDevice, type AuthenticatorStatus } from "$lib/authenticator-model.js";
+import type { ActiveScreen, StatusBarState } from "$lib/features/workbench";
 
 export type SidebarTokenItem = {
   value: string;
@@ -85,6 +93,7 @@ export type InteractionModalPresentation = {
 
 function sidebarDeviceIcon(device: DeviceReport): Component {
   if (device.attachment.transport !== Mode.ModeSmartCard) return Usb;
+
   return device.attachment.smartCard?.interface === SmartCardInterface.SmartCardInterfaceContactless
     ? Nfc
     : CreditCard;
@@ -104,13 +113,16 @@ export function buildSidebarPresentation(input: {
       const serial = deviceDetail(device);
       const smartCard = device.attachment.transport === Mode.ModeSmartCard;
       const reader = device.attachment.smartCard?.reader.trim() ?? "";
+
       return {
         value,
         label: labelDevice(device),
         name: deviceName(device),
-        detail: serial ? `S/N ${serial}` : smartCard
-          ? [reader, "PC/SC"].filter(Boolean).join(" · ")
-          : "",
+        detail: serial
+          ? `S/N ${serial}`
+          : smartCard
+            ? [reader, "PC/SC"].filter(Boolean).join(" · ")
+            : "",
         icon: sidebarDeviceIcon(device),
       };
     }),
@@ -129,13 +141,23 @@ function screenLabel(screen: ActiveScreen) {
     logs: m.logs(),
     settings: m.settings(),
   };
+
   return labels[screen];
 }
 
 function activeProgress(statusBar: StatusBarState): ShellStatusProgress | null {
   const completed = statusBar.activeOperation?.completed;
   const total = statusBar.activeOperation?.total;
-  if (completed === null || completed === undefined || total === null || total === undefined || total < 0) return null;
+
+  if (
+    completed === null ||
+    completed === undefined ||
+    total === null ||
+    total === undefined ||
+    total < 0
+  )
+    return null;
+
   return {
     value: total === 0 ? 0 : Math.min(Math.max(completed, 0), total),
     max: Math.max(total, 1),
@@ -151,34 +173,43 @@ export function buildShellStatusPresentation(input: {
 }): ShellStatusPresentation {
   const active = input.statusBar.activeOperation;
   const outcome = input.statusBar.lastOutcome;
+
   if (active) {
     const cancellationPending = active.cancelPending || active.cancelRequested;
+
     return {
       source: "operation",
       tone: active.cancelError ? "error" : "info",
       title: active.cancelRequested ? m.cancel_requested() : active.label || m.operation_running(),
       detail: cancellationPending
         ? m.cancel_requested_message()
-        : failureMessage(active.cancelError)
-          || [operationStageLabel(active.stage), bioSampleStatusLabel(active.sampleStatus)].filter(Boolean).join(" · "),
+        : failureMessage(active.cancelError) ||
+          [operationStageLabel(active.stage), bioSampleStatusLabel(active.sampleStatus)]
+            .filter(Boolean)
+            .join(" · "),
       busy: true,
       progress: activeProgress(input.statusBar),
-      cancel: active.operationId && !active.cancelRequested ? {
-        label: m.cancel(),
-        ariaLabel: m.cancel_operation(),
-        disabled: Boolean(active.cancelPending),
-      } : null,
+      cancel:
+        active.operationId && !active.cancelRequested
+          ? {
+              label: m.cancel(),
+              ariaLabel: m.cancel_operation(),
+              disabled: Boolean(active.cancelPending),
+            }
+          : null,
     };
   }
 
   if (["opening", "running", "error"].includes(input.authenticatorStatus.state)) {
     const error = input.authenticatorStatus.state === "error";
+
     return {
       source: "authenticator",
       tone: error ? "error" : "info",
       title: authenticatorStateLabel(input.authenticatorStatus.state),
-      detail: failureMessage(input.authenticatorStatus.error)
-        || (input.selectedDevice ? deviceName(input.selectedDevice) : m.no_token_selected()),
+      detail:
+        failureMessage(input.authenticatorStatus.error) ||
+        (input.selectedDevice ? deviceName(input.selectedDevice) : m.no_token_selected()),
       busy: !error,
       progress: null,
       cancel: null,
@@ -190,7 +221,9 @@ export function buildShellStatusPresentation(input: {
       source: "outcome",
       tone: outcome.tone,
       title: outcome.title,
-      detail: outcome.message || (input.selectedDevice ? deviceName(input.selectedDevice) : m.no_token_selected()),
+      detail:
+        outcome.message ||
+        (input.selectedDevice ? deviceName(input.selectedDevice) : m.no_token_selected()),
       busy: false,
       progress: null,
       cancel: null,
@@ -210,30 +243,51 @@ export function buildShellStatusPresentation(input: {
 
 function userVerificationIcon(modality: UserVerify | null): Component {
   if (modality == null) return ShieldCheck;
+
   if (modality & UserVerify.UserVerifyFingerprintInternal) return FingerprintPattern;
+
   if (modality & UserVerify.UserVerifyFaceprintInternal) return ScanFace;
+
   if (modality & UserVerify.UserVerifyEyeprintInternal) return ScanEye;
+
   if (modality & UserVerify.UserVerifyVoiceprintInternal) return Mic;
+
   if (modality & UserVerify.UserVerifyHandprintInternal) return Hand;
-  if (modality & (UserVerify.UserVerifyPasscodeInternal | UserVerify.UserVerifyPasscodeExternal)) return KeyRound;
-  if (modality & (UserVerify.UserVerifyPatternInternal | UserVerify.UserVerifyPatternExternal)) return Grid3X3;
+
+  if (modality & (UserVerify.UserVerifyPasscodeInternal | UserVerify.UserVerifyPasscodeExternal))
+    return KeyRound;
+
+  if (modality & (UserVerify.UserVerifyPatternInternal | UserVerify.UserVerifyPatternExternal))
+    return Grid3X3;
+
   if (modality & UserVerify.UserVerifyLocationInternal) return MapPin;
+
   if (modality & UserVerify.UserVerifyPresenceInternal) return Hand;
+
   return ShieldCheck;
 }
 
 function interactionTitle(kind: InteractionKind, destructive: boolean) {
   if (destructive) return m.confirm_destructive_operation();
+
   if (kind === InteractionKind.InteractionKindPIN) return m.interaction_pin_title();
+
   if (kind === InteractionKind.InteractionKindTouch) return m.interaction_touch_title();
-  if (kind === InteractionKind.InteractionKindUserVerification) return m.interaction_user_verification_title();
+
+  if (kind === InteractionKind.InteractionKindUserVerification)
+    return m.interaction_user_verification_title();
+
   return m.authenticator_needs_you();
 }
 
 function interactionMessage(kind: InteractionKind) {
   if (kind === InteractionKind.InteractionKindPIN) return m.interaction_pin_description();
+
   if (kind === InteractionKind.InteractionKindTouch) return m.interaction_touch_description();
-  if (kind === InteractionKind.InteractionKindUserVerification) return m.interaction_user_verification_description();
+
+  if (kind === InteractionKind.InteractionKindUserVerification)
+    return m.interaction_user_verification_description();
+
   return m.continue_on_authenticator();
 }
 
@@ -243,15 +297,23 @@ function interactionIcon(
   uvModality: UserVerify | null,
 ): Component {
   if (destructive) return TriangleAlert;
+
   if (kind === InteractionKind.InteractionKindPIN) return KeyRound;
+
   if (kind === InteractionKind.InteractionKindTouch) return Hand;
-  if (kind === InteractionKind.InteractionKindUserVerification) return userVerificationIcon(uvModality);
+
+  if (kind === InteractionKind.InteractionKindUserVerification)
+    return userVerificationIcon(uvModality);
+
   return ShieldCheck;
 }
 
-export function buildInteractionModalPresentation(prompt: InteractionPrompt): InteractionModalPresentation {
+export function buildInteractionModalPresentation(
+  prompt: InteractionPrompt,
+): InteractionModalPresentation {
   const request = prompt.request;
   const destructive = request.destructive === true;
+
   return {
     interactionId: prompt.interactionId,
     title: interactionTitle(request.kind, destructive),

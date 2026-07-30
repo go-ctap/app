@@ -9,99 +9,103 @@ import (
 	appservice "telesma/service"
 )
 
-func (s *Service) Inspect(ctx context.Context, req appservice.OperationRequest) (appservice.InspectEnvelope, error) {
+func (s *Service) Inspect(ctx context.Context, req appservice.OperationRequest) appservice.InspectEnvelope {
 	return s.core.Inspect(ctx, req)
 }
 
-func (s *Service) ListCredentials(ctx context.Context, req appservice.CredentialListRequest) (appservice.CredentialsEnvelope, error) {
+func (s *Service) ListCredentials(ctx context.Context, req appservice.OperationRequest) appservice.CredentialsEnvelope {
 	return s.core.ListCredentials(ctx, req)
 }
 
-func (s *Service) CredentialStoreState(ctx context.Context, req appservice.OperationRequest) (appservice.CredentialStoreStateEnvelope, error) {
-	return s.core.CredentialStoreState(ctx, req)
-}
-
-func (s *Service) DeleteCredential(ctx context.Context, req appservice.CredentialDeleteRequest) (appservice.CredentialDeleteEnvelope, error) {
+func (s *Service) DeleteCredential(ctx context.Context, req appservice.CredentialDeleteRequest) appservice.CredentialDeleteEnvelope {
 	return s.core.DeleteCredential(ctx, req)
 }
 
-func (s *Service) UpdateCredentialUser(ctx context.Context, req appservice.CredentialUpdateRequest) (appservice.CredentialUpdateEnvelope, error) {
+func (s *Service) UpdateCredentialUser(ctx context.Context, req appservice.CredentialUpdateRequest) appservice.CredentialUpdateEnvelope {
 	return s.core.UpdateCredentialUser(ctx, req)
 }
 
-func (s *Service) ReadLargeBlob(ctx context.Context, req appservice.LargeBlobReadRequest) (appservice.LargeBlobReadEnvelope, error) {
+func (s *Service) ReadLargeBlob(ctx context.Context, req appservice.LargeBlobReadRequest) appservice.LargeBlobReadEnvelope {
 	return s.core.ReadLargeBlob(ctx, req)
 }
 
-func (s *Service) ListLargeBlobs(ctx context.Context, req appservice.LargeBlobListRequest) (appservice.LargeBlobListEnvelope, error) {
+func (s *Service) DecodeLargeBlob(ctx context.Context, req appservice.LargeBlobDecodeRequest) appservice.LargeBlobDecodeEnvelope {
+	return s.core.DecodeLargeBlob(ctx, req)
+}
+
+func (s *Service) ListLargeBlobs(ctx context.Context, req appservice.OperationRequest) appservice.LargeBlobListEnvelope {
 	return s.core.ListLargeBlobs(ctx, req)
 }
 
-func (s *Service) WriteLargeBlob(ctx context.Context, req appservice.LargeBlobMutationRequest) (appservice.LargeBlobMutationEnvelope, error) {
+func (s *Service) WriteLargeBlob(ctx context.Context, req appservice.LargeBlobMutationRequest) appservice.LargeBlobMutationEnvelope {
 	return s.core.WriteLargeBlob(ctx, req)
 }
 
-func (s *Service) DeleteLargeBlob(ctx context.Context, req appservice.LargeBlobMutationRequest) (appservice.LargeBlobMutationEnvelope, error) {
+func (s *Service) DeleteLargeBlob(ctx context.Context, req appservice.LargeBlobMutationRequest) appservice.LargeBlobMutationEnvelope {
 	return s.core.DeleteLargeBlob(ctx, req)
 }
 
-func (s *Service) GarbageCollectLargeBlobs(ctx context.Context, req appservice.LargeBlobGarbageCollectRequest) (appservice.LargeBlobMutationEnvelope, error) {
+func (s *Service) GarbageCollectLargeBlobs(ctx context.Context, req appservice.LargeBlobGarbageCollectRequest) appservice.LargeBlobMutationEnvelope {
 	return s.core.GarbageCollectLargeBlobs(ctx, req)
 }
 
-func (s *Service) ConfigStatus(ctx context.Context, req appservice.OperationRequest) (appservice.ConfigStatusEnvelope, error) {
+func (s *Service) ConfigStatus(ctx context.Context, req appservice.OperationRequest) appservice.ConfigStatusEnvelope {
 	return s.core.ConfigStatus(ctx, req)
 }
 
-func (s *Service) SetPIN(ctx context.Context, req appservice.PINSetRequest) (appservice.PINEnvelope, error) {
+func (s *Service) SetPIN(ctx context.Context, req appservice.PINSetRequest) appservice.PINEnvelope {
 	return s.core.SetPIN(ctx, req)
 }
 
-func (s *Service) ChangePIN(ctx context.Context, req appservice.PINChangeRequest) (appservice.PINEnvelope, error) {
+func (s *Service) ChangePIN(ctx context.Context, req appservice.PINChangeRequest) appservice.PINEnvelope {
 	return s.core.ChangePIN(ctx, req)
 }
 
-func (s *Service) SetAlwaysUV(ctx context.Context, req appservice.AlwaysUVRequest) (appservice.AuthenticatorConfigEnvelope, error) {
+func (s *Service) SetAlwaysUV(ctx context.Context, req appservice.AlwaysUVRequest) appservice.AuthenticatorConfigEnvelope {
 	return s.core.SetAlwaysUV(ctx, req)
 }
 
-func (s *Service) SetMinPINLength(ctx context.Context, req appservice.MinPINLengthRequest) (appservice.AuthenticatorConfigEnvelope, error) {
+func (s *Service) EnableEnterpriseAttestation(ctx context.Context, req appservice.EnableEnterpriseAttestationRequest) appservice.AuthenticatorConfigEnvelope {
+	return s.core.EnableEnterpriseAttestation(ctx, req)
+}
+
+func (s *Service) SetMinPINLength(ctx context.Context, req appservice.MinPINLengthRequest) appservice.AuthenticatorConfigEnvelope {
 	return s.core.SetMinPINLength(ctx, req)
 }
 
-func (s *Service) EnableLongTouchForReset(ctx context.Context, req appservice.EnableLongTouchForResetRequest) (appservice.AuthenticatorConfigEnvelope, error) {
+func (s *Service) EnableLongTouchForReset(ctx context.Context, req appservice.EnableLongTouchForResetRequest) appservice.AuthenticatorConfigEnvelope {
 	return s.core.EnableLongTouchForReset(ctx, req)
 }
 
-func (s *Service) BioSensorInfo(ctx context.Context, req appservice.OperationRequest) (appservice.BioSensorEnvelope, error) {
+func (s *Service) BioSensorInfo(ctx context.Context, req appservice.OperationRequest) appservice.BioSensorEnvelope {
 	return s.core.BioSensorInfo(ctx, req)
 }
 
-func (s *Service) BioList(ctx context.Context, req appservice.OperationRequest) (appservice.BioListEnvelope, error) {
+func (s *Service) BioList(ctx context.Context, req appservice.OperationRequest) appservice.BioListEnvelope {
 	return s.core.BioList(ctx, req)
 }
 
-func (s *Service) BioEnroll(ctx context.Context, req appservice.BioEnrollRequest) (appservice.BioEnrollEnvelope, error) {
+func (s *Service) BioEnroll(ctx context.Context, req appservice.BioEnrollRequest) appservice.BioEnrollEnvelope {
 	return s.core.BioEnroll(ctx, req)
 }
 
-func (s *Service) BioRename(ctx context.Context, req appservice.BioRenameRequest) (appservice.BioMutationEnvelope, error) {
+func (s *Service) BioRename(ctx context.Context, req appservice.BioRenameRequest) appservice.BioMutationEnvelope {
 	return s.core.BioRename(ctx, req)
 }
 
-func (s *Service) BioRemove(ctx context.Context, req appservice.BioRemoveRequest) (appservice.BioMutationEnvelope, error) {
+func (s *Service) BioRemove(ctx context.Context, req appservice.BioRemoveRequest) appservice.BioMutationEnvelope {
 	return s.core.BioRemove(ctx, req)
 }
 
-func (s *Service) ResetFactory(ctx context.Context, req appservice.ResetFactoryRequest) (appservice.ResetFactoryEnvelope, error) {
+func (s *Service) ResetFactory(ctx context.Context, req appservice.ResetFactoryRequest) appservice.ResetFactoryEnvelope {
 	return s.core.ResetFactory(ctx, req)
 }
 
-func (s *Service) MakeCredential(ctx context.Context, req appservice.MakeCredentialRequest) (appservice.MakeCredentialEnvelope, error) {
+func (s *Service) MakeCredential(ctx context.Context, req appservice.MakeCredentialRequest) appservice.MakeCredentialEnvelope {
 	return s.core.MakeCredential(ctx, req)
 }
 
-func (s *Service) GetAssertion(ctx context.Context, req appservice.GetAssertionRequest) (appservice.GetAssertionEnvelope, error) {
+func (s *Service) GetAssertion(ctx context.Context, req appservice.GetAssertionRequest) appservice.GetAssertionEnvelope {
 	return s.core.GetAssertion(ctx, req)
 }
 

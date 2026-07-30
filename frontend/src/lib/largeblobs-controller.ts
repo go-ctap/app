@@ -2,121 +2,129 @@ import { get } from "svelte/store";
 
 import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
 import {
-  BlobState,
   DecodeMode,
-  LargeBlobKeyState,
   MutationOperation,
+  ReadState,
 } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
 import type {
+  LargeBlobDecodeEnvelope,
+  LargeBlobDecodeRequest,
   LargeBlobGarbageCollectRequest,
-  LargeBlobListRequest,
   LargeBlobMutationEnvelope,
   LargeBlobMutationRequest,
   LargeBlobReadEnvelope,
   LargeBlobReadRequest,
+  OperationRequest,
 } from "../../bindings/telesma/service";
 import { m } from "../paraglide/messages.js";
-import { api } from "./api.js";
+import { api } from "$lib/api.js";
 import {
+  largeBlobDecodeResult,
   largeBlobListReport,
   largeBlobMutationPreview,
   largeBlobMutationResult,
   largeBlobReadReport,
-} from "./ctapkit-results.js";
+} from "$lib/ctapkit-results.js";
 import {
   beginLargeBlobsInventoryLoad,
   completeLargeBlobsInventoryLoad,
   failLargeBlobsInventoryLoadAtRuntime,
   failLargeBlobsInventoryLoadWithResponse,
+  largeBlobsDecodeState,
   largeBlobsDecodeMode,
   largeBlobsInventoryState,
   largeBlobsMutation,
   largeBlobsPayloadEncoding,
   largeBlobsQuery,
   largeBlobsReadState,
-  largeBlobsSelectedCredentialID,
+  largeBlobsSelectedEntryIndex,
   largeBlobsStatusFilter,
   largeBlobsVerificationFlow,
   resetLargeBlobReadState,
   resetLargeBlobsDeviceState,
-  type LargeBlobMutationFailureReason,
   type LargeBlobMutationState,
   type LargeBlobWriteDraft,
   type LargeBlobsStatusFilter,
-} from "./features/largeblobs/state.js";
-import { selectedSelector, authenticatorStatus } from "./features/authenticator/state.js";
-import { activeScreen } from "./features/workbench/state.js";
+} from "$lib/features/largeblobs/state.js";
+import { selectedSelector, authenticatorStatus } from "$lib/features/authenticator/state.js";
+import { activeScreen } from "$lib/features/workbench/state.js";
 import {
   parseLargeBlobPayload,
   type LargeBlobPayloadEncoding,
   type LargeBlobPayloadValidationError,
-} from "./largeblobs-payload.js";
-import { findLargeBlobCredential } from "./largeblobs-presentation.js";
-import { runtimeFailureFrom } from "./failure.js";
-import { currentSelectionID } from "./authenticator-boundary.js";
+} from "$lib/largeblobs-payload.js";
+import { findLargeBlobEntry } from "$lib/largeblobs-presentation.js";
+import { runtimeFailureFrom } from "$lib/failure.js";
+import { currentSelectionID } from "$lib/authenticator-boundary.js";
 import {
-  editingMutation,
-  executingMutation,
-  failedEditableMutation,
-  failedMutation,
-  idleMutation,
-  mutationExecutionContext,
-  previewingMutation,
-  reviewedMutation,
-  type MutationFailedPhase,
-} from "./mutation-lifecycle.js";
+  editingConfirmedOperation,
+  idleConfirmedOperation,
+  runConfirmedExecution,
+  runConfirmedPreview,
+  type ConfirmedOperationError,
+  type ConfirmedOperationExecuting,
+  type ConfirmedOperationReview,
+} from "$lib/confirmed-operation.js";
 import {
   completeOperation,
-  operationStageFailureDetails,
   requestForCurrentSelection,
   runOperation,
-  runTypedOperationStage,
-} from "./operation-lifecycle.js";
-import {
-  setStatusOutcome,
-} from "./workbench-state.js";
+} from "$lib/operation-lifecycle.js";
+import { setStatusOutcome } from "$lib/workbench-state.js";
 
 function largeBlobsAutoLoadKey() {
   const selector = get(selectedSelector).trim();
   const selectionId = get(authenticatorStatus).selectionId || "";
+
   return selector && selectionId ? `${selector}:${selectionId}` : "";
 }
 
 function shouldAutoLoadLargeBlobs() {
   const inventory = get(largeBlobsInventoryState);
-  return get(activeScreen) === "large-blobs"
-    && Boolean(largeBlobsAutoLoadKey())
-    && !inventory.lastSuccessfulEnvelope
-    && inventory.phase !== "loading"
-    && inventory.phase !== "refreshing"
-    && inventory.phase !== "unsupported";
+
+  return (
+    get(activeScreen) === "large-blobs" &&
+    Boolean(largeBlobsAutoLoadKey()) &&
+    !inventory.report &&
+    inventory.phase !== "loading" &&
+    inventory.phase !== "refreshing" &&
+    inventory.phase !== "unsupported"
+  );
 }
 
-function reconcileSelectedCredential() {
-  const selectedID = get(largeBlobsSelectedCredentialID);
-  if (!selectedID) return;
-  const report = largeBlobListReport(get(largeBlobsInventoryState).lastSuccessfulEnvelope);
-  if (findLargeBlobCredential(report, selectedID)) return;
-  largeBlobsSelectedCredentialID.set("");
+function reconcileSelectedEntry() {
+  const selectedIndex = get(largeBlobsSelectedEntryIndex);
+
+  if (selectedIndex === null) return;
+
+  const report = get(largeBlobsInventoryState).report;
+
+  if (findLargeBlobEntry(report, selectedIndex)) return;
+
+  largeBlobsSelectedEntryIndex.set(null);
   resetLargeBlobReadState();
-  largeBlobsMutation.set(idleMutation());
+  largeBlobsMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
 }
 
 export async function maybeLoadLargeBlobs() {
   if (!shouldAutoLoadLargeBlobs()) return;
+
   await loadLargeBlobs();
 }
 
 export async function loadLargeBlobs() {
   const selector = get(selectedSelector).trim();
+
   if (!selector) {
     resetLargeBlobsDeviceState();
+
     return false;
   }
 
   beginLargeBlobsInventoryLoad();
+
   const label = m.large_blob_list();
-  const request: LargeBlobListRequest = {
+  const request: OperationRequest = {
     selectionId: currentSelectionID(),
     verificationFlow: get(largeBlobsVerificationFlow),
   };
@@ -125,23 +133,28 @@ export async function loadLargeBlobs() {
     call: () => api.listLargeBlobs(requestForCurrentSelection(request)),
     onRuntimeFailure: failLargeBlobsInventoryLoadAtRuntime,
   });
+
   if (!attempt.ok) return false;
 
   const envelope = attempt.envelope;
-  const report = largeBlobListReport(envelope);
-  if (envelope.error || !report) {
+
+  if (envelope.error) {
     failLargeBlobsInventoryLoadWithResponse(envelope);
   } else {
-    completeLargeBlobsInventoryLoad(envelope, new Date().toISOString());
+    completeLargeBlobsInventoryLoad(largeBlobListReport(envelope)!, new Date().toISOString());
     resetLargeBlobReadState();
-    reconcileSelectedCredential();
+    reconcileSelectedEntry();
   }
-  completeOperation(label, envelope, { contractValid: Boolean(report) });
-  const selectedCredentialID = get(largeBlobsSelectedCredentialID);
-  if (!envelope.error && report && selectedCredentialID) {
-    await readLargeBlob(selectedCredentialID);
+
+  completeOperation(label, envelope);
+
+  const selectedEntryIndex = get(largeBlobsSelectedEntryIndex);
+
+  if (!envelope.error && selectedEntryIndex !== null) {
+    await readLargeBlob(selectedEntryIndex);
   }
-  return !envelope.error && Boolean(report);
+
+  return !envelope.error;
 }
 
 export function setLargeBlobsQuery(value: string) {
@@ -152,13 +165,17 @@ export function setLargeBlobsStatusFilter(value: LargeBlobsStatusFilter) {
   largeBlobsStatusFilter.set(value);
 }
 
-export async function selectLargeBlobCredential(credentialIDHex: string): Promise<boolean> {
-  if (get(largeBlobsSelectedCredentialID) === credentialIDHex) return true;
-  largeBlobsSelectedCredentialID.set(credentialIDHex);
+export async function selectLargeBlobEntry(entryIndex: number | null): Promise<boolean> {
+  if (get(largeBlobsSelectedEntryIndex) === entryIndex) return true;
+
+  largeBlobsSelectedEntryIndex.set(entryIndex);
   resetLargeBlobReadState();
-  largeBlobsMutation.set(idleMutation());
-  if (!credentialIDHex) return true;
-  return readLargeBlob(credentialIDHex);
+  largeBlobsMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
+  if (entryIndex === null) return true;
+
+  const entry = findLargeBlobEntry(reportForActions(), entryIndex);
+
+  return entryHasTarget(entry) ? readLargeBlob(entryIndex) : true;
 }
 
 export function setLargeBlobsVerificationFlow(value: VerificationFlow) {
@@ -166,48 +183,83 @@ export function setLargeBlobsVerificationFlow(value: VerificationFlow) {
 }
 
 export async function setLargeBlobsDecodeMode(value: DecodeMode): Promise<boolean> {
-  if (get(largeBlobsDecodeMode) === value) return true;
   largeBlobsDecodeMode.set(value);
-  resetLargeBlobReadState();
-  const credentialIDHex = get(largeBlobsSelectedCredentialID);
-  if (!credentialIDHex) return true;
-  return readLargeBlob(credentialIDHex);
+  const readState = get(largeBlobsReadState);
+
+  if (readState.phase !== "ready") {
+    largeBlobsDecodeState.set({ phase: "idle" });
+
+    return true;
+  }
+
+  const report = largeBlobReadReport(readState.responseEnvelope);
+
+  if (report?.state !== ReadState.ReadStatePresent) {
+    largeBlobsDecodeState.set({ phase: "idle" });
+
+    return true;
+  }
+
+  return decodeLargeBlob(readState.entryIndex, report.rawHex ?? "", value);
 }
 
 export function setLargeBlobsPayloadEncoding(value: LargeBlobPayloadEncoding) {
   largeBlobsPayloadEncoding.set(value);
+
   const current = get(largeBlobsMutation);
+
   if (current.kind !== "write") return;
-  largeBlobsMutation.set(editingLargeBlobWrite({
-    ...writeMutationBase(current),
-    draft: { ...current.draft, encoding: value },
-  }, null));
+
+  largeBlobsMutation.set(
+    editingLargeBlobWrite(
+      {
+        ...writeMutationBase(current),
+        draft: { ...current.draft, encoding: value },
+      },
+      null,
+    ),
+  );
 }
 
 function reportForActions() {
   const inventory = get(largeBlobsInventoryState);
+
   if (inventory.phase === "loading" || inventory.phase === "refreshing") return null;
+
   const authenticator = get(authenticatorStatus);
+
   if (authenticator.state !== "ready" || !authenticator.selectionId) return null;
-  const report = largeBlobListReport(inventory.lastSuccessfulEnvelope);
+
+  const report = inventory.report;
+
   return report?.support.largeBlobs ? report : null;
 }
 
-function targetForMutation(credentialIDHex: string) {
-  const target = findLargeBlobCredential(reportForActions(), credentialIDHex);
-  return target?.largeBlobKeyState === LargeBlobKeyState.LargeBlobKeyAvailable ? target : null;
+function entryHasTarget(entry: ReturnType<typeof findLargeBlobEntry>): entry is NonNullable<
+  ReturnType<typeof findLargeBlobEntry>
+> & {
+  target: NonNullable<NonNullable<ReturnType<typeof findLargeBlobEntry>>["target"]>;
+} {
+  return Boolean(entry?.target);
+}
+
+function entryForMutation(entryIndex: number) {
+  const entry = findLargeBlobEntry(reportForActions(), entryIndex);
+
+  return entryHasTarget(entry) ? entry : null;
 }
 
 function writeMutationBase(current: Extract<LargeBlobMutationState, { kind: "write" }>) {
   return {
     kind: "write" as const,
+    entryIndex: current.entryIndex,
     credentialIDHex: current.credentialIDHex,
     draft: current.draft,
   };
 }
 
-function deleteMutationBase(credentialIDHex: string) {
-  return { kind: "delete" as const, credentialIDHex };
+function deleteMutationBase(entryIndex: number, credentialIDHex: string) {
+  return { kind: "delete" as const, entryIndex, credentialIDHex };
 }
 
 function cleanupMutationBase() {
@@ -218,56 +270,120 @@ function editingLargeBlobWrite(
   base: ReturnType<typeof writeMutationBase>,
   validationError: LargeBlobPayloadValidationError | null,
 ) {
-  return editingMutation(base, validationError);
+  return {
+    ...base,
+    operation: editingConfirmedOperation(validationError),
+  };
 }
 
 function readError(
-  credentialIDHex: string,
+  entryIndex: number,
   responseEnvelope: LargeBlobReadEnvelope | null,
   runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
-  failureReason: "response-error" | "runtime-error" | "missing-result",
 ) {
   largeBlobsReadState.set({
     phase: "error",
-    credentialIDHex,
+    entryIndex,
     responseEnvelope,
     runtimeError,
-    failureReason,
   });
 }
 
-export async function readLargeBlob(credentialIDHex = get(largeBlobsSelectedCredentialID)): Promise<boolean> {
+function decodeError(
+  entryIndex: number,
+  mode: DecodeMode,
+  responseEnvelope: LargeBlobDecodeEnvelope | null,
+  runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
+) {
+  largeBlobsDecodeState.set({
+    phase: "error",
+    entryIndex,
+    mode,
+    responseEnvelope,
+    runtimeError,
+  });
+}
+
+async function decodeLargeBlob(
+  entryIndex: number,
+  rawHex: string,
+  mode = get(largeBlobsDecodeMode),
+): Promise<boolean> {
+  const request: LargeBlobDecodeRequest = { rawHex, mode };
+
+  largeBlobsDecodeState.set({ phase: "loading", entryIndex, mode });
+
+  try {
+    const envelope = await api.decodeLargeBlob(request);
+
+    if (envelope.error) {
+      decodeError(entryIndex, mode, envelope, null);
+
+      return false;
+    }
+
+    largeBlobsDecodeState.set({
+      phase: "ready",
+      entryIndex,
+      mode,
+      responseEnvelope: envelope,
+      value: largeBlobDecodeResult(envelope)!,
+    });
+
+    return true;
+  } catch (cause) {
+    decodeError(entryIndex, mode, null, runtimeFailureFrom(cause));
+
+    return false;
+  }
+}
+
+export async function readLargeBlob(
+  entryIndex = get(largeBlobsSelectedEntryIndex),
+): Promise<boolean> {
   const inventory = reportForActions();
-  if (!inventory || !findLargeBlobCredential(inventory, credentialIDHex)) return false;
+  if (entryIndex === null) return false;
+
+  const entry = findLargeBlobEntry(inventory, entryIndex);
+  if (!entryHasTarget(entry)) return false;
 
   const request: LargeBlobReadRequest = {
     selectionId: currentSelectionID(),
     verificationFlow: get(largeBlobsVerificationFlow),
-    credentialIdHex: credentialIDHex,
-    decodeMode: get(largeBlobsDecodeMode),
+    credentialIdHex: entry.target.credentialIDHex,
   };
 
-  largeBlobsSelectedCredentialID.set(credentialIDHex);
-  largeBlobsReadState.set({ phase: "loading", credentialIDHex });
+  largeBlobsSelectedEntryIndex.set(entryIndex);
+  resetLargeBlobReadState();
+  largeBlobsReadState.set({ phase: "loading", entryIndex });
+
   const label = m.large_blob_read();
   const attempt = await runOperation({
     label,
     call: () => api.readLargeBlob(requestForCurrentSelection(request)),
-    onRuntimeFailure: (error) => readError(credentialIDHex, null, error, "runtime-error"),
+    onRuntimeFailure: (error) => readError(entryIndex, null, error),
   });
+
   if (!attempt.ok) return false;
 
   const envelope = attempt.envelope;
-  const report = largeBlobReadReport(envelope);
   if (envelope.error) {
-    readError(credentialIDHex, envelope, null, "response-error");
-  } else if (!report) {
-    readError(credentialIDHex, envelope, null, "missing-result");
+    readError(entryIndex, envelope, null);
   } else {
-    largeBlobsReadState.set({ phase: "ready", credentialIDHex, responseEnvelope: envelope });
+    largeBlobsReadState.set({ phase: "ready", entryIndex, responseEnvelope: envelope });
   }
-  completeOperation(label, envelope, { contractValid: Boolean(report) });
-  return !envelope.error && Boolean(report);
+
+  completeOperation(label, envelope);
+
+  if (envelope.error) return false;
+
+  const report = largeBlobReadReport(envelope)!;
+
+  if (report.state === ReadState.ReadStatePresent) {
+    await decodeLargeBlob(entryIndex, report.rawHex ?? "");
+  }
+
+  return true;
 }
 
 export function buildLargeBlobDeletePreviewRequest(
@@ -294,87 +410,98 @@ export function buildLargeBlobCleanupPreviewRequest(
   };
 }
 
-export function beginLargeBlobWrite(credentialIDHex = get(largeBlobsSelectedCredentialID)) {
-  const target = targetForMutation(credentialIDHex);
-  if (!target) return false;
+export function beginLargeBlobWrite(entryIndex = get(largeBlobsSelectedEntryIndex)) {
+  if (entryIndex === null) return false;
 
-  let draft: LargeBlobWriteDraft = {
-    payload: "",
-    encoding: get(largeBlobsPayloadEncoding),
-  };
-  const blobPresent = target.blobPresent || target.blobState === BlobState.BlobStatePresent;
-  if (blobPresent) {
-    const readState = get(largeBlobsReadState);
-    if (readState.phase !== "ready" || readState.credentialIDHex !== credentialIDHex) return false;
-    const report = largeBlobReadReport(readState.responseEnvelope);
-    if (!report || !(report.blobPresent || report.array.blobState === BlobState.BlobStatePresent)) return false;
+  const entry = entryForMutation(entryIndex);
+  if (!entry) return false;
 
-    if (
-      report.decode.success
-      && report.decode.mode === DecodeMode.DecodeModeUTF8
-      && report.decode.decodedText !== undefined
-    ) {
-      draft = { payload: report.decode.decodedText, encoding: "utf8" };
-    } else {
-      draft = { payload: report.rawHex ?? "", encoding: "hex" };
-    }
+  const readState = get(largeBlobsReadState);
+
+  if (readState.phase !== "ready" || readState.entryIndex !== entryIndex) return false;
+
+  const report = largeBlobReadReport(readState.responseEnvelope);
+
+  if (!report || report.state !== ReadState.ReadStatePresent) return false;
+
+  let draft: LargeBlobWriteDraft = { payload: report.rawHex ?? "", encoding: "hex" };
+  const decodeState = get(largeBlobsDecodeState);
+
+  if (
+    decodeState.phase === "ready" &&
+    decodeState.entryIndex === entryIndex &&
+    decodeState.mode === DecodeMode.DecodeModeUTF8
+  ) {
+    draft = { payload: decodeState.value.text ?? "", encoding: "utf8" };
   }
 
-  largeBlobsSelectedCredentialID.set(credentialIDHex);
-  largeBlobsMutation.set(editingLargeBlobWrite({
-    kind: "write" as const,
-    credentialIDHex,
-    draft,
-  }, null));
+  largeBlobsSelectedEntryIndex.set(entryIndex);
+  largeBlobsMutation.set(
+    editingLargeBlobWrite(
+      {
+        kind: "write" as const,
+        entryIndex,
+        credentialIDHex: entry.target.credentialIDHex,
+        draft,
+      },
+      null,
+    ),
+  );
+
   return true;
 }
 
 export function updateLargeBlobWriteDraft(patch: Partial<LargeBlobWriteDraft>) {
   const current = get(largeBlobsMutation);
+
   if (current.kind !== "write") return false;
+
   const draft = { ...current.draft, ...patch };
+
   largeBlobsPayloadEncoding.set(draft.encoding);
-  largeBlobsMutation.set(editingLargeBlobWrite({
-    ...writeMutationBase(current),
-    draft,
-  }, null));
+  largeBlobsMutation.set(
+    editingLargeBlobWrite(
+      {
+        ...writeMutationBase(current),
+        draft,
+      },
+      null,
+    ),
+  );
+
   return true;
 }
 
 export function editLargeBlobWrite() {
   const current = get(largeBlobsMutation);
-  if (current.kind !== "write" || (current.phase !== "review" && current.phase !== "error")) return false;
-  largeBlobsMutation.set(editingLargeBlobWrite(writeMutationBase(current), null));
-  return true;
-}
 
-function writeError(
-  current: Extract<LargeBlobMutationState, { kind: "write" }>,
-  failedPhase: MutationFailedPhase,
-  previewRequest: LargeBlobMutationRequest | null,
-  previewEnvelope: LargeBlobMutationEnvelope | null,
-  responseEnvelope: LargeBlobMutationEnvelope | null,
-  runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
-  failureReason: LargeBlobMutationFailureReason,
-) {
-  largeBlobsMutation.set(failedEditableMutation(writeMutationBase(current), {
-    failedPhase,
-    previewRequest,
-    previewEnvelope,
-    responseEnvelope,
-    runtimeError,
-    failureReason,
-  }));
+  if (
+    current.kind !== "write" ||
+    (current.operation.phase !== "review" && current.operation.phase !== "error")
+  )
+    return false;
+
+  largeBlobsMutation.set(editingLargeBlobWrite(writeMutationBase(current), null));
+
+  return true;
 }
 
 export async function previewLargeBlobWrite(): Promise<boolean> {
   const current = get(largeBlobsMutation);
-  if (current.kind !== "write" || (current.phase !== "editing" && current.phase !== "error")) return false;
-  if (!targetForMutation(current.credentialIDHex)) return false;
+
+  if (
+    current.kind !== "write" ||
+    (current.operation.phase !== "editing" && current.operation.phase !== "error")
+  )
+    return false;
+
+  if (!entryForMutation(current.entryIndex)) return false;
 
   const payload = parseLargeBlobPayload(current.draft.payload, current.draft.encoding);
+
   if (!payload.ok) {
     largeBlobsMutation.set(editingLargeBlobWrite(writeMutationBase(current), payload.error));
+
     return false;
   }
 
@@ -386,153 +513,92 @@ export async function previewLargeBlobWrite(): Promise<boolean> {
     dryRun: true,
   };
 
-  largeBlobsMutation.set(previewingMutation(writeMutationBase(current), request));
-  const label = m.large_blob_write();
-  const outcome = await runTypedOperationStage({
-    label,
-    call: () => api.writeLargeBlob(requestForCurrentSelection(request)),
+  const base = writeMutationBase(current);
+
+  return runConfirmedPreview({
+    label: m.large_blob_write(),
+    request,
+    call: api.writeLargeBlob,
     extract: largeBlobMutationPreview,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-preview");
-      writeError(current, "previewing", request, null, details.responseEnvelope, details.runtimeError, details.failureReason);
-    },
-    onSuccess: (_preview, envelope) => largeBlobsMutation.set(
-      reviewedMutation(writeMutationBase(current), request, envelope),
-    ),
+    publish: (operation) => largeBlobsMutation.set({ ...base, operation }),
   });
-  return outcome.ok;
 }
 
-function deleteError(
-  credentialIDHex: string,
-  failedPhase: MutationFailedPhase,
-  previewRequest: LargeBlobMutationRequest | null,
-  previewEnvelope: LargeBlobMutationEnvelope | null,
-  responseEnvelope: LargeBlobMutationEnvelope | null,
-  runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
-  failureReason: LargeBlobMutationFailureReason,
-) {
-  largeBlobsMutation.set(failedMutation(deleteMutationBase(credentialIDHex), {
-    failedPhase,
-    previewRequest,
-    previewEnvelope,
-    responseEnvelope,
-    runtimeError,
-    failureReason,
-  }));
-}
+export async function beginLargeBlobDelete(
+  entryIndex = get(largeBlobsSelectedEntryIndex),
+): Promise<boolean> {
+  if (entryIndex === null) return false;
 
-export async function beginLargeBlobDelete(credentialIDHex = get(largeBlobsSelectedCredentialID)): Promise<boolean> {
-  if (!targetForMutation(credentialIDHex)) return false;
+  const entry = entryForMutation(entryIndex);
+  if (!entry) return false;
+
+  const credentialIDHex = entry.target.credentialIDHex;
+
   const request = buildLargeBlobDeletePreviewRequest(
     currentSelectionID(),
     get(largeBlobsVerificationFlow),
     credentialIDHex,
   );
 
-  largeBlobsSelectedCredentialID.set(credentialIDHex);
-  largeBlobsMutation.set(previewingMutation(deleteMutationBase(credentialIDHex), request));
-  const label = m.large_blob_delete();
-  let noop = false;
-  const outcome = await runTypedOperationStage({
-    label,
-    call: () => api.deleteLargeBlob(requestForCurrentSelection(request)),
+  largeBlobsSelectedEntryIndex.set(entryIndex);
+
+  const base = deleteMutationBase(entryIndex, credentialIDHex);
+
+  return runConfirmedPreview({
+    label: m.large_blob_delete(),
+    request,
+    call: api.deleteLargeBlob,
     extract: largeBlobMutationPreview,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-preview");
-      deleteError(credentialIDHex, "previewing", request, null, details.responseEnvelope, details.runtimeError, details.failureReason);
-    },
-    onSuccess: (preview, envelope) => {
-      noop = preview.operation === MutationOperation.MutationNoBlob
-        || preview.noBlob
-        || preview.noop === true;
-      if (noop) {
-        largeBlobsMutation.set(idleMutation());
-        return;
-      }
-      largeBlobsMutation.set(reviewedMutation(
-        deleteMutationBase(credentialIDHex),
-        request,
-        envelope,
-      ));
-    },
-    completion: (preview) => {
-      noop = Boolean(preview && (
-        preview.operation === MutationOperation.MutationNoBlob
-        || preview.noBlob
-        || preview.noop === true
-      ));
-      return { summarize: !noop };
+    publish: (operation) => largeBlobsMutation.set({ ...base, operation }),
+    shouldReview: (preview) =>
+      !(
+        preview.operation === MutationOperation.MutationNoBlob ||
+        preview.noBlob ||
+        preview.noop === true
+      ),
+    onSkipped: () => {
+      largeBlobsMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
+      setStatusOutcome({
+        tone: "info",
+        title: m.large_blob_delete(),
+        message: m.large_blob_delete_noop(),
+      });
     },
   });
-  if (noop) {
-    setStatusOutcome({
-      tone: "info",
-      title: m.large_blob_delete(),
-      message: m.large_blob_delete_noop(),
-    });
-  }
-  return outcome.ok;
-}
-
-function cleanupError(
-  failedPhase: MutationFailedPhase,
-  previewRequest: LargeBlobGarbageCollectRequest | null,
-  previewEnvelope: LargeBlobMutationEnvelope | null,
-  responseEnvelope: LargeBlobMutationEnvelope | null,
-  runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
-  failureReason: LargeBlobMutationFailureReason,
-) {
-  largeBlobsMutation.set(failedMutation(cleanupMutationBase(), {
-    failedPhase,
-    previewRequest,
-    previewEnvelope,
-    responseEnvelope,
-    runtimeError,
-    failureReason,
-  }));
 }
 
 export async function beginLargeBlobCleanup(): Promise<boolean> {
   if (!reportForActions()) return false;
-  const request = buildLargeBlobCleanupPreviewRequest(currentSelectionID(), get(largeBlobsVerificationFlow));
 
-  largeBlobsMutation.set(previewingMutation(cleanupMutationBase(), request));
-  const label = m.large_blob_cleanup_preview();
-  let noop = false;
-  const outcome = await runTypedOperationStage({
-    label,
-    call: () => api.garbageCollectLargeBlobs(requestForCurrentSelection(request)),
+  const request = buildLargeBlobCleanupPreviewRequest(
+    currentSelectionID(),
+    get(largeBlobsVerificationFlow),
+  );
+
+  const base = cleanupMutationBase();
+
+  return runConfirmedPreview({
+    label: m.large_blob_cleanup_preview(),
+    request,
+    call: api.garbageCollectLargeBlobs,
     extract: largeBlobMutationPreview,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-preview");
-      cleanupError("previewing", request, null, details.responseEnvelope, details.runtimeError, details.failureReason);
-    },
-    onSuccess: (preview, envelope) => {
-      noop = preview.noop === true;
-      if (noop) {
-        largeBlobsMutation.set(idleMutation());
-        return;
-      }
-      largeBlobsMutation.set(reviewedMutation(cleanupMutationBase(), request, envelope));
-    },
-    completion: (preview) => {
-      noop = preview?.noop === true;
-      return { summarize: !noop };
+    publish: (operation) => largeBlobsMutation.set({ ...base, operation }),
+    shouldReview: (preview) => preview.noop !== true,
+    onSkipped: () => {
+      largeBlobsMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
+      setStatusOutcome({
+        tone: "info",
+        title: m.large_blob_cleanup(),
+        message: m.large_blob_cleanup_noop(),
+      });
     },
   });
-  if (noop) {
-    setStatusOutcome({
-      tone: "info",
-      title: m.large_blob_cleanup(),
-      message: m.large_blob_cleanup_noop(),
-    });
-  }
-  return outcome.ok;
 }
 
 async function refreshAfterMutation() {
-  largeBlobsMutation.set(idleMutation());
+  largeBlobsMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
+  largeBlobsSelectedEntryIndex.set(null);
+  resetLargeBlobReadState();
   await loadLargeBlobs();
 }
 
@@ -540,96 +606,95 @@ type LargeBlobExecutionRequest = LargeBlobMutationRequest | LargeBlobGarbageColl
 
 type LargeBlobExecutionOptions<TRequest extends LargeBlobExecutionRequest> = {
   label: string;
-  execution: {
-    previewRequest: TRequest;
-    previewEnvelope: LargeBlobMutationEnvelope;
-  };
+  operation:
+    | ConfirmedOperationReview<TRequest, LargeBlobMutationEnvelope>
+    | ConfirmedOperationError<TRequest, LargeBlobMutationEnvelope>;
   call: (request: TRequest) => Promise<LargeBlobMutationEnvelope>;
-  makeExecuting: (request: TRequest, envelope: LargeBlobMutationEnvelope) => LargeBlobMutationState;
-  setFailure: (
-    responseEnvelope: LargeBlobMutationEnvelope | null,
-    runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
-    failureReason: LargeBlobMutationFailureReason,
+  publish: (
+    operation:
+      | ConfirmedOperationExecuting<TRequest, LargeBlobMutationEnvelope>
+      | ConfirmedOperationError<TRequest, LargeBlobMutationEnvelope>,
   ) => void;
 };
 
 async function executeReviewedLargeBlobMutation<TRequest extends LargeBlobExecutionRequest>({
   label,
-  execution,
+  operation,
   call,
-  makeExecuting,
-  setFailure,
+  publish,
 }: LargeBlobExecutionOptions<TRequest>): Promise<boolean> {
-  const request = {
-    ...execution.previewRequest,
-    dryRun: false,
-  };
-  largeBlobsMutation.set(makeExecuting(execution.previewRequest, execution.previewEnvelope));
-  const outcome = await runTypedOperationStage({
+  const succeeded = await runConfirmedExecution({
     label,
-    call: () => call(requestForCurrentSelection(request)),
+    operation,
+    call,
     extract: largeBlobMutationResult,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-result");
-      setFailure(details.responseEnvelope, details.runtimeError, details.failureReason);
-    },
+    publish,
   });
-  if (!outcome.ok) return false;
+
+  if (!succeeded) return false;
 
   await refreshAfterMutation();
+
   return true;
 }
 
 export async function confirmLargeBlobWrite(): Promise<boolean> {
   const current = get(largeBlobsMutation);
-  if (current.kind !== "write" || (current.phase !== "review" && current.phase !== "error")) return false;
-  const execution = mutationExecutionContext(current);
-  if (!execution) return false;
+
+  if (
+    current.kind !== "write" ||
+    (current.operation.phase !== "review" && current.operation.phase !== "error")
+  )
+    return false;
+
+  const base = writeMutationBase(current);
 
   return executeReviewedLargeBlobMutation({
     label: m.large_blob_write(),
-    execution,
-    call: (request) => api.writeLargeBlob(request),
-    makeExecuting: (request, envelope) => executingMutation(writeMutationBase(current), request, envelope),
-    setFailure: (response, runtime, reason) =>
-      writeError(current, "executing", execution.previewRequest, execution.previewEnvelope, response, runtime, reason),
+    operation: current.operation,
+    call: api.writeLargeBlob,
+    publish: (operation) => largeBlobsMutation.set({ ...base, operation }),
   });
 }
 
 export async function confirmLargeBlobDelete(): Promise<boolean> {
   const current = get(largeBlobsMutation);
-  if (current.kind !== "delete" || (current.phase !== "review" && current.phase !== "error")) return false;
-  const execution = mutationExecutionContext(current);
-  if (!execution) return false;
+
+  if (
+    current.kind !== "delete" ||
+    (current.operation.phase !== "review" && current.operation.phase !== "error")
+  )
+    return false;
+
+  const base = deleteMutationBase(current.entryIndex, current.credentialIDHex);
 
   return executeReviewedLargeBlobMutation({
     label: m.large_blob_delete(),
-    execution,
-    call: (request) => api.deleteLargeBlob(request),
-    makeExecuting: (request, envelope) =>
-      executingMutation(deleteMutationBase(current.credentialIDHex), request, envelope),
-    setFailure: (response, runtime, reason) =>
-      deleteError(current.credentialIDHex, "executing", execution.previewRequest, execution.previewEnvelope,
-        response, runtime, reason),
+    operation: current.operation,
+    call: api.deleteLargeBlob,
+    publish: (operation) => largeBlobsMutation.set({ ...base, operation }),
   });
 }
 
 export async function confirmLargeBlobCleanup(): Promise<boolean> {
   const current = get(largeBlobsMutation);
-  if (current.kind !== "cleanup" || (current.phase !== "review" && current.phase !== "error")) return false;
-  const execution = mutationExecutionContext(current);
-  if (!execution) return false;
+
+  if (
+    current.kind !== "cleanup" ||
+    (current.operation.phase !== "review" && current.operation.phase !== "error")
+  )
+    return false;
+
+  const base = cleanupMutationBase();
 
   return executeReviewedLargeBlobMutation({
     label: m.large_blob_cleanup(),
-    execution,
-    call: (request) => api.garbageCollectLargeBlobs(request),
-    makeExecuting: (request, envelope) => executingMutation(cleanupMutationBase(), request, envelope),
-    setFailure: (response, runtime, reason) =>
-      cleanupError("executing", execution.previewRequest, execution.previewEnvelope, response, runtime, reason),
+    operation: current.operation,
+    call: api.garbageCollectLargeBlobs,
+    publish: (operation) => largeBlobsMutation.set({ ...base, operation }),
   });
 }
 
 export function closeLargeBlobMutation() {
-  largeBlobsMutation.set(idleMutation());
+  largeBlobsMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
 }

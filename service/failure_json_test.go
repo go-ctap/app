@@ -34,11 +34,13 @@ func TestGetAssertionFailureEnvelopeExactJSON(t *testing.T) {
 	}
 
 	raw, marshalErr := json.Marshal(envelope)
+
 	if marshalErr != nil {
 		t.Fatalf("Marshal: %v", marshalErr)
 	}
 
 	want := `{"operationId":"operation-1","selectionId":"selection-1","kind":"webauthn.getAssertion","authenticatorClosed":false,"error":{"code":"ASSERTION_NOT_ALLOWED","category":"invalid-state","operation":"webauthn.getAssertion","phase":"authenticator-command","ctap":{"command":"authenticatorGetAssertion","commandCode":2,"status":"CTAP2_ERR_NOT_ALLOWED","statusCode":48}}}`
+
 	if string(raw) != want {
 		t.Fatalf("JSON = %s, want %s", raw, want)
 	}
@@ -48,11 +50,13 @@ func TestDirectServiceErrorIsTypedAndMachineReadable(t *testing.T) {
 	service := New()
 
 	_, err := service.SetSelection(context.Background(), SelectionRequest{AttachmentID: "missing-device"})
+
 	if err == nil {
 		t.Fatal("SetSelection error = nil, want failure")
 	}
 
 	var typed *failure.Error
+
 	if !errors.As(err, &typed) {
 		t.Fatalf("SetSelection error type = %T, want *failure.Error", err)
 	}
@@ -62,10 +66,9 @@ func TestDirectServiceErrorIsTypedAndMachineReadable(t *testing.T) {
 	}
 }
 
-func TestBioEnrollEnvelopeKeepsPartialResultWithFailure(t *testing.T) {
+func TestBioEnrollEnvelopeKeepsFailureWithoutResult(t *testing.T) {
 	output := config.BioEnrollOutput{Result: &config.BioEnrollResult{
-		TemplateIDHex:   "aabb",
-		CancelAttempted: true,
+		TemplateIDHex: "aabb",
 	}}
 	runErr := failure.Wrap(
 		failure.CodeBioInteractionTimeout,
@@ -75,28 +78,27 @@ func TestBioEnrollEnvelopeKeepsPartialResultWithFailure(t *testing.T) {
 	)
 	runtime := &recordingAuthenticator{}
 	service := New()
+
 	service.selected = newSelection(
 		"selection-1",
 		openedAuthenticator{lifecycle: runtime},
 	)
 
-	meta, result, err := runOperation(
+	meta, result := runOperation(
 		service,
 		t.Context(),
 		OperationRequest{SelectionID: "selection-1"},
 		operation.BioEnroll,
-		staticOperationExecutor(&output, runErr),
+		staticOperationExecutor(output, runErr),
 	)
-	if err != nil {
-		t.Fatalf("BioEnroll: %v", err)
-	}
+
 	envelope := BioEnrollEnvelope{OperationEnvelopeMeta: meta, Result: result}
 
 	if envelope.Error == nil || envelope.Error.Code != failure.CodeBioInteractionTimeout {
 		t.Fatalf("error = %#v, want %s", envelope.Error, failure.CodeBioInteractionTimeout)
 	}
 
-	if envelope.Result == nil || envelope.Result.Result == nil || envelope.Result.Result.TemplateIDHex != "aabb" {
-		t.Fatalf("partial result = %#v, want template aabb", envelope.Result)
+	if envelope.Result != nil {
+		t.Fatalf("result = %#v, want nil on failure", envelope.Result)
 	}
 }

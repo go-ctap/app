@@ -12,6 +12,7 @@ import (
 
 func (s *Service) LookupMDS(ctx context.Context, req MDSLookupRequest) (MDSLookupEnvelope, error) {
 	aaguid, err := uuid.Parse(req.AAGUID)
+
 	if err != nil {
 		return MDSLookupEnvelope{}, failure.Wrap(
 			failure.CodeMDSAAGUIDInvalid,
@@ -27,6 +28,7 @@ func (s *Service) LookupMDS(ctx context.Context, req MDSLookupRequest) (MDSLooku
 	result, err := client.Lookup(ctx, aaguid, mds.LookupOptions{
 		Refresh: req.Refresh,
 	})
+
 	if err != nil {
 		return MDSLookupEnvelope{}, normalizeMDSError(err)
 	}
@@ -40,6 +42,7 @@ func normalizeMDSError(err error) error {
 		return failure.Wrap(failure.CodeMDSAAGUIDInvalid, err, failure.WithPhase(failure.PhaseMetadata))
 	case errors.Is(err, mds.ErrFetch):
 		opts := []failure.Option{failure.WithPhase(failure.PhaseMetadata)}
+
 		if statusErr, ok := errors.AsType[*mds.HTTPStatusError](err); ok {
 			opts = append(opts, failure.WithParams(map[string]string{
 				"httpStatus": strconv.Itoa(statusErr.StatusCode),

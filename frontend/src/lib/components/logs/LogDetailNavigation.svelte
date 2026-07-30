@@ -1,9 +1,9 @@
 <script lang="ts">
   import { ChevronDown, ChevronUp } from "@lucide/svelte";
 
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Kbd from "$lib/components/ui/kbd/index.js";
-  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+  import { Button } from "$lib/components/ui/button";
+  import * as Kbd from "$lib/components/ui/kbd";
+  import * as Tooltip from "$lib/components/ui/tooltip";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -60,6 +60,7 @@
           </span>
         </Tooltip.Content>
       </Tooltip.Root>
+
       <Tooltip.Root>
         <Tooltip.Trigger>
           {#snippet child({ props })}

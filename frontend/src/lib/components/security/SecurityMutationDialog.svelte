@@ -2,14 +2,14 @@
   import { FingerprintPattern, RotateCcw, Trash2 } from "@lucide/svelte";
 
   import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";
-  import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
+  import * as AlertDialog from "$lib/components/ui/alert-dialog";
+  import { Button } from "$lib/components/ui/button";
+  import * as Dialog from "$lib/components/ui/dialog";
   import type { SecurityMutationState } from "$lib/features/security/state";
   import type { ActiveOperation } from "$lib/features/workbench/state";
 
   import { m } from "../../../paraglide/messages.js";
-  import SecurityMutationDetails from "./SecurityMutationDetails.svelte";
+  import SecurityMutationDetails from "$lib/components/security/SecurityMutationDetails.svelte";
 
   type Props = {
     mutation: SecurityMutationState;
@@ -21,51 +21,89 @@
     onCancelOperation: () => void | Promise<void>;
   };
 
-  let { mutation, activeOperation, disabled, onConfirm, onPreview, onClose, onCancelOperation }: Props = $props();
+  let {
+    mutation,
+    activeOperation,
+    disabled,
+    onConfirm,
+    onPreview,
+    onClose,
+    onCancelOperation,
+  }: Props = $props();
+
+  let operation = $derived(mutation.operation);
 
   let enrollmentRunning = $derived(
-    mutation.kind === "bioEnroll" && mutation.phase === "executing",
+    mutation.kind === "bioEnroll" && operation.phase === "executing",
   );
+
   let open = $derived(
-    mutation.phase === "review" || mutation.phase === "error" || enrollmentRunning,
+    operation.phase === "review" || operation.phase === "error" || enrollmentRunning,
   );
+
   let destructive = $derived(mutation.kind === "bioRemove" || mutation.kind === "reset");
+
   let previewFailed = $derived(
-    mutation.phase === "error" && mutation.failedPhase === "previewing",
+    operation.phase === "error" && operation.failedPhase === "previewing",
   );
+
   let executionFailed = $derived(
-    mutation.phase === "error" && mutation.failedPhase === "executing",
+    operation.phase === "error" && operation.failedPhase === "executing",
   );
+
   function dialogTitle() {
+    if (mutation.kind === "enterpriseAttestation") return m.security_enterprise_attestation();
+
     if (mutation.kind === "alwaysUv") return m.security_always_uv();
+
     if (mutation.kind === "pinPolicy") return m.security_pin_policy();
+
     if (mutation.kind === "longTouch") return m.security_long_touch_for_reset();
+
     if (mutation.kind === "bioEnroll") return m.security_enroll_biometric();
+
     if (mutation.kind === "bioRename") return m.security_rename_enrollment();
+
     if (mutation.kind === "bioRemove") return m.security_remove_enrollment();
+
     if (mutation.kind === "reset") return m.security_factory_reset();
+
     return m.security_mutation_preview();
   }
 
   function dialogDescription(): string | undefined {
     if (mutation.kind === "reset") return m.security_factory_reset_description();
+
     if (mutation.kind === "bioRemove") return m.security_remove_enrollment_description();
+
     if (mutation.kind === "bioEnroll") {
       return enrollmentRunning
         ? m.security_capture_biometric_description()
         : m.security_bio_enroll_description();
     }
+
     return undefined;
   }
 
   function confirmationLabel() {
+    if (mutation.kind === "enterpriseAttestation") {
+      return m.security_enterprise_attestation_operation();
+    }
+
     if (mutation.kind === "reset") return m.security_reset_confirm();
+
     if (mutation.kind === "bioRemove") return m.security_bio_remove_operation();
+
     if (mutation.kind === "bioEnroll") return m.security_bio_enroll_operation();
+
     if (mutation.kind === "bioRename") return m.security_bio_rename_operation();
+
     if (mutation.kind === "alwaysUv") return m.security_always_uv_operation();
+
     if (mutation.kind === "pinPolicy") return m.security_pin_policy_operation();
+
     if (mutation.kind === "longTouch") return m.security_long_touch_operation();
+
     return m.continue_action();
   }
 
@@ -73,6 +111,7 @@
     if (mutation.kind === "pinPolicy" || mutation.kind === "bioRename") {
       return m.preview_change();
     }
+
     return confirmationLabel();
   }
 
@@ -82,7 +121,7 @@
 
   function runPrimary(event?: Event) {
     event?.preventDefault();
-    if (mutation.phase === "review" || executionFailed) void onConfirm();
+    if (operation.phase === "review" || executionFailed) void onConfirm();
     else if (previewFailed) void onPreview();
   }
 
@@ -101,7 +140,9 @@
       <ModalScrollArea>
         <AlertDialog.Header>
           <AlertDialog.Media>
-            {#if mutation.kind === "reset"}<RotateCcw aria-hidden="true" />{:else}<Trash2 aria-hidden="true" />{/if}
+            {#if mutation.kind === "reset"}<RotateCcw aria-hidden="true" />{:else}<Trash2
+                aria-hidden="true"
+              />{/if}
           </AlertDialog.Media>
           <AlertDialog.Title>{dialogTitle()}</AlertDialog.Title>
           {#if dialogDescription()}
@@ -113,7 +154,7 @@
 
         <AlertDialog.Footer>
           <AlertDialog.Cancel onclick={onClose}>{m.cancel()}</AlertDialog.Cancel>
-          <AlertDialog.Action variant="destructive" disabled={disabled} onclick={runPrimary}>
+          <AlertDialog.Action variant="destructive" {disabled} onclick={runPrimary}>
             {primaryLabel()}
           </AlertDialog.Action>
         </AlertDialog.Footer>
@@ -135,6 +176,7 @@
               <div class="enrollment-dialog-icon" data-prompt-visual aria-hidden="true">
                 <FingerprintPattern />
               </div>
+
               <div class="enrollment-dialog-copy">
                 <Dialog.Title>{dialogTitle()}</Dialog.Title>
                 <Dialog.Description>{dialogDescription()}</Dialog.Description>
@@ -156,7 +198,7 @@
               {m.security_cancel_enrollment()}
             </Button>
           {:else}
-            <Button type="button" disabled={disabled} onclick={runPrimary}>
+            <Button type="button" {disabled} onclick={runPrimary}>
               {primaryLabel()}
             </Button>
             <Button variant="outline" type="button" onclick={onClose}>{m.cancel()}</Button>
@@ -168,43 +210,43 @@
 {/if}
 
 <style>
-@layer blocks {
-  :global(.security-mutation-dialog),
-  :global(.security-destructive-dialog) {
-    width: min(38rem, calc(100vw - 2rem));
-    max-width: none;
-    max-height: calc(100vh - 2rem);
-    overflow: hidden;
-  }
+  @layer blocks {
+    :global(.security-mutation-dialog),
+    :global(.security-destructive-dialog) {
+      width: min(38rem, calc(100vw - 2rem));
+      max-width: none;
+      max-height: calc(100vh - 2rem);
+      overflow: hidden;
+    }
 
-  .enrollment-dialog-heading {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: var(--space-3);
-    align-items: start;
-    width: 100%;
-    text-align: left;
-  }
+    .enrollment-dialog-heading {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: var(--space-3);
+      align-items: start;
+      width: 100%;
+      text-align: left;
+    }
 
-  .enrollment-dialog-copy {
-    display: grid;
-    gap: var(--space-1);
-    min-width: 0;
-  }
+    .enrollment-dialog-copy {
+      display: grid;
+      gap: var(--space-1);
+      min-width: 0;
+    }
 
-  .enrollment-dialog-icon {
-    display: grid;
-    width: 3rem;
-    aspect-ratio: 1;
-    place-items: center;
-    border: 1px solid var(--border);
-    background: var(--muted);
-    color: var(--foreground);
-  }
+    .enrollment-dialog-icon {
+      display: grid;
+      width: 3rem;
+      aspect-ratio: 1;
+      place-items: center;
+      border: 1px solid var(--border);
+      background: var(--muted);
+      color: var(--foreground);
+    }
 
-  .enrollment-dialog-icon :global(svg) {
-    width: 1.5rem;
-    height: 1.5rem;
+    .enrollment-dialog-icon :global(svg) {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
   }
-}
 </style>

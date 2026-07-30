@@ -7,9 +7,6 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as failure$0 from "../failure/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
 import * as report$0 from "../report/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -31,6 +28,7 @@ export enum AuthenticatorConfigOperation {
      */
     $zero = "",
 
+    AuthenticatorConfigEnterprise = "enableEnterpriseAttestation",
     AuthenticatorConfigAlwaysUV = "alwaysUv",
     AuthenticatorConfigMinPINLength = "setMinPINLength",
     AuthenticatorConfigLongTouch = "enableLongTouchForReset",
@@ -73,6 +71,8 @@ export class AuthenticatorConfigPreview {
     "operation": AuthenticatorConfigOperation;
     "device": report$0.DeviceReport;
     "authenticatorConfig": AuthenticatorConfigStatus;
+    "currentEnterpriseAttestation"?: boolean | null;
+    "requestedEnterpriseAttestation"?: boolean;
     "target"?: AlwaysUVTarget;
     "currentAlwaysUv"?: boolean | null;
     "requestedAlwaysUv"?: boolean;
@@ -117,8 +117,8 @@ export class AuthenticatorConfigPreview {
     static createFrom($$source: any = {}): AuthenticatorConfigPreview {
         const $$createField1_0 = $$createType3;
         const $$createField2_0 = $$createType4;
-        const $$createField9_0 = $$createType5;
-        const $$createField15_0 = $$createType7;
+        const $$createField11_0 = $$createType5;
+        const $$createField17_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField1_0($$parsedSource["device"]);
@@ -127,10 +127,10 @@ export class AuthenticatorConfigPreview {
             $$parsedSource["authenticatorConfig"] = $$createField2_0($$parsedSource["authenticatorConfig"]);
         }
         if ("minPinLengthRPIDs" in $$parsedSource) {
-            $$parsedSource["minPinLengthRPIDs"] = $$createField9_0($$parsedSource["minPinLengthRPIDs"]);
+            $$parsedSource["minPinLengthRPIDs"] = $$createField11_0($$parsedSource["minPinLengthRPIDs"]);
         }
         if ("warnings" in $$parsedSource) {
-            $$parsedSource["warnings"] = $$createField15_0($$parsedSource["warnings"]);
+            $$parsedSource["warnings"] = $$createField17_0($$parsedSource["warnings"]);
         }
         return new AuthenticatorConfigPreview($$parsedSource as Partial<AuthenticatorConfigPreview>);
     }
@@ -180,9 +180,12 @@ export class AuthenticatorConfigStatus {
     "configured"?: boolean | null;
     "previewOnly"?: boolean;
     "uvAcfg": CapabilityState;
+    "enterpriseAttestation": CapabilityState;
     "alwaysUv": CapabilityState;
     "setMinPINLength": CapabilityState;
     "longTouchForReset": CapabilityState;
+    "vendorPrototype": CapabilityState;
+    "vendorPrototypeConfigCommands"?: string[];
 
     /** Creates a new AuthenticatorConfigStatus instance. */
     constructor($$source: Partial<AuthenticatorConfigStatus> = {}) {
@@ -195,6 +198,9 @@ export class AuthenticatorConfigStatus {
         if (!("uvAcfg" in $$source)) {
             this["uvAcfg"] = (new CapabilityState());
         }
+        if (!("enterpriseAttestation" in $$source)) {
+            this["enterpriseAttestation"] = (new CapabilityState());
+        }
         if (!("alwaysUv" in $$source)) {
             this["alwaysUv"] = (new CapabilityState());
         }
@@ -203,6 +209,9 @@ export class AuthenticatorConfigStatus {
         }
         if (!("longTouchForReset" in $$source)) {
             this["longTouchForReset"] = (new CapabilityState());
+        }
+        if (!("vendorPrototype" in $$source)) {
+            this["vendorPrototype"] = (new CapabilityState());
         }
 
         Object.assign(this, $$source);
@@ -216,18 +225,30 @@ export class AuthenticatorConfigStatus {
         const $$createField5_0 = $$createType8;
         const $$createField6_0 = $$createType8;
         const $$createField7_0 = $$createType8;
+        const $$createField8_0 = $$createType8;
+        const $$createField9_0 = $$createType8;
+        const $$createField10_0 = $$createType5;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("uvAcfg" in $$parsedSource) {
             $$parsedSource["uvAcfg"] = $$createField4_0($$parsedSource["uvAcfg"]);
         }
+        if ("enterpriseAttestation" in $$parsedSource) {
+            $$parsedSource["enterpriseAttestation"] = $$createField5_0($$parsedSource["enterpriseAttestation"]);
+        }
         if ("alwaysUv" in $$parsedSource) {
-            $$parsedSource["alwaysUv"] = $$createField5_0($$parsedSource["alwaysUv"]);
+            $$parsedSource["alwaysUv"] = $$createField6_0($$parsedSource["alwaysUv"]);
         }
         if ("setMinPINLength" in $$parsedSource) {
-            $$parsedSource["setMinPINLength"] = $$createField6_0($$parsedSource["setMinPINLength"]);
+            $$parsedSource["setMinPINLength"] = $$createField7_0($$parsedSource["setMinPINLength"]);
         }
         if ("longTouchForReset" in $$parsedSource) {
-            $$parsedSource["longTouchForReset"] = $$createField7_0($$parsedSource["longTouchForReset"]);
+            $$parsedSource["longTouchForReset"] = $$createField8_0($$parsedSource["longTouchForReset"]);
+        }
+        if ("vendorPrototype" in $$parsedSource) {
+            $$parsedSource["vendorPrototype"] = $$createField9_0($$parsedSource["vendorPrototype"]);
+        }
+        if ("vendorPrototypeConfigCommands" in $$parsedSource) {
+            $$parsedSource["vendorPrototypeConfigCommands"] = $$createField10_0($$parsedSource["vendorPrototypeConfigCommands"]);
         }
         return new AuthenticatorConfigStatus($$parsedSource as Partial<AuthenticatorConfigStatus>);
     }
@@ -998,7 +1019,6 @@ export class RetryState {
     "state": StateValue;
     "remaining"?: number | null;
     "powerCycleState"?: boolean | null;
-    "failure"?: failure$0.Failure | null;
 
     /** Creates a new RetryState instance. */
     constructor($$source: Partial<RetryState> = {}) {
@@ -1013,11 +1033,7 @@ export class RetryState {
      * Creates a new RetryState instance from a string or object.
      */
     static createFrom($$source: any = {}): RetryState {
-        const $$createField3_0 = $$createType29;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("failure" in $$parsedSource) {
-            $$parsedSource["failure"] = $$createField3_0($$parsedSource["failure"]);
-        }
         return new RetryState($$parsedSource as Partial<RetryState>);
     }
 }
@@ -1078,11 +1094,11 @@ export class StatusReport {
     static createFrom($$source: any = {}): StatusReport {
         const $$createField0_0 = $$createType3;
         const $$createField1_0 = $$createType19;
-        const $$createField2_0 = $$createType30;
-        const $$createField3_0 = $$createType31;
+        const $$createField2_0 = $$createType28;
+        const $$createField3_0 = $$createType29;
         const $$createField4_0 = $$createType4;
         const $$createField5_0 = $$createType27;
-        const $$createField6_0 = $$createType32;
+        const $$createField6_0 = $$createType30;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
@@ -1173,8 +1189,6 @@ const $$createType24 = ResetPreview.createFrom;
 const $$createType25 = ResetResult.createFrom;
 const $$createType26 = $Create.Nullable($$createType25);
 const $$createType27 = ResetHints.createFrom;
-const $$createType28 = failure$0.Failure.createFrom;
-const $$createType29 = $Create.Nullable($$createType28);
-const $$createType30 = UVStatus.createFrom;
-const $$createType31 = BioStatus.createFrom;
-const $$createType32 = LimitsStatus.createFrom;
+const $$createType28 = UVStatus.createFrom;
+const $$createType29 = BioStatus.createFrom;
+const $$createType30 = LimitsStatus.createFrom;

@@ -1,391 +1,416 @@
 <script lang="ts">
-	import { Events } from "@wailsio/runtime";
-	import { onMount } from "svelte";
+  import { Events } from "@wailsio/runtime";
+  import { onMount } from "svelte";
 
-	import type * as appservice from "../bindings/telesma/service/models";
+  import InteractionModal from "$lib/components/interaction/InteractionModal.svelte";
+  import OperationRecoveryDialog from "$lib/components/operation/OperationRecoveryDialog.svelte";
+  import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
+  import NoAuthenticatorState from "$lib/components/shell/NoAuthenticatorState.svelte";
+  import ShellStatusBar from "$lib/components/shell/ShellStatusBar.svelte";
+  import { ScrollArea } from "$lib/components/ui/scroll-area";
+  import { Toaster } from "$lib/components/ui/sonner";
+  import { WindowControls, WindowTitlebar } from "$lib/components/window-controls";
+  import { handleDiscoveryChanged } from "$lib/discovery-controller.js";
+  import { handleOperationProgress } from "$lib/event-controller.js";
+  import {
+    authenticatorStatus,
+    devices,
+    selectedDevice,
+    selectedSelector,
+    shutdownWorkbench,
+  } from "$lib/features/authenticator";
+  import {
+    answerPendingInteraction,
+    handleInteractionRequested,
+    pendingInteraction,
+  } from "$lib/features/interaction";
+  import {
+    activeScreen,
+    bootstrap,
+    navigateToScreen,
+    selectToken,
+    statusBar,
+  } from "$lib/features/workbench";
+  import { syncLogJournal } from "$lib/logs-controller.js";
+  import { cancelActiveOperation } from "$lib/operation-controller.js";
+  import { currentLocale } from "$lib/i18n";
+  import {
+    cancelOperationRecovery,
+    operationRecovery,
+    retryOperationRecovery,
+  } from "$lib/operation-recovery.js";
+  import {
+    buildInteractionModalPresentation,
+    buildShellStatusPresentation,
+    buildSidebarPresentation,
+  } from "$lib/shell-presentation";
+  import { toggleMaximizeWindow } from "$lib/window-controller.js";
+  import { detectWindowPlatform, resolveWindowPlatform } from "$lib/window-platform";
 
-	import InteractionModal from "$lib/components/interaction/InteractionModal.svelte";
-	import OperationRecoveryDialog from "$lib/components/operation/OperationRecoveryDialog.svelte";
-	import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
-	import NoAuthenticatorState from "$lib/components/shell/NoAuthenticatorState.svelte";
-	import ShellStatusBar from "$lib/components/shell/ShellStatusBar.svelte";
-	import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
-	import { Toaster } from "$lib/components/ui/sonner/index.js";
-	import { WindowControls, WindowTitlebar } from "$lib/components/window-controls";
-	import { handleDiscoveryChanged } from "$lib/discovery-controller.js";
-	import { handleOperationProgress } from "$lib/event-controller.js";
-	import {
-		authenticatorStatus,
-		devices,
-		selectedDevice,
-		selectedSelector,
-		shutdownWorkbench,
-	} from "$lib/features/authenticator";
-	import {
-		answerPendingInteraction,
-		handleInteractionRequested,
-		pendingInteraction,
-	} from "$lib/features/interaction";
-	import {
-		activeScreen,
-		bootstrap,
-		navigateToScreen,
-		selectToken,
-		statusBar,
-		type ActiveScreen,
-	} from "$lib/features/workbench";
-	import { syncLogJournal } from "$lib/logs-controller.js";
-	import { cancelActiveOperation } from "$lib/operation-controller.js";
-	import { currentLocale } from "$lib/i18n";
-	import {
-		cancelOperationRecovery,
-		operationRecovery,
-		retryOperationRecovery,
-	} from "$lib/operation-recovery.js";
-	import { buildInteractionModalPresentation, buildShellStatusPresentation, buildSidebarPresentation } from "$lib/shell-presentation";
-	import { toggleMaximizeWindow } from "$lib/window-controller.js";
-	import { detectWindowPlatform, resolveWindowPlatform } from "$lib/window-platform";
+  let refreshing = $state(false);
 
-	let refreshing = $state(false);
-	let initialized = $state(false);
-	let windowPlatform = $state(detectWindowPlatform());
-	let windowActive = $state(true);
-	let isMacOS = $derived(windowPlatform === "macos");
-	let noDevices = $derived(initialized && !refreshing && $devices.length === 0);
-	let sidebarPresentation = $derived(buildSidebarPresentation({
-		activeScreen: $activeScreen,
-		devices: $devices,
-		selectedSelector: $selectedSelector,
-		busy: refreshing || $authenticatorStatus.state === "opening",
-	}));
-	let shellStatusPresentation = $derived(buildShellStatusPresentation({
-		authenticatorStatus: $authenticatorStatus,
-		selectedDevice: $selectedDevice,
-		statusBar: $statusBar,
-	}));
-	let interactionModalPresentation = $derived($pendingInteraction ? buildInteractionModalPresentation($pendingInteraction) : null);
+  let initialized = $state(false);
 
-	function navigate(screen: ActiveScreen) {
-		void navigateToScreen(screen);
-	}
+  let windowPlatform = $state(detectWindowPlatform());
 
-	function handleSelectToken(selector: string) {
-		void selectToken(selector);
-	}
+  let windowActive = $state(true);
 
-	async function handleInteractionAnswer(answer: appservice.InteractionAnswer) {
-		await answerPendingInteraction(answer);
-	}
+  let isMacOS = $derived(windowPlatform === "macos");
 
-	function handleCancelOperation() {
-		void cancelActiveOperation();
-	}
+  let noDevices = $derived(initialized && !refreshing && $devices.length === 0);
 
-	async function syncWindowPlatform() {
-		const detected = detectWindowPlatform();
-		if (detected !== null) {
-			windowPlatform = detected;
-			return;
-		}
+  let sidebarPresentation = $derived(
+    buildSidebarPresentation({
+      activeScreen: $activeScreen,
+      devices: $devices,
+      selectedSelector: $selectedSelector,
+      busy: refreshing || $authenticatorStatus.state === "opening",
+    }),
+  );
 
-		windowPlatform = null;
-		try {
-			const resolved = await resolveWindowPlatform();
-			if (resolved !== null) {
-				windowPlatform = resolved;
-			}
-		} catch {
-			// WindowRuntimeReady retries detection without rendering the wrong platform chrome.
-		}
-	}
+  let shellStatusPresentation = $derived(
+    buildShellStatusPresentation({
+      authenticatorStatus: $authenticatorStatus,
+      selectedDevice: $selectedDevice,
+      statusBar: $statusBar,
+    }),
+  );
 
-	function handleTitlebarDoubleClick(event: MouseEvent) {
-		if (!(event.target instanceof Element)) return;
-		if (!event.target.closest('[data-window-titlebar-region="true"]')) return;
-		if (event.target.closest('button, a, input, select, textarea, [role="button"], [contenteditable="true"]')) return;
+  let interactionModalPresentation = $derived(
+    $pendingInteraction ? buildInteractionModalPresentation($pendingInteraction) : null,
+  );
 
-		event.preventDefault();
-		void toggleMaximizeWindow();
-	}
+  async function syncWindowPlatform() {
+    const detected = detectWindowPlatform();
 
-	onMount(() => {
-		let disposed = false;
-		const handleWindowFocus = () => windowActive = true;
-		const handleWindowBlur = () => windowActive = false;
-		windowActive = document.hasFocus();
-		window.addEventListener("focus", handleWindowFocus);
-		window.addEventListener("blur", handleWindowBlur);
-		window.addEventListener("dblclick", handleTitlebarDoubleClick);
-		const offRuntimeReady = Events.On(Events.Types.Common.WindowRuntimeReady, () => {
-			void syncWindowPlatform();
-		});
-		const offProgress = Events.On("ctapkit:operation-event", (event) => {
-			handleOperationProgress(event.data);
-		});
+    if (detected !== null) {
+      windowPlatform = detected;
 
-		const offInteraction = Events.On("ctapkit:interaction-requested", (event) => {
-			handleInteractionRequested(event.data);
-		});
+      return;
+    }
 
-		const offDiscovery = Events.On("ctapkit:discovery-changed", (event) => {
-			void handleDiscoveryChanged(event.data);
-		});
+    windowPlatform = null;
+    try {
+      const resolved = await resolveWindowPlatform();
 
-		const offLogsChanged = Events.On("ctapkit:logs-changed", () => {
-			void syncLogJournal();
-		});
+      if (resolved !== null) {
+        windowPlatform = resolved;
+      }
+    } catch {
+      // WindowRuntimeReady retries detection without rendering the wrong platform chrome.
+    }
+  }
 
-		refreshing = true;
-		void syncWindowPlatform();
-		void syncLogJournal();
+  function handleTitlebarDoubleClick(event: MouseEvent) {
+    if (!(event.target instanceof Element)) return;
 
-		bootstrap()
-			.finally(() => {
-				if (disposed) return;
-				refreshing = false;
-				initialized = true;
-			});
+    if (!event.target.closest('[data-window-titlebar-region="true"]')) return;
 
-		return () => {
-			disposed = true;
-			window.removeEventListener("focus", handleWindowFocus);
-			window.removeEventListener("blur", handleWindowBlur);
-			window.removeEventListener("dblclick", handleTitlebarDoubleClick);
-			offRuntimeReady();
-			offProgress();
-			offInteraction();
-			offDiscovery();
-			offLogsChanged();
-			cancelOperationRecovery();
-			void shutdownWorkbench();
-		};
-	});
+    if (
+      event.target.closest(
+        'button, a, input, select, textarea, [role="button"], [contenteditable="true"]',
+      )
+    )
+      return;
+
+    event.preventDefault();
+    void toggleMaximizeWindow();
+  }
+
+  onMount(() => {
+    let disposed = false;
+    const handleWindowFocus = () => (windowActive = true);
+    const handleWindowBlur = () => (windowActive = false);
+
+    windowActive = document.hasFocus();
+    window.addEventListener("focus", handleWindowFocus);
+    window.addEventListener("blur", handleWindowBlur);
+    window.addEventListener("dblclick", handleTitlebarDoubleClick);
+
+    const offRuntimeReady = Events.On(Events.Types.Common.WindowRuntimeReady, () => {
+      void syncWindowPlatform();
+    });
+    const offProgress = Events.On("ctapkit:operation-event", (event) => {
+      handleOperationProgress(event.data);
+    });
+
+    const offInteraction = Events.On("ctapkit:interaction-requested", (event) => {
+      handleInteractionRequested(event.data);
+    });
+
+    const offDiscovery = Events.On("ctapkit:discovery-changed", (event) => {
+      void handleDiscoveryChanged(event.data);
+    });
+
+    const offLogsChanged = Events.On("ctapkit:logs-changed", () => {
+      void syncLogJournal();
+    });
+
+    refreshing = true;
+    void syncWindowPlatform();
+    void syncLogJournal();
+
+    bootstrap().finally(() => {
+      if (disposed) return;
+
+      refreshing = false;
+      initialized = true;
+    });
+
+    return () => {
+      disposed = true;
+      window.removeEventListener("focus", handleWindowFocus);
+      window.removeEventListener("blur", handleWindowBlur);
+      window.removeEventListener("dblclick", handleTitlebarDoubleClick);
+      offRuntimeReady();
+      offProgress();
+      offInteraction();
+      offDiscovery();
+      offLogsChanged();
+      cancelOperationRecovery();
+      void shutdownWorkbench();
+    };
+  });
 </script>
 
 {#if windowPlatform}
-	{#key $currentLocale}
-	<div class="app-shell" data-platform={windowPlatform} data-window-active={windowActive ? "true" : "false"}>
-		<AppSidebar
-			presentation={sidebarPresentation}
-			nativeWindowTitlebar={isMacOS}
-			onNavigate={navigate}
-			onSelectToken={handleSelectToken}
-		/>
+  {#key $currentLocale}
+    <div
+      class="app-shell"
+      data-platform={windowPlatform}
+      data-window-active={windowActive ? "true" : "false"}
+    >
+      <AppSidebar
+        presentation={sidebarPresentation}
+        nativeWindowTitlebar={isMacOS}
+        onNavigate={(screen) => void navigateToScreen(screen)}
+        onSelectToken={(selector) => void selectToken(selector)}
+      />
 
-		<section class="app-workspace">
-			<header class="app-header">
-				<WindowTitlebar>
-					<div class="titlebar-content" data-native-window-controls={isMacOS ? "true" : undefined}>
-						<h1 class="titlebar-screen-title">{sidebarPresentation.activeScreenLabel}</h1>
-						<div class="titlebar-drag-space" aria-hidden="true"></div>
-						{#if !isMacOS}
-							<WindowControls />
-						{/if}
-					</div>
-				</WindowTitlebar>
-			</header>
+      <section class="app-workspace">
+        <header class="app-header">
+          <WindowTitlebar>
+            <div
+              class="titlebar-content"
+              data-native-window-controls={isMacOS ? "true" : undefined}
+            >
+              <h1 class="titlebar-screen-title">{sidebarPresentation.activeScreenLabel}</h1>
 
-			<main class="main-view">
-				{#if $activeScreen === "logs"}
-					<div class="main-view-content" data-fill="true">
-						{#await import("./screens/Logs.svelte") then { default: Logs }}
-							<Logs />
-						{/await}
-					</div>
-				{:else}
-					<ScrollArea class="main-view-scroll">
-						<div class="main-view-content">
-							{#if $activeScreen === "settings"}
-								{#await import("./screens/Settings.svelte") then { default: Settings }}
-									<Settings />
-								{/await}
-							{:else if noDevices}
-								<NoAuthenticatorState screenLabel={sidebarPresentation.activeScreenLabel} />
-							{:else if $activeScreen === "large-blobs"}
-								{#await import("./screens/LargeBlobs.svelte") then { default: LargeBlobs }}
-									<LargeBlobs />
-								{/await}
-							{:else if $activeScreen === "passkeys"}
-								{#await import("./screens/Passkeys.svelte") then { default: Passkeys }}
-									<Passkeys />
-								{/await}
-							{:else if $activeScreen === "lab"}
-								{#await import("./screens/Lab.svelte") then { default: Lab }}
-									<Lab />
-								{/await}
-							{:else if $activeScreen === "security"}
-								{#await import("./screens/Security.svelte") then { default: Security }}
-									<Security />
-								{/await}
-							{:else}
-								{#await import("./screens/Overview.svelte") then { default: Overview }}
-									<Overview />
-								{/await}
-							{/if}
-						</div>
-					</ScrollArea>
-				{/if}
-			</main>
+              <div class="titlebar-drag-space" aria-hidden="true"></div>
 
-			<ShellStatusBar
-				presentation={shellStatusPresentation}
-				onCancel={handleCancelOperation}
-			/>
-		</section>
+              {#if !isMacOS}
+                <WindowControls />
+              {/if}
+            </div>
+          </WindowTitlebar>
+        </header>
 
-		<InteractionModal presentation={interactionModalPresentation} onAnswer={handleInteractionAnswer} />
-		<OperationRecoveryDialog
-			presentation={$operationRecovery}
-			onCancel={cancelOperationRecovery}
-			onRetry={retryOperationRecovery}
-		/>
-	</div>
-	{/key}
+        <main class="main-view">
+          {#if $activeScreen === "logs"}
+            <div class="main-view-content" data-fill="true">
+              {#await import("./screens/Logs.svelte") then { default: Logs }}
+                <Logs />
+              {/await}
+            </div>
+          {:else}
+            <ScrollArea class="main-view-scroll">
+              <div class="main-view-content">
+                {#if $activeScreen === "settings"}
+                  {#await import("./screens/Settings.svelte") then { default: Settings }}
+                    <Settings />
+                  {/await}
+                {:else if noDevices}
+                  <NoAuthenticatorState screenLabel={sidebarPresentation.activeScreenLabel} />
+                {:else if $activeScreen === "large-blobs"}
+                  {#await import("./screens/LargeBlobs.svelte") then { default: LargeBlobs }}
+                    <LargeBlobs />
+                  {/await}
+                {:else if $activeScreen === "passkeys"}
+                  {#await import("./screens/Passkeys.svelte") then { default: Passkeys }}
+                    <Passkeys />
+                  {/await}
+                {:else if $activeScreen === "lab"}
+                  {#await import("./screens/Lab.svelte") then { default: Lab }}
+                    <Lab />
+                  {/await}
+                {:else if $activeScreen === "security"}
+                  {#await import("./screens/Security.svelte") then { default: Security }}
+                    <Security />
+                  {/await}
+                {:else}
+                  {#await import("./screens/Overview.svelte") then { default: Overview }}
+                    <Overview />
+                  {/await}
+                {/if}
+              </div>
+            </ScrollArea>
+          {/if}
+        </main>
+
+        <ShellStatusBar
+          presentation={shellStatusPresentation}
+          onCancel={() => void cancelActiveOperation()}
+        />
+      </section>
+
+      <InteractionModal
+        presentation={interactionModalPresentation}
+        onAnswer={async (answer) => {
+          await answerPendingInteraction(answer);
+        }}
+      />
+
+      <OperationRecoveryDialog
+        presentation={$operationRecovery}
+        onCancel={cancelOperationRecovery}
+        onRetry={retryOperationRecovery}
+      />
+    </div>
+  {/key}
 {:else}
-	<div class="app-platform-pending" aria-hidden="true"></div>
+  <div class="app-platform-pending" aria-hidden="true"></div>
 {/if}
 
 <Toaster
-	position="bottom-right"
-	richColors
-	expand
-	closeButton
-	duration={8_000}
-	offset={{ bottom: "3.5rem", right: "2rem" }}
-	mobileOffset={{ bottom: "3.25rem", right: "1rem" }}
+  position="bottom-right"
+  richColors
+  expand
+  closeButton
+  duration={8_000}
+  offset={{ bottom: "3.5rem", right: "2rem" }}
+  mobileOffset={{ bottom: "3.25rem", right: "1rem" }}
 />
 
 <style>
-	@layer blocks {
-		.app-platform-pending {
-			height: 100dvh;
-			background: var(--background);
-		}
+  @layer blocks {
+    .app-platform-pending {
+      height: 100dvh;
+      background: var(--background);
+    }
 
-		.app-shell {
-			--sidebar-inline-size: 14rem;
-			--sidebar-background: var(--sidebar);
-			--sidebar-backdrop-filter: none;
-			--topbar-background: var(--card);
-			--topbar-border: var(--window-border);
-			--statusbar-background: var(--card);
-			display: grid;
-			grid-template-columns: var(--sidebar-inline-size) minmax(0, 1fr);
-			min-width: 0;
-			height: 100dvh;
-			overflow: hidden;
-			border-radius: 0;
-			background: var(--window-surface);
-			color: var(--foreground);
-		}
-		.app-workspace {
-			container: workspace-shell / inline-size;
-			display: grid;
-			grid-template-rows: var(--shell-titlebar-block-size) minmax(0, 1fr) auto;
-			min-width: 0;
-			min-height: 0;
-		}
-		.app-header {
-			z-index: 10;
-			min-width: 0;
-			border-bottom: 1px solid var(--topbar-border);
-			background: var(--topbar-background);
-		}
-		.titlebar-content {
-			display: grid;
-			grid-template-columns: minmax(0, 38rem) minmax(2rem, 1fr) auto;
-			align-items: stretch;
-			height: var(--shell-titlebar-block-size);
-			min-width: 0;
-			padding: 0 0 0 var(--space-4);
-		}
-		.titlebar-drag-space {
-			min-width: 0;
-			height: 100%;
-			--wails-non-client-region: caption;
-			--wails-draggable: drag;
-		}
-		.titlebar-screen-title {
-			display: flex;
-			align-items: center;
-			min-width: 0;
-			overflow: hidden;
-			font-size: 0.88rem;
-			font-weight: 600;
-			margin: 0;
-			text-overflow: ellipsis;
-			white-space: nowrap;
-			--wails-non-client-region: caption;
-			--wails-draggable: drag;
-		}
-		.main-view {
-			container: workspace / inline-size;
-			display: grid;
-			grid-template-columns: minmax(0, 1fr);
-			min-width: 0;
-			min-height: 0;
-			overflow: hidden;
-			background: var(--workspace-surface);
-		}
-		:global(.main-view-scroll) {
-			height: 100%;
-			min-width: 0;
-			min-height: 0;
-		}
-		.main-view-content {
-			min-width: 0;
-			min-height: 100%;
-			padding: var(--space-4);
-		}
-		@container workspace-shell (max-width: 48rem) {
-			.titlebar-content {
-				grid-template-columns: minmax(0, 1fr) auto;
-				padding-left: var(--space-3);
-			}
+    .app-shell {
+      --sidebar-inline-size: 14rem;
+      --sidebar-background: var(--sidebar);
+      --sidebar-backdrop-filter: none;
+      --topbar-background: var(--card);
+      --topbar-border: var(--window-border);
+      --statusbar-background: var(--card);
+      display: grid;
+      grid-template-columns: var(--sidebar-inline-size) minmax(0, 1fr);
+      min-width: 0;
+      height: 100dvh;
+      overflow: hidden;
+      border-radius: 0;
+      background: var(--window-surface);
+      color: var(--foreground);
+    }
+    .app-workspace {
+      container: workspace-shell / inline-size;
+      display: grid;
+      grid-template-rows: var(--shell-titlebar-block-size) minmax(0, 1fr) auto;
+      min-width: 0;
+      min-height: 0;
+    }
+    .app-header {
+      z-index: 10;
+      min-width: 0;
+      border-bottom: 1px solid var(--topbar-border);
+      background: var(--topbar-background);
+    }
+    .titlebar-content {
+      display: grid;
+      grid-template-columns: minmax(0, 38rem) minmax(2rem, 1fr) auto;
+      align-items: stretch;
+      height: var(--shell-titlebar-block-size);
+      min-width: 0;
+      padding: 0 0 0 var(--space-4);
+    }
+    .titlebar-drag-space {
+      min-width: 0;
+      height: 100%;
+      --wails-non-client-region: caption;
+      --wails-draggable: drag;
+    }
+    .titlebar-screen-title {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      overflow: hidden;
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin: 0;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      --wails-non-client-region: caption;
+      --wails-draggable: drag;
+    }
+    .main-view {
+      container: workspace / inline-size;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--workspace-surface);
+    }
+    :global(.main-view-scroll) {
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+    }
+    .main-view-content {
+      min-width: 0;
+      min-height: 100%;
+      padding: var(--space-4);
+    }
+    @container workspace-shell (max-width: 48rem) {
+      .titlebar-content {
+        grid-template-columns: minmax(0, 1fr) auto;
+        padding-left: var(--space-3);
+      }
 
-			.titlebar-drag-space {
-				display: none;
-			}
-		}
+      .titlebar-drag-space {
+        display: none;
+      }
+    }
+  }
 
-	}
+  @layer exceptions {
+    .app-shell[data-platform="windows"],
+    .app-shell[data-platform="linux"] {
+      --sidebar-background: color-mix(in srgb, var(--sidebar) 40%, transparent);
+      --sidebar-backdrop-filter: blur(24px) saturate(1.2);
+    }
 
-	@layer exceptions {
-		.app-shell[data-platform="windows"],
-		.app-shell[data-platform="linux"] {
-			--sidebar-background: color-mix(in srgb, var(--sidebar) 40%, transparent);
-			--sidebar-backdrop-filter: blur(24px) saturate(1.2);
-		}
+    .app-shell[data-platform="linux"] {
+      border: 1px solid var(--window-border);
+      background-clip: padding-box;
+    }
 
-		.app-shell[data-platform="linux"] {
-			border: 1px solid var(--window-border);
-			background-clip: padding-box;
-		}
+    .app-shell[data-platform="macos"] {
+      --sidebar-background: transparent;
+      background: var(--window-tint);
+    }
 
-		.app-shell[data-platform="macos"] {
-			--sidebar-background: transparent;
-			background: var(--window-tint);
-		}
+    .app-shell[data-platform="macos"][data-window-active="false"] {
+      --sidebar-background: color-mix(in srgb, var(--sidebar) 88%, transparent);
+    }
 
-		.app-shell[data-platform="macos"][data-window-active="false"] {
-			--sidebar-background: color-mix(in srgb, var(--sidebar) 88%, transparent);
-		}
+    .titlebar-content[data-native-window-controls="true"] {
+      grid-template-columns: minmax(0, 38rem) minmax(2rem, 1fr);
+      padding-right: var(--space-4);
+    }
 
-		.titlebar-content[data-native-window-controls="true"] {
-			grid-template-columns: minmax(0, 38rem) minmax(2rem, 1fr);
-			padding-right: var(--space-4);
-		}
+    .main-view-content[data-fill="true"] {
+      height: 100%;
+      overflow: hidden;
+    }
 
-		.main-view-content[data-fill="true"] {
-			height: 100%;
-			overflow: hidden;
-		}
-
-		@container workspace-shell (max-width: 48rem) {
-			.titlebar-content[data-native-window-controls="true"] {
-				grid-template-columns: minmax(0, 1fr);
-				padding-right: var(--space-3);
-			}
-		}
-	}
+    @container workspace-shell (max-width: 48rem) {
+      .titlebar-content[data-native-window-controls="true"] {
+        grid-template-columns: minmax(0, 1fr);
+        padding-right: var(--space-3);
+      }
+    }
+  }
 </style>

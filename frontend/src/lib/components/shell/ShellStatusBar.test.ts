@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ShellStatusPresentation } from "$lib/shell-presentation";
 
-import ShellStatusBar from "./ShellStatusBar.svelte";
+import ShellStatusBar from "$lib/components/shell/ShellStatusBar.svelte";
 
 function presentation(patch: Partial<ShellStatusPresentation> = {}): ShellStatusPresentation {
   return {
@@ -25,6 +25,7 @@ describe("ShellStatusBar", () => {
   it("renders determinate progress and requests cancellation", async () => {
     const user = userEvent.setup();
     const onCancel = vi.fn();
+
     render(ShellStatusBar, {
       props: {
         presentation: presentation({
@@ -40,7 +41,10 @@ describe("ShellStatusBar", () => {
       },
     });
 
-    expect(screen.getByRole("progressbar", { name: "Operation progress" })).toHaveAttribute("aria-valuenow", "2");
+    expect(screen.getByRole("progressbar", { name: "Operation progress" })).toHaveAttribute(
+      "aria-valuenow",
+      "2",
+    );
     expect(screen.getByText("2 of 5")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Cancel operation" }));
     expect(onCancel).toHaveBeenCalledTimes(1);

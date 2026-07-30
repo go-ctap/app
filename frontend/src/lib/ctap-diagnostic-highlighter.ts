@@ -48,7 +48,10 @@ export const ctapDiagnosticLanguage = {
       name: "string.quoted.double.ctapdiag",
       patterns: [
         { match: "\\[REDACTED\\]", name: "markup.deleted.redacted.ctapdiag" },
-        { match: "\\\\(?:[\"/\\\\bfnrt]|u[0-9A-Fa-f]{4})", name: "constant.character.escape.ctapdiag" },
+        {
+          match: '\\\\(?:["/\\\\bfnrt]|u[0-9A-Fa-f]{4})',
+          name: "constant.character.escape.ctapdiag",
+        },
       ],
     },
     "single-quoted-string": {
@@ -63,7 +66,10 @@ export const ctapDiagnosticLanguage = {
       name: "string.quoted.single.ctapdiag",
       patterns: [
         { match: "\\[REDACTED\\]", name: "markup.deleted.redacted.ctapdiag" },
-        { match: "\\\\(?:['/\\\\bfnrt]|u[0-9A-Fa-f]{4})", name: "constant.character.escape.ctapdiag" },
+        {
+          match: "\\\\(?:['/\\\\bfnrt]|u[0-9A-Fa-f]{4})",
+          name: "constant.character.escape.ctapdiag",
+        },
       ],
     },
     constant: {
@@ -94,7 +100,9 @@ export type HighlightedCTAPDiagnosticLine = {
   tokens: ThemedTokenWithVariants[];
 };
 
-export async function highlightCTAPDiagnostic(source: string): Promise<HighlightedCTAPDiagnosticLine[]> {
+export async function highlightCTAPDiagnostic(
+  source: string,
+): Promise<HighlightedCTAPDiagnosticLine[]> {
   const lines = (await highlighter).codeToTokensWithThemes(source, {
     lang: "ctap-diagnostic",
     themes: {

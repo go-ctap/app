@@ -5,9 +5,9 @@
   import TriangleAlertIcon from "@lucide/svelte/icons/triangle-alert";
   import XIcon from "@lucide/svelte/icons/x";
 
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { Progress } from "$lib/components/ui/progress/index.js";
-  import { Spinner } from "$lib/components/ui/spinner/index.js";
+  import { Button } from "$lib/components/ui/button";
+  import { Progress } from "$lib/components/ui/progress";
+  import { Spinner } from "$lib/components/ui/spinner";
   import type { ShellStatusPresentation } from "$lib/shell-presentation";
 
   import { m } from "../../../paraglide/messages.js";

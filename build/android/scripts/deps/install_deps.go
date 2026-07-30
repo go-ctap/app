@@ -24,9 +24,11 @@ func main() {
 
 	// Check ANDROID_HOME
 	androidHome := os.Getenv("ANDROID_HOME")
+
 	if androidHome == "" {
 		androidHome = os.Getenv("ANDROID_SDK_ROOT")
 	}
+
 	if androidHome == "" {
 		// Try common default locations
 		home, _ := os.UserHomeDir()
@@ -35,6 +37,7 @@ func main() {
 			filepath.Join(home, "Library", "Android", "sdk"),
 			"/usr/local/share/android-sdk",
 		}
+
 		for _, p := range possiblePaths {
 			if _, err := os.Stat(p); err == nil {
 				androidHome = p
@@ -53,6 +56,7 @@ func main() {
 	if !checkCommand("adb", "version") {
 		if androidHome != "" {
 			platformTools := filepath.Join(androidHome, "platform-tools")
+
 			errors = append(errors, fmt.Sprintf("adb not found. Add %s to PATH", platformTools))
 		} else {
 			errors = append(errors, "adb not found. Install Android SDK Platform-Tools")
@@ -65,6 +69,7 @@ func main() {
 	if !checkCommand("emulator", "-list-avds") {
 		if androidHome != "" {
 			emulatorPath := filepath.Join(androidHome, "emulator")
+
 			errors = append(errors, fmt.Sprintf("emulator not found. Add %s to PATH", emulatorPath))
 		} else {
 			errors = append(errors, "emulator not found. Install Android Emulator via SDK Manager")
@@ -75,9 +80,11 @@ func main() {
 
 	// Check NDK
 	ndkHome := os.Getenv("ANDROID_NDK_HOME")
+
 	if ndkHome == "" && androidHome != "" {
 		// Look for NDK in default location
 		ndkDir := filepath.Join(androidHome, "ndk")
+
 		if entries, err := os.ReadDir(ndkDir); err == nil {
 			for _, entry := range entries {
 				if entry.IsDir() {
@@ -105,8 +112,10 @@ func main() {
 	if checkCommand("emulator", "-list-avds") {
 		cmd := exec.Command("emulator", "-list-avds")
 		output, err := cmd.Output()
+
 		if err == nil && len(strings.TrimSpace(string(output))) > 0 {
 			avds := strings.Split(strings.TrimSpace(string(output)), "\n")
+
 			fmt.Printf("✓ Found %d Android Virtual Device(s)\n", len(avds))
 		} else {
 			fmt.Println("⚠ No Android Virtual Devices found. Create one via Android Studio > Tools > Device Manager")
@@ -120,6 +129,7 @@ func main() {
 		for _, err := range errors {
 			fmt.Printf("   - %s\n", err)
 		}
+
 		fmt.Println()
 		fmt.Println("Setup instructions:")
 		fmt.Println("1. Install Android Studio: https://developer.android.com/studio")
@@ -135,6 +145,7 @@ func main() {
 		} else {
 			fmt.Println("   export ANDROID_HOME=$HOME/Android/Sdk")
 		}
+
 		fmt.Println("   export PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator")
 		fmt.Println("4. Create an AVD via Android Studio > Tools > Device Manager")
 		os.Exit(1)
@@ -145,7 +156,9 @@ func main() {
 
 func checkCommand(name string, args ...string) bool {
 	cmd := exec.Command(name, args...)
+
 	cmd.Stdout = nil
 	cmd.Stderr = nil
+
 	return cmd.Run() == nil
 }

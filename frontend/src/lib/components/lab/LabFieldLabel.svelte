@@ -1,9 +1,9 @@
 <script lang="ts">
   import { CircleQuestionMark } from "@lucide/svelte";
 
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Field from "$lib/components/ui/field/index.js";
-  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+  import { Button } from "$lib/components/ui/button";
+  import * as Field from "$lib/components/ui/field";
+  import * as Tooltip from "$lib/components/ui/tooltip";
 
   type Props = {
     label: string;
@@ -41,12 +41,12 @@
 </div>
 
 <style>
-@layer blocks {
-  .lab-field-label {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
-    min-width: 0;
+  @layer blocks {
+    .lab-field-label {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      min-width: 0;
+    }
   }
-}
 </style>

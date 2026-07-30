@@ -41,15 +41,20 @@ func main() {
 				if !checkCommand([]string{"xcodebuild", "-version"}) {
 					return false, ""
 				}
+
 				// Get version info
 				out, err := exec.Command("xcodebuild", "-version").Output()
+
 				if err != nil {
 					return false, ""
 				}
+
 				lines := strings.Split(string(out), "\n")
+
 				if len(lines) > 0 {
 					return true, strings.TrimSpace(lines[0])
 				}
+
 				return true, ""
 			},
 			Required:   true,
@@ -62,9 +67,11 @@ func main() {
 			CheckFunc: func() (bool, string) {
 				// Check if xcode-select points to a valid Xcode path
 				out, err := exec.Command("xcode-select", "-p").Output()
+
 				if err != nil {
 					return false, "xcode-select not configured"
 				}
+
 				path := strings.TrimSpace(string(out))
 
 				// Check if path exists and is in Xcode.app
@@ -91,9 +98,11 @@ func main() {
 				// Get the iOS Simulator SDK path
 				cmd := exec.Command("xcrun", "--sdk", "iphonesimulator", "--show-sdk-path")
 				output, err := cmd.Output()
+
 				if err != nil {
 					return false, "Cannot find iOS SDK"
 				}
+
 				sdkPath := strings.TrimSpace(string(output))
 
 				// Check if the SDK path exists
@@ -103,6 +112,7 @@ func main() {
 
 				// Check for UIKit framework (essential for iOS development)
 				uikitPath := fmt.Sprintf("%s/System/Library/Frameworks/UIKit.framework", sdkPath)
+
 				if _, err := os.Stat(uikitPath); err != nil {
 					return false, "UIKit.framework not found"
 				}
@@ -125,15 +135,19 @@ func main() {
 				if !checkCommand([]string{"xcrun", "simctl", "help"}) {
 					return false, ""
 				}
+
 				// Check if we can list runtimes
 				out, err := exec.Command("xcrun", "simctl", "list", "runtimes").Output()
+
 				if err != nil {
 					return false, "Cannot access simulator"
 				}
+
 				// Count iOS runtimes
 				lines := strings.Split(string(out), "\n")
 				count := 0
 				var versions []string
+
 				for _, line := range lines {
 					if strings.Contains(line, "iOS") && !strings.Contains(line, "unavailable") {
 						count++
@@ -148,9 +162,11 @@ func main() {
 						}
 					}
 				}
+
 				if count > 0 {
 					return true, fmt.Sprintf("%d runtime(s): %s", count, strings.Join(versions, ", "))
 				}
+
 				return false, "No iOS runtimes installed"
 			},
 			Required:   true,
@@ -163,17 +179,21 @@ func main() {
 	// Check each dependency
 	for _, dep := range dependencies {
 		success, details := dep.CheckFunc()
+
 		if success {
 			msg := dep.SuccessMsg
+
 			if details != "" {
 				msg = fmt.Sprintf("%s (%s)", dep.SuccessMsg, details)
 			}
+
 			fmt.Println(msg)
 		} else {
 			fmt.Println(dep.FailureMsg)
 			if details != "" {
 				fmt.Printf("   Details: %s\n", details)
 			}
+
 			if dep.Required {
 				hasErrors = true
 				if len(dep.InstallCmd) > 0 {
@@ -182,7 +202,9 @@ func main() {
 					fmt.Printf("   Fix command: %s\n", strings.Join(dep.InstallCmd, " "))
 					if promptUser("Do you want to run this command?") {
 						fmt.Println("Running command...")
+
 						cmd := exec.Command(dep.InstallCmd[0], dep.InstallCmd[1:]...)
+
 						cmd.Stdout = os.Stdout
 						cmd.Stderr = os.Stderr
 						cmd.Stdin = os.Stdin
@@ -190,6 +212,7 @@ func main() {
 							fmt.Printf("Command failed: %v\n", err)
 							os.Exit(1)
 						}
+
 						fmt.Println("✅ Command completed. Please run this check again.")
 					} else {
 						fmt.Printf("   Please run manually: %s\n", strings.Join(dep.InstallCmd, " "))
@@ -209,6 +232,7 @@ func main() {
 		hasErrors = true
 	} else {
 		out, err := exec.Command("xcrun", "simctl", "list", "devices").Output()
+
 		if err != nil {
 			fmt.Println("❌ Failed to list simulator devices")
 			hasErrors = true
@@ -218,15 +242,18 @@ func main() {
 
 			// Get the latest iOS runtime
 			runtimeOut, err := exec.Command("xcrun", "simctl", "list", "runtimes").Output()
+
 			if err != nil {
 				fmt.Println("   Failed to get iOS runtimes:", err)
 			} else {
 				lines := strings.Split(string(runtimeOut), "\n")
 				var latestRuntime string
+
 				for _, line := range lines {
 					if strings.Contains(line, "iOS") && !strings.Contains(line, "unavailable") {
 						// Extract runtime identifier
 						parts := strings.Fields(line)
+
 						if len(parts) > 0 {
 							latestRuntime = parts[len(parts)-1]
 						}
@@ -238,10 +265,13 @@ func main() {
 					fmt.Println("   Xcode → Settings → Platforms → iOS")
 				} else {
 					fmt.Println("   Would you like to create an iPhone 15 Pro simulator?")
+
 					createCmd := []string{"xcrun", "simctl", "create", "iPhone 15 Pro", "iPhone 15 Pro", latestRuntime}
+
 					fmt.Printf("   Command: %s\n", strings.Join(createCmd, " "))
 					if promptUser("Create simulator?") {
 						cmd := exec.Command(createCmd[0], createCmd[1:]...)
+
 						cmd.Stdout = os.Stdout
 						cmd.Stderr = os.Stderr
 						if err := cmd.Run(); err != nil {
@@ -259,11 +289,13 @@ func main() {
 			// Count iPhone devices
 			count := 0
 			lines := strings.Split(string(out), "\n")
+
 			for _, line := range lines {
 				if strings.Contains(line, "iPhone") && !strings.Contains(line, "unavailable") {
 					count++
 				}
 			}
+
 			fmt.Printf("✅ %d iPhone simulator device(s) available\n", count)
 		}
 	}
@@ -292,10 +324,14 @@ func checkCommand(args []string) bool {
 	if len(args) == 0 {
 		return false
 	}
+
 	cmd := exec.Command(args[0], args[1:]...)
+
 	cmd.Stdout = nil
 	cmd.Stderr = nil
+
 	err := cmd.Run()
+
 	return err == nil
 }
 
@@ -303,17 +339,21 @@ func promptUser(question string) bool {
 	// Check if we're in a non-interactive environment
 	if os.Getenv("CI") != "" || os.Getenv("TASK_FORCE_YES") == "true" {
 		fmt.Printf("%s [y/N]: y (auto-accepted)\n", question)
+
 		return true
 	}
 
 	reader := bufio.NewReader(os.Stdin)
+
 	fmt.Printf("%s [y/N]: ", question)
 
 	response, err := reader.ReadString('\n')
+
 	if err != nil {
 		return false
 	}
 
 	response = strings.ToLower(strings.TrimSpace(response))
+
 	return response == "y" || response == "yes"
 }

@@ -6,13 +6,13 @@
   } from "../../../../bindings/github.com/go-ctap/ctap/extension";
   import type { InspectEnvelope } from "../../../../bindings/telesma/service";
 
-  import * as Accordion from "$lib/components/ui/accordion/index.js";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Field from "$lib/components/ui/field/index.js";
-  import * as Select from "$lib/components/ui/select/index.js";
-  import { Switch } from "$lib/components/ui/switch/index.js";
-  import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
+  import * as Accordion from "$lib/components/ui/accordion";
+  import * as Alert from "$lib/components/ui/alert";
+  import { Button } from "$lib/components/ui/button";
+  import * as Field from "$lib/components/ui/field";
+  import * as Select from "$lib/components/ui/select";
+  import { Switch } from "$lib/components/ui/switch";
+  import * as ToggleGroup from "$lib/components/ui/toggle-group";
   import { inspectResult } from "$lib/ctapkit-results";
   import type { MakeCredentialExtensionsDraft } from "$lib/features/lab/state";
   import { authenticatorSupportsLabExtension } from "$lib/lab-extension-support";
@@ -21,11 +21,13 @@
 
   import { m } from "../../../paraglide/messages.js";
 
-  import LabBinaryEditor from "./LabBinaryEditor.svelte";
-  import LabExtensionItem, { type ExtensionStatus } from "./LabExtensionItem.svelte";
-  import LabFieldLabel from "./LabFieldLabel.svelte";
-  import LabHMACEditor from "./LabHMACEditor.svelte";
-  import LabPRFValuesEditor from "./LabPRFValuesEditor.svelte";
+  import LabBinaryEditor from "$lib/components/lab/LabBinaryEditor.svelte";
+  import LabExtensionItem, {
+    type ExtensionStatus,
+  } from "$lib/components/lab/LabExtensionItem.svelte";
+  import LabFieldLabel from "$lib/components/lab/LabFieldLabel.svelte";
+  import LabHMACEditor from "$lib/components/lab/LabHMACEditor.svelte";
+  import LabPRFValuesEditor from "$lib/components/lab/LabPRFValuesEditor.svelte";
 
   type Props = {
     value: MakeCredentialExtensionsDraft;
@@ -49,8 +51,12 @@
 
   function status(identifier: ExtensionIdentifier): ExtensionStatus {
     if (inspection.state !== "ready") return "unknown";
+
     const info = inspectResult(inspection.data)?.info;
-    return info && authenticatorSupportsLabExtension(info, identifier) ? "supported" : "not-reported";
+
+    return info && authenticatorSupportsLabExtension(info, identifier)
+      ? "supported"
+      : "not-reported";
   }
 
   function hasError(prefix: string) {
@@ -77,15 +83,23 @@
     if (policy === CredentialProtectionPolicy.CredentialProtectionPolicyUserVerificationRequired) {
       return "userVerificationRequired";
     }
-    if (policy === CredentialProtectionPolicy.CredentialProtectionPolicyUserVerificationOptionalWithCredentialIDList) {
+
+    if (
+      policy ===
+      CredentialProtectionPolicy.CredentialProtectionPolicyUserVerificationOptionalWithCredentialIDList
+    ) {
       return "userVerificationOptionalWithCredentialIDList";
     }
+
     return "userVerificationOptional";
   }
 
   function changePolicy(next: string | string[]) {
     if (Array.isArray(next)) return;
-    if (!Object.values(CredentialProtectionPolicy).includes(next as CredentialProtectionPolicy)) return;
+
+    if (!Object.values(CredentialProtectionPolicy).includes(next as CredentialProtectionPolicy))
+      return;
+
     update("credentialProtection", {
       ...value.credentialProtection,
       policy: next as CredentialProtectionPolicy,
@@ -93,7 +107,9 @@
   }
 
   function changeLargeBlobSupport(next: string | string[]) {
-    if (Array.isArray(next) || !Object.values(LargeBlobSupport).includes(next as LargeBlobSupport)) return;
+    if (Array.isArray(next) || !Object.values(LargeBlobSupport).includes(next as LargeBlobSupport))
+      return;
+
     update("largeBlob", { ...value.largeBlob, support: next as LargeBlobSupport });
   }
 </script>
@@ -110,7 +126,13 @@
   </Alert.Root>
 {/if}
 
-<Accordion.Root type="single" value={openExtension} onValueChange={(next) => { openExtension = next ?? ""; }}>
+<Accordion.Root
+  type="single"
+  value={openExtension}
+  onValueChange={(next) => {
+    openExtension = next ?? "";
+  }}
+>
   <section class="lab-extension-group" aria-labelledby="lab-make-webauthn-extensions-title">
     <header class="lab-extension-group-header">
       <h3 id="lab-make-webauthn-extensions-title">{m.lab_webauthn_client_extensions()}</h3>
@@ -169,7 +191,8 @@
       included={value.credentialProperties.included}
       {disabled}
       status="client-side"
-      onInclude={(included) => include("credentialProperties", included, value.credentialProperties)}
+      onInclude={(included) =>
+        include("credentialProperties", included, value.credentialProperties)}
     />
 
     <LabExtensionItem
@@ -195,6 +218,7 @@
           onCheckedChange={(useEval) => update("prf", { ...value.prf, useEval })}
         />
       </Field.Field>
+
       {#if value.prf.useEval}
         <LabPRFValuesEditor
           id="lab-ext-prf"
@@ -206,7 +230,6 @@
         />
       {/if}
     </LabExtensionItem>
-
   </section>
 
   <section class="lab-extension-group" aria-labelledby="lab-make-ctap-extensions-title">
@@ -222,7 +245,8 @@
       included={value.credentialProtection.included}
       {disabled}
       status={status(ExtensionIdentifier.ExtensionIdentifierCredentialProtection)}
-      onInclude={(included) => include("credentialProtection", included, value.credentialProtection)}
+      onInclude={(included) =>
+        include("credentialProtection", included, value.credentialProtection)}
     >
       <Field.Field>
         <LabFieldLabel
@@ -231,7 +255,11 @@
           helpText={m.lab_cred_protect_policy_tooltip()}
           helpLabel={m.lab_option_help({ label: `credProtect: ${m.lab_policy()}` })}
         />
-        <Select.Root type="single" value={value.credentialProtection.policy} onValueChange={changePolicy}>
+        <Select.Root
+          type="single"
+          value={value.credentialProtection.policy}
+          onValueChange={changePolicy}
+        >
           <Select.Trigger id="lab-ext-cred-protect-policy" {disabled}>
             {policyLabel(value.credentialProtection.policy)}
           </Select.Trigger>
@@ -239,20 +267,22 @@
             <Select.Group>
               <Select.Item
                 value={CredentialProtectionPolicy.CredentialProtectionPolicyUserVerificationOptional}
-                label="userVerificationOptional"
-              >userVerificationOptional</Select.Item>
+                label="userVerificationOptional">userVerificationOptional</Select.Item
+              >
               <Select.Item
                 value={CredentialProtectionPolicy.CredentialProtectionPolicyUserVerificationOptionalWithCredentialIDList}
                 label="userVerificationOptionalWithCredentialIDList"
-              >userVerificationOptionalWithCredentialIDList</Select.Item>
+                >userVerificationOptionalWithCredentialIDList</Select.Item
+              >
               <Select.Item
                 value={CredentialProtectionPolicy.CredentialProtectionPolicyUserVerificationRequired}
-                label="userVerificationRequired"
-              >userVerificationRequired</Select.Item>
+                label="userVerificationRequired">userVerificationRequired</Select.Item
+              >
             </Select.Group>
           </Select.Content>
         </Select.Root>
       </Field.Field>
+
       <Field.Field orientation="horizontal">
         <LabFieldLabel
           forId="lab-ext-cred-protect-enforce"
@@ -264,10 +294,11 @@
           id="lab-ext-cred-protect-enforce"
           checked={value.credentialProtection.enforce}
           {disabled}
-          onCheckedChange={(enforce) => update("credentialProtection", {
-            ...value.credentialProtection,
-            enforce,
-          })}
+          onCheckedChange={(enforce) =>
+            update("credentialProtection", {
+              ...value.credentialProtection,
+              enforce,
+            })}
         />
       </Field.Field>
     </LabExtensionItem>
@@ -311,10 +342,11 @@
           id="lab-ext-hmac-create-requested"
           checked={value.hmacSecret.value}
           {disabled}
-          onCheckedChange={(requested) => update("hmacSecret", {
-            ...value.hmacSecret,
-            value: requested,
-          })}
+          onCheckedChange={(requested) =>
+            update("hmacSecret", {
+              ...value.hmacSecret,
+              value: requested,
+            })}
         />
       </Field.Field>
     </LabExtensionItem>
@@ -358,7 +390,8 @@
           id="lab-ext-min-pin-requested"
           checked={value.minPINLength.value}
           {disabled}
-          onCheckedChange={(requested) => update("minPINLength", { ...value.minPINLength, value: requested })}
+          onCheckedChange={(requested) =>
+            update("minPINLength", { ...value.minPINLength, value: requested })}
         />
       </Field.Field>
     </LabExtensionItem>
@@ -383,10 +416,11 @@
           id="lab-ext-pin-complexity-requested"
           checked={value.pinComplexityPolicy.value}
           {disabled}
-          onCheckedChange={(requested) => update("pinComplexityPolicy", {
-            ...value.pinComplexityPolicy,
-            value: requested,
-          })}
+          onCheckedChange={(requested) =>
+            update("pinComplexityPolicy", {
+              ...value.pinComplexityPolicy,
+              value: requested,
+            })}
         />
       </Field.Field>
     </LabExtensionItem>
@@ -394,34 +428,34 @@
 </Accordion.Root>
 
 <style>
-@layer blocks {
-  .lab-extension-group {
-    display: grid;
-  }
+  @layer blocks {
+    .lab-extension-group {
+      display: grid;
+    }
 
-  .lab-extension-group + .lab-extension-group {
-    margin-top: var(--space-5);
-  }
+    .lab-extension-group + .lab-extension-group {
+      margin-top: var(--space-5);
+    }
 
-  .lab-extension-group-header {
-    display: grid;
-    gap: var(--space-1);
-    padding-block: var(--space-2);
-    border-bottom: 1px solid var(--border);
-  }
+    .lab-extension-group-header {
+      display: grid;
+      gap: var(--space-1);
+      padding-block: var(--space-2);
+      border-bottom: 1px solid var(--border);
+    }
 
-  .lab-extension-group-header h3,
-  .lab-extension-group-header p {
-    margin: 0;
-  }
+    .lab-extension-group-header h3,
+    .lab-extension-group-header p {
+      margin: 0;
+    }
 
-  .lab-extension-group-header h3 {
-    font-size: 0.8rem;
-  }
+    .lab-extension-group-header h3 {
+      font-size: 0.8rem;
+    }
 
-  .lab-extension-group-header p {
-    color: var(--muted-foreground);
-    font-size: 0.7rem;
+    .lab-extension-group-header p {
+      color: var(--muted-foreground);
+      font-size: 0.7rem;
+    }
   }
-}
 </style>

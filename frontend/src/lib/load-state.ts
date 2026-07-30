@@ -9,6 +9,17 @@ export type LoadState<T> = {
 };
 
 export const idleLoadState = <T>(): LoadState<T> => ({ state: "idle", data: null, error: null });
-export const loadingLoadState = <T>(data: T | null = null): LoadState<T> => ({ state: "loading", data, error: null });
+
+export const loadingLoadState = <T>(data: T | null = null): LoadState<T> => ({
+  state: "loading",
+  data,
+  error: null,
+});
+
 export const readyLoadState = <T>(data: T): LoadState<T> => ({ state: "ready", data, error: null });
-export const errorLoadState = <T>(error: Failure, data: T | null = null): LoadState<T> => ({ state: "error", data, error });
+
+export const errorLoadState = <T>(error: Failure, data: T | null = null): LoadState<T> => ({
+  state: "error",
+  data,
+  error,
+});

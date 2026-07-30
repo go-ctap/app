@@ -1,5 +1,5 @@
 <script lang="ts">
-  import * as ExpandableDataTable from "./index.js";
+  import * as ExpandableDataTable from "$lib/components/shared/expandable-data-table";
 
   type Props = {
     open: boolean;
@@ -7,11 +7,7 @@
     onOpenChange: (open: boolean) => void;
   };
 
-  let {
-    open,
-    disabled = false,
-    onOpenChange,
-  }: Props = $props();
+  let { open, disabled = false, onOpenChange }: Props = $props();
 </script>
 
 {#snippet header()}

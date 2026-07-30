@@ -2,14 +2,13 @@
   import { Database, TriangleAlert } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
 
-  import LargeBlobCleanupDialog from "$lib/components/largeblobs/LargeBlobCleanupDialog.svelte";
-  import LargeBlobDeleteDialog from "$lib/components/largeblobs/LargeBlobDeleteDialog.svelte";
+  import LargeBlobDestructiveDialog from "$lib/components/largeblobs/LargeBlobDestructiveDialog.svelte";
   import LargeBlobsInventory from "$lib/components/largeblobs/LargeBlobsInventory.svelte";
   import LargeBlobsOverview from "$lib/components/largeblobs/LargeBlobsOverview.svelte";
   import LargeBlobWriteDialog from "$lib/components/largeblobs/LargeBlobWriteDialog.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
+  import * as Alert from "$lib/components/ui/alert";
+  import { Button } from "$lib/components/ui/button";
   import {
     beginLargeBlobCleanup,
     beginLargeBlobDelete,
@@ -21,7 +20,7 @@
     editLargeBlobWrite,
     previewLargeBlobWrite,
     reloadLargeBlobs,
-    selectLargeBlobCredential,
+    selectLargeBlobEntry,
     setLargeBlobsDecodeMode,
     setLargeBlobsPayloadEncoding,
     setLargeBlobsQuery,
@@ -40,52 +39,61 @@
   import {
     largeBlobsInventoryState,
     largeBlobsDecodeMode,
+    largeBlobsDecodeState,
     largeBlobsMutation,
     largeBlobsQuery,
     largeBlobsReadState,
-    largeBlobsSelectedCredentialID,
+    largeBlobsSelectedEntryIndex,
     largeBlobsStatusFilter,
     largeBlobsVerificationFlow,
   } from "$lib/features/largeblobs";
 
   import { m } from "../paraglide/messages.js";
 
-  let largeBlobs = $derived(buildLargeBlobsPresentation({
-    selectedSelector: $selectedSelector,
-    selectedDevice: $selectedDevice,
-    authenticatorBusy: $authenticatorBusy,
-    authenticatorReady: $authenticatorStatus.state === "ready" && Boolean($authenticatorStatus.selectionId),
-    inventoryState: $largeBlobsInventoryState,
-    query: $largeBlobsQuery,
-    statusFilter: $largeBlobsStatusFilter,
-    selectedCredentialID: $largeBlobsSelectedCredentialID,
-  }));
+  let largeBlobs = $derived(
+    buildLargeBlobsPresentation({
+      selectedSelector: $selectedSelector,
+      selectedDevice: $selectedDevice,
+      authenticatorBusy: $authenticatorBusy,
+      authenticatorReady:
+        $authenticatorStatus.state === "ready" && Boolean($authenticatorStatus.selectionId),
+      inventoryState: $largeBlobsInventoryState,
+      query: $largeBlobsQuery,
+      statusFilter: $largeBlobsStatusFilter,
+      selectedEntryIndex: $largeBlobsSelectedEntryIndex,
+    }),
+  );
+
   async function handleReload() {
     const refreshed = await reloadLargeBlobs();
+
     if (refreshed) toast.success(m.large_blobs_reloaded());
+
     return refreshed;
   }
 
   async function handleConfirmWrite() {
     const succeeded = await confirmLargeBlobWrite();
+
     if (succeeded) toast.success(m.large_blob_written());
+
     return succeeded;
   }
 
   async function handleConfirmDelete() {
     const succeeded = await confirmLargeBlobDelete();
+
     if (succeeded) toast.success(m.large_blob_deleted());
+
     return succeeded;
   }
 
   async function handleConfirmCleanup() {
     const succeeded = await confirmLargeBlobCleanup();
-    if (succeeded) toast.success(m.large_blob_cleanup_complete());
-    return succeeded;
-  }
 
-  function handleOpenLab() {
-    void navigateToScreen("lab");
+    if (succeeded) toast.success(m.large_blob_cleanup_complete());
+
+    return succeeded;
   }
 </script>
 
@@ -122,6 +130,7 @@
         variant="compact"
       >
         {#snippet icon()}<Database aria-hidden="true" />{/snippet}
+
         {#snippet actions()}
           <Button type="button" disabled={largeBlobs.reloadDisabled} onclick={handleReload}>
             {m.load_blobs()}
@@ -132,15 +141,16 @@
       <LargeBlobsInventory
         presentation={largeBlobs}
         readState={$largeBlobsReadState}
+        decodeState={$largeBlobsDecodeState}
         mutation={$largeBlobsMutation}
         decodeMode={$largeBlobsDecodeMode}
         onQueryChange={setLargeBlobsQuery}
         onFilterChange={setLargeBlobsStatusFilter}
-        onSelect={selectLargeBlobCredential}
+        onSelect={selectLargeBlobEntry}
         onDecodeModeChange={setLargeBlobsDecodeMode}
         onWrite={beginLargeBlobWrite}
         onDelete={beginLargeBlobDelete}
-        onOpenLab={handleOpenLab}
+        onOpenLab={() => void navigateToScreen("lab")}
         onReload={handleReload}
       />
     {/if}
@@ -148,7 +158,6 @@
 
   <LargeBlobWriteDialog
     mutation={$largeBlobsMutation}
-    editingExisting={largeBlobs.selectedBlobPresent}
     onDraftChange={updateLargeBlobWriteDraft}
     onEncodingChange={setLargeBlobsPayloadEncoding}
     onEdit={editLargeBlobWrite}
@@ -156,31 +165,28 @@
     onConfirm={handleConfirmWrite}
     onClose={closeLargeBlobMutation}
   />
-  <LargeBlobDeleteDialog
+
+  <LargeBlobDestructiveDialog
     mutation={$largeBlobsMutation}
-    onPreview={beginLargeBlobDelete}
-    onConfirm={handleConfirmDelete}
-    onClose={closeLargeBlobMutation}
-  />
-  <LargeBlobCleanupDialog
-    mutation={$largeBlobsMutation}
-    onPreview={beginLargeBlobCleanup}
-    onConfirm={handleConfirmCleanup}
+    onDeletePreview={beginLargeBlobDelete}
+    onDeleteConfirm={handleConfirmDelete}
+    onCleanupPreview={beginLargeBlobCleanup}
+    onCleanupConfirm={handleConfirmCleanup}
     onClose={closeLargeBlobMutation}
   />
 {/if}
 
 <style>
-@layer blocks {
-  .large-blobs-screen {
-    display: grid;
-    align-content: start;
-    gap: var(--space-4);
-    min-width: 0;
-  }
+  @layer blocks {
+    .large-blobs-screen {
+      display: grid;
+      align-content: start;
+      gap: var(--space-4);
+      min-width: 0;
+    }
 
-  :global(.large-blobs-state-alert) {
-    min-width: 0;
+    :global(.large-blobs-state-alert) {
+      min-width: 0;
+    }
   }
-}
 </style>

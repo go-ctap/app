@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/svelte";
+import { cleanup, render, screen, within } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
@@ -26,8 +26,8 @@ import {
   securityStatus,
 } from "$lib/features/security/state";
 import { setAppLocale } from "$lib/i18n";
-import { resetAppStateForTest, seedSelectionForTest } from "$lib/store-test-utils";
-import { failureForCode } from "$lib/test-failure";
+import { resetAppStateForTest, seedSelectionForTest } from "$lib/test-support/store-utils";
+import { failureForCode } from "$lib/test-support/failure";
 
 import Security from "./Security.svelte";
 
@@ -71,12 +71,23 @@ function statusEnvelope(maxPINLength = 63): ConfigStatusEnvelope {
       state: StateValue.StateSupported,
       supported: true,
       uvAcfg: new CapabilityState({ state: StateValue.StateSupported, supported: true }),
+      enterpriseAttestation: new CapabilityState({
+        state: StateValue.StateNotConfigured,
+        supported: true,
+        configured: false,
+      }),
       alwaysUv: new CapabilityState({
         state: StateValue.StateConfigured,
         supported: true,
         configured: false,
       }),
       setMinPINLength: new CapabilityState({ state: StateValue.StateSupported, supported: true }),
+      longTouchForReset: unsupported,
+      vendorPrototype: new CapabilityState({
+        state: StateValue.StateSupported,
+        supported: true,
+      }),
+      vendorPrototypeConfigCommands: ["7", "4294967296"],
     }),
     resetHints: new ResetHints({ longTouchForReset: StateValue.StateSupported }),
     limits: new LimitsStatus({
@@ -98,7 +109,10 @@ describe("Security screen", () => {
   beforeEach(() => {
     setAppLocale("en");
     resetAppStateForTest();
-    seedSelectionForTest(token.attachment.id, token, { state: "ready", selectionId: "authenticator-1" });
+    seedSelectionForTest(token.attachment.id, token, {
+      state: "ready",
+      selectionId: "authenticator-1",
+    });
     completeSecurityResourceLoad(securityStatus, statusEnvelope());
   });
 
@@ -107,17 +121,49 @@ describe("Security screen", () => {
   it("shows the current verification configuration and supported controls", () => {
     render(Security);
 
+    const overview = document.querySelector<HTMLElement>("#security-overview");
+
+    expect(overview).not.toBeNull();
+    expect(within(overview!).getByText("Client PIN")).toBeInTheDocument();
+    expect(
+      within(overview!).getByText("Depends on request and credential policy"),
+    ).toBeInTheDocument();
+    expect(within(overview!).getByText("No immediate issues")).toBeInTheDocument();
+    expect(within(overview!).queryByText("Ready")).not.toBeInTheDocument();
+    expect(within(overview!).queryByText("PIN retries")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Authenticator configuration" }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Client PIN or built-in UV/)).toBeInTheDocument();
     expect(screen.getByRole("switch", { name: "Always UV" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Enable enterprise attestation" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Enable long touch" })).toBeDisabled();
+    expect(screen.getByText("4294967296")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Factory reset" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Reload overview" })).not.toBeInTheDocument();
+  });
+
+  it("keeps configuration actions out of the factory-reset block", () => {
+    render(Security);
+
+    const reset = screen
+      .getByRole("heading", { name: "Factory reset" })
+      .closest<HTMLElement>("#security-factory-reset");
+
+    expect(reset).not.toBeNull();
+    expect(within(reset!).getByRole("button", { name: "Preview change" })).toBeInTheDocument();
+    expect(within(reset!).queryByText("Long touch for reset")).not.toBeInTheDocument();
+    expect(within(reset!).queryByText("Enterprise attestation")).not.toBeInTheDocument();
   });
 
   it("shows and enforces the effective CTAP maximum PIN length", () => {
     completeSecurityResourceLoad(securityStatus, statusEnvelope());
     render(Security);
 
-    expect(screen.getByRole("spinbutton", { name: "Minimum PIN length" })).toHaveAttribute("max", "63");
+    expect(screen.getByRole("spinbutton", { name: "Minimum PIN length" })).toHaveAttribute(
+      "max",
+      "63",
+    );
     expect(screen.getByText(/Maximum PIN length: 63/)).toBeInTheDocument();
   });
 
@@ -127,7 +173,9 @@ describe("Security screen", () => {
 
     render(Security);
 
-    expect(screen.getByText("This authenticator does not expose the requested security capability.")).toBeInTheDocument();
+    expect(
+      screen.getByText("This authenticator does not expose the requested security capability."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("The PIN is invalid.")).not.toBeInTheDocument();
   });
 });

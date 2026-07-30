@@ -1,23 +1,19 @@
-import {
-  Category,
-  Code,
-  Failure,
-} from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { Category, Code, Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 
 import { m } from "../paraglide/messages.js";
 
 type Message = () => string;
 
 const CODE_MESSAGES: Record<Exclude<Code, Code.$zero>, Message> = {
-	[Code.CodeInternalError]: m.failure_internal_error,
-	[Code.CodeOperationUnsupported]: m.failure_operation_unsupported,
+  [Code.CodeInternalError]: m.failure_internal_error,
+  [Code.CodeOperationUnsupported]: m.failure_operation_unsupported,
   [Code.CodeOperationCanceled]: m.failure_operation_canceled,
   [Code.CodeOperationTimeout]: m.failure_operation_timeout,
   [Code.CodeVerificationFlowUnsupported]: m.failure_verification_flow_unsupported,
   [Code.CodeInteractionKindRequired]: m.failure_interaction_kind_required,
   [Code.CodeInteractionHandlerRequired]: m.failure_interaction_handler_required,
   [Code.CodeInteractionCanceled]: m.failure_interaction_canceled,
-	[Code.CodeAuthenticatorClosed]: m.failure_authenticator_closed,
+  [Code.CodeAuthenticatorClosed]: m.failure_authenticator_closed,
   [Code.CodeDeviceNotFound]: m.failure_device_not_found,
   [Code.CodeTransportModeUnsupported]: m.failure_transport_mode_unsupported,
   [Code.CodeTransportPermissionDenied]: m.failure_transport_permission_denied,
@@ -30,8 +26,10 @@ const CODE_MESSAGES: Record<Exclude<Code, Code.$zero>, Message> = {
   [Code.CodeRelyingPartyIDRequired]: m.failure_relying_party_id_required,
   [Code.CodeUserIDRequired]: m.failure_user_id_required,
   [Code.CodeClientDataJSONRequired]: m.failure_client_data_json_required,
-  [Code.CodePublicKeyCredentialParametersRequired]: m.failure_public_key_credential_parameters_required,
-  [Code.CodePublicKeyCredentialAlgorithmRequired]: m.failure_public_key_credential_algorithm_required,
+  [Code.CodePublicKeyCredentialParametersRequired]:
+    m.failure_public_key_credential_parameters_required,
+  [Code.CodePublicKeyCredentialAlgorithmRequired]:
+    m.failure_public_key_credential_algorithm_required,
   [Code.CodeCredentialIDRequired]: m.failure_credential_id_required,
   [Code.CodeCredentialNotFound]: m.failure_credential_not_found,
   [Code.CodeCredentialExcluded]: m.failure_credential_excluded,
@@ -77,12 +75,12 @@ const CODE_MESSAGES: Record<Exclude<Code, Code.$zero>, Message> = {
   [Code.CodeResetTouchTimeout]: m.failure_reset_touch_timeout,
   [Code.CodeLargeBlobUnsupported]: m.failure_large_blob_unsupported,
   [Code.CodeLargeBlobKeyMissing]: m.failure_large_blob_key_missing,
+  [Code.CodeLargeBlobKeyInvalid]: m.failure_large_blob_key_invalid,
   [Code.CodeLargeBlobArrayTooLarge]: m.failure_large_blob_array_too_large,
   [Code.CodeLargeBlobStorageFull]: m.failure_large_blob_storage_full,
   [Code.CodeLargeBlobArrayInvalid]: m.failure_large_blob_array_invalid,
   [Code.CodeLargeBlobWriteSequenceInvalid]: m.failure_large_blob_write_sequence_invalid,
   [Code.CodeLargeBlobIntegrityFailure]: m.failure_large_blob_integrity_failure,
-  [Code.CodeLargeBlobMissing]: m.failure_large_blob_missing,
   [Code.CodeLargeBlobUTF8Invalid]: m.failure_large_blob_utf8_invalid,
   [Code.CodeLargeBlobJSONInvalid]: m.failure_large_blob_json_invalid,
   [Code.CodeLargeBlobCBORInvalid]: m.failure_large_blob_cbor_invalid,
@@ -126,7 +124,9 @@ const CODE_MESSAGES: Record<Exclude<Code, Code.$zero>, Message> = {
 
 export function runtimeFailureFrom(error: unknown): Failure {
   if (error instanceof Failure) return error;
+
   if (error instanceof Error) return failureCause(error.cause) ?? internalFailure();
+
   return internalFailure();
 }
 
@@ -138,11 +138,15 @@ export function internalFailure(): Failure {
 }
 
 export function failureMessage(failure: Failure): string;
+
 export function failureMessage(failure: Failure | null | undefined): string | null;
+
 export function failureMessage(failure: Failure | null | undefined): string | null {
   if (!failure) return null;
 
-  const message = CODE_MESSAGES[failure.code as Exclude<Code, Code.$zero>] ?? m.failure_internal_error;
+  const message =
+    CODE_MESSAGES[failure.code as Exclude<Code, Code.$zero>] ?? m.failure_internal_error;
+
   return message();
 }
 
@@ -151,7 +155,7 @@ export function isCanceledFailure(failure: Failure | null | undefined): boolean 
 }
 
 export function isAuthenticatorClosedFailure(failure: Failure | null | undefined): boolean {
-	return failure?.code === Code.CodeAuthenticatorClosed;
+  return failure?.code === Code.CodeAuthenticatorClosed;
 }
 
 export function isUnsupportedFailure(failure: Failure | null | undefined): boolean {
@@ -163,6 +167,7 @@ function failureCause(value: unknown): Failure | null {
 
   try {
     const failure = Failure.createFrom(value);
+
     return validFailure(failure) ? failure : null;
   } catch {
     return null;
@@ -170,8 +175,10 @@ function failureCause(value: unknown): Failure | null {
 }
 
 function validFailure(failure: Failure) {
-  return failure.code !== Code.$zero
-    && failure.category !== Category.$zero
-    && Object.values(Code).includes(failure.code)
-    && Object.values(Category).includes(failure.category);
+  return (
+    failure.code !== Code.$zero &&
+    failure.category !== Category.$zero &&
+    Object.values(Code).includes(failure.code) &&
+    Object.values(Category).includes(failure.category)
+  );
 }

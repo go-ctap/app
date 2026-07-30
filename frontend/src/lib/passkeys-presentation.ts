@@ -1,10 +1,14 @@
-import type { CredentialGroup, CredentialRecord, InventoryReport } from "../../bindings/github.com/go-ctap/kit/model/credentials";
+import type {
+  CredentialGroup,
+  CredentialRecord,
+  InventoryReport,
+} from "../../bindings/github.com/go-ctap/kit/model/credentials";
 import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 
 import { m } from "../paraglide/messages.js";
-import type { PasskeysInventoryState, PasskeysStatusFilter } from "./features/passkeys/state.js";
-import { passkeysInventoryIsStale } from "./features/passkeys/state.js";
-import { deviceName } from "./format.js";
+import type { PasskeysInventoryState, PasskeysStatusFilter } from "$lib/features/passkeys/state.js";
+import { passkeysInventoryIsStale } from "$lib/features/passkeys/state.js";
+import { deviceName } from "$lib/format.js";
 
 export type PasskeyCredentialRow = {
   id: string;
@@ -28,7 +32,6 @@ export type PasskeyCredentialRow = {
 export type PasskeysCapacity = {
   stored: number;
   remainingUpperBound: number;
-  estimatedTotal: number;
   percentage: number;
 };
 
@@ -47,14 +50,18 @@ export type PasskeysPresentation = ReturnType<typeof buildPasskeysPresentation>;
 
 function displayValue(value: string | number | boolean | null | undefined) {
   if (value === true) return m.state_available();
+
   if (value === false) return m.state_not_available();
+
   const text = String(value ?? "").trim();
+
   return text || m.not_reported();
 }
 
 function relyingPartyName(group: CredentialGroup) {
   const rpName = group.rpName?.trim() ?? "";
   const rpID = group.rpID.trim();
+
   return rpName || rpID || m.unknown_rp();
 }
 
@@ -96,8 +103,13 @@ function rowFor(group: CredentialGroup, credential: CredentialRecord): PasskeyCr
   };
 }
 
-function searchMatches(group: CredentialGroup, credential: CredentialRecord, normalizedQuery: string) {
+function searchMatches(
+  group: CredentialGroup,
+  credential: CredentialRecord,
+  normalizedQuery: string,
+) {
   if (!normalizedQuery) return true;
+
   return [
     group.rpName,
     group.rpID,
@@ -136,23 +148,30 @@ export function buildPasskeyRows(
   statusFilter: PasskeysStatusFilter = "all",
 ): PasskeyCredentialRow[] {
   const normalizedQuery = query.trim().toLowerCase();
+
   return (report?.groups ?? []).flatMap((group) =>
     (group.credentials ?? [])
-      .filter((credential) => searchMatches(group, credential, normalizedQuery) && statusMatches(credential, statusFilter))
+      .filter(
+        (credential) =>
+          searchMatches(group, credential, normalizedQuery) &&
+          statusMatches(credential, statusFilter),
+      )
       .map((credential) => rowFor(group, credential)),
   );
 }
 
 export function passkeysCapacity(report: InventoryReport | null): PasskeysCapacity | null {
   if (!report) return null;
+
   const stored = report.summary.existingResidentCredentialsCount;
   const remainingUpperBound = report.summary.maxPossibleRemainingResidentCredentialsCount;
   const estimatedTotal = stored + remainingUpperBound;
+
   return {
     stored,
     remainingUpperBound,
-    estimatedTotal,
-    percentage: estimatedTotal > 0 ? Math.min(100, Math.max(0, (stored / estimatedTotal) * 100)) : 0,
+    percentage:
+      estimatedTotal > 0 ? Math.min(100, Math.max(0, (stored / estimatedTotal) * 100)) : 0,
   };
 }
 
@@ -164,7 +183,8 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
   const rows = buildPasskeyRows(report, query, statusFilter);
   const selectedCredentialID = input.selectedCredentialID;
   const support = report?.support;
-  const loading = input.inventoryState.phase === "loading" || input.inventoryState.phase === "refreshing";
+  const loading =
+    input.inventoryState.phase === "loading" || input.inventoryState.phase === "refreshing";
   const stale = passkeysInventoryIsStale(input.inventoryState);
   const mutationsBlocked = loading || input.authenticatorBusy || !input.authenticatorReady;
 
@@ -177,7 +197,8 @@ export function buildPasskeysPresentation(input: PasskeysPresentationInput) {
       ? !report.support.credentialManagement
       : input.inventoryState.phase === "unsupported",
     reloadDisabled: loading || input.authenticatorBusy,
-    updateDisabled: mutationsBlocked || !support?.credentialManagement || Boolean(support?.previewOnly),
+    updateDisabled:
+      mutationsBlocked || !support?.credentialManagement || Boolean(support?.previewOnly),
     deleteDisabled: mutationsBlocked || !support?.credentialManagement,
     hasReport: Boolean(report),
     report,

@@ -8,12 +8,9 @@
   import OverviewStandardHeroCard from "$lib/components/overview/OverviewStandardHeroCard.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
+  import { Button } from "$lib/components/ui/button";
   import { toast } from "svelte-sonner";
-  import {
-    selectedDevice,
-    selectedSelector,
-  } from "$lib/features/authenticator";
+  import { selectedDevice, selectedSelector } from "$lib/features/authenticator";
   import {
     authenticatorInspection,
     loadOverviewMDS,
@@ -26,17 +23,20 @@
 
   import { m } from "../paraglide/messages.js";
 
-  let overview = $derived(buildOverviewPresentation({
-    selectedSelector: $selectedSelector,
-    selectedDevice: $selectedDevice,
-    overviewState: $authenticatorInspection,
-    overviewBioSensorState: $overviewBioSensor,
-    overviewMDSState: $overviewMDS,
-  }));
+  let overview = $derived(
+    buildOverviewPresentation({
+      selectedSelector: $selectedSelector,
+      selectedDevice: $selectedDevice,
+      overviewState: $authenticatorInspection,
+      overviewBioSensorState: $overviewBioSensor,
+      overviewMDSState: $overviewMDS,
+    }),
+  );
 
   async function refreshMDS() {
     if (overview.hero.aaguidAvailable) {
       const refreshed = await loadOverviewMDS(overview.hero.aaguid, true);
+
       if (refreshed) toast.success(m.mds_refresh_complete());
     }
   }
@@ -60,22 +60,32 @@
           mdsLoading={overview.mdsLoading}
           onRefreshMDS={refreshMDS}
         />
+
         {#if overview.conformance}
           {#key overview.info}
             <OverviewConformance presentation={overview.conformance} />
           {/key}
         {/if}
-        <OverviewCapabilityMatrix groups={overview.overviewGroups} warningCount={overview.warningCount} />
+
+        <OverviewCapabilityMatrix
+          groups={overview.overviewGroups}
+          warningCount={overview.warningCount}
+        />
+
         <OverviewMDSObservations observations={overview.mdsObservations} />
+
         <JsonDisclosure value={overview.report} />
       {:else if overview.standard}
         <OverviewStandardHeroCard hero={overview.hero} presentation={overview.standard} />
+
         {#if overview.conformance && overview.conformance.status !== "passed"}
           {#key overview.info}
             <OverviewConformance presentation={overview.conformance} />
           {/key}
         {/if}
+
         <OverviewStandardCapabilities presentation={overview.standard} />
+
         <OverviewMDSObservations observations={overview.mdsObservations} />
       {/if}
     {:else if overview.loading}
@@ -85,10 +95,10 @@
 {/if}
 
 <style>
-@layer blocks {
+  @layer blocks {
     .overview-screen {
       min-width: 0;
       --flow-space: var(--space-4);
     }
-}
+  }
 </style>

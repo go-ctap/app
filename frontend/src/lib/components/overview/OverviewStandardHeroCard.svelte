@@ -1,15 +1,9 @@
 <script lang="ts">
-  import {
-    BadgeCheck,
-    HardDrive,
-    ScanFace,
-    ShieldCheck,
-    Touchpad,
-  } from "@lucide/svelte";
+  import { BadgeCheck, HardDrive, ScanFace, ShieldCheck, Touchpad } from "@lucide/svelte";
 
   import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
+  import { Badge } from "$lib/components/ui/badge";
+  import * as Card from "$lib/components/ui/card";
   import type {
     OverviewHeroPresentation,
     OverviewMDSState,
@@ -29,7 +23,9 @@
 
   function mdsTone(state: OverviewMDSState) {
     if (state === "error") return "warn" as const;
+
     if (state === "found") return "ok" as const;
+
     return "neutral" as const;
   }
 </script>
@@ -68,6 +64,7 @@
             <span>{presentation.transports}</span>
           {/if}
         </div>
+
         {#if hero.subtitle}
           <Card.Description>{hero.subtitle}</Card.Description>
         {/if}
@@ -101,7 +98,7 @@
 </Card.Root>
 
 <style>
-@layer blocks {
+  @layer blocks {
     :global(.standard-hero-card) {
       min-width: 0;
     }
@@ -264,9 +261,9 @@
         text-align: start;
       }
     }
-}
+  }
 
-@layer exceptions {
+  @layer exceptions {
     .standard-facts > div[data-tone="warning"] dd {
       color: var(--warning-foreground);
     }
@@ -274,5 +271,5 @@
     .standard-facts > div[data-tone="muted"] dd {
       color: var(--muted-foreground);
     }
-}
+  }
 </style>

@@ -1,5 +1,18 @@
 <script module lang="ts">
-  import { Award, Boxes, Cable, Cpu, Database, FingerprintPattern, IdCard, Info, ListChecks, Puzzle, ShieldCheck, SlidersHorizontal } from "@lucide/svelte";
+  import {
+    Award,
+    Boxes,
+    Cable,
+    Cpu,
+    Database,
+    FingerprintPattern,
+    IdCard,
+    Info,
+    ListChecks,
+    Puzzle,
+    ShieldCheck,
+    SlidersHorizontal,
+  } from "@lucide/svelte";
 
   const GROUP_ICONS: Record<string, typeof ShieldCheck> = {
     Identity: IdCard,
@@ -17,18 +30,25 @@
 
 <script lang="ts">
   import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import * as Table from "$lib/components/ui/table/index.js";
-  import { overviewStatusLabel, type OverviewGroup, type OverviewRowStatus } from "$lib/overview-rules";
+  import { Badge } from "$lib/components/ui/badge";
+  import * as Card from "$lib/components/ui/card";
+  import * as Table from "$lib/components/ui/table";
+  import {
+    overviewStatusLabel,
+    type OverviewGroup,
+    type OverviewRowStatus,
+  } from "$lib/overview-rules";
 
   import { m } from "../../../paraglide/messages.js";
 
-  let { groups = [], warningCount = 0 }: { groups?: OverviewGroup[]; warningCount?: number } = $props();
+  let { groups = [], warningCount = 0 }: { groups?: OverviewGroup[]; warningCount?: number } =
+    $props();
 
   function statusTone(status: OverviewRowStatus) {
     if (["supported", "configured", "enabled"].includes(status)) return "ok" as const;
+
     if (status === "warning") return "warn" as const;
+
     return "neutral" as const;
   }
 </script>
@@ -81,12 +101,16 @@
                     tone={statusTone(row.status)}
                   />
                 </Table.Cell>
-                <Table.Cell class="text-cell"><strong>{row.value || m.not_reported()}</strong></Table.Cell>
+                <Table.Cell class="text-cell"
+                  ><strong>{row.value || m.not_reported()}</strong></Table.Cell
+                >
               </Table.Row>
             {/each}
           {:else}
             <Table.Row>
-              <Table.Cell colspan={4} class="empty-cell">{m.no_getinfo_fields_reported()}</Table.Cell>
+              <Table.Cell colspan={4} class="empty-cell"
+                >{m.no_getinfo_fields_reported()}</Table.Cell
+              >
             </Table.Row>
           {/each}
         </Table.Body>
@@ -96,61 +120,61 @@
 </Card.Root>
 
 <style>
-@layer blocks {
-  .table-frame {
-    min-width: 0;
-    border: 1px solid var(--border);
-  }
+  @layer blocks {
+    .table-frame {
+      min-width: 0;
+      border: 1px solid var(--border);
+    }
 
-  :global(.capability-table) {
-    min-width: 58rem;
-  }
+    :global(.capability-table) {
+      min-width: 58rem;
+    }
 
-  :global(.capability-table-header tr),
-  :global(.capability-group-row) {
-    background: color-mix(in srgb, var(--muted) 40%, transparent);
-  }
+    :global(.capability-table-header tr),
+    :global(.capability-group-row) {
+      background: color-mix(in srgb, var(--muted) 40%, transparent);
+    }
 
-  :global(.capability-table th + th),
-  :global(.capability-table td + td) {
-    border-inline-start: 1px solid var(--border);
-  }
+    :global(.capability-table th + th),
+    :global(.capability-table td + td) {
+      border-inline-start: 1px solid var(--border);
+    }
 
-  :global(.capability-group-row:hover) {
-    background: color-mix(in srgb, var(--muted) 40%, transparent);
-  }
+    :global(.capability-group-row:hover) {
+      background: color-mix(in srgb, var(--muted) 40%, transparent);
+    }
 
-  :global(.capability-table [data-state="muted"]) {
-    color: var(--muted-foreground);
-  }
+    :global(.capability-table [data-state="muted"]) {
+      color: var(--muted-foreground);
+    }
 
-  :global(.status-column) {
-    text-align: right;
-  }
+    :global(.status-column) {
+      text-align: right;
+    }
 
-  :global(.text-cell) {
-    white-space: normal;
-  }
+    :global(.text-cell) {
+      white-space: normal;
+    }
 
-  :global(.empty-cell) {
-    height: 6rem;
-    color: var(--muted-foreground);
-    text-align: center;
-  }
+    :global(.empty-cell) {
+      height: 6rem;
+      color: var(--muted-foreground);
+      text-align: center;
+    }
 
-  .group-label {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-weight: 700;
-  }
+    .group-label {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-weight: 700;
+    }
 
-  small {
-    display: block;
-    margin-top: var(--space-1);
-    color: var(--muted-foreground);
-    font-family: var(--font-mono);
-    overflow-wrap: anywhere;
+    small {
+      display: block;
+      margin-top: var(--space-1);
+      color: var(--muted-foreground);
+      font-family: var(--font-mono);
+      overflow-wrap: anywhere;
+    }
   }
-}
 </style>

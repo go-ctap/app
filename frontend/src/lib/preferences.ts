@@ -1,1 +1,1 @@
-export { advancedMode, setAdvancedMode } from "./application-config.js";
+export { advancedMode, setAdvancedMode } from "$lib/application-config.js";

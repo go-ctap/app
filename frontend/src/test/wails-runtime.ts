@@ -6,10 +6,16 @@ export const Create = {
       Array.isArray(value) ? value.map(create) : [],
   ByteSlice: (value: unknown) => value,
   Map:
-    <K extends string | number | symbol, V>(createKey: (value: unknown) => K, createValue: (value: unknown) => V) =>
+    <K extends string | number | symbol, V>(
+      createKey: (value: unknown) => K,
+      createValue: (value: unknown) => V,
+    ) =>
     (value: unknown): Record<K, V> => {
       if (!value || typeof value !== "object" || Array.isArray(value)) return {} as Record<K, V>;
-      return Object.fromEntries(Object.entries(value).map(([key, item]) => [createKey(key), createValue(item)])) as Record<K, V>;
+
+      return Object.fromEntries(
+        Object.entries(value).map(([key, item]) => [createKey(key), createValue(item)]),
+      ) as Record<K, V>;
     },
   Nullable:
     <T>(create: (value: unknown) => T) =>

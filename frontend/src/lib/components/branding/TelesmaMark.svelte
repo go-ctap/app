@@ -9,20 +9,20 @@
 ></span>
 
 <style>
-@layer blocks {
-  .telesma-mark {
-    display: block;
-    width: 26px;
-    height: 26px;
-    background: currentColor;
-    -webkit-mask-image: var(--telesma-mark-source);
-    mask-image: var(--telesma-mark-source);
-    -webkit-mask-position: center;
-    mask-position: center;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-size: contain;
-    mask-size: contain;
+  @layer blocks {
+    .telesma-mark {
+      display: block;
+      width: 26px;
+      height: 26px;
+      background: currentColor;
+      -webkit-mask-image: var(--telesma-mark-source);
+      mask-image: var(--telesma-mark-source);
+      -webkit-mask-position: center;
+      mask-position: center;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-size: contain;
+      mask-size: contain;
+    }
   }
-}
 </style>

@@ -54,9 +54,11 @@ func newSelection(id SelectionID, runtime openedAuthenticator) *selection {
 
 func (s *Service) SetSelection(ctx context.Context, req SelectionRequest) (SelectionSnapshot, error) {
 	unlock, err := s.lockSelection(ctx)
+
 	if err != nil {
 		return SelectionSnapshot{}, err
 	}
+
 	defer unlock()
 
 	if s.isClosed() {
@@ -66,16 +68,21 @@ func (s *Service) SetSelection(ctx context.Context, req SelectionRequest) (Selec
 	if req.AttachmentID == "" {
 		if selected := s.currentSelection(); selected != nil {
 			closeErr := s.closeSelection(selected)
+
 			s.retireSelection(selected)
+
 			return SelectionSnapshot{}, closeErr
 		}
+
 		return SelectionSnapshot{}, nil
 	}
 
 	s.mu.Lock()
+
 	inventory := s.inventory
 	present := attachmentPresent(s.devices, req.AttachmentID)
 	current := s.selected
+
 	s.mu.Unlock()
 	if inventory == nil || !present {
 		return SelectionSnapshot{}, failure.New(
@@ -83,8 +90,10 @@ func (s *Service) SetSelection(ctx context.Context, req SelectionRequest) (Selec
 			failure.WithPhase(failure.PhaseDiscovery),
 		)
 	}
+
 	if current != nil && current.device.Attachment.ID == req.AttachmentID {
 		active := ActiveSelection{ID: current.id}
+
 		return SelectionSnapshot{Selection: &active}, nil
 	}
 
@@ -99,9 +108,11 @@ func (s *Service) SetSelection(ctx context.Context, req SelectionRequest) (Selec
 		req.AttachmentID,
 		ctapkit.WithLogJournal(s.logs),
 	)
+
 	if err != nil {
 		return SelectionSnapshot{}, err
 	}
+
 	selected := newSelection(
 		SelectionID(uuid.NewString()),
 		runtime,
@@ -111,12 +122,15 @@ func (s *Service) SetSelection(ctx context.Context, req SelectionRequest) (Selec
 	if s.closed {
 		s.mu.Unlock()
 		_ = selected.runtime.Close()
+
 		return SelectionSnapshot{}, closedServiceError(failure.PhaseAuthenticator)
 	}
+
 	s.selected = selected
 	s.mu.Unlock()
 
 	active := ActiveSelection{ID: selected.id}
+
 	return SelectionSnapshot{Selection: &active}, nil
 }
 
@@ -127,19 +141,25 @@ func (s *Service) Close() error {
 	if s.closed {
 		s.mu.Unlock()
 		<-s.selectionGate
+
 		return nil
 	}
+
 	s.closed = true
+
 	selected := s.selected
 	inventory := s.inventory
 	inventoryDone := s.inventoryDone
+
 	s.mu.Unlock()
 
 	var closeErr error
+
 	if selected != nil {
 		closeErr = s.closeSelection(selected)
 		s.retireSelection(selected)
 	}
+
 	<-s.selectionGate
 
 	if inventory != nil {
@@ -147,6 +167,7 @@ func (s *Service) Close() error {
 			closeErr = err
 		}
 	}
+
 	if inventoryDone != nil {
 		<-inventoryDone
 	}
@@ -172,6 +193,7 @@ func (s *Service) lockSelection(ctx context.Context) (func(), error) {
 
 func (s *Service) closeSelection(selected *selection) error {
 	closeErr := selected.runtime.Close()
+
 	s.cancelAndWait(selected)
 
 	return closeErr
@@ -179,15 +201,19 @@ func (s *Service) closeSelection(selected *selection) error {
 
 func (s *Service) cancelAndWait(selected *selection) {
 	s.mu.Lock()
+
 	operations := make([]*operationState, 0, len(selected.operations))
+
 	for _, operation := range selected.operations {
 		operations = append(operations, operation)
 	}
+
 	s.mu.Unlock()
 
 	for _, operation := range operations {
 		operation.cancel()
 	}
+
 	for _, operation := range operations {
 		<-operation.done
 	}

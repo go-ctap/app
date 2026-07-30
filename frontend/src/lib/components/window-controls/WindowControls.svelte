@@ -2,11 +2,16 @@
   import { Events } from "@wailsio/runtime";
   import { onMount } from "svelte";
 
-  import { closeWindow, isWindowMaximized, minimizeWindow, toggleMaximizeWindow } from "$lib/window-controller.js";
+  import {
+    closeWindow,
+    isWindowMaximized,
+    minimizeWindow,
+    toggleMaximizeWindow,
+  } from "$lib/window-controller.js";
 
   import { m } from "../../../paraglide/messages.js";
-  import Icons from "./Icons.svelte";
-  import WindowControlButton from "./WindowControlButton.svelte";
+  import Icons from "$lib/components/window-controls/Icons.svelte";
+  import WindowControlButton from "$lib/components/window-controls/WindowControlButton.svelte";
 
   let maximized = $state(false);
 
@@ -42,26 +47,22 @@
     }
   }
 
-  async function handleMinimize() {
-    await minimizeWindow();
-  }
-
   async function handleToggleMaximize() {
     await toggleMaximizeWindow();
     await syncMaximized();
   }
-
-  async function handleClose() {
-    await closeWindow();
-  }
 </script>
 
 <div class="window-controls" aria-label={m.window_controls()}>
-  <WindowControlButton label={m.minimize()} region="minimize" onclick={handleMinimize}>
+  <WindowControlButton label={m.minimize()} region="minimize" onclick={() => void minimizeWindow()}>
     <Icons icon="minimizeWin" aria-hidden="true" />
   </WindowControlButton>
 
-  <WindowControlButton label={maximized ? m.restore() : m.maximize()} region="maximize" onclick={handleToggleMaximize}>
+  <WindowControlButton
+    label={maximized ? m.restore() : m.maximize()}
+    region="maximize"
+    onclick={handleToggleMaximize}
+  >
     {#if maximized}
       <Icons icon="maximizeRestoreWin" aria-hidden="true" />
     {:else}
@@ -69,18 +70,23 @@
     {/if}
   </WindowControlButton>
 
-  <WindowControlButton label={m.close()} region="close" action="close" onclick={handleClose}>
+  <WindowControlButton
+    label={m.close()}
+    region="close"
+    action="close"
+    onclick={() => void closeWindow()}
+  >
     <Icons icon="closeWin" aria-hidden="true" />
   </WindowControlButton>
 </div>
 
 <style>
-@layer blocks {
+  @layer blocks {
     .window-controls {
       display: flex;
       align-items: stretch;
       height: 100%;
       min-width: max-content;
     }
-}
+  }
 </style>

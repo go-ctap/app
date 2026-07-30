@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setAppLocale } from "$lib/i18n";
 import { setAdvancedMode } from "$lib/preferences";
 
-import JsonDisclosure from "./JsonDisclosure.svelte";
+import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
 
 describe("JsonDisclosure", () => {
   const setText = vi.spyOn(Clipboard, "SetText");
@@ -46,7 +46,9 @@ describe("JsonDisclosure", () => {
     await user.click(copy);
 
     await waitFor(() => {
-      expect(setText).toHaveBeenCalledWith(JSON.stringify({ pin: "[redacted]", ok: true }, null, 2));
+      expect(setText).toHaveBeenCalledWith(
+        JSON.stringify({ pin: "[redacted]", ok: true }, null, 2),
+      );
     });
     expect(disclosure).toHaveAttribute("aria-expanded", "false");
 
@@ -64,7 +66,10 @@ describe("JsonDisclosure", () => {
       },
     });
 
-    expect(screen.getByRole("button", { name: "Raw JSON" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "Raw JSON" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
 
     setAdvancedMode(false);
     await waitFor(() => {
@@ -74,7 +79,10 @@ describe("JsonDisclosure", () => {
 
     setAdvancedMode(true);
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Raw JSON" })).toHaveAttribute("aria-expanded", "false");
+      expect(screen.getByRole("button", { name: "Raw JSON" })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      );
     });
   });
 });

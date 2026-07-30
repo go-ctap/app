@@ -7,9 +7,6 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as failure$0 from "../failure/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
 import * as transport$0 from "../../transport/models.js";
 
 /**
@@ -157,13 +154,12 @@ export class DeviceReport {
 }
 
 /**
- * IdentityResolution exposes identity progress without turning it into a
- * discovery or authenticator failure.
+ * IdentityResolution exposes identity progress. Failure details are emitted
+ * through Inventory events rather than retained in device snapshots.
  */
 export class IdentityResolution {
     "state": IdentityResolutionState;
     "provider"?: Vendor;
-    "error"?: failure$0.Failure | null;
 
     /** Creates a new IdentityResolution instance. */
     constructor($$source: Partial<IdentityResolution> = {}) {
@@ -178,11 +174,7 @@ export class IdentityResolution {
      * Creates a new IdentityResolution instance from a string or object.
      */
     static createFrom($$source: any = {}): IdentityResolution {
-        const $$createField2_0 = $$createType13;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("error" in $$parsedSource) {
-            $$parsedSource["error"] = $$createField2_0($$parsedSource["error"]);
-        }
         return new IdentityResolution($$parsedSource as Partial<IdentityResolution>);
     }
 }
@@ -237,8 +229,8 @@ export class InterfaceReport {
      * Creates a new InterfaceReport instance from a string or object.
      */
     static createFrom($$source: any = {}): InterfaceReport {
-        const $$createField1_0 = $$createType14;
-        const $$createField2_0 = $$createType14;
+        const $$createField1_0 = $$createType12;
+        const $$createField2_0 = $$createType12;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("supported" in $$parsedSource) {
             $$parsedSource["supported"] = $$createField1_0($$parsedSource["supported"]);
@@ -342,7 +334,7 @@ export class VendorDetails {
      * Creates a new VendorDetails instance from a string or object.
      */
     static createFrom($$source: any = {}): VendorDetails {
-        const $$createField0_0 = $$createType16;
+        const $$createField0_0 = $$createType14;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("yubico" in $$parsedSource) {
             $$parsedSource["yubico"] = $$createField0_0($$parsedSource["yubico"]);
@@ -408,10 +400,10 @@ export class YubicoDetails {
      * Creates a new YubicoDetails instance from a string or object.
      */
     static createFrom($$source: any = {}): YubicoDetails {
-        const $$createField5_0 = $$createType18;
-        const $$createField9_0 = $$createType14;
-        const $$createField10_0 = $$createType14;
-        const $$createField13_0 = $$createType14;
+        const $$createField5_0 = $$createType16;
+        const $$createField9_0 = $$createType12;
+        const $$createField10_0 = $$createType12;
+        const $$createField13_0 = $$createType12;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("versionQualifier" in $$parsedSource) {
             $$parsedSource["versionQualifier"] = $$createField5_0($$parsedSource["versionQualifier"]);
@@ -508,10 +500,8 @@ const $$createType8 = AttachmentReport.createFrom;
 const $$createType9 = DeviceIdentity.createFrom;
 const $$createType10 = $Create.Nullable($$createType9);
 const $$createType11 = IdentityResolution.createFrom;
-const $$createType12 = failure$0.Failure.createFrom;
-const $$createType13 = $Create.Nullable($$createType12);
-const $$createType14 = $Create.Array($Create.Any);
-const $$createType15 = YubicoDetails.createFrom;
+const $$createType12 = $Create.Array($Create.Any);
+const $$createType13 = YubicoDetails.createFrom;
+const $$createType14 = $Create.Nullable($$createType13);
+const $$createType15 = YubicoVersionQualifier.createFrom;
 const $$createType16 = $Create.Nullable($$createType15);
-const $$createType17 = YubicoVersionQualifier.createFrom;
-const $$createType18 = $Create.Nullable($$createType17);

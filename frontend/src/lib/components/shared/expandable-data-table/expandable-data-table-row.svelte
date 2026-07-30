@@ -24,15 +24,7 @@
     details: Snippet;
   };
 
-  let {
-    detailsId,
-    open,
-    disabled,
-    columnCount,
-    onOpenChange,
-    summary,
-    details,
-  }: Props = $props();
+  let { detailsId, open, disabled, columnCount, onOpenChange, summary, details }: Props = $props();
 
   let triggerProps = $derived<ExpandableDataTableTriggerProps>({
     "aria-expanded": open,
@@ -74,32 +66,34 @@
 {/if}
 
 <style>
-@layer blocks {
-  .expandable-data-table-summary-row,
-  .expandable-data-table-details-row {
-    border-bottom: 1px solid var(--border);
+  @layer blocks {
+    .expandable-data-table-summary-row,
+    .expandable-data-table-details-row {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .expandable-data-table-summary-row {
+      transition:
+        background-color 120ms ease,
+        color 120ms ease;
+    }
+
+    .expandable-data-table-summary-row:hover {
+      background: color-mix(in srgb, var(--muted) 50%, transparent);
+    }
+
+    .expandable-data-table-details-cell {
+      min-width: 0;
+      overflow: hidden;
+      padding: 0;
+      white-space: normal;
+    }
   }
 
-  .expandable-data-table-summary-row {
-    transition: background-color 120ms ease, color 120ms ease;
+  @layer exceptions {
+    .expandable-data-table-summary-row[data-selected="true"],
+    .expandable-data-table-details-row[data-open="true"] {
+      background: var(--muted);
+    }
   }
-
-  .expandable-data-table-summary-row:hover {
-    background: color-mix(in srgb, var(--muted) 50%, transparent);
-  }
-
-  .expandable-data-table-details-cell {
-    min-width: 0;
-    overflow: hidden;
-    padding: 0;
-    white-space: normal;
-  }
-}
-
-@layer exceptions {
-  .expandable-data-table-summary-row[data-selected="true"],
-  .expandable-data-table-details-row[data-open="true"] {
-    background: var(--muted);
-  }
-}
 </style>

@@ -1,28 +1,21 @@
 <script lang="ts">
   import { tick } from "svelte";
-  import { Pencil, RotateCcw, Send, WandSparkles } from "@lucide/svelte";
 
   import type { DeviceReport } from "../../../../bindings/github.com/go-ctap/kit/model/report";
   import type { CredentialVerificationMaterial } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
-  import type { GetAssertionEnvelope, InspectEnvelope } from "../../../../bindings/telesma/service";
+  import type { InspectEnvelope } from "../../../../bindings/telesma/service";
 
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import { Spinner } from "$lib/components/ui/spinner/index.js";
-  import { getAssertionPreview, getAssertionResult, operationError } from "$lib/ctapkit-results";
   import type { GetAssertionDraft, LabState } from "$lib/features/lab/state";
-  import { failureMessage as localizeFailure } from "$lib/failure";
   import { validateGetAssertionDraft } from "$lib/lab-input";
   import type { LoadState } from "$lib/load-state";
 
   import { m } from "../../../paraglide/messages.js";
 
-  import GetAssertionConfigure from "./GetAssertionConfigure.svelte";
-  import GetAssertionResult from "./GetAssertionResult.svelte";
-  import GetAssertionReview from "./GetAssertionReview.svelte";
-  import LabCommandCenter from "./LabCommandCenter.svelte";
-  import LabValidationIssues from "./LabValidationIssues.svelte";
+  import GetAssertionConfigure from "$lib/components/lab/GetAssertionConfigure.svelte";
+  import GetAssertionResult from "$lib/components/lab/GetAssertionResult.svelte";
+  import GetAssertionReview from "$lib/components/lab/GetAssertionReview.svelte";
+  import LabOperationStep from "$lib/components/lab/LabOperationStep.svelte";
+  import LabValidationIssues from "$lib/components/lab/LabValidationIssues.svelte";
 
   type Props = {
     lab: LabState;
@@ -63,160 +56,101 @@
   }: Props = $props();
 
   let draft = $derived(lab.getDraft);
+
   let step = $derived(lab.getStep);
+
   let phase = $derived(step.phase);
-  let previewEnvelope = $derived.by(() => {
-    if (step.phase === "review" || step.phase === "executing" || step.phase === "success" || step.phase === "error") return step.previewEnvelope;
+
+  let preview = $derived.by(() => {
+    if (
+      step.phase === "review" ||
+      step.phase === "executing" ||
+      step.phase === "success" ||
+      (step.phase === "error" && step.failedPhase === "executing")
+    )
+      return step.previewValue;
+
     return null;
   });
-  let responseEnvelope = $derived.by((): GetAssertionEnvelope | null => {
-    if (step.phase === "success" || step.phase === "error") return step.responseEnvelope;
-    return null;
-  });
-  let preview = $derived(getAssertionPreview(previewEnvelope));
-  let result = $derived(getAssertionResult(responseEnvelope));
+
   let validation = $derived(validateGetAssertionDraft(draft));
-  let extensionCount = $derived(Object.values(draft.extensions).filter((extension) => extension.included).length);
-  let failureMessage = $derived.by(() => {
-    if (step.phase !== "error") return null;
-    return localizeFailure(step.runtimeError) ?? operationError(step.responseEnvelope) ?? m.lab_request_failed();
-  });
-  let previewFailed = $derived(step.phase === "error" && step.request === null);
-  let executionFailed = $derived(step.phase === "error" && step.request !== null);
-  let showConfigure = $derived(phase === "editing" || phase === "previewing" || previewFailed);
+
+  let extensionCount = $derived(
+    Object.values(draft.extensions).filter((extension) => extension.included).length,
+  );
+
+  let showConfigure = $derived(
+    phase === "editing" ||
+      phase === "previewing" ||
+      (step.phase === "error" && step.failedPhase === "previewing"),
+  );
 
   async function handlePreview() {
     if (!validation.valid) {
       await tick();
       document.querySelector<HTMLElement>("#lab-get-configure [aria-invalid='true']")?.focus();
+
       return;
     }
+
     await onPreview();
   }
 </script>
 
-{#snippet actions()}
-  {#if phase === "editing"}
-    <Button class="lab-command-action" type="button" {disabled} onclick={handlePreview}>
-      <WandSparkles data-icon="inline-start" aria-hidden="true" />{m.lab_preview()}
-    </Button>
-  {:else if phase === "previewing"}
-    <Button class="lab-command-action" type="button" disabled>
-      <Spinner data-icon="inline-start" aria-hidden="true" />{m.lab_preview()}
-    </Button>
-  {:else if phase === "review"}
-    <Button class="lab-command-action" variant="outline" type="button" {disabled} onclick={onEdit}>
-      <Pencil data-icon="inline-start" aria-hidden="true" />{m.lab_edit()}
-    </Button>
-    <Button class="lab-command-action" type="button" {disabled} onclick={onConfirm}>
-      <Send data-icon="inline-start" aria-hidden="true" />{m.lab_execute()}
-    </Button>
-  {:else if phase === "executing"}
-    <Button class="lab-command-action" type="button" disabled>
-      <Spinner data-icon="inline-start" aria-hidden="true" />{m.lab_execute()}
-    </Button>
-  {:else if phase === "success"}
-    <Button class="lab-command-action" variant="outline" type="button" {disabled} onclick={onEdit}>
-      <Pencil data-icon="inline-start" aria-hidden="true" />{m.lab_edit()}
-    </Button>
-    <Button class="lab-command-action" type="button" {disabled} onclick={onNewRun}>
-      <RotateCcw data-icon="inline-start" aria-hidden="true" />{m.lab_new_run()}
-    </Button>
-  {:else if phase === "error"}
-    <Button class="lab-command-action" variant="outline" type="button" {disabled} onclick={onEdit}>
-      <Pencil data-icon="inline-start" aria-hidden="true" />{m.lab_edit()}
-    </Button>
-    <Button class="lab-command-action" type="button" {disabled} onclick={onRetry}>
-      {#if executionFailed}
-        <Send data-icon="inline-start" aria-hidden="true" />
-      {:else}
-        <WandSparkles data-icon="inline-start" aria-hidden="true" />
-      {/if}
-      {previewFailed ? m.lab_retry_preview() : m.lab_retry()}
-    </Button>
+{#snippet content()}
+  {#if showConfigure}
+    <section
+      id="lab-get-configure"
+      class="lab-configure-stage"
+      aria-labelledby="lab-get-assertion-heading"
+    >
+      <LabValidationIssues issues={validation.errors} severity="error" />
+
+      <LabValidationIssues issues={validation.warnings} severity="warning" />
+
+      <GetAssertionConfigure
+        {draft}
+        disabled={disabled || phase === "previewing"}
+        errors={validation.errors}
+        warnings={validation.warnings}
+        {inspection}
+        {onDraftChange}
+        {onRegenerateChallenge}
+        onPrimary={handlePreview}
+        {onRetryInspection}
+      />
+    </section>
+  {:else if step.phase === "success"}
+    <GetAssertionResult
+      preview={step.previewValue}
+      result={step.value}
+      verification={lab.getVerification}
+      verificationMaterial={lab.getDraft.verificationMaterial}
+      {onVerificationMaterialChange}
+      {onRetryVerification}
+    />
+  {:else if preview}
+    <GetAssertionReview {preview} />
   {/if}
 {/snippet}
 
-<div class="lab-step-layout">
-  <Card.Root class="lab-step-card" data-phase={phase}>
-    <Card.Header>
-      <Card.Title><h2 id="lab-get-assertion-heading">{m.lab_get_assertion()}</h2></Card.Title>
-      <Card.Description>{m.lab_get_assertion_description()}</Card.Description>
-    </Card.Header>
-
-    <Card.Content class="lab-step-content">
-      {#if failureMessage}
-        <Alert.Root variant="destructive" role="alert">
-          <Alert.Title>{m.lab_request_failed()}</Alert.Title>
-          <Alert.Description>{failureMessage}</Alert.Description>
-        </Alert.Root>
-      {/if}
-
-      {#if showConfigure}
-        <section id="lab-get-configure" class="lab-configure-stage" aria-labelledby="lab-get-assertion-heading">
-          <LabValidationIssues issues={validation.errors} severity="error" />
-          <LabValidationIssues issues={validation.warnings} severity="warning" />
-          <GetAssertionConfigure
-            {draft}
-            disabled={disabled || phase === "previewing"}
-            errors={validation.errors}
-            warnings={validation.warnings}
-            {inspection}
-            {onDraftChange}
-            {onRegenerateChallenge}
-            onPrimary={handlePreview}
-            {onRetryInspection}
-          />
-        </section>
-      {:else if phase === "success" && preview && result}
-        <GetAssertionResult
-          {preview}
-          {result}
-          verification={lab.getVerification}
-          verificationMaterial={lab.getDraft.verificationMaterial}
-          {onVerificationMaterialChange}
-          {onRetryVerification}
-        />
-      {:else if preview}
-        <GetAssertionReview {preview} />
-      {/if}
-    </Card.Content>
-  </Card.Root>
-
-  <LabCommandCenter
-    id="lab-get-command"
-    operationLabel={m.lab_get_assertion()}
-    {device}
-    {step}
-    errorCount={validation.errors.length}
-    warningCount={validation.warnings.length}
-    {extensionCount}
-    {fillDemoDisabled}
-    {actions}
-    {onFillDemoValues}
-  />
-</div>
-
-<style>
-@layer blocks {
-  :global(.lab-step-card) {
-    min-width: 0;
-  }
-
-  .lab-step-layout {
-    min-width: 0;
-  }
-
-  :global(.lab-step-card [data-slot="card-title"] h2) {
-    margin: 0;
-    font: inherit;
-  }
-
-  :global(.lab-step-content),
-  .lab-configure-stage {
-    display: grid;
-    gap: var(--space-4);
-    min-width: 0;
-  }
-}
-</style>
+<LabOperationStep
+  id="lab-get-command"
+  headingId="lab-get-assertion-heading"
+  title={m.lab_get_assertion()}
+  description={m.lab_get_assertion_description()}
+  {step}
+  {device}
+  {disabled}
+  {fillDemoDisabled}
+  errorCount={validation.errors.length}
+  warningCount={validation.warnings.length}
+  {extensionCount}
+  {content}
+  onPreview={handlePreview}
+  {onConfirm}
+  {onRetry}
+  {onEdit}
+  {onNewRun}
+  {onFillDemoValues}
+/>

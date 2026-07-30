@@ -11,15 +11,18 @@ import {
   setLocale,
   type Locale,
 } from "../paraglide/runtime.js";
-import { api } from "./api.js";
+import { api } from "$lib/api.js";
 
 const currentLocaleState = writable<Locale>(initialLocale());
+
 const advancedModeState = writable(false);
 
 let saveTail: Promise<void> = Promise.resolve();
 
 export const availableLocales = locales;
+
 export const currentLocale = readonly(currentLocaleState);
+
 export const advancedMode = readonly(advancedModeState);
 
 export function localeLabel(locale: Locale) {
@@ -28,11 +31,14 @@ export function localeLabel(locale: Locale) {
 
 export async function initializeApplicationConfig() {
   const fallbackLocale = initialLocale();
+
   try {
     const snapshot = await api.loadApplicationConfig();
+
     if (snapshot.exists) {
       applyLocale(snapshot.config.locale as Locale);
       advancedModeState.set(snapshot.config.advancedMode);
+
       return;
     }
 
@@ -47,6 +53,7 @@ export async function initializeApplicationConfig() {
 
 export function setAppLocale(locale: string) {
   const next = isLocale(locale) ? locale : baseLocale;
+
   if (get(currentLocaleState) === next) return;
 
   applyLocale(next);
@@ -62,9 +69,11 @@ export function setAdvancedMode(enabled: boolean) {
 
 function initialLocale(): Locale {
   const runtimeLocale = getLocale();
+
   if (isLocale(runtimeLocale)) return runtimeLocale;
 
   const language = navigator.languages?.find(isLocale) || navigator.language;
+
   return isLocale(language) ? language : baseLocale;
 }
 
@@ -75,16 +84,14 @@ function applyLocale(locale: Locale) {
   currentLocaleState.set(locale);
 }
 
-function applicationConfig() {
-  return new ApplicationConfig({
+function queueConfigSave() {
+  const config = new ApplicationConfig({
     locale: get(currentLocaleState),
     advancedMode: get(advancedModeState),
   });
-}
-
-function queueConfigSave() {
-  const config = applicationConfig();
   const save = saveTail.then(() => api.saveApplicationConfig(config));
+
   saveTail = save.catch(() => {});
+
   return save;
 }

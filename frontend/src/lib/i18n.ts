@@ -4,4 +4,4 @@ export {
   initializeApplicationConfig,
   localeLabel,
   setAppLocale,
-} from "./application-config.js";
+} from "$lib/application-config.js";

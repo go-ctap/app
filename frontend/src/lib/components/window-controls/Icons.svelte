@@ -11,7 +11,8 @@
     | "fullMac"
     | "plusMac";
 
-  let { icon = "", ...restProps }: SVGAttributes<SVGSVGElement> & { icon?: IconName | "" } = $props();
+  let { icon = "", ...restProps }: SVGAttributes<SVGSVGElement> & { icon?: IconName | "" } =
+    $props();
 </script>
 
 {#if icon === "minimizeWin"}

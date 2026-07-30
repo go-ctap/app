@@ -10,7 +10,7 @@ import {
 
 import { setAppLocale } from "$lib/i18n";
 
-import SecurityPIN from "./SecurityPIN.svelte";
+import SecurityPIN from "$lib/components/security/SecurityPIN.svelte";
 
 function unsetPIN(minPINLength = 4) {
   return new PINStatus({
@@ -40,6 +40,7 @@ describe("SecurityPIN", () => {
     const onSetPIN = vi.fn(({ newPIN }: { newPIN: string }) => {
       submittedPINs.push(newPIN);
       if (submittedPINs.length > 1) return true;
+
       return new Promise<boolean>((resolve) => {
         finishOperation = resolve;
       });
@@ -132,6 +133,7 @@ describe("SecurityPIN", () => {
     });
 
     const trigger = screen.getByRole("button", { name: "Set PIN" });
+
     await fireEvent.click(trigger);
     await user.type(screen.getByLabelText("New PIN"), "escape-secret");
     await user.type(screen.getByLabelText("Confirm new PIN"), "escape-secret");

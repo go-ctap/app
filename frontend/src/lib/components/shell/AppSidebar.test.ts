@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { Nfc, Usb } from "@lucide/svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import AppSidebar from "./AppSidebar.svelte";
+import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
 
 describe("AppSidebar", () => {
   afterEach(() => {
@@ -28,7 +28,9 @@ describe("AppSidebar", () => {
       },
     });
 
-    expect(screen.getAllByRole("button").map((button) => button.getAttribute("aria-label"))).toEqual([
+    expect(
+      screen.getAllByRole("button").map((button) => button.getAttribute("aria-label")),
+    ).toEqual([
       "Overview",
       "Passkeys",
       "Large blobs",
@@ -70,6 +72,7 @@ describe("AppSidebar", () => {
     });
 
     const sidebar = container.querySelector(".app-sidebar");
+
     expect(sidebar).toHaveAttribute("data-native-titlebar", "true");
     expect(sidebar?.firstElementChild).toHaveClass("sidebar-titlebar-space");
     expect(sidebar?.children[1]).toHaveClass("sidebar-brand");
@@ -87,7 +90,13 @@ describe("AppSidebar", () => {
           selectedValue: "token-1",
           busy: false,
           tokens: [
-            { value: "token-1", label: "YubiKey 5 · ABC", name: "YubiKey 5", detail: "S/N ABC", icon: Usb },
+            {
+              value: "token-1",
+              label: "YubiKey 5 · ABC",
+              name: "YubiKey 5",
+              detail: "S/N ABC",
+              icon: Usb,
+            },
             {
               value: "token-2",
               label: "Token2 FIDO2 Card",
@@ -103,8 +112,10 @@ describe("AppSidebar", () => {
     });
 
     expect(screen.getByRole("heading", { name: "Authenticators" })).toBeInTheDocument();
+
     const usbButton = screen.getByRole("button", { name: "YubiKey 5 · ABC" });
     const smartCardButton = screen.getByRole("button", { name: "Token2 FIDO2 Card" });
+
     expect(usbButton).toHaveAttribute("aria-pressed", "true");
     expect(usbButton.querySelector(".lucide-usb")).toBeInTheDocument();
     expect(smartCardButton.querySelector(".lucide-nfc")).toBeInTheDocument();

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import * as Field from "$lib/components/ui/field/index.js";
-  import * as InputGroup from "$lib/components/ui/input-group/index.js";
+  import * as Field from "$lib/components/ui/field";
+  import * as InputGroup from "$lib/components/ui/input-group";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -17,7 +17,6 @@
   function handleInput(event: Event) {
     onChange((event.currentTarget as HTMLTextAreaElement).value.split(/\r?\n/));
   }
-
 </script>
 
 <Field.Field data-disabled={disabled} data-invalid={invalid}>

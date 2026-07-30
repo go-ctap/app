@@ -18,6 +18,7 @@ func TestAssessMakeCredentialAttestationMarksNoneNotApplicable(t *testing.T) {
 		AuthData:  []byte{1},
 		Statement: map[string]any{},
 	})
+
 	if err != nil {
 		t.Fatalf("marshal attestation object: %v", err)
 	}
@@ -36,6 +37,7 @@ func TestAssessMakeCredentialAttestationMarksNoneNotApplicable(t *testing.T) {
 			},
 		},
 	)
+
 	if assessment.Status != mdsmodel.AttestationTrustStatusNotApplicable {
 		t.Fatalf("status = %q, want not_applicable", assessment.Status)
 	}
@@ -51,9 +53,11 @@ func TestAssessMakeCredentialAttestationRejectsMalformedEvidence(t *testing.T) {
 			},
 		},
 	)
+
 	if assessment.Status != mdsmodel.AttestationTrustStatusUnavailable {
 		t.Fatalf("status = %q, want unavailable", assessment.Status)
 	}
+
 	if len(assessment.Issues) != 1 ||
 		assessment.Issues[0] != mdsmodel.AttestationTrustIssueEvidenceMalformed {
 		t.Fatalf("issues = %v, want evidence_malformed", assessment.Issues)
@@ -71,6 +75,7 @@ func TestAssessMakeCredentialAttestationRequiresVerifiedBasicStatement(t *testin
 			"x5c": [][]byte{{1}},
 		},
 	})
+
 	if err != nil {
 		t.Fatalf("marshal attestation object: %v", err)
 	}
@@ -85,9 +90,11 @@ func TestAssessMakeCredentialAttestationRequiresVerifiedBasicStatement(t *testin
 			},
 		},
 	)
+
 	if assessment.Status != mdsmodel.AttestationTrustStatusUnavailable {
 		t.Fatalf("status = %q, want unavailable", assessment.Status)
 	}
+
 	if len(assessment.Issues) != 1 ||
 		assessment.Issues[0] != mdsmodel.AttestationTrustIssueEvidenceUnverified {
 		t.Fatalf("issues = %v, want evidence_unverified", assessment.Issues)

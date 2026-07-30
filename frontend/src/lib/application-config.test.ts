@@ -16,7 +16,7 @@ import {
   initializeApplicationConfig,
   setAdvancedMode,
   setAppLocale,
-} from "./application-config.js";
+} from "$lib/application-config.js";
 
 function snapshot(locale: string, advanced: boolean, exists = true) {
   return new ApplicationConfigSnapshot({
@@ -55,20 +55,26 @@ describe("application config", () => {
 
   it("serializes preference writes", async () => {
     let finishFirstSave: (() => void) | undefined;
-    applicationServiceMocks.SaveApplicationConfig
-      .mockImplementationOnce(() => new Promise<void>((resolve) => {
-        finishFirstSave = resolve;
-      }))
-      .mockResolvedValue(undefined);
+
+    applicationServiceMocks.SaveApplicationConfig.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishFirstSave = resolve;
+        }),
+    ).mockResolvedValue(undefined);
 
     setAppLocale("ru");
-    await vi.waitFor(() => expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() =>
+      expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledTimes(1),
+    );
     setAdvancedMode(true);
     await Promise.resolve();
     expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledTimes(1);
 
     finishFirstSave?.();
-    await vi.waitFor(() => expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() =>
+      expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledTimes(2),
+    );
     expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenLastCalledWith(
       expect.objectContaining({ locale: "ru", advancedMode: true }),
     );

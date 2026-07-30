@@ -1,0 +1,7 @@
+bindings/
+dist/
+pnpm-lock.yaml
+project.inlang/cache/
+project.inlang/.meta.json
+project.inlang/README.md
+src/paraglide/

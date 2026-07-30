@@ -1,12 +1,12 @@
 <script lang="ts">
   import { RefreshCw } from "@lucide/svelte";
 
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import * as Field from "$lib/components/ui/field/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import * as InputGroup from "$lib/components/ui/input-group/index.js";
-  import { Switch } from "$lib/components/ui/switch/index.js";
-  import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
+  import * as Alert from "$lib/components/ui/alert";
+  import * as Field from "$lib/components/ui/field";
+  import { Input } from "$lib/components/ui/input";
+  import * as InputGroup from "$lib/components/ui/input-group";
+  import { Switch } from "$lib/components/ui/switch";
+  import * as ToggleGroup from "$lib/components/ui/toggle-group";
   import type { LabClientDataMode } from "$lib/features/lab/state";
   import { buildClientDataJSON, type LabClientDataOperation } from "$lib/lab-input";
 
@@ -61,15 +61,19 @@
   }: Props = $props();
 
   let clientDataType = $derived(operation === "create" ? "webauthn.create" : "webauthn.get");
-  let generatedValue = $derived(buildClientDataJSON(operation, {
-    origin,
-    challenge,
-    crossOrigin,
-    topOrigin,
-  }));
+
+  let generatedValue = $derived(
+    buildClientDataJSON(operation, {
+      origin,
+      challenge,
+      crossOrigin,
+      topOrigin,
+    }),
+  );
 
   function handleModeChange(next: string | string[]) {
     if (Array.isArray(next) || !next) return;
+
     if (next === "raw") onModeChange(next, generatedValue);
     else if (next === "builder") onModeChange(next);
   }
@@ -80,10 +84,10 @@
 
   function handleSingleLineKeydown(event: KeyboardEvent) {
     if (event.key !== "Enter" || event.isComposing || disabled) return;
+
     event.preventDefault();
     void onPrimary();
   }
-
 </script>
 
 <Field.Set class="lab-client-data" data-disabled={disabled}>
@@ -114,6 +118,7 @@
           <Field.Label for={`${id}-type`}>{m.lab_client_data_type()}</Field.Label>
           <output id={`${id}-type`} class="lab-client-data-fixed">{clientDataType}</output>
         </Field.Field>
+
         <Field.Field orientation="horizontal" data-disabled={disabled}>
           <Field.Content>
             <Field.Label for={`${id}-cross-origin`}>{m.lab_client_data_cross_origin()}</Field.Label>
@@ -126,6 +131,7 @@
             onCheckedChange={onCrossOriginChange}
           />
         </Field.Field>
+
         <Field.Field data-disabled={disabled} data-invalid={originInvalid}>
           <Field.Label for={`${id}-origin`}>{m.lab_origin()}</Field.Label>
           <Input
@@ -137,6 +143,7 @@
             onkeydown={handleSingleLineKeydown}
           />
         </Field.Field>
+
         <Field.Field data-disabled={disabled} data-invalid={challengeInvalid}>
           <Field.Label for={`${id}-challenge`}>{m.lab_challenge()}</Field.Label>
           <InputGroup.Root>
@@ -157,8 +164,13 @@
             </InputGroup.Addon>
           </InputGroup.Root>
         </Field.Field>
+
         {#if crossOrigin}
-          <Field.Field class="lab-client-data-wide" data-disabled={disabled} data-invalid={topOriginInvalid}>
+          <Field.Field
+            class="lab-client-data-wide"
+            data-disabled={disabled}
+            data-invalid={topOriginInvalid}
+          >
             <Field.Label for={`${id}-top-origin`}>{m.lab_top_origin()}</Field.Label>
             <Input
               id={`${id}-top-origin`}
@@ -202,59 +214,59 @@
 </Field.Set>
 
 <style>
-@layer blocks {
-  :global(.lab-client-data) {
-    min-width: 0;
-  }
-
-  :global(.lab-client-data-mode) {
-    width: 100%;
-  }
-
-  :global(.lab-client-data-mode [data-slot="toggle-group-item"]) {
-    flex: 1 1 50%;
-  }
-
-  :global(.lab-client-data-grid) {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-3);
-    min-width: 0;
-  }
-
-  :global(.lab-client-data-wide) {
-    grid-column: span 2;
-  }
-
-  .lab-client-data-fixed {
-    display: flex;
-    align-items: center;
-    block-size: 2rem;
-    padding-inline: var(--space-2);
-    border: 1px solid var(--border);
-    background: var(--muted);
-    font-family: var(--font-mono);
-    font-size: 0.76rem;
-  }
-
-  :global(.lab-client-data [data-slot="input-group"]) {
-    min-width: 0;
-  }
-
-  @container workspace (max-width: 84rem) {
-    :global(.lab-client-data-grid) {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+  @layer blocks {
+    :global(.lab-client-data) {
+      min-width: 0;
     }
-  }
 
-  @container workspace (max-width: 42rem) {
+    :global(.lab-client-data-mode) {
+      width: 100%;
+    }
+
+    :global(.lab-client-data-mode [data-slot="toggle-group-item"]) {
+      flex: 1 1 50%;
+    }
+
     :global(.lab-client-data-grid) {
-      grid-template-columns: minmax(0, 1fr);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-3);
+      min-width: 0;
     }
 
     :global(.lab-client-data-wide) {
-      grid-column: auto;
+      grid-column: span 2;
+    }
+
+    .lab-client-data-fixed {
+      display: flex;
+      align-items: center;
+      block-size: 2rem;
+      padding-inline: var(--space-2);
+      border: 1px solid var(--border);
+      background: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+    }
+
+    :global(.lab-client-data [data-slot="input-group"]) {
+      min-width: 0;
+    }
+
+    @container workspace (max-width: 84rem) {
+      :global(.lab-client-data-grid) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @container workspace (max-width: 42rem) {
+      :global(.lab-client-data-grid) {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      :global(.lab-client-data-wide) {
+        grid-column: auto;
+      }
     }
   }
-}
 </style>

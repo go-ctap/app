@@ -8,7 +8,11 @@ import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit";
 import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   CredentialVerificationMaterial,
+  GetAssertionPreview,
+  GetAssertionResult,
   GetAssertionVerification,
+  MakeCredentialPreview,
+  MakeCredentialResult,
   MakeCredentialVerification,
 } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
 import type { AttestationTrustAssessment } from "../../../../bindings/github.com/go-ctap/mds/model";
@@ -19,6 +23,7 @@ import type {
   MakeCredentialRequest,
 } from "../../../../bindings/telesma/service";
 
+import type { ConfirmedOperation } from "$lib/confirmed-operation";
 import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import {
   buildClientDataJSON,
@@ -28,9 +33,13 @@ import {
 } from "$lib/lab-input";
 
 export type LabTriState = "auto" | "true" | "false";
+
 export type LabClientDataMode = "builder" | "raw";
+
 export type LabOperationTab = "make" | "get";
+
 export type LabBinaryMode = "utf8" | "hex";
+
 export type LabEnterpriseAttestation = 0 | 1 | 2;
 
 export type LabBinaryDraft = {
@@ -155,71 +164,19 @@ export type LabVerificationState<T> =
   | { phase: "ready"; verification: T }
   | { phase: "error"; error: Failure };
 
-export type LabMakeStep =
-  | { phase: "editing" }
-  | {
-      phase: "previewing";
-      previewRequest: MakeCredentialRequest;
-    }
-  | {
-      phase: "review";
-      previewRequest: MakeCredentialRequest;
-      previewEnvelope: MakeCredentialEnvelope;
-    }
-  | {
-      phase: "executing";
-      previewRequest: MakeCredentialRequest;
-      previewEnvelope: MakeCredentialEnvelope;
-      request: MakeCredentialRequest;
-    }
-  | {
-      phase: "success";
-      previewRequest: MakeCredentialRequest;
-      previewEnvelope: MakeCredentialEnvelope;
-      request: MakeCredentialRequest;
-      responseEnvelope: MakeCredentialEnvelope;
-    }
-  | {
-      phase: "error";
-      previewRequest: MakeCredentialRequest;
-      previewEnvelope: MakeCredentialEnvelope | null;
-      request: MakeCredentialRequest | null;
-      responseEnvelope: MakeCredentialEnvelope | null;
-      runtimeError: Failure | null;
-    };
+export type LabMakeStep = ConfirmedOperation<
+  MakeCredentialRequest,
+  MakeCredentialEnvelope,
+  MakeCredentialPreview,
+  MakeCredentialResult
+>;
 
-export type LabGetStep =
-  | { phase: "editing" }
-  | {
-      phase: "previewing";
-      previewRequest: GetAssertionRequest;
-    }
-  | {
-      phase: "review";
-      previewRequest: GetAssertionRequest;
-      previewEnvelope: GetAssertionEnvelope;
-    }
-  | {
-      phase: "executing";
-      previewRequest: GetAssertionRequest;
-      previewEnvelope: GetAssertionEnvelope;
-      request: GetAssertionRequest;
-    }
-  | {
-      phase: "success";
-      previewRequest: GetAssertionRequest;
-      previewEnvelope: GetAssertionEnvelope;
-      request: GetAssertionRequest;
-      responseEnvelope: GetAssertionEnvelope;
-    }
-  | {
-      phase: "error";
-      previewRequest: GetAssertionRequest;
-      previewEnvelope: GetAssertionEnvelope | null;
-      request: GetAssertionRequest | null;
-      responseEnvelope: GetAssertionEnvelope | null;
-      runtimeError: Failure | null;
-    };
+export type LabGetStep = ConfirmedOperation<
+  GetAssertionRequest,
+  GetAssertionEnvelope,
+  GetAssertionPreview,
+  GetAssertionResult
+>;
 
 export type LabPendingHandoff = {
   rpID: string;
@@ -316,6 +273,7 @@ export function createLabState(randomSource?: LabRandomSource): LabState {
     topOrigin: "https://example.com",
     rawJSON: "",
   };
+
   makeClientData.rawJSON = buildClientDataJSON("create", makeClientData);
   getClientData.rawJSON = buildClientDataJSON("get", getClientData);
 
@@ -369,5 +327,4 @@ export function resetLabStateForTest(randomSource?: LabRandomSource) {
 
 deviceFeatureLifecycles.register("lab", {
   resetForAuthenticatorChange: resetLabDeviceState,
-  resetForTest: resetLabStateForTest,
 });

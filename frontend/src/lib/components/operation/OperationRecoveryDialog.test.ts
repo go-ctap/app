@@ -5,9 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 
 import { setAppLocale } from "$lib/i18n.js";
-import { failureForCode } from "$lib/test-failure.js";
+import { failureForCode } from "$lib/test-support/failure.js";
 
-import OperationRecoveryDialog from "./OperationRecoveryDialog.svelte";
+import OperationRecoveryDialog from "$lib/components/operation/OperationRecoveryDialog.svelte";
 
 function presentation(overrides: Record<string, boolean> = {}) {
   return {
@@ -38,7 +38,9 @@ describe("OperationRecoveryDialog", () => {
     });
 
     expect(screen.getByRole("heading", { name: "Reattach smart card" })).toBeInTheDocument();
-    expect(screen.getByText(/Create credential ended with an authenticator response error/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Create credential ended with an authenticator response error/),
+    ).toBeInTheDocument();
     expect(screen.getByText("Remove the smart card from the reader.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeDisabled();
 
@@ -59,6 +61,7 @@ describe("OperationRecoveryDialog", () => {
 
   it("renders inventory-visible but unready cards as opening and exposes cancel", async () => {
     const onCancel = vi.fn();
+
     render(OperationRecoveryDialog, {
       props: {
         presentation: presentation({

@@ -8,7 +8,7 @@ import {
   type Fact,
 } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 
-import type { OverviewRowStatus } from "./overview-types.js";
+import type { OverviewRowStatus } from "$lib/overview-types.js";
 
 export type OverviewFactLookup = ReadonlyMap<FactID, Fact>;
 
@@ -18,7 +18,9 @@ export function buildOverviewFactLookup(assessment: Assessment): OverviewFactLoo
 
 export function overviewFact(facts: OverviewFactLookup, id: FactID): Fact {
   const fact = facts.get(id);
+
   if (!fact) throw new Error(`Missing required Overview fact: ${id}`);
+
   return fact;
 }
 
@@ -53,6 +55,7 @@ export function factBoolean(fact: Fact): boolean | undefined {
   if (fact.value.kind !== FactValueKind.FactValueBoolean) {
     throw new Error(`Overview fact ${fact.id} is not boolean`);
   }
+
   return fact.value.boolean ?? undefined;
 }
 
@@ -60,6 +63,7 @@ export function factInteger(fact: Fact): number | undefined {
   if (fact.value.kind !== FactValueKind.FactValueInteger) {
     throw new Error(`Overview fact ${fact.id} is not integer`);
   }
+
   return fact.value.integer ?? undefined;
 }
 
@@ -67,6 +71,7 @@ export function factText(fact: Fact): string | undefined {
   if (fact.value.kind !== FactValueKind.FactValueText) {
     throw new Error(`Overview fact ${fact.id} is not text`);
   }
+
   return fact.value.text ?? undefined;
 }
 
@@ -74,6 +79,7 @@ export function factList(fact: Fact): readonly string[] | undefined {
   if (fact.value.kind !== FactValueKind.FactValueList) {
     throw new Error(`Overview fact ${fact.id} is not list`);
   }
+
   return fact.value.list ?? undefined;
 }
 
@@ -83,7 +89,9 @@ export function factUsesSpecDefault(fact: Fact) {
 
 export function factUnit(fact: Fact): "bytes" | "codePoints" | "" {
   if (fact.value.unit === FactUnit.FactUnitBytes) return "bytes";
+
   if (fact.value.unit === FactUnit.FactUnitCodePoints) return "codePoints";
+
   return "";
 }
 

@@ -1,10 +1,10 @@
 <script lang="ts">
   import type { LabPRFValuesDraft } from "$lib/features/lab/state";
-  import { Switch } from "$lib/components/ui/switch/index.js";
+  import { Switch } from "$lib/components/ui/switch";
 
   import { m } from "../../../paraglide/messages.js";
 
-  import LabBinaryEditor from "./LabBinaryEditor.svelte";
+  import LabBinaryEditor from "$lib/components/lab/LabBinaryEditor.svelte";
 
   type Props = {
     id: string;
@@ -55,17 +55,17 @@
 </div>
 
 <style>
-@layer blocks {
-  .lab-prf-values {
-    display: grid;
-    gap: var(--space-3);
-  }
+  @layer blocks {
+    .lab-prf-values {
+      display: grid;
+      gap: var(--space-3);
+    }
 
-  .lab-prf-second-toggle {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: 0.72rem;
+    .lab-prf-second-toggle {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 0.72rem;
+    }
   }
-}
 </style>

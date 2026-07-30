@@ -1,7 +1,6 @@
 import { writable } from "svelte/store";
 
 import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit";
-import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
   CredentialTarget,
   InventoryReport,
@@ -9,39 +8,34 @@ import type {
 import type {
   CredentialDeleteEnvelope,
   CredentialDeleteRequest,
-  CredentialStoreStateEnvelope,
   CredentialUpdateEnvelope,
   CredentialUpdateRequest,
 } from "../../../../bindings/telesma/service";
 
 import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import {
-  idleMutation,
-  type EditableMutationLifecycle,
-  type MutationFailureReason,
-  type MutationIdleState,
-  type MutationLifecycle,
-} from "$lib/mutation-lifecycle";
+  idleConfirmedOperation,
+  type ConfirmableMutation,
+  type ConfirmedOperationIdle,
+  type NonEditableConfirmedMutation,
+} from "$lib/confirmed-operation";
+import {
+  beginRetainedInventoryLoad,
+  completeRetainedInventoryLoad,
+  emptyRetainedInventoryState,
+  failRetainedInventoryLoad,
+  retainedInventoryIsStale,
+  type RetainedInventoryPhase,
+  type RetainedInventoryState,
+} from "$lib/retained-inventory-state";
 
-export type PasskeysInventoryPhase = "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";
-export type CredentialStoreStatePhase = "idle" | "loading" | "ready" | "error" | "unsupported";
+export type PasskeysInventoryPhase = RetainedInventoryPhase;
 
 /** Retains the last-known-good generated report while a forced refresh fails. */
-export type PasskeysInventoryState = {
-  phase: PasskeysInventoryPhase;
-  report: InventoryReport | null;
-  lastSuccessfulAt: string | null;
-};
-
-export type CredentialStoreStateState = {
-  phase: CredentialStoreStatePhase;
-  responseEnvelope: CredentialStoreStateEnvelope | null;
-  runtimeError: Failure | null;
-};
+export type PasskeysInventoryState = RetainedInventoryState<InventoryReport>;
 
 export function passkeysInventoryIsStale(state: PasskeysInventoryState) {
-  return Boolean(state.report)
-    && (state.phase === "error" || state.phase === "unsupported");
+  return retainedInventoryIsStale(state);
 }
 
 export type PasskeysStatusFilter =
@@ -60,7 +54,6 @@ export type CredentialUpdateForm = {
 };
 
 export type CredentialUpdateValidationError = "no-changes";
-export type PasskeysMutationFailureReason = MutationFailureReason;
 
 type UpdateMutationBase = {
   kind: "update";
@@ -74,132 +67,72 @@ type DeleteMutationBase = {
 };
 
 export type PasskeysMutationState =
-  | MutationIdleState
-  | EditableMutationLifecycle<
+  | { kind: "idle"; operation: ConfirmedOperationIdle }
+  | ConfirmableMutation<
       UpdateMutationBase,
       CredentialUpdateRequest,
       CredentialUpdateEnvelope,
       CredentialUpdateValidationError
     >
-  | MutationLifecycle<
+  | NonEditableConfirmedMutation<
       DeleteMutationBase,
       CredentialDeleteRequest,
       CredentialDeleteEnvelope
     >;
 
 export function emptyPasskeysInventoryState(): PasskeysInventoryState {
-  return {
-    phase: "idle",
-    report: null,
-    lastSuccessfulAt: null,
-  };
+  return emptyRetainedInventoryState();
 }
 
-export function emptyCredentialStoreStateState(): CredentialStoreStateState {
-  return {
-    phase: "idle",
-    responseEnvelope: null,
-    runtimeError: null,
-  };
-}
-
-export const passkeysInventoryState = writable<PasskeysInventoryState>(emptyPasskeysInventoryState());
-export const credentialStoreStateState = writable<CredentialStoreStateState>(emptyCredentialStoreStateState());
+export const passkeysInventoryState = writable<PasskeysInventoryState>(
+  emptyPasskeysInventoryState(),
+);
 
 export const passkeysQuery = writable("");
+
 export const passkeysStatusFilter = writable<PasskeysStatusFilter>("all");
+
 export const passkeysSelectedCredentialID = writable("");
-export const passkeysVerificationFlow = writable<VerificationFlow>(VerificationFlow.VerificationFlowDefault);
-export const passkeysMutation = writable<PasskeysMutationState>(idleMutation());
+
+export const passkeysVerificationFlow = writable<VerificationFlow>(
+  VerificationFlow.VerificationFlowDefault,
+);
+
+export const passkeysMutation = writable<PasskeysMutationState>({
+  kind: "idle",
+  operation: idleConfirmedOperation(),
+});
 
 export function beginPasskeysInventoryLoad() {
-  passkeysInventoryState.update((current) => ({
-    ...current,
-    phase: current.report ? "refreshing" : "loading",
-  }));
+  passkeysInventoryState.update(beginRetainedInventoryLoad);
 }
 
 export function completePasskeysInventoryLoad(report: InventoryReport, completedAt: string) {
-  passkeysInventoryState.set({
-    phase: "ready",
-    report,
-    lastSuccessfulAt: completedAt,
-  });
+  passkeysInventoryState.set(completeRetainedInventoryLoad(report, completedAt));
 }
 
 export function failPasskeysInventoryLoadWithResponse(unsupported: boolean) {
-  passkeysInventoryState.update((current) => ({
-    ...current,
-    phase: unsupported ? "unsupported" : "error",
-  }));
+  passkeysInventoryState.update((current) => failRetainedInventoryLoad(current, unsupported));
 }
 
 export function failPasskeysInventoryLoadAtRuntime() {
-  passkeysInventoryState.update((current) => ({
-    ...current,
-    phase: "error",
-  }));
-}
-
-export function beginCredentialStoreStateLoad() {
-  credentialStoreStateState.set({
-    phase: "loading",
-    responseEnvelope: null,
-    runtimeError: null,
-  });
-}
-
-export function completeCredentialStoreStateLoad(envelope: CredentialStoreStateEnvelope) {
-  credentialStoreStateState.set({
-    phase: "ready",
-    responseEnvelope: envelope,
-    runtimeError: null,
-  });
-}
-
-export function failCredentialStoreStateLoadWithResponse(envelope: CredentialStoreStateEnvelope) {
-  credentialStoreStateState.set({
-    phase: envelope.error?.category === "unsupported" ? "unsupported" : "error",
-    responseEnvelope: envelope,
-    runtimeError: null,
-  });
-}
-
-export function failCredentialStoreStateLoadAtRuntime(error: Failure) {
-  credentialStoreStateState.set({
-    phase: "error",
-    responseEnvelope: null,
-    runtimeError: error,
-  });
-}
-
-export function failCredentialStoreStateLoadWithContractError(
-  envelope: CredentialStoreStateEnvelope,
-  error: Failure,
-) {
-  credentialStoreStateState.set({
-    phase: "error",
-    responseEnvelope: envelope,
-    runtimeError: error,
-  });
+  passkeysInventoryState.update((current) => failRetainedInventoryLoad(current));
 }
 
 /** Clears state owned by one selected authenticator but keeps the in-memory UV preference. */
 export function resetPasskeysDeviceState() {
   passkeysInventoryState.set(emptyPasskeysInventoryState());
-  credentialStoreStateState.set(emptyCredentialStoreStateState());
   passkeysQuery.set("");
   passkeysStatusFilter.set("all");
   passkeysSelectedCredentialID.set("");
-  passkeysMutation.set(idleMutation());
+  passkeysMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
 }
 
 /** Invalidates authenticator-backed inventory while retaining every UI preference. */
 export function invalidatePasskeysInventory() {
   passkeysInventoryState.set(emptyPasskeysInventoryState());
-  credentialStoreStateState.set(emptyCredentialStoreStateState());
   passkeysSelectedCredentialID.set("");
-  passkeysMutation.set(idleMutation());
+  passkeysMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
 }
 
 export function resetPasskeysStateForTest() {
@@ -209,5 +142,4 @@ export function resetPasskeysStateForTest() {
 
 deviceFeatureLifecycles.register("passkeys", {
   resetForAuthenticatorChange: resetPasskeysDeviceState,
-  resetForTest: resetPasskeysStateForTest,
 });

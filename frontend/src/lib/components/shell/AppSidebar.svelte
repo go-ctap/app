@@ -1,11 +1,19 @@
 <script lang="ts">
-  import { Database, FlaskConical, Gauge, KeyRound, ScrollText, Settings, Shield } from "@lucide/svelte";
-  import {type Component} from "svelte";
+  import {
+    Database,
+    FlaskConical,
+    Gauge,
+    KeyRound,
+    ScrollText,
+    Settings,
+    Shield,
+  } from "@lucide/svelte";
+  import { type Component } from "svelte";
 
   import TelesmaMark from "$lib/components/branding/TelesmaMark.svelte";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
-  import { Spinner } from "$lib/components/ui/spinner/index.js";
+  import { Button } from "$lib/components/ui/button";
+  import { ScrollArea } from "$lib/components/ui/scroll-area";
+  import { Spinner } from "$lib/components/ui/spinner";
   import type { SidebarPresentation } from "$lib/shell-presentation";
   import type { ActiveScreen } from "$lib/features/workbench";
 
@@ -29,7 +37,6 @@
     { id: "logs", label: m.logs(), icon: ScrollText },
     { id: "settings", label: m.settings(), icon: Settings },
   ];
-
 </script>
 
 <aside
@@ -73,6 +80,7 @@
 
   <section class="sidebar-tokens" aria-labelledby="sidebar-tokens-title">
     <h2 id="sidebar-tokens-title" class="sidebar-section-title">{m.authenticators()}</h2>
+
     <ScrollArea class="sidebar-token-scroll">
       <div class="sidebar-token-list">
         {#each presentation.tokens as token (token.value)}
@@ -102,11 +110,10 @@
       </div>
     </ScrollArea>
   </section>
-
 </aside>
 
 <style>
-@layer blocks {
+  @layer blocks {
     .app-sidebar {
       container: sidebar / inline-size;
       display: grid;
@@ -252,10 +259,9 @@
       margin: 0;
       line-height: 1.35;
     }
+  }
 
-}
-
-@layer exceptions {
+  @layer exceptions {
     .app-sidebar[data-native-titlebar="true"] {
       grid-template-rows: 36px auto minmax(0, 1fr) auto;
     }
@@ -275,5 +281,5 @@
     .app-sidebar[data-native-titlebar="true"] .sidebar-nav-list {
       padding-block-start: var(--space-2);
     }
-}
+  }
 </style>

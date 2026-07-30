@@ -4,32 +4,23 @@ import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
 import type { CredentialTarget } from "../../bindings/github.com/go-ctap/kit/model/credentials";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type {
-  CredentialDeleteEnvelope,
   CredentialDeleteRequest,
-  CredentialListRequest,
-  CredentialStoreStateEnvelope,
-  CredentialUpdateEnvelope,
   CredentialUpdateRequest,
+  OperationRequest,
 } from "../../bindings/telesma/service";
 import { m } from "../paraglide/messages.js";
-import { api } from "./api.js";
+import { api } from "$lib/api.js";
 import {
   credentialDeletePreview,
   credentialDeleteResult,
-  credentialStoreStateResult,
   credentialTarget,
   credentialsReport,
   credentialUpdatePreview,
   credentialUpdateResult,
-} from "./ctapkit-results.js";
+} from "$lib/ctapkit-results.js";
 import {
   beginPasskeysInventoryLoad,
-  beginCredentialStoreStateLoad,
   completePasskeysInventoryLoad,
-  completeCredentialStoreStateLoad,
-  failCredentialStoreStateLoadAtRuntime,
-  failCredentialStoreStateLoadWithContractError,
-  failCredentialStoreStateLoadWithResponse,
   failPasskeysInventoryLoadAtRuntime,
   failPasskeysInventoryLoadWithResponse,
   passkeysInventoryState,
@@ -43,69 +34,72 @@ import {
   type CredentialUpdateValidationError,
   type PasskeysMutationState,
   type PasskeysStatusFilter,
-} from "./features/passkeys/state.js";
-import { selectedSelector, authenticatorStatus } from "./features/authenticator/state.js";
-import { activeScreen } from "./features/workbench/state.js";
-import { internalFailure, runtimeFailureFrom } from "./failure.js";
-import { currentSelectionID } from "./authenticator-boundary.js";
+} from "$lib/features/passkeys/state.js";
+import { selectedSelector, authenticatorStatus } from "$lib/features/authenticator/state.js";
+import { activeScreen } from "$lib/features/workbench/state.js";
+import { currentSelectionID } from "$lib/authenticator-boundary.js";
 import {
-  editingMutation,
-  executingMutation,
-  failedEditableMutation,
-  failedMutation,
-  idleMutation,
-  mutationExecutionContext,
-  previewingMutation,
-  reviewedMutation,
-  type MutationFailedPhase,
-} from "./mutation-lifecycle.js";
+  editingConfirmedOperation,
+  idleConfirmedOperation,
+  runConfirmedExecution,
+  runConfirmedPreview,
+} from "$lib/confirmed-operation.js";
 import {
   completeOperation,
-  operationStageFailureDetails,
   requestForCurrentSelection,
   runOperation,
-  runTypedOperationStage,
-} from "./operation-lifecycle.js";
+} from "$lib/operation-lifecycle.js";
 
 function passkeysAutoLoadKey() {
   const selector = get(selectedSelector).trim();
   const selectionId = get(authenticatorStatus).selectionId || "";
+
   return selector && selectionId ? `${selector}:${selectionId}` : "";
 }
 
 function shouldAutoLoadPasskeys() {
   const inventory = get(passkeysInventoryState);
-  return get(activeScreen) === "passkeys"
-    && Boolean(passkeysAutoLoadKey())
-    && !inventory.report
-    && inventory.phase !== "loading"
-    && inventory.phase !== "refreshing"
-    && inventory.phase !== "unsupported";
+
+  return (
+    get(activeScreen) === "passkeys" &&
+    Boolean(passkeysAutoLoadKey()) &&
+    !inventory.report &&
+    inventory.phase !== "loading" &&
+    inventory.phase !== "refreshing" &&
+    inventory.phase !== "unsupported"
+  );
 }
 
 function reconcileSelectedCredential() {
   const selectedID = get(passkeysSelectedCredentialID);
+
   if (!selectedID) return;
+
   if (credentialTarget(get(passkeysInventoryState).report, selectedID)) return;
+
   passkeysSelectedCredentialID.set("");
-  passkeysMutation.set(idleMutation());
+  passkeysMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
 }
 
 export async function maybeLoadPasskeys() {
   if (!shouldAutoLoadPasskeys()) return;
+
   await loadPasskeys();
 }
 
 export async function loadPasskeys() {
   const selector = get(selectedSelector).trim();
+
   if (!selector) {
     resetPasskeysDeviceState();
+
     return false;
   }
 
   beginPasskeysInventoryLoad();
+
   const label = m.credential_inventory();
-  const request: CredentialListRequest = {
+  const request: OperationRequest = {
     selectionId: currentSelectionID(),
     verificationFlow: get(passkeysVerificationFlow),
   };
@@ -114,49 +108,23 @@ export async function loadPasskeys() {
     call: () => api.listCredentials(requestForCurrentSelection(request)),
     onRuntimeFailure: failPasskeysInventoryLoadAtRuntime,
   });
+
   if (!attempt.ok) return false;
 
   const envelope = attempt.envelope;
-  const report = credentialsReport(envelope);
-  if (envelope.error || !report) {
+
+  if (envelope.error) {
     failPasskeysInventoryLoadWithResponse(
-      envelope.error?.code === Code.CodeCredentialManagementUnsupported,
+      envelope.error.code === Code.CodeCredentialManagementUnsupported,
     );
   } else {
-    completePasskeysInventoryLoad(report, new Date().toISOString());
+    completePasskeysInventoryLoad(credentialsReport(envelope)!, new Date().toISOString());
     reconcileSelectedCredential();
   }
-  completeOperation(label, envelope, { contractValid: Boolean(report) });
-  return !envelope.error && Boolean(report);
-}
 
-export async function loadCredentialStoreState(): Promise<boolean> {
-  const inventory = get(passkeysInventoryState).report;
-  if (!get(selectedSelector).trim() || !inventory?.support.readOnlyPermission) return false;
+  completeOperation(label, envelope);
 
-  beginCredentialStoreStateLoad();
-  const label = m.credential_store_state_operation();
-  const attempt = await runOperation({
-    label,
-    call: (): Promise<CredentialStoreStateEnvelope> => api.credentialStoreState({
-      selectionId: currentSelectionID(),
-      verificationFlow: get(passkeysVerificationFlow),
-    }),
-    onRuntimeFailure: failCredentialStoreStateLoadAtRuntime,
-  });
-  if (!attempt.ok) return false;
-
-  const envelope = attempt.envelope;
-  const result = credentialStoreStateResult(envelope);
-  if (envelope.error) {
-    failCredentialStoreStateLoadWithResponse(envelope);
-  } else if (!result) {
-    failCredentialStoreStateLoadWithContractError(envelope, internalFailure());
-  } else {
-    completeCredentialStoreStateLoad(envelope);
-  }
-  completeOperation(label, envelope, { contractValid: Boolean(result) });
-  return !envelope.error && Boolean(result);
+  return !envelope.error;
 }
 
 export function setPasskeysQuery(value: string) {
@@ -177,11 +145,17 @@ export function setPasskeysVerificationFlow(value: VerificationFlow) {
 
 function mutationsAvailable(kind: "update" | "delete") {
   const inventory = get(passkeysInventoryState);
+
   if (inventory.phase === "loading" || inventory.phase === "refreshing") return false;
+
   const authenticator = get(authenticatorStatus);
+
   if (authenticator.state !== "ready" || !authenticator.selectionId) return false;
+
   const report = inventory.report;
+
   if (!report?.support.credentialManagement) return false;
+
   return kind === "delete" || !report.support.previewOnly;
 }
 
@@ -208,36 +182,63 @@ function editingCredentialUpdate(
   base: ReturnType<typeof updateMutationBase>,
   validationError: CredentialUpdateValidationError | null,
 ) {
-  return editingMutation(base, validationError);
+  return {
+    ...base,
+    operation: editingConfirmedOperation(validationError),
+  };
 }
 
 export function beginCredentialUpdate(credentialIDHex = get(passkeysSelectedCredentialID)) {
   if (!mutationsAvailable("update")) return false;
+
   const target = credentialTarget(get(passkeysInventoryState).report, credentialIDHex);
+
   if (!target) return false;
+
   passkeysSelectedCredentialID.set(credentialIDHex);
-  passkeysMutation.set(editingCredentialUpdate({
-    kind: "update" as const,
-    target,
-    form: updateFormFor(target),
-  }, null));
+  passkeysMutation.set(
+    editingCredentialUpdate(
+      {
+        kind: "update" as const,
+        target,
+        form: updateFormFor(target),
+      },
+      null,
+    ),
+  );
+
   return true;
 }
 
 export function updateCredentialDraft(patch: Partial<CredentialUpdateForm>) {
   const current = get(passkeysMutation);
+
   if (current.kind !== "update") return false;
-  passkeysMutation.set(editingCredentialUpdate({
-    ...updateMutationBase(current),
-    form: { ...current.form, ...patch },
-  }, null));
+
+  passkeysMutation.set(
+    editingCredentialUpdate(
+      {
+        ...updateMutationBase(current),
+        form: { ...current.form, ...patch },
+      },
+      null,
+    ),
+  );
+
   return true;
 }
 
 export function editCredentialUpdate() {
   const current = get(passkeysMutation);
-  if (current.kind !== "update" || (current.phase !== "review" && current.phase !== "error")) return false;
+
+  if (
+    current.kind !== "update" ||
+    (current.operation.phase !== "review" && current.operation.phase !== "error")
+  )
+    return false;
+
   passkeysMutation.set(editingCredentialUpdate(updateMutationBase(current), null));
+
   return true;
 }
 
@@ -254,7 +255,10 @@ export function validateCredentialUpdate(
 ): CredentialUpdateValidationError | null {
   const current = normalizeCredentialUpdateForm(original);
   const proposed = normalizeCredentialUpdateForm(form);
-  if (current.name === proposed.name && current.displayName === proposed.displayName) return "no-changes";
+
+  if (current.name === proposed.name && current.displayName === proposed.displayName)
+    return "no-changes";
+
   return null;
 }
 
@@ -268,6 +272,7 @@ export function buildCredentialUpdatePreviewRequest(
   const proposed = normalizeCredentialUpdateForm(form);
   const nameChanged = proposed.name !== current.name;
   const displayNameChanged = proposed.displayName !== current.displayName;
+
   return {
     selectionId,
     verificationFlow,
@@ -278,32 +283,22 @@ export function buildCredentialUpdatePreviewRequest(
   };
 }
 
-function updateError(
-  current: Extract<PasskeysMutationState, { kind: "update" }>,
-  failedPhase: MutationFailedPhase,
-  previewRequest: CredentialUpdateRequest | null,
-  previewEnvelope: CredentialUpdateEnvelope | null,
-  responseEnvelope: CredentialUpdateEnvelope | null,
-  runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
-  failureReason: "response-error" | "runtime-error" | "missing-preview" | "missing-result",
-) {
-  passkeysMutation.set(failedEditableMutation(updateMutationBase(current), {
-    failedPhase,
-    previewRequest,
-    previewEnvelope,
-    responseEnvelope,
-    runtimeError,
-    failureReason,
-  }));
-}
-
 export async function previewCredentialUpdate(): Promise<boolean> {
   const current = get(passkeysMutation);
-  if (current.kind !== "update" || (current.phase !== "editing" && current.phase !== "error")) return false;
+
+  if (
+    current.kind !== "update" ||
+    (current.operation.phase !== "editing" && current.operation.phase !== "error")
+  )
+    return false;
+
   if (!mutationsAvailable("update")) return false;
+
   const validationError = validateCredentialUpdate(updateFormFor(current.target), current.form);
+
   if (validationError) {
     passkeysMutation.set(editingCredentialUpdate(updateMutationBase(current), validationError));
+
     return false;
   }
 
@@ -314,78 +309,53 @@ export async function previewCredentialUpdate(): Promise<boolean> {
     current.form,
   );
 
-  passkeysMutation.set(previewingMutation(updateMutationBase(current), request));
-  const label = m.credential_update_preview();
-  const outcome = await runTypedOperationStage({
-    label,
-    call: () => api.updateCredentialUser(requestForCurrentSelection(request)),
+  const base = updateMutationBase(current);
+
+  return runConfirmedPreview({
+    label: m.credential_update_preview(),
+    request,
+    call: api.updateCredentialUser,
     extract: credentialUpdatePreview,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-preview");
-      updateError(current, "previewing", request, null, details.responseEnvelope, details.runtimeError, details.failureReason);
-    },
-    onSuccess: (_preview, envelope) => passkeysMutation.set(
-      reviewedMutation(updateMutationBase(current), request, envelope),
-    ),
+    publish: (operation) => passkeysMutation.set({ ...base, operation }),
   });
-  return outcome.ok;
 }
 
 export async function confirmCredentialUpdate(): Promise<boolean> {
   const current = get(passkeysMutation);
-  if (current.kind !== "update" || (current.phase !== "review" && current.phase !== "error")) return false;
-  const execution = mutationExecutionContext(current);
-  if (!execution) return false;
-  const { previewRequest, previewEnvelope } = execution;
-  const request: CredentialUpdateRequest = {
-    ...previewRequest,
-    dryRun: false,
-  };
-  passkeysMutation.set(executingMutation(
-    updateMutationBase(current),
-    previewRequest,
-    previewEnvelope,
-  ));
-  const label = m.credential_update();
-  const outcome = await runTypedOperationStage({
-    label,
-    call: () => api.updateCredentialUser(requestForCurrentSelection(request)),
+
+  if (
+    current.kind !== "update" ||
+    (current.operation.phase !== "review" && current.operation.phase !== "error")
+  )
+    return false;
+
+  const base = updateMutationBase(current);
+  const succeeded = await runConfirmedExecution({
+    label: m.credential_update(),
+    operation: current.operation,
+    call: api.updateCredentialUser,
     extract: credentialUpdateResult,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-result");
-      updateError(current, "executing", previewRequest, previewEnvelope, details.responseEnvelope, details.runtimeError, details.failureReason);
-    },
+    publish: (operation) => passkeysMutation.set({ ...base, operation }),
     onSuccess: () => {
       passkeysSelectedCredentialID.set(current.target.record.credentialIDHex);
-      passkeysMutation.set(idleMutation());
+      passkeysMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
     },
   });
-  if (!outcome.ok) return false;
+
+  if (!succeeded) return false;
+
   await loadPasskeys();
+
   return true;
 }
 
-function deleteError(
-  credentialIDHex: string,
-  failedPhase: MutationFailedPhase,
-  previewRequest: CredentialDeleteRequest | null,
-  previewEnvelope: CredentialDeleteEnvelope | null,
-  responseEnvelope: CredentialDeleteEnvelope | null,
-  runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
-  failureReason: "response-error" | "runtime-error" | "missing-preview" | "missing-result",
-) {
-  passkeysMutation.set(failedMutation(deleteMutationBase(credentialIDHex), {
-    failedPhase,
-    previewRequest,
-    previewEnvelope,
-    responseEnvelope,
-    runtimeError,
-    failureReason,
-  }));
-}
-
 async function previewCredentialDelete(credentialIDHex: string): Promise<boolean> {
-  if (!mutationsAvailable("delete") || !credentialTarget(get(passkeysInventoryState).report, credentialIDHex)) return false;
+  if (
+    !mutationsAvailable("delete") ||
+    !credentialTarget(get(passkeysInventoryState).report, credentialIDHex)
+  )
+    return false;
+
   const request: CredentialDeleteRequest = {
     selectionId: currentSelectionID(),
     verificationFlow: get(passkeysVerificationFlow),
@@ -394,21 +364,16 @@ async function previewCredentialDelete(credentialIDHex: string): Promise<boolean
   };
 
   passkeysSelectedCredentialID.set(credentialIDHex);
-  passkeysMutation.set(previewingMutation(deleteMutationBase(credentialIDHex), request));
-  const label = m.credential_delete_preview();
-  const outcome = await runTypedOperationStage({
-    label,
-    call: () => api.deleteCredential(requestForCurrentSelection(request)),
+
+  const base = deleteMutationBase(credentialIDHex);
+
+  return runConfirmedPreview({
+    label: m.credential_delete_preview(),
+    request,
+    call: api.deleteCredential,
     extract: credentialDeletePreview,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-preview");
-      deleteError(credentialIDHex, "previewing", request, null, details.responseEnvelope, details.runtimeError, details.failureReason);
-    },
-    onSuccess: (_preview, envelope) => passkeysMutation.set(
-      reviewedMutation(deleteMutationBase(credentialIDHex), request, envelope),
-    ),
+    publish: (operation) => passkeysMutation.set({ ...base, operation }),
   });
-  return outcome.ok;
 }
 
 export function beginCredentialDelete(credentialIDHex = get(passkeysSelectedCredentialID)) {
@@ -417,38 +382,33 @@ export function beginCredentialDelete(credentialIDHex = get(passkeysSelectedCred
 
 export async function confirmCredentialDelete(): Promise<boolean> {
   const current = get(passkeysMutation);
-  if (current.kind !== "delete" || (current.phase !== "review" && current.phase !== "error")) return false;
-  const execution = mutationExecutionContext(current);
-  if (!execution) return false;
-  const { previewRequest, previewEnvelope } = execution;
-  const request: CredentialDeleteRequest = {
-    ...previewRequest,
-    dryRun: false,
-  };
-  passkeysMutation.set(executingMutation(
-    deleteMutationBase(current.credentialIDHex),
-    previewRequest,
-    previewEnvelope,
-  ));
-  const label = m.credential_delete();
-  const outcome = await runTypedOperationStage({
-    label,
-    call: () => api.deleteCredential(requestForCurrentSelection(request)),
+
+  if (
+    current.kind !== "delete" ||
+    (current.operation.phase !== "review" && current.operation.phase !== "error")
+  )
+    return false;
+
+  const base = deleteMutationBase(current.credentialIDHex);
+  const succeeded = await runConfirmedExecution({
+    label: m.credential_delete(),
+    operation: current.operation,
+    call: api.deleteCredential,
     extract: credentialDeleteResult,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-result");
-      deleteError(current.credentialIDHex, "executing", previewRequest, previewEnvelope, details.responseEnvelope, details.runtimeError, details.failureReason);
-    },
+    publish: (operation) => passkeysMutation.set({ ...base, operation }),
     onSuccess: () => {
       passkeysSelectedCredentialID.set("");
-      passkeysMutation.set(idleMutation());
+      passkeysMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
     },
   });
-  if (!outcome.ok) return false;
+
+  if (!succeeded) return false;
+
   await loadPasskeys();
+
   return true;
 }
 
 export function closePasskeysMutation() {
-  passkeysMutation.set(idleMutation());
+  passkeysMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
 }

@@ -5,37 +5,39 @@ import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/mod
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { CredentialsEnvelope } from "../../bindings/telesma/service";
 
-import { setAppLocale } from "./i18n.js";
-import {
-  operationStageFailureDetails,
-  requestForCurrentSelection,
-  runTypedOperationStage,
-} from "./operation-lifecycle.js";
+import { runConfirmedPreview } from "$lib/confirmed-operation.js";
+import { setAppLocale } from "$lib/i18n.js";
+import { requestForCurrentSelection, runTypedOperationStage } from "$lib/operation-lifecycle.js";
 import {
   cancelOperationRecovery,
   operationRecovery,
   retryOperationRecovery,
-} from "./operation-recovery.js";
+} from "$lib/operation-recovery.js";
 import {
   resetAppStateForTest,
   seedDevicesForTest,
   seedSelectionForTest,
-} from "./store-test-utils.js";
-import { failureForCode } from "./test-failure.js";
-import { statusBar } from "./features/workbench/state.js";
+} from "$lib/test-support/store-utils.js";
+import { failureForCode } from "$lib/test-support/failure.js";
+import { statusBar } from "$lib/features/workbench/state.js";
 import { testSmartCardDevice } from "../test/device.js";
 
-function envelope(error: CredentialsEnvelope["error"] = null): CredentialsEnvelope {
-  return {
+function envelope(error?: NonNullable<CredentialsEnvelope["error"]>): CredentialsEnvelope {
+  const base = {
     operationId: "operation-1",
     selectionId: "authenticator-1",
     kind: OperationKind.ListCredentials,
-    error,
-  } as CredentialsEnvelope;
+    authenticatorClosed: false,
+  };
+
+  return error
+    ? ({ ...base, error } as CredentialsEnvelope)
+    : ({ ...base, result: {} } as CredentialsEnvelope);
 }
 
 function seedReadyCard(id = "card-1") {
   const card = testSmartCardDevice(id);
+
   seedDevicesForTest([card]);
   seedSelectionForTest(id, card, {
     state: "ready",
@@ -50,39 +52,23 @@ describe("typed operation stages", () => {
     seedReadyCard();
   });
 
-  it("classifies a generated response error before its extracted partial value", async () => {
+  it("classifies a generated response error without extracting a result", async () => {
     const response = envelope(failureForCode(Code.CodeTransportFailure));
     const onFailure = vi.fn();
+    const extract = vi.fn(() => ({ preview: true }));
 
     const outcome = await runTypedOperationStage({
       label: "Preview",
       call: async () => response,
-      extract: () => ({ preview: true }),
+      extract,
       onFailure,
     });
 
     if (outcome.ok) throw new Error("expected an operation-stage failure");
-    expect(outcome).toMatchObject({ ok: false, reason: "response-error", envelope: response });
+
+    expect(outcome).toEqual({ ok: false, reason: "response-error", envelope: response });
+    expect(extract).not.toHaveBeenCalled();
     expect(onFailure).toHaveBeenCalledWith(outcome);
-    expect(operationStageFailureDetails(outcome, "missing-preview")).toEqual({
-      responseEnvelope: response,
-      runtimeError: null,
-      failureReason: "response-error",
-    });
-  });
-
-  it("reports a successful envelope with no typed contract as a contract failure", async () => {
-    const response = envelope();
-
-    const outcome = await runTypedOperationStage({
-      label: "Execute",
-      call: async () => response,
-      extract: () => null,
-      onFailure: () => {},
-    });
-
-    expect(outcome).toEqual({ ok: false, reason: "missing-contract", envelope: response });
-    expect(get(statusBar).lastOutcome).toMatchObject({ tone: "error" });
   });
 
   it("keeps thrown runtime failures separate from generated envelopes", async () => {
@@ -90,7 +76,9 @@ describe("typed operation stages", () => {
 
     const outcome = await runTypedOperationStage({
       label: "Execute",
-      call: async (): Promise<CredentialsEnvelope> => { throw new Error("bridge unavailable"); },
+      call: async (): Promise<CredentialsEnvelope> => {
+        throw new Error("bridge unavailable");
+      },
       extract: () => ({}),
       onFailure,
     });
@@ -126,7 +114,9 @@ describe("typed operation stages", () => {
     expect(call).toHaveBeenCalledOnce();
 
     cancelOperationRecovery();
+
     const outcome = await pending;
+
     expect(outcome).toMatchObject({
       ok: false,
       reason: "response-error",
@@ -142,12 +132,13 @@ describe("typed operation stages", () => {
     const responses = [response, envelope()];
     const call = vi.fn(async () => {
       sentSelectionIds.push(requestForCurrentSelection(request).selectionId);
+
       return responses.shift()!;
     });
     const pending = runTypedOperationStage({
       label: "List credentials",
       call,
-      extract: (value) => value.error ? null : {},
+      extract: (value) => (value.error ? null : {}),
       onFailure: () => {},
     });
 
@@ -158,10 +149,7 @@ describe("typed operation stages", () => {
     expect(retryOperationRecovery()).toBe(true);
 
     await expect(pending).resolves.toMatchObject({ ok: true });
-    expect(sentSelectionIds).toEqual([
-      "authenticator-card-1",
-      "authenticator-card-2",
-    ]);
+    expect(sentSelectionIds).toEqual(["authenticator-card-1", "authenticator-card-2"]);
   });
 
   it("prompts again when an explicit retry receives another eligible error", async () => {
@@ -203,5 +191,52 @@ describe("typed operation stages", () => {
     expect(outcome).toMatchObject({ ok: false, reason: "response-error" });
     expect(call).toHaveBeenCalledOnce();
     expect(get(operationRecovery)).toBeNull();
+  });
+
+  it("finishes a confirmed preview that does not require review", async () => {
+    const response = envelope();
+    const preview = { requiresReview: false };
+    const publish = vi.fn();
+    const onSkipped = vi.fn();
+
+    await expect(
+      runConfirmedPreview({
+        label: "Preview cleanup",
+        request: { selectionId: "stale-selection" },
+        call: async () => response,
+        extract: () => preview,
+        publish,
+        shouldReview: (value) => value.requiresReview,
+        onSkipped,
+      }),
+    ).resolves.toBe(true);
+
+    expect(publish).toHaveBeenCalledOnce();
+    expect(publish).toHaveBeenCalledWith({ phase: "previewing" });
+    expect(onSkipped).toHaveBeenCalledWith(preview, response);
+    expect(get(statusBar).activeOperation).toBeNull();
+  });
+
+  it("retains the extracted preview value in review state", async () => {
+    const response = envelope();
+    const preview = { requiresReview: true };
+    const publish = vi.fn();
+
+    await expect(
+      runConfirmedPreview({
+        label: "Preview mutation",
+        request: { selectionId: "stale-selection" },
+        call: async () => response,
+        extract: () => preview,
+        publish,
+      }),
+    ).resolves.toBe(true);
+
+    expect(publish).toHaveBeenLastCalledWith({
+      phase: "review",
+      previewRequest: { selectionId: "authenticator-card-1" },
+      previewEnvelope: response,
+      previewValue: preview,
+    });
   });
 });

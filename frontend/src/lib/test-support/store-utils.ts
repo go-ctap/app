@@ -1,35 +1,40 @@
-import type { LookupResult } from "../../bindings/github.com/go-ctap/mds/model";
-import { Code, type Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import type { LookupResult } from "../../../bindings/github.com/go-ctap/mds/model";
+import { Code, type Failure } from "../../../bindings/github.com/go-ctap/kit/model/failure";
+import type { DeviceReport } from "../../../bindings/github.com/go-ctap/kit/model/report";
 import type {
   BioSensorEnvelope,
   CredentialsEnvelope,
   InspectEnvelope,
   InteractionPrompt,
   LargeBlobListEnvelope,
-} from "../../bindings/telesma/service";
+} from "../../../bindings/telesma/service";
 
-import { deviceFeatureLifecycles } from "./feature-lifecycle.js";
-import { resetInteractionStateForTest, pendingInteraction } from "./features/interaction/state.js";
-import "./features/lab/state.js";
+import {
+  resetInteractionStateForTest,
+  pendingInteraction,
+} from "$lib/features/interaction/state.js";
+import { resetLabStateForTest } from "$lib/features/lab/state.js";
 import {
   completeLargeBlobsInventoryLoad,
   emptyLargeBlobsInventoryState,
   largeBlobsInventoryState,
-} from "./features/largeblobs/state.js";
+  resetLargeBlobsStateForTest,
+} from "$lib/features/largeblobs/state.js";
 import {
   errorLoadState,
   idleLoadState,
   overviewBioSensor,
   overviewMDS,
   readyLoadState,
-} from "./features/overview/state.js";
+  resetOverviewDeviceState,
+} from "$lib/features/overview/state.js";
 import {
   completePasskeysInventoryLoad,
   emptyPasskeysInventoryState,
   passkeysInventoryState,
-} from "./features/passkeys/state.js";
-import { credentialsReport } from "./ctapkit-results.js";
+  resetPasskeysStateForTest,
+} from "$lib/features/passkeys/state.js";
+import { credentialsReport } from "$lib/ctapkit-results.js";
 import {
   authenticatorInspection,
   devices,
@@ -37,22 +42,23 @@ import {
   selectedSelector,
   authenticatorStatus,
   resetAuthenticatorStateForTest,
-} from "./features/authenticator/state.js";
-import "./features/security/state.js";
-import { cancelOperationRecovery } from "./operation-recovery.js";
-import {
-  activeScreen,
-  resetWorkbenchStateForTest,
-} from "./features/workbench/state.js";
-import type { AuthenticatorStatus } from "./authenticator-model.js";
-import type { ActiveScreen } from "./features/workbench/index.js";
+} from "$lib/features/authenticator/state.js";
+import { resetSecurityDeviceState } from "$lib/features/security/state.js";
+import { cancelOperationRecovery } from "$lib/operation-recovery.js";
+import { activeScreen, resetWorkbenchStateForTest } from "$lib/features/workbench/state.js";
+import type { AuthenticatorStatus } from "$lib/authenticator-model.js";
+import type { ActiveScreen } from "$lib/features/workbench";
 
 export function resetAppStateForTest() {
   cancelOperationRecovery();
   resetAuthenticatorStateForTest();
   resetWorkbenchStateForTest();
   resetInteractionStateForTest();
-  deviceFeatureLifecycles.resetForTest();
+  resetOverviewDeviceState();
+  resetPasskeysStateForTest();
+  resetLargeBlobsStateForTest();
+  resetLabStateForTest();
+  resetSecurityDeviceState();
 }
 
 export function seedActiveScreenForTest(screen: ActiveScreen) {
@@ -63,7 +69,11 @@ export function seedDevicesForTest(items: DeviceReport[]) {
   devices.set(items);
 }
 
-export function seedSelectionForTest(selector: string, device: DeviceReport | null, authenticator: AuthenticatorStatus) {
+export function seedSelectionForTest(
+  selector: string,
+  device: DeviceReport | null,
+  authenticator: AuthenticatorStatus,
+) {
   selectedSelector.set(selector);
   selectedDevice.set(device);
   authenticatorStatus.set(authenticator);
@@ -76,12 +86,12 @@ export function seedPendingInteractionForTest(prompt: InteractionPrompt | null) 
 export function seedOverviewEnvelopeForTest(envelope: InspectEnvelope | null) {
   if (!envelope) {
     authenticatorInspection.set(idleLoadState());
+
     return;
   }
+
   authenticatorInspection.set(
-    envelope.error
-      ? errorLoadState(envelope.error, envelope)
-      : readyLoadState(envelope),
+    envelope.error ? errorLoadState(envelope.error, envelope) : readyLoadState(envelope),
   );
 }
 
@@ -92,52 +102,82 @@ export function seedOverviewBioSensorEnvelopeForTest(envelope: BioSensorEnvelope
 export function seedOverviewMDSForTest(data: LookupResult | null, error?: Failure | null) {
   if (error) {
     overviewMDS.set({ state: "error", data, error });
+
     return;
   }
+
   if (!data) {
     overviewMDS.set(idleLoadState());
+
     return;
   }
+
   overviewMDS.set(readyLoadState(data));
 }
 
-export function seedPasskeysEnvelopeForTest(envelope: CredentialsEnvelope | null, error?: Failure | null) {
+export function seedPasskeysEnvelopeForTest(
+  envelope: CredentialsEnvelope | null,
+  error?: Failure | null,
+) {
   if (error) {
     passkeysInventoryState.set({
       ...emptyPasskeysInventoryState(),
       phase: "error",
       report: envelope?.result ?? null,
     });
+
     return;
   }
+
   if (!envelope) {
     passkeysInventoryState.set(emptyPasskeysInventoryState());
+
     return;
   }
+
   const report = credentialsReport(envelope);
+
   if (report) {
     completePasskeysInventoryLoad(report, "2026-06-22T00:00:00.000Z");
+
     return;
   }
+
   passkeysInventoryState.set({
     ...emptyPasskeysInventoryState(),
-    phase: envelope.error?.code === Code.CodeCredentialManagementUnsupported ? "unsupported" : "error",
+    phase:
+      envelope.error?.code === Code.CodeCredentialManagementUnsupported ? "unsupported" : "error",
   });
 }
 
-export function seedLargeBlobsEnvelopeForTest(envelope: LargeBlobListEnvelope | null, error?: Failure | null) {
+export function seedLargeBlobsEnvelopeForTest(
+  envelope: LargeBlobListEnvelope | null,
+  error?: Failure | null,
+) {
   if (error) {
     largeBlobsInventoryState.set({
       ...emptyLargeBlobsInventoryState(),
       phase: "error",
-      lastSuccessfulEnvelope: envelope,
-      runtimeError: error,
+      report: envelope?.result ?? null,
     });
+
     return;
   }
+
   if (!envelope) {
     largeBlobsInventoryState.set(emptyLargeBlobsInventoryState());
+
     return;
   }
-  completeLargeBlobsInventoryLoad(envelope, "2026-06-22T00:00:00.000Z");
+
+  if (envelope.result) {
+    completeLargeBlobsInventoryLoad(envelope.result, "2026-06-22T00:00:00.000Z");
+
+    return;
+  }
+
+  largeBlobsInventoryState.set({
+    ...emptyLargeBlobsInventoryState(),
+    phase: envelope.error?.code === Code.CodeLargeBlobUnsupported ? "unsupported" : "error",
+  });
 }

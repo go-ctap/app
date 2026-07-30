@@ -5,33 +5,43 @@ import { m } from "../paraglide/messages.js";
 
 export function labelDevice(device: DeviceReport | null | undefined) {
   if (!device) return m.no_token_selected();
+
   const name = deviceName(device);
   const serialValue = device.identity?.serial;
   const serial = serialValue ? ` · ${serialValue}` : "";
+
   return `${name || device.attachment.id || m.authenticator()}${serial}`;
 }
 
 export function deviceName(device: DeviceReport | null | undefined) {
   if (!device) return m.no_token_selected();
-  return device.identity?.model?.trim()
-    || (device.attachment.transport === Mode.ModeSmartCard ? m.fido_smart_card() : "")
-    || device.attachment.usb?.product?.trim()
-    || device.attachment.usb?.manufacturer?.trim()
-    || device.attachment.id
-    || m.authenticator();
+
+  return (
+    device.identity?.model?.trim() ||
+    (device.attachment.transport === Mode.ModeSmartCard ? m.fido_smart_card() : "") ||
+    device.attachment.usb?.product?.trim() ||
+    device.attachment.usb?.manufacturer?.trim() ||
+    device.attachment.id ||
+    m.authenticator()
+  );
 }
 
 export function deviceDetail(device: DeviceReport | null | undefined) {
   if (!device) return "";
+
   return device.identity?.serial ?? "";
 }
 
 export function authenticatorStateLabel(value: unknown) {
   const raw = String(value || "");
+
   if (["idle", "opening", "ready", "running", "error"].includes(raw)) {
     return authenticatorStateText(raw);
   }
-  return raw ? m.unknown_authenticator_state({ state: raw.replaceAll("_", " ") }) : m.state_unknown();
+
+  return raw
+    ? m.unknown_authenticator_state({ state: raw.replaceAll("_", " ") })
+    : m.state_unknown();
 }
 
 export function operationStageLabel(value: unknown) {
@@ -42,6 +52,7 @@ export function operationStageLabel(value: unknown) {
     "enumerating-credentials": m.stage_enumerating_credentials(),
     "capturing-bio-sample": m.stage_capturing_bio_sample(),
   };
+
   return labels[raw] || raw.replaceAll("-", " ") || m.operation_running();
 }
 
@@ -58,13 +69,19 @@ const permissionMessages: Readonly<Record<string, () => string>> = {
 
 export function permissionLabel(value: unknown) {
   const raw = String(value || "").trim();
+
   if (!raw) return "";
+
   return raw
     .split(",")
     .map((permission) => permission.trim())
     .filter(Boolean)
     .map((permission) => {
-      const key = permission.replace(/^Permission/, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
+      const key = permission
+        .replace(/^Permission/, "")
+        .replace(/[^a-z0-9]/gi, "")
+        .toLowerCase();
+
       return permissionMessages[key]?.() ?? humanizeIdentifier(permission, "Permission");
     })
     .join(" + ");
@@ -89,12 +106,15 @@ const sampleStatusMessages: Readonly<Record<string, () => string>> = {
 
 export function bioSampleStatusLabel(value: unknown) {
   const raw = String(value || "").trim();
+
   if (!raw) return "";
+
   const key = raw
     .replace(/^LastEnrollSampleStatus/, "")
     .replace(/^Fingerprint/, "")
     .replace(/[^a-z0-9]/gi, "")
     .toLowerCase();
+
   return sampleStatusMessages[key]?.() ?? humanizeIdentifier(raw, "LastEnrollSampleStatus");
 }
 
@@ -114,5 +134,6 @@ function authenticatorStateText(raw: string) {
     running: m.authenticator_running(),
     error: m.authenticator_error(),
   };
+
   return labels[raw] || raw;
 }

@@ -20,24 +20,28 @@ import { api } from "$lib/api";
 import { logController } from "$lib/features/logs/state.svelte.js";
 import { setAppLocale } from "$lib/i18n.js";
 
-import LogWorkbench from "./LogWorkbench.svelte";
+import LogWorkbench from "$lib/components/logs/LogWorkbench.svelte";
 
 function appendEntry(sequence: number, values: Partial<LogEntry> = {}) {
   const timestamp = new Date(Date.UTC(2026, 6, 15, 10, 0, sequence)).toISOString();
-  logController.append(new LogJournalRecord({
-    sequence,
-    entry: new LogEntry({
-      timestamp,
-      outcome: LogOutcome.LogOutcomeSucceeded,
-      command: "authenticatorGetInfo",
-      commandCode: 0x04,
-      ...values,
+
+  logController.append(
+    new LogJournalRecord({
+      sequence,
+      entry: new LogEntry({
+        timestamp,
+        outcome: LogOutcome.LogOutcomeSucceeded,
+        command: "authenticatorGetInfo",
+        commandCode: 0x04,
+        ...values,
+      }),
     }),
-  }));
+  );
 }
 
 function layoutRect(element: HTMLElement) {
   const height = element.hasAttribute("data-index") ? 64 : 800;
+
   return {
     x: 0,
     y: 0,
@@ -59,10 +63,14 @@ describe("LogWorkbench", () => {
     logController.setFilters({ outcome: "all" });
     vi.spyOn(api, "clearLogs").mockResolvedValue(new LogCursor({ sequence: 1 }));
     vi.spyOn(api, "readLogs").mockResolvedValue(new LogJournalBatch({ cursor: 1 }));
-    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
+      this: HTMLElement,
+    ) {
       return layoutRect(this);
     });
-    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (this: HTMLElement) {
+    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (
+      this: HTMLElement,
+    ) {
       return this.hasAttribute("data-index") ? 64 : 800;
     });
     vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(1_200);
@@ -81,6 +89,7 @@ describe("LogWorkbench", () => {
 
   it("shows CTAP diagnostics, redaction, search, and clear confirmation", async () => {
     const user = userEvent.setup();
+
     appendEntry(1, {
       command: "authenticatorClientPIN",
       commandCode: 0x06,
@@ -102,21 +111,36 @@ describe("LogWorkbench", () => {
     });
     render(LogWorkbench);
 
-    expect(screen.getAllByText("CTAP command: authenticatorClientPIN · getPinUvAuthTokenUsingPinWithPermissions").length)
-      .toBeGreaterThan(0);
-    expect(screen.getByText("Sensitive fields were redacted: request.PinHashEnc, response.PinUvAuthToken"))
-      .toBeInTheDocument();
+    expect(
+      screen.getAllByText(
+        "CTAP command: authenticatorClientPIN · getPinUvAuthTokenUsingPinWithPermissions",
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "Sensitive fields were redacted: request.PinHashEnc, response.PinUvAuthToken",
+      ),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Request" }));
-    expect(screen.getByText("CBOR diagnostic notation was truncated to 25 bytes. The original CBOR message was 70000 bytes."))
-      .toBeInTheDocument();
-    await waitFor(() => expect(screen.getByRole("region", { name: "Diagnostic CBOR" }).querySelector("pre")?.textContent)
-      .toBe(`{1: 1, 6: "[REDACTED]"}`));
+    expect(
+      screen.getByText(
+        "CBOR diagnostic notation was truncated to 25 bytes. The original CBOR message was 70000 bytes.",
+      ),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("region", { name: "Diagnostic CBOR" }).querySelector("pre")?.textContent,
+      ).toBe(`{1: 1, 6: "[REDACTED]"}`),
+    );
     expect(screen.getByRole("button", { name: "Copy payload" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Response" }));
-    await waitFor(() => expect(screen.getByRole("tabpanel", { name: "Response" }).querySelector("pre")?.textContent)
-      .toBe(`{2: 8, 5: "[REDACTED]"}`));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("tabpanel", { name: "Response" }).querySelector("pre")?.textContent,
+      ).toBe(`{2: 8, 5: "[REDACTED]"}`),
+    );
 
     await user.type(screen.getByRole("searchbox"), "no-match");
     expect(screen.getByText("No matching log entries")).toBeInTheDocument();
@@ -130,6 +154,7 @@ describe("LogWorkbench", () => {
 
   it("shows retained transport diagnostics", async () => {
     const user = userEvent.setup();
+
     appendEntry(1, {
       outcome: LogOutcome.LogOutcomeFailed,
       errorMessage: "transport read: io: read/write on closed pipe",
@@ -142,6 +167,7 @@ describe("LogWorkbench", () => {
 
   it("shows diagnostic failures with the typed CTAP failure", async () => {
     const user = userEvent.setup();
+
     appendEntry(1, {
       outcome: LogOutcome.LogOutcomeFailed,
       request: new LogPayload({
@@ -168,18 +194,23 @@ describe("LogWorkbench", () => {
     expect(screen.getByText("diagnostic schema unavailable")).toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Response" }));
-    expect(screen.getByText("CTAP_CBOR_INVALID · CTAP2_ERR_INVALID_CBOR (0x12)")).toBeInTheDocument();
+    expect(
+      screen.getByText("CTAP_CBOR_INVALID · CTAP2_ERR_INVALID_CBOR (0x12)"),
+    ).toBeInTheDocument();
   });
 
   it("opens a detail sheet and navigates the filtered journal on narrow layouts", async () => {
     const user = userEvent.setup();
+
     vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(800);
     appendEntry(1, { command: "authenticatorGetInfo" });
     appendEntry(2, { command: "authenticatorClientPIN" });
     render(LogWorkbench);
 
     await user.click(screen.getByRole("button", { name: "CTAP command: authenticatorClientPIN" }));
+
     const dialog = screen.getByRole("dialog", { name: "CTAP command: authenticatorClientPIN" });
+
     expect(within(dialog).getByText("Log entry 2 of 2")).toBeInTheDocument();
 
     await user.click(within(dialog).getByRole("button", { name: "Previous log entry" }));
@@ -188,6 +219,7 @@ describe("LogWorkbench", () => {
 
   it("navigates the desktop detail panel with Alt+ArrowUp and Alt+ArrowDown", async () => {
     const user = userEvent.setup();
+
     appendEntry(1, { command: "authenticatorGetInfo" });
     appendEntry(2, { command: "authenticatorClientPIN" });
     render(LogWorkbench);
@@ -209,24 +241,32 @@ describe("LogWorkbench", () => {
 
     logController.setFilters({ outcome: LogOutcome.LogOutcomeFailed });
     await waitFor(() => {
-      expect(screen.queryByRole("button", { name: "CTAP command: authenticatorGetInfo" })).not.toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "CTAP command: authenticatorClientPIN" })).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "CTAP command: authenticatorGetInfo" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "CTAP command: authenticatorClientPIN" }),
+      ).toBeInTheDocument();
     });
   });
 
   it("reports when the runtime retention boundary was crossed", () => {
-    logController.applyBatch(new LogJournalBatch({
-      entries: [new LogJournalRecord({
-        sequence: 1,
-        entry: new LogEntry({
-          timestamp: "2026-07-15T10:00:00.000Z",
-          outcome: LogOutcome.LogOutcomeSucceeded,
-          command: "authenticatorGetInfo",
-        }),
-      })],
-      cursor: 1,
-      truncated: true,
-    }));
+    logController.applyBatch(
+      new LogJournalBatch({
+        entries: [
+          new LogJournalRecord({
+            sequence: 1,
+            entry: new LogEntry({
+              timestamp: "2026-07-15T10:00:00.000Z",
+              outcome: LogOutcome.LogOutcomeSucceeded,
+              command: "authenticatorGetInfo",
+            }),
+          }),
+        ],
+        cursor: 1,
+        truncated: true,
+      }),
+    );
 
     render(LogWorkbench);
     expect(screen.getByText("Earlier log entries are no longer available")).toBeInTheDocument();
@@ -234,10 +274,12 @@ describe("LogWorkbench", () => {
 
   it("renders only the visible window for a large journal", async () => {
     for (let sequence = 1; sequence <= 200; sequence += 1) appendEntry(sequence);
+
     const { container } = render(LogWorkbench);
 
     await waitFor(() => {
       const renderedRows = container.querySelectorAll(".log-virtual-row");
+
       expect(renderedRows.length).toBeGreaterThan(0);
       expect(renderedRows.length).toBeLessThan(200);
     });
@@ -245,9 +287,11 @@ describe("LogWorkbench", () => {
 
   it("always scrolls the virtual journal to the newest record", async () => {
     appendEntry(1);
+
     const { container } = render(LogWorkbench);
     const viewport = container.querySelector<HTMLElement>("[data-slot='scroll-area-viewport']")!;
     const scrollTo = vi.fn();
+
     viewport.scrollTo = scrollTo;
 
     appendEntry(2);

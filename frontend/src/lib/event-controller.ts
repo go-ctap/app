@@ -2,18 +2,22 @@ import { get } from "svelte/store";
 
 import type { OperationEventEnvelope } from "../../bindings/telesma/service";
 
-import { authenticatorStatus } from "./features/authenticator/state.js";
-import { statusBar } from "./features/workbench/state.js";
-import { setStatusOperation } from "./workbench-state.js";
+import { authenticatorStatus } from "$lib/features/authenticator/state.js";
+import { statusBar } from "$lib/features/workbench/state.js";
+import { setStatusOperation } from "$lib/workbench-state.js";
 
 export function handleOperationProgress(data: OperationEventEnvelope) {
   if (!data.operationId) {
     setStatusOperation(null);
+
     return;
   }
 
   const currentOperation = get(statusBar).activeOperation;
-  const canMerge = currentOperation && (!currentOperation.operationId || currentOperation.operationId === data.operationId);
+  const canMerge =
+    currentOperation &&
+    (!currentOperation.operationId || currentOperation.operationId === data.operationId);
+
   setStatusOperation({
     ...(canMerge ? currentOperation : {}),
     operationId: data.operationId,
@@ -23,9 +27,9 @@ export function handleOperationProgress(data: OperationEventEnvelope) {
     total: data.event.total,
     sampleStatus: data.event.sampleStatus,
   });
-  authenticatorStatus.update((authenticator) => (
+  authenticatorStatus.update((authenticator) =>
     authenticator.selectionId === data.selectionId && authenticator.state !== "error"
       ? { ...authenticator, state: "running" }
-      : authenticator
-  ));
+      : authenticator,
+  );
 }

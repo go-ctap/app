@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { setAppLocale } from "$lib/i18n";
 
-import { openExternalLink } from "./external-links";
+import { openExternalLink } from "$lib/external-links";
 
 const toastMocks = vi.hoisted(() => ({
   error: vi.fn(),
@@ -22,6 +22,7 @@ describe("openExternalLink", () => {
 
   it("prevents WebView navigation and delegates the URL to Wails", async () => {
     openURL.mockResolvedValue();
+
     const event = new MouseEvent("click", { cancelable: true });
 
     await expect(openExternalLink(event, "https://example.com/spec")).resolves.toBe(true);
@@ -33,6 +34,7 @@ describe("openExternalLink", () => {
 
   it("reports a runtime failure without navigating the WebView", async () => {
     openURL.mockRejectedValue(new Error("browser unavailable"));
+
     const event = new MouseEvent("click", { cancelable: true });
 
     await expect(openExternalLink(event, "https://example.com/spec")).resolves.toBe(false);

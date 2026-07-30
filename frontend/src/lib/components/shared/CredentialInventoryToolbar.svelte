@@ -1,11 +1,11 @@
 <script lang="ts" generics="TFilter extends string">
   import { FilterX } from "@lucide/svelte";
 
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Field from "$lib/components/ui/field/index.js";
-  import { Input } from "$lib/components/ui/input/index.js";
-  import * as Select from "$lib/components/ui/select/index.js";
-  import { Skeleton } from "$lib/components/ui/skeleton/index.js";
+  import { Button } from "$lib/components/ui/button";
+  import * as Field from "$lib/components/ui/field";
+  import { Input } from "$lib/components/ui/input";
+  import * as Select from "$lib/components/ui/select";
+  import { Skeleton } from "$lib/components/ui/skeleton";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -37,19 +37,26 @@
   }: Props = $props();
 
   let currentFilterLabel = $derived(
-    filters.find((filter) => filter.value === statusFilter)?.label ?? filters[0]?.label ?? m.status(),
+    filters.find((filter) => filter.value === statusFilter)?.label ??
+      filters[0]?.label ??
+      m.status(),
   );
+
   let filtersActive = $derived(Boolean(query.trim()) || statusFilter !== "all");
 
   function handleFilterChange(value: string | string[]) {
     if (Array.isArray(value)) return;
+
     const selected = filters.find((filter) => filter.value === value);
+
     if (selected) onFilterChange(selected.value);
   }
 
   function clearFilters() {
     onQueryChange("");
+
     const all = filters.find((filter) => filter.value === "all");
+
     if (all) onFilterChange(all.value);
   }
 </script>
@@ -103,60 +110,60 @@
 {/if}
 
 <style>
-@layer blocks {
-  .credential-inventory-toolbar {
-    display: grid;
-    grid-template-columns: minmax(12rem, 1fr) minmax(10rem, auto) auto;
-    gap: var(--space-2);
-    align-items: end;
-    min-width: 0;
-  }
-
-  :global(.credential-inventory-toolbar [data-slot="field"]) {
-    min-width: 0;
-  }
-
-  :global(.credential-inventory-toolbar [data-slot="select-trigger"]) {
-    min-width: 10rem;
-  }
-
-  :global(.credential-inventory-toolbar[data-loading] [data-slot="skeleton"]) {
-    height: 2.25rem;
-  }
-
-  :global(.credential-inventory-toolbar [data-slot="toolbar-search-skeleton"]) {
-    width: 100%;
-  }
-
-  :global(.credential-inventory-toolbar [data-slot="toolbar-filter-skeleton"]) {
-    width: 10rem;
-  }
-
-  :global(.credential-inventory-toolbar [data-slot="toolbar-action-skeleton"]) {
-    width: 8rem;
-  }
-
-  @container workspace (max-width: 43rem) {
+  @layer blocks {
     .credential-inventory-toolbar {
-      grid-template-columns: minmax(0, 1fr) auto;
+      display: grid;
+      grid-template-columns: minmax(12rem, 1fr) minmax(10rem, auto) auto;
+      gap: var(--space-2);
+      align-items: end;
+      min-width: 0;
     }
 
-    :global(.credential-inventory-toolbar [data-slot="field"]:first-child),
+    :global(.credential-inventory-toolbar [data-slot="field"]) {
+      min-width: 0;
+    }
+
+    :global(.credential-inventory-toolbar [data-slot="select-trigger"]) {
+      min-width: 10rem;
+    }
+
+    :global(.credential-inventory-toolbar[data-loading] [data-slot="skeleton"]) {
+      height: 2.25rem;
+    }
+
     :global(.credential-inventory-toolbar [data-slot="toolbar-search-skeleton"]) {
-      grid-column: 1 / -1;
-    }
-  }
-
-  @container workspace (max-width: 31rem) {
-    .credential-inventory-toolbar {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    :global(.credential-inventory-toolbar [data-slot="field"]),
-    :global(.credential-inventory-toolbar [data-slot="select-trigger"]),
-    :global(.credential-inventory-toolbar [data-slot="skeleton"]) {
       width: 100%;
     }
+
+    :global(.credential-inventory-toolbar [data-slot="toolbar-filter-skeleton"]) {
+      width: 10rem;
+    }
+
+    :global(.credential-inventory-toolbar [data-slot="toolbar-action-skeleton"]) {
+      width: 8rem;
+    }
+
+    @container workspace (max-width: 43rem) {
+      .credential-inventory-toolbar {
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+
+      :global(.credential-inventory-toolbar [data-slot="field"]:first-child),
+      :global(.credential-inventory-toolbar [data-slot="toolbar-search-skeleton"]) {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @container workspace (max-width: 31rem) {
+      .credential-inventory-toolbar {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      :global(.credential-inventory-toolbar [data-slot="field"]),
+      :global(.credential-inventory-toolbar [data-slot="select-trigger"]),
+      :global(.credential-inventory-toolbar [data-slot="skeleton"]) {
+        width: 100%;
+      }
+    }
   }
-}
 </style>

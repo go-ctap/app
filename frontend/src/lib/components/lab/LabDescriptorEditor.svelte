@@ -1,9 +1,9 @@
 <script lang="ts">
   import { Plus, X } from "@lucide/svelte";
 
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Field from "$lib/components/ui/field/index.js";
-  import * as InputGroup from "$lib/components/ui/input-group/index.js";
+  import { Button } from "$lib/components/ui/button";
+  import * as Field from "$lib/components/ui/field";
+  import * as InputGroup from "$lib/components/ui/input-group";
   import type { LabDescriptorDraft } from "$lib/features/lab/state";
 
   import { m } from "../../../paraglide/messages.js";
@@ -31,9 +31,11 @@
   }: Props = $props();
 
   function updateID(index: number, credentialIDHex: string) {
-    onChange(descriptors.map((descriptor, current) => (
-      current === index ? { ...descriptor, credentialIDHex } : descriptor
-    )));
+    onChange(
+      descriptors.map((descriptor, current) =>
+        current === index ? { ...descriptor, credentialIDHex } : descriptor,
+      ),
+    );
   }
 
   function removeDescriptor(index: number) {
@@ -46,6 +48,7 @@
 
   function handleSingleLineKeydown(event: KeyboardEvent) {
     if (event.key !== "Enter" || event.isComposing || disabled) return;
+
     event.preventDefault();
     void onPrimary();
   }
@@ -62,7 +65,8 @@
         data-invalid={invalidIndices.includes(index)}
       >
         <Field.Label for={`${id}-${index}`} class="sr-only">
-          {label} {index + 1}
+          {label}
+          {index + 1}
         </Field.Label>
         <InputGroup.Root>
           <InputGroup.Addon>
@@ -101,16 +105,16 @@
 </Field.Set>
 
 <style>
-@layer blocks {
-  :global(.lab-descriptor-editor),
-  :global(.lab-descriptor-row),
-  :global(.lab-descriptor-row [data-slot="input-group"]) {
-    min-width: 0;
-  }
+  @layer blocks {
+    :global(.lab-descriptor-editor),
+    :global(.lab-descriptor-row),
+    :global(.lab-descriptor-row [data-slot="input-group"]) {
+      min-width: 0;
+    }
 
-  :global(.lab-descriptor-row) {
-    padding: var(--space-2);
-    border: 1px solid var(--border);
+    :global(.lab-descriptor-row) {
+      padding: var(--space-2);
+      border: 1px solid var(--border);
+    }
   }
-}
 </style>

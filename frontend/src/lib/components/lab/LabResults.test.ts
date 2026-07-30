@@ -38,14 +38,16 @@ import { setAppLocale } from "$lib/i18n";
 import { hexToBase64, utf8ToBase64 } from "$lib/lab-input";
 
 const toastMocks = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+
 vi.mock("svelte-sonner", () => ({ toast: toastMocks }));
 
 const clipboardSetText = vi.spyOn(Clipboard, "SetText");
 
 const makeClientDataJSON =
-  "{\"type\":\"webauthn.create\", \"challenge\":\"make-challenge\", \"origin\":\"https://example.com\"}";
+  '{"type":"webauthn.create", "challenge":"make-challenge", "origin":"https://example.com"}';
+
 const getClientDataJSON =
-  "{\"type\":\"webauthn.get\", \"challenge\":\"get-challenge\", \"origin\":\"https://example.com\"}";
+  '{"type":"webauthn.get", "challenge":"get-challenge", "origin":"https://example.com"}';
 
 function getAssertionPreview(clientDataJSON = getClientDataJSON) {
   return new GetAssertionPreview({
@@ -100,6 +102,7 @@ describe("WebAuthn Lab results", () => {
       rpID: "example.com",
       assertions: [],
     });
+
     renderGetResult(result);
 
     expect(screen.getByText("0 assertions")).toBeInTheDocument();
@@ -144,7 +147,12 @@ describe("WebAuthn Lab results", () => {
       }),
     ];
 
-    const result = new GetAssertionResultDTO({ attachmentId: "token-1", rpID: "example.com", assertions });
+    const result = new GetAssertionResultDTO({
+      attachmentId: "token-1",
+      rpID: "example.com",
+      assertions,
+    });
+
     renderGetResult(result);
 
     expect(screen.getByText("2 assertions")).toBeInTheDocument();
@@ -154,13 +162,14 @@ describe("WebAuthn Lab results", () => {
     expect(screen.getAllByText("False")).toHaveLength(3);
 
     await user.click(screen.getByRole("button", { name: "Technical details" }));
+
     const technicalTabs = screen.getByRole("tablist", { name: "Technical details" });
-    expect(within(technicalTabs).getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
-      "clientDataJSON",
-      "Signature",
-      "Authenticator data",
-      "Result",
-    ]);
+
+    expect(
+      within(technicalTabs)
+        .getAllByRole("tab")
+        .map((tab) => tab.textContent),
+    ).toEqual(["clientDataJSON", "Signature", "Authenticator data", "Result"]);
     await user.click(screen.getByRole("tab", { name: "Signature" }));
     expect(screen.getByRole("region", { name: "Signature" })).toHaveTextContent("aa");
 
@@ -175,22 +184,24 @@ describe("WebAuthn Lab results", () => {
     const result = new GetAssertionResultDTO({
       attachmentId: "token-1",
       rpID: "example.com",
-      assertions: [new Assertion({
-        index: 0,
-        credential: new PublicKeyCredentialDescriptor({
-          type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
-          id: "AA==",
-        }),
-        authenticatorDataHex: "cafe",
-        signatureHex: "aa",
-        extensionResults: new GetAssertionExtensionResults({
-          client: new GetAssertionClientExtensionResults({
-            prf: new GetAssertionPRFOutput({
-              results: new AuthenticationExtensionsPRFValues({ first: hexToBase64(secret) }),
+      assertions: [
+        new Assertion({
+          index: 0,
+          credential: new PublicKeyCredentialDescriptor({
+            type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
+            id: "AA==",
+          }),
+          authenticatorDataHex: "cafe",
+          signatureHex: "aa",
+          extensionResults: new GetAssertionExtensionResults({
+            client: new GetAssertionClientExtensionResults({
+              prf: new GetAssertionPRFOutput({
+                results: new AuthenticationExtensionsPRFValues({ first: hexToBase64(secret) }),
+              }),
             }),
           }),
         }),
-      })],
+      ],
     });
 
     renderGetResult(result);
@@ -204,20 +215,22 @@ describe("WebAuthn Lab results", () => {
     const result = new GetAssertionResultDTO({
       attachmentId: "token-1",
       rpID: "example.com",
-      assertions: [new Assertion({
-        index: 0,
-        credential: new PublicKeyCredentialDescriptor({
-          type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
-          id: "AA==",
-        }),
-        authenticatorDataHex: "cafe",
-        signatureHex: "aa",
-        extensionResults: new GetAssertionExtensionResults({
-          client: new GetAssertionClientExtensionResults({
-            getCredBlob: new CredentialBlobGetOutput({ valueHex: "0102" }),
+      assertions: [
+        new Assertion({
+          index: 0,
+          credential: new PublicKeyCredentialDescriptor({
+            type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
+            id: "AA==",
+          }),
+          authenticatorDataHex: "cafe",
+          signatureHex: "aa",
+          extensionResults: new GetAssertionExtensionResults({
+            client: new GetAssertionClientExtensionResults({
+              getCredBlob: new CredentialBlobGetOutput({ valueHex: "0102" }),
+            }),
           }),
         }),
-      })],
+      ],
     });
 
     renderGetResult(result);
@@ -230,7 +243,7 @@ describe("WebAuthn Lab results", () => {
     const user = userEvent.setup();
     const credentialIDHex = "00112233445566778899aabbccddeeff0011223344556677";
     const exactClientDataJSON =
-      "{\n  \"type\": \"webauthn.create\",\n  \"challenge\": \"signed bytes stay exact\"\n}";
+      '{\n  "type": "webauthn.create",\n  "challenge": "signed bytes stay exact"\n}';
     const result = new MakeCredentialResultDTO({
       attachmentId: "token-1",
       rpID: "example.com",
@@ -256,31 +269,46 @@ describe("WebAuthn Lab results", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Technical details" }));
+
     const technicalTabs = screen.getByRole("tablist", { name: "Technical details" });
-    expect(within(technicalTabs).getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+
+    expect(
+      within(technicalTabs)
+        .getAllByRole("tab")
+        .map((tab) => tab.textContent),
+    ).toEqual([
       "clientDataJSON",
       "Public key COSE",
       "Authenticator data",
       "Attestation object",
       "Result",
     ]);
+
     const clientDataRegion = screen.getByRole("region", { name: "clientDataJSON" });
+
     await waitFor(() => expect(clientDataRegion.textContent).toContain(exactClientDataJSON));
-    expect(screen.getByText(`UTF-8 JSON · ${new TextEncoder().encode(exactClientDataJSON).byteLength} bytes`))
-      .toBeInTheDocument();
+    expect(
+      screen.getByText(
+        `UTF-8 JSON · ${new TextEncoder().encode(exactClientDataJSON).byteLength} bytes`,
+      ),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Copy clientDataJSON" }));
     expect(clipboardSetText).toHaveBeenLastCalledWith(exactClientDataJSON);
 
     await user.click(screen.getByRole("tab", { name: "Result" }));
+
     const resultRegion = screen.getByRole("region", { name: "Result" });
+
     await waitFor(() => expect(resultRegion).toHaveTextContent(credentialIDHex));
     expect(resultRegion).not.toHaveTextContent("operationId");
     expect(resultRegion).not.toHaveTextContent("selectionId");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Copy Result" }));
+
     const copiedResult = clipboardSetText.mock.calls.at(-1)?.[0] ?? "";
+
     expect(copiedResult).toContain(credentialIDHex);
     expect(copiedResult).not.toContain("operationId");
     expect(copiedResult).not.toContain("selectionId");
@@ -315,19 +343,29 @@ describe("WebAuthn Lab results", () => {
     expect(screen.getByLabelText("Hidden secret, 32 bytes")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "WebAuthn client outputs" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "CTAP extension outputs" })).toBeInTheDocument();
-    const credentialPropertiesRow = screen.getByText("credProps · rk").closest("div") as HTMLElement;
+
+    const credentialPropertiesRow = screen
+      .getByText("credProps · rk")
+      .closest("div") as HTMLElement;
+
     expect(within(credentialPropertiesRow).getByText("False")).toBeInTheDocument();
+
     const secretRow = screen.getByText("prf · first").closest("div") as HTMLElement;
+
     expect(within(secretRow).queryByRole("button", { name: /copy/i })).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Technical details" }));
     await user.click(screen.getByRole("tab", { name: "Result" }));
+
     const resultRegion = screen.getByRole("region", { name: "Result" });
+
     await waitFor(() => expect(resultRegion).toHaveTextContent("[redacted]"));
     expect(resultRegion).not.toHaveTextContent(secret);
 
     await user.click(screen.getByRole("button", { name: "Copy Result" }));
+
     const copiedResult = clipboardSetText.mock.calls.at(-1)?.[0] ?? "";
+
     expect(copiedResult).toContain("[redacted]");
     expect(copiedResult).not.toContain(secret);
 

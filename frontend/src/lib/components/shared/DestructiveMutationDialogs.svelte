@@ -1,18 +1,31 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import { TriangleAlert } from "@lucide/svelte";
+  import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 
   import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
+  import * as Alert from "$lib/components/ui/alert";
+  import * as AlertDialog from "$lib/components/ui/alert-dialog";
+  import { Button } from "$lib/components/ui/button";
+  import * as Dialog from "$lib/components/ui/dialog";
+  import {
+    confirmedFailureCanceled,
+    confirmedFailureMessage,
+  } from "$lib/confirmed-operation-presentation";
 
   import { m } from "../../../paraglide/messages.js";
 
+  type Operation =
+    | { phase: "idle" | "editing" | "previewing" | "review" | "executing" | "success" }
+    | {
+        phase: "error";
+        failedPhase: "previewing" | "executing";
+        runtimeError: Failure | null;
+        responseEnvelope: { error?: Failure | null } | null;
+      };
+
   type Props = {
-    previewErrorOpen: boolean;
-    confirmationOpen: boolean;
+    operation: Operation;
     previewTitle: string;
     previewDescription?: string;
     previewCanceledTitle: string;
@@ -21,9 +34,6 @@
     confirmationDescription?: string;
     retryLabel: string;
     confirmLabel: string;
-    failureMessage: string | null;
-    failureCanceled: boolean;
-    previewContent?: Snippet;
     confirmationContent?: Snippet;
     size?: "compact" | "wide";
     onRetry: () => void | Promise<boolean>;
@@ -32,8 +42,7 @@
   };
 
   let {
-    previewErrorOpen,
-    confirmationOpen,
+    operation,
     previewTitle,
     previewDescription,
     previewCanceledTitle,
@@ -42,15 +51,31 @@
     confirmationDescription,
     retryLabel,
     confirmLabel,
-    failureMessage,
-    failureCanceled,
-    previewContent,
     confirmationContent,
     size = "wide",
     onRetry,
     onConfirm,
     onClose,
   }: Props = $props();
+
+  let previewErrorOpen = $derived(
+    operation.phase === "error" && operation.failedPhase === "previewing",
+  );
+
+  let confirmationOpen = $derived(
+    operation.phase === "review" ||
+      (operation.phase === "error" && operation.failedPhase === "executing"),
+  );
+
+  let failureMessage = $derived.by(() => {
+    if (operation.phase !== "error") return null;
+
+    return confirmedFailureMessage(operation);
+  });
+
+  let failureCanceled = $derived(
+    operation.phase === "error" && confirmedFailureCanceled(operation),
+  );
 
   function handleOpenChange(next: boolean) {
     if (!next) onClose();
@@ -81,8 +106,6 @@
           <Alert.Description>{failureMessage}</Alert.Description>
         </Alert.Root>
 
-        {#if previewContent}{@render previewContent()}{/if}
-
         <Dialog.Footer>
           <Button type="button" onclick={() => void onRetry()}>{retryLabel}</Button>
           <Button variant="outline" type="button" onclick={onClose}>{m.close()}</Button>
@@ -109,7 +132,9 @@
             variant={failureCanceled ? "default" : "destructive"}
             role={failureCanceled ? "status" : "alert"}
           >
-            <Alert.Title>{failureCanceled ? operationCanceledTitle : m.operation_failed()}</Alert.Title>
+            <Alert.Title
+              >{failureCanceled ? operationCanceledTitle : m.operation_failed()}</Alert.Title
+            >
             <Alert.Description>{failureMessage}</Alert.Description>
           </Alert.Root>
         {/if}
@@ -128,25 +153,25 @@
 </AlertDialog.Root>
 
 <style>
-@layer blocks {
-  :global(.mutation-preview-error-dialog),
-  :global(.destructive-mutation-dialog) {
-    max-width: none;
-    max-height: calc(100vh - 2rem);
-    overflow: hidden;
-  }
+  @layer blocks {
+    :global(.mutation-preview-error-dialog),
+    :global(.destructive-mutation-dialog) {
+      max-width: none;
+      max-height: calc(100vh - 2rem);
+      overflow: hidden;
+    }
 
-  :global(.mutation-preview-error-dialog[data-size="compact"]) {
-    width: min(30rem, calc(100vw - 2rem));
-  }
+    :global(.mutation-preview-error-dialog[data-size="compact"]) {
+      width: min(30rem, calc(100vw - 2rem));
+    }
 
-  :global(.destructive-mutation-dialog[data-size="compact"]) {
-    width: min(34rem, calc(100vw - 2rem));
-  }
+    :global(.destructive-mutation-dialog[data-size="compact"]) {
+      width: min(34rem, calc(100vw - 2rem));
+    }
 
-  :global(.mutation-preview-error-dialog[data-size="wide"]),
-  :global(.destructive-mutation-dialog[data-size="wide"]) {
-    width: min(42rem, calc(100vw - 2rem));
+    :global(.mutation-preview-error-dialog[data-size="wide"]),
+    :global(.destructive-mutation-dialog[data-size="wide"]) {
+      width: min(42rem, calc(100vw - 2rem));
+    }
   }
-}
 </style>

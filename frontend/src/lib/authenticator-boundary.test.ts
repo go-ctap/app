@@ -6,10 +6,10 @@ import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/mod
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
 import type { CredentialsEnvelope, InteractionPrompt } from "../../bindings/telesma/service";
 
-import { pendingInteraction } from "./features/interaction/state.js";
-import { authenticatorStatus } from "./features/authenticator/state.js";
-import { applyOperationAuthenticatorBoundary } from "./authenticator-boundary.js";
-import { failureForCode } from "./test-failure.js";
+import { pendingInteraction } from "$lib/features/interaction/state.js";
+import { authenticatorStatus } from "$lib/features/authenticator/state.js";
+import { applyOperationAuthenticatorBoundary } from "$lib/authenticator-boundary.js";
+import { failureForCode } from "$lib/test-support/failure.js";
 
 function envelope(authenticatorClosed: boolean, code: Code): CredentialsEnvelope {
   return {

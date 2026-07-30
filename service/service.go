@@ -83,9 +83,11 @@ func New(opts ...Option) *Service {
 			opts ...ctapkit.AuthenticatorOption,
 		) (openedAuthenticator, error) {
 			client, err := inventory.OpenAuthenticator(ctx, attachmentID, opts...)
+
 			if err != nil {
 				return openedAuthenticator{}, err
 			}
+
 			return newOpenedAuthenticator(client), nil
 		},
 		selectionGate: make(chan struct{}, 1),
@@ -113,11 +115,14 @@ func (s *Service) CancelOperation(req CancelOperationRequest) bool {
 
 func (s *Service) cancelOperation(id OperationID) bool {
 	s.mu.Lock()
+
 	selected := s.selected
 	var operation *operationState
+
 	if selected != nil {
 		operation = selected.operations[id]
 	}
+
 	s.mu.Unlock()
 
 	if operation == nil {
@@ -131,10 +136,13 @@ func (s *Service) cancelOperation(id OperationID) bool {
 
 func (s *Service) ResolveInteraction(ctx context.Context, answer InteractionAnswer) (bool, error) {
 	s.mu.Lock()
+
 	pending, ok := s.interactions[answer.InteractionID]
+
 	if ok {
 		delete(s.interactions, answer.InteractionID)
 	}
+
 	s.mu.Unlock()
 
 	if !ok {
@@ -186,6 +194,7 @@ func (s *Service) registerOperation(selected *selection, operation *operationSta
 	if s.closed || s.selected != selected || selected.id != operation.selectionID {
 		return false
 	}
+
 	selected.operations[operation.id] = operation
 
 	return true
@@ -198,6 +207,7 @@ func (s *Service) unregisterOperation(selected *selection, id OperationID) {
 	if operation, ok := selected.operations[id]; ok {
 		close(operation.done)
 	}
+
 	delete(selected.operations, id)
 }
 
@@ -225,8 +235,10 @@ func (s *Service) unregisterInteraction(id InteractionID) {
 
 func (s *Service) emit(name string, payload any) {
 	s.mu.Lock()
+
 	emitter := s.emitter
 	closed := s.closed
+
 	s.mu.Unlock()
 
 	if emitter == nil || closed {
@@ -247,9 +259,11 @@ func (s operationEventSink) Emit(_ context.Context, event model.OperationEvent) 
 
 func (s *Service) emitOperationEvent(operation *operationState, event model.OperationEvent) {
 	s.mu.Lock()
+
 	selected := s.selected
 	ok := operation != nil && selected != nil && selected.id == operation.selectionID &&
 		selected.operations[operation.id] == operation
+
 	s.mu.Unlock()
 	if !ok {
 		return
@@ -277,6 +291,7 @@ func (h interactionHandler) RequestInteraction(ctx context.Context, req model.In
 		Request:       req,
 	}
 	response := make(chan model.InteractionResponse)
+
 	h.service.registerInteraction(prompt, response, h.done)
 	h.service.emit(EventInteractionRequested, prompt)
 	defer h.service.unregisterInteraction(prompt.InteractionID)
@@ -291,12 +306,4 @@ func (h interactionHandler) RequestInteraction(ctx context.Context, req model.In
 	return model.InteractionResponse{}, failure.New(failure.CodeInteractionCanceled,
 		failure.WithPhase(failure.PhaseInteraction),
 	)
-}
-
-func runOptions(verificationFlow ctapkit.VerificationFlow) []ctapkit.OperationOption {
-	if verificationFlow == ctapkit.VerificationFlowDefault {
-		return nil
-	}
-
-	return []ctapkit.OperationOption{ctapkit.WithVerificationFlow(verificationFlow)}
 }

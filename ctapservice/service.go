@@ -3,6 +3,7 @@ package ctapservice
 import (
 	"context"
 
+	ctapkit "github.com/go-ctap/kit"
 	kitmodel "github.com/go-ctap/kit/model"
 	"github.com/wailsapp/wails/v3/pkg/application"
 
@@ -52,12 +53,8 @@ func (s *Service) ClearLogs(_ context.Context) appservice.LogCursor {
 	return s.core.ClearLogs()
 }
 
-func (s *Service) Discover(ctx context.Context, req appservice.DiscoverRequest) (appservice.DiscoverySnapshot, error) {
+func (s *Service) Discover(ctx context.Context, req appservice.DiscoverRequest) (ctapkit.InventorySnapshot, error) {
 	return s.core.Discover(ctx, req)
-}
-
-func (s *Service) RefreshDiscovery(ctx context.Context, req appservice.DiscoverRequest) error {
-	return s.core.RefreshDiscovery(ctx, req)
 }
 
 func (s *Service) SetSelection(ctx context.Context, req appservice.SelectionRequest) (appservice.SelectionSnapshot, error) {
@@ -80,6 +77,7 @@ type wailsEmitter struct{}
 
 func (wailsEmitter) Emit(name string, payload any) {
 	app := application.Get()
+
 	switch name {
 	case appservice.EventDiscoveryChanged:
 		app.Event.Emit(name, payload)

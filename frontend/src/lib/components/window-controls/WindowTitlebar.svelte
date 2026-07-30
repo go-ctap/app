@@ -7,25 +7,17 @@
     class?: string;
   }
 
-  let {
-    children,
-    class: className = "",
-    ...rest
-  }: Props = $props();
+  let { children, class: className = "", ...rest }: Props = $props();
 </script>
 
-<div
-  {...rest}
-  class="window-titlebar"
-  data-window-titlebar-region="true"
->
+<div {...rest} class="window-titlebar" data-window-titlebar-region="true">
   <div class={className}>
     {@render children?.()}
   </div>
 </div>
 
 <style>
-@layer blocks {
+  @layer blocks {
     .window-titlebar {
       position: relative;
       display: block;
@@ -36,5 +28,5 @@
       user-select: none;
       --wails-draggable: drag;
     }
-}
+  }
 </style>

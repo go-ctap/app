@@ -6,15 +6,12 @@ import {
   CapabilityState,
   StateValue,
 } from "../../../../bindings/github.com/go-ctap/kit/model/config";
-import type {
-  BioListEnvelope,
-  BioSensorEnvelope,
-} from "../../../../bindings/telesma/service";
+import type { BioListEnvelope, BioSensorEnvelope } from "../../../../bindings/telesma/service";
 
 import { emptySecurityResourceState } from "$lib/features/security/state";
 import { setAppLocale } from "$lib/i18n";
 
-import SecurityBiometrics from "./SecurityBiometrics.svelte";
+import SecurityBiometrics from "$lib/components/security/SecurityBiometrics.svelte";
 
 function bioStatus(supported: boolean, configured: boolean) {
   return new BioStatus({
@@ -53,7 +50,9 @@ describe("SecurityBiometrics", () => {
     renderBiometrics(bioStatus(false, false));
 
     expect(screen.queryByRole("heading", { name: "Biometric sensor" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Biometric enrollments" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Biometric enrollments" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Enroll biometric" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Load enrollments" })).not.toBeInTheDocument();
   });

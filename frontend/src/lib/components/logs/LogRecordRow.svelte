@@ -1,13 +1,8 @@
 <script lang="ts">
-  import { Badge } from "$lib/components/ui/badge/index.js";
+  import { Badge } from "$lib/components/ui/badge";
   import type { LogRecord } from "$lib/features/logs/state.svelte.js";
   import { recordID } from "$lib/features/logs/state.svelte.js";
-  import {
-    logOutcome,
-    logOutcomeLabel,
-    logSummary,
-    logTime,
-  } from "$lib/log-presentation.js";
+  import { logOutcome, logOutcomeLabel, logSummary, logTime } from "$lib/log-presentation.js";
   import { LogOutcome } from "../../../../bindings/github.com/go-ctap/kit/model/index.js";
 
   import { m } from "../../../paraglide/messages.js";
@@ -20,11 +15,8 @@
   };
 
   let { record, selected, onSelect, onOpen = onSelect }: Props = $props();
-  let outcome = $derived(logOutcome(record));
 
-  function handleClick() {
-    onOpen(recordID(record));
-  }
+  let outcome = $derived(logOutcome(record));
 </script>
 
 <button
@@ -34,10 +26,12 @@
   data-selected={selected ? "true" : undefined}
   aria-label={logSummary(record)}
   aria-pressed={selected}
-  onclick={handleClick}
+  onclick={() => onOpen(recordID(record))}
 >
   <span class="log-record-primary">
-    <time datetime={record.source === "kit" ? record.entry.timestamp : record.timestamp}>{logTime(record)}</time>
+    <time datetime={record.source === "kit" ? record.entry.timestamp : record.timestamp}
+      >{logTime(record)}</time
+    >
     <span title={logSummary(record)}>{logSummary(record)}</span>
   </span>
   <span class="log-record-badges">

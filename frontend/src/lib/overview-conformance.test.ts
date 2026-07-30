@@ -20,8 +20,8 @@ import {
 } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { Assessment } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 
-import { buildOverviewConformancePresentation } from "./overview-conformance";
-import { localizeCtapAssessment } from "./overview-i18n";
+import { buildOverviewConformancePresentation } from "$lib/overview-conformance";
+import { localizeCtapAssessment } from "$lib/overview-i18n";
 
 const fido21Target = new Target({
   specification: SpecificationID.SpecificationCTAP21,
@@ -116,10 +116,12 @@ describe("buildOverviewConformancePresentation", () => {
 
   it("presents and localizes findings", () => {
     const presentation = buildOverviewConformancePresentation({
-      info: infoWith(new Report({
-        target: fido21Target,
-        findings: [localizedFinding()],
-      })),
+      info: infoWith(
+        new Report({
+          target: fido21Target,
+          findings: [localizedFinding()],
+        }),
+      ),
     });
 
     expect(presentation).toMatchObject({
@@ -140,11 +142,13 @@ describe("buildOverviewConformancePresentation", () => {
 
   it("gives findings precedence in a mixed report", () => {
     const presentation = buildOverviewConformancePresentation({
-      info: infoWith(new Report({
-        target: fido21Target,
-        findings: [localizedFinding()],
-        inconclusive: [localizedInconclusive()],
-      })),
+      info: infoWith(
+        new Report({
+          target: fido21Target,
+          findings: [localizedFinding()],
+          inconclusive: [localizedInconclusive()],
+        }),
+      ),
     });
 
     expect(presentation).toMatchObject({
@@ -166,10 +170,12 @@ describe("buildOverviewConformancePresentation", () => {
 
   it("presents an inconclusive-only report", () => {
     const presentation = buildOverviewConformancePresentation({
-      info: infoWith(new Report({
-        target: fido21Target,
-        inconclusive: [localizedInconclusive()],
-      })),
+      info: infoWith(
+        new Report({
+          target: fido21Target,
+          inconclusive: [localizedInconclusive()],
+        }),
+      ),
     });
 
     expect(presentation).toMatchObject({
@@ -184,9 +190,12 @@ describe("buildOverviewConformancePresentation", () => {
 
   it("makes an unresolved target explicit instead of presenting a clean report", () => {
     const presentation = buildOverviewConformancePresentation({
-      info: infoWith(new Report({
-        advertisedProfiles: [Profile.ProfileU2FV2],
-      }), [Version.U2F_V2]),
+      info: infoWith(
+        new Report({
+          advertisedProfiles: [Profile.ProfileU2FV2],
+        }),
+        [Version.U2F_V2],
+      ),
     });
 
     expect(presentation).toMatchObject({

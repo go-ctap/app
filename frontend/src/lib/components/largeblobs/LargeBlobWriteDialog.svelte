@@ -3,29 +3,28 @@
 
   import LargeBlobMutationPreview from "$lib/components/largeblobs/LargeBlobMutationPreview.svelte";
   import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import * as Field from "$lib/components/ui/field/index.js";
-  import { Textarea } from "$lib/components/ui/textarea/index.js";
-  import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
+  import * as Alert from "$lib/components/ui/alert";
+  import { Button } from "$lib/components/ui/button";
+  import * as Dialog from "$lib/components/ui/dialog";
+  import * as Field from "$lib/components/ui/field";
+  import { Textarea } from "$lib/components/ui/textarea";
+  import * as ToggleGroup from "$lib/components/ui/toggle-group";
+  import {
+    confirmedFailureCanceled,
+    confirmedFailureMessage,
+  } from "$lib/confirmed-operation-presentation";
   import { largeBlobMutationPreview } from "$lib/ctapkit-results";
-  import type {
-    LargeBlobMutationState,
-    LargeBlobWriteDraft,
-  } from "$lib/features/largeblobs/state";
+  import type { LargeBlobMutationState, LargeBlobWriteDraft } from "$lib/features/largeblobs/state";
   import {
     parseLargeBlobPayload,
     type LargeBlobPayloadEncoding,
     type LargeBlobPayloadValidationError,
   } from "$lib/largeblobs-payload";
-  import { failureMessage as localizeFailure, isCanceledFailure } from "$lib/failure";
 
   import { m } from "../../../paraglide/messages.js";
 
   type Props = {
     mutation: LargeBlobMutationState;
-    editingExisting: boolean;
     onDraftChange: (patch: Partial<LargeBlobWriteDraft>) => void;
     onEncodingChange: (encoding: LargeBlobPayloadEncoding) => void;
     onEdit: () => void;
@@ -34,72 +33,80 @@
     onClose: () => void;
   };
 
-  let {
-    mutation,
-    editingExisting,
-    onDraftChange,
-    onEncodingChange,
-    onEdit,
-    onPreview,
-    onConfirm,
-    onClose,
-  }: Props = $props();
+  let { mutation, onDraftChange, onEncodingChange, onEdit, onPreview, onConfirm, onClose }: Props =
+    $props();
+
+  let operation = $derived(mutation.operation);
 
   let open = $derived(
-    mutation.kind === "write"
-      && (mutation.phase === "editing" || mutation.phase === "review" || mutation.phase === "error"),
+    mutation.kind === "write" &&
+      (operation.phase === "editing" ||
+        operation.phase === "review" ||
+        operation.phase === "error"),
   );
+
   let fieldsLocked = $derived(
-    mutation.kind === "write"
-      && mutation.phase !== "editing"
-      && !(mutation.phase === "error" && mutation.failedPhase === "previewing"),
+    mutation.kind === "write" &&
+      operation.phase !== "editing" &&
+      !(operation.phase === "error" && operation.failedPhase === "previewing"),
   );
+
   let preview = $derived.by(() => {
     if (mutation.kind !== "write") return null;
-    if (mutation.phase === "review") {
-      return largeBlobMutationPreview(mutation.previewEnvelope);
+
+    const writeOperation = mutation.operation;
+
+    if (
+      writeOperation.phase === "review" ||
+      (writeOperation.phase === "error" && writeOperation.failedPhase === "executing")
+    ) {
+      return largeBlobMutationPreview(writeOperation.previewEnvelope);
     }
-    if (mutation.phase === "error") {
-      return largeBlobMutationPreview(mutation.previewEnvelope ?? mutation.responseEnvelope);
-    }
+
     return null;
   });
+
   let validationError = $derived.by((): LargeBlobPayloadValidationError | null => {
     if (mutation.kind !== "write") return null;
-    if (mutation.phase === "editing" || mutation.phase === "error") {
-      return mutation.validationError;
+
+    if (mutation.operation.phase === "editing") {
+      return mutation.operation.validationError;
     }
+
     return null;
   });
+
   let parsedPayload = $derived.by(() => {
     if (mutation.kind !== "write") return null;
+
     return parseLargeBlobPayload(mutation.draft.payload, mutation.draft.encoding);
   });
+
   let failureMessage = $derived.by(() => {
-    if (mutation.kind !== "write" || mutation.phase !== "error") return null;
-    if (mutation.failureReason === "missing-preview") return m.operation_missing_preview();
-    if (mutation.failureReason === "missing-result") return m.operation_missing_result();
-    return localizeFailure(mutation.runtimeError)
-      ?? localizeFailure(mutation.responseEnvelope?.error)
-      ?? m.operation_failed();
+    if (mutation.kind !== "write" || mutation.operation.phase !== "error") return null;
+
+    return confirmedFailureMessage(mutation.operation);
   });
+
   let failureCanceled = $derived(
-    mutation.kind === "write" && mutation.phase === "error" && (
-      isCanceledFailure(mutation.runtimeError)
-      || isCanceledFailure(mutation.responseEnvelope?.error)
-    ),
+    mutation.kind === "write" && operation.phase === "error" && confirmedFailureCanceled(operation),
   );
-  let failedPhase = $derived(mutation.phase === "error" ? mutation.failedPhase : null);
+
+  let failedPhase = $derived(operation.phase === "error" ? operation.failedPhase : null);
 
   function validationMessage(error: LargeBlobPayloadValidationError | null) {
     if (error === "invalid-hex-character") return m.payload_hex_invalid();
+
     if (error === "odd-hex-length") return m.payload_hex_odd_length();
+
     return "";
   }
 
   function handleEncodingChange(value: string | string[]) {
     if (Array.isArray(value)) return;
+
     if (!value) return;
+
     onEncodingChange(value === "hex" ? "hex" : "utf8");
   }
 
@@ -109,15 +116,19 @@
 
   function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
-    if (mutation.phase === "review") {
+    if (operation.phase === "review") {
       void onConfirm();
+
       return;
     }
-    if (mutation.phase === "error") {
-      if (mutation.failedPhase === "previewing") void onPreview();
+
+    if (operation.phase === "error") {
+      if (operation.failedPhase === "previewing") void onPreview();
       else void onConfirm();
+
       return;
     }
+
     void onPreview();
   }
 </script>
@@ -127,96 +138,97 @@
     <Dialog.Content class="large-blob-write-dialog">
       <ModalScrollArea>
         <Dialog.Header>
-          <Dialog.Title>{editingExisting ? m.large_blob_edit() : m.large_blob_write()}</Dialog.Title>
+          <Dialog.Title>{m.large_blob_edit()}</Dialog.Title>
         </Dialog.Header>
 
         <form class="large-blob-write-form" onsubmit={handleSubmit}>
-        <Field.FieldGroup>
-          <Field.Field data-disabled={fieldsLocked ? "true" : undefined}>
-            <Field.FieldTitle id="large-blob-payload-encoding-label">
-              {m.payload_encoding()}
-            </Field.FieldTitle>
-            <ToggleGroup.Root
-              type="single"
-              value={mutation.draft.encoding}
-              variant="outline"
-              aria-labelledby="large-blob-payload-encoding-label"
-              disabled={fieldsLocked}
-              onValueChange={handleEncodingChange}
+          <Field.FieldGroup>
+            <Field.Field data-disabled={fieldsLocked ? "true" : undefined}>
+              <Field.FieldTitle id="large-blob-payload-encoding-label">
+                {m.payload_encoding()}
+              </Field.FieldTitle>
+              <ToggleGroup.Root
+                type="single"
+                value={mutation.draft.encoding}
+                variant="outline"
+                aria-labelledby="large-blob-payload-encoding-label"
+                disabled={fieldsLocked}
+                onValueChange={handleEncodingChange}
+              >
+                <ToggleGroup.Item value="utf8">{m.payload_encoding_utf8()}</ToggleGroup.Item>
+                <ToggleGroup.Item value="hex">{m.payload_encoding_hex()}</ToggleGroup.Item>
+              </ToggleGroup.Root>
+            </Field.Field>
+
+            <Field.Field
+              data-invalid={Boolean(validationError)}
+              data-disabled={fieldsLocked ? "true" : undefined}
             >
-              <ToggleGroup.Item value="utf8">{m.payload_encoding_utf8()}</ToggleGroup.Item>
-              <ToggleGroup.Item value="hex">{m.payload_encoding_hex()}</ToggleGroup.Item>
-            </ToggleGroup.Root>
-          </Field.Field>
+              <Field.FieldLabel for="large-blob-write-payload">{m.payload()}</Field.FieldLabel>
+              <Textarea
+                id="large-blob-write-payload"
+                value={mutation.draft.payload}
+                rows={9}
+                disabled={fieldsLocked}
+                aria-invalid={Boolean(validationError)}
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck={false}
+                placeholder={m.large_blob_payload_placeholder()}
+                oninput={(event) => onDraftChange({ payload: event.currentTarget.value })}
+              />
+              {#if validationError}
+                <Field.FieldError>{validationMessage(validationError)}</Field.FieldError>
+              {:else if parsedPayload?.ok}
+                <Field.FieldDescription>
+                  {m.byte_payload_prepared({ count: parsedPayload.byteCount })}
+                  {#if parsedPayload.byteCount === 0}
+                    · {m.payload_empty_hint()}{/if}
+                </Field.FieldDescription>
+              {/if}
+            </Field.Field>
+          </Field.FieldGroup>
 
-          <Field.Field
-            data-invalid={Boolean(validationError)}
-            data-disabled={fieldsLocked ? "true" : undefined}
-          >
-            <Field.FieldLabel for="large-blob-write-payload">{m.payload()}</Field.FieldLabel>
-            <Textarea
-              id="large-blob-write-payload"
-              value={mutation.draft.payload}
-              rows={9}
-              disabled={fieldsLocked}
-              aria-invalid={Boolean(validationError)}
-              autocomplete="off"
-              autocorrect="off"
-              autocapitalize="off"
-              spellcheck={false}
-              placeholder={m.large_blob_payload_placeholder()}
-              oninput={(event) => onDraftChange({ payload: event.currentTarget.value })}
-            />
-            {#if validationError}
-              <Field.FieldError>{validationMessage(validationError)}</Field.FieldError>
-            {:else if parsedPayload?.ok}
-              <Field.FieldDescription>
-                {m.byte_payload_prepared({ count: parsedPayload.byteCount })}
-                {#if parsedPayload.byteCount === 0} · {m.payload_empty_hint()}{/if}
-              </Field.FieldDescription>
-            {/if}
-          </Field.Field>
-        </Field.FieldGroup>
-
-        {#if failureMessage}
-          <Alert.Root
-            variant={failureCanceled ? "default" : "destructive"}
-            role={failureCanceled ? "status" : "alert"}
-          >
-            <Alert.Title>
-              {failureCanceled
-                ? m.operation_canceled_with_label({
-                    label: failedPhase === "previewing"
-                      ? (editingExisting ? m.preview_changes() : m.write_preview())
-                      : (editingExisting ? m.large_blob_edit() : m.large_blob_write()),
-                  })
-                : m.operation_failed()}
-            </Alert.Title>
-            <Alert.Description>{failureMessage}</Alert.Description>
-          </Alert.Root>
-        {/if}
-
-        {#if preview}
-          {#if mutation.phase === "review"}
-            <div class="large-blob-write-preview-actions">
-              <Button variant="ghost" size="sm" type="button" onclick={onEdit}>
-                <Pencil data-icon="inline-start" aria-hidden="true" />
-                {m.edit()}
-              </Button>
-            </div>
+          {#if failureMessage}
+            <Alert.Root
+              variant={failureCanceled ? "default" : "destructive"}
+              role={failureCanceled ? "status" : "alert"}
+            >
+              <Alert.Title>
+                {failureCanceled
+                  ? m.operation_canceled_with_label({
+                      label:
+                        failedPhase === "previewing" ? m.preview_changes() : m.large_blob_edit(),
+                    })
+                  : m.operation_failed()}
+              </Alert.Title>
+              <Alert.Description>{failureMessage}</Alert.Description>
+            </Alert.Root>
           {/if}
-          <LargeBlobMutationPreview {preview} />
-        {/if}
 
-        <Dialog.Footer>
-          <Button type="submit">
-            {mutation.phase === "review"
-              || (mutation.phase === "error" && mutation.failedPhase === "executing")
-              ? (editingExisting ? m.save_changes() : m.confirm_write())
-              : (editingExisting ? m.preview_changes() : m.preview_write())}
-          </Button>
-          <Button variant="outline" type="button" onclick={onClose}>{m.cancel()}</Button>
-        </Dialog.Footer>
+          {#if preview}
+            {#if operation.phase === "review"}
+              <div class="large-blob-write-preview-actions">
+                <Button variant="ghost" size="sm" type="button" onclick={onEdit}>
+                  <Pencil data-icon="inline-start" aria-hidden="true" />
+                  {m.edit()}
+                </Button>
+              </div>
+            {/if}
+
+            <LargeBlobMutationPreview {preview} />
+          {/if}
+
+          <Dialog.Footer>
+            <Button type="submit">
+              {operation.phase === "review" ||
+              (operation.phase === "error" && operation.failedPhase === "executing")
+                ? m.save_changes()
+                : m.preview_changes()}
+            </Button>
+            <Button variant="outline" type="button" onclick={onClose}>{m.cancel()}</Button>
+          </Dialog.Footer>
         </form>
       </ModalScrollArea>
     </Dialog.Content>
@@ -224,23 +236,23 @@
 </Dialog.Root>
 
 <style>
-@layer blocks {
-  :global(.large-blob-write-dialog) {
-    width: min(46rem, calc(100vw - 2rem));
-    max-width: none;
-    max-height: calc(100vh - 2rem);
-    overflow: hidden;
-  }
+  @layer blocks {
+    :global(.large-blob-write-dialog) {
+      width: min(46rem, calc(100vw - 2rem));
+      max-width: none;
+      max-height: calc(100vh - 2rem);
+      overflow: hidden;
+    }
 
-  .large-blob-write-form {
-    display: grid;
-    min-width: 0;
-    gap: var(--space-4);
-  }
+    .large-blob-write-form {
+      display: grid;
+      min-width: 0;
+      gap: var(--space-4);
+    }
 
-  .large-blob-write-preview-actions {
-    display: flex;
-    justify-content: flex-end;
+    .large-blob-write-preview-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
   }
-}
 </style>

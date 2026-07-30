@@ -11,11 +11,14 @@ import (
 func TestOperationEventEmitsWithoutWritingApplicationJournalEntry(t *testing.T) {
 	emitter := newCountingEmitter()
 	service := New(WithEventEmitter(emitter))
+
 	service.selected = newSelection("selection-1", openedAuthenticator{})
+
 	operation := &operationState{
 		id:          "operation-1",
 		selectionID: "selection-1",
 	}
+
 	service.selected.operations[operation.id] = operation
 
 	operationEventSink{service: service, operation: operation}.Emit(t.Context(), model.OperationEvent{
@@ -25,6 +28,7 @@ func TestOperationEventEmitsWithoutWritingApplicationJournalEntry(t *testing.T) 
 	if got := emitter.count(EventOperationEvent); got != 1 {
 		t.Fatalf("operation event count = %d, want 1", got)
 	}
+
 	if logs := service.ReadLogs(ReadLogsRequest{}).Entries; len(logs) != 0 {
 		t.Fatalf("application journal entries = %#v, want none", logs)
 	}
@@ -34,12 +38,14 @@ func TestInteractionEmitsWithoutWritingApplicationJournalEntry(t *testing.T) {
 	emitter := newCountingEmitter()
 	service := New(WithEventEmitter(emitter))
 	done := make(chan struct{})
+
 	service.selected = newSelection("selection-1", openedAuthenticator{})
 	service.selected.operations["operation-1"] = &operationState{
 		id:          "operation-1",
 		selectionID: "selection-1",
 		done:        done,
 	}
+
 	handler := interactionHandler{
 		service:     service,
 		done:        done,
@@ -48,16 +54,20 @@ func TestInteractionEmitsWithoutWritingApplicationJournalEntry(t *testing.T) {
 	}
 
 	result := make(chan error, 1)
+
 	go func() {
 		answer, err := handler.RequestInteraction(t.Context(), model.InteractionRequest{Kind: model.InteractionKindPIN})
+
 		clear(answer.PIN)
 		result <- err
 	}()
+
 	prompt := <-emitter.prompts
 	resolved, err := service.ResolveInteraction(context.Background(), InteractionAnswer{
 		InteractionID: prompt.InteractionID,
 		PIN:           "sentinel-interaction-pin-8301",
 	})
+
 	if err != nil || !resolved {
 		t.Fatalf("ResolveInteraction = %v, %v", resolved, err)
 	}
@@ -65,9 +75,11 @@ func TestInteractionEmitsWithoutWritingApplicationJournalEntry(t *testing.T) {
 	if err := <-result; err != nil {
 		t.Fatalf("RequestInteraction: %v", err)
 	}
+
 	if got := emitter.count(EventInteractionRequested); got != 1 {
 		t.Fatalf("interaction event count = %d, want 1", got)
 	}
+
 	if logs := service.ReadLogs(ReadLogsRequest{}).Entries; len(logs) != 0 {
 		t.Fatalf("application journal entries = %#v, want none", logs)
 	}
@@ -98,6 +110,7 @@ func (e *countingEmitter) count(name string) int {
 	defer e.mu.Unlock()
 
 	count := 0
+
 	for _, candidate := range e.names {
 		if candidate == name {
 			count++

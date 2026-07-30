@@ -8,7 +8,6 @@ import {
   MakeCredentialRequest,
   MakeCredentialVerificationRequest,
   MDSLookupRequest,
-  type GetAssertionEnvelope,
 } from "../../bindings/telesma/service";
 import {
   CredentialVerificationMaterial,
@@ -18,23 +17,23 @@ import {
   type MakeCredentialResult,
 } from "../../bindings/github.com/go-ctap/kit/model/webauthn";
 import { m } from "../paraglide/messages.js";
-import { api } from "./api.js";
+import { api } from "$lib/api.js";
 import {
   getAssertionPreview,
   getAssertionResult,
   inspectResult,
   makeCredentialPreview,
   makeCredentialResult,
-} from "./ctapkit-results.js";
+} from "$lib/ctapkit-results.js";
 import {
   labState,
   type GetAssertionDraft,
   type LabState,
   type MakeCredentialDraft,
-} from "./features/lab/state.js";
-import { invalidateLargeBlobsInventory } from "./features/largeblobs/state.js";
-import { invalidatePasskeysInventory } from "./features/passkeys/state.js";
-import { authenticatorInspection } from "./features/authenticator/state.js";
+} from "$lib/features/lab/state.js";
+import { invalidateLargeBlobsInventory } from "$lib/features/largeblobs/state.js";
+import { invalidatePasskeysInventory } from "$lib/features/passkeys/state.js";
+import { authenticatorInspection } from "$lib/features/authenticator/state.js";
 import {
   buildClientDataJSON,
   buildGetAssertionRequest,
@@ -43,18 +42,12 @@ import {
   randomHex,
   validateGetAssertionDraft,
   validateMakeCredentialDraft,
-} from "./lab-input.js";
-import { runtimeFailureFrom } from "./failure.js";
-import { currentSelectionID } from "./authenticator-boundary.js";
-import { ensureActiveSelectionReady } from "./authenticator-controller.js";
-import {
-  operationStageFailureDetails,
-  requestForCurrentSelection,
-  runTypedOperationStage,
-} from "./operation-lifecycle.js";
-import {
-  setStatusOutcome,
-} from "./workbench-state.js";
+} from "$lib/lab-input.js";
+import { runtimeFailureFrom } from "$lib/failure.js";
+import { currentSelectionID } from "$lib/authenticator-boundary.js";
+import { ensureActiveSelectionReady } from "$lib/authenticator-controller.js";
+import { runConfirmedExecution, runConfirmedPreview } from "$lib/confirmed-operation.js";
+import { setStatusOutcome } from "$lib/workbench-state.js";
 
 export function selectLabOperation(activeOperation: LabState["activeOperation"]) {
   labState.update((state) => ({ ...state, activeOperation }));
@@ -65,16 +58,20 @@ async function verifyMakeCredentialResult(
   result: MakeCredentialResult,
 ) {
   try {
-    const verification = await api.verifyMakeCredential(new MakeCredentialVerificationRequest({
-      input: new MakeCredentialInput(request),
-      result,
-    }));
+    const verification = await api.verifyMakeCredential(
+      new MakeCredentialVerificationRequest({
+        input: new MakeCredentialInput(request),
+        result,
+      }),
+    );
+
     labState.update((state) => ({
       ...state,
       makeVerification: { phase: "ready", verification },
     }));
   } catch (cause) {
     const error = runtimeFailureFrom(cause);
+
     labState.update((state) => ({
       ...state,
       makeVerification: { phase: "error", error },
@@ -87,9 +84,11 @@ async function assessMakeCredentialAttestation(
   result: MakeCredentialResult,
 ) {
   try {
-    const metadata = await api.lookupMDS(new MDSLookupRequest({
-      aaguid: result.aaguid,
-    }));
+    const metadata = await api.lookupMDS(
+      new MDSLookupRequest({
+        aaguid: result.aaguid,
+      }),
+    );
     const assessment = await api.assessMakeCredentialAttestation(
       new MakeCredentialAttestationAssessmentRequest({
         input: new MakeCredentialInput(request),
@@ -97,12 +96,14 @@ async function assessMakeCredentialAttestation(
         metadata: metadata.result,
       }),
     );
+
     labState.update((state) => ({
       ...state,
       makeAttestationTrust: { phase: "ready", verification: assessment },
     }));
   } catch (cause) {
     const error = runtimeFailureFrom(cause);
+
     labState.update((state) => ({
       ...state,
       makeAttestationTrust: { phase: "error", error },
@@ -116,17 +117,21 @@ async function verifyGetAssertionResult(
   verificationMaterial: CredentialVerificationMaterial[],
 ) {
   try {
-    const verification = await api.verifyGetAssertion(new GetAssertionVerificationRequest({
-      input: new GetAssertionInput(request),
-      result,
-      verificationMaterial,
-    }));
+    const verification = await api.verifyGetAssertion(
+      new GetAssertionVerificationRequest({
+        input: new GetAssertionInput(request),
+        result,
+        verificationMaterial,
+      }),
+    );
+
     labState.update((state) => ({
       ...state,
       getVerification: { phase: "ready", verification },
     }));
   } catch (cause) {
     const error = runtimeFailureFrom(cause);
+
     labState.update((state) => ({
       ...state,
       getVerification: { phase: "error", error },
@@ -143,6 +148,7 @@ function demoClientData(
     origin: "https://example.com",
     challenge: randomBase64URL(32),
   };
+
   return {
     ...clientData,
     rawJSON: buildClientDataJSON(type, clientData),
@@ -151,6 +157,7 @@ function demoClientData(
 
 export function fillLabDemoValues() {
   const current = get(labState);
+
   if (current.activeOperation === "make") {
     return updateLabMakeCredentialDraft({
       rpID: "example.com",
@@ -162,6 +169,7 @@ export function fillLabDemoValues() {
       algorithms: ["-7"],
     });
   }
+
   return updateLabGetAssertionDraft({
     rpID: "example.com",
     clientData: demoClientData("get", current.getDraft.clientData),
@@ -170,11 +178,15 @@ export function fillLabDemoValues() {
 
 export function updateLabMakeCredentialDraft(patch: Partial<MakeCredentialDraft>) {
   const current = get(labState);
+
   if (
-    current.makeStep.phase !== "editing"
-    && !(current.makeStep.phase === "error" && current.makeStep.request === null)
-  ) return false;
+    current.makeStep.phase !== "editing" &&
+    !(current.makeStep.phase === "error" && current.makeStep.failedPhase === "previewing")
+  )
+    return false;
+
   const makeDraft = { ...current.makeDraft, ...patch };
+
   labState.set({
     ...current,
     makeDraft,
@@ -182,22 +194,28 @@ export function updateLabMakeCredentialDraft(patch: Partial<MakeCredentialDraft>
     makeVerification: { phase: "idle" },
     makeAttestationTrust: { phase: "idle" },
   });
+
   return true;
 }
 
 export function updateLabGetAssertionDraft(patch: Partial<GetAssertionDraft>) {
   const current = get(labState);
+
   if (
-    current.getStep.phase !== "editing"
-    && !(current.getStep.phase === "error" && current.getStep.request === null)
-  ) return false;
+    current.getStep.phase !== "editing" &&
+    !(current.getStep.phase === "error" && current.getStep.failedPhase === "previewing")
+  )
+    return false;
+
   const getDraft = { ...current.getDraft, ...patch };
+
   labState.set({
     ...current,
     getDraft,
     getStep: { phase: "editing" },
     getVerification: { phase: "idle" },
   });
+
   return true;
 }
 
@@ -207,6 +225,7 @@ export function regenerateLabUserID() {
 
 export function regenerateLabMakeChallenge() {
   const current = get(labState);
+
   return updateLabMakeCredentialDraft({
     clientData: { ...current.makeDraft.clientData, challenge: randomBase64URL(32) },
   });
@@ -214,6 +233,7 @@ export function regenerateLabMakeChallenge() {
 
 export function regenerateLabGetChallenge() {
   const current = get(labState);
+
   return updateLabGetAssertionDraft({
     clientData: { ...current.getDraft.clientData, challenge: randomBase64URL(32) },
   });
@@ -221,132 +241,85 @@ export function regenerateLabGetChallenge() {
 
 export async function previewLabMakeCredential(): Promise<boolean> {
   const current = get(labState);
-  if (
-    current.makeStep.phase !== "editing"
-    && !(current.makeStep.phase === "error" && current.makeStep.request === null)
-  ) return false;
 
-  const maxCredBlobLength = inspectResult(get(authenticatorInspection).data)?.info.maxCredBlobLength;
+  if (
+    current.makeStep.phase !== "editing" &&
+    !(current.makeStep.phase === "error" && current.makeStep.failedPhase === "previewing")
+  )
+    return false;
+
+  const maxCredBlobLength = inspectResult(get(authenticatorInspection).data)?.info
+    .maxCredBlobLength;
   const validation = validateMakeCredentialDraft(current.makeDraft, maxCredBlobLength);
+
   if (!validation.valid) return false;
-  if (!await ensureActiveSelectionReady()) return false;
+
+  if (!(await ensureActiveSelectionReady())) return false;
 
   const previewRequest = new MakeCredentialRequest({
     ...buildMakeCredentialRequest(currentSelectionID(), current.makeDraft),
     dryRun: true,
   });
 
-  labState.update((state) => ({
-    ...state,
-    makeStep: { phase: "previewing", previewRequest },
-    makeVerification: { phase: "idle" },
-    makeAttestationTrust: { phase: "idle" },
-  }));
-  const label = m.lab_make_credential_preview();
-  const outcome = await runTypedOperationStage({
-    label,
-    call: () => api.makeCredential(requestForCurrentSelection(previewRequest)),
+  return runConfirmedPreview({
+    label: m.lab_make_credential_preview(),
+    request: previewRequest,
+    call: api.makeCredential,
     extract: makeCredentialPreview,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-preview");
+    publish: (makeStep) =>
       labState.update((state) => ({
         ...state,
-        makeStep: {
-          phase: "error",
-          previewRequest,
-          previewEnvelope: null,
-          request: null,
-          responseEnvelope: details.responseEnvelope,
-          runtimeError: details.runtimeError,
-        },
+        makeStep,
         makeVerification: { phase: "idle" },
         makeAttestationTrust: { phase: "idle" },
-      }));
-    },
-    onSuccess: (_preview, envelope) => labState.update((state) => ({
-      ...state,
-      makeStep: { phase: "review", previewRequest, previewEnvelope: envelope },
-    })),
+      })),
   });
-  return outcome.ok;
 }
 
 export async function confirmLabMakeCredential(): Promise<boolean> {
   const current = get(labState);
   const step = current.makeStep;
-  if (step.phase !== "review" && !(
-    step.phase === "error"
-    && step.previewEnvelope
-    && step.request
-  )) return false;
-  const previewRequest = step.previewRequest;
-  const previewEnvelope = step.previewEnvelope;
-  if (!previewEnvelope) return false;
 
-  const request = step.phase === "error" && step.request
-    ? step.request
-    : new MakeCredentialRequest({
-        ...previewRequest,
-        dryRun: false,
-      });
-  labState.update((state) => ({
-    ...state,
-    makeStep: {
-      phase: "executing",
-      previewRequest,
-      previewEnvelope,
-      request,
-    },
-    makeVerification: { phase: "idle" },
-    makeAttestationTrust: { phase: "idle" },
-  }));
+  if (step.phase !== "review" && step.phase !== "error") return false;
 
-  const label = m.lab_make_credential();
-  const outcome = await runTypedOperationStage({
-    label,
-    call: () => api.makeCredential(requestForCurrentSelection(request)),
+  return runConfirmedExecution({
+    label: m.lab_make_credential(),
+    operation: step,
+    makeRequest: (request) => new MakeCredentialRequest({ ...request, dryRun: false }),
+    call: api.makeCredential,
     extract: makeCredentialResult,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-result");
+    publish: (makeStep) =>
       labState.update((state) => ({
         ...state,
-        makeStep: {
-          phase: "error",
-          previewRequest,
-          previewEnvelope,
-          request,
-          responseEnvelope: details.responseEnvelope,
-          runtimeError: details.runtimeError,
-        },
+        makeStep,
         makeVerification: { phase: "idle" },
         makeAttestationTrust: { phase: "idle" },
-      }));
-    },
-    onSuccess: (result, envelope) => {
+      })),
+    onSuccess: (result, responseEnvelope, execution) => {
       labState.update((state) => ({
         ...state,
         makeStep: {
           phase: "success",
-          previewRequest,
-          previewEnvelope,
-          request,
-          responseEnvelope: envelope,
+          ...execution,
+          responseEnvelope,
+          value: result,
         },
         makeVerification: { phase: "loading" },
         makeAttestationTrust: { phase: "loading" },
       }));
-      void verifyMakeCredentialResult(request, result);
-      void assessMakeCredentialAttestation(request, result);
+      void verifyMakeCredentialResult(execution.request, result);
+      void assessMakeCredentialAttestation(execution.request, result);
       invalidatePasskeysInventory();
       invalidateLargeBlobsInventory();
     },
   });
-  return outcome.ok;
 }
 
 export function editLabMakeCredential() {
   const current = get(labState);
+
   if (current.makeStep.phase === "editing") return true;
+
   labState.set({
     ...current,
     pendingHandoff: null,
@@ -354,17 +327,20 @@ export function editLabMakeCredential() {
     makeVerification: { phase: "idle" },
     makeAttestationTrust: { phase: "idle" },
   });
+
   return true;
 }
 
 export function newLabMakeCredentialRun() {
   const current = get(labState);
-  const makeDraft = current.makeDraft.clientData.mode === "builder"
-    ? {
-        ...current.makeDraft,
-        clientData: { ...current.makeDraft.clientData, challenge: randomBase64URL(32) },
-      }
-    : current.makeDraft;
+  const makeDraft =
+    current.makeDraft.clientData.mode === "builder"
+      ? {
+          ...current.makeDraft,
+          clientData: { ...current.makeDraft.clientData, challenge: randomBase64URL(32) },
+        }
+      : current.makeDraft;
+
   labState.set({
     ...current,
     pendingHandoff: null,
@@ -373,131 +349,95 @@ export function newLabMakeCredentialRun() {
     makeVerification: { phase: "idle" },
     makeAttestationTrust: { phase: "idle" },
   });
-  return true;
-}
 
-async function executeGetAssertion(
-  previewRequest: GetAssertionRequest,
-  previewEnvelope: GetAssertionEnvelope,
-  initialRequest: GetAssertionRequest,
-): Promise<boolean> {
-  const request = initialRequest;
-  const verificationMaterial = get(labState).getDraft.verificationMaterial;
-  labState.update((state) => ({
-    ...state,
-    getStep: { phase: "executing", previewRequest, previewEnvelope, request },
-    getVerification: { phase: "idle" },
-  }));
-  const label = m.lab_get_assertion();
-  const outcome = await runTypedOperationStage({
-    label,
-    call: () => api.getAssertion(requestForCurrentSelection(request)),
-    extract: getAssertionResult,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-result");
-      labState.update((state) => ({
-        ...state,
-        getStep: {
-          phase: "error",
-          previewRequest,
-          previewEnvelope,
-          request,
-          responseEnvelope: details.responseEnvelope,
-          runtimeError: details.runtimeError,
-        },
-        getVerification: { phase: "idle" },
-      }));
-    },
-    onSuccess: (result, envelope) => {
-      labState.update((state) => ({
-        ...state,
-        getStep: { phase: "success", previewRequest, previewEnvelope, request, responseEnvelope: envelope },
-        getVerification: { phase: "loading" },
-      }));
-      void verifyGetAssertionResult(request, result, verificationMaterial);
-      if (request.extensions?.largeBlob?.write !== undefined) invalidateLargeBlobsInventory();
-    },
-  });
-  return outcome.ok;
+  return true;
 }
 
 export async function runLabGetAssertion(): Promise<boolean> {
   const current = get(labState);
+
   if (
-    current.getStep.phase !== "editing"
-    && !(current.getStep.phase === "error" && current.getStep.request === null)
-  ) return false;
+    current.getStep.phase !== "editing" &&
+    !(current.getStep.phase === "error" && current.getStep.failedPhase === "previewing")
+  )
+    return false;
+
   const validation = validateGetAssertionDraft(current.getDraft);
+
   if (!validation.valid) return false;
-  if (!await ensureActiveSelectionReady()) return false;
+
+  if (!(await ensureActiveSelectionReady())) return false;
 
   const previewRequest = new GetAssertionRequest({
     ...buildGetAssertionRequest(currentSelectionID(), current.getDraft),
     dryRun: true,
   });
-  labState.update((state) => ({
-    ...state,
-    getStep: { phase: "previewing", previewRequest },
-    getVerification: { phase: "idle" },
-  }));
-  const label = m.lab_get_assertion();
-  const outcome = await runTypedOperationStage({
-    label,
-    call: () => api.getAssertion(requestForCurrentSelection(previewRequest)),
+
+  return runConfirmedPreview({
+    label: m.lab_get_assertion(),
+    request: previewRequest,
+    call: api.getAssertion,
     extract: getAssertionPreview,
-    onFailure: (failure) => {
-      const details = operationStageFailureDetails(failure, "missing-preview");
+    publish: (getStep) =>
       labState.update((state) => ({
         ...state,
-        getStep: {
-          phase: "error",
-          previewRequest,
-          previewEnvelope: null,
-          request: null,
-          responseEnvelope: details.responseEnvelope,
-          runtimeError: details.runtimeError,
-        },
+        getStep,
         getVerification: { phase: "idle" },
-      }));
-    },
-    onSuccess: (_preview, envelope) => labState.update((state) => ({
-      ...state,
-      getStep: { phase: "review", previewRequest, previewEnvelope: envelope },
-    })),
+      })),
   });
-  return outcome.ok;
 }
 
 export async function confirmLabGetAssertion(): Promise<boolean> {
   const current = get(labState);
   const step = current.getStep;
-  if (step.phase !== "review" && !(
-    step.phase === "error"
-    && step.previewEnvelope
-    && step.request
-  )) return false;
-  if (!step.previewEnvelope || !await ensureActiveSelectionReady()) return false;
 
-  const request = step.phase === "error" && step.request
-    ? step.request
-    : new GetAssertionRequest({
-        ...step.previewRequest,
-        dryRun: false,
-      });
-  return executeGetAssertion(step.previewRequest, step.previewEnvelope, request);
+  if ((step.phase !== "review" && step.phase !== "error") || !(await ensureActiveSelectionReady()))
+    return false;
+
+  const verificationMaterial = current.getDraft.verificationMaterial;
+
+  return runConfirmedExecution({
+    label: m.lab_get_assertion(),
+    operation: step,
+    makeRequest: (request) => new GetAssertionRequest({ ...request, dryRun: false }),
+    call: api.getAssertion,
+    extract: getAssertionResult,
+    publish: (getStep) =>
+      labState.update((state) => ({
+        ...state,
+        getStep,
+        getVerification: { phase: "idle" },
+      })),
+    onSuccess: (result, responseEnvelope, execution) => {
+      labState.update((state) => ({
+        ...state,
+        getStep: { phase: "success", ...execution, responseEnvelope, value: result },
+        getVerification: { phase: "loading" },
+      }));
+      void verifyGetAssertionResult(execution.request, result, verificationMaterial);
+      if (execution.request.extensions?.largeBlob?.write !== undefined) {
+        invalidateLargeBlobsInventory();
+      }
+    },
+  });
 }
 
 /** GetAssertion retries the exact frozen execution request. */
 export async function rerunLabGetAssertion(): Promise<boolean> {
   const current = get(labState);
+
   if (current.getStep.phase !== "error") return false;
-  if (current.getStep.request === null) return runLabGetAssertion();
+
+  if (current.getStep.failedPhase === "previewing") return runLabGetAssertion();
+
   return confirmLabGetAssertion();
 }
 
 export function editLabGetAssertion() {
   const current = get(labState);
+
   if (current.getStep.phase === "editing") return true;
+
   labState.set({
     ...current,
     pendingHandoff: null,
@@ -505,17 +445,20 @@ export function editLabGetAssertion() {
     getStep: { phase: "editing" },
     getVerification: { phase: "idle" },
   });
+
   return true;
 }
 
 export function newLabGetAssertionRun() {
   const current = get(labState);
-  const getDraft = current.getDraft.clientData.mode === "builder"
-    ? {
-        ...current.getDraft,
-        clientData: { ...current.getDraft.clientData, challenge: randomBase64URL(32) },
-      }
-    : current.getDraft;
+  const getDraft =
+    current.getDraft.clientData.mode === "builder"
+      ? {
+          ...current.getDraft,
+          clientData: { ...current.getDraft.clientData, challenge: randomBase64URL(32) },
+        }
+      : current.getDraft;
+
   labState.set({
     ...current,
     pendingHandoff: null,
@@ -524,54 +467,57 @@ export function newLabGetAssertionRun() {
     getStep: { phase: "editing" },
     getVerification: { phase: "idle" },
   });
+
   return true;
 }
 
 export function retryLabMakeCredentialVerification() {
   const current = get(labState);
-  if (current.makeStep.phase !== "success") return false;
-  const result = makeCredentialResult(current.makeStep.responseEnvelope);
-  if (!result) return false;
 
+  if (current.makeStep.phase !== "success") return false;
+
+  const result = current.makeStep.value;
   const { request } = current.makeStep;
+
   labState.set({
     ...current,
     makeVerification: { phase: "loading" },
   });
   void verifyMakeCredentialResult(request, result);
+
   return true;
 }
 
 export function retryLabMakeCredentialAttestationTrust() {
   const current = get(labState);
+
   if (current.makeStep.phase !== "success") return false;
-  const result = makeCredentialResult(current.makeStep.responseEnvelope);
-  if (!result) return false;
+
+  const result = current.makeStep.value;
 
   labState.set({
     ...current,
     makeAttestationTrust: { phase: "loading" },
   });
   void assessMakeCredentialAttestation(current.makeStep.request, result);
+
   return true;
 }
 
 export function retryLabGetAssertionVerification() {
   const current = get(labState);
-  if (current.getStep.phase !== "success") return false;
-  const result = getAssertionResult(current.getStep.responseEnvelope);
-  if (!result) return false;
 
+  if (current.getStep.phase !== "success") return false;
+
+  const result = current.getStep.value;
   const { request } = current.getStep;
+
   labState.set({
     ...current,
     getVerification: { phase: "loading" },
   });
-  void verifyGetAssertionResult(
-    request,
-    result,
-    current.getDraft.verificationMaterial,
-  );
+  void verifyGetAssertionResult(request, result, current.getDraft.verificationMaterial);
+
   return true;
 }
 
@@ -581,22 +527,18 @@ export function updateLabVerificationMaterial(material: CredentialVerificationMa
     ...current.getDraft,
     verificationMaterial: material.map((entry) => new CredentialVerificationMaterial(entry)),
   };
+
   labState.set({
     ...current,
     getDraft,
-    getVerification: current.getStep.phase === "success"
-      ? { phase: "loading" }
-      : { phase: "idle" },
+    getVerification: current.getStep.phase === "success" ? { phase: "loading" } : { phase: "idle" },
   });
   if (current.getStep.phase !== "success") return true;
 
-  const result = getAssertionResult(current.getStep.responseEnvelope);
-  if (!result) return false;
-  void verifyGetAssertionResult(
-    current.getStep.request,
-    result,
-    getDraft.verificationMaterial,
-  );
+  const result = current.getStep.value;
+
+  void verifyGetAssertionResult(current.getStep.request, result, getDraft.verificationMaterial);
+
   return true;
 }
 
@@ -614,7 +556,9 @@ function completeHandoff(
   const created = { credentialIDHex };
   const allowList = replace
     ? [created]
-    : duplicate ? current.getDraft.allowList : [...current.getDraft.allowList, created];
+    : duplicate
+      ? current.getDraft.allowList
+      : [...current.getDraft.allowList, created];
   const verification = new CredentialVerificationMaterial({
     credentialIDHex,
     publicKeyCOSEHex,
@@ -629,6 +573,7 @@ function completeHandoff(
         verification,
       ];
   const getDraft = { ...current.getDraft, rpID, allowList, verificationMaterial };
+
   labState.set({
     ...current,
     pendingHandoff: null,
@@ -637,23 +582,29 @@ function completeHandoff(
     getStep: { phase: "editing" },
     getVerification: { phase: "idle" },
   });
+
   const outcome = {
     tone: "success" as const,
     title: m.lab_handoff_complete(),
     message: m.lab_handoff_complete_message(),
   };
+
   setStatusOutcome(outcome);
   toast.success(outcome.title, { description: outcome.message });
+
   return true;
 }
 
 /** Starts handoff. `false` means a confirmation dialog is now represented in state. */
 export function handoffLabCredential() {
   const current = get(labState);
+
   if (current.makeStep.phase !== "success") return false;
-  const result = makeCredentialResult(current.makeStep.responseEnvelope)!;
+
+  const result = current.makeStep.value;
   const differentRP = Boolean(current.getDraft.rpID && current.getDraft.rpID !== result.rpID);
   const fixedResult = current.getStep.phase === "success";
+
   if (differentRP || fixedResult) {
     labState.set({
       ...current,
@@ -664,8 +615,10 @@ export function handoffLabCredential() {
         previousSignCount: result.signCount,
       },
     });
+
     return false;
   }
+
   return completeHandoff(
     result.rpID,
     result.credentialIDHex,
@@ -677,7 +630,9 @@ export function handoffLabCredential() {
 
 export function confirmLabHandoff() {
   const pending = get(labState).pendingHandoff;
+
   if (!pending) return false;
+
   return completeHandoff(
     pending.rpID,
     pending.credentialIDHex,

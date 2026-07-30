@@ -5,17 +5,23 @@ import type { BioSensorEnvelope } from "../../../../bindings/telesma/service";
 
 import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import { idleLoadState, type LoadState } from "$lib/load-state";
-export { errorLoadState, idleLoadState, loadingLoadState, readyLoadState, type LoadState } from "$lib/load-state";
+export {
+  errorLoadState,
+  idleLoadState,
+  loadingLoadState,
+  readyLoadState,
+  type LoadState,
+} from "$lib/load-state";
 
 export const overviewBioSensor = writable<LoadState<BioSensorEnvelope>>(idleLoadState());
+
 export const overviewMDS = writable<LoadState<LookupResult | null>>(idleLoadState());
 
-export function resetOverviewStateForTest() {
+export function resetOverviewDeviceState() {
   overviewBioSensor.set(idleLoadState());
   overviewMDS.set(idleLoadState());
 }
 
 deviceFeatureLifecycles.register("overview", {
-  resetForAuthenticatorChange: resetOverviewStateForTest,
-  resetForTest: resetOverviewStateForTest,
+  resetForAuthenticatorChange: resetOverviewDeviceState,
 });

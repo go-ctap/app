@@ -1,6 +1,6 @@
 <script lang="ts">
-  import * as Field from "$lib/components/ui/field/index.js";
-  import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
+  import * as Field from "$lib/components/ui/field";
+  import * as ToggleGroup from "$lib/components/ui/toggle-group";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -16,6 +16,7 @@
 
   function handleValueChange(next: string | string[]) {
     if (Array.isArray(next) || !next) return;
+
     onChange(next);
   }
 </script>
@@ -39,13 +40,13 @@
 </Field.Field>
 
 <style>
-@layer blocks {
-  :global(.lab-verification-flow) {
-    width: 100%;
-  }
+  @layer blocks {
+    :global(.lab-verification-flow) {
+      width: 100%;
+    }
 
-  :global(.lab-verification-flow [data-slot="toggle-group-item"]) {
-    flex: 1 1 50%;
+    :global(.lab-verification-flow [data-slot="toggle-group-item"]) {
+      flex: 1 1 50%;
+    }
   }
-}
 </style>

@@ -10,59 +10,49 @@ import { Create as $Create } from "@wailsio/runtime";
 import * as credentials$0 from "../credentials/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as failure$0 from "../failure/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
 import * as report$0 from "../report/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as safety$0 from "../safety/models.js";
 
-export class ArrayState {
-    "read": boolean;
-    "blobCount": number;
-    "blobPresent": boolean;
-    "blobState": BlobState;
-    "blobSize"?: number;
+export class ArrayEntry {
+    "index": number;
+    "state": EntryState;
+    "target"?: BlobTarget | null;
+    "ciphertextByteCount": number;
+    "declaredPayloadByteCount": number;
+    "payloadByteCount"?: number;
 
-    /** Creates a new ArrayState instance. */
-    constructor($$source: Partial<ArrayState> = {}) {
-        if (!("read" in $$source)) {
-            this["read"] = false;
+    /** Creates a new ArrayEntry instance. */
+    constructor($$source: Partial<ArrayEntry> = {}) {
+        if (!("index" in $$source)) {
+            this["index"] = 0;
         }
-        if (!("blobCount" in $$source)) {
-            this["blobCount"] = 0;
+        if (!("state" in $$source)) {
+            this["state"] = EntryState.$zero;
         }
-        if (!("blobPresent" in $$source)) {
-            this["blobPresent"] = false;
+        if (!("ciphertextByteCount" in $$source)) {
+            this["ciphertextByteCount"] = 0;
         }
-        if (!("blobState" in $$source)) {
-            this["blobState"] = BlobState.$zero;
+        if (!("declaredPayloadByteCount" in $$source)) {
+            this["declaredPayloadByteCount"] = 0;
         }
 
         Object.assign(this, $$source);
     }
 
     /**
-     * Creates a new ArrayState instance from a string or object.
+     * Creates a new ArrayEntry instance from a string or object.
      */
-    static createFrom($$source: any = {}): ArrayState {
+    static createFrom($$source: any = {}): ArrayEntry {
+        const $$createField2_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new ArrayState($$parsedSource as Partial<ArrayState>);
+        if ("target" in $$parsedSource) {
+            $$parsedSource["target"] = $$createField2_0($$parsedSource["target"]);
+        }
+        return new ArrayEntry($$parsedSource as Partial<ArrayEntry>);
     }
 }
-
-export enum BlobState {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    BlobStateUnknownKeyMissing = "unknown_key_missing",
-    BlobStateMissing = "missing",
-    BlobStatePresent = "present",
-    BlobStateUnsupported = "unsupported",
-};
 
 export class BlobTarget {
     "credentialIDHex": string;
@@ -88,8 +78,8 @@ export class BlobTarget {
      * Creates a new BlobTarget instance from a string or object.
      */
     static createFrom($$source: any = {}): BlobTarget {
-        const $$createField1_0 = $$createType0;
-        const $$createField2_0 = $$createType1;
+        const $$createField1_0 = $$createType2;
+        const $$createField2_0 = $$createType3;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("rp" in $$parsedSource) {
             $$parsedSource["rp"] = $$createField1_0($$parsedSource["rp"]);
@@ -107,48 +97,64 @@ export enum DecodeMode {
      */
     $zero = "",
 
-    DecodeModeNone = "none",
     DecodeModeUTF8 = "utf8",
     DecodeModeJSON = "json",
     DecodeModeCBOR = "cbor",
 };
 
-export class DecodeStatus {
-    "requested": boolean;
+export class DecodeResult {
     "mode": DecodeMode;
-    "label"?: string;
-    "success": boolean;
-    "decodedText"?: string;
-    "decodedValue"?: any;
-    "failure"?: failure$0.Failure | null;
+    "text"?: string;
+    "value"?: any;
 
-    /** Creates a new DecodeStatus instance. */
-    constructor($$source: Partial<DecodeStatus> = {}) {
-        if (!("requested" in $$source)) {
-            this["requested"] = false;
-        }
+    /** Creates a new DecodeResult instance. */
+    constructor($$source: Partial<DecodeResult> = {}) {
         if (!("mode" in $$source)) {
             this["mode"] = DecodeMode.$zero;
-        }
-        if (!("success" in $$source)) {
-            this["success"] = false;
         }
 
         Object.assign(this, $$source);
     }
 
     /**
-     * Creates a new DecodeStatus instance from a string or object.
+     * Creates a new DecodeResult instance from a string or object.
      */
-    static createFrom($$source: any = {}): DecodeStatus {
-        const $$createField6_0 = $$createType3;
+    static createFrom($$source: any = {}): DecodeResult {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("failure" in $$parsedSource) {
-            $$parsedSource["failure"] = $$createField6_0($$parsedSource["failure"]);
-        }
-        return new DecodeStatus($$parsedSource as Partial<DecodeStatus>);
+        return new DecodeResult($$parsedSource as Partial<DecodeResult>);
     }
 }
+
+export enum EntryState {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    /**
+     * EntryStateMatched means AEAD authentication and payload decompression
+     * succeeded with an enumerated credential key.
+     */
+    EntryStateMatched = "matched",
+
+    /**
+     * EntryStateOrphaned means the conforming entry did not authenticate with
+     * any valid key returned while enumerating discoverable credentials.
+     */
+    EntryStateOrphaned = "orphaned",
+
+    /**
+     * EntryStateNonconforming means the entry violates a required large-blob
+     * map restriction represented by protocol.LargeBlob.
+     */
+    EntryStateNonconforming = "nonconforming",
+
+    /**
+     * EntryStateCorrupt means AEAD authentication succeeded, but DEFLATE or
+     * origSize validation failed. CTAP garbage collection retains this entry.
+     */
+    EntryStateCorrupt = "corrupt",
+};
 
 export enum LargeBlobKeyState {
     /**
@@ -164,7 +170,9 @@ export class ListArraySummary {
     "read": boolean;
     "blobCount": number;
     "matchedBlobCount": number;
-    "unmatchedBlobCount": number;
+    "orphanedBlobCount": number;
+    "nonconformingBlobCount": number;
+    "corruptBlobCount": number;
 
     /** Creates a new ListArraySummary instance. */
     constructor($$source: Partial<ListArraySummary> = {}) {
@@ -177,8 +185,14 @@ export class ListArraySummary {
         if (!("matchedBlobCount" in $$source)) {
             this["matchedBlobCount"] = 0;
         }
-        if (!("unmatchedBlobCount" in $$source)) {
-            this["unmatchedBlobCount"] = 0;
+        if (!("orphanedBlobCount" in $$source)) {
+            this["orphanedBlobCount"] = 0;
+        }
+        if (!("nonconformingBlobCount" in $$source)) {
+            this["nonconformingBlobCount"] = 0;
+        }
+        if (!("corruptBlobCount" in $$source)) {
+            this["corruptBlobCount"] = 0;
         }
 
         Object.assign(this, $$source);
@@ -193,65 +207,11 @@ export class ListArraySummary {
     }
 }
 
-export class ListCredential {
-    "attachmentId"?: report$0.AttachmentID;
-    "credentialIDHex": string;
-    "rp": credentials$0.RelyingParty;
-    "user": credentials$0.UserIdentity;
-    "largeBlobKeyState": LargeBlobKeyState;
-    "blobPresent": boolean;
-    "blobState": BlobState;
-    "blobByteCount": number;
-
-    /** Creates a new ListCredential instance. */
-    constructor($$source: Partial<ListCredential> = {}) {
-        if (!("credentialIDHex" in $$source)) {
-            this["credentialIDHex"] = "";
-        }
-        if (!("rp" in $$source)) {
-            this["rp"] = (new credentials$0.RelyingParty());
-        }
-        if (!("user" in $$source)) {
-            this["user"] = (new credentials$0.UserIdentity());
-        }
-        if (!("largeBlobKeyState" in $$source)) {
-            this["largeBlobKeyState"] = LargeBlobKeyState.$zero;
-        }
-        if (!("blobPresent" in $$source)) {
-            this["blobPresent"] = false;
-        }
-        if (!("blobState" in $$source)) {
-            this["blobState"] = BlobState.$zero;
-        }
-        if (!("blobByteCount" in $$source)) {
-            this["blobByteCount"] = 0;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new ListCredential instance from a string or object.
-     */
-    static createFrom($$source: any = {}): ListCredential {
-        const $$createField2_0 = $$createType0;
-        const $$createField3_0 = $$createType1;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("rp" in $$parsedSource) {
-            $$parsedSource["rp"] = $$createField2_0($$parsedSource["rp"]);
-        }
-        if ("user" in $$parsedSource) {
-            $$parsedSource["user"] = $$createField3_0($$parsedSource["user"]);
-        }
-        return new ListCredential($$parsedSource as Partial<ListCredential>);
-    }
-}
-
 export class ListReport {
     "device": report$0.DeviceReport;
     "support": SupportReport;
     "array": ListArraySummary;
-    "credentials"?: ListCredential[];
+    "entries"?: ArrayEntry[];
 
     /** Creates a new ListReport instance. */
     constructor($$source: Partial<ListReport> = {}) {
@@ -286,8 +246,8 @@ export class ListReport {
         if ("array" in $$parsedSource) {
             $$parsedSource["array"] = $$createField2_0($$parsedSource["array"]);
         }
-        if ("credentials" in $$parsedSource) {
-            $$parsedSource["credentials"] = $$createField3_0($$parsedSource["credentials"]);
+        if ("entries" in $$parsedSource) {
+            $$parsedSource["entries"] = $$createField3_0($$parsedSource["entries"]);
         }
         return new ListReport($$parsedSource as Partial<ListReport>);
     }
@@ -353,7 +313,8 @@ export class MutationPreview {
     "blobCountBefore": number;
     "blobCountAfter": number;
     "matchedBlobCount"?: number;
-    "unmatchedBlobCount"?: number;
+    "orphanedBlobCount"?: number;
+    "nonconformingBlobCount"?: number;
     "deletedBlobCount"?: number;
     "noBlob": boolean;
     "noop"?: boolean;
@@ -407,8 +368,8 @@ export class MutationPreview {
     static createFrom($$source: any = {}): MutationPreview {
         const $$createField1_0 = $$createType4;
         const $$createField2_0 = $$createType5;
-        const $$createField3_0 = $$createType12;
-        const $$createField17_0 = $$createType14;
+        const $$createField3_0 = $$createType0;
+        const $$createField18_0 = $$createType13;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField1_0($$parsedSource["device"]);
@@ -420,7 +381,7 @@ export class MutationPreview {
             $$parsedSource["target"] = $$createField3_0($$parsedSource["target"]);
         }
         if ("warnings" in $$parsedSource) {
-            $$parsedSource["warnings"] = $$createField17_0($$parsedSource["warnings"]);
+            $$parsedSource["warnings"] = $$createField18_0($$parsedSource["warnings"]);
         }
         return new MutationPreview($$parsedSource as Partial<MutationPreview>);
     }
@@ -443,7 +404,8 @@ export class MutationResult {
     "blobCountBefore": number;
     "blobCountAfter": number;
     "matchedBlobCount"?: number;
-    "unmatchedBlobCount"?: number;
+    "orphanedBlobCount"?: number;
+    "nonconformingBlobCount"?: number;
     "deletedBlobCount"?: number;
     "noBlob": boolean;
     "noop"?: boolean;
@@ -498,40 +460,24 @@ export class MutationResult {
 
 export class ReadReport {
     "device": report$0.DeviceReport;
-    "support": SupportReport;
     "target": BlobTarget;
-    "largeBlobKeyState": LargeBlobKeyState;
-    "array": ArrayState;
-    "blobPresent": boolean;
+    "state": ReadState;
     "rawHex"?: string;
     "rawByteCount": number;
-    "decode": DecodeStatus;
 
     /** Creates a new ReadReport instance. */
     constructor($$source: Partial<ReadReport> = {}) {
         if (!("device" in $$source)) {
             this["device"] = (new report$0.DeviceReport());
         }
-        if (!("support" in $$source)) {
-            this["support"] = (new SupportReport());
-        }
         if (!("target" in $$source)) {
             this["target"] = (new BlobTarget());
         }
-        if (!("largeBlobKeyState" in $$source)) {
-            this["largeBlobKeyState"] = LargeBlobKeyState.$zero;
-        }
-        if (!("array" in $$source)) {
-            this["array"] = (new ArrayState());
-        }
-        if (!("blobPresent" in $$source)) {
-            this["blobPresent"] = false;
+        if (!("state" in $$source)) {
+            this["state"] = ReadState.$zero;
         }
         if (!("rawByteCount" in $$source)) {
             this["rawByteCount"] = 0;
-        }
-        if (!("decode" in $$source)) {
-            this["decode"] = (new DecodeStatus());
         }
 
         Object.assign(this, $$source);
@@ -542,29 +488,36 @@ export class ReadReport {
      */
     static createFrom($$source: any = {}): ReadReport {
         const $$createField0_0 = $$createType4;
-        const $$createField1_0 = $$createType5;
-        const $$createField2_0 = $$createType12;
-        const $$createField4_0 = $$createType15;
-        const $$createField8_0 = $$createType16;
+        const $$createField1_0 = $$createType0;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
         }
-        if ("support" in $$parsedSource) {
-            $$parsedSource["support"] = $$createField1_0($$parsedSource["support"]);
-        }
         if ("target" in $$parsedSource) {
-            $$parsedSource["target"] = $$createField2_0($$parsedSource["target"]);
-        }
-        if ("array" in $$parsedSource) {
-            $$parsedSource["array"] = $$createField4_0($$parsedSource["array"]);
-        }
-        if ("decode" in $$parsedSource) {
-            $$parsedSource["decode"] = $$createField8_0($$parsedSource["decode"]);
+            $$parsedSource["target"] = $$createField1_0($$parsedSource["target"]);
         }
         return new ReadReport($$parsedSource as Partial<ReadReport>);
     }
 }
+
+export enum ReadState {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    /**
+     * ReadStateMissing means no largeBlobKey was returned for the credential or
+     * no conforming array entry authenticated with its key.
+     */
+    ReadStateMissing = "missing",
+
+    /**
+     * ReadStatePresent means RawBytes contains the opaque, decompressed
+     * per-credential data.
+     */
+    ReadStatePresent = "present",
+};
 
 export class SupportReport {
     "largeBlobs": boolean;
@@ -593,20 +546,17 @@ export class SupportReport {
 }
 
 // Private type creation functions
-const $$createType0 = credentials$0.RelyingParty.createFrom;
-const $$createType1 = credentials$0.UserIdentity.createFrom;
-const $$createType2 = failure$0.Failure.createFrom;
-const $$createType3 = $Create.Nullable($$createType2);
+const $$createType0 = BlobTarget.createFrom;
+const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = credentials$0.RelyingParty.createFrom;
+const $$createType3 = credentials$0.UserIdentity.createFrom;
 const $$createType4 = report$0.DeviceReport.createFrom;
 const $$createType5 = SupportReport.createFrom;
 const $$createType6 = ListArraySummary.createFrom;
-const $$createType7 = ListCredential.createFrom;
+const $$createType7 = ArrayEntry.createFrom;
 const $$createType8 = $Create.Array($$createType7);
 const $$createType9 = MutationPreview.createFrom;
 const $$createType10 = MutationResult.createFrom;
 const $$createType11 = $Create.Nullable($$createType10);
-const $$createType12 = BlobTarget.createFrom;
-const $$createType13 = safety$0.Warning.createFrom;
-const $$createType14 = $Create.Array($$createType13);
-const $$createType15 = ArrayState.createFrom;
-const $$createType16 = DecodeStatus.createFrom;
+const $$createType12 = safety$0.Warning.createFrom;
+const $$createType13 = $Create.Array($$createType12);

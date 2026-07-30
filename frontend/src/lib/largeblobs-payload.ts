@@ -1,4 +1,5 @@
 export type LargeBlobPayloadEncoding = "utf8" | "hex";
+
 export type LargeBlobPayloadValidationError = "invalid-hex-character" | "odd-hex-length";
 
 export type LargeBlobPayloadParseResult =
@@ -15,7 +16,9 @@ export type LargeBlobPayloadParseResult =
 
 export function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
+
   for (const byte of bytes) binary += String.fromCharCode(byte);
+
   return btoa(binary);
 }
 
@@ -25,6 +28,7 @@ export function parseLargeBlobPayload(
 ): LargeBlobPayloadParseResult {
   if (encoding === "utf8") {
     const bytes = new TextEncoder().encode(value);
+
     return {
       ok: true,
       bytes,
@@ -38,11 +42,13 @@ export function parseLargeBlobPayload(
   }
 
   const normalized = value.replace(/\s/g, "");
+
   if (normalized.length % 2 !== 0) {
     return { ok: false, error: "odd-hex-length" };
   }
 
   const bytes = new Uint8Array(normalized.length / 2);
+
   for (let offset = 0; offset < normalized.length; offset += 2) {
     bytes[offset / 2] = Number.parseInt(normalized.slice(offset, offset + 2), 16);
   }

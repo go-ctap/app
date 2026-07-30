@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { bioSampleStatusLabel, permissionLabel } from "./format.js";
-import { setAppLocale } from "./i18n.js";
+import { bioSampleStatusLabel, permissionLabel } from "$lib/format.js";
+import { setAppLocale } from "$lib/i18n.js";
 
 describe("ctapkit display labels", () => {
   afterEach(() => setAppLocale("en"));
@@ -19,7 +19,9 @@ describe("ctapkit display labels", () => {
   it("localizes biometric sample statuses", () => {
     setAppLocale("ru");
 
-    expect(bioSampleStatusLabel("LastEnrollSampleStatusFingerprintTooHigh")).toBe("Приложите палец ниже");
+    expect(bioSampleStatusLabel("LastEnrollSampleStatusFingerprintTooHigh")).toBe(
+      "Приложите палец ниже",
+    );
     expect(bioSampleStatusLabel("too-fast")).toBe("Держите палец на сенсоре дольше");
   });
 

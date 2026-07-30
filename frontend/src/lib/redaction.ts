@@ -1,26 +1,28 @@
 const REDACTED = "[redacted]";
 
-const SECRET_FIELD_NAMES = new Set([
-  "pin",
-  "pinCode",
-  "currentPIN",
-  "pinUvAuthToken",
-  "pinUVAuthToken",
-  "newPIN",
-  "newPin",
-  "oldPIN",
-  "oldPin",
-  "resetConfirmation",
-  "resetPhrase",
-  "encIdentifier",
-  "encCredStoreState",
-  "authenticatorIdentifierHex",
-  "credentialStoreStateHex",
-  "output1Hex",
-  "output2Hex",
-  "first",
-  "second",
-].map(normalizeFieldName));
+const SECRET_FIELD_NAMES = new Set(
+  [
+    "pin",
+    "pinCode",
+    "currentPIN",
+    "pinUvAuthToken",
+    "pinUVAuthToken",
+    "newPIN",
+    "newPin",
+    "oldPIN",
+    "oldPin",
+    "resetConfirmation",
+    "resetPhrase",
+    "encIdentifier",
+    "encCredStoreState",
+    "authenticatorIdentifierHex",
+    "credentialStoreStateHex",
+    "output1Hex",
+    "output2Hex",
+    "first",
+    "second",
+  ].map(normalizeFieldName),
+);
 
 function normalizeFieldName(value: string) {
   return value.replace(/[^a-z0-9]/gi, "").toLowerCase();
@@ -33,7 +35,7 @@ function shouldRedactField(key: string, value: unknown) {
 export function sanitizedJson(value: unknown) {
   return JSON.stringify(
     value,
-    (key, item) => key && shouldRedactField(key, item) ? REDACTED : item,
+    (key, item) => (key && shouldRedactField(key, item) ? REDACTED : item),
     2,
   );
 }

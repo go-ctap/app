@@ -1,28 +1,25 @@
 <script lang="ts">
   import { Copy } from "@lucide/svelte";
 
-  import { Button } from "$lib/components/ui/button/index.js";
-  import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
-  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+  import { Button } from "$lib/components/ui/button";
+  import { ScrollArea } from "$lib/components/ui/scroll-area";
+  import * as Tooltip from "$lib/components/ui/tooltip";
   import { copyToClipboard } from "$lib/clipboard.js";
 
   import { m } from "../../../paraglide/messages.js";
-  import CTAPDiagnosticCode from "./CTAPDiagnosticCode.svelte";
+  import CTAPDiagnosticCode from "$lib/components/logs/CTAPDiagnosticCode.svelte";
 
   type Props = {
     source: string;
   };
 
   let { source }: Props = $props();
-
-  function copyPayload() {
-    void copyToClipboard(source, m.logs_payload_copied());
-  }
 </script>
 
 <section class="preformatted-payload" aria-label={m.logs_format_cbor_diagnostic()}>
   <header class="preformatted-payload-header">
     <h3>{m.logs_format_cbor_diagnostic()}</h3>
+
     <Tooltip.Provider delayDuration={350}>
       <Tooltip.Root>
         <Tooltip.Trigger>
@@ -33,7 +30,7 @@
               size="icon-sm"
               variant="ghost"
               aria-label={m.logs_copy_payload()}
-              onclick={copyPayload}
+              onclick={() => void copyToClipboard(source, m.logs_payload_copied())}
             >
               <Copy data-icon="inline-start" aria-hidden="true" />
             </Button>
@@ -43,6 +40,7 @@
       </Tooltip.Root>
     </Tooltip.Provider>
   </header>
+
   <ScrollArea class="preformatted-payload-scroll">
     <CTAPDiagnosticCode {source} />
   </ScrollArea>

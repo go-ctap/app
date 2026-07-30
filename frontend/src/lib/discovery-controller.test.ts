@@ -25,7 +25,7 @@ import {
   offerOperationRecovery,
   operationRecovery,
 } from "$lib/operation-recovery";
-import { failureForCode } from "$lib/test-failure";
+import { failureForCode } from "$lib/test-support/failure";
 import { testSmartCardDevice } from "../test/device.js";
 
 import {
@@ -37,7 +37,7 @@ import {
   seedPasskeysEnvelopeForTest,
   seedPendingInteractionForTest,
   seedSelectionForTest,
-} from "./store-test-utils.js";
+} from "$lib/test-support/store-utils.js";
 import {
   devices,
   largeBlobsInventoryState,
@@ -48,13 +48,12 @@ import {
   selectedSelector,
   authenticatorStatus,
   statusBar,
-} from "./test-support/stores.js";
+} from "$lib/test-support/stores.js";
 
 const serviceMocks = vi.hoisted(() => ({
   Inspect: vi.fn(),
   ListCredentials: vi.fn(),
   SetSelection: vi.fn(),
-  RefreshDiscovery: vi.fn(),
 }));
 
 vi.mock("../../bindings/telesma/ctapservice/service", () => serviceMocks);
@@ -71,15 +70,15 @@ function device(id: string, product = id): DeviceReport {
 }
 
 function event(
-  snapshot: { devices: DeviceReport[] } | null,
-  error: DiscoveryChangedEnvelope["error"] = null,
+  snapshot: { devices: DeviceReport[] },
+  error: DiscoveryChangedEnvelope["error"] = undefined,
   trigger = InventoryTrigger.InventoryTriggerTopology,
 ): DiscoveryChangedEnvelope {
   return {
     trigger,
     snapshot,
-    error,
-  } as DiscoveryChangedEnvelope;
+    ...(error ? { error } : {}),
+  };
 }
 
 function seedSelected(token: DeviceReport, state: "ready" | "running" = "ready") {
@@ -105,7 +104,8 @@ describe("discovery controller", () => {
 
   it("auto-selects a late authenticator when none were available", async () => {
     const token = device("token-1");
-    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+    const { handleDiscoveryChanged } = await import("$lib/discovery-controller.js");
+
     seedActiveScreenForTest("settings");
     serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(token) });
 
@@ -128,7 +128,8 @@ describe("discovery controller", () => {
   it("auto-selects the first when several authenticators appear after none", async () => {
     const first = device("token-1");
     const second = device("token-2");
-    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+    const { handleDiscoveryChanged } = await import("$lib/discovery-controller.js");
+
     seedActiveScreenForTest("settings");
     serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(first) });
 
@@ -144,24 +145,31 @@ describe("discovery controller", () => {
     const original = testSmartCardDevice("card-1");
     const retainedInventory = device("other-token");
     const reattached = testSmartCardDevice("card-2");
+
     seedDevicesForTest([original]);
     seedSelectionForTest(original.attachment.id, original, {
       state: "ready",
       selectionId: "authenticator-card-1",
     });
+
     const decision = offerOperationRecovery(
       "Create credential",
       failureForCode(Code.CodeUserPresenceRequired),
     );
+
     seedDevicesForTest([retainedInventory]);
     seedSelectionForTest("", null, { state: "idle" });
     seedActiveScreenForTest("lab");
 
     let finishSelection!: (value: { selection: ActiveSelection }) => void;
-    serviceMocks.SetSelection.mockReturnValue(new Promise((resolve) => {
-      finishSelection = resolve;
-    }));
-    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+
+    serviceMocks.SetSelection.mockReturnValue(
+      new Promise((resolve) => {
+        finishSelection = resolve;
+      }),
+    );
+
+    const { handleDiscoveryChanged } = await import("$lib/discovery-controller.js");
     const opening = handleDiscoveryChanged(event({ devices: [retainedInventory, reattached] }));
 
     await vi.waitFor(() => {
@@ -192,21 +200,26 @@ describe("discovery controller", () => {
     const original = testSmartCardDevice("card-1");
     const retained = device("other-token");
     const reattached = testSmartCardDevice("card-2");
+
     seedDevicesForTest([original]);
     seedSelectionForTest(original.attachment.id, original, {
       state: "ready",
       selectionId: "authenticator-card-1",
     });
+
     const decision = offerOperationRecovery(
       "Create credential",
       failureForCode(Code.CodeUserPresenceRequired),
     );
+
     seedActiveScreenForTest("passkeys");
     serviceMocks.SetSelection.mockImplementation(({ attachmentId }) => {
       const selected = attachmentId === retained.attachment.id ? retained : reattached;
+
       return Promise.resolve({ selection: snapshot(selected) });
     });
-    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+
+    const { handleDiscoveryChanged } = await import("$lib/discovery-controller.js");
 
     await handleDiscoveryChanged(event({ devices: [retained] }));
     expect(get(selectedDevice)).toEqual(retained);
@@ -231,14 +244,19 @@ describe("discovery controller", () => {
     const refreshed = device("token-1", "Refreshed");
     const inspection = { operationId: "inspect-1" } as InspectEnvelope;
     const inventory = { operationId: "credentials-1", result: {} } as CredentialsEnvelope;
-    const largeBlobs = { operationId: "large-blobs-1" } as LargeBlobListEnvelope;
+    const largeBlobReport = {} as NonNullable<LargeBlobListEnvelope["result"]>;
+    const largeBlobs = {
+      operationId: "large-blobs-1",
+      result: largeBlobReport,
+    } as LargeBlobListEnvelope;
     const prompt = {
       interactionId: "interaction-1",
       operationId: "operation-1",
       selectionId: "authenticator-token-1",
       request: { kind: InteractionKind.InteractionKindTouch },
     } as InteractionPrompt;
-    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+    const { handleDiscoveryChanged } = await import("$lib/discovery-controller.js");
+
     seedSelected(original);
     seedOverviewEnvelopeForTest(inspection);
     seedPasskeysEnvelopeForTest(inventory);
@@ -255,7 +273,7 @@ describe("discovery controller", () => {
     });
     expect(get(authenticatorInspection).data).toBe(inspection);
     expect(get(passkeysInventoryState).report).toBe(inventory.result);
-    expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).toBe(largeBlobs);
+    expect(get(largeBlobsInventoryState).report).toBe(largeBlobReport);
     expect(get(pendingInteraction)).toBe(prompt);
   });
 
@@ -274,16 +292,17 @@ describe("discovery controller", () => {
         provider: Vendor.VendorYubico,
       },
     };
-    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+    const { handleDiscoveryChanged } = await import("$lib/discovery-controller.js");
+
     seedSelected(original);
 
     handleDiscoveryChanged(event({ devices: [original] }));
+
     const outcome = get(statusBar).lastOutcome;
-    handleDiscoveryChanged(event(
-      { devices: [enriched] },
-      null,
-      InventoryTrigger.InventoryTriggerIdentity,
-    ));
+
+    handleDiscoveryChanged(
+      event({ devices: [enriched] }, undefined, InventoryTrigger.InventoryTriggerIdentity),
+    );
 
     expect(get(devices)).toEqual([enriched]);
     expect(get(selectedDevice)).toEqual(enriched);
@@ -310,22 +329,26 @@ describe("discovery controller", () => {
       },
     };
     let finishSelection!: (value: { selection: ActiveSelection }) => void;
-    serviceMocks.SetSelection.mockReturnValue(new Promise((resolve) => {
-      finishSelection = resolve;
-    }));
-    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+
+    serviceMocks.SetSelection.mockReturnValue(
+      new Promise((resolve) => {
+        finishSelection = resolve;
+      }),
+    );
+
+    const { handleDiscoveryChanged } = await import("$lib/discovery-controller.js");
+
     seedActiveScreenForTest("settings");
 
     const opening = handleDiscoveryChanged(event({ devices: [original] }));
+
     await vi.waitFor(() => {
       expect(serviceMocks.SetSelection).toHaveBeenCalledWith({ attachmentId: "token-1" });
     });
 
-    await handleDiscoveryChanged(event(
-      { devices: [enriched] },
-      null,
-      InventoryTrigger.InventoryTriggerIdentity,
-    ));
+    await handleDiscoveryChanged(
+      event({ devices: [enriched] }, undefined, InventoryTrigger.InventoryTriggerIdentity),
+    );
     finishSelection({ selection: snapshot(original) });
     await opening;
 
@@ -341,7 +364,8 @@ describe("discovery controller", () => {
     const selected = device("token-1");
     const unselected = device("token-2");
     const inspection = { operationId: "inspect-1" } as InspectEnvelope;
-    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+    const { handleDiscoveryChanged } = await import("$lib/discovery-controller.js");
+
     seedDevicesForTest([selected, unselected]);
     seedSelectionForTest(selected.attachment.id, selected, {
       state: "ready",
@@ -360,7 +384,8 @@ describe("discovery controller", () => {
   it("selects the first remaining authenticator when the selected one disappears", async () => {
     const selected = device("token-1");
     const remaining = device("token-2");
-    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+    const { handleDiscoveryChanged } = await import("$lib/discovery-controller.js");
+
     seedSelected(selected);
     seedActiveScreenForTest("settings");
     serviceMocks.SetSelection.mockResolvedValue({ selection: snapshot(remaining) });
@@ -382,7 +407,9 @@ describe("discovery controller", () => {
     const inspection = { operationId: "inspect-1" } as InspectEnvelope;
     const inventory = { operationId: "credentials-1" } as CredentialsEnvelope;
     const largeBlobs = { operationId: "large-blobs-1" } as LargeBlobListEnvelope;
-    const { handleDiscoveryChanged, handleOperationProgress } = await import("./test-support/controller.js");
+    const { handleDiscoveryChanged, handleOperationProgress } =
+      await import("$lib/test-support/controller.js");
+
     seedSelected(token, "running");
     seedOverviewEnvelopeForTest(inspection);
     seedPasskeysEnvelopeForTest(inventory);
@@ -409,7 +436,7 @@ describe("discovery controller", () => {
     expect(get(pendingInteraction)).toBeNull();
     expect(get(authenticatorInspection).data).toBeNull();
     expect(get(passkeysInventoryState).report).toBeNull();
-    expect(get(largeBlobsInventoryState).lastSuccessfulEnvelope).toBeNull();
+    expect(get(largeBlobsInventoryState).report).toBeNull();
     expect(get(statusBar).activeOperation).toBeNull();
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "warning",
@@ -417,12 +444,13 @@ describe("discovery controller", () => {
     });
   });
 
-  it("keeps the last snapshot and authenticator on discovery failure", async () => {
+  it("keeps the authenticator when a failed monitor reports the last snapshot", async () => {
     const token = device("token-1");
-    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+    const { handleDiscoveryChanged } = await import("$lib/discovery-controller.js");
+
     seedSelected(token);
 
-    handleDiscoveryChanged(event(null, failureForCode(Code.CodeTransportFailure)));
+    handleDiscoveryChanged(event({ devices: [token] }, failureForCode(Code.CodeTransportFailure)));
 
     expect(get(devices)).toEqual([token]);
     expect(get(selectedSelector)).toBe("token-1");
@@ -436,7 +464,8 @@ describe("discovery controller", () => {
   it("keeps an identical snapshot and current authenticator without clearing caches", async () => {
     const token = device("token-1");
     const inspection = { operationId: "inspect-1" } as InspectEnvelope;
-    const { handleDiscoveryChanged } = await import("./discovery-controller.js");
+    const { handleDiscoveryChanged } = await import("$lib/discovery-controller.js");
+
     seedSelected(token);
     seedOverviewEnvelopeForTest(inspection);
 
@@ -446,18 +475,4 @@ describe("discovery controller", () => {
     expect(get(authenticatorInspection).data).toBe(inspection);
     expect(get(statusBar).lastOutcome).toMatchObject({ tone: "info" });
   });
-
-  it("requests manual reconciliation and waits for its event", async () => {
-    const original = device("token-1");
-    const { refreshDiscovery } = await import("./discovery-controller.js");
-    seedDevicesForTest([original]);
-    serviceMocks.RefreshDiscovery.mockResolvedValue(undefined);
-
-    await refreshDiscovery();
-
-    expect(serviceMocks.RefreshDiscovery).toHaveBeenCalledWith({});
-    expect(get(devices)).toEqual([original]);
-    expect(get(statusBar).lastOutcome).toBeNull();
-  });
-
 });

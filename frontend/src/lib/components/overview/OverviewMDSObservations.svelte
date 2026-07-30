@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Badge, type BadgeVariant } from "$lib/components/ui/badge/index.js";
-  import * as Collapsible from "$lib/components/ui/collapsible/index.js";
-  import * as Table from "$lib/components/ui/table/index.js";
+  import { Badge, type BadgeVariant } from "$lib/components/ui/badge";
+  import * as Collapsible from "$lib/components/ui/collapsible";
+  import * as Table from "$lib/components/ui/table";
   import type { OverviewMDSObservation, OverviewMDSObservationSeverity } from "$lib/overview-rules";
 
   import { m } from "../../../paraglide/messages.js";
@@ -10,13 +10,17 @@
 
   function label(severity: OverviewMDSObservationSeverity) {
     if (severity === "critical") return m.severity_critical();
+
     if (severity === "warning") return m.severity_warning();
+
     return m.severity_info();
   }
 
   function variant(severity: OverviewMDSObservationSeverity): BadgeVariant {
     if (severity === "critical") return "destructive";
+
     if (severity === "warning") return "secondary";
+
     return "outline";
   }
 </script>
@@ -44,7 +48,11 @@
           <Table.Body>
             {#each observations as observation (`${observation.severity}:${observation.source}:${observation.finding}`)}
               <Table.Row>
-                <Table.Cell><Badge variant={variant(observation.severity)}>{label(observation.severity)}</Badge></Table.Cell>
+                <Table.Cell
+                  ><Badge variant={variant(observation.severity)}
+                    >{label(observation.severity)}</Badge
+                  ></Table.Cell
+                >
                 <Table.Cell><strong>{observation.finding}</strong></Table.Cell>
                 <Table.Cell><strong>{observation.token || m.not_reported()}</strong></Table.Cell>
                 <Table.Cell><strong>{observation.mds || m.not_reported()}</strong></Table.Cell>
@@ -60,61 +68,61 @@
 {/if}
 
 <style>
-@layer blocks {
-  :global(.mds-observations) {
-    min-width: 0;
-    overflow: hidden;
-    border: 1px solid var(--border);
-    background: var(--card);
-  }
+  @layer blocks {
+    :global(.mds-observations) {
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
 
-  :global(.mds-observations-trigger) {
-    display: flex;
-    width: 100%;
-    cursor: pointer;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    border: 0;
-    background: transparent;
-    color: var(--foreground);
-    padding: var(--space-4);
-    font-weight: 700;
-  }
+    :global(.mds-observations-trigger) {
+      display: flex;
+      width: 100%;
+      cursor: pointer;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-3);
+      border: 0;
+      background: transparent;
+      color: var(--foreground);
+      padding: var(--space-4);
+      font-weight: 700;
+    }
 
-  :global(.mds-observations-content) {
-    display: grid;
-    gap: var(--space-3);
-    border-top: 1px solid var(--border);
-    padding: var(--space-4);
-  }
+    :global(.mds-observations-content) {
+      display: grid;
+      gap: var(--space-3);
+      border-top: 1px solid var(--border);
+      padding: var(--space-4);
+    }
 
-  :global(.observations-table) {
-    min-width: 72rem;
-  }
+    :global(.observations-table) {
+      min-width: 72rem;
+    }
 
-  .description {
-    margin: 0;
-    color: var(--muted-foreground);
-    font-size: 0.875rem;
-    line-height: 1.5;
-  }
+    .description {
+      margin: 0;
+      color: var(--muted-foreground);
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
 
-  .table-frame {
-    min-width: 0;
-    border: 1px solid var(--border);
-  }
+    .table-frame {
+      min-width: 0;
+      border: 1px solid var(--border);
+    }
 
-  :global(.text-cell) {
-    white-space: normal;
-  }
+    :global(.text-cell) {
+      white-space: normal;
+    }
 
-  :global(.source-cell) {
-    white-space: normal;
-  }
+    :global(.source-cell) {
+      white-space: normal;
+    }
 
-  code {
-    overflow-wrap: anywhere;
+    code {
+      overflow-wrap: anywhere;
+    }
   }
-}
 </style>

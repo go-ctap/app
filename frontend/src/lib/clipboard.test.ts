@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { setAppLocale } from "$lib/i18n";
 
-import { copyToClipboard } from "./clipboard";
+import { copyToClipboard } from "$lib/clipboard";
 
 const toastMocks = vi.hoisted(() => ({
   error: vi.fn(),

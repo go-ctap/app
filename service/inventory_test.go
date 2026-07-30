@@ -18,6 +18,7 @@ func TestInventoryIdentityEventKeepsAttachmentOrderAndSelection(t *testing.T) {
 	second := testDevice("device-2")
 	inventory := newFakeInventory([]report.DeviceReport{first, second})
 	service := New()
+
 	service.openInventory = func(context.Context, transport.Mode) (inventoryRuntime, error) {
 		return inventory, nil
 	}
@@ -31,9 +32,11 @@ func TestInventoryIdentityEventKeepsAttachmentOrderAndSelection(t *testing.T) {
 	}
 
 	snapshot, err := service.Discover(t.Context(), DiscoverRequest{})
+
 	if err != nil || len(snapshot.Devices) != 2 {
 		t.Fatalf("Discover = (%#v, %v)", snapshot, err)
 	}
+
 	selected := mustSelect(t, service, "device-1")
 
 	first.Identity = &report.DeviceIdentity{
@@ -55,12 +58,14 @@ func TestInventoryIdentityEventKeepsAttachmentOrderAndSelection(t *testing.T) {
 	waitFor(t, func() bool {
 		service.mu.Lock()
 		defer service.mu.Unlock()
+
 		return service.devices[0].Identity != nil
 	})
 	if service.devices[0].Attachment.ID != "device-1" ||
 		service.devices[1].Attachment.ID != "device-2" {
 		t.Fatalf("identity update reordered devices: %#v", service.devices)
 	}
+
 	if service.selected == nil || service.selected.id != selected.ID {
 		t.Fatalf("identity update changed selection: %#v", service.selected)
 	}
@@ -73,15 +78,18 @@ func TestInventoryIdentityEventKeepsAttachmentOrderAndSelection(t *testing.T) {
 func TestInventoryRemovalClosesSelectionBeforePublishingSnapshot(t *testing.T) {
 	inventory := newFakeInventory([]report.DeviceReport{testDevice("device-1")})
 	service := New()
+
 	service.openInventory = func(context.Context, transport.Mode) (inventoryRuntime, error) {
 		return inventory, nil
 	}
+
 	closedWhilePresent := atomic.Bool{}
 	runtime := &fakeAuthenticatorRuntime{onClose: func() {
 		service.mu.Lock()
 		defer service.mu.Unlock()
 		closedWhilePresent.Store(attachmentPresent(service.devices, "device-1"))
 	}}
+
 	service.openAuthenticator = func(
 		context.Context,
 		inventoryRuntime,
@@ -94,6 +102,7 @@ func TestInventoryRemovalClosesSelectionBeforePublishingSnapshot(t *testing.T) {
 	if _, err := service.Discover(t.Context(), DiscoverRequest{}); err != nil {
 		t.Fatalf("Discover: %v", err)
 	}
+
 	mustSelect(t, service, "device-1")
 	inventory.events <- ctapkit.InventoryEvent{
 		Trigger:  ctapkit.InventoryTriggerTopology,
@@ -103,6 +112,7 @@ func TestInventoryRemovalClosesSelectionBeforePublishingSnapshot(t *testing.T) {
 	waitFor(t, func() bool {
 		service.mu.Lock()
 		defer service.mu.Unlock()
+
 		return service.selected == nil && len(service.devices) == 0
 	})
 	if !runtime.closed.Load() || !closedWhilePresent.Load() {
@@ -132,6 +142,7 @@ func newFakeInventory(devices []report.DeviceReport) *fakeInventory {
 func (i *fakeInventory) Snapshot() ctapkit.InventorySnapshot {
 	i.mu.Lock()
 	defer i.mu.Unlock()
+
 	return i.snapshot
 }
 
@@ -141,6 +152,7 @@ func (i *fakeInventory) Events() <-chan ctapkit.InventoryEvent {
 
 func (i *fakeInventory) Refresh(context.Context) error {
 	i.refreshes.Add(1)
+
 	return nil
 }
 
@@ -156,17 +168,22 @@ func (i *fakeInventory) Close() error {
 	i.closeOnce.Do(func() {
 		close(i.events)
 	})
+
 	return nil
 }
 
 func waitFor(t *testing.T, condition func() bool) {
 	t.Helper()
+
 	deadline := time.Now().Add(time.Second)
+
 	for time.Now().Before(deadline) {
 		if condition() {
 			return
 		}
+
 		time.Sleep(time.Millisecond)
 	}
+
 	t.Fatal("condition was not met")
 }

@@ -1,12 +1,15 @@
 <script lang="ts">
   import { FileWarning, ShieldAlert } from "@lucide/svelte";
 
-  import { LogOutcome, type LogPayload } from "../../../../bindings/github.com/go-ctap/kit/model/index.js";
+  import {
+    LogOutcome,
+    type LogPayload,
+  } from "../../../../bindings/github.com/go-ctap/kit/model/index.js";
   import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure/index.js";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
-  import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
-  import * as Tabs from "$lib/components/ui/tabs/index.js";
+  import * as Alert from "$lib/components/ui/alert";
+  import { Badge } from "$lib/components/ui/badge";
+  import { ScrollArea } from "$lib/components/ui/scroll-area";
+  import * as Tabs from "$lib/components/ui/tabs";
   import { failureMessage } from "$lib/failure.js";
   import type { LogRecord } from "$lib/features/logs/state.svelte.js";
   import {
@@ -19,7 +22,7 @@
   } from "$lib/log-presentation.js";
 
   import { m } from "../../../paraglide/messages.js";
-  import PreformattedPayload from "./PreformattedPayload.svelte";
+  import PreformattedPayload from "$lib/components/logs/PreformattedPayload.svelte";
 
   type Props = {
     record: LogRecord;
@@ -33,16 +36,25 @@
   let { record }: Props = $props();
 
   let summaryRows = $derived(buildSummaryRows(record));
-  let request = $derived(record.source === "kit" ? record.entry.request ?? null : null);
-  let response = $derived(record.source === "kit" ? record.entry.response ?? null : null);
+
+  let request = $derived(record.source === "kit" ? (record.entry.request ?? null) : null);
+
+  let response = $derived(record.source === "kit" ? (record.entry.response ?? null) : null);
+
   let requestSource = $derived(request?.cborDiagnostic ?? "");
+
   let responseSource = $derived(response?.cborDiagnostic ?? "");
-  let errorMessage = $derived(record.source === "kit" ? record.entry.errorMessage ?? "" : "");
+
+  let errorMessage = $derived(record.source === "kit" ? (record.entry.errorMessage ?? "") : "");
+
   let failure = $derived<Failure | null>(
-    record.source === "app/runtime" ? record.error : record.entry.error ?? null,
+    record.source === "app/runtime" ? record.error : (record.entry.error ?? null),
   );
+
   let failureDetails = $derived(formatFailureDetails(failure));
-  let redactedFields = $derived(record.source === "kit" ? record.entry.redactedFields ?? [] : []);
+
+  let redactedFields = $derived(record.source === "kit" ? (record.entry.redactedFields ?? []) : []);
+
   let outcome = $derived(logOutcome(record));
 
   function payloadEmptyMessage(side: "request" | "response") {
@@ -67,11 +79,13 @@
     if (!value) return "";
 
     const details: string[] = [value.code];
+
     if (value.ctap?.status) {
       details.push(`${value.ctap.status} (${formatCTAPCode(value.ctap.statusCode)})`);
     } else if (value.ctap?.statusCode) {
       details.push(formatCTAPCode(value.ctap.statusCode));
     }
+
     return details.filter(Boolean).join(" · ");
   }
 
@@ -85,14 +99,30 @@
     }
 
     const entry = value.entry;
+
     return [
       { label: m.logs_source(), value: m.logs_source_kit() },
       { label: m.logs_sequence(), value: String(value.sequence) },
-      { label: m.logs_duration(), value: entry.durationMilliseconds === undefined ? "" : m.logs_duration_ms({ duration: entry.durationMilliseconds }) },
-      { label: m.logs_operation(), value: entry.operationKind ? operationKindLabel(entry.operationKind) : "" },
+      {
+        label: m.logs_duration(),
+        value:
+          entry.durationMilliseconds === undefined
+            ? ""
+            : m.logs_duration_ms({ duration: entry.durationMilliseconds }),
+      },
+      {
+        label: m.logs_operation(),
+        value: entry.operationKind ? operationKindLabel(entry.operationKind) : "",
+      },
       { label: m.logs_wire_codes(), value: wireCodes(entry.commandCode, entry.subCommandCode) },
-      { label: m.logs_request_size(), value: entry.request ? m.bytes_count({ count: entry.request.originalBytes }) : "" },
-      { label: m.logs_response_size(), value: entry.response ? m.bytes_count({ count: entry.response.originalBytes }) : "" },
+      {
+        label: m.logs_request_size(),
+        value: entry.request ? m.bytes_count({ count: entry.request.originalBytes }) : "",
+      },
+      {
+        label: m.logs_response_size(),
+        value: entry.response ? m.bytes_count({ count: entry.response.originalBytes }) : "",
+      },
       { label: m.logs_failure(), value: failureMessage(entry.error) ?? "" },
     ].filter((row) => row.value);
   }
@@ -102,6 +132,7 @@
   <header class="log-detail-header">
     <p class="log-detail-time">{logTime(record)}</p>
     <h2 class="log-detail-title">{logSummary(record)}</h2>
+
     <div class="log-detail-badges" aria-label={m.status()}>
       <Badge variant="secondary">
         {record.source === "kit" ? m.logs_source_kit() : m.logs_source_runtime()}
@@ -154,13 +185,17 @@
           <Alert.Title>{truncatedPayloadMessage(request)}</Alert.Title>
         </Alert.Root>
       {/if}
+
       {#if request?.diagnosticError}
         <Alert.Root variant="warning">
           <FileWarning aria-hidden="true" />
           <Alert.Title>{m.logs_diagnostic_error()}</Alert.Title>
-          <Alert.Description class="log-error-message"><code>{request.diagnosticError}</code></Alert.Description>
+          <Alert.Description class="log-error-message"
+            ><code>{request.diagnosticError}</code></Alert.Description
+          >
         </Alert.Root>
       {/if}
+
       {#if requestSource}
         <PreformattedPayload source={requestSource} />
       {:else if !request?.diagnosticError}
@@ -181,22 +216,28 @@
           {/if}
         </Alert.Root>
       {/if}
+
       {#if response?.truncated}
         <Alert.Root variant="warning">
           <FileWarning aria-hidden="true" />
           <Alert.Title>{truncatedPayloadMessage(response)}</Alert.Title>
         </Alert.Root>
       {/if}
+
       {#if response?.diagnosticError}
         <Alert.Root variant="warning">
           <FileWarning aria-hidden="true" />
           <Alert.Title>{m.logs_diagnostic_error()}</Alert.Title>
-          <Alert.Description class="log-error-message"><code>{response.diagnosticError}</code></Alert.Description>
+          <Alert.Description class="log-error-message"
+            ><code>{response.diagnosticError}</code></Alert.Description
+          >
         </Alert.Root>
       {/if}
+
       {#if responseSource}
         <PreformattedPayload source={responseSource} />
       {/if}
+
       {#if !responseSource && !response?.diagnosticError && !failure && !errorMessage}
         <p class="log-payload-empty">{payloadEmptyMessage("response")}</p>
       {/if}

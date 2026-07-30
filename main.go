@@ -90,6 +90,7 @@ func main() {
 	})
 
 	mainWindow := app.Window.NewWithOptions(mainWindowOptions(runtime.GOOS, state))
+
 	windowstate.Track(
 		mainWindow,
 		windowstate.NewTracker(state, mainWindowMinWidth, mainWindowMinHeight),

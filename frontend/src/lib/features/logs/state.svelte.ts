@@ -1,10 +1,16 @@
-import type { LogEntry, LogJournalBatch, LogJournalRecord, LogOutcome } from "../../../../bindings/github.com/go-ctap/kit/model";
+import type {
+  LogEntry,
+  LogJournalBatch,
+  LogJournalRecord,
+  LogOutcome,
+} from "../../../../bindings/github.com/go-ctap/kit/model";
 import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import { SvelteDate } from "svelte/reactivity";
 
-import { runtimeFailureFrom } from "../../failure.js";
+import { runtimeFailureFrom } from "$lib/failure.js";
 
 export const LOG_ENTRY_LIMIT = 2_000;
+
 export const LOG_BYTE_LIMIT = 16 * 1024 * 1024;
 
 export type KitLogRecord = {
@@ -36,11 +42,15 @@ function storedSize(value: object) {
 }
 
 function runtimeID() {
-  return globalThis.crypto?.randomUUID?.() ?? `runtime-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return (
+    globalThis.crypto?.randomUUID?.() ??
+    `runtime-${Date.now()}-${Math.random().toString(16).slice(2)}`
+  );
 }
 
 function kitRecord(item: LogJournalRecord): KitLogRecord {
   const base = { source: "kit" as const, sequence: item.sequence, entry: item.entry };
+
   return { ...base, byteSize: storedSize(base) };
 }
 
@@ -63,6 +73,7 @@ export class LogController {
 
   append(item: LogJournalRecord) {
     const record = kitRecord(item);
+
     this.commit([...this.records, record], recordID(record));
   }
 
@@ -70,9 +81,11 @@ export class LogController {
     if (batch.cursor <= this.cursor) return;
 
     const appended = batch.entries.filter((item) => item.sequence > this.cursor).map(kitRecord);
+
     if (appended.length > 0) {
       this.commit([...this.records, ...appended], recordID(appended.at(-1)!));
     }
+
     this.cursor = batch.cursor;
     this.historyTruncated ||= batch.truncated ?? false;
   }
@@ -86,13 +99,17 @@ export class LogController {
       error: runtimeFailureFrom(cause),
     };
     const record: AppRuntimeLogRecord = { ...base, byteSize: storedSize(base) };
+
     this.commit([...this.records, record], record.id);
+
     return record;
   }
 
   select(id: string) {
     this.selectedId = id;
+
     const newest = this.records.at(-1);
+
     this.followLive = newest !== undefined && recordID(newest) === id;
   }
 
@@ -114,14 +131,19 @@ export class LogController {
 
   private commit(records: LogRecord[], newestId: string) {
     let byteCount = records.reduce((total, record) => total + record.byteSize, 0);
+
     while (records.length > this.entryLimit || byteCount > this.byteLimit) {
       const evicted = records.shift();
+
       if (!evicted) break;
+
       byteCount -= evicted.byteSize;
     }
 
     this.records = records;
-    if (this.followLive) this.selectedId = records.some((record) => recordID(record) === newestId) ? newestId : null;
+    if (this.followLive)
+      this.selectedId = records.some((record) => recordID(record) === newestId) ? newestId : null;
+
     if (this.selectedId && !records.some((record) => recordID(record) === this.selectedId)) {
       this.selectedId = records.length > 0 ? recordID(records.at(-1)!) : null;
     }
@@ -143,6 +165,7 @@ export async function runtimeCall<T>(context: string, call: () => Promise<T>): P
     return await call();
   } catch (error) {
     recordRuntimeFailure(context, error);
+
     throw error;
   }
 }

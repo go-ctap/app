@@ -31,10 +31,12 @@ import type {
   LabDescriptorDraft,
   LabTriState,
   MakeCredentialDraft,
-} from "./features/lab/state.js";
+} from "$lib/features/lab/state.js";
 
 export type LabRandomSource = (target: Uint8Array<ArrayBuffer>) => void | Uint8Array<ArrayBuffer>;
+
 export type LabClientDataOperation = "create" | "get";
+
 export type LabValidationCode =
   | "required"
   | "invalid-origin"
@@ -77,48 +79,57 @@ function randomBytes(byteLength: number, randomSource: LabRandomSource = default
   if (!Number.isSafeInteger(byteLength) || byteLength < 0) {
     throw new RangeError("byteLength must be a non-negative safe integer");
   }
+
   const bytes = new Uint8Array(byteLength);
+
   randomSource(bytes);
+
   return bytes;
 }
 
 function bytesToBase64(bytes: Uint8Array) {
   let binary = "";
+
   for (let offset = 0; offset < bytes.length; offset += 0x8000) {
     binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
   }
+
   return btoa(binary);
 }
 
 function strictBase64ToBytes(value: string) {
   if (value === "") return new Uint8Array();
+
   if (
-    value.length % 4 !== 0
-    || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)
+    value.length % 4 !== 0 ||
+    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)
   ) {
     throw new Error("invalid base64");
   }
+
   const binary = atob(value);
   const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+
   if (bytesToBase64(bytes) !== value) throw new Error("non-canonical base64");
+
   return bytes;
 }
 
 function bytesToBase64URL(bytes: Uint8Array) {
-  return bytesToBase64(bytes)
-    .replaceAll("+", "-")
-    .replaceAll("/", "_")
-    .replace(/=+$/u, "");
+  return bytesToBase64(bytes).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "");
 }
 
 function strictBase64URLToBytes(value: string) {
   if (value === "" || !/^[A-Za-z0-9_-]+$/u.test(value) || value.length % 4 === 1) {
     throw new Error("invalid base64url");
   }
+
   const standard = value.replaceAll("-", "+").replaceAll("_", "/");
   const padded = standard.padEnd(standard.length + ((4 - (standard.length % 4)) % 4), "=");
   const bytes = strictBase64ToBytes(padded);
+
   if (bytesToBase64URL(bytes) !== value) throw new Error("non-canonical base64url");
+
   return bytes;
 }
 
@@ -126,10 +137,13 @@ function strictHexToBytes(value: string) {
   if (value.length % 2 !== 0 || !/^[0-9a-fA-F]*$/u.test(value)) {
     throw new Error("invalid hex");
   }
+
   const bytes = new Uint8Array(value.length / 2);
+
   for (let index = 0; index < bytes.length; index += 1) {
     bytes[index] = Number.parseInt(value.slice(index * 2, index * 2 + 2), 16);
   }
+
   return bytes;
 }
 
@@ -171,10 +185,6 @@ export function hexToBase64URL(value: string) {
   return bytesToBase64URL(strictHexToBytes(value));
 }
 
-export function base64URLToHex(value: string) {
-  return bytesToHex(strictBase64URLToBytes(value));
-}
-
 export function utf8ToBase64(value: string) {
   return bytesToBase64(new TextEncoder().encode(value));
 }
@@ -193,16 +203,21 @@ export function isStrictBase64URL(value: string) {
 
 function parseHTTPOrigin(value: string) {
   if (!/^https?:\/\/[^/?#]+$/iu.test(value)) return null;
+
   try {
     const url = new URL(value);
-    if ((url.protocol === "http:" || url.protocol === "https:")
-      && url.username === ""
-      && url.password === ""
-      && url.pathname === "/"
-      && url.search === ""
-      && url.hash === "") {
+
+    if (
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      url.username === "" &&
+      url.password === "" &&
+      url.pathname === "/" &&
+      url.search === "" &&
+      url.hash === ""
+    ) {
       return url;
     }
+
     return null;
   } catch {
     return null;
@@ -215,21 +230,31 @@ export function isHTTPOrigin(value: string) {
 
 export function isWebAuthnOrigin(value: string) {
   const url = parseHTTPOrigin(value);
-  return Boolean(url && (url.protocol === "https:" || (url.protocol === "http:" && url.hostname === "localhost")));
+
+  return Boolean(
+    url &&
+    (url.protocol === "https:" || (url.protocol === "http:" && url.hostname === "localhost")),
+  );
 }
 
 export function rpIDMatchesOrigin(rpID: string, origin: string) {
   const url = parseHTTPOrigin(origin);
   const normalizedRPID = rpID.trim().toLowerCase().replace(/\.$/u, "");
+
   if (!url || !normalizedRPID) return false;
 
   const hostname = url.hostname.toLowerCase().replace(/\.$/u, "");
+
   if (hostname === "localhost") return normalizedRPID === "localhost";
+
   if (normalizedRPID !== hostname && !hostname.endsWith(`.${normalizedRPID}`)) return false;
 
   const registrableDomain = getDomain(hostname, { allowPrivateDomains: true });
-  return registrableDomain !== null
-    && getDomain(normalizedRPID, { allowPrivateDomains: true }) === registrableDomain;
+
+  return (
+    registrableDomain !== null &&
+    getDomain(normalizedRPID, { allowPrivateDomains: true }) === registrableDomain
+  );
 }
 
 export function buildClientDataJSON(
@@ -261,10 +286,7 @@ export function clientDataJSONBase64(
   return utf8ToBase64(clientDataJSONText(operation, clientData));
 }
 
-function issue(
-  field: string,
-  code: LabValidationCode,
-): LabValidationIssue {
+function issue(field: string, code: LabValidationCode): LabValidationIssue {
   return { field, code };
 }
 
@@ -277,8 +299,10 @@ function validateClientData(
 ) {
   if (clientData.mode === "builder") {
     if (!clientData.origin) errors.push(issue(`${prefix}.origin`, "required"));
-    else if (!isHTTPOrigin(clientData.origin)) errors.push(issue(`${prefix}.origin`, "invalid-origin"));
-    else if (!isWebAuthnOrigin(clientData.origin)) errors.push(issue(`${prefix}.origin`, "insecure-origin"));
+    else if (!isHTTPOrigin(clientData.origin))
+      errors.push(issue(`${prefix}.origin`, "invalid-origin"));
+    else if (!isWebAuthnOrigin(clientData.origin))
+      errors.push(issue(`${prefix}.origin`, "insecure-origin"));
     else if (rpID && !rpIDMatchesOrigin(rpID, clientData.origin)) {
       errors.push(issue(`${prefix}.origin`, "rp-id-origin-mismatch"));
     }
@@ -287,6 +311,7 @@ function validateClientData(
     else if (!isStrictBase64URL(clientData.challenge)) {
       errors.push(issue(`${prefix}.challenge`, "invalid-base64url"));
     }
+
     if (clientData.crossOrigin) {
       if (!clientData.topOrigin) errors.push(issue(`${prefix}.topOrigin`, "required"));
       else if (!isHTTPOrigin(clientData.topOrigin)) {
@@ -295,6 +320,7 @@ function validateClientData(
         errors.push(issue(`${prefix}.topOrigin`, "insecure-origin"));
       }
     }
+
     return;
   }
 
@@ -307,6 +333,7 @@ function validateClientData(
 
 function validNonemptyHex(value: string) {
   if (!value) return false;
+
   try {
     return strictHexToBytes(value).byteLength > 0;
   } catch {
@@ -321,18 +348,25 @@ function validateDescriptors(
 ) {
   descriptors.forEach((descriptor, index) => {
     const field = `${prefix}.${index}.credentialIDHex`;
+
     if (!descriptor.credentialIDHex) errors.push(issue(field, "required"));
-    else if (!validNonemptyHex(descriptor.credentialIDHex)) errors.push(issue(field, "invalid-hex"));
+    else if (!validNonemptyHex(descriptor.credentialIDHex))
+      errors.push(issue(field, "invalid-hex"));
   });
 }
 
 function parseAlgorithm(value: string) {
   if (!/^[+-]?\d+$/u.test(value)) return null;
+
   const algorithm = Number(value);
+
   return Number.isSafeInteger(algorithm) && algorithm !== 0 ? algorithm : null;
 }
 
-function completeValidation(errors: LabValidationIssue[], warnings: LabValidationIssue[]): LabValidationResult {
+function completeValidation(
+  errors: LabValidationIssue[],
+  warnings: LabValidationIssue[],
+): LabValidationResult {
   return { valid: errors.length === 0, errors, warnings };
 }
 
@@ -344,20 +378,28 @@ export function validateMakeCredentialDraft(
   const warnings: LabValidationIssue[] = [];
 
   if (!draft.rpID) errors.push(issue("make.rpID", "required"));
+
   if (!draft.rpName) errors.push(issue("make.rpName", "required"));
+
   if (!draft.userIDHex) errors.push(issue("make.userIDHex", "required"));
   else if (!validNonemptyHex(draft.userIDHex)) errors.push(issue("make.userIDHex", "invalid-hex"));
   else if (strictHexToBytes(draft.userIDHex).byteLength > 64) {
     errors.push(issue("make.userIDHex", "user-id-too-long"));
   }
+
   if (!draft.userName) errors.push(issue("make.userName", "required"));
+
   if (!draft.userDisplayName) errors.push(issue("make.userDisplayName", "required"));
+
   validateClientData("make.clientData", draft.rpID, draft.clientData, errors, warnings);
 
   if (draft.algorithms.length === 0) errors.push(issue("make.algorithms", "required"));
+
   const seenAlgorithms = new Set<number>();
+
   draft.algorithms.forEach((algorithm, index) => {
     const parsed = parseAlgorithm(algorithm);
+
     if (parsed === null) {
       errors.push(issue(`make.algorithms.${index}`, "invalid-algorithm"));
     } else if (seenAlgorithms.has(parsed)) {
@@ -366,13 +408,20 @@ export function validateMakeCredentialDraft(
       seenAlgorithms.add(parsed);
     }
   });
+
   const seenAttestationFormats = new Set<string>();
+
   draft.attestationFormatsPreference.forEach((format, index) => {
     const normalized = format.trim();
+
     if (!normalized || !supportedAttestationFormats.has(normalized)) {
-      errors.push(issue(`make.attestationFormatsPreference.${index}`, "invalid-attestation-format"));
+      errors.push(
+        issue(`make.attestationFormatsPreference.${index}`, "invalid-attestation-format"),
+      );
     } else if (seenAttestationFormats.has(normalized)) {
-      errors.push(issue(`make.attestationFormatsPreference.${index}`, "duplicate-attestation-format"));
+      errors.push(
+        issue(`make.attestationFormatsPreference.${index}`, "duplicate-attestation-format"),
+      );
     } else {
       seenAttestationFormats.add(normalized);
     }
@@ -380,6 +429,7 @@ export function validateMakeCredentialDraft(
   if (draft.userPresence === "false") {
     errors.push(issue("make.userPresence", "invalid-user-presence"));
   }
+
   validateDescriptors("make.excludeList", draft.excludeList, errors);
   validateMakeExtensions(draft, errors, warnings, maxCredBlobLength);
 
@@ -391,6 +441,7 @@ export function validateGetAssertionDraft(draft: GetAssertionDraft): LabValidati
   const warnings: LabValidationIssue[] = [];
 
   if (!draft.rpID) errors.push(issue("get.rpID", "required"));
+
   validateClientData("get.clientData", draft.rpID, draft.clientData, errors, warnings);
   validateDescriptors("get.allowList", draft.allowList, errors);
   validateGetExtensions(draft, errors);
@@ -398,7 +449,11 @@ export function validateGetAssertionDraft(draft: GetAssertionDraft): LabValidati
   return completeValidation(errors, warnings);
 }
 
-function validatePRFBinaryDraft(field: string, value: LabBinaryDraft, errors: LabValidationIssue[]) {
+function validatePRFBinaryDraft(
+  field: string,
+  value: LabBinaryDraft,
+  errors: LabValidationIssue[],
+) {
   if (binaryDraftByteLength(value) === null) errors.push(issue(field, "invalid-hex"));
 }
 
@@ -408,15 +463,22 @@ function validateHMACSecret(
   errors: LabValidationIssue[],
 ) {
   if (!value.included) return;
+
   if (!validNonemptyHex(value.salt1Hex)) errors.push(issue(`${prefix}.salt1Hex`, "invalid-hex"));
   else if (value.salt1Hex.length !== 64) errors.push(issue(`${prefix}.salt1Hex`, "invalid-length"));
+
   if (value.salt2Enabled) {
     if (!validNonemptyHex(value.salt2Hex)) errors.push(issue(`${prefix}.salt2Hex`, "invalid-hex"));
-    else if (value.salt2Hex.length !== 64) errors.push(issue(`${prefix}.salt2Hex`, "invalid-length"));
+    else if (value.salt2Hex.length !== 64)
+      errors.push(issue(`${prefix}.salt2Hex`, "invalid-length"));
   }
 }
 
-function validatePRFValues(prefix: string, value: MakeCredentialDraft["extensions"]["prf"]["eval"], errors: LabValidationIssue[]) {
+function validatePRFValues(
+  prefix: string,
+  value: MakeCredentialDraft["extensions"]["prf"]["eval"],
+  errors: LabValidationIssue[],
+) {
   validatePRFBinaryDraft(`${prefix}.first`, value.first, errors);
   if (value.secondEnabled) validatePRFBinaryDraft(`${prefix}.second`, value.second, errors);
 }
@@ -429,16 +491,24 @@ function validateMakeExtensions(
 ) {
   const extensions = draft.extensions;
   const prfConflict = extensions.prf.included && extensions.hmacSecretMC.included;
+
   if (prfConflict) {
     errors.push(issue("make.extensions.hmac-prf", "extension-conflict"));
   }
+
   if (extensions.credentialBlob.included) {
     const byteLength = binaryDraftByteLength(extensions.credentialBlob.payload);
+
     if (byteLength === null) errors.push(issue("make.extensions.credBlob", "invalid-hex"));
-    else if (maxCredBlobLength !== null && maxCredBlobLength !== undefined && byteLength > maxCredBlobLength) {
+    else if (
+      maxCredBlobLength !== null &&
+      maxCredBlobLength !== undefined &&
+      byteLength > maxCredBlobLength
+    ) {
       warnings.push(issue("make.extensions.credBlob", "too-long"));
     }
   }
+
   validateHMACSecret("make.extensions.hmacSecretMC", extensions.hmacSecretMC, errors);
   if (extensions.prf.included && extensions.prf.useEval) {
     validatePRFValues("make.extensions.prf", extensions.prf.eval, errors);
@@ -447,47 +517,62 @@ function validateMakeExtensions(
 
 function validateGetExtensions(draft: GetAssertionDraft, errors: LabValidationIssue[]) {
   const extensions = draft.extensions;
+
   if (extensions.hmacSecret.included && extensions.prf.included) {
     errors.push(issue("get.extensions.hmac-prf", "extension-conflict"));
   }
+
   validateHMACSecret("get.extensions.hmacSecret", extensions.hmacSecret, errors);
   if (extensions.largeBlob.included && extensions.largeBlob.mode === "write") {
-    validatePRFBinaryDraft("get.extensions.largeBlob.payload", extensions.largeBlob.payload, errors);
+    validatePRFBinaryDraft(
+      "get.extensions.largeBlob.payload",
+      extensions.largeBlob.payload,
+      errors,
+    );
   }
+
   if (!extensions.prf.included) return;
 
-  if (extensions.prf.useGlobalEval) validatePRFValues("get.extensions.prf.eval", extensions.prf.eval, errors);
+  if (extensions.prf.useGlobalEval)
+    validatePRFValues("get.extensions.prf.eval", extensions.prf.eval, errors);
+
   const allowedCredentialIDs = new Set(
     draft.allowList
       .filter((descriptor) => validNonemptyHex(descriptor.credentialIDHex))
       .map((descriptor) => descriptor.credentialIDHex.toLowerCase()),
   );
+
   extensions.prf.evalByCredential.forEach((entry, index) => {
     const credentialField = `get.extensions.prf.evalByCredential.${index}.credentialIDHex`;
+
     if (!entry.credentialIDHex) errors.push(issue(credentialField, "required"));
-    else if (!validNonemptyHex(entry.credentialIDHex)) errors.push(issue(credentialField, "invalid-hex"));
+    else if (!validNonemptyHex(entry.credentialIDHex))
+      errors.push(issue(credentialField, "invalid-hex"));
     else if (!allowedCredentialIDs.has(entry.credentialIDHex.toLowerCase())) {
       errors.push(issue(credentialField, "prf-credential-not-allowed"));
     }
+
     validatePRFValues(`get.extensions.prf.evalByCredential.${index}`, entry.values, errors);
   });
 }
 
 function triStateValue(value: LabTriState) {
   if (value === "auto") return undefined;
+
   return value === "true";
 }
 
-export function buildAuthenticatorOptions(draft: Pick<
-  MakeCredentialDraft,
-  "residentKey" | "userPresence" | "userVerification"
->) {
+export function buildAuthenticatorOptions(
+  draft: Pick<MakeCredentialDraft, "residentKey" | "userPresence" | "userVerification">,
+) {
   const residentKey = triStateValue(draft.residentKey);
   const userPresence = draft.userPresence === "true" ? true : undefined;
   const userVerification = triStateValue(draft.userVerification);
+
   if (residentKey === undefined && userPresence === undefined && userVerification === undefined) {
     return undefined;
   }
+
   return new AuthenticatorOptions({
     ...(residentKey === undefined ? {} : { residentKey }),
     ...(userPresence === undefined ? {} : { userPresence }),
@@ -495,13 +580,14 @@ export function buildAuthenticatorOptions(draft: Pick<
   });
 }
 
-function buildGetAuthenticatorOptions(draft: Pick<
-  GetAssertionDraft,
-  "userPresence" | "userVerification"
->) {
+function buildGetAuthenticatorOptions(
+  draft: Pick<GetAssertionDraft, "userPresence" | "userVerification">,
+) {
   const userPresence = triStateValue(draft.userPresence);
   const userVerification = triStateValue(draft.userVerification);
+
   if (userPresence === undefined && userVerification === undefined) return undefined;
+
   return new AuthenticatorOptions({
     ...(userPresence === undefined ? {} : { userPresence }),
     ...(userVerification === undefined ? {} : { userVerification }),
@@ -509,10 +595,13 @@ function buildGetAuthenticatorOptions(draft: Pick<
 }
 
 function buildDescriptors(descriptors: LabDescriptorDraft[]) {
-  return descriptors.map((descriptor) => new PublicKeyCredentialDescriptor({
-    type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
-    id: hexToBase64(descriptor.credentialIDHex),
-  }));
+  return descriptors.map(
+    (descriptor) =>
+      new PublicKeyCredentialDescriptor({
+        type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
+        id: hexToBase64(descriptor.credentialIDHex),
+      }),
+  );
 }
 
 function buildPRFValues(value: MakeCredentialDraft["extensions"]["prf"]["eval"]) {
@@ -525,104 +614,144 @@ function buildPRFValues(value: MakeCredentialDraft["extensions"]["prf"]["eval"])
 function buildMakeCredentialExtensions(draft: MakeCredentialDraft) {
   const source = draft.extensions;
   const included = Object.values(source).some((extension) => extension.included);
+
   if (!included) return undefined;
 
   return new CreateAuthenticationExtensionsClientInputs({
-    ...(source.credentialProperties.included ? {
-      credProps: true,
-    } : {}),
-    ...(source.credentialProtection.included ? {
-      credentialProtectionPolicy: source.credentialProtection.policy,
-      enforceCredentialProtectionPolicy: source.credentialProtection.enforce,
-    } : {}),
-    ...(source.credentialBlob.included ? {
-      credBlob: binaryDraftToBase64(source.credentialBlob.payload),
-    } : {}),
-    ...(source.hmacSecret.included ? {
-      hmacCreateSecret: source.hmacSecret.value,
-    } : {}),
-    ...(source.hmacSecretMC.included ? {
-      hmacGetSecret: new HMACGetSecretInput({
-        salt1: hexToBase64(source.hmacSecretMC.salt1Hex),
-        ...(source.hmacSecretMC.salt2Enabled ? { salt2: hexToBase64(source.hmacSecretMC.salt2Hex) } : {}),
-      }),
-    } : {}),
-    ...(source.largeBlob.included ? {
-      largeBlob: new AuthenticationExtensionsLargeBlobInputs({ support: source.largeBlob.support }),
-    } : {}),
-    ...(source.minPINLength.included ? {
-      minPinLength: source.minPINLength.value,
-    } : {}),
-    ...(source.pinComplexityPolicy.included ? {
-      pinComplexityPolicy: source.pinComplexityPolicy.value,
-    } : {}),
-    ...(source.prf.included ? {
-      prf: new AuthenticationExtensionsPRFInputs({
-        ...(source.prf.useEval ? { eval: buildPRFValues(source.prf.eval) } : {}),
-      }),
-    } : {}),
-    ...(source.payment.included ? {
-      payment: new AuthenticationExtensionsPaymentInputs({ payment: true }),
-    } : {}),
+    ...(source.credentialProperties.included
+      ? {
+          credProps: true,
+        }
+      : {}),
+    ...(source.credentialProtection.included
+      ? {
+          credentialProtectionPolicy: source.credentialProtection.policy,
+          enforceCredentialProtectionPolicy: source.credentialProtection.enforce,
+        }
+      : {}),
+    ...(source.credentialBlob.included
+      ? {
+          credBlob: binaryDraftToBase64(source.credentialBlob.payload),
+        }
+      : {}),
+    ...(source.hmacSecret.included
+      ? {
+          hmacCreateSecret: source.hmacSecret.value,
+        }
+      : {}),
+    ...(source.hmacSecretMC.included
+      ? {
+          hmacGetSecret: new HMACGetSecretInput({
+            salt1: hexToBase64(source.hmacSecretMC.salt1Hex),
+            ...(source.hmacSecretMC.salt2Enabled
+              ? { salt2: hexToBase64(source.hmacSecretMC.salt2Hex) }
+              : {}),
+          }),
+        }
+      : {}),
+    ...(source.largeBlob.included
+      ? {
+          largeBlob: new AuthenticationExtensionsLargeBlobInputs({
+            support: source.largeBlob.support,
+          }),
+        }
+      : {}),
+    ...(source.minPINLength.included
+      ? {
+          minPinLength: source.minPINLength.value,
+        }
+      : {}),
+    ...(source.pinComplexityPolicy.included
+      ? {
+          pinComplexityPolicy: source.pinComplexityPolicy.value,
+        }
+      : {}),
+    ...(source.prf.included
+      ? {
+          prf: new AuthenticationExtensionsPRFInputs({
+            ...(source.prf.useEval ? { eval: buildPRFValues(source.prf.eval) } : {}),
+          }),
+        }
+      : {}),
+    ...(source.payment.included
+      ? {
+          payment: new AuthenticationExtensionsPaymentInputs({ payment: true }),
+        }
+      : {}),
   });
 }
 
 function buildGetAssertionExtensions(draft: GetAssertionDraft) {
   const source = draft.extensions;
+
   if (
-    !source.getCredentialBlob.included
-    && !source.hmacSecret.included
-    && !source.largeBlob.included
-    && !source.prf.included
-    && !source.payment.included
+    !source.getCredentialBlob.included &&
+    !source.hmacSecret.included &&
+    !source.largeBlob.included &&
+    !source.prf.included &&
+    !source.payment.included
   ) {
     return undefined;
   }
 
   return new GetAuthenticationExtensionsClientInputs({
-    ...(source.getCredentialBlob.included ? {
-      getCredBlob: source.getCredentialBlob.value,
-    } : {}),
-    ...(source.hmacSecret.included ? {
-      hmacGetSecret: new HMACGetSecretInput({
-        salt1: hexToBase64(source.hmacSecret.salt1Hex),
-        ...(source.hmacSecret.salt2Enabled ? { salt2: hexToBase64(source.hmacSecret.salt2Hex) } : {}),
-      }),
-    } : {}),
-    ...(source.largeBlob.included ? {
-      largeBlob: new AuthenticationExtensionsLargeBlobInputs(
-        source.largeBlob.mode === "read"
-          ? { read: true }
-          : { write: binaryDraftToBase64(source.largeBlob.payload) },
-      ),
-    } : {}),
-    ...(source.prf.included ? {
-      prf: new AuthenticationExtensionsPRFInputs({
-        ...(source.prf.useGlobalEval ? { eval: buildPRFValues(source.prf.eval) } : {}),
-        ...(source.prf.evalByCredential.length ? {
-          evalByCredential: Object.fromEntries(source.prf.evalByCredential.map((entry) => [
-            hexToBase64URL(entry.credentialIDHex),
-            buildPRFValues(entry.values),
-          ])),
-        } : {}),
-      }),
-    } : {}),
-    ...(source.payment.included ? {
-      payment: new AuthenticationExtensionsPaymentInputs({ payment: true }),
-    } : {}),
+    ...(source.getCredentialBlob.included
+      ? {
+          getCredBlob: source.getCredentialBlob.value,
+        }
+      : {}),
+    ...(source.hmacSecret.included
+      ? {
+          hmacGetSecret: new HMACGetSecretInput({
+            salt1: hexToBase64(source.hmacSecret.salt1Hex),
+            ...(source.hmacSecret.salt2Enabled
+              ? { salt2: hexToBase64(source.hmacSecret.salt2Hex) }
+              : {}),
+          }),
+        }
+      : {}),
+    ...(source.largeBlob.included
+      ? {
+          largeBlob: new AuthenticationExtensionsLargeBlobInputs(
+            source.largeBlob.mode === "read"
+              ? { read: true }
+              : { write: binaryDraftToBase64(source.largeBlob.payload) },
+          ),
+        }
+      : {}),
+    ...(source.prf.included
+      ? {
+          prf: new AuthenticationExtensionsPRFInputs({
+            ...(source.prf.useGlobalEval ? { eval: buildPRFValues(source.prf.eval) } : {}),
+            ...(source.prf.evalByCredential.length
+              ? {
+                  evalByCredential: Object.fromEntries(
+                    source.prf.evalByCredential.map((entry) => [
+                      hexToBase64URL(entry.credentialIDHex),
+                      buildPRFValues(entry.values),
+                    ]),
+                  ),
+                }
+              : {}),
+          }),
+        }
+      : {}),
+    ...(source.payment.included
+      ? {
+          payment: new AuthenticationExtensionsPaymentInputs({ payment: true }),
+        }
+      : {}),
   });
 }
 
-export function buildMakeCredentialRequest(
-  selectionId: SelectionID,
-  draft: MakeCredentialDraft,
-) {
+export function buildMakeCredentialRequest(selectionId: SelectionID, draft: MakeCredentialDraft) {
   const excludeList = buildDescriptors(draft.excludeList);
   const options = buildAuthenticatorOptions(draft);
   const extensions = buildMakeCredentialExtensions(draft);
-  const verificationFlow = draft.verificationFlow === VerificationFlow.VerificationFlowDefault
-    ? undefined
-    : draft.verificationFlow;
+  const verificationFlow =
+    draft.verificationFlow === VerificationFlow.VerificationFlowDefault
+      ? undefined
+      : draft.verificationFlow;
 
   return new MakeCredentialRequest({
     selectionId,
@@ -634,34 +763,39 @@ export function buildMakeCredentialRequest(
       displayName: draft.userDisplayName,
     }),
     clientDataJSON: clientDataJSONBase64("create", draft.clientData),
-    pubKeyCredParams: draft.algorithms.map((algorithm) => new PublicKeyCredentialParameters({
-      type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
-      alg: parseAlgorithm(algorithm)!,
-    })),
-    ...(draft.enterpriseAttestation === 0 ? {} : {
-      enterpriseAttestation: draft.enterpriseAttestation,
-    }),
-    ...(draft.attestationFormatsPreference.length === 0 ? {} : {
-      attestationFormatsPreference: draft.attestationFormatsPreference.map(
-        (format) => format.trim() as AttestationStatementFormatIdentifier,
-      ),
-    }),
+    pubKeyCredParams: draft.algorithms.map(
+      (algorithm) =>
+        new PublicKeyCredentialParameters({
+          type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey,
+          alg: parseAlgorithm(algorithm)!,
+        }),
+    ),
+    ...(draft.enterpriseAttestation === 0
+      ? {}
+      : {
+          enterpriseAttestation: draft.enterpriseAttestation,
+        }),
+    ...(draft.attestationFormatsPreference.length === 0
+      ? {}
+      : {
+          attestationFormatsPreference: draft.attestationFormatsPreference.map(
+            (format) => format.trim() as AttestationStatementFormatIdentifier,
+          ),
+        }),
     ...(excludeList.length > 0 ? { excludeList } : {}),
     ...(options === undefined ? {} : { options }),
     ...(extensions === undefined ? {} : { extensions }),
   });
 }
 
-export function buildGetAssertionRequest(
-  selectionId: SelectionID,
-  draft: GetAssertionDraft,
-) {
+export function buildGetAssertionRequest(selectionId: SelectionID, draft: GetAssertionDraft) {
   const allowList = buildDescriptors(draft.allowList);
   const options = buildGetAuthenticatorOptions(draft);
   const extensions = buildGetAssertionExtensions(draft);
-  const verificationFlow = draft.verificationFlow === VerificationFlow.VerificationFlowDefault
-    ? undefined
-    : draft.verificationFlow;
+  const verificationFlow =
+    draft.verificationFlow === VerificationFlow.VerificationFlowDefault
+      ? undefined
+      : draft.verificationFlow;
 
   return new GetAssertionRequest({
     selectionId,

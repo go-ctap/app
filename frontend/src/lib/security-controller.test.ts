@@ -9,7 +9,10 @@ import {
   StateValue,
 } from "../../bindings/github.com/go-ctap/kit/model/config";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { IdentityResolutionState, type DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import {
+  IdentityResolutionState,
+  type DeviceReport,
+} from "../../bindings/github.com/go-ctap/kit/model/report";
 import { PreviewMode } from "../../bindings/github.com/go-ctap/kit/model/safety";
 import type {
   AuthenticatorConfigEnvelope,
@@ -27,33 +30,30 @@ import type {
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import { testSmartCardDevice } from "../test/device.js";
 
-import { api } from "./api";
-import {
-  errorLoadState,
-  overviewBioSensor,
-  overviewMDS,
-} from "./features/overview/state";
-import { failureForCode } from "./test-failure";
+import { api } from "$lib/api";
+import { errorLoadState, overviewBioSensor, overviewMDS } from "$lib/features/overview/state";
+import { failureForCode } from "$lib/test-support/failure";
 import {
   completeSecurityResourceLoad,
   securityEnrollments,
   securityMutation,
   securitySensor,
   securityStatus,
-} from "./features/security/state";
+} from "$lib/features/security/state";
 import {
   authenticatorInspection,
   devices,
   selectedSelector,
   authenticatorStatus,
-} from "./features/authenticator/state";
-import { activeScreen, statusBar } from "./features/workbench/state";
-import { setAppLocale } from "./i18n";
-import { operationRecovery } from "./operation-recovery.js";
+} from "$lib/features/authenticator/state";
+import { statusBar } from "$lib/features/workbench/state";
+import { setAppLocale } from "$lib/i18n";
+import { operationRecovery } from "$lib/operation-recovery.js";
 import {
   beginAlwaysUVChange,
   beginBioEnrollment,
   beginBioRename,
+  beginEnterpriseAttestation,
   beginFactoryReset,
   beginLongTouchForReset,
   beginPINPolicyChange,
@@ -64,17 +64,17 @@ import {
   maybeLoadSecurity,
   restartSecurityPreview,
   setAuthenticatorPIN,
-} from "./security-controller";
+} from "$lib/security-controller";
 import {
   reloadSecurity,
   restartSecurityPreview as restartSecurityPreviewWithRecovery,
-} from "./features/security/index.js";
+} from "$lib/features/security";
 import {
   resetAppStateForTest,
   seedActiveScreenForTest,
   seedDevicesForTest,
   seedSelectionForTest,
-} from "./store-test-utils";
+} from "$lib/test-support/store-utils";
 
 const TOKEN = device("token-1");
 
@@ -89,27 +89,34 @@ function device(id: string): DeviceReport {
   };
 }
 
-function snapshot(item: DeviceReport, selectionId = `authenticator-${item.attachment.id}`): ActiveSelection {
+function snapshot(
+  item: DeviceReport,
+  selectionId = `authenticator-${item.attachment.id}`,
+): ActiveSelection {
   return {
     id: selectionId,
   } as ActiveSelection;
 }
 
-function statusEnvelope(options: {
-  item?: DeviceReport;
-  selectionId?: string;
-  bioSupported?: boolean;
-  bioConfigured?: boolean | null;
-  alwaysUVConfigured?: boolean | null;
-  minPINLength?: number;
-  maxPINLength?: number;
-  maxRPIDs?: number;
-  longTouchConfigured?: boolean | null;
-} = {}): ConfigStatusEnvelope {
+function statusEnvelope(
+  options: {
+    item?: DeviceReport;
+    selectionId?: string;
+    bioSupported?: boolean;
+    bioConfigured?: boolean | null;
+    enterpriseConfigured?: boolean | null;
+    alwaysUVConfigured?: boolean | null;
+    minPINLength?: number;
+    maxPINLength?: number;
+    maxRPIDs?: number;
+    longTouchConfigured?: boolean | null;
+  } = {},
+): ConfigStatusEnvelope {
   const item = options.item ?? TOKEN;
   const bioSupported = options.bioSupported ?? false;
   const minPINLength = options.minPINLength ?? 4;
   const maxPINLength = options.maxPINLength ?? 63;
+
   return {
     operationId: "status-1",
     selectionId: options.selectionId ?? "authenticator-1",
@@ -145,6 +152,14 @@ function statusEnvelope(options: {
         state: StateValue.StateSupported,
         supported: true,
         uvAcfg: { state: StateValue.StateSupported, supported: true },
+        enterpriseAttestation: {
+          state:
+            options.enterpriseConfigured === true
+              ? StateValue.StateConfigured
+              : StateValue.StateNotConfigured,
+          supported: options.enterpriseConfigured !== null,
+          configured: options.enterpriseConfigured ?? false,
+        },
         alwaysUv: {
           state: StateValue.StateSupported,
           supported: true,
@@ -152,12 +167,14 @@ function statusEnvelope(options: {
         },
         setMinPINLength: { state: StateValue.StateSupported, supported: true },
         longTouchForReset: {
-          state: options.longTouchConfigured === true
-            ? StateValue.StateConfigured
-            : StateValue.StateNotConfigured,
+          state:
+            options.longTouchConfigured === true
+              ? StateValue.StateConfigured
+              : StateValue.StateNotConfigured,
           supported: options.longTouchConfigured !== null,
           configured: options.longTouchConfigured ?? false,
         },
+        vendorPrototype: { state: StateValue.StateUnsupported, supported: false },
       },
       resetHints: { longTouchForReset: StateValue.StateUnknown },
       limits: {
@@ -212,11 +229,15 @@ function authenticatorConfigEnvelope(
   phase: "preview" | "result",
   error = false,
 ): AuthenticatorConfigEnvelope {
-  const kind = operation === AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV
-    ? OperationKind.SetAlwaysUV
-    : operation === AuthenticatorConfigOperation.AuthenticatorConfigLongTouch
-      ? OperationKind.EnableLongTouchForReset
-      : OperationKind.SetMinPINLength;
+  const kind =
+    operation === AuthenticatorConfigOperation.AuthenticatorConfigEnterprise
+      ? OperationKind.EnableEnterpriseAttestation
+      : operation === AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV
+        ? OperationKind.SetAlwaysUV
+        : operation === AuthenticatorConfigOperation.AuthenticatorConfigLongTouch
+          ? OperationKind.EnableLongTouchForReset
+          : OperationKind.SetMinPINLength;
+
   return {
     operationId: `${phase}-${operation}`,
     selectionId: "authenticator-1",
@@ -229,13 +250,14 @@ function authenticatorConfigEnvelope(
         authenticatorConfig: statusEnvelope().result!.authenticatorConfig,
         mode: phase === "preview" ? PreviewMode.PreviewModeDryRun : PreviewMode.PreviewModeExecute,
       },
-      result: phase === "result"
-        ? {
-            operation,
-            attachmentId: TOKEN.attachment.id,
-            state: StateValue.StateConfigured,
-          }
-        : null,
+      result:
+        phase === "result"
+          ? {
+              operation,
+              attachmentId: TOKEN.attachment.id,
+              state: StateValue.StateConfigured,
+            }
+          : null,
     },
   } as unknown as AuthenticatorConfigEnvelope;
 }
@@ -257,33 +279,12 @@ function bioEnrollPreviewEnvelope(): BioEnrollEnvelope {
   } as unknown as BioEnrollEnvelope;
 }
 
-function partialBioEnrollErrorEnvelope(): BioEnrollEnvelope {
+function bioEnrollErrorEnvelope(): BioEnrollEnvelope {
   return {
-    operationId: "bio-partial-1",
+    operationId: "bio-error-1",
     selectionId: "authenticator-1",
     kind: OperationKind.BioEnroll,
     error: failureForCode(Code.CodeBioInteractionTimeout),
-    result: {
-      preview: {
-        device: TOKEN,
-        previewOnly: false,
-        timeoutMilliseconds: 60_000,
-        mode: PreviewMode.PreviewModeExecute,
-      },
-      result: {
-        attachmentId: TOKEN.attachment.id,
-        previewOnly: false,
-        templateIDHex: "beef",
-        samples: [
-          { status: "good", remainingSamples: 3 },
-          { status: "too-fast", remainingSamples: 3 },
-        ],
-        lastEnrollSampleStatus: "too-fast",
-        remainingSamples: 3,
-        cancelAttempted: true,
-        cancelSucceeded: true,
-      },
-    },
   } as unknown as BioEnrollEnvelope;
 }
 
@@ -327,9 +328,7 @@ function resetEnvelope(phase: "preview" | "result"): ResetFactoryEnvelope {
         resetHints: { longTouchForReset: StateValue.StateUnknown },
         mode: phase === "preview" ? PreviewMode.PreviewModeDryRun : PreviewMode.PreviewModeExecute,
       },
-      result: phase === "result"
-        ? { attachmentId: TOKEN.attachment.id, reset: true }
-        : null,
+      result: phase === "result" ? { attachmentId: TOKEN.attachment.id, reset: true } : null,
     },
   } as unknown as ResetFactoryEnvelope;
 }
@@ -342,7 +341,10 @@ beforeEach(() => {
   setAppLocale("en");
   resetAppStateForTest();
   seedDevicesForTest([TOKEN]);
-  seedSelectionForTest(TOKEN.attachment.id, TOKEN, { state: "ready", selectionId: "authenticator-1" });
+  seedSelectionForTest(TOKEN.attachment.id, TOKEN, {
+    state: "ready",
+    selectionId: "authenticator-1",
+  });
 });
 
 afterEach(() => {
@@ -375,11 +377,14 @@ describe("security controller loading", () => {
 
   it("loads ConfigStatus before sensor info only when biometrics are supported", async () => {
     seedActiveScreenForTest("security");
+
     const enrollments = bioListEnvelope();
-    const configStatus = vi.spyOn(api, "configStatus").mockResolvedValue(statusEnvelope({
-      bioSupported: true,
-      bioConfigured: true,
-    }));
+    const configStatus = vi.spyOn(api, "configStatus").mockResolvedValue(
+      statusEnvelope({
+        bioSupported: true,
+        bioConfigured: true,
+      }),
+    );
     const bioSensorInfo = vi.spyOn(api, "bioSensorInfo").mockResolvedValue(bioSensorEnvelope());
     const bioList = vi.spyOn(api, "bioList").mockResolvedValue(enrollments);
 
@@ -387,7 +392,9 @@ describe("security controller loading", () => {
 
     expect(configStatus).toHaveBeenCalledWith({ selectionId: "authenticator-1" });
     expect(bioSensorInfo).toHaveBeenCalledWith({ selectionId: "authenticator-1" });
-    expect(configStatus.mock.invocationCallOrder[0]).toBeLessThan(bioSensorInfo.mock.invocationCallOrder[0]);
+    expect(configStatus.mock.invocationCallOrder[0]).toBeLessThan(
+      bioSensorInfo.mock.invocationCallOrder[0],
+    );
     expect(get(securityStatus).phase).toBe("ready");
     expect(get(securitySensor).phase).toBe("ready");
     expect(bioList).not.toHaveBeenCalled();
@@ -399,6 +406,7 @@ describe("security controller loading", () => {
 
   it("treats unconfigured biometrics as an empty explicit list without calling BioList", async () => {
     seedReadyStatus(statusEnvelope({ bioSupported: true, bioConfigured: false }));
+
     const bioList = vi.spyOn(api, "bioList").mockResolvedValue(bioListEnvelope());
 
     expect(await loadSecurityEnrollments()).toBe(true);
@@ -426,8 +434,10 @@ describe("security controller loading", () => {
 
   it("recovers an invalid selected authenticator before a user-forced Security reload", async () => {
     seedActiveScreenForTest("security");
+
     const invalidEnvelope = invalidAuthenticatorStatusEnvelope();
-    const configStatus = vi.spyOn(api, "configStatus")
+    const configStatus = vi
+      .spyOn(api, "configStatus")
       .mockResolvedValueOnce(invalidEnvelope)
       .mockResolvedValueOnce(statusEnvelope({ selectionId: "authenticator-2" }));
     const setSelection = vi.spyOn(api, "setSelection").mockResolvedValue({
@@ -445,7 +455,10 @@ describe("security controller loading", () => {
     expect(await reloadSecurity()).toBe(true);
     expect(setSelection).toHaveBeenCalledWith({ attachmentId: TOKEN.attachment.id });
     expect(configStatus.mock.calls[1][0]).toEqual({ selectionId: "authenticator-2" });
-    expect(get(authenticatorStatus)).toMatchObject({ state: "ready", selectionId: "authenticator-2" });
+    expect(get(authenticatorStatus)).toMatchObject({
+      state: "ready",
+      selectionId: "authenticator-2",
+    });
     expect(get(securityStatus).phase).toBe("ready");
   });
 });
@@ -453,13 +466,17 @@ describe("security controller loading", () => {
 describe("security controller mutations", () => {
   it("does not retain or replay PIN input through card recovery", async () => {
     const card = testSmartCardDevice();
+
     seedDevicesForTest([card]);
     seedSelectionForTest(card.attachment.id, card, {
       state: "ready",
       selectionId: "authenticator-card-1",
     });
+
     const denied = pinErrorEnvelope(OperationKind.SetPIN);
+
     denied.error = failureForCode(Code.CodeUserPresenceRequired);
+
     const setPIN = vi.spyOn(api, "setPIN").mockResolvedValue(denied);
     const input = { newPIN: "set-secret-123" };
 
@@ -476,10 +493,12 @@ describe("security controller mutations", () => {
     let sentChangePINRequest: PINChangeRequest | null = null;
     const setPIN = vi.spyOn(api, "setPIN").mockImplementation((request) => {
       sentSetPINRequest = { ...request };
+
       return Promise.resolve(pinErrorEnvelope(OperationKind.SetPIN));
     });
     const changePIN = vi.spyOn(api, "changePIN").mockImplementation((request) => {
       sentChangePINRequest = { ...request };
+
       return Promise.resolve(pinErrorEnvelope(OperationKind.ChangePIN));
     });
 
@@ -490,17 +509,19 @@ describe("security controller mutations", () => {
     });
     expect(setPIN.mock.calls[0][0].newPIN).toBe("");
 
-    expect(await changeAuthenticatorPIN({
-      currentPIN: "old-secret-456",
-      newPIN: "new-secret-789",
-    })).toBe(false);
+    expect(
+      await changeAuthenticatorPIN({
+        currentPIN: "old-secret-456",
+        newPIN: "new-secret-789",
+      }),
+    ).toBe(false);
     expect(sentChangePINRequest).toEqual({
       selectionId: "authenticator-1",
       currentPIN: "old-secret-456",
       newPIN: "new-secret-789",
     });
     expect(changePIN.mock.calls[0][0]).toMatchObject({ currentPIN: "", newPIN: "" });
-    expect(get(securityMutation)).toEqual({ kind: "idle", phase: "idle" });
+    expect(get(securityMutation)).toEqual({ kind: "idle", operation: { phase: "idle" } });
 
     const persistedState = JSON.stringify({
       mutation: get(securityMutation),
@@ -509,6 +530,7 @@ describe("security controller mutations", () => {
       enrollments: get(securityEnrollments),
       statusBar: get(statusBar),
     });
+
     expect(persistedState).not.toContain("set-secret-123");
     expect(persistedState).not.toContain("old-secret-456");
     expect(persistedState).not.toContain("new-secret-789");
@@ -516,23 +538,35 @@ describe("security controller mutations", () => {
 
   it("previews and then executes the exact Always UV request", async () => {
     seedReadyStatus(statusEnvelope({ alwaysUVConfigured: false }));
+
     const staleOverviewFailure = failureForCode(Code.CodeTransportFailure);
+
     authenticatorInspection.set(errorLoadState(staleOverviewFailure));
     overviewBioSensor.set(errorLoadState(staleOverviewFailure));
     overviewMDS.set(errorLoadState(staleOverviewFailure));
-    const setAlwaysUV = vi.spyOn(api, "setAlwaysUV")
-      .mockResolvedValueOnce(authenticatorConfigEnvelope(
-        AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
-        "preview",
-      ))
-      .mockResolvedValueOnce(authenticatorConfigEnvelope(
-        AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
-        "result",
-      ));
+
+    const setAlwaysUV = vi
+      .spyOn(api, "setAlwaysUV")
+      .mockResolvedValueOnce(
+        authenticatorConfigEnvelope(
+          AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
+          "preview",
+        ),
+      )
+      .mockResolvedValueOnce(
+        authenticatorConfigEnvelope(
+          AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
+          "result",
+        ),
+      );
+
     vi.spyOn(api, "configStatus").mockResolvedValue(statusEnvelope({ alwaysUVConfigured: true }));
 
     expect(await beginAlwaysUVChange(AlwaysUVTarget.AlwaysUVTargetEnable)).toBe(true);
-    expect(get(securityMutation)).toMatchObject({ kind: "alwaysUv", phase: "review" });
+    expect(get(securityMutation)).toMatchObject({
+      kind: "alwaysUv",
+      operation: { phase: "review" },
+    });
     expect(setAlwaysUV.mock.calls[0][0]).toEqual({
       selectionId: "authenticator-1",
       target: AlwaysUVTarget.AlwaysUVTargetEnable,
@@ -545,8 +579,10 @@ describe("security controller mutations", () => {
       target: AlwaysUVTarget.AlwaysUVTargetEnable,
       dryRun: false,
     });
-    expect(get(securityMutation)).toEqual({ kind: "idle", phase: "idle" });
+    expect(get(securityMutation)).toEqual({ kind: "idle", operation: { phase: "idle" } });
+
     const refreshedStatus = get(securityStatus).lastSuccessfulEnvelope!;
+
     expect(refreshedStatus.result!.authenticatorConfig.alwaysUv.configured).toBe(true);
     expect(get(authenticatorInspection).state).toBe("idle");
     expect(get(overviewBioSensor).state).toBe("idle");
@@ -555,15 +591,22 @@ describe("security controller mutations", () => {
 
   it("normalizes, previews, and then executes the exact PIN policy request", async () => {
     seedReadyStatus(statusEnvelope({ minPINLength: 4, maxPINLength: 63, maxRPIDs: 3 }));
-    const setMinPINLength = vi.spyOn(api, "setMinPINLength")
-      .mockResolvedValueOnce(authenticatorConfigEnvelope(
-        AuthenticatorConfigOperation.AuthenticatorConfigMinPINLength,
-        "preview",
-      ))
-      .mockResolvedValueOnce(authenticatorConfigEnvelope(
-        AuthenticatorConfigOperation.AuthenticatorConfigMinPINLength,
-        "result",
-      ));
+
+    const setMinPINLength = vi
+      .spyOn(api, "setMinPINLength")
+      .mockResolvedValueOnce(
+        authenticatorConfigEnvelope(
+          AuthenticatorConfigOperation.AuthenticatorConfigMinPINLength,
+          "preview",
+        ),
+      )
+      .mockResolvedValueOnce(
+        authenticatorConfigEnvelope(
+          AuthenticatorConfigOperation.AuthenticatorConfigMinPINLength,
+          "result",
+        ),
+      );
+
     vi.spyOn(api, "configStatus").mockResolvedValue(statusEnvelope({ minPINLength: 6 }));
 
     const draft = {
@@ -572,6 +615,7 @@ describe("security controller mutations", () => {
       forceChangePin: true,
       pinComplexityPolicy: true,
     };
+
     expect(await beginPINPolicyChange(draft)).toBe(true);
     expect(setMinPINLength.mock.calls[0][0]).toEqual({
       selectionId: "authenticator-1",
@@ -595,19 +639,24 @@ describe("security controller mutations", () => {
 
   it("omits the optional minimum when changing only RP and boolean PIN policy fields", async () => {
     seedReadyStatus(statusEnvelope({ minPINLength: 4, maxPINLength: 63 }));
-    const setMinPINLength = vi.spyOn(api, "setMinPINLength").mockResolvedValue(
-      authenticatorConfigEnvelope(
-        AuthenticatorConfigOperation.AuthenticatorConfigMinPINLength,
-        "preview",
-      ),
-    );
 
-    expect(await beginPINPolicyChange({
-      minPINLength: "",
-      rpIDs: "example.test",
-      forceChangePin: true,
-      pinComplexityPolicy: false,
-    })).toBe(true);
+    const setMinPINLength = vi
+      .spyOn(api, "setMinPINLength")
+      .mockResolvedValue(
+        authenticatorConfigEnvelope(
+          AuthenticatorConfigOperation.AuthenticatorConfigMinPINLength,
+          "preview",
+        ),
+      );
+
+    expect(
+      await beginPINPolicyChange({
+        minPINLength: "",
+        rpIDs: "example.test",
+        forceChangePin: true,
+        pinComplexityPolicy: false,
+      }),
+    ).toBe(true);
     expect(setMinPINLength).toHaveBeenCalledWith({
       selectionId: "authenticator-1",
       minPinLengthRPIDs: ["example.test"],
@@ -619,6 +668,7 @@ describe("security controller mutations", () => {
 
   it("treats both an omitted and unchanged minimum-only request as no change", async () => {
     seedReadyStatus(statusEnvelope({ minPINLength: 4, maxPINLength: 63 }));
+
     const setMinPINLength = vi.spyOn(api, "setMinPINLength");
     const baseDraft = {
       rpIDs: "",
@@ -627,27 +677,41 @@ describe("security controller mutations", () => {
     };
 
     expect(await beginPINPolicyChange({ ...baseDraft, minPINLength: "" })).toBe(false);
-    expect(get(securityMutation)).toMatchObject({ validationError: "no-change" });
+    expect(get(securityMutation)).toMatchObject({
+      operation: { phase: "editing", validationError: "no-change" },
+    });
     expect(await beginPINPolicyChange({ ...baseDraft, minPINLength: "4" })).toBe(false);
-    expect(get(securityMutation)).toMatchObject({ validationError: "no-change" });
+    expect(get(securityMutation)).toMatchObject({
+      operation: { phase: "editing", validationError: "no-change" },
+    });
     expect(setMinPINLength).not.toHaveBeenCalled();
   });
 
   it("previews and executes enabling long touch for reset", async () => {
     seedReadyStatus(statusEnvelope({ longTouchConfigured: false }));
-    const enableLongTouch = vi.spyOn(api, "enableLongTouchForReset")
-      .mockResolvedValueOnce(authenticatorConfigEnvelope(
-        AuthenticatorConfigOperation.AuthenticatorConfigLongTouch,
-        "preview",
-      ))
-      .mockResolvedValueOnce(authenticatorConfigEnvelope(
-        AuthenticatorConfigOperation.AuthenticatorConfigLongTouch,
-        "result",
-      ));
+
+    const enableLongTouch = vi
+      .spyOn(api, "enableLongTouchForReset")
+      .mockResolvedValueOnce(
+        authenticatorConfigEnvelope(
+          AuthenticatorConfigOperation.AuthenticatorConfigLongTouch,
+          "preview",
+        ),
+      )
+      .mockResolvedValueOnce(
+        authenticatorConfigEnvelope(
+          AuthenticatorConfigOperation.AuthenticatorConfigLongTouch,
+          "result",
+        ),
+      );
+
     vi.spyOn(api, "configStatus").mockResolvedValue(statusEnvelope({ longTouchConfigured: true }));
 
     expect(await beginLongTouchForReset()).toBe(true);
-    expect(enableLongTouch.mock.calls[0][0]).toEqual({ selectionId: "authenticator-1", dryRun: true });
+    expect(enableLongTouch.mock.calls[0][0]).toEqual({
+      selectionId: "authenticator-1",
+      dryRun: true,
+    });
 
     expect(await confirmSecurityMutation()).toBe(true);
     expect(enableLongTouch.mock.calls[1][0]).toEqual({
@@ -656,26 +720,65 @@ describe("security controller mutations", () => {
     });
   });
 
+  it("previews and executes enabling enterprise attestation", async () => {
+    seedReadyStatus(statusEnvelope({ enterpriseConfigured: false }));
+
+    const enableEnterpriseAttestation = vi
+      .spyOn(api, "enableEnterpriseAttestation")
+      .mockResolvedValueOnce(
+        authenticatorConfigEnvelope(
+          AuthenticatorConfigOperation.AuthenticatorConfigEnterprise,
+          "preview",
+        ),
+      )
+      .mockResolvedValueOnce(
+        authenticatorConfigEnvelope(
+          AuthenticatorConfigOperation.AuthenticatorConfigEnterprise,
+          "result",
+        ),
+      );
+
+    vi.spyOn(api, "configStatus").mockResolvedValue(statusEnvelope({ enterpriseConfigured: true }));
+
+    expect(await beginEnterpriseAttestation()).toBe(true);
+    expect(enableEnterpriseAttestation.mock.calls[0][0]).toEqual({
+      selectionId: "authenticator-1",
+      dryRun: true,
+    });
+
+    expect(await confirmSecurityMutation()).toBe(true);
+    expect(enableEnterpriseAttestation.mock.calls[1][0]).toEqual({
+      selectionId: "authenticator-1",
+      dryRun: false,
+    });
+  });
+
   it("rejects a minimum above the effective maximum", async () => {
     seedReadyStatus(statusEnvelope({ maxPINLength: 63 }));
+
     const setMinPINLength = vi.spyOn(api, "setMinPINLength");
 
-    expect(await beginPINPolicyChange({
-      minPINLength: "64",
-      rpIDs: "",
-      forceChangePin: false,
-      pinComplexityPolicy: false,
-    })).toBe(false);
+    expect(
+      await beginPINPolicyChange({
+        minPINLength: "64",
+        rpIDs: "",
+        forceChangePin: false,
+        pinComplexityPolicy: false,
+      }),
+    ).toBe(false);
     expect(get(securityMutation)).toMatchObject({
       kind: "pinPolicy",
-      phase: "editing",
-      validationError: "min-pin-length-too-large",
+      operation: {
+        phase: "editing",
+        validationError: "min-pin-length-too-large",
+      },
     });
     expect(setMinPINLength).not.toHaveBeenCalled();
   });
 
   it("restarts a failed preview through the original preview action", async () => {
     seedReadyStatus(statusEnvelope({ alwaysUVConfigured: false }));
+
     const previewFailure = authenticatorConfigEnvelope(
       AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
       "preview",
@@ -685,41 +788,56 @@ describe("security controller mutations", () => {
       AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
       "preview",
     );
-    const setAlwaysUV = vi.spyOn(api, "setAlwaysUV")
+    const setAlwaysUV = vi
+      .spyOn(api, "setAlwaysUV")
       .mockResolvedValueOnce(previewFailure)
       .mockResolvedValueOnce(secondPreview);
 
     expect(await beginAlwaysUVChange(AlwaysUVTarget.AlwaysUVTargetEnable)).toBe(false);
     expect(get(securityMutation)).toMatchObject({
       kind: "alwaysUv",
-      phase: "error",
-      failedPhase: "previewing",
-      responseEnvelope: previewFailure,
+      operation: {
+        phase: "error",
+        failedPhase: "previewing",
+        responseEnvelope: previewFailure,
+      },
     });
 
     expect(await restartSecurityPreview()).toBe(true);
     expect(setAlwaysUV).toHaveBeenCalledTimes(2);
     expect(setAlwaysUV.mock.calls[1][0]).toEqual(setAlwaysUV.mock.calls[0][0]);
-    expect(get(securityMutation)).toMatchObject({ kind: "alwaysUv", phase: "review" });
+    expect(get(securityMutation)).toMatchObject({
+      kind: "alwaysUv",
+      operation: { phase: "review" },
+    });
   });
 
   it("reconfirms after any execution failure without rebuilding the preview", async () => {
     seedReadyStatus(statusEnvelope({ alwaysUVConfigured: false }));
+
     const executionFailure = authenticatorConfigEnvelope(
       AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
       "preview",
     );
+
     executionFailure.error = failureForCode(Code.CodeTransportFailure);
-    const setAlwaysUV = vi.spyOn(api, "setAlwaysUV")
-      .mockResolvedValueOnce(authenticatorConfigEnvelope(
-        AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
-        "preview",
-      ))
+
+    const setAlwaysUV = vi
+      .spyOn(api, "setAlwaysUV")
+      .mockResolvedValueOnce(
+        authenticatorConfigEnvelope(
+          AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
+          "preview",
+        ),
+      )
       .mockResolvedValueOnce(executionFailure)
-      .mockResolvedValueOnce(authenticatorConfigEnvelope(
-        AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
-        "result",
-      ));
+      .mockResolvedValueOnce(
+        authenticatorConfigEnvelope(
+          AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
+          "result",
+        ),
+      );
+
     vi.spyOn(api, "configStatus").mockResolvedValue(statusEnvelope({ alwaysUVConfigured: true }));
 
     expect(await beginAlwaysUVChange(AlwaysUVTarget.AlwaysUVTargetEnable)).toBe(true);
@@ -731,50 +849,48 @@ describe("security controller mutations", () => {
     expect(setAlwaysUV.mock.calls[2][0]).toMatchObject({ dryRun: false });
   });
 
-  it("retains a real partial biometric enrollment result on execution error", async () => {
+  it("retains an atomic biometric enrollment failure without a result", async () => {
     seedReadyStatus(statusEnvelope({ bioSupported: true, bioConfigured: true }));
-    const partial = partialBioEnrollErrorEnvelope();
+
+    const failure = bioEnrollErrorEnvelope();
+
     vi.spyOn(api, "bioEnroll")
       .mockResolvedValueOnce(bioEnrollPreviewEnvelope())
-      .mockResolvedValueOnce(partial);
+      .mockResolvedValueOnce(failure);
 
     expect(await beginBioEnrollment()).toBe(true);
     expect(await confirmSecurityMutation()).toBe(false);
 
     const mutation = get(securityMutation);
+
     expect(mutation).toMatchObject({
       kind: "bioEnroll",
-      phase: "error",
-      failedPhase: "executing",
-      responseEnvelope: partial,
-      runtimeError: null,
+      operation: {
+        phase: "error",
+        failedPhase: "executing",
+        responseEnvelope: failure,
+        runtimeError: null,
+      },
     });
-    if (mutation.kind !== "bioEnroll" || mutation.phase !== "error") return;
-    expect(mutation.responseEnvelope).toBe(partial);
-    expect(mutation.responseEnvelope?.result?.result).toMatchObject({
-      templateIDHex: "beef",
-      lastEnrollSampleStatus: "too-fast",
-      remainingSamples: 3,
-      samples: [
-        { status: "good", remainingSamples: 3 },
-        { status: "too-fast", remainingSamples: 3 },
-      ],
-    });
+    if (mutation.kind !== "bioEnroll" || mutation.operation.phase !== "error") return;
+
+    expect(mutation.operation.responseEnvelope).toBe(failure);
+    expect(mutation.operation.responseEnvelope?.error?.code).toBe(Code.CodeBioInteractionTimeout);
+    expect(mutation.operation.responseEnvelope?.result).toBeUndefined();
   });
 
   it("validates biometric friendly names by UTF-8 bytes and permits an empty name", async () => {
     seedReadyStatus(statusEnvelope({ bioSupported: true, bioConfigured: true }));
+
     const sensorEnvelope = bioSensorEnvelope();
+
     sensorEnvelope.result!.maxTemplateFriendlyName = 4;
     completeSecurityResourceLoad(securitySensor, sensorEnvelope);
+
     const bioRename = vi.spyOn(api, "bioRename").mockResolvedValue(bioRenamePreviewEnvelope(""));
 
     expect(await beginBioRename("cafe", "ééé")).toBe(false);
-    expect(get(securityMutation)).toMatchObject({
-      kind: "bioRename",
-      phase: "editing",
-      validationError: "friendly-name-too-long",
-    });
+    expect(get(securityMutation)).toEqual({ kind: "idle", operation: { phase: "idle" } });
     expect(bioRename).not.toHaveBeenCalled();
 
     expect(await beginBioRename("cafe", "")).toBe(true);
@@ -788,19 +904,28 @@ describe("security controller mutations", () => {
 
   it("reopens an invalid authenticator before repeating a failed preview", async () => {
     seedReadyStatus(statusEnvelope({ alwaysUVConfigured: false }));
+
     const invalidPreview = authenticatorConfigEnvelope(
       AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
       "preview",
       true,
     );
+
     invalidPreview.error = failureForCode(Code.CodeAuthenticatorClosed);
-    const setAlwaysUV = vi.spyOn(api, "setAlwaysUV")
+
+    const setAlwaysUV = vi
+      .spyOn(api, "setAlwaysUV")
       .mockResolvedValueOnce(invalidPreview)
-      .mockResolvedValueOnce(authenticatorConfigEnvelope(
-        AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
-        "preview",
-      ));
-    vi.spyOn(api, "setSelection").mockResolvedValue({ selection: snapshot(TOKEN, "authenticator-2") });
+      .mockResolvedValueOnce(
+        authenticatorConfigEnvelope(
+          AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV,
+          "preview",
+        ),
+      );
+
+    vi.spyOn(api, "setSelection").mockResolvedValue({
+      selection: snapshot(TOKEN, "authenticator-2"),
+    });
 
     expect(await beginAlwaysUVChange(AlwaysUVTarget.AlwaysUVTargetEnable)).toBe(false);
     expect(get(authenticatorStatus).selectionId).toBeUndefined();
@@ -811,25 +936,34 @@ describe("security controller mutations", () => {
       target: AlwaysUVTarget.AlwaysUVTargetEnable,
       dryRun: true,
     });
-    expect(get(securityMutation)).toMatchObject({ kind: "alwaysUv", phase: "review" });
+    expect(get(securityMutation)).toMatchObject({
+      kind: "alwaysUv",
+      operation: { phase: "review" },
+    });
   });
 });
 
 describe("factory reset lifecycle", () => {
   it("clears selection and auto-selects the sole rediscovered authenticator", async () => {
     const replacement = device("token-after-reset");
+
     seedActiveScreenForTest("security");
-    const resetFactory = vi.spyOn(api, "resetFactory")
+
+    const resetFactory = vi
+      .spyOn(api, "resetFactory")
       .mockResolvedValueOnce(resetEnvelope("preview"))
       .mockResolvedValueOnce(resetEnvelope("result"));
-    const setSelection = vi.spyOn(api, "setSelection")
+    const setSelection = vi
+      .spyOn(api, "setSelection")
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ selection: snapshot(replacement) });
     const discover = vi.spyOn(api, "discover").mockResolvedValue([replacement]);
-    const configStatus = vi.spyOn(api, "configStatus").mockResolvedValue(statusEnvelope({
-      item: replacement,
-      selectionId: "authenticator-token-after-reset",
-    }));
+    const configStatus = vi.spyOn(api, "configStatus").mockResolvedValue(
+      statusEnvelope({
+        item: replacement,
+        selectionId: "authenticator-token-after-reset",
+      }),
+    );
 
     expect(await beginFactoryReset()).toBe(true);
     expect(await confirmSecurityMutation()).toBe(true);
@@ -840,8 +974,12 @@ describe("factory reset lifecycle", () => {
       dryRun: false,
     });
     expect(setSelection).toHaveBeenCalledTimes(2);
-    expect(setSelection.mock.invocationCallOrder[0]).toBeLessThan(discover.mock.invocationCallOrder[0]);
-    expect(discover.mock.invocationCallOrder[0]).toBeLessThan(setSelection.mock.invocationCallOrder[1]);
+    expect(setSelection.mock.invocationCallOrder[0]).toBeLessThan(
+      discover.mock.invocationCallOrder[0],
+    );
+    expect(discover.mock.invocationCallOrder[0]).toBeLessThan(
+      setSelection.mock.invocationCallOrder[1],
+    );
     expect(setSelection).toHaveBeenLastCalledWith({ attachmentId: replacement.attachment.id });
     expect(get(devices)).toEqual([replacement]);
     expect(get(selectedSelector)).toBe(replacement.attachment.id);
@@ -854,18 +992,25 @@ describe("factory reset lifecycle", () => {
 
   it("clears selection and selects the first rediscovered authenticator", async () => {
     const replacements = [device("token-a"), device("token-b")];
+
     seedActiveScreenForTest("security");
     vi.spyOn(api, "resetFactory")
       .mockResolvedValueOnce(resetEnvelope("preview"))
       .mockResolvedValueOnce(resetEnvelope("result"));
-    const setSelection = vi.spyOn(api, "setSelection")
+
+    const setSelection = vi
+      .spyOn(api, "setSelection")
       .mockResolvedValueOnce({})
       .mockResolvedValueOnce({ selection: snapshot(replacements[0]) });
+
     vi.spyOn(api, "discover").mockResolvedValue(replacements);
-    const configStatus = vi.spyOn(api, "configStatus").mockResolvedValue(statusEnvelope({
-      item: replacements[0],
-      selectionId: "authenticator-token-a",
-    }));
+
+    const configStatus = vi.spyOn(api, "configStatus").mockResolvedValue(
+      statusEnvelope({
+        item: replacements[0],
+        selectionId: "authenticator-token-a",
+      }),
+    );
 
     expect(await beginFactoryReset()).toBe(true);
     expect(await confirmSecurityMutation()).toBe(true);
@@ -883,24 +1028,33 @@ describe("factory reset lifecycle", () => {
 
   it("does not reuse a pre-reset authenticator when clearing selection reports an error", async () => {
     const replacement = device("token-after-close-warning");
+
     seedActiveScreenForTest("security");
     vi.spyOn(api, "resetFactory")
       .mockResolvedValueOnce(resetEnvelope("preview"))
       .mockResolvedValueOnce(resetEnvelope("result"));
-    const setSelection = vi.spyOn(api, "setSelection")
+
+    const setSelection = vi
+      .spyOn(api, "setSelection")
       .mockRejectedValueOnce(new Error("old handle close failed"))
       .mockResolvedValueOnce({ selection: snapshot(replacement, "fresh-authenticator") });
+
     vi.spyOn(api, "discover").mockResolvedValue([replacement]);
-    vi.spyOn(api, "configStatus").mockResolvedValue(statusEnvelope({
-      item: replacement,
-      selectionId: "fresh-authenticator",
-    }));
+    vi.spyOn(api, "configStatus").mockResolvedValue(
+      statusEnvelope({
+        item: replacement,
+        selectionId: "fresh-authenticator",
+      }),
+    );
 
     expect(await beginFactoryReset()).toBe(true);
     expect(await confirmSecurityMutation()).toBe(true);
 
     expect(setSelection).toHaveBeenLastCalledWith({ attachmentId: replacement.attachment.id });
-    expect(get(authenticatorStatus)).toMatchObject({ state: "ready", selectionId: "fresh-authenticator" });
+    expect(get(authenticatorStatus)).toMatchObject({
+      state: "ready",
+      selectionId: "fresh-authenticator",
+    });
     expect(get(statusBar).lastOutcome).toMatchObject({
       tone: "warning",
       message: "The operation failed because of an internal error.",

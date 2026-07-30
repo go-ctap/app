@@ -2,8 +2,8 @@
   import { Copy } from "@lucide/svelte";
 
   import { copyToClipboard } from "$lib/clipboard";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Tooltip from "$lib/components/ui/tooltip/index.js";
+  import { Button } from "$lib/components/ui/button";
+  import * as Tooltip from "$lib/components/ui/tooltip";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -15,13 +15,10 @@
   let { label, value }: Props = $props();
 
   let byteCount = $derived(Math.floor(value.length / 2));
+
   let compactValue = $derived(
     value.length > 42 ? `${value.slice(0, 22)}…${value.slice(-16)}` : value,
   );
-
-  async function copyValue() {
-    await copyToClipboard(value, m.lab_value_copied({ label }));
-  }
 </script>
 
 <Tooltip.Provider delayDuration={350}>
@@ -38,7 +35,7 @@
             type="button"
             aria-label={m.lab_copy({ label })}
             disabled={!value}
-            onclick={copyValue}
+            onclick={() => void copyToClipboard(value, m.lab_value_copied({ label }))}
           >
             <Copy data-icon="inline-start" aria-hidden="true" />
           </Button>
@@ -50,28 +47,28 @@
 </Tooltip.Provider>
 
 <style>
-@layer blocks {
-  .lab-hex-value {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-1);
-    min-width: 0;
-    max-width: 100%;
-  }
+  @layer blocks {
+    .lab-hex-value {
+      display: inline-flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-1);
+      min-width: 0;
+      max-width: 100%;
+    }
 
-  .lab-hex-value code {
-    max-width: 100%;
-    overflow: hidden;
-    font-size: 0.76rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+    .lab-hex-value code {
+      max-width: 100%;
+      overflow: hidden;
+      font-size: 0.76rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
-  .lab-hex-value-count {
-    color: var(--muted-foreground);
-    font-size: 0.7rem;
-    white-space: nowrap;
+    .lab-hex-value-count {
+      color: var(--muted-foreground);
+      font-size: 0.7rem;
+      white-space: nowrap;
+    }
   }
-}
 </style>

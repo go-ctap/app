@@ -13,20 +13,20 @@ type operationExecutor[T any] func(
 	context.Context,
 	*ctapkit.Authenticator,
 	...ctapkit.OperationOption,
-) (*T, error)
+) (T, error)
 
 type authenticatorOperation[O any, T any] func(
 	*ctapkit.Authenticator,
 	context.Context,
 	O,
 	...ctapkit.OperationOption,
-) (*T, error)
+) (T, error)
 
 type inputlessAuthenticatorOperation[T any] func(
 	*ctapkit.Authenticator,
 	context.Context,
 	...ctapkit.OperationOption,
-) (*T, error)
+) (T, error)
 
 func runAuthenticatorOperation[O any, T any](
 	service *Service,
@@ -35,12 +35,12 @@ func runAuthenticatorOperation[O any, T any](
 	kind operation.Kind,
 	input O,
 	execute authenticatorOperation[O, T],
-) (OperationEnvelopeMeta, *T, error) {
+) (OperationEnvelopeMeta, *T) {
 	return runOperation(service, ctx, req, kind, func(
 		ctx context.Context,
 		authenticator *ctapkit.Authenticator,
 		opts ...ctapkit.OperationOption,
-	) (*T, error) {
+	) (T, error) {
 		return execute(authenticator, ctx, input, opts...)
 	})
 }
@@ -51,12 +51,12 @@ func runInputlessOperation[T any](
 	req OperationRequest,
 	kind operation.Kind,
 	execute inputlessAuthenticatorOperation[T],
-) (OperationEnvelopeMeta, *T, error) {
+) (OperationEnvelopeMeta, *T) {
 	return runOperation(service, ctx, req, kind, func(
 		ctx context.Context,
 		authenticator *ctapkit.Authenticator,
 		opts ...ctapkit.OperationOption,
-	) (*T, error) {
+	) (T, error) {
 		return execute(authenticator, ctx, opts...)
 	})
 }
@@ -67,7 +67,7 @@ func runOperation[T any](
 	req OperationRequest,
 	kind operation.Kind,
 	execute operationExecutor[T],
-) (OperationEnvelopeMeta, *T, error) {
+) (OperationEnvelopeMeta, *T) {
 	operationID := OperationID(uuid.NewString())
 	meta := OperationEnvelopeMeta{
 		OperationID: operationID,
@@ -76,11 +76,13 @@ func runOperation[T any](
 	}
 
 	selected, ok := service.selectionFor(req.SelectionID)
+
 	if !ok {
 		operationErr := authenticatorClosedError()
+
 		meta.Error = failure.Snapshot(operationErr)
 
-		return meta, nil, nil
+		return meta, nil
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -95,14 +97,21 @@ func runOperation[T any](
 		cancel()
 
 		operationErr := authenticatorClosedError()
+
 		meta.Error = failure.Snapshot(operationErr)
 
-		return meta, nil, nil
+		return meta, nil
 	}
+
 	defer cancel()
 	defer service.unregisterOperation(selected, operationID)
 
-	opts := runOptions(req.VerificationFlow)
+	var opts []ctapkit.OperationOption
+
+	if req.VerificationFlow != ctapkit.VerificationFlowDefault {
+		opts = append(opts, ctapkit.WithVerificationFlow(req.VerificationFlow))
+	}
+
 	opts = append(opts, ctapkit.WithEventSink(operationEventSink{service: service, operation: state}))
 	opts = append(opts, ctapkit.WithInteractionHandler(interactionHandler{
 		service:     service,
@@ -110,6 +119,7 @@ func runOperation[T any](
 		selectionID: req.SelectionID,
 		operationID: operationID,
 	}))
+
 	result, operationErr := execute(ctx, selected.runtime.client, opts...)
 
 	meta.AuthenticatorClosed = selected.runtime.Closed()
@@ -118,5 +128,9 @@ func runOperation[T any](
 		service.retireSelection(selected)
 	}
 
-	return meta, result, nil
+	if operationErr != nil {
+		return meta, nil
+	}
+
+	return meta, &result
 }

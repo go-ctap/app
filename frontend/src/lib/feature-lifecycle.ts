@@ -2,7 +2,6 @@ export type DeviceFeatureName = "overview" | "passkeys" | "large-blobs" | "lab" 
 
 export type DeviceFeatureLifecycle = Readonly<{
   resetForAuthenticatorChange: () => void;
-  resetForTest: () => void;
 }>;
 
 /**
@@ -26,12 +25,6 @@ export class DeviceFeatureLifecycleRegistry {
   resetForAuthenticatorChange() {
     for (const lifecycle of this.#features.values()) {
       lifecycle.resetForAuthenticatorChange();
-    }
-  }
-
-  resetForTest() {
-    for (const lifecycle of this.#features.values()) {
-      lifecycle.resetForTest();
     }
   }
 

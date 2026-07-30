@@ -11,7 +11,6 @@ export {
     InventoryReport,
     InventorySummary,
     RelyingParty,
-    StoreStateResult,
     SupportReport,
     UpdateUserOutput,
     UpdateUserPreview,

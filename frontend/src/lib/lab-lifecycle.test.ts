@@ -3,12 +3,13 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { testHIDDevice } from "../test/device.js";
 
-import { labState } from "./features/lab/state";
-import { activeScreen } from "./features/workbench/state";
-import { resetAppStateForTest, seedSelectionForTest } from "./store-test-utils";
-import { applyDiscovery, clearWorkbenchScreenCaches } from "./workbench-state";
+import { labState } from "$lib/features/lab/state";
+import { activeScreen } from "$lib/features/workbench/state";
+import { resetAppStateForTest, seedSelectionForTest } from "$lib/test-support/store-utils";
+import { applyDiscovery, clearWorkbenchScreenCaches } from "$lib/workbench-state";
 
 const first = testHIDDevice("token-1", "First");
+
 const second = testHIDDevice("token-2", "Second");
 
 describe("WebAuthn Lab authenticator lifecycle", () => {
@@ -54,20 +55,24 @@ describe("WebAuthn Lab authenticator lifecycle", () => {
       getDraft: { ...state.getDraft, rpID: "kept.example" },
     }));
 
-    expect(applyDiscovery({
-      devices: [first],
-      selectedSelector: "token-1",
-      selectedDevice: first,
-      authenticator: { state: "ready", selectionId: "authenticator-1" },
-    })).toBe(false);
+    expect(
+      applyDiscovery({
+        devices: [first],
+        selectedSelector: "token-1",
+        selectedDevice: first,
+        authenticator: { state: "ready", selectionId: "authenticator-1" },
+      }),
+    ).toBe(false);
     expect(get(labState).getDraft.rpID).toBe("kept.example");
 
-    expect(applyDiscovery({
-      devices: [first, second],
-      selectedSelector: "token-2",
-      selectedDevice: second,
-      authenticator: { state: "ready", selectionId: "authenticator-2" },
-    })).toBe(true);
+    expect(
+      applyDiscovery({
+        devices: [first, second],
+        selectedSelector: "token-2",
+        selectedDevice: second,
+        authenticator: { state: "ready", selectionId: "authenticator-2" },
+      }),
+    ).toBe(true);
     expect(get(labState).getDraft.rpID).toBe("example.com");
   });
 });

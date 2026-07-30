@@ -2,7 +2,7 @@ import { cleanup, render, screen, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import ExpandableDataTableTestFixture from "./ExpandableDataTableTestFixture.svelte";
+import ExpandableDataTableTestFixture from "$lib/test-support/components/ExpandableDataTableFixture.svelte";
 
 describe("ExpandableDataTable", () => {
   afterEach(() => {
@@ -35,6 +35,7 @@ describe("ExpandableDataTable", () => {
     await view.rerender({ open: true, onOpenChange });
 
     const details = summary.nextElementSibling as HTMLTableRowElement;
+
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(trigger).toHaveAttribute("data-state", "open");
     expect(summary).toHaveAttribute("aria-selected", "true");
@@ -50,11 +51,13 @@ describe("ExpandableDataTable", () => {
   it("disables the trigger without requesting a state change", async () => {
     const user = userEvent.setup();
     const onOpenChange = vi.fn();
+
     render(ExpandableDataTableTestFixture, {
       props: { open: false, disabled: true, onOpenChange },
     });
 
     const trigger = screen.getByRole("button", { name: "Toggle credential" });
+
     expect(trigger).toBeDisabled();
     expect(trigger).toHaveAttribute("data-disabled", "true");
 

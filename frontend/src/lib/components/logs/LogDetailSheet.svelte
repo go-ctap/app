@@ -1,14 +1,14 @@
 <script lang="ts">
   import { X } from "@lucide/svelte";
 
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Sheet from "$lib/components/ui/sheet/index.js";
+  import { Button } from "$lib/components/ui/button";
+  import * as Sheet from "$lib/components/ui/sheet";
   import type { LogRecord } from "$lib/features/logs/state.svelte.js";
   import { logSummary, logTime } from "$lib/log-presentation.js";
 
   import { m } from "../../../paraglide/messages.js";
-  import LogDetail from "./LogDetail.svelte";
-  import LogDetailNavigation from "./LogDetailNavigation.svelte";
+  import LogDetail from "$lib/components/logs/LogDetail.svelte";
+  import LogDetailNavigation from "$lib/components/logs/LogDetailNavigation.svelte";
 
   type Props = {
     open: boolean;
@@ -42,18 +42,20 @@
   }
 
   function isEditableTarget(target: EventTarget | null) {
-    return target instanceof Element
-      && Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
+    return (
+      target instanceof Element &&
+      Boolean(target.closest('input, textarea, select, [contenteditable="true"]'))
+    );
   }
 
   function handleWindowKeydown(event: KeyboardEvent) {
     if (
-      !open
-      || !event.altKey
-      || event.ctrlKey
-      || event.metaKey
-      || event.shiftKey
-      || isEditableTarget(event.target)
+      !open ||
+      !event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      isEditableTarget(event.target)
     ) {
       return;
     }
@@ -61,6 +63,7 @@
     if (event.key === "ArrowUp") {
       event.preventDefault();
       if (canPrevious) onPrevious();
+
       return;
     }
 
@@ -99,14 +102,9 @@
         {/snippet}
       </Sheet.Close>
     </div>
-    <LogDetailNavigation
-      {position}
-      {total}
-      {canPrevious}
-      {canNext}
-      {onPrevious}
-      {onNext}
-    />
+
+    <LogDetailNavigation {position} {total} {canPrevious} {canNext} {onPrevious} {onNext} />
+
     <LogDetail {record} />
   </Sheet.Content>
 </Sheet.Root>

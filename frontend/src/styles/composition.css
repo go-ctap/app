@@ -21,5 +21,4 @@
     flex-grow: 1;
     flex-basis: calc((var(--switcher-threshold, 48rem) - 100%) * 999);
   }
-
 }

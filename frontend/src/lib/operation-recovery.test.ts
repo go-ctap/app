@@ -1,18 +1,13 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import {
-  Category,
-  Code,
-  CTAPDetail,
-  Failure,
-} from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { Category, Code, Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
 
 import {
   resetAppStateForTest,
   seedDevicesForTest,
   seedSelectionForTest,
-} from "./store-test-utils.js";
+} from "$lib/test-support/store-utils.js";
 import { testHIDDevice, testSmartCardDevice } from "../test/device.js";
 import {
   cancelOperationRecovery,
@@ -20,22 +15,21 @@ import {
   offerOperationRecovery,
   operationRecovery,
   retryOperationRecovery,
-} from "./operation-recovery.js";
+} from "$lib/operation-recovery.js";
 
-function failure(code: Code, statusCode?: number) {
+function failure(code: Code) {
   return new Failure({
     code,
     category: Category.CategoryInvalidState,
-    ...(statusCode === undefined
-      ? {}
-      : { ctap: new CTAPDetail({ commandCode: 1, statusCode }) }),
   });
 }
 
 function seedReadyCard(id = "card-1", selectionId = `authenticator-${id}`) {
   const card = testSmartCardDevice(id);
+
   seedDevicesForTest([card]);
   seedSelectionForTest(id, card, { state: "ready", selectionId });
+
   return card;
 }
 
@@ -52,20 +46,16 @@ describe("operation recovery", () => {
     expect(isCardPresenceRecoveryCandidate(failure(code))).toBe(true);
   });
 
-  it.each([0x27, 0x3b, 0x7f])("accepts legacy CTAP status 0x%s", (statusCode) => {
-    expect(isCardPresenceRecoveryCandidate(failure(Code.CodeTransportFailure, statusCode))).toBe(true);
-  });
-
-  it.each([
-    Code.CodePINInvalid,
-    Code.CodeOperationUnsupported,
-    Code.CodeTransportFailure,
-  ])("rejects unrelated failure %s", (code) => {
-    expect(isCardPresenceRecoveryCandidate(failure(code))).toBe(false);
-  });
+  it.each([Code.CodePINInvalid, Code.CodeOperationUnsupported, Code.CodeTransportFailure])(
+    "rejects unrelated failure %s",
+    (code) => {
+      expect(isCardPresenceRecoveryCandidate(failure(code))).toBe(false);
+    },
+  );
 
   it("requires removal and an explicitly ready reattachment before retry", async () => {
     seedReadyCard();
+
     const decision = offerOperationRecovery(
       "Create credential",
       failure(Code.CodeUserPresenceRequired),
@@ -89,6 +79,7 @@ describe("operation recovery", () => {
     });
 
     const reattached = testSmartCardDevice("card-2");
+
     seedDevicesForTest([reattached]);
     expect(get(operationRecovery)).toMatchObject({
       cardVisible: true,
@@ -111,36 +102,33 @@ describe("operation recovery", () => {
 
   it("does not offer recovery for a HID authenticator and resolves cancel explicitly", async () => {
     const hid = testHIDDevice();
+
     seedDevicesForTest([hid]);
     seedSelectionForTest(hid.attachment.id, hid, {
       state: "ready",
       selectionId: "authenticator-hid",
     });
-    expect(offerOperationRecovery(
-      "Inspect",
-      failure(Code.CodeUserPresenceRequired),
-    )).toBeNull();
+    expect(offerOperationRecovery("Inspect", failure(Code.CodeUserPresenceRequired))).toBeNull();
 
     seedReadyCard();
-    const decision = offerOperationRecovery(
-      "Inspect",
-      failure(Code.CodeUserPresenceRequired),
-    );
+
+    const decision = offerOperationRecovery("Inspect", failure(Code.CodeUserPresenceRequired));
+
     cancelOperationRecovery();
     await expect(decision).resolves.toBe("cancel");
   });
 
   it("does not replace an active recovery intent", async () => {
     seedReadyCard();
+
     const decision = offerOperationRecovery(
       "Create credential",
       failure(Code.CodeUserPresenceRequired),
     );
 
-    expect(offerOperationRecovery(
-      "Background inspection",
-      failure(Code.CodeUserPresenceRequired),
-    )).toBeNull();
+    expect(
+      offerOperationRecovery("Background inspection", failure(Code.CodeUserPresenceRequired)),
+    ).toBeNull();
     expect(get(operationRecovery)).toMatchObject({ label: "Create credential" });
 
     cancelOperationRecovery();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { sanitizedJson } from "./redaction";
+import { sanitizedJson } from "$lib/redaction";
 
 describe("sanitizedJson", () => {
   it("redacts interaction and PIN mutation secrets without hiding CTAP capability fields", () => {
@@ -20,6 +20,7 @@ describe("sanitizedJson", () => {
         },
       },
     });
+
     expect(JSON.parse(json)).toEqual({
       pin: "[redacted]",
       currentPIN: "[redacted]",

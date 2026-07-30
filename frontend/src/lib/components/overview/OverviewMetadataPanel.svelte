@@ -4,8 +4,8 @@
 
 <script lang="ts">
   import { copyToClipboard } from "$lib/clipboard";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
+  import { Button } from "$lib/components/ui/button";
+  import * as Card from "$lib/components/ui/card";
   import { openExternalLink } from "$lib/external-links";
   import type { OverviewHeroFact, OverviewHeroPresentation } from "$lib/overview-rules";
 
@@ -21,17 +21,15 @@
     onRefresh?: () => void | Promise<void>;
   } = $props();
 
-  async function copyAaguid() {
-    if (hero.aaguidAvailable) {
-      await copyToClipboard(hero.aaguid, m.aaguid_copied());
-    }
-  }
-
   function factTone(fact: OverviewHeroFact) {
     if (fact.placeholder || fact.tone === "muted") return "muted";
+
     if (fact.tone === "success") return "success";
+
     if (fact.tone === "warning") return "warning";
+
     if (fact.tone === "error") return "error";
+
     return "";
   }
 </script>
@@ -41,7 +39,13 @@
     <dt>{fact.label}</dt>
     <dd data-tone={factTone(fact)}>
       {#if fact.href && !fact.placeholder}
-        <a href={fact.href} target="_blank" rel="noreferrer" title={fact.href} onclick={(event) => openExternalLink(event, fact.href!)}>
+        <a
+          href={fact.href}
+          target="_blank"
+          rel="noreferrer"
+          title={fact.href}
+          onclick={(event) => openExternalLink(event, fact.href!)}
+        >
           <span>{fact.value}</span>
           <ExternalLink size={11} />
         </a>
@@ -55,6 +59,7 @@
 {#snippet factSection(title: string, facts: OverviewHeroFact[])}
   <section class="fact-section">
     <h3>{title}</h3>
+
     <dl>
       {#each facts as fact (fact.label)}
         {@render factRow(fact)}
@@ -68,7 +73,12 @@
     <Card.Title>{m.metadata_service()}</Card.Title>
     <Card.Description>{hero.mdsDescription}</Card.Description>
     <Card.Action>
-      <Button variant="outline" type="button" onclick={onRefresh} disabled={loading || !hero.aaguidAvailable}>
+      <Button
+        variant="outline"
+        type="button"
+        onclick={onRefresh}
+        disabled={loading || !hero.aaguidAvailable}
+      >
         <RefreshCw data-icon="inline-start" class={loading ? "u-spin" : undefined} />
         {loading ? m.mds_refreshing() : m.mds_refresh()}
       </Button>
@@ -80,7 +90,13 @@
       <div class="aaguid-header cluster">
         <span>{m.mds_aaguid()}</span>
         {#if hero.aaguidAvailable}
-          <Button variant="ghost" size="icon-xs" type="button" onclick={copyAaguid} aria-label={m.copy_label({ label: "AAGUID" })}>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            type="button"
+            onclick={() => void copyToClipboard(hero.aaguid, m.aaguid_copied())}
+            aria-label={m.copy_label({ label: "AAGUID" })}
+          >
             <Copy />
           </Button>
         {/if}
@@ -94,7 +110,7 @@
 </Card.Root>
 
 <style>
-@layer blocks {
+  @layer blocks {
     :global(.mds-card) {
       min-width: 0;
     }
@@ -210,6 +226,5 @@
     dd[data-tone="error"] {
       color: var(--destructive);
     }
-
-}
+  }
 </style>

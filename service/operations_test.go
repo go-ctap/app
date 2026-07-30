@@ -14,12 +14,9 @@ import (
 func TestListCredentialsInvalidSelectionReturnsTypedErrorEnvelope(t *testing.T) {
 	service := New()
 
-	envelope, err := service.ListCredentials(context.Background(), CredentialListRequest{
-		OperationRequest: OperationRequest{SelectionID: "missing-selection"},
+	envelope := service.ListCredentials(context.Background(), OperationRequest{
+		SelectionID: "missing-selection",
 	})
-	if err != nil {
-		t.Fatalf("ListCredentials error = %v, want nil because the failure is in the envelope", err)
-	}
 
 	if envelope.SelectionID != "missing-selection" {
 		t.Fatalf("envelope selection ID = %q, want missing-selection", envelope.SelectionID)
@@ -46,18 +43,17 @@ func TestListCredentialsFailureUsesOnlyTheTypedEnvelopeError(t *testing.T) {
 		failure.WithPhase(failure.PhaseAuthenticatorCommand),
 	)
 	service := New()
+
 	service.selected = newSelection("selection-1", openedAuthenticator{lifecycle: runtime})
 
-	meta, result, err := runOperation(
+	meta, result := runOperation(
 		service,
 		context.Background(),
 		OperationRequest{SelectionID: "selection-1"},
 		operation.ListCredentials,
-		staticOperationExecutor[credentials.InventoryReport](nil, runErr),
+		staticOperationExecutor(credentials.InventoryReport{}, runErr),
 	)
-	if err != nil {
-		t.Fatalf("ListCredentials error = %v, want nil because the failure is in the envelope", err)
-	}
+
 	envelope := CredentialsEnvelope{OperationEnvelopeMeta: meta, Result: result}
 
 	if envelope.Error == nil || envelope.Error.Code != failure.CodeOperationCanceled {
@@ -91,18 +87,17 @@ func TestOperationEnvelopeReportsAndRetiresClosedSelection(t *testing.T) {
 		failure.WithPhase(failure.PhaseAuthenticatorCommand),
 	)
 	service := New()
+
 	service.selected = newSelection("selection-1", openedAuthenticator{lifecycle: runtime})
 
-	meta, result, err := runOperation(
+	meta, result := runOperation(
 		service,
 		context.Background(),
 		OperationRequest{SelectionID: "selection-1"},
 		operation.ListCredentials,
-		staticOperationExecutor[credentials.InventoryReport](nil, runErr),
+		staticOperationExecutor(credentials.InventoryReport{}, runErr),
 	)
-	if err != nil {
-		t.Fatalf("ListCredentials: %v", err)
-	}
+
 	envelope := CredentialsEnvelope{OperationEnvelopeMeta: meta, Result: result}
 
 	if !envelope.AuthenticatorClosed {
@@ -120,6 +115,7 @@ func TestOperationEnvelopeReportsAndRetiresClosedSelection(t *testing.T) {
 
 func TestPINRequestsRoundTripSecrets(t *testing.T) {
 	var setPIN PINSetRequest
+
 	if err := json.Unmarshal([]byte(`{"selectionId":"selection-1","newPIN":"123456"}`), &setPIN); err != nil {
 		t.Fatalf("unmarshal set PIN request: %v", err)
 	}
@@ -129,11 +125,13 @@ func TestPINRequestsRoundTripSecrets(t *testing.T) {
 	}
 
 	raw, err := json.Marshal(setPIN)
+
 	if err != nil {
 		t.Fatalf("marshal set PIN request: %v", err)
 	}
 
 	var setPINRoundTrip PINSetRequest
+
 	if err := json.Unmarshal(raw, &setPINRoundTrip); err != nil {
 		t.Fatalf("unmarshal marshaled set PIN request: %v", err)
 	}
@@ -143,6 +141,7 @@ func TestPINRequestsRoundTripSecrets(t *testing.T) {
 	}
 
 	var changePIN PINChangeRequest
+
 	if err := json.Unmarshal([]byte(`{"selectionId":"selection-1","currentPIN":"123456","newPIN":"654321","dryRun":true}`), &changePIN); err != nil {
 		t.Fatalf("unmarshal change PIN request: %v", err)
 	}
@@ -157,6 +156,7 @@ func TestPINRequestsRoundTripSecrets(t *testing.T) {
 	}
 
 	var changePINRoundTrip PINChangeRequest
+
 	if err := json.Unmarshal(raw, &changePINRoundTrip); err != nil {
 		t.Fatalf("unmarshal marshaled change PIN request: %v", err)
 	}
@@ -174,12 +174,12 @@ func (s *recordingAuthenticator) Close() error { return nil }
 
 func (s *recordingAuthenticator) Closed() bool { return s.closed }
 
-func staticOperationExecutor[T any](result *T, err error) operationExecutor[T] {
+func staticOperationExecutor[T any](result T, err error) operationExecutor[T] {
 	return func(
 		context.Context,
 		*ctapkit.Authenticator,
 		...ctapkit.OperationOption,
-	) (*T, error) {
+	) (T, error) {
 		return result, err
 	}
 }

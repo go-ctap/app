@@ -2,11 +2,12 @@ import { LogOutcome } from "../../bindings/github.com/go-ctap/kit/model";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
 
 import { m } from "../paraglide/messages.js";
-import { failureMessage } from "./failure.js";
-import type { KitLogRecord, LogFilters, LogRecord } from "./features/logs/state.svelte.js";
+import { failureMessage } from "$lib/failure.js";
+import type { KitLogRecord, LogFilters, LogRecord } from "$lib/features/logs/state.svelte.js";
 
 export function logSummary(record: LogRecord) {
   if (record.source === "app/runtime") return m.logs_summary_runtime({ context: record.context });
+
   return m.logs_summary_ctap_command({ command: commandLabel(record) });
 }
 
@@ -17,7 +18,7 @@ export function operationKindLabel(kind: OperationKind | undefined) {
     case OperationKind.ListCredentials:
       return m.credential_inventory();
     case OperationKind.CredentialStoreState:
-      return m.credential_store_state_operation();
+      return kind;
     case OperationKind.DeleteCredential:
       return m.credential_delete();
     case OperationKind.UpdateCredentialUser:
@@ -50,6 +51,8 @@ export function operationKindLabel(kind: OperationKind | undefined) {
       return m.security_pin_set_operation();
     case OperationKind.ChangePIN:
       return m.security_pin_change_operation();
+    case OperationKind.EnableEnterpriseAttestation:
+      return m.security_enterprise_attestation_operation();
     case OperationKind.SetAlwaysUV:
       return m.security_always_uv_operation();
     case OperationKind.SetMinPINLength:
@@ -77,6 +80,7 @@ export function logOutcomeLabel(outcome: LogOutcome) {
     [LogOutcome.LogOutcomeFailed]: m.logs_outcome_failed(),
     [LogOutcome.LogOutcomeCanceled]: m.logs_outcome_canceled(),
   };
+
   return labels[outcome];
 }
 
@@ -95,6 +99,7 @@ export function logTime(record: LogRecord) {
 
 export function commandLabel(record: KitLogRecord) {
   const command = record.entry.command || "CTAP";
+
   return record.entry.subCommand ? `${command} · ${record.entry.subCommand}` : command;
 }
 
@@ -104,9 +109,12 @@ export function formatCTAPCode(value: number) {
 
 export function filterLogs(records: readonly LogRecord[], query: string, filters: LogFilters) {
   const normalizedQuery = query.trim().toLocaleLowerCase();
+
   return records.filter((record) => {
     if (filters.outcome !== "all" && logOutcome(record) !== filters.outcome) return false;
+
     if (!normalizedQuery) return true;
+
     return searchableText(record).toLocaleLowerCase().includes(normalizedQuery);
   });
 }
@@ -117,6 +125,7 @@ function searchableText(record: LogRecord) {
   }
 
   const entry = record.entry;
+
   return [
     logSummary(record),
     record.sequence,
@@ -132,5 +141,7 @@ function searchableText(record: LogRecord) {
     entry.error ? failureMessage(entry.error) : "",
     entry.error ? JSON.stringify(entry.error) : "",
     entry.errorMessage,
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }

@@ -7,16 +7,14 @@ import {
   InteractionRequest,
   PINInteractionState,
 } from "../../../../bindings/github.com/go-ctap/kit/model";
-import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
 import { UserVerify } from "../../../../bindings/github.com/go-ctap/ctap/protocol";
 import { InteractionAnswer, InteractionPrompt } from "../../../../bindings/telesma/service";
 
 import { buildInteractionModalPresentation } from "$lib/shell-presentation";
 import { setAdvancedMode } from "$lib/preferences";
-import { resetAppStateForTest } from "$lib/store-test-utils";
-import { failureForCode } from "$lib/test-failure";
+import { resetAppStateForTest } from "$lib/test-support/store-utils";
 
-import InteractionModal from "./InteractionModal.svelte";
+import InteractionModal from "$lib/components/interaction/InteractionModal.svelte";
 
 function pinPrompt(interactionId = "interaction-1", pinState?: PINInteractionState) {
   return new InteractionPrompt({
@@ -67,6 +65,7 @@ describe("InteractionModal", () => {
     });
 
     const input = await screen.findByLabelText("PIN");
+
     await waitFor(() => expect(input).toHaveFocus());
   });
 
@@ -87,30 +86,43 @@ describe("InteractionModal", () => {
       },
     });
 
-    expect(screen.getByRole("heading", { name: "Verify on the authenticator" })).toBeInTheDocument();
-    expect(screen.getByRole("dialog").querySelector(`[data-prompt-visual] .${iconClass}`)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Verify on the authenticator" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog").querySelector(`[data-prompt-visual] .${iconClass}`),
+    ).toBeInTheDocument();
   });
 
   it("submits the PIN prompt from Enter without rendering preview secrets", async () => {
     const user = userEvent.setup();
+
     render(InteractionModal, {
       props: { presentation: buildInteractionModalPresentation(pinPrompt()), onAnswer },
     });
 
     const input = await screen.findByLabelText("PIN");
-    expect(screen.getByRole("button", { name: "Preview JSON" })).toHaveAttribute("aria-expanded", "false");
+
+    expect(screen.getByRole("button", { name: "Preview JSON" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+
     const preview = screen.getByRole("region", { name: "Preview JSON", hidden: true });
+
     await waitFor(() => expect(preview).toHaveTextContent('"pinUvAuthToken": "[redacted]"'));
     expect(preview).not.toBeVisible();
 
     await user.type(input, "123456{Enter}");
 
     expect(onAnswer).toHaveBeenCalledTimes(1);
-    expect(onAnswer).toHaveBeenCalledWith(new InteractionAnswer({
-      interactionId: "interaction-1",
-      pin: "123456",
-      canceled: false,
-    }));
+    expect(onAnswer).toHaveBeenCalledWith(
+      new InteractionAnswer({
+        interactionId: "interaction-1",
+        pin: "123456",
+        canceled: false,
+      }),
+    );
     expect(screen.queryByText("secret-token")).not.toBeInTheDocument();
   });
 
@@ -120,6 +132,7 @@ describe("InteractionModal", () => {
     });
 
     const input = await screen.findByLabelText("PIN");
+
     expect(screen.getByRole("button", { name: "Send PIN" })).toBeDisabled();
     await fireEvent.submit(input.closest("form")!);
 
@@ -129,10 +142,15 @@ describe("InteractionModal", () => {
   it("shows the authenticator's remaining PIN attempts", async () => {
     render(InteractionModal, {
       props: {
-        presentation: buildInteractionModalPresentation(pinPrompt("interaction-1", new PINInteractionState({
-          retriesRemaining: 7,
-          powerCycleState: false,
-        }))),
+        presentation: buildInteractionModalPresentation(
+          pinPrompt(
+            "interaction-1",
+            new PINInteractionState({
+              retriesRemaining: 7,
+              powerCycleState: false,
+            }),
+          ),
+        ),
         onAnswer,
       },
     });
@@ -144,11 +162,16 @@ describe("InteractionModal", () => {
   it("shows the previous PIN failure and power-cycle guidance on retry", async () => {
     render(InteractionModal, {
       props: {
-        presentation: buildInteractionModalPresentation(pinPrompt("interaction-2", new PINInteractionState({
-          failure: failureForCode(Code.CodePINInvalid),
-          retriesRemaining: 6,
-          powerCycleState: true,
-        }))),
+        presentation: buildInteractionModalPresentation(
+          pinPrompt(
+            "interaction-2",
+            new PINInteractionState({
+              previousAttemptInvalid: true,
+              retriesRemaining: 6,
+              powerCycleState: true,
+            }),
+          ),
+        ),
         onAnswer,
       },
     });
@@ -156,7 +179,9 @@ describe("InteractionModal", () => {
     expect(screen.getByText("The PIN is incorrect.")).toBeInTheDocument();
     expect(screen.getByText("PIN attempts remaining: 6")).toBeInTheDocument();
     expect(screen.getByText("Power cycle required")).toBeInTheDocument();
-    expect(screen.getByText("Reconnect the authenticator before trying the PIN again.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Reconnect the authenticator before trying the PIN again."),
+    ).toBeInTheDocument();
   });
 
   it("keeps the dialog open and resets the PIN for the next prompt", async () => {
@@ -178,7 +203,9 @@ describe("InteractionModal", () => {
     });
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+
     const retryInput = screen.getByLabelText("PIN");
+
     expect(retryInput).toBeEnabled();
     expect(retryInput).toHaveValue("");
     await waitFor(() => expect(retryInput).toHaveFocus());
@@ -192,19 +219,23 @@ describe("InteractionModal", () => {
 
   it("cancels the prompt from Escape", async () => {
     const user = userEvent.setup();
+
     render(InteractionModal, {
       props: { presentation: buildInteractionModalPresentation(pinPrompt()), onAnswer },
     });
 
     const input = await screen.findByLabelText("PIN");
+
     await user.type(input, "123456");
     await user.keyboard("{Escape}");
 
     expect(onAnswer).toHaveBeenCalledTimes(1);
-    expect(onAnswer).toHaveBeenCalledWith(new InteractionAnswer({
-      interactionId: "interaction-1",
-      canceled: true,
-    }));
+    expect(onAnswer).toHaveBeenCalledWith(
+      new InteractionAnswer({
+        interactionId: "interaction-1",
+        canceled: true,
+      }),
+    );
   });
 
   it("does not carry a PIN into the next prompt after an external dismissal", async () => {

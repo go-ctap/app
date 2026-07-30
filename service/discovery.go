@@ -9,51 +9,36 @@ import (
 	"github.com/go-ctap/kit/transport"
 )
 
-func (s *Service) Discover(ctx context.Context, req DiscoverRequest) (DiscoverySnapshot, error) {
+func (s *Service) Discover(ctx context.Context, req DiscoverRequest) (ctapkit.InventorySnapshot, error) {
 	if err := s.ensureInventory(ctx, normalizedDiscoverMode(req.Mode)); err != nil {
-		return DiscoverySnapshot{}, err
+		return ctapkit.InventorySnapshot{}, err
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	return DiscoverySnapshot{Devices: s.devices}, nil
-}
-
-func (s *Service) RefreshDiscovery(ctx context.Context, req DiscoverRequest) error {
-	mode := normalizedDiscoverMode(req.Mode)
-	if req.Mode == "" {
-		s.mu.Lock()
-		if s.inventory != nil {
-			mode = s.inventoryMode
-		}
-		s.mu.Unlock()
-	}
-	if err := s.ensureInventory(ctx, mode); err != nil {
-		return err
-	}
-
-	s.mu.Lock()
-	inventory := s.inventory
-	s.mu.Unlock()
-
-	return inventory.Refresh(ctx)
+	return ctapkit.InventorySnapshot{Devices: s.devices}, nil
 }
 
 func (s *Service) ensureInventory(ctx context.Context, mode transport.Mode) error {
 	unlock, err := s.lockSelection(ctx)
+
 	if err != nil {
 		return err
 	}
+
 	defer unlock()
 
 	s.mu.Lock()
 	if s.closed {
 		s.mu.Unlock()
+
 		return closedServiceError(failure.PhaseDiscovery)
 	}
+
 	if s.inventory != nil {
 		currentMode := s.inventoryMode
+
 		s.mu.Unlock()
 		if currentMode != mode {
 			return failure.New(
@@ -61,23 +46,30 @@ func (s *Service) ensureInventory(ctx context.Context, mode transport.Mode) erro
 				failure.WithPhase(failure.PhaseDiscovery),
 			)
 		}
+
 		return nil
 	}
+
 	open := s.openInventory
+
 	s.mu.Unlock()
 
 	inventory, err := open(ctx, mode)
+
 	if err != nil {
 		return normalizeServicePhaseError(err, failure.PhaseDiscovery)
 	}
 
 	done := make(chan struct{})
+
 	s.mu.Lock()
 	if s.closed {
 		s.mu.Unlock()
 		_ = inventory.Close()
+
 		return closedServiceError(failure.PhaseDiscovery)
 	}
+
 	s.inventory = inventory
 	s.inventoryMode = mode
 	s.inventoryDone = done
@@ -104,11 +96,14 @@ func (s *Service) applyInventoryEvent(event ctapkit.InventoryEvent) {
 	s.mu.Lock()
 	if s.closed || s.inventory == nil {
 		s.mu.Unlock()
+
 		return
 	}
+
 	selected := s.selected
 	missing := selected != nil &&
 		!attachmentPresent(event.Snapshot.Devices, selected.device.Attachment.ID)
+
 	s.mu.Unlock()
 
 	if missing {
@@ -119,12 +114,13 @@ func (s *Service) applyInventoryEvent(event ctapkit.InventoryEvent) {
 	if missing && s.selected == selected {
 		s.selected = nil
 	}
+
 	s.devices = event.Snapshot.Devices
 	s.mu.Unlock()
 
 	s.emit(EventDiscoveryChanged, DiscoveryChangedEnvelope{
 		Trigger:  event.Trigger,
-		Snapshot: &event.Snapshot,
+		Snapshot: event.Snapshot,
 		Error:    event.Error,
 	})
 }
@@ -141,7 +137,9 @@ func attachmentPresent(devices []report.DeviceReport, id report.AttachmentID) bo
 
 func (s *Service) isClosed() bool {
 	s.mu.Lock()
+
 	closed := s.closed
+
 	s.mu.Unlock()
 
 	return closed

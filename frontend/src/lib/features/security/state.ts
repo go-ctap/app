@@ -13,21 +13,23 @@ import type {
   BioRenameRequest,
   BioSensorEnvelope,
   ConfigStatusEnvelope,
+  EnableEnterpriseAttestationRequest,
   EnableLongTouchForResetRequest,
   MinPINLengthRequest,
   ResetFactoryEnvelope,
   ResetFactoryRequest,
 } from "../../../../bindings/telesma/service";
-import { isUnsupportedFailure } from "../../failure.js";
+import { isUnsupportedFailure } from "$lib/failure";
 import { deviceFeatureLifecycles } from "$lib/feature-lifecycle";
 import {
-  idleMutation,
-  type EditableMutationLifecycle,
-  type MutationFailureReason,
-  type MutationIdleState,
-} from "$lib/mutation-lifecycle";
+  idleConfirmedOperation,
+  type ConfirmableMutation,
+  type ConfirmedOperationIdle,
+  type NonEditableConfirmedMutation,
+} from "$lib/confirmed-operation";
 
-export type SecurityResourcePhase = "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";
+export type SecurityResourcePhase =
+  "idle" | "loading" | "refreshing" | "ready" | "error" | "unsupported";
 
 /**
  * Resource state never replaces a real service response with a frontend-made
@@ -42,7 +44,9 @@ export type SecurityResourceState<TEnvelope> = {
 };
 
 export type SecurityStatusState = SecurityResourceState<ConfigStatusEnvelope>;
+
 export type SecurityBioSensorState = SecurityResourceState<BioSensorEnvelope>;
+
 export type SecurityBioListState = SecurityResourceState<BioListEnvelope>;
 
 export function emptySecurityResourceState<TEnvelope>(): SecurityResourceState<TEnvelope> {
@@ -63,18 +67,18 @@ export type SecurityPINPolicyDraft = {
 
 export type SecurityMutationValidationError =
   | "no-change"
-  | "min-pin-length-required"
   | "min-pin-length-invalid"
   | "min-pin-length-decrease"
   | "min-pin-length-too-large"
-  | "too-many-rp-ids"
-  | "friendly-name-too-long";
-
-export type SecurityMutationFailureReason = MutationFailureReason;
+  | "too-many-rp-ids";
 
 type AlwaysUVMutationBase = {
   kind: "alwaysUv";
   target: AlwaysUVTarget;
+};
+
+type EnterpriseAttestationMutationBase = {
+  kind: "enterpriseAttestation";
 };
 
 type PINPolicyMutationBase = {
@@ -88,7 +92,6 @@ type LongTouchMutationBase = {
 
 type BioEnrollMutationBase = {
   kind: "bioEnroll";
-  timeoutMilliseconds: number;
 };
 
 type BioRenameMutationBase = {
@@ -112,58 +115,45 @@ type ResetMutationBase = {
  * discarded as soon as the service call starts.
  */
 export type SecurityMutationState =
-  | MutationIdleState
-  | EditableMutationLifecycle<
-      AlwaysUVMutationBase,
-      AlwaysUVRequest,
-      AuthenticatorConfigEnvelope,
-      SecurityMutationValidationError
+  | { kind: "idle"; operation: ConfirmedOperationIdle }
+  | NonEditableConfirmedMutation<
+      EnterpriseAttestationMutationBase,
+      EnableEnterpriseAttestationRequest,
+      AuthenticatorConfigEnvelope
     >
-  | EditableMutationLifecycle<
+  | NonEditableConfirmedMutation<AlwaysUVMutationBase, AlwaysUVRequest, AuthenticatorConfigEnvelope>
+  | ConfirmableMutation<
       PINPolicyMutationBase,
       MinPINLengthRequest,
       AuthenticatorConfigEnvelope,
       SecurityMutationValidationError
     >
-  | EditableMutationLifecycle<
+  | NonEditableConfirmedMutation<
       LongTouchMutationBase,
       EnableLongTouchForResetRequest,
-      AuthenticatorConfigEnvelope,
-      SecurityMutationValidationError
+      AuthenticatorConfigEnvelope
     >
-  | EditableMutationLifecycle<
-      BioEnrollMutationBase,
-      BioEnrollRequest,
-      BioEnrollEnvelope,
-      SecurityMutationValidationError
-    >
-  | EditableMutationLifecycle<
-      BioRenameMutationBase,
-      BioRenameRequest,
-      BioMutationEnvelope,
-      SecurityMutationValidationError
-    >
-  | EditableMutationLifecycle<
-      BioRemoveMutationBase,
-      BioRemoveRequest,
-      BioMutationEnvelope,
-      SecurityMutationValidationError
-    >
-  | EditableMutationLifecycle<
-      ResetMutationBase,
-      ResetFactoryRequest,
-      ResetFactoryEnvelope,
-      SecurityMutationValidationError
-    >;
+  | NonEditableConfirmedMutation<BioEnrollMutationBase, BioEnrollRequest, BioEnrollEnvelope>
+  | NonEditableConfirmedMutation<BioRenameMutationBase, BioRenameRequest, BioMutationEnvelope>
+  | NonEditableConfirmedMutation<BioRemoveMutationBase, BioRemoveRequest, BioMutationEnvelope>
+  | NonEditableConfirmedMutation<ResetMutationBase, ResetFactoryRequest, ResetFactoryEnvelope>;
 
 export const securityStatus = writable<SecurityStatusState>(emptySecurityResourceState());
+
 export const securitySensor = writable<SecurityBioSensorState>(emptySecurityResourceState());
+
 export const securityEnrollments = writable<SecurityBioListState>(emptySecurityResourceState());
-export const securityMutation = writable<SecurityMutationState>(idleMutation());
+
+export const securityMutation = writable<SecurityMutationState>({
+  kind: "idle",
+  operation: idleConfirmedOperation(),
+});
 
 type ErrorBearingEnvelope = { error?: Failure | null };
 
-export function beginSecurityResourceLoad<TEnvelope>(store: Writable<SecurityResourceState<TEnvelope>>) {
+export function beginSecurityResourceLoad<TEnvelope>(
+  store: Writable<SecurityResourceState<TEnvelope>>,
+) {
   store.update((current) => ({
     ...current,
     phase: current.lastSuccessfulEnvelope ? "refreshing" : "loading",
@@ -208,31 +198,13 @@ export function failSecurityResourceLoadAtRuntime<TEnvelope>(
   }));
 }
 
-export function failSecurityResourceLoadWithContractError<TEnvelope>(
-  store: Writable<SecurityResourceState<TEnvelope>>,
-  envelope: TEnvelope,
-  error: Failure,
-) {
-  store.update((current) => ({
-    ...current,
-    phase: "error",
-    responseEnvelope: envelope,
-    runtimeError: error,
-  }));
-}
-
 export function resetSecurityDeviceState() {
   securityStatus.set(emptySecurityResourceState());
   securitySensor.set(emptySecurityResourceState());
   securityEnrollments.set(emptySecurityResourceState());
-  securityMutation.set(idleMutation());
-}
-
-export function resetSecurityStateForTest() {
-  resetSecurityDeviceState();
+  securityMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
 }
 
 deviceFeatureLifecycles.register("security", {
   resetForAuthenticatorChange: resetSecurityDeviceState,
-  resetForTest: resetSecurityStateForTest,
 });

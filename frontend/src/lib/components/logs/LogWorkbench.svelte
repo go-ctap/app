@@ -4,13 +4,13 @@
   import { get } from "svelte/store";
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { Eraser, Search, TriangleAlert } from "@lucide/svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
-  import { Button } from "$lib/components/ui/button/index.js";
-  import * as InputGroup from "$lib/components/ui/input-group/index.js";
-  import * as Resizable from "$lib/components/ui/resizable/index.js";
-  import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
-  import * as Select from "$lib/components/ui/select/index.js";
+  import * as Alert from "$lib/components/ui/alert";
+  import * as AlertDialog from "$lib/components/ui/alert-dialog";
+  import { Button } from "$lib/components/ui/button";
+  import * as InputGroup from "$lib/components/ui/input-group";
+  import * as Resizable from "$lib/components/ui/resizable";
+  import { ScrollArea } from "$lib/components/ui/scroll-area";
+  import * as Select from "$lib/components/ui/select";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import { clearLogJournal } from "$lib/logs-controller.js";
   import { logController, recordID } from "$lib/features/logs/state.svelte.js";
@@ -18,13 +18,15 @@
   import { LogOutcome } from "../../../../bindings/github.com/go-ctap/kit/model/index.js";
 
   import { m } from "../../../paraglide/messages.js";
-  import LogDetail from "./LogDetail.svelte";
-  import LogDetailNavigation from "./LogDetailNavigation.svelte";
-  import LogDetailSheet from "./LogDetailSheet.svelte";
-  import LogRecordRow from "./LogRecordRow.svelte";
+  import LogDetail from "$lib/components/logs/LogDetail.svelte";
+  import LogDetailNavigation from "$lib/components/logs/LogDetailNavigation.svelte";
+  import LogDetailSheet from "$lib/components/logs/LogDetailSheet.svelte";
+  import LogRecordRow from "$lib/components/logs/LogRecordRow.svelte";
 
   const DETAIL_SHEET_BREAKPOINT_PX = 62 * 16;
+
   const LOG_ROW_ESTIMATE_PX = 64;
+
   const LOG_ROW_OVERSCAN = 8;
 
   const outcomeOptions = [
@@ -35,28 +37,44 @@
   ];
 
   let clearOpen = $state(false);
+
   let detailOpen = $state(false);
+
   let keyboardNavigation = $state(false);
+
   let workbenchWidth = $state(0);
+
   let listViewport: HTMLElement | null = $state(null);
+
   let pointerX: number | null = null;
+
   let pointerY: number | null = null;
-  let filteredRecords = $derived(filterLogs(logController.records, logController.query, logController.filters));
-  let selectedRecord = $derived(
-    filteredRecords.find((record) => recordID(record) === logController.selectedId)
-      ?? filteredRecords.at(-1)
-      ?? null,
+
+  let filteredRecords = $derived(
+    filterLogs(logController.records, logController.query, logController.filters),
   );
+
+  let selectedRecord = $derived(
+    filteredRecords.find((record) => recordID(record) === logController.selectedId) ??
+      filteredRecords.at(-1) ??
+      null,
+  );
+
   let selectedId = $derived(selectedRecord ? recordID(selectedRecord) : null);
+
   let selectedRecordIndex = $derived.by(() => {
     const selected = selectedRecord;
+
     if (!selected) return -1;
+
     return filteredRecords.findIndex((record) => recordID(record) === recordID(selected));
   });
+
   let currentOutcomeLabel = $derived(
-    outcomeOptions.find((option) => option.value === logController.filters.outcome)?.label
-      ?? m.logs_all_outcomes(),
+    outcomeOptions.find((option) => option.value === logController.filters.outcome)?.label ??
+      m.logs_all_outcomes(),
   );
+
   let useDetailSheet = $derived(workbenchWidth > 0 && workbenchWidth <= DETAIL_SHEET_BREAKPOINT_PX);
 
   function getScrollElement() {
@@ -65,6 +83,7 @@
 
   function getItemKey(index: number) {
     const record = filteredRecords[index];
+
     return record ? recordID(record) : index;
   }
 
@@ -79,7 +98,9 @@
 
   const measureVirtualRow: Attachment<HTMLElement> = (element) => {
     const virtualizer = get(rowVirtualizer);
+
     virtualizer.measureElement(element);
+
     return () => virtualizer.measureElement(null);
   };
 
@@ -90,18 +111,11 @@
   $effect(() => {
     const newest = logController.records.at(-1);
     const viewport = listViewport;
+
     if (!newest || !viewport) return;
 
     void tick().then(() => get(rowVirtualizer).scrollToEnd({ behavior: "auto" }));
   });
-
-  function handleQuery(event: Event) {
-    logController.setQuery((event.currentTarget as HTMLInputElement).value);
-  }
-
-  function handleOutcome(value: string) {
-    logController.setFilters({ outcome: value as LogOutcome | "all" });
-  }
 
   function selectRecord(id: string) {
     logController.select(id);
@@ -114,49 +128,53 @@
 
   function selectRecordAt(index: number) {
     const record = filteredRecords[index];
+
     if (!record) return false;
 
     logController.select(recordID(record));
     get(rowVirtualizer).scrollToIndex(index, { align: "auto" });
+
     return true;
   }
 
   function isEditableTarget(target: EventTarget | null) {
-    return target instanceof Element
-      && Boolean(target.closest('input, textarea, select, [contenteditable="true"]'));
+    return (
+      target instanceof Element &&
+      Boolean(target.closest('input, textarea, select, [contenteditable="true"]'))
+    );
   }
 
   function handleWindowKeydown(event: KeyboardEvent) {
     if (
-      useDetailSheet
-      || !selectedRecord
-      || !event.altKey
-      || event.ctrlKey
-      || event.metaKey
-      || event.shiftKey
-      || isEditableTarget(event.target)
-      || !["ArrowUp", "ArrowDown"].includes(event.key)
+      useDetailSheet ||
+      !selectedRecord ||
+      !event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      isEditableTarget(event.target) ||
+      !["ArrowUp", "ArrowDown"].includes(event.key)
     ) {
       return;
     }
 
     keyboardNavigation = true;
+
     const offset = event.key === "ArrowUp" ? -1 : 1;
+
     if (selectRecordAt(selectedRecordIndex + offset)) event.preventDefault();
   }
 
   function handleWindowPointerMove(event: PointerEvent) {
-    const moved = pointerX === null
-      || pointerY === null
-      || event.clientX !== pointerX
-      || event.clientY !== pointerY;
+    const moved =
+      pointerX === null ||
+      pointerY === null ||
+      event.clientX !== pointerX ||
+      event.clientY !== pointerY;
+
     pointerX = event.clientX;
     pointerY = event.clientY;
     if (moved) keyboardNavigation = false;
-  }
-
-  function handleWindowPointerDown() {
-    keyboardNavigation = false;
   }
 
   async function clearLogs() {
@@ -170,14 +188,18 @@
 <svelte:window
   onkeydown={handleWindowKeydown}
   onpointermove={handleWindowPointerMove}
-  onpointerdown={handleWindowPointerDown}
+  onpointerdown={() => (keyboardNavigation = false)}
 />
 
 {#snippet logMaster()}
   <section class="log-master" aria-label={m.logs()}>
     {#if filteredRecords.length === 0}
       <div class="log-master-empty">
-        <EmptyState title={m.logs_no_match_title()} message={m.logs_no_match_message()} variant="compact" />
+        <EmptyState
+          title={m.logs_no_match_title()}
+          message={m.logs_no_match_message()}
+          variant="compact"
+        />
       </div>
     {:else}
       <div class="log-list-scroll-frame">
@@ -219,6 +241,7 @@
         onPrevious={() => selectRecordAt(selectedRecordIndex - 1)}
         onNext={() => selectRecordAt(selectedRecordIndex + 1)}
       />
+
       <LogDetail record={selectedRecord} />
     {/if}
   </section>
@@ -244,11 +267,17 @@
           placeholder={m.logs_search_placeholder()}
           aria-label={m.logs_search_placeholder()}
           autocomplete="off"
-          oninput={handleQuery}
+          oninput={(event) => logController.setQuery(event.currentTarget.value)}
         />
       </InputGroup.Root>
 
-      <Select.Root type="single" value={logController.filters.outcome} onValueChange={handleOutcome} items={outcomeOptions}>
+      <Select.Root
+        type="single"
+        value={logController.filters.outcome}
+        onValueChange={(value) =>
+          logController.setFilters({ outcome: value as LogOutcome | "all" })}
+        items={outcomeOptions}
+      >
         <Select.Trigger aria-label={m.logs_outcome()}>{currentOutcomeLabel}</Select.Trigger>
         <Select.Content side="bottom" align="end" sideOffset={6}>
           <Select.Group>
@@ -259,7 +288,12 @@
         </Select.Content>
       </Select.Root>
 
-      <Button type="button" variant="outline" disabled={logController.records.length === 0} onclick={() => clearOpen = true}>
+      <Button
+        type="button"
+        variant="outline"
+        disabled={logController.records.length === 0}
+        onclick={() => (clearOpen = true)}
+      >
         <Eraser data-icon="inline-start" aria-hidden="true" />
         {m.logs_clear()}
       </Button>
@@ -303,20 +337,23 @@
     canNext={selectedRecordIndex >= 0 && selectedRecordIndex < filteredRecords.length - 1}
     onPrevious={() => selectRecordAt(selectedRecordIndex - 1)}
     onNext={() => selectRecordAt(selectedRecordIndex + 1)}
-    onOpenChange={(open) => detailOpen = open}
+    onOpenChange={(open) => (detailOpen = open)}
   />
 {/if}
 
-<AlertDialog.Root open={clearOpen} onOpenChange={(open) => clearOpen = open}>
+<AlertDialog.Root open={clearOpen} onOpenChange={(open) => (clearOpen = open)}>
   <AlertDialog.Content>
     <AlertDialog.Header>
       <AlertDialog.Media><TriangleAlert aria-hidden="true" /></AlertDialog.Media>
       <AlertDialog.Title>{m.logs_clear_title()}</AlertDialog.Title>
       <AlertDialog.Description>{m.logs_clear_description()}</AlertDialog.Description>
     </AlertDialog.Header>
+
     <AlertDialog.Footer>
       <AlertDialog.Cancel>{m.cancel()}</AlertDialog.Cancel>
-      <AlertDialog.Action variant="destructive" onclick={clearLogs}>{m.logs_clear_confirm()}</AlertDialog.Action>
+      <AlertDialog.Action variant="destructive" onclick={clearLogs}
+        >{m.logs_clear_confirm()}</AlertDialog.Action
+      >
     </AlertDialog.Footer>
   </AlertDialog.Content>
 </AlertDialog.Root>

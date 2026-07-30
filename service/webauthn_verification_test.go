@@ -21,6 +21,7 @@ func TestVerifyMakeCredentialReturnsCompactFailure(t *testing.T) {
 	if verification.Status != appwebauthn.VerificationStatusFailed {
 		t.Fatalf("status = %q, want %q", verification.Status, appwebauthn.VerificationStatusFailed)
 	}
+
 	if len(verification.Issues) == 0 {
 		t.Fatal("expected compact verification issues")
 	}
@@ -40,6 +41,7 @@ func TestVerifyGetAssertionReturnsCompactFailure(t *testing.T) {
 	if verification.Status != appwebauthn.VerificationStatusFailed {
 		t.Fatalf("status = %q, want %q", verification.Status, appwebauthn.VerificationStatusFailed)
 	}
+
 	if len(verification.Issues) == 0 {
 		t.Fatal("expected compact verification issues")
 	}

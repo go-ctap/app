@@ -1,9 +1,9 @@
-import { localizeCtapAssessment, m } from "./overview-i18n.js";
+import { localizeCtapAssessment, m } from "$lib/overview-i18n.js";
 import type {
   OverviewConformanceAssessment,
   OverviewConformancePresentation,
   OverviewContext,
-} from "./overview-types.js";
+} from "$lib/overview-types.js";
 
 export function buildOverviewConformancePresentation(
   context: OverviewContext = {},
@@ -24,9 +24,11 @@ export function buildOverviewConformancePresentation(
       name: m.conformance_target_unresolved_name(),
       description: m.conformance_target_unresolved_description(),
       expectations: [],
-      evidence: [versions.length
-        ? m.conformance_evidence_present_values({ path: "versions", values: versions.join(", ") })
-        : m.conformance_evidence_present_empty({ path: "versions" })],
+      evidence: [
+        versions.length
+          ? m.conformance_evidence_present_values({ path: "versions", values: versions.join(", ") })
+          : m.conformance_evidence_present_empty({ path: "versions" }),
+      ],
       reason: m.conformance_target_unresolved_reason(),
       source: "versions",
       references: [],
@@ -37,13 +39,14 @@ export function buildOverviewConformancePresentation(
   const inconclusiveCount = conformance.inconclusive.length;
 
   return {
-    status: findingCount > 0
-      ? "findings"
-      : inconclusiveCount > 0
-        ? "inconclusive"
-        : conformance.target === null
-          ? "unresolved"
-          : "passed",
+    status:
+      findingCount > 0
+        ? "findings"
+        : inconclusiveCount > 0
+          ? "inconclusive"
+          : conformance.target === null
+            ? "unresolved"
+            : "passed",
     target: conformance.target,
     assessments,
     findingCount,

@@ -3,25 +3,22 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { Kind as OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model/operation";
 import { Code, type Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
-import type {
-  BioSensorEnvelope,
-  ConfigStatusEnvelope,
-} from "../../../../bindings/telesma/service";
+import type { BioSensorEnvelope, ConfigStatusEnvelope } from "../../../../bindings/telesma/service";
 
-import { failureForCode } from "../../test-failure";
+import { failureForCode } from "$lib/test-support/failure";
 
 import {
   beginSecurityResourceLoad,
   completeSecurityResourceLoad,
   failSecurityResourceLoadAtRuntime,
   failSecurityResourceLoadWithResponse,
-  resetSecurityStateForTest,
+  resetSecurityDeviceState,
   securitySensor,
   securityStatus,
-} from "./state";
+} from "$lib/features/security/state";
 
 describe("security state", () => {
-  beforeEach(() => resetSecurityStateForTest());
+  beforeEach(() => resetSecurityDeviceState());
 
   it("retains last-known-good status separately from a failed service response", () => {
     const successful = {

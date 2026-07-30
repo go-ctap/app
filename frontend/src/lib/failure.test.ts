@@ -8,15 +8,15 @@ import {
   Phase,
 } from "../../bindings/github.com/go-ctap/kit/model/failure";
 
-import { failureMessage, internalFailure, runtimeFailureFrom } from "./failure.js";
+import { failureMessage, internalFailure, runtimeFailureFrom } from "$lib/failure.js";
 
 describe("runtimeFailureFrom", () => {
   it("returns an existing generated Failure without rebuilding it", () => {
     const failure = new Failure({
-		code: Code.CodeAuthenticatorClosed,
-		category: Category.CategoryInvalidState,
+      code: Code.CodeAuthenticatorClosed,
+      category: Category.CategoryInvalidState,
       operation: "inspect",
-		phase: Phase.PhaseAuthenticator,
+      phase: Phase.PhaseAuthenticator,
     });
 
     expect(runtimeFailureFrom(failure)).toBe(failure);
@@ -69,24 +69,36 @@ describe("runtimeFailureFrom", () => {
   });
 
   it("localizes failures by code instead of rendering runtime prose", () => {
-    expect(failureMessage(new Failure({
-      code: Code.CodeOperationTimeout,
-      category: Category.CategoryTimeout,
-    }))).toBe("The operation timed out.");
+    expect(
+      failureMessage(
+        new Failure({
+          code: Code.CodeOperationTimeout,
+          category: Category.CategoryTimeout,
+        }),
+      ),
+    ).toBe("The operation timed out.");
 
-    expect(failureMessage(new Failure({
-      code: Code.CodeCTAPSpecViolation,
-      category: Category.CategoryTransportFailure,
-    }))).toBe("The authenticator returned data that violates the CTAP specification.");
+    expect(
+      failureMessage(
+        new Failure({
+          code: Code.CodeCTAPSpecViolation,
+          category: Category.CategoryTransportFailure,
+        }),
+      ),
+    ).toBe("The authenticator returned data that violates the CTAP specification.");
   });
 
   it("presents user-presence exhaustion as a terminal retry instruction", () => {
-    expect(failureMessage(new Failure({
-      code: Code.CodeUserPresenceRequired,
-      category: Category.CategoryInvalidState,
-    }))).toBe(
-      "Confirm presence on the authenticator, then retry the operation. "
-      + "For an NFC key, remove it and present it again before retrying.",
+    expect(
+      failureMessage(
+        new Failure({
+          code: Code.CodeUserPresenceRequired,
+          category: Category.CategoryInvalidState,
+        }),
+      ),
+    ).toBe(
+      "Confirm presence on the authenticator, then retry the operation. " +
+        "For an NFC key, remove it and present it again before retrying.",
     );
   });
 });

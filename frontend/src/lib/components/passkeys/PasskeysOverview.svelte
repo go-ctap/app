@@ -3,7 +3,7 @@
 
   import InventoryOverviewCard from "$lib/components/shared/InventoryOverviewCard.svelte";
   import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
-  import { Progress } from "$lib/components/ui/progress/index.js";
+  import { Progress } from "$lib/components/ui/progress";
   import type { PasskeysPresentation } from "$lib/passkeys-presentation";
 
   import { m } from "../../../paraglide/messages.js";
@@ -18,6 +18,7 @@
   let { presentation, verificationFlow, onReload, onVerificationFlowChange }: Props = $props();
 
   let support = $derived(presentation.report?.support ?? null);
+
   let inventorySummary = $derived(presentation.report?.summary ?? null);
 </script>
 
@@ -52,6 +53,7 @@
           <span id="passkeys-capacity-title">{m.remaining_resident_capacity()}</span>
           <strong>{presentation.capacity?.remainingUpperBound ?? m.capacity_not_reported()}</strong>
         </div>
+
         {#if presentation.capacity}
           <Progress
             value={presentation.capacity.percentage}
@@ -86,61 +88,61 @@
 </InventoryOverviewCard>
 
 <style>
-@layer blocks {
-  .passkeys-overview-grid {
-    display: grid;
-    grid-template-columns: minmax(15rem, 0.75fr) minmax(18rem, 1.25fr);
-    gap: var(--space-4);
-    align-items: center;
-    min-width: 0;
-  }
-
-  .passkeys-inventory-summary,
-  .passkeys-capacity,
-  .passkeys-capacity-heading {
-    display: grid;
-    align-content: center;
-    min-width: 0;
-  }
-
-  .passkeys-inventory-summary,
-  .passkeys-capacity {
-    gap: var(--space-2);
-  }
-
-  .passkeys-capacity-heading {
-    gap: var(--space-1);
-  }
-
-  .passkeys-capacity-heading span {
-    color: var(--muted-foreground);
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
-
-  .passkeys-inventory-summary strong,
-  .passkeys-capacity-heading strong {
-    font-size: 1rem;
-  }
-
-  .passkeys-inventory-summary small {
-    color: var(--muted-foreground);
-    font-size: 0.72rem;
-  }
-
-  .passkeys-capabilities {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2);
-    min-width: 0;
-  }
-
-  @container workspace (max-width: 51.25rem) {
+  @layer blocks {
     .passkeys-overview-grid {
-      grid-template-columns: minmax(0, 1fr);
+      display: grid;
+      grid-template-columns: minmax(15rem, 0.75fr) minmax(18rem, 1.25fr);
+      gap: var(--space-4);
+      align-items: center;
+      min-width: 0;
+    }
+
+    .passkeys-inventory-summary,
+    .passkeys-capacity,
+    .passkeys-capacity-heading {
+      display: grid;
+      align-content: center;
+      min-width: 0;
+    }
+
+    .passkeys-inventory-summary,
+    .passkeys-capacity {
+      gap: var(--space-2);
+    }
+
+    .passkeys-capacity-heading {
+      gap: var(--space-1);
+    }
+
+    .passkeys-capacity-heading span {
+      color: var(--muted-foreground);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .passkeys-inventory-summary strong,
+    .passkeys-capacity-heading strong {
+      font-size: 1rem;
+    }
+
+    .passkeys-inventory-summary small {
+      color: var(--muted-foreground);
+      font-size: 0.72rem;
+    }
+
+    .passkeys-capabilities {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-2);
+      min-width: 0;
+    }
+
+    @container workspace (max-width: 51.25rem) {
+      .passkeys-overview-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
   }
-}
 </style>

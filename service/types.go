@@ -38,22 +38,14 @@ type LogCursor struct {
 	Sequence uint64 `json:"sequence"`
 }
 
-const (
-	DiscoveryTriggerTopology = ctapkit.InventoryTriggerTopology
-	DiscoveryTriggerManual   = ctapkit.InventoryTriggerManual
-	DiscoveryTriggerIdentity = ctapkit.InventoryTriggerIdentity
-)
-
 type DiscoverRequest struct {
 	Mode transport.Mode `json:"mode,omitempty"`
 }
 
-type DiscoverySnapshot = ctapkit.InventorySnapshot
-
 type DiscoveryChangedEnvelope struct {
-	Trigger  ctapkit.InventoryTrigger `json:"trigger"`
-	Snapshot *DiscoverySnapshot       `json:"snapshot,omitempty"`
-	Error    *failure.Failure         `json:"error,omitempty"`
+	Trigger  ctapkit.InventoryTrigger  `json:"trigger"`
+	Snapshot ctapkit.InventorySnapshot `json:"snapshot"`
+	Error    *failure.Failure          `json:"error,omitempty"`
 }
 
 type SelectionRequest struct {
@@ -84,11 +76,6 @@ type InspectEnvelope struct {
 type CredentialsEnvelope struct {
 	OperationEnvelopeMeta
 	Result *credentials.InventoryReport `json:"result,omitempty"`
-}
-
-type CredentialStoreStateEnvelope struct {
-	OperationEnvelopeMeta
-	Result *credentials.StoreStateResult `json:"result,omitempty"`
 }
 
 type CredentialDeleteEnvelope struct {

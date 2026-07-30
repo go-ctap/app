@@ -1,10 +1,7 @@
 <script lang="ts">
-  import { Badge, type BadgeVariant } from "$lib/components/ui/badge/index.js";
-  import * as Card from "$lib/components/ui/card/index.js";
-  import type {
-    OverviewStandardPresentation,
-    OverviewStandardTone,
-  } from "$lib/overview-rules";
+  import { Badge, type BadgeVariant } from "$lib/components/ui/badge";
+  import * as Card from "$lib/components/ui/card";
+  import type { OverviewStandardPresentation, OverviewStandardTone } from "$lib/overview-rules";
 
   import { m } from "../../../paraglide/messages.js";
 
@@ -12,11 +9,13 @@
 
   function badgeVariant(tone: OverviewStandardTone): BadgeVariant {
     if (tone === "positive") return "default";
+
     if (tone === "warning") return "warning";
+
     if (tone === "neutral") return "secondary";
+
     return "outline";
   }
-
 </script>
 
 <Card.Root class="standard-capabilities-card">
@@ -41,7 +40,7 @@
 </Card.Root>
 
 <style>
-@layer blocks {
+  @layer blocks {
     :global(.standard-capabilities-card) {
       min-width: 0;
       padding-block-end: 0;
@@ -105,5 +104,5 @@
         grid-column: auto;
       }
     }
-}
+  }
 </style>

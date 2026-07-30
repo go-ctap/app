@@ -9,18 +9,19 @@ import type { ResetFactoryEnvelope } from "../../../../bindings/telesma/service"
 
 import type { SecurityMutationState } from "$lib/features/security/state";
 import { testHIDDevice } from "../../../test/device.js";
-import { failureForCode } from "$lib/test-failure";
+import { failureForCode } from "$lib/test-support/failure";
 import { setAppLocale } from "$lib/i18n";
 import { setAdvancedMode } from "$lib/preferences";
 
-import SecurityMutationDetails from "./SecurityMutationDetails.svelte";
+import SecurityMutationDetails from "$lib/components/security/SecurityMutationDetails.svelte";
 
-function erroredPreviewMutation(longTouchForReset = StateValue.StateSupported): SecurityMutationState {
-  const responseEnvelope = {
-    operationId: "reset-preview-error",
+function erroredExecutionMutation(
+  longTouchForReset = StateValue.StateSupported,
+): SecurityMutationState {
+  const previewEnvelope = {
+    operationId: "reset-preview",
     selectionId: "authenticator-1",
     kind: OperationKind.ResetFactory,
-    error: failureForCode(Code.CodeResetWindowExpired),
     result: {
       preview: {
         device: testHIDDevice(),
@@ -29,26 +30,35 @@ function erroredPreviewMutation(longTouchForReset = StateValue.StateSupported): 
           transportsForReset: ["usb"],
         },
         mode: PreviewMode.PreviewModeDryRun,
-        warnings: [{
-          severity: Severity.SeverityDestructive,
-          code: "reset.factory.destructive",
-          message: "backend fallback",
-        }],
+        warnings: [
+          {
+            severity: Severity.SeverityDestructive,
+            code: "reset.factory.destructive",
+            message: "backend fallback",
+          },
+        ],
       },
       result: null,
     },
   } as unknown as ResetFactoryEnvelope;
+  const responseEnvelope = {
+    operationId: "reset-error",
+    selectionId: "authenticator-1",
+    kind: OperationKind.ResetFactory,
+    error: failureForCode(Code.CodeResetWindowExpired),
+  } as unknown as ResetFactoryEnvelope;
 
   return {
     kind: "reset",
-    phase: "error",
-    failedPhase: "previewing",
-    previewRequest: { selectionId: "authenticator-1", dryRun: true },
-    previewEnvelope: null,
-    responseEnvelope,
-    runtimeError: null,
-    failureReason: "response-error",
-    validationError: null,
+    operation: {
+      phase: "error",
+      failedPhase: "executing",
+      previewEnvelope,
+      previewValue: previewEnvelope.result!.preview,
+      request: { selectionId: "authenticator-1", dryRun: false },
+      responseEnvelope,
+      runtimeError: null,
+    },
   };
 }
 
@@ -59,29 +69,36 @@ describe("SecurityMutationDetails", () => {
   });
   afterEach(() => cleanup());
 
-  it("keeps a typed preview and its localized warning visible when its envelope also has an error", () => {
+  it("keeps a successful preview visible after a separate execution error", () => {
     render(SecurityMutationDetails, {
-      props: { mutation: erroredPreviewMutation(), activeOperation: null },
+      props: { mutation: erroredExecutionMutation(), activeOperation: null },
     });
 
     expect(screen.getByText("The authenticator reset window has expired.")).toBeInTheDocument();
     expect(screen.getByText("usb")).toBeInTheDocument();
-    expect(screen.getByText("Factory reset permanently removes authenticator state and cannot be undone.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Factory reset permanently removes authenticator state and cannot be undone.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByText("reset.factory.destructive")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Preview JSON" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Preview JSON" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
   });
 
-  it("localizes an unknown long-touch reset hint", () => {
+  it("keeps authenticator configuration details out of the reset preview", () => {
     setAppLocale("ru");
 
     render(SecurityMutationDetails, {
       props: {
-        mutation: erroredPreviewMutation(StateValue.StateUnknown),
+        mutation: erroredExecutionMutation(StateValue.StateUnknown),
         activeOperation: null,
       },
     });
 
-    expect(screen.getByText("Неизвестно")).toBeInTheDocument();
-    expect(screen.queryByText("unknown")).not.toBeInTheDocument();
+    expect(screen.queryByText("Долгое касание для сброса")).not.toBeInTheDocument();
+    expect(screen.getByText("usb")).toBeInTheDocument();
   });
 });

@@ -17,15 +17,16 @@ import {
 import type { SecurityMutationState } from "$lib/features/security/state";
 import type { ActiveOperation } from "$lib/features/workbench/state";
 import { setAppLocale } from "$lib/i18n";
-import { failureForCode } from "$lib/test-failure";
+import { failureForCode } from "$lib/test-support/failure";
 
-import SecurityMutationDialog from "./SecurityMutationDialog.svelte";
+import SecurityMutationDialog from "$lib/components/security/SecurityMutationDialog.svelte";
 
 const request = new AlwaysUVRequest({
   selectionId: "authenticator-1",
   target: AlwaysUVTarget.AlwaysUVTargetEnable,
   dryRun: true,
 });
+
 const previewEnvelope = new AuthenticatorConfigEnvelope({
   operationId: "preview-1",
   selectionId: "authenticator-1",
@@ -33,40 +34,58 @@ const previewEnvelope = new AuthenticatorConfigEnvelope({
 });
 
 function errorMutation(failedPhase: "previewing" | "executing", code: Code): SecurityMutationState {
+  const responseEnvelope = new AuthenticatorConfigEnvelope({
+    operationId: "response-1",
+    selectionId: "authenticator-1",
+    kind: OperationKind.SetAlwaysUV,
+    error: failureForCode(code),
+  });
+
+  if (failedPhase === "previewing") {
+    return {
+      kind: "alwaysUv",
+      target: AlwaysUVTarget.AlwaysUVTargetEnable,
+      operation: {
+        phase: "error",
+        failedPhase,
+        responseEnvelope,
+        runtimeError: null,
+      },
+    };
+  }
+
   return {
     kind: "alwaysUv",
     target: AlwaysUVTarget.AlwaysUVTargetEnable,
-    phase: "error",
-    failedPhase,
-    previewRequest: request,
-    previewEnvelope: failedPhase === "executing" ? previewEnvelope : null,
-    responseEnvelope: new AuthenticatorConfigEnvelope({
-      operationId: "response-1",
-      selectionId: "authenticator-1",
-      kind: OperationKind.SetAlwaysUV,
-      error: failureForCode(code),
-    }),
-    runtimeError: null,
-    failureReason: "response-error",
-    validationError: null,
+    operation: {
+      phase: "error",
+      failedPhase,
+      previewEnvelope,
+      previewValue: previewEnvelope.result?.preview,
+      request: new AlwaysUVRequest({ ...request, dryRun: false }),
+      responseEnvelope,
+      runtimeError: null,
+    },
   };
 }
 
 function executingBioEnrollment(): SecurityMutationState {
   return {
     kind: "bioEnroll",
-    timeoutMilliseconds: 60_000,
-    phase: "executing",
-    previewRequest: new BioEnrollRequest({
-      selectionId: "authenticator-1",
-      timeoutMilliseconds: 60_000,
-      dryRun: true,
-    }),
-    previewEnvelope: new BioEnrollEnvelope({
-      operationId: "bio-preview-1",
-      selectionId: "authenticator-1",
-      kind: OperationKind.BioEnroll,
-    }),
+    operation: {
+      phase: "executing",
+      previewEnvelope: new BioEnrollEnvelope({
+        operationId: "bio-preview-1",
+        selectionId: "authenticator-1",
+        kind: OperationKind.BioEnroll,
+      }),
+      previewValue: undefined,
+      request: new BioEnrollRequest({
+        selectionId: "authenticator-1",
+        timeoutMilliseconds: 60_000,
+        dryRun: false,
+      }),
+    },
   };
 }
 
@@ -80,6 +99,7 @@ function renderDialog(
     onClose: vi.fn(),
     onCancelOperation: vi.fn(async () => {}),
   };
+
   render(SecurityMutationDialog, {
     props: {
       mutation,
@@ -88,6 +108,7 @@ function renderDialog(
       ...callbacks,
     },
   });
+
   return callbacks;
 }
 
@@ -99,28 +120,31 @@ describe("SecurityMutationDialog", () => {
     const callbacks = renderDialog(errorMutation("previewing", Code.CodeTransportFailure));
 
     expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Waiting for authenticator response." })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Waiting for authenticator response." }),
+    ).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Update Always UV" }));
 
     expect(callbacks.onPreview).toHaveBeenCalledOnce();
     expect(callbacks.onConfirm).not.toHaveBeenCalled();
   });
 
-  it.each([
-    Code.CodePINInvalid,
-    Code.CodePINPolicyViolation,
-    Code.CodeTransportFailure,
-  ])("keeps the confirmation action after execution error %s", async (code) => {
-    const callbacks = renderDialog(errorMutation("executing", code));
+  it.each([Code.CodePINInvalid, Code.CodePINPolicyViolation, Code.CodeTransportFailure])(
+    "keeps the confirmation action after execution error %s",
+    async (code) => {
+      const callbacks = renderDialog(errorMutation("executing", code));
 
-    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Waiting for authenticator response." })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Update Always UV" }));
+      expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Waiting for authenticator response." }),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+      await userEvent.click(screen.getByRole("button", { name: "Update Always UV" }));
 
-    expect(callbacks.onConfirm).toHaveBeenCalledOnce();
-    expect(callbacks.onPreview).not.toHaveBeenCalled();
-  });
+      expect(callbacks.onConfirm).toHaveBeenCalledOnce();
+      expect(callbacks.onPreview).not.toHaveBeenCalled();
+    },
+  );
 
   it("keeps the destructive action after any execution failure", async () => {
     const request = new ResetFactoryRequest({ selectionId: "authenticator-1", dryRun: true });
@@ -131,19 +155,20 @@ describe("SecurityMutationDialog", () => {
     });
     const callbacks = renderDialog({
       kind: "reset",
-      phase: "error",
-      failedPhase: "executing",
-      previewRequest: request,
-      previewEnvelope,
-      responseEnvelope: new ResetFactoryEnvelope({
-        operationId: "reset-response-1",
-        selectionId: "authenticator-1",
-        kind: OperationKind.ResetFactory,
-        error: failureForCode(Code.CodeTransportFailure),
-      }),
-      runtimeError: null,
-      failureReason: "response-error",
-      validationError: null,
+      operation: {
+        phase: "error",
+        failedPhase: "executing",
+        previewEnvelope,
+        previewValue: previewEnvelope.result?.preview,
+        request: new ResetFactoryRequest({ ...request, dryRun: false }),
+        responseEnvelope: new ResetFactoryEnvelope({
+          operationId: "reset-response-1",
+          selectionId: "authenticator-1",
+          kind: OperationKind.ResetFactory,
+          error: failureForCode(Code.CodeTransportFailure),
+        }),
+        runtimeError: null,
+      },
     });
 
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
@@ -157,8 +182,7 @@ describe("SecurityMutationDialog", () => {
     renderDialog({
       kind: "alwaysUv",
       target: AlwaysUVTarget.AlwaysUVTargetEnable,
-      phase: "previewing",
-      previewRequest: request,
+      operation: { phase: "previewing" },
     });
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -168,9 +192,12 @@ describe("SecurityMutationDialog", () => {
     renderDialog({
       kind: "alwaysUv",
       target: AlwaysUVTarget.AlwaysUVTargetEnable,
-      phase: "executing",
-      previewRequest: request,
-      previewEnvelope,
+      operation: {
+        phase: "executing",
+        previewEnvelope,
+        previewValue: previewEnvelope.result?.preview,
+        request: new AlwaysUVRequest({ ...request, dryRun: false }),
+      },
     });
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -185,6 +212,7 @@ describe("SecurityMutationDialog", () => {
     expect(callbacks.onClose).not.toHaveBeenCalled();
 
     const cancelButton = screen.getByRole("button", { name: "Cancel enrollment" });
+
     expect(cancelButton.querySelector("svg")).not.toBeInTheDocument();
     await user.click(cancelButton);
 
@@ -192,14 +220,15 @@ describe("SecurityMutationDialog", () => {
   });
 
   it("marks biometric enrollment with concise capture guidance", () => {
-    renderDialog(
-      executingBioEnrollment(),
-      { completed: 1, total: 4, sampleStatus: "good" },
-    );
+    renderDialog(executingBioEnrollment(), { completed: 1, total: 4, sampleStatus: "good" });
 
     expect(screen.getByRole("heading", { name: "Enroll biometric" })).toBeInTheDocument();
-    expect(screen.getByText("Complete each capture requested by the authenticator.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Complete each capture requested by the authenticator."),
+    ).toBeInTheDocument();
     expect(screen.getByText("Latest sample: Good fingerprint sample")).toBeInTheDocument();
-    expect(screen.getByRole("dialog").querySelector("[data-prompt-visual] .lucide-fingerprint-pattern")).toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog").querySelector("[data-prompt-visual] .lucide-fingerprint-pattern"),
+    ).toBeInTheDocument();
   });
 });

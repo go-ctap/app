@@ -4,12 +4,14 @@ import { AttestationStatementFormatIdentifier } from "../../bindings/github.com/
 import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/credential";
 import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
 import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
-import { Assessment, type Result as InspectResult } from "../../bindings/github.com/go-ctap/kit/model/inspect";
+import {
+  Assessment,
+  type Result as InspectResult,
+} from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import {
   AuthenticatorConfigOperation,
   BioModality,
   BioMutationOperation,
-  PINMutationOperation,
   StateValue,
   type BioSensorReport,
 } from "../../bindings/github.com/go-ctap/kit/model/config";
@@ -30,10 +32,10 @@ import {
   type CredentialDeleteEnvelope,
   type CredentialUpdateEnvelope,
   type InspectEnvelope,
+  type LargeBlobDecodeEnvelope,
   type LargeBlobListEnvelope,
   type LargeBlobMutationEnvelope,
   type LargeBlobReadEnvelope,
-  type PINEnvelope,
   type ResetFactoryEnvelope,
 } from "../../bindings/telesma/service";
 import {
@@ -46,7 +48,7 @@ import {
 } from "../../bindings/github.com/go-ctap/kit/model/webauthn";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
-import { failureForCode } from "./test-failure";
+import { failureForCode } from "$lib/test-support/failure";
 
 import {
   authenticatorConfigPreview,
@@ -64,17 +66,16 @@ import {
   credentialUpdateResult,
   getAssertionResult,
   inspectResult,
+  largeBlobDecodeResult,
   largeBlobListReport,
   largeBlobMutationPreview,
   largeBlobMutationResult,
   largeBlobReadReport,
   makeCredentialPreview,
   makeCredentialResult,
-  pinMutationPreview,
-  pinMutationResult,
   resetFactoryPreview,
   resetFactoryResult,
-} from "./ctapkit-results";
+} from "$lib/ctapkit-results";
 
 const device = new DeviceReport({
   attachment: {
@@ -85,6 +86,13 @@ const device = new DeviceReport({
 });
 
 describe("ctapkit result extractors", () => {
+  it("extracts a local large blob decode result", () => {
+    const result = { mode: "json", value: { hello: true } };
+
+    expect(largeBlobDecodeResult({ result } as LargeBlobDecodeEnvelope)).toBe(result);
+    expect(largeBlobDecodeResult({ error: failureForCode(Code.CodeInternalError) })).toBeNull();
+  });
+
   it("extracts the direct inspect result from an operation envelope", () => {
     const result: InspectResult = {
       device,
@@ -109,7 +117,10 @@ describe("ctapkit result extractors", () => {
       modality: BioModality.BioModalityFingerprint,
     };
 
-    const envelope = { kind: OperationKind.BioSensorInfo, result: report } as unknown as BioSensorEnvelope;
+    const envelope = {
+      kind: OperationKind.BioSensorInfo,
+      result: report,
+    } as unknown as BioSensorEnvelope;
 
     expect(bioSensorReport(envelope)).toBe(report);
   });
@@ -136,24 +147,23 @@ describe("ctapkit result extractors", () => {
     expect(configStatusReport(status)).toBe(status.result);
     expect(bioListReport(list)).toBe(list.result);
 
-    status.error = failureForCode(Code.CodeInternalError);
-    list.error = failureForCode(Code.CodeInternalError);
-    expect(configStatusReport(status)).toBeNull();
-    expect(bioListReport(list)).toBeNull();
+    expect(
+      configStatusReport({
+        kind: OperationKind.ConfigStatus,
+        error: failureForCode(Code.CodeInternalError),
+      } as ConfigStatusEnvelope),
+    ).toBeNull();
+    expect(
+      bioListReport({
+        kind: OperationKind.BioList,
+        error: failureForCode(Code.CodeInternalError),
+      } as BioListEnvelope),
+    ).toBeNull();
   });
 
-  it("uses generated operation and mode fields to recognize meaningful security previews", () => {
-    const pin = {
-      kind: OperationKind.ChangePIN,
-      error: failureForCode(Code.CodeInternalError),
-      result: {
-        preview: { operation: PINMutationOperation.PINMutationChange },
-        result: null,
-      },
-    } as unknown as PINEnvelope;
+  it("extracts generated security previews", () => {
     const authenticatorConfig = {
       kind: OperationKind.SetAlwaysUV,
-      error: failureForCode(Code.CodeInternalError),
       result: {
         preview: { operation: AuthenticatorConfigOperation.AuthenticatorConfigAlwaysUV },
         result: null,
@@ -161,7 +171,6 @@ describe("ctapkit result extractors", () => {
     } as unknown as AuthenticatorConfigEnvelope;
     const enroll = {
       kind: OperationKind.BioEnroll,
-      error: failureForCode(Code.CodeInternalError),
       result: {
         preview: { mode: PreviewMode.PreviewModeDryRun },
         result: null,
@@ -169,7 +178,6 @@ describe("ctapkit result extractors", () => {
     } as unknown as BioEnrollEnvelope;
     const bioMutation = {
       kind: OperationKind.BioRename,
-      error: failureForCode(Code.CodeInternalError),
       result: {
         preview: { operation: BioMutationOperation.BioMutationRename },
         result: null,
@@ -177,40 +185,21 @@ describe("ctapkit result extractors", () => {
     } as unknown as BioMutationEnvelope;
     const reset = {
       kind: OperationKind.ResetFactory,
-      error: failureForCode(Code.CodeInternalError),
       result: {
         preview: { mode: PreviewMode.PreviewModeDryRun },
         result: null,
       },
     } as unknown as ResetFactoryEnvelope;
 
-    expect(pinMutationPreview(pin)).toBe(pin.result!.preview);
-    expect(authenticatorConfigPreview(authenticatorConfig)).toBe(authenticatorConfig.result!.preview);
+    expect(authenticatorConfigPreview(authenticatorConfig)).toBe(
+      authenticatorConfig.result!.preview,
+    );
     expect(bioEnrollPreview(enroll)).toBe(enroll.result!.preview);
     expect(bioMutationPreview(bioMutation)).toBe(bioMutation.result!.preview);
     expect(resetFactoryPreview(reset)).toBe(reset.result!.preview);
-
-    pin.result!.preview.operation = PINMutationOperation.$zero;
-    authenticatorConfig.result!.preview.operation = AuthenticatorConfigOperation.$zero;
-    enroll.result!.preview.mode = PreviewMode.$zero;
-    bioMutation.result!.preview.operation = BioMutationOperation.$zero;
-    reset.result!.preview.mode = PreviewMode.$zero;
-
-    expect(pinMutationPreview(pin)).toBeNull();
-    expect(authenticatorConfigPreview(authenticatorConfig)).toBeNull();
-    expect(bioEnrollPreview(enroll)).toBeNull();
-    expect(bioMutationPreview(bioMutation)).toBeNull();
-    expect(resetFactoryPreview(reset)).toBeNull();
   });
 
-  it("keeps partial biometric enrollment progress on error but rejects other errored results", () => {
-    const pin = {
-      kind: OperationKind.SetPIN,
-      result: {
-        preview: { operation: PINMutationOperation.PINMutationSet },
-        result: { operation: PINMutationOperation.PINMutationSet, attachmentId: "dev-1" },
-      },
-    } as unknown as PINEnvelope;
+  it("extracts generated security mutation results", () => {
     const authenticatorConfig = {
       kind: OperationKind.SetMinPINLength,
       result: {
@@ -252,23 +241,10 @@ describe("ctapkit result extractors", () => {
       },
     } as unknown as ResetFactoryEnvelope;
 
-    expect(pinMutationResult(pin)).toBe(pin.result!.result);
     expect(authenticatorConfigResult(authenticatorConfig)).toBe(authenticatorConfig.result!.result);
     expect(bioEnrollResult(enroll)).toBe(enroll.result!.result);
     expect(bioMutationResult(bioMutation)).toBe(bioMutation.result!.result);
     expect(resetFactoryResult(reset)).toBe(reset.result!.result);
-
-    pin.error = failureForCode(Code.CodeInternalError);
-    authenticatorConfig.error = failureForCode(Code.CodeInternalError);
-    enroll.error = failureForCode(Code.CodeBioInteractionTimeout);
-    bioMutation.error = failureForCode(Code.CodeInternalError);
-    reset.error = failureForCode(Code.CodeResetTouchTimeout);
-
-    expect(pinMutationResult(pin)).toBeNull();
-    expect(authenticatorConfigResult(authenticatorConfig)).toBeNull();
-    expect(bioEnrollResult(enroll)?.remainingSamples).toBe(2);
-    expect(bioMutationResult(bioMutation)).toBeNull();
-    expect(resetFactoryResult(reset)).toBeNull();
   });
 
   it("extracts typed large blob list and read reports only from successful envelopes", () => {
@@ -277,19 +253,23 @@ describe("ctapkit result extractors", () => {
       result: {
         device,
         support: { largeBlobs: true, largeBlobKeyExtension: true },
-        array: { read: true, blobCount: 1, matchedBlobCount: 1, unmatchedBlobCount: 0 },
-        credentials: [],
+        array: {
+          read: true,
+          blobCount: 1,
+          matchedBlobCount: 1,
+          orphanedBlobCount: 0,
+          nonconformingBlobCount: 0,
+          corruptBlobCount: 0,
+        },
+        entries: [],
       },
     } as unknown as LargeBlobListEnvelope;
     const read = {
       kind: OperationKind.ReadLargeBlob,
       result: {
         device,
-        support: { largeBlobs: true, largeBlobKeyExtension: true },
         target: { credentialIDHex: "cafe", rp: { id: "example.test" }, user: {} },
-        largeBlobKeyState: "available",
-        array: { read: true, blobCount: 1, blobPresent: true, blobState: "present" },
-        blobPresent: true,
+        state: "present",
         rawByteCount: 0,
       },
     } as unknown as LargeBlobReadEnvelope;
@@ -297,18 +277,25 @@ describe("ctapkit result extractors", () => {
     expect(largeBlobListReport(list)).toBe(list.result);
     expect(largeBlobReadReport(read)).toBe(read.result);
 
-    list.error = failureForCode(Code.CodeInternalError);
-    read.error = failureForCode(Code.CodeInternalError);
-    expect(largeBlobListReport(list)).toBeNull();
-    expect(largeBlobReadReport(read)).toBeNull();
+    expect(
+      largeBlobListReport({
+        kind: OperationKind.ListLargeBlobs,
+        error: failureForCode(Code.CodeInternalError),
+      } as LargeBlobListEnvelope),
+    ).toBeNull();
+    expect(
+      largeBlobReadReport({
+        kind: OperationKind.ReadLargeBlob,
+        error: failureForCode(Code.CodeInternalError),
+      } as LargeBlobReadEnvelope),
+    ).toBeNull();
   });
 
-  it("preserves a meaningful mutation preview on error but rejects the generated zero preview", () => {
+  it("extracts a large blob preview", () => {
     const capacity = {
       operationId: "op-capacity",
       selectionId: "authenticator-1",
       kind: OperationKind.WriteLargeBlob,
-      error: failureForCode(Code.CodeLargeBlobArrayTooLarge),
       result: {
         preview: {
           operation: MutationOperation.MutationCreate,
@@ -324,22 +311,22 @@ describe("ctapkit result extractors", () => {
     expect(largeBlobMutationPreview(capacity)?.serializedLargeBlobArraySizeAfter).toBe(2049);
     expect(largeBlobMutationPreview(capacity)?.serializedLargeBlobArrayLimit).toBe(0);
     expect(largeBlobMutationResult(capacity)).toBeNull();
-    capacity.result!.preview.operation = MutationOperation.$zero;
-    expect(largeBlobMutationPreview(capacity)).toBeNull();
   });
 
-  it("extracts a completed large blob result only when the envelope itself succeeded", () => {
+  it("extracts a completed large blob result", () => {
     const envelope = {
       kind: OperationKind.DeleteLargeBlob,
       result: {
         preview: { operation: MutationOperation.MutationDelete },
-        result: { operation: MutationOperation.MutationDelete, credentialIDHex: "cafe", noBlob: false },
+        result: {
+          operation: MutationOperation.MutationDelete,
+          credentialIDHex: "cafe",
+          noBlob: false,
+        },
       },
     } as LargeBlobMutationEnvelope;
 
     expect(largeBlobMutationResult(envelope)?.credentialIDHex).toBe("cafe");
-    envelope.error = failureForCode(Code.CodeTransportFailure);
-    expect(largeBlobMutationResult(envelope)).toBeNull();
   });
 
   it("extracts credential mutation previews and completed results without generic traversal", () => {
@@ -381,7 +368,9 @@ describe("ctapkit result extractors", () => {
       input: new MakeCredentialInput({
         rp: { id: "example.com", name: "Example" },
         user: { id: "AQ==", name: "alice", displayName: "Alice" },
-        pubKeyCredParams: [{ type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 }],
+        pubKeyCredParams: [
+          { type: PublicKeyCredentialType.PublicKeyCredentialTypePublicKey, alg: -7 },
+        ],
       }),
       warnings: [],
     });
@@ -408,11 +397,6 @@ describe("ctapkit result extractors", () => {
     expect(makeCredentialPreview(envelope)).toBe(preview);
     expect(makeCredentialResult(envelope)).toBe(result);
 
-    envelope.error = failureForCode(Code.CodeCredentialCreationDenied);
-    expect(makeCredentialPreview(envelope)).toBeNull();
-    expect(makeCredentialResult(envelope)).toBeNull();
-
-    delete envelope.error;
     envelope.result!.result = null;
     expect(makeCredentialPreview(envelope)).toBe(preview);
     expect(makeCredentialResult(envelope)).toBeNull();
@@ -433,8 +417,6 @@ describe("ctapkit result extractors", () => {
 
     expect(getAssertionResult(envelope)).toBe(result);
 
-    envelope.error = failureForCode(Code.CodeAssertionDenied);
-    expect(getAssertionResult(envelope)).toBeNull();
     expect(getAssertionResult(null)).toBeNull();
   });
 });

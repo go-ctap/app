@@ -1,12 +1,8 @@
-import {
-  Category,
-  Code,
-  Failure,
-} from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { Category, Code, Failure } from "../../../bindings/github.com/go-ctap/kit/model/failure";
 
 const TEST_CATEGORY_BY_CODE: Partial<Record<Code, Category>> = {
-	[Code.CodeAssertionDenied]: Category.CategoryInvalidState,
-	[Code.CodeAuthenticatorClosed]: Category.CategoryInvalidState,
+  [Code.CodeAssertionDenied]: Category.CategoryInvalidState,
+  [Code.CodeAuthenticatorClosed]: Category.CategoryInvalidState,
   [Code.CodeAuthenticatorBusy]: Category.CategoryBusy,
   [Code.CodeBioInteractionTimeout]: Category.CategoryTimeout,
   [Code.CodeCredentialCreationDenied]: Category.CategoryInvalidState,
@@ -14,7 +10,7 @@ const TEST_CATEGORY_BY_CODE: Partial<Record<Code, Category>> = {
   [Code.CodeDeviceNotFound]: Category.CategoryInvalidState,
   [Code.CodeInternalError]: Category.CategoryInternal,
   [Code.CodeLargeBlobArrayTooLarge]: Category.CategoryInvalidState,
-  [Code.CodeLargeBlobMissing]: Category.CategoryInvalidState,
+  [Code.CodeLargeBlobKeyInvalid]: Category.CategoryInvalidState,
   [Code.CodeLargeBlobUTF8Invalid]: Category.CategoryInvalidState,
   [Code.CodeMDSFetchFailed]: Category.CategoryTransportFailure,
   [Code.CodeOperationCanceled]: Category.CategoryCanceled,
@@ -31,6 +27,8 @@ const TEST_CATEGORY_BY_CODE: Partial<Record<Code, Category>> = {
 
 export function failureForCode(code: Code): Failure {
   const category = TEST_CATEGORY_BY_CODE[code];
+
   if (!category) throw new Error(`missing failure fixture category for ${code}`);
+
   return new Failure({ code, category });
 }

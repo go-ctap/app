@@ -1,7 +1,7 @@
-import Root from "./progress.svelte";
+import Root from "$lib/components/ui/progress/progress.svelte";
 
 export {
-	Root,
-	//
-	Root as Progress,
+  Root,
+  //
+  Root as Progress,
 };

@@ -1,6 +1,6 @@
 import { readonly } from "svelte/store";
 
-import * as state from "./state.js";
+import * as state from "$lib/features/lab/state.js";
 
 export const labState = readonly(state.labState);
 
@@ -15,7 +15,7 @@ export type {
   LabState,
   LabTriState,
   MakeCredentialDraft,
-} from "./state.js";
+} from "$lib/features/lab/state.js";
 
 export {
   cancelLabHandoff,
@@ -41,4 +41,4 @@ export {
   retryLabGetAssertionVerification,
   retryLabMakeCredentialAttestationTrust,
   retryLabMakeCredentialVerification,
-} from "../../lab-controller.js";
+} from "$lib/lab-controller.js";

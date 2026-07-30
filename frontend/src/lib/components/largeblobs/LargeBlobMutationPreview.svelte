@@ -5,8 +5,8 @@
   } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
 
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
-  import * as Alert from "$lib/components/ui/alert/index.js";
-  import { Badge } from "$lib/components/ui/badge/index.js";
+  import * as Alert from "$lib/components/ui/alert";
+  import { Badge } from "$lib/components/ui/badge";
   import { warningMessage } from "$lib/warning-message";
 
   import { m } from "../../../paraglide/messages.js";
@@ -18,10 +18,12 @@
   let { preview }: Props = $props();
 
   let isCleanup = $derived(preview.operation === MutationOperation.MutationGC);
+
   let hasTarget = $derived(!isCleanup && Boolean(preview.target.credentialIDHex));
+
   let hasLimit = $derived(
-    preview.serializedLargeBlobArrayLimit !== null
-      && preview.serializedLargeBlobArrayLimit !== undefined,
+    preview.serializedLargeBlobArrayLimit !== null &&
+      preview.serializedLargeBlobArrayLimit !== undefined,
   );
 
   function shown(value: string | undefined) {
@@ -51,11 +53,19 @@
     {#if isCleanup || preview.matchedBlobCount !== undefined}
       <Badge variant="outline">{m.matched_count({ count: preview.matchedBlobCount ?? 0 })}</Badge>
     {/if}
-    {#if isCleanup || preview.unmatchedBlobCount !== undefined}
-      <Badge variant={(preview.unmatchedBlobCount ?? 0) > 0 ? "destructive" : "outline"}>
-        {m.unmatched_count({ count: preview.unmatchedBlobCount ?? 0 })}
+
+    {#if isCleanup || preview.orphanedBlobCount !== undefined}
+      <Badge variant="outline">
+        {m.large_blob_orphaned_count({ count: preview.orphanedBlobCount ?? 0 })}
       </Badge>
     {/if}
+
+    {#if isCleanup || preview.nonconformingBlobCount !== undefined}
+      <Badge variant={(preview.nonconformingBlobCount ?? 0) > 0 ? "destructive" : "outline"}>
+        {m.large_blob_nonconforming_count({ count: preview.nonconformingBlobCount ?? 0 })}
+      </Badge>
+    {/if}
+
     {#if preview.deletedBlobCount !== undefined}
       <Badge variant="outline">{m.deleted_blobs_count({ count: preview.deletedBlobCount })}</Badge>
     {/if}
@@ -67,6 +77,7 @@
         <dt>{m.relying_parties()}</dt>
         <dd>{shown(preview.target.rp.name)} <code>{preview.target.rp.id}</code></dd>
       </div>
+
       <div>
         <dt>{m.user_name()}</dt>
         <dd>
@@ -74,14 +85,17 @@
           <span>{shown(preview.target.user.name)}</span>
         </dd>
       </div>
+
       <div>
         <dt>{m.credential_id()}</dt>
         <dd><code>{preview.target.credentialIDHex}</code></dd>
       </div>
+
       <div>
         <dt>{m.current_value()}</dt>
         <dd>{m.bytes_count({ count: preview.currentByteCount })}</dd>
       </div>
+
       <div>
         <dt>{m.proposed_value()}</dt>
         <dd>{m.bytes_count({ count: preview.proposedByteCount })}</dd>
@@ -109,56 +123,55 @@
 </section>
 
 <style>
-@layer blocks {
-  .large-blob-preview,
-  .large-blob-preview-warnings {
-    display: grid;
-    min-width: 0;
-    gap: var(--space-3);
-  }
+  @layer blocks {
+    .large-blob-preview,
+    .large-blob-preview-warnings {
+      display: grid;
+      min-width: 0;
+      gap: var(--space-3);
+    }
 
-  .large-blob-preview-heading h3 {
-    margin: 0;
-    font-size: 0.92rem;
-  }
+    .large-blob-preview-heading h3 {
+      margin: 0;
+      font-size: 0.92rem;
+    }
 
-  .large-blob-preview-metrics {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
+    .large-blob-preview-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
 
-  .large-blob-preview-target {
-    display: grid;
-    min-width: 0;
-    gap: var(--space-2);
-    margin: 0;
-    border: 1px solid var(--border);
-    padding: var(--space-3);
-  }
+    .large-blob-preview-target {
+      display: grid;
+      min-width: 0;
+      gap: var(--space-2);
+      margin: 0;
+      border: 1px solid var(--border);
+      padding: var(--space-3);
+    }
 
-  .large-blob-preview-target > div {
-    display: grid;
-    grid-template-columns: minmax(7rem, 0.4fr) minmax(0, 1fr);
-    gap: var(--space-2);
-  }
+    .large-blob-preview-target > div {
+      display: grid;
+      grid-template-columns: minmax(7rem, 0.4fr) minmax(0, 1fr);
+      gap: var(--space-2);
+    }
 
-  .large-blob-preview-target dt {
-    color: var(--muted-foreground);
-    font-size: 0.72rem;
-  }
+    .large-blob-preview-target dt {
+      color: var(--muted-foreground);
+      font-size: 0.72rem;
+    }
 
-  .large-blob-preview-target dd {
-    display: grid;
-    min-width: 0;
-    gap: var(--space-1);
-    margin: 0;
-    overflow-wrap: anywhere;
-  }
+    .large-blob-preview-target dd {
+      display: grid;
+      min-width: 0;
+      gap: var(--space-1);
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
 
-  .large-blob-preview-target dd span {
-    color: var(--muted-foreground);
+    .large-blob-preview-target dd span {
+      color: var(--muted-foreground);
+    }
   }
-
-}
 </style>
