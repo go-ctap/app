@@ -98,18 +98,18 @@
       {#each SKELETON_ROWS as row (row)}
         <tr data-slot="expandable-data-table-summary-row">
           <td>
-            <div class="passkeys-skeleton-copy">
-              <Skeleton class="passkeys-skeleton-primary" />
-              <Skeleton class="passkeys-skeleton-secondary" />
-            </div>
-          </td>
-          <td>
-            <div class="passkeys-skeleton-user">
+            <div class="passkeys-row-primary">
+              <Skeleton class="passkeys-skeleton-disclosure" />
               <div class="passkeys-skeleton-copy">
                 <Skeleton class="passkeys-skeleton-primary" />
                 <Skeleton class="passkeys-skeleton-secondary" />
               </div>
-              <Skeleton class="passkeys-skeleton-icon" />
+            </div>
+          </td>
+          <td>
+            <div class="passkeys-skeleton-copy">
+              <Skeleton class="passkeys-skeleton-primary" />
+              <Skeleton class="passkeys-skeleton-secondary" />
             </div>
           </td>
           <td class="passkeys-table-credential">
@@ -303,19 +303,17 @@
       font-size: 0.72rem;
     }
 
-    .passkeys-skeleton-user {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
-      gap: var(--space-2);
-      min-width: 0;
-      padding: var(--space-2);
-    }
-
     .passkeys-skeleton-copy {
       display: grid;
+      align-content: center;
       gap: var(--space-1);
       min-width: 0;
+      min-height: 2.5rem;
+    }
+
+    :global(.passkeys-skeleton-disclosure) {
+      width: 1.5rem;
+      height: 1.5rem;
     }
 
     :global(.passkeys-skeleton-primary) {
@@ -326,11 +324,6 @@
     :global(.passkeys-skeleton-secondary) {
       width: 86%;
       height: 0.6rem;
-    }
-
-    :global(.passkeys-skeleton-icon) {
-      width: 1rem;
-      height: 1rem;
     }
 
     :global(.passkeys-skeleton-credential) {

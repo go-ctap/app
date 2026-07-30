@@ -144,11 +144,30 @@
     >
       {#each SKELETON_ROWS as row (row)}
         <tr data-slot="expandable-data-table-summary-row">
-          <td><Skeleton class="large-blobs-cell-skeleton" /></td>
-          <td><Skeleton class="large-blobs-cell-skeleton" /></td>
-          <td class="large-blobs-table-state"><Skeleton class="large-blobs-badge-skeleton" /></td>
-          <td class="large-blobs-table-bytes"><Skeleton class="large-blobs-badge-skeleton" /></td>
-          <td class="large-blobs-table-payload"><Skeleton class="large-blobs-badge-skeleton" /></td>
+          <td>
+            <div class="large-blobs-row-primary">
+              <Skeleton class="large-blobs-skeleton-disclosure" />
+              <div class="large-blobs-skeleton-copy">
+                <Skeleton class="large-blobs-skeleton-primary" />
+                <Skeleton class="large-blobs-skeleton-entry-id" />
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="large-blobs-skeleton-copy">
+              <Skeleton class="large-blobs-skeleton-primary" />
+              <Skeleton class="large-blobs-skeleton-secondary" />
+            </div>
+          </td>
+          <td class="large-blobs-table-state">
+            <Skeleton class="large-blobs-skeleton-badge" />
+          </td>
+          <td class="large-blobs-table-bytes">
+            <Skeleton class="large-blobs-skeleton-byte-count" />
+          </td>
+          <td class="large-blobs-table-payload">
+            <Skeleton class="large-blobs-skeleton-byte-count" />
+          </td>
         </tr>
       {/each}
     </ExpandableDataTable.Root>
@@ -347,14 +366,43 @@
       transition: transform 120ms ease;
     }
 
-    :global(.large-blobs-cell-skeleton) {
-      width: 78%;
+    .large-blobs-skeleton-copy {
+      display: grid;
+      align-content: center;
+      gap: var(--space-1);
+      min-width: 0;
+      min-height: 2.5rem;
+    }
+
+    :global(.large-blobs-skeleton-disclosure) {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+
+    :global(.large-blobs-skeleton-primary) {
+      width: 62%;
       height: 0.75rem;
     }
 
-    :global(.large-blobs-badge-skeleton) {
+    :global(.large-blobs-skeleton-entry-id) {
+      width: 92%;
+      height: 0.6rem;
+    }
+
+    :global(.large-blobs-skeleton-secondary) {
+      width: 72%;
+      height: 0.6rem;
+    }
+
+    :global(.large-blobs-skeleton-badge) {
       width: 4.5rem;
       height: 1.25rem;
+    }
+
+    :global(.large-blobs-skeleton-byte-count) {
+      width: 3.75rem;
+      height: 0.75rem;
+      margin-left: auto;
     }
 
     @container workspace (max-width: 45rem) {

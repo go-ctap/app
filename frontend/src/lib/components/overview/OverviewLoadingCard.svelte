@@ -4,9 +4,16 @@
   import * as Table from "$lib/components/ui/table";
 
   import { m } from "../../../paraglide/messages.js";
+
+  let { advanced }: { advanced: boolean } = $props();
 </script>
 
-<div class="overview-loading" aria-busy="true" aria-label={m.inspection_in_progress()}>
+<div
+  class="overview-loading"
+  data-mode={advanced ? "advanced" : "standard"}
+  aria-busy="true"
+  aria-label={m.inspection_in_progress()}
+>
   <span class="sr-only">{m.reading_authenticator_metadata()}</span>
 
   <div class="overview-loading-summary">
@@ -23,7 +30,7 @@
             </div>
           </div>
         </div>
-        <Skeleton class="overview-loading-button" />
+        {#if advanced}<Skeleton class="overview-loading-button" />{/if}
       </Card.Header>
 
       <Card.Content class="overview-loading-hero-content">
@@ -35,7 +42,7 @@
         </div>
 
         <div class="overview-loading-signals">
-          {#each Array(3) as _, index (index)}
+          {#each Array(advanced ? 3 : 4) as _, index (index)}
             <div class="overview-loading-signal">
               <Skeleton class="overview-loading-signal-title" />
               <Skeleton class="overview-loading-line" />
@@ -46,32 +53,36 @@
       </Card.Content>
     </Card.Root>
 
-    <Card.Root class="overview-loading-mds">
+    {#if advanced}
+      <Card.Root class="overview-loading-mds">
+        <Card.Header>
+          <Skeleton class="overview-loading-heading" />
+          <Skeleton class="overview-loading-line" />
+          <Card.Action><Skeleton class="overview-loading-button" /></Card.Action>
+        </Card.Header>
+
+        <Card.Content class="overview-loading-mds-content">
+          {#each Array(3) as _, section (section)}
+            <div class="overview-loading-facts">
+              <Skeleton class="overview-loading-eyebrow" />
+              <Skeleton class="overview-loading-line" />
+              <Skeleton class="overview-loading-line-short" />
+            </div>
+          {/each}
+        </Card.Content>
+      </Card.Root>
+    {/if}
+  </div>
+
+  {#if advanced}
+    <Card.Root>
       <Card.Header>
         <Skeleton class="overview-loading-heading" />
         <Skeleton class="overview-loading-line" />
-        <Card.Action><Skeleton class="overview-loading-button" /></Card.Action>
+        <Card.Action><Skeleton class="overview-loading-badge-wide" /></Card.Action>
       </Card.Header>
-
-      <Card.Content class="overview-loading-mds-content">
-        {#each Array(3) as _, section (section)}
-          <div class="overview-loading-facts">
-            <Skeleton class="overview-loading-eyebrow" />
-            <Skeleton class="overview-loading-line" />
-            <Skeleton class="overview-loading-line-short" />
-          </div>
-        {/each}
-      </Card.Content>
     </Card.Root>
-  </div>
-
-  <Card.Root>
-    <Card.Header>
-      <Skeleton class="overview-loading-heading" />
-      <Skeleton class="overview-loading-line" />
-      <Card.Action><Skeleton class="overview-loading-badge-wide" /></Card.Action>
-    </Card.Header>
-  </Card.Root>
+  {/if}
 
   <Card.Root>
     <Card.Header>
@@ -80,36 +91,46 @@
     </Card.Header>
 
     <Card.Content>
-      <div class="overview-loading-table-frame">
-        <Table.Root>
-          <Table.Header>
-            <Table.Row>
-              {#each Array(4) as _, index (index)}
-                <Table.Head><Skeleton class="overview-loading-table-heading" /></Table.Head>
-              {/each}
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {#each Array(4) as _, row (row)}
+      {#if advanced}
+        <div class="overview-loading-table-frame">
+          <Table.Root>
+            <Table.Header>
               <Table.Row>
-                {#each Array(4) as _, cell (`${row}:${cell}`)}
-                  <Table.Cell><Skeleton class="overview-loading-table-cell" /></Table.Cell>
+                {#each Array(4) as _, index (index)}
+                  <Table.Head><Skeleton class="overview-loading-table-heading" /></Table.Head>
                 {/each}
               </Table.Row>
-            {/each}
-          </Table.Body>
-        </Table.Root>
-      </div>
+            </Table.Header>
+            <Table.Body>
+              {#each Array(4) as _, row (row)}
+                <Table.Row>
+                  {#each Array(4) as _, cell (`${row}:${cell}`)}
+                    <Table.Cell><Skeleton class="overview-loading-table-cell" /></Table.Cell>
+                  {/each}
+                </Table.Row>
+              {/each}
+            </Table.Body>
+          </Table.Root>
+        </div>
+      {:else}
+        <div class="overview-loading-standard-list">
+          {#each Array(8) as _, row (row)}
+            <Skeleton class="overview-loading-standard-row" />
+          {/each}
+        </div>
+      {/if}
     </Card.Content>
   </Card.Root>
 
-  <div class="overview-loading-raw">
-    <div>
-      <Skeleton class="overview-loading-heading" />
-      <Skeleton class="overview-loading-raw-meta" />
+  {#if advanced}
+    <div class="overview-loading-raw">
+      <div>
+        <Skeleton class="overview-loading-heading" />
+        <Skeleton class="overview-loading-raw-meta" />
+      </div>
+      <Skeleton class="overview-loading-icon-button" />
     </div>
-    <Skeleton class="overview-loading-icon-button" />
-  </div>
+  {/if}
 </div>
 
 <style>
@@ -181,6 +202,13 @@
       border: 1px solid var(--border);
     }
 
+    .overview-loading-standard-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-3);
+      min-width: 0;
+    }
+
     .overview-loading-raw {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
@@ -248,13 +276,17 @@
       width: 80%;
       height: 0.875rem;
     }
+    :global(.overview-loading-standard-row) {
+      width: 100%;
+      height: 3.5rem;
+    }
     :global(.overview-loading-raw-meta) {
       width: 9rem;
       height: 0.625rem;
     }
 
     @container workspace (min-width: 64rem) {
-      .overview-loading-summary {
+      .overview-loading[data-mode="advanced"] .overview-loading-summary {
         grid-template-columns: minmax(0, 2fr) minmax(18rem, 1fr);
       }
     }
@@ -262,6 +294,12 @@
     @container workspace (max-width: 45rem) {
       :global(.overview-loading-hero-header) {
         display: grid;
+      }
+    }
+
+    @container workspace (max-width: 42rem) {
+      .overview-loading-standard-list {
+        grid-template-columns: minmax(0, 1fr);
       }
     }
   }

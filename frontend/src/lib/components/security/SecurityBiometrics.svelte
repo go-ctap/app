@@ -145,11 +145,18 @@
 
     <Card.Content>
       {#if sensorLoading && !sensor}
-        <div class="sensor-loading" aria-busy="true" aria-label={m.security_sensor_loading()}>
-          <Skeleton class="sensor-skeleton" />
-          <Skeleton class="sensor-skeleton" />
-          <Skeleton class="sensor-skeleton" />
-        </div>
+        <dl
+          class="sensor-facts sensor-loading"
+          aria-busy="true"
+          aria-label={m.security_sensor_loading()}
+        >
+          {#each Array(4) as _, fact (fact)}
+            <div>
+              <dt><Skeleton class="sensor-skeleton" /></dt>
+              <dd><Skeleton class="sensor-skeleton" data-value /></dd>
+            </div>
+          {/each}
+        </dl>
       {:else}
         {#if sensorError}
           <Alert.Root variant="destructive" role="alert" class="sensor-alert">
@@ -249,8 +256,15 @@
             aria-busy="true"
             aria-label={m.security_enrollment_loading()}
           >
-            {#each Array(3) as _, index (index)}
-              <Skeleton class="enrollment-skeleton" />
+            {#each Array(3) as _, enrollment (enrollment)}
+              <div class="enrollment-skeleton-row">
+                <Skeleton class="enrollment-skeleton" data-column="name" />
+                <Skeleton class="enrollment-skeleton" data-column="template" />
+                <div class="row-actions">
+                  <Skeleton class="enrollment-skeleton" data-column="action" />
+                  <Skeleton class="enrollment-skeleton" data-column="action" />
+                </div>
+              </div>
             {/each}
           </div>
         {/if}
@@ -404,8 +418,6 @@
     }
 
     :global(.enrollment-content),
-    .sensor-loading,
-    .enrollment-loading,
     .rename-form {
       display: grid;
       gap: var(--space-3);
@@ -438,13 +450,36 @@
     }
 
     :global(.sensor-skeleton) {
-      width: 100%;
-      height: 2rem;
+      width: min(10rem, 80%);
+      height: 0.7rem;
+    }
+
+    :global(.sensor-skeleton[data-value]) {
+      width: 5rem;
+      height: 0.8rem;
+    }
+
+    .enrollment-loading,
+    .enrollment-skeleton-row {
+      display: grid;
+      gap: var(--space-3);
+    }
+
+    .enrollment-skeleton-row {
+      grid-template-columns: minmax(8rem, 0.8fr) minmax(12rem, 1fr) auto;
+      align-items: center;
+      min-height: 3rem;
+      border-top: 1px solid var(--border);
     }
 
     :global(.enrollment-skeleton) {
-      width: 100%;
-      height: 2.5rem;
+      width: 80%;
+      height: 0.75rem;
+    }
+
+    :global(.enrollment-skeleton[data-column="action"]) {
+      width: 2rem;
+      height: 2rem;
     }
 
     .preview-note {

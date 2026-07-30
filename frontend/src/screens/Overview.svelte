@@ -89,7 +89,7 @@
         <OverviewMDSObservations observations={overview.mdsObservations} />
       {/if}
     {:else if overview.loading}
-      <OverviewLoadingCard />
+      <OverviewLoadingCard advanced={$advancedMode} />
     {/if}
   </section>
 {/if}

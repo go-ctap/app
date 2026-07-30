@@ -41,6 +41,8 @@
 
   import { m } from "../paraglide/messages.js";
 
+  const SECURITY_SKELETONS = ["overview", "pin", "configuration", "factory-reset"] as const;
+
   let report = $derived(configStatusReport($securityStatus.lastSuccessfulEnvelope));
 
   let statusLoading = $derived(
@@ -77,19 +79,15 @@
 
 {#if $selectedSelector && (statusLoading || $authenticatorStatus.state === "opening") && !report}
   <section class="security-loading" aria-busy="true" aria-label={m.security_state_loading()}>
-    <div class="security-loading-header">
-      <Skeleton class="loading-title" />
-      <Skeleton class="loading-copy" />
-    </div>
-
-    {#each Array(4) as _, index (index)}
+    {#each SECURITY_SKELETONS as section (section)}
       <Card.Root>
         <Card.Header>
           <Skeleton class="loading-heading" />
           <Skeleton class="loading-copy" />
         </Card.Header>
-
-        <Card.Content><Skeleton class="loading-card" /></Card.Content>
+        <Card.Content>
+          <Skeleton class="loading-card" data-section={section} />
+        </Card.Content>
       </Card.Root>
     {/each}
   </section>
@@ -178,27 +176,27 @@
       min-width: 0;
     }
 
-    .security-loading-header {
-      display: grid;
-      gap: var(--space-2);
-      min-width: 0;
-    }
-
-    :global(.loading-title) {
-      width: min(15rem, 70%);
-      height: 1.5rem;
-    }
     :global(.loading-heading) {
       width: min(11rem, 60%);
       height: 1rem;
     }
+
     :global(.loading-copy) {
       width: min(28rem, 85%);
       height: 0.8rem;
     }
+
     :global(.loading-card) {
       width: 100%;
       height: 7rem;
+    }
+
+    :global(.loading-card[data-section="configuration"]) {
+      height: 18rem;
+    }
+
+    :global(.loading-card[data-section="factory-reset"]) {
+      height: 9rem;
     }
   }
 </style>
