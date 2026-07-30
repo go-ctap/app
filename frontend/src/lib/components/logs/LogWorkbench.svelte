@@ -1,5 +1,8 @@
 <script lang="ts">
   import { tick } from "svelte";
+  import type { Attachment } from "svelte/attachments";
+  import { get } from "svelte/store";
+  import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { Eraser, Search, TriangleAlert } from "@lucide/svelte";
   import * as Alert from "$lib/components/ui/alert";
   import * as AlertDialog from "$lib/components/ui/alert-dialog";
@@ -21,6 +24,9 @@
   import LogRecordRow from "$lib/components/logs/LogRecordRow.svelte";
 
   const DETAIL_SHEET_BREAKPOINT_PX = 62 * 16;
+
+  const LOG_ROW_ESTIMATE_PX = 64;
+  const LOG_ROW_OVERSCAN = 8;
 
   const outcomeOptions = [
     { value: "all", label: m.logs_all_outcomes() },
@@ -64,15 +70,44 @@
 
   let useDetailSheet = $derived(workbenchWidth > 0 && workbenchWidth <= DETAIL_SHEET_BREAKPOINT_PX);
 
+  function getScrollElement() {
+    return listViewport;
+  }
+
+  function getItemKey(index: number) {
+    const record = filteredRecords[index];
+
+    return record ? recordID(record) : index;
+  }
+
+  const rowVirtualizer = createVirtualizer<HTMLElement, HTMLElement>({
+    count: 0,
+    getScrollElement,
+    estimateSize: () => LOG_ROW_ESTIMATE_PX,
+    getItemKey,
+    overscan: LOG_ROW_OVERSCAN,
+    anchorTo: "end",
+  });
+
+  const measureVirtualRow: Attachment<HTMLElement> = (element) => {
+    const virtualizer = get(rowVirtualizer);
+
+    virtualizer.measureElement(element);
+
+    return () => virtualizer.measureElement(null);
+  };
+
+  $effect(() => {
+    get(rowVirtualizer).setOptions({ count: filteredRecords.length });
+  });
+
   $effect(() => {
     const newest = logController.records.at(-1);
     const viewport = listViewport;
 
     if (!newest || !viewport) return;
 
-    void tick().then(() => {
-      viewport.scrollTop = viewport.scrollHeight;
-    });
+    void tick().then(() => get(rowVirtualizer).scrollToEnd({ behavior: "auto" }));
   });
 
   function selectRecord(id: string) {
@@ -90,6 +125,7 @@
     if (!record) return false;
 
     logController.select(recordID(record));
+    get(rowVirtualizer).scrollToIndex(index, { align: "auto" });
 
     return true;
   }
@@ -143,13 +179,23 @@
     {:else}
       <div class="log-list-scroll-frame">
         <ScrollArea class="log-list-scroll" bind:viewportRef={listViewport}>
-          <div class="log-list">
-            {#each filteredRecords as record (recordID(record))}
-              <LogRecordRow
-                {record}
-                selected={recordID(record) === selectedId}
-                onOpen={openRecord}
-              />
+          <div class="log-list" style:height={`${$rowVirtualizer.getTotalSize()}px`}>
+            {#each $rowVirtualizer.getVirtualItems() as virtualRow (virtualRow.key)}
+              {@const record = filteredRecords[virtualRow.index]}
+              {#if record}
+                <div
+                  class="log-virtual-row"
+                  data-index={virtualRow.index}
+                  style:transform={`translateY(${virtualRow.start}px)`}
+                  {@attach measureVirtualRow}
+                >
+                  <LogRecordRow
+                    {record}
+                    selected={recordID(record) === selectedId}
+                    onOpen={openRecord}
+                  />
+                </div>
+              {/if}
             {/each}
           </div>
         </ScrollArea>
@@ -375,8 +421,17 @@
     }
 
     .log-list {
+      position: relative;
       width: 100%;
       min-height: 100%;
+    }
+
+    .log-virtual-row {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      min-width: 0;
     }
   }
 </style>

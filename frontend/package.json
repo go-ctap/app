@@ -15,6 +15,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/svelte-virtual": "^3.13.32",
     "@wailsio/runtime": "file:../../wails/v3/internal/runtime/desktop/@wailsio/runtime",
     "tldts": "^7.4.3"
   },
