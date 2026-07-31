@@ -664,14 +664,10 @@ export class CredentialsEnvelope {
 }
 
 export class DiscoveryChangedEnvelope {
-    "trigger": ctapkit$0.InventoryTrigger;
     "snapshot": AuthenticatorSessionSnapshot;
 
     /** Creates a new DiscoveryChangedEnvelope instance. */
     constructor($$source: Partial<DiscoveryChangedEnvelope> = {}) {
-        if (!("trigger" in $$source)) {
-            this["trigger"] = ctapkit$0.InventoryTrigger.$zero;
-        }
         if (!("snapshot" in $$source)) {
             this["snapshot"] = (new AuthenticatorSessionSnapshot());
         }
@@ -683,10 +679,10 @@ export class DiscoveryChangedEnvelope {
      * Creates a new DiscoveryChangedEnvelope instance from a string or object.
      */
     static createFrom($$source: any = {}): DiscoveryChangedEnvelope {
-        const $$createField1_0 = $$createType25;
+        const $$createField0_0 = $$createType25;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("snapshot" in $$parsedSource) {
-            $$parsedSource["snapshot"] = $$createField1_0($$parsedSource["snapshot"]);
+            $$parsedSource["snapshot"] = $$createField0_0($$parsedSource["snapshot"]);
         }
         return new DiscoveryChangedEnvelope($$parsedSource as Partial<DiscoveryChangedEnvelope>);
     }
@@ -1757,10 +1753,13 @@ export class ResetFactoryRequest {
 export type SelectionID = string;
 
 export class SelectionRequest {
-    "attachmentId"?: report$0.AttachmentID;
+    "attachmentId": report$0.AttachmentID;
 
     /** Creates a new SelectionRequest instance. */
     constructor($$source: Partial<SelectionRequest> = {}) {
+        if (!("attachmentId" in $$source)) {
+            this["attachmentId"] = "";
+        }
 
         Object.assign(this, $$source);
     }
@@ -1771,28 +1770,6 @@ export class SelectionRequest {
     static createFrom($$source: any = {}): SelectionRequest {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new SelectionRequest($$parsedSource as Partial<SelectionRequest>);
-    }
-}
-
-export class SelectionSnapshot {
-    "selection"?: ActiveSelection | null;
-
-    /** Creates a new SelectionSnapshot instance. */
-    constructor($$source: Partial<SelectionSnapshot> = {}) {
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new SelectionSnapshot instance from a string or object.
-     */
-    static createFrom($$source: any = {}): SelectionSnapshot {
-        const $$createField0_0 = $$createType7;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("selection" in $$parsedSource) {
-            $$parsedSource["selection"] = $$createField0_0($$parsedSource["selection"]);
-        }
-        return new SelectionSnapshot($$parsedSource as Partial<SelectionSnapshot>);
     }
 }
 

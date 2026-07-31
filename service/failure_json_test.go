@@ -48,7 +48,7 @@ func TestGetAssertionFailureEnvelopeExactJSON(t *testing.T) {
 func TestDirectServiceErrorIsTypedAndMachineReadable(t *testing.T) {
 	service := New()
 
-	_, err := service.SetSelection(context.Background(), SelectionRequest{AttachmentID: "missing-device"})
+	err := service.SetSelection(context.Background(), SelectionRequest{AttachmentID: "missing-device"})
 
 	if err == nil {
 		t.Fatal("SetSelection error = nil, want failure")

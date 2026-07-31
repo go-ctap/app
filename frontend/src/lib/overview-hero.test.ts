@@ -8,11 +8,7 @@ import {
   PayloadEntry,
   StatusReport,
 } from "../../bindings/github.com/go-ctap/mds/model";
-import {
-  DeviceIdentity,
-  DeviceReport,
-  Vendor,
-} from "../../bindings/github.com/go-ctap/kit/model/report";
+import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
@@ -62,37 +58,19 @@ describe("buildOverviewHero", () => {
     );
   });
 
-  it("prefers the normalized vendor model over the discovery product", () => {
+  it("uses the attachment product as the device title", () => {
     const device = new DeviceReport({
       attachment: {
         id: "token-1",
         transport: Mode.ModeHID,
         usb: { product: "Yubico Security Key", vendorId: 0x1050, productId: 0x0407 },
       },
-      identity: new DeviceIdentity({ vendor: Vendor.VendorYubico, model: "YubiKey 5C NFC" }),
     });
 
-    expect(buildOverviewHero({ device }).title).toBe("YubiKey 5C NFC");
+    expect(buildOverviewHero({ device }).title).toBe("Yubico Security Key");
   });
 
-  it("shows vendor firmware instead of a generic authenticator-ready badge", () => {
-    const yubico = new DeviceReport({
-      identity: new DeviceIdentity({ vendor: Vendor.VendorYubico, firmware: "5.7.1" }),
-    });
-    const token2 = new DeviceReport({
-      identity: new DeviceIdentity({
-        vendor: Vendor.VendorToken2,
-        model: "Token2 Bio3 Dual A+C PIN+",
-        firmware: "R3.2",
-      }),
-    });
-    const other = new DeviceReport({
-      identity: new DeviceIdentity({ vendor: Vendor.VendorUnknown, firmware: "1.0" }),
-    });
-
-    expect(buildOverviewHero({ device: yubico }).versionBadge).toBe("Firmware 5.7.1");
-    expect(buildOverviewHero({ device: token2 }).title).toBe("Token2 Bio3 Dual A+C PIN+");
-    expect(buildOverviewHero({ device: token2 }).versionBadge).toBe("Firmware R3.2");
-    expect(buildOverviewHero({ device: other }).versionBadge).toBe("");
+  it("leaves the removed vendor firmware badge empty", () => {
+    expect(buildOverviewHero({ device: new DeviceReport() }).versionBadge).toBe("");
   });
 });

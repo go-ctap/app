@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"errors"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -13,174 +12,232 @@ import (
 	"github.com/go-ctap/kit/transport"
 )
 
-func TestSetSelectionSerializesAndReuses(t *testing.T) {
-	service := selectionTestService()
+func TestSetSelectionUsesManagerAndAppliesReplacementBoundary(t *testing.T) {
 	firstRuntime := &fakeAuthenticatorRuntime{}
 	secondRuntime := &fakeAuthenticatorRuntime{}
-	firstOpen := make(chan struct{})
-	releaseFirst := make(chan struct{})
-	var opens atomic.Int32
-
-	service.openAuthenticator = func(
-		context.Context,
-		inventoryRuntime,
-		report.AttachmentID,
-		...ctapkit.AuthenticatorOption,
-	) (openedAuthenticator, error) {
-		if opens.Add(1) == 1 {
-			close(firstOpen)
-			<-releaseFirst
-
-			return openedFor("device-1", firstRuntime), nil
+	manager := newFakeDeviceManager(
+		[]report.DeviceReport{testDevice("device-1"), testDevice("device-2")},
+		openedFor("device-1", firstRuntime),
+	)
+	manager.selectFunc = func(_ context.Context, id report.AttachmentID) error {
+		if id != "device-2" {
+			t.Fatalf("Select id = %q, want device-2", id)
 		}
+		manager.setSelected(openedFor(id, secondRuntime))
+		manager.setSnapshot(ctapkit.DeviceSnapshot{
+			Devices: []report.DeviceReport{
+				testDevice("device-1"),
+				testDevice("device-2"),
+			},
+			Selected: id,
+		})
 
-		return openedFor("device-2", secondRuntime), nil
+		return nil
+	}
+	emitted := make(chan DiscoveryChangedEnvelope, 2)
+	service := New(WithEventEmitter(discoveryEmitter(emitted)))
+	service.openDeviceManager = staticDeviceManager(manager)
+
+	if err := service.Discover(t.Context()); err != nil {
+		t.Fatalf("Discover: %v", err)
+	}
+	initial := (<-emitted).Snapshot
+	if err := service.SetSelection(
+		t.Context(),
+		SelectionRequest{AttachmentID: "device-2"},
+	); err != nil {
+		t.Fatalf("SetSelection: %v", err)
+	}
+	replacement := (<-emitted).Snapshot
+	if replacement.Selection == nil ||
+		replacement.Selection.AttachmentID != "device-2" ||
+		replacement.Selection.ID == initial.Selection.ID {
+		t.Fatalf("replacement = %#v", replacement.Selection)
 	}
 
-	results := make(chan SelectionSnapshot, 2)
-
-	go func() {
-		result, _ := service.SetSelection(t.Context(), SelectionRequest{AttachmentID: "device-1"})
-
-		results <- result
-	}()
-	<-firstOpen
-	go func() {
-		result, _ := service.SetSelection(t.Context(), SelectionRequest{AttachmentID: "device-1"})
-
-		results <- result
-	}()
-	close(releaseFirst)
-
-	first := <-results
-	second := <-results
-
-	if first.Selection == nil || second.Selection == nil || first.Selection.ID != second.Selection.ID {
-		t.Fatalf("concurrent selections = (%#v, %#v), want one selection", first, second)
+	if err := service.close(); err != nil {
+		t.Fatalf("Close: %v", err)
 	}
-
-	if opens.Load() != 1 {
-		t.Fatalf("physical opens = %d, want 1", opens.Load())
-	}
-
-	replacement := mustSelect(t, service, "device-2")
-
-	if replacement.ID == first.Selection.ID || !firstRuntime.closed.Load() {
-		t.Fatalf("replacement = %#v, old closed = %v", replacement, firstRuntime.closed.Load())
-	}
-
-	if service.selected == nil || service.selected.device.Attachment.ID != "device-2" {
-		t.Fatalf("final selection = %#v, want device-2", service.selected)
-	}
-
 }
 
-func TestSetSelectionCancellationAndCloseFailures(t *testing.T) {
-	service := selectionTestService()
-	firstRuntime := &fakeAuthenticatorRuntime{closeErr: errors.New("first close failed")}
-	secondRuntime := &fakeAuthenticatorRuntime{closeErr: errors.New("second close failed")}
-	var opens atomic.Int32
+func TestSetSelectionKeepsFallbackAndTypedManagerFailure(t *testing.T) {
+	firstRuntime := &fakeAuthenticatorRuntime{}
+	fallbackRuntime := &fakeAuthenticatorRuntime{}
+	devices := []report.DeviceReport{testDevice("device-1"), testDevice("device-2")}
+	manager := newFakeDeviceManager(devices, openedFor("device-1", firstRuntime))
+	manager.selectFunc = func(_ context.Context, _ report.AttachmentID) error {
+		manager.setSelected(openedFor("device-1", fallbackRuntime))
+		manager.setSnapshot(ctapkit.DeviceSnapshot{
+			Devices:  devices,
+			Selected: "device-1",
+		})
 
-	service.openAuthenticator = func(
-		context.Context,
-		inventoryRuntime,
-		report.AttachmentID,
-		...ctapkit.AuthenticatorOption,
-	) (openedAuthenticator, error) {
-		if opens.Add(1) == 1 {
-			return openedFor("device-1", firstRuntime), nil
-		}
-
-		return openedFor("device-2", secondRuntime), nil
+		return failure.New(
+			failure.CodeTransportFailure,
+			failure.WithPhase(failure.PhaseAuthenticator),
+		)
 	}
-	mustSelect(t, service, "device-1")
+	emitted := make(chan DiscoveryChangedEnvelope, 2)
+	service := New(WithEventEmitter(discoveryEmitter(emitted)))
+	service.openDeviceManager = staticDeviceManager(manager)
+
+	if err := service.Discover(t.Context()); err != nil {
+		t.Fatalf("Discover: %v", err)
+	}
+	initial := (<-emitted).Snapshot
+	err := service.SetSelection(
+		t.Context(),
+		SelectionRequest{AttachmentID: "device-2"},
+	)
+	if !failure.IsCode(err, failure.CodeTransportFailure) {
+		t.Fatalf("SetSelection error = %v", err)
+	}
+	snapshot := (<-emitted).Snapshot
+	if snapshot.Selection == nil ||
+		snapshot.Selection.AttachmentID != "device-1" ||
+		snapshot.Selection.ID == initial.Selection.ID {
+		t.Fatalf("fallback selection = %#v", snapshot.Selection)
+	}
+	if snapshot.Error == nil ||
+		snapshot.Error.Code != failure.CodeTransportFailure {
+		t.Fatalf("fallback error = %#v", snapshot.Error)
+	}
+
+	if err := service.close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+}
+
+func TestSetSelectionCancellationDoesNotReachManager(t *testing.T) {
+	manager := newFakeDeviceManager(
+		[]report.DeviceReport{testDevice("device-1")},
+		openedFor("device-1", &fakeAuthenticatorRuntime{}),
+	)
+	var selections atomic.Int32
+	manager.selectFunc = func(context.Context, report.AttachmentID) error {
+		selections.Add(1)
+
+		return nil
+	}
+	service := New()
+	service.openDeviceManager = staticDeviceManager(manager)
+	if err := service.Discover(t.Context()); err != nil {
+		t.Fatalf("Discover: %v", err)
+	}
 
 	release, err := service.lockSelection(t.Context())
-
 	if err != nil {
-		t.Fatalf("acquire selection: %v", err)
+		t.Fatalf("lock selection: %v", err)
 	}
-
 	canceled, cancel := context.WithCancel(t.Context())
-
 	cancel()
-	_, err = service.SetSelection(canceled, SelectionRequest{AttachmentID: "device-2"})
+	err = service.SetSelection(
+		canceled,
+		SelectionRequest{AttachmentID: "device-1"},
+	)
 	release()
-	if !failure.IsCode(err, failure.CodeOperationCanceled) || opens.Load() != 1 {
-		t.Fatalf("canceled selection = %v, opens = %d", err, opens.Load())
+
+	if !failure.IsCode(err, failure.CodeOperationCanceled) {
+		t.Fatalf("SetSelection error = %v", err)
+	}
+	if selections.Load() != 0 {
+		t.Fatalf("manager selections = %d, want 0", selections.Load())
 	}
 
-	mustSelect(t, service, "device-2")
-	if service.selected.device.Attachment.ID != "device-2" || !firstRuntime.closed.Load() {
-		t.Fatalf("selection = %#v, old closed = %v", service.selected, firstRuntime.closed.Load())
-	}
-
-	snapshot, err := service.SetSelection(t.Context(), SelectionRequest{})
-
-	if err == nil {
-		t.Fatal("clear unexpectedly ignored authenticator close failure")
-	}
-
-	if snapshot.Selection != nil || service.selected != nil {
-		t.Fatalf("clear = (%#v, %v), selected = %#v", snapshot, err, service.selected)
+	if err := service.close(); err != nil {
+		t.Fatalf("Close: %v", err)
 	}
 }
 
-func TestCloseSelectionClosesRuntimeBeforeWaitingForOperations(t *testing.T) {
-	service := selectionTestService()
+func TestReconnectSelectionInvalidatesAndReopensSameAttachment(t *testing.T) {
+	firstRuntime := &fakeAuthenticatorRuntime{}
+	reopenedRuntime := &fakeAuthenticatorRuntime{}
+	device := testDevice("device-1")
+	firstManager := newFakeDeviceManager(
+		[]report.DeviceReport{device},
+		openedFor(device.Attachment.ID, firstRuntime),
+	)
+	secondManager := newFakeDeviceManager(
+		[]report.DeviceReport{device},
+		openedFor(device.Attachment.ID, reopenedRuntime),
+	)
+	var opens atomic.Int32
+	emitted := make(chan DiscoveryChangedEnvelope, 3)
+	service := New(WithEventEmitter(discoveryEmitter(emitted)))
+	service.openDeviceManager = func(
+		context.Context,
+		transport.Mode,
+		...ctapkit.AuthenticatorOption,
+	) (deviceManagerRuntime, error) {
+		if opens.Add(1) == 1 {
+			return firstManager, nil
+		}
+
+		return secondManager, nil
+	}
+
+	if err := service.Discover(t.Context()); err != nil {
+		t.Fatalf("Discover: %v", err)
+	}
+	initial := (<-emitted).Snapshot
+	if err := service.ReconnectSelection(t.Context()); err != nil {
+		t.Fatalf("ReconnectSelection: %v", err)
+	}
+	reconnected := (<-emitted).Snapshot
+	if reconnected.Selection == nil ||
+		reconnected.Selection.AttachmentID != device.Attachment.ID ||
+		reconnected.Selection.ID == initial.Selection.ID {
+		t.Fatalf("reconnected selection = %#v", reconnected.Selection)
+	}
+	if opens.Load() != 2 {
+		t.Fatalf("device manager opens = %d, want 2", opens.Load())
+	}
+
+	if err := service.close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+}
+
+func TestCloseManagerBeforeWaitingForOperations(t *testing.T) {
+	runtime := &fakeAuthenticatorRuntime{}
+	manager := newFakeDeviceManager(
+		[]report.DeviceReport{testDevice("device-1")},
+		openedFor("device-1", runtime),
+	)
+	service := New()
+	service.openDeviceManager = staticDeviceManager(manager)
+	if err := service.Discover(t.Context()); err != nil {
+		t.Fatalf("Discover: %v", err)
+	}
+
+	selected := service.currentSelection()
 	operationID := OperationID("operation-1")
-	selected := newSelection("selection-1", openedFor("device-1", &fakeAuthenticatorRuntime{}))
 	operation := &operationState{
 		id:          operationID,
 		selectionID: selected.id,
 		cancel:      func() {},
 		done:        make(chan struct{}),
 	}
-
 	selected.operations[operationID] = operation
-	selected.runtime.lifecycle = &fakeAuthenticatorRuntime{onClose: func() {
+	manager.closeFunc = func() error {
 		service.unregisterOperation(selected, operationID)
-	}}
+
+		return nil
+	}
 
 	closeDone := make(chan error, 1)
-
-	go func() { closeDone <- service.closeSelection(selected) }()
+	go func() {
+		closeDone <- service.close()
+	}()
 
 	select {
 	case err := <-closeDone:
 		if err != nil {
-			t.Fatalf("closeSelection: %v", err)
+			t.Fatalf("Close: %v", err)
 		}
 	case <-time.After(time.Second):
-		t.Fatal("closeSelection waited for the operation before closing the runtime")
+		t.Fatal("Close waited for the operation before closing the manager")
 	}
-}
-
-func selectionTestService() *Service {
-	service := New()
-
-	service.inventory = newFakeInventory([]report.DeviceReport{
-		testDevice("device-1"),
-		testDevice("device-2"),
-	})
-
-	return service
-}
-
-func mustSelect(t *testing.T, service *Service, attachmentID report.AttachmentID) ActiveSelection {
-	t.Helper()
-
-	snapshot, err := service.SetSelection(t.Context(), SelectionRequest{AttachmentID: attachmentID})
-
-	if err != nil {
-		t.Fatalf("SetSelection(%q): %v", attachmentID, err)
-	}
-
-	if snapshot.Selection == nil {
-		t.Fatalf("SetSelection(%q) returned no selection", attachmentID)
-	}
-
-	return *snapshot.Selection
 }
 
 func openedFor(id report.AttachmentID, lifecycle authenticatorLifecycle) openedAuthenticator {
@@ -195,8 +252,8 @@ func testDevice(id report.AttachmentID) report.DeviceReport {
 		Attachment: report.AttachmentReport{
 			ID:        id,
 			Transport: transport.ModeHID,
+			USB:       &report.USBReport{},
 		},
-		Resolution: report.IdentityResolution{State: report.IdentityUnavailable},
 	}
 }
 

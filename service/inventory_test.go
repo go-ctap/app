@@ -2,9 +2,7 @@ package service
 
 import (
 	"context"
-	"errors"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -14,53 +12,51 @@ import (
 	"github.com/go-ctap/kit/transport"
 )
 
-func TestDiscoverAutoSelectsFirstAndIdentityKeepsSelection(t *testing.T) {
-	first := testDevice("device-1")
-	second := testDevice("device-2")
-	inventory := newFakeInventory([]report.DeviceReport{first, second})
-	emitter := newCountingEmitter()
-	service := New(WithEventEmitter(emitter))
-
-	service.openInventory = func(context.Context, transport.Mode) (inventoryRuntime, error) {
-		return inventory, nil
-	}
-	service.openAuthenticator = func(
+func TestDiscoverUsesDeviceManagerInitialSelection(t *testing.T) {
+	firstRuntime := &fakeAuthenticatorRuntime{}
+	manager := newFakeDeviceManager(
+		[]report.DeviceReport{testDevice("device-1"), testDevice("device-2")},
+		openedFor("device-1", firstRuntime),
+	)
+	emitted := make(chan DiscoveryChangedEnvelope, 1)
+	service := New(WithEventEmitter(discoveryEmitter(emitted)))
+	service.openDeviceManager = func(
 		context.Context,
-		inventoryRuntime,
-		report.AttachmentID,
+		transport.Mode,
 		...ctapkit.AuthenticatorOption,
-	) (openedAuthenticator, error) {
-		return openedFor("device-1", &fakeAuthenticatorRuntime{}), nil
+	) (deviceManagerRuntime, error) {
+		return manager, nil
 	}
 
-	snapshot, err := service.Discover(t.Context())
-
-	if err != nil || len(snapshot.Devices) != 2 || snapshot.Selection == nil {
-		t.Fatalf("Discover = (%#v, %v)", snapshot, err)
+	if err := service.Discover(t.Context()); err != nil {
+		t.Fatalf("Discover: %v", err)
+	}
+	snapshot := (<-emitted).Snapshot
+	if len(snapshot.Devices) != 2 ||
+		snapshot.Selection == nil ||
+		snapshot.Selection.AttachmentID != "device-1" {
+		t.Fatalf("Discover = %#v", snapshot)
+	}
+	if manager.openCalls != 1 {
+		t.Fatalf("device manager opens = %d, want 1", manager.openCalls)
 	}
 
-	selected := snapshot.Selection.ID
-
-	first.Identity = &report.DeviceIdentity{
-		Vendor: report.VendorToken2,
-		Model:  "Token2 Dual NFC PIN+ PIV+",
-		Serial: "66103930925563",
+	if err := service.Discover(t.Context()); err != nil {
+		t.Fatalf("second Discover: %v", err)
 	}
-	first.Resolution = report.IdentityResolution{
-		State:    report.IdentityResolved,
-		Provider: report.VendorToken2,
+	select {
+	case replay := <-emitted:
+		if replay.Snapshot.Selection == nil ||
+			replay.Snapshot.Selection.ID != snapshot.Selection.ID ||
+			replay.Snapshot.Selection.AttachmentID != "device-1" ||
+			len(replay.Snapshot.Devices) != 2 {
+			t.Fatalf("second Discover = %#v", replay.Snapshot)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("second Discover did not replay the current snapshot")
 	}
-	inventory.events <- ctapkit.InventoryEvent{
-		Trigger: ctapkit.InventoryTriggerIdentity,
-		Snapshot: ctapkit.InventorySnapshot{
-			Devices: []report.DeviceReport{first, second},
-		},
-	}
-
-	waitFor(t, func() bool { return emitter.count(EventDiscoveryChanged) == 1 })
-
-	if service.selected == nil || service.selected.id != selected {
-		t.Fatalf("identity update changed selection: %#v", service.selected)
+	if manager.openCalls != 1 {
+		t.Fatalf("device manager opens after replay = %d, want 1", manager.openCalls)
 	}
 
 	if err := service.close(); err != nil {
@@ -68,62 +64,124 @@ func TestDiscoverAutoSelectsFirstAndIdentityKeepsSelection(t *testing.T) {
 	}
 }
 
-func TestIdentityFailureDoesNotFailAuthenticatorSession(t *testing.T) {
+func TestDiscoverReturnsAnEmptyDeviceArray(t *testing.T) {
+	manager := newFakeDeviceManager(nil, openedAuthenticator{})
+	emitted := make(chan DiscoveryChangedEnvelope, 1)
+	service := New(WithEventEmitter(discoveryEmitter(emitted)))
+	service.openDeviceManager = staticDeviceManager(manager)
+
+	if err := service.Discover(t.Context()); err != nil {
+		t.Fatalf("Discover: %v", err)
+	}
+	snapshot := (<-emitted).Snapshot
+	if snapshot.Devices == nil || len(snapshot.Devices) != 0 {
+		t.Fatalf("devices = %#v, want non-nil empty slice", snapshot.Devices)
+	}
+
+	if err := service.close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+}
+
+func TestDeviceUpdateKeepsSelectionIDForSameAuthenticator(t *testing.T) {
+	runtime := &fakeAuthenticatorRuntime{}
 	device := testDevice("device-1")
-	inventory := newFakeInventory([]report.DeviceReport{device})
+	manager := newFakeDeviceManager(
+		[]report.DeviceReport{device},
+		openedFor(device.Attachment.ID, runtime),
+	)
 	emitted := make(chan DiscoveryChangedEnvelope, 1)
 	service := New(WithEventEmitter(emitterFunc(func(name string, payload any) {
 		if name == EventDiscoveryChanged {
 			emitted <- payload.(DiscoveryChangedEnvelope)
 		}
 	})))
+	service.openDeviceManager = staticDeviceManager(manager)
 
-	service.openInventory = func(context.Context, transport.Mode) (inventoryRuntime, error) {
-		return inventory, nil
+	if err := service.Discover(t.Context()); err != nil {
+		t.Fatalf("Discover: %v", err)
 	}
-	service.openAuthenticator = func(
-		context.Context,
-		inventoryRuntime,
-		report.AttachmentID,
-		...ctapkit.AuthenticatorOption,
-	) (openedAuthenticator, error) {
-		return openedFor("device-1", &fakeAuthenticatorRuntime{}), nil
-	}
+	initial := (<-emitted).Snapshot
 
-	initial, err := service.Discover(t.Context())
-	if err != nil || initial.Selection == nil {
-		t.Fatalf("Discover = (%#v, %v), want active selection", initial, err)
-	}
-
-	device.Resolution = report.IdentityResolution{
-		State:    report.IdentityFailed,
-		Provider: report.VendorYubico,
-	}
-	inventory.events <- ctapkit.InventoryEvent{
-		Trigger: ctapkit.InventoryTriggerIdentity,
-		Snapshot: ctapkit.InventorySnapshot{
-			Devices: []report.DeviceReport{device},
+	updated := device
+	updated.Attachment.USB.Product = "Updated product"
+	manager.publish(ctapkit.DeviceUpdate{
+		Snapshot: ctapkit.DeviceSnapshot{
+			Devices:  []report.DeviceReport{updated},
+			Selected: device.Attachment.ID,
 		},
-		Error: failure.Snapshot(failure.New(
-			failure.CodeOperationTimeout,
-			failure.WithPhase(failure.PhaseIdentity),
-		)),
-	}
+	})
 
 	select {
 	case event := <-emitted:
-		if event.Snapshot.Error != nil {
-			t.Fatalf("identity failure became session error: %#v", event.Snapshot.Error)
+		if event.Snapshot.Selection == nil ||
+			event.Snapshot.Selection.ID != initial.Selection.ID {
+			t.Fatalf("update changed selection: %#v", event.Snapshot.Selection)
+		}
+		if event.Snapshot.Devices[0].Attachment.USB.Product != "Updated product" {
+			t.Fatalf("update devices = %#v", event.Snapshot.Devices)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("device update was not emitted")
+	}
+
+	if err := service.close(); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+}
+
+func TestDeviceUpdateCarriesItsOwnSelectionRuntime(t *testing.T) {
+	runtime := &fakeAuthenticatorRuntime{}
+	device := testDevice("device-1")
+	manager := newFakeDeviceManager(
+		[]report.DeviceReport{device},
+		openedFor(device.Attachment.ID, runtime),
+	)
+	emitted := make(chan DiscoveryChangedEnvelope, 1)
+	service := New(WithEventEmitter(emitterFunc(func(name string, payload any) {
+		if name == EventDiscoveryChanged {
+			emitted <- payload.(DiscoveryChangedEnvelope)
+		}
+	})))
+	service.openDeviceManager = staticDeviceManager(manager)
+
+	if err := service.Discover(t.Context()); err != nil {
+		t.Fatalf("Discover: %v", err)
+	}
+	initial := (<-emitted).Snapshot
+
+	unlock, err := service.lockSelection(t.Context())
+	if err != nil {
+		t.Fatalf("lock selection: %v", err)
+	}
+	card := report.DeviceReport{
+		Attachment: report.AttachmentReport{
+			ID:        "smart-card:reader-1",
+			Transport: transport.ModeSmartCard,
+			SmartCard: &report.SmartCardReport{Reader: "reader-1"},
+		},
+	}
+	manager.publish(ctapkit.DeviceUpdate{
+		Snapshot: ctapkit.DeviceSnapshot{
+			Devices:  []report.DeviceReport{device, card},
+			Selected: device.Attachment.ID,
+		},
+	})
+	manager.setSelected(openedFor("device-2", &fakeAuthenticatorRuntime{}))
+	unlock()
+
+	select {
+	case event := <-emitted:
+		if len(event.Snapshot.Devices) != 2 ||
+			event.Snapshot.Devices[1].Attachment.ID != card.Attachment.ID {
+			t.Fatalf("topology update = %#v", event.Snapshot.Devices)
 		}
 		if event.Snapshot.Selection == nil ||
 			event.Snapshot.Selection.ID != initial.Selection.ID {
-			t.Fatalf("identity failure changed selection: %#v", event.Snapshot.Selection)
-		}
-		if got := event.Snapshot.Devices[0].Resolution.State; got != report.IdentityFailed {
-			t.Fatalf("identity resolution state = %q, want failed", got)
+			t.Fatalf("selection = %#v", event.Snapshot.Selection)
 		}
 	case <-time.After(time.Second):
-		t.Fatal("identity failure event was not emitted")
+		t.Fatal("topology update was dropped")
 	}
 
 	if err := service.close(); err != nil {
@@ -131,46 +189,52 @@ func TestIdentityFailureDoesNotFailAuthenticatorSession(t *testing.T) {
 	}
 }
 
-func TestInventoryRemovalClosesSelectionBeforePublishingSnapshot(t *testing.T) {
-	inventory := newFakeInventory([]report.DeviceReport{testDevice("device-1")})
-	runtime := &fakeAuthenticatorRuntime{}
-	emittedBeforeClose := atomic.Bool{}
-	service := New(WithEventEmitter(emitterFunc(func(name string, _ any) {
-		if name == EventDiscoveryChanged && !runtime.closed.Load() {
-			emittedBeforeClose.Store(true)
+func TestDeviceUpdateAppliesManagerFallbackAndFailure(t *testing.T) {
+	firstRuntime := &fakeAuthenticatorRuntime{}
+	secondRuntime := &fakeAuthenticatorRuntime{}
+	first := testDevice("device-1")
+	second := testDevice("device-2")
+	manager := newFakeDeviceManager(
+		[]report.DeviceReport{first, second},
+		openedFor(first.Attachment.ID, firstRuntime),
+	)
+	emitted := make(chan DiscoveryChangedEnvelope, 1)
+	service := New(WithEventEmitter(emitterFunc(func(name string, payload any) {
+		if name == EventDiscoveryChanged {
+			emitted <- payload.(DiscoveryChangedEnvelope)
 		}
 	})))
+	service.openDeviceManager = staticDeviceManager(manager)
 
-	service.openInventory = func(context.Context, transport.Mode) (inventoryRuntime, error) {
-		return inventory, nil
-	}
-
-	service.openAuthenticator = func(
-		context.Context,
-		inventoryRuntime,
-		report.AttachmentID,
-		...ctapkit.AuthenticatorOption,
-	) (openedAuthenticator, error) {
-		return openedFor("device-1", runtime), nil
-	}
-
-	if _, err := service.Discover(t.Context()); err != nil {
+	if err := service.Discover(t.Context()); err != nil {
 		t.Fatalf("Discover: %v", err)
 	}
-
-	inventory.events <- ctapkit.InventoryEvent{
-		Trigger:  ctapkit.InventoryTriggerTopology,
-		Snapshot: ctapkit.InventorySnapshot{},
-	}
-
-	waitFor(t, func() bool {
-		service.mu.Lock()
-		defer service.mu.Unlock()
-
-		return service.selected == nil && runtime.closed.Load()
+	initial := (<-emitted).Snapshot
+	manager.setSelected(openedFor(second.Attachment.ID, secondRuntime))
+	manager.publish(ctapkit.DeviceUpdate{
+		Snapshot: ctapkit.DeviceSnapshot{
+			Devices:  []report.DeviceReport{first, second},
+			Selected: second.Attachment.ID,
+		},
+		Error: failure.Snapshot(failure.New(
+			failure.CodeTransportFailure,
+			failure.WithPhase(failure.PhaseAuthenticator),
+		)),
 	})
-	if emittedBeforeClose.Load() {
-		t.Fatal("removal snapshot was published before closing the authenticator")
+
+	select {
+	case event := <-emitted:
+		if event.Snapshot.Selection == nil ||
+			event.Snapshot.Selection.ID == initial.Selection.ID ||
+			event.Snapshot.Selection.AttachmentID != second.Attachment.ID {
+			t.Fatalf("fallback selection = %#v", event.Snapshot.Selection)
+		}
+		if event.Snapshot.Error == nil ||
+			event.Snapshot.Error.Code != failure.CodeTransportFailure {
+			t.Fatalf("fallback error = %#v", event.Snapshot.Error)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("fallback update was not emitted")
 	}
 
 	if err := service.close(); err != nil {
@@ -178,37 +242,121 @@ func TestInventoryRemovalClosesSelectionBeforePublishingSnapshot(t *testing.T) {
 	}
 }
 
-type fakeInventory struct {
-	mu        sync.Mutex
-	snapshot  ctapkit.InventorySnapshot
-	events    chan ctapkit.InventoryEvent
-	closeOnce sync.Once
+type fakeDeviceManager struct {
+	mu         sync.Mutex
+	snapshot   ctapkit.DeviceSnapshot
+	selected   openedAuthenticator
+	updates    chan deviceManagerState
+	selectFunc func(context.Context, report.AttachmentID) error
+	closeFunc  func() error
+	closeOnce  sync.Once
+	openCalls  int
 }
 
-func newFakeInventory(devices []report.DeviceReport) *fakeInventory {
-	return &fakeInventory{
-		snapshot: ctapkit.InventorySnapshot{Devices: devices},
-		events:   make(chan ctapkit.InventoryEvent, 4),
+func newFakeDeviceManager(
+	devices []report.DeviceReport,
+	selected openedAuthenticator,
+) *fakeDeviceManager {
+	snapshot := ctapkit.DeviceSnapshot{Devices: devices}
+	if selected.lifecycle != nil {
+		snapshot.Selected = selected.device.Attachment.ID
+	}
+	manager := &fakeDeviceManager{
+		snapshot:  snapshot,
+		selected:  selected,
+		updates:   make(chan deviceManagerState, 8),
+		openCalls: 1,
+	}
+	manager.updates <- deviceManagerState{
+		update:  ctapkit.DeviceUpdate{Snapshot: snapshot},
+		runtime: selected,
+	}
+
+	return manager
+}
+
+func staticDeviceManager(manager deviceManagerRuntime) openDeviceManagerFunc {
+	return func(
+		context.Context,
+		transport.Mode,
+		...ctapkit.AuthenticatorOption,
+	) (deviceManagerRuntime, error) {
+		return manager, nil
 	}
 }
 
-func (i *fakeInventory) Snapshot() ctapkit.InventorySnapshot {
-	i.mu.Lock()
-	defer i.mu.Unlock()
+func (m *fakeDeviceManager) State() deviceManagerState {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
-	return i.snapshot
+	return deviceManagerState{
+		update: ctapkit.DeviceUpdate{
+			Snapshot: m.snapshot,
+		},
+		runtime: m.selected,
+	}
 }
 
-func (i *fakeInventory) Events() <-chan ctapkit.InventoryEvent {
-	return i.events
+func (m *fakeDeviceManager) Next() (deviceManagerState, bool) {
+	state, ok := <-m.updates
+
+	return state, ok
 }
 
-func (i *fakeInventory) OpenAuthenticator(
-	context.Context,
-	report.AttachmentID,
-	...ctapkit.AuthenticatorOption,
-) (*ctapkit.Authenticator, error) {
-	return nil, errors.New("unexpected fake inventory open")
+func (m *fakeDeviceManager) Select(ctx context.Context, id report.AttachmentID) error {
+	var err error
+	if m.selectFunc != nil {
+		err = m.selectFunc(ctx, id)
+	}
+
+	m.mu.Lock()
+	state := deviceManagerState{
+		update: ctapkit.DeviceUpdate{
+			Snapshot: m.snapshot,
+			Error:    failure.Snapshot(err),
+		},
+		runtime: m.selected,
+	}
+	m.mu.Unlock()
+	m.updates <- state
+
+	return err
+}
+
+func (m *fakeDeviceManager) Close() error {
+	var err error
+	m.closeOnce.Do(func() {
+		if m.closeFunc != nil {
+			err = m.closeFunc()
+		}
+		close(m.updates)
+	})
+
+	return err
+}
+
+func (m *fakeDeviceManager) setSelected(selected openedAuthenticator) {
+	m.mu.Lock()
+	m.selected = selected
+	m.mu.Unlock()
+}
+
+func (m *fakeDeviceManager) setSnapshot(snapshot ctapkit.DeviceSnapshot) {
+	m.mu.Lock()
+	m.snapshot = snapshot
+	m.mu.Unlock()
+}
+
+func (m *fakeDeviceManager) publish(update ctapkit.DeviceUpdate) {
+	m.mu.Lock()
+	m.snapshot = update.Snapshot
+	state := deviceManagerState{
+		update:  update,
+		runtime: m.selected,
+	}
+	m.mu.Unlock()
+
+	m.updates <- state
 }
 
 type emitterFunc func(string, any)
@@ -217,26 +365,10 @@ func (emit emitterFunc) Emit(name string, payload any) {
 	emit(name, payload)
 }
 
-func (i *fakeInventory) Close() error {
-	i.closeOnce.Do(func() {
-		close(i.events)
-	})
-
-	return nil
-}
-
-func waitFor(t *testing.T, condition func() bool) {
-	t.Helper()
-
-	deadline := time.Now().Add(time.Second)
-
-	for time.Now().Before(deadline) {
-		if condition() {
-			return
+func discoveryEmitter(events chan<- DiscoveryChangedEnvelope) emitterFunc {
+	return func(name string, payload any) {
+		if name == EventDiscoveryChanged {
+			events <- payload.(DiscoveryChangedEnvelope)
 		}
-
-		time.Sleep(time.Millisecond)
 	}
-
-	t.Fatal("condition was not met")
 }

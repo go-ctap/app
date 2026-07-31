@@ -3,7 +3,6 @@
 package service
 
 import (
-	ctapkit "github.com/go-ctap/kit"
 	"github.com/go-ctap/kit/model"
 	"github.com/go-ctap/kit/model/config"
 	"github.com/go-ctap/kit/model/credentials"
@@ -38,16 +37,11 @@ type LogCursor struct {
 }
 
 type DiscoveryChangedEnvelope struct {
-	Trigger  ctapkit.InventoryTrigger     `json:"trigger"`
 	Snapshot AuthenticatorSessionSnapshot `json:"snapshot"`
 }
 
 type SelectionRequest struct {
-	AttachmentID report.AttachmentID `json:"attachmentId,omitempty"`
-}
-
-type SelectionSnapshot struct {
-	Selection *ActiveSelection `json:"selection,omitempty"`
+	AttachmentID report.AttachmentID `json:"attachmentId"`
 }
 
 type ActiveSelection struct {

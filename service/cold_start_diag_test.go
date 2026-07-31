@@ -33,7 +33,16 @@ func TestDiagnosticWindowsColdStart(t *testing.T) {
 		runtime := New(WithEventEmitter(emitter))
 		ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 
-		snapshot, err := runtime.Discover(ctx)
+		err := runtime.Discover(ctx)
+		var snapshot AuthenticatorSessionSnapshot
+		if err == nil {
+			select {
+			case event := <-emitter.events:
+				snapshot = event.Snapshot
+			case <-ctx.Done():
+				err = ctx.Err()
+			}
+		}
 		logDiagnosticValue(t, attempt, "initial", snapshot, err)
 
 		timer := time.NewTimer(2250 * time.Millisecond)
@@ -41,7 +50,7 @@ func TestDiagnosticWindowsColdStart(t *testing.T) {
 		for {
 			select {
 			case event := <-emitter.events:
-				logDiagnosticValue(t, attempt, string(event.Trigger), event.Snapshot, nil)
+				logDiagnosticValue(t, attempt, "update", event.Snapshot, nil)
 			case <-timer.C:
 				break collect
 			}

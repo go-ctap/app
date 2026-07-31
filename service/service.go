@@ -16,35 +16,38 @@ type EventEmitter interface {
 	Emit(name string, payload any)
 }
 
+type deviceManagerState struct {
+	update  ctapkit.DeviceUpdate
+	runtime openedAuthenticator
+}
+
 type Option func(*Service)
 
-type inventoryRuntime interface {
-	Snapshot() ctapkit.InventorySnapshot
-	Events() <-chan ctapkit.InventoryEvent
-	OpenAuthenticator(
-		context.Context,
-		report.AttachmentID,
-		...ctapkit.AuthenticatorOption,
-	) (*ctapkit.Authenticator, error)
+type deviceManagerRuntime interface {
+	Next() (deviceManagerState, bool)
+	Select(context.Context, report.AttachmentID) error
 	Close() error
 }
 
-type openAuthenticatorFunc func(
+type openDeviceManagerFunc func(
 	context.Context,
-	inventoryRuntime,
-	report.AttachmentID,
+	transport.Mode,
 	...ctapkit.AuthenticatorOption,
-) (openedAuthenticator, error)
+) (deviceManagerRuntime, error)
 
 type Service struct {
 	mu                sync.Mutex
 	emitter           EventEmitter
 	closed            bool
-	openInventory     func(context.Context, transport.Mode) (inventoryRuntime, error)
-	openAuthenticator openAuthenticatorFunc
-	inventory         inventoryRuntime
-	inventoryDone     chan struct{}
+	deviceContext     context.Context
+	cancelDevices     context.CancelFunc
+	openDeviceManager openDeviceManagerFunc
+	devices           deviceManagerRuntime
+	devicesDone       chan struct{}
+	deviceSnapshot    ctapkit.DeviceSnapshot
+	deviceError       *failure.Failure
 	selectionGate     chan struct{}
+	metadataCachePath string
 
 	selected     *selection
 	interactions map[InteractionID]*pendingInteraction
@@ -64,27 +67,22 @@ type pendingInteraction struct {
 }
 
 func New(opts ...Option) *Service {
+	deviceContext, cancelDevices := context.WithCancel(context.Background())
 	service := &Service{
-		interactions: make(map[InteractionID]*pendingInteraction),
-		openInventory: func(
+		deviceContext: deviceContext,
+		cancelDevices: cancelDevices,
+		interactions:  make(map[InteractionID]*pendingInteraction),
+		openDeviceManager: func(
 			ctx context.Context,
 			mode transport.Mode,
-		) (inventoryRuntime, error) {
-			return ctapkit.OpenInventory(ctx, mode)
-		},
-		openAuthenticator: func(
-			ctx context.Context,
-			inventory inventoryRuntime,
-			attachmentID report.AttachmentID,
 			opts ...ctapkit.AuthenticatorOption,
-		) (openedAuthenticator, error) {
-			client, err := inventory.OpenAuthenticator(ctx, attachmentID, opts...)
-
+		) (deviceManagerRuntime, error) {
+			manager, err := ctapkit.NewDeviceManager(ctx, mode, opts...)
 			if err != nil {
-				return openedAuthenticator{}, err
+				return nil, err
 			}
 
-			return newOpenedAuthenticator(client), nil
+			return managedDevices{manager}, nil
 		},
 		selectionGate: make(chan struct{}, 1),
 		logs:          ctapkit.NewLogJournal(),

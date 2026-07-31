@@ -3,11 +3,7 @@ import { CreditCard, Nfc, Usb } from "@lucide/svelte";
 
 import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import {
-  DeviceIdentity,
-  DeviceReport,
-  Vendor,
-} from "../../bindings/github.com/go-ctap/kit/model/report";
+import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { Mode, SmartCardInterface } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n.js";
@@ -145,15 +141,18 @@ describe("sidebar presentation", () => {
     ]);
   });
 
-  it("prefers enriched model and serial in discovered token rows", () => {
+  it("uses the HID product and reported serial in token rows", () => {
     const enriched = new DeviceReport({
       ...token,
-      identity: new DeviceIdentity({
-        vendor: Vendor.VendorYubico,
-        model: "YubiKey 5C NFC",
-        serial: "12345678",
-        firmware: "5.7.1",
-      }),
+      attachment: {
+        ...token.attachment,
+        usb: {
+          product: "YubiKey 5C NFC",
+          reportedSerial: "12345678",
+          vendorId: 0x1050,
+          productId: 0x0407,
+        },
+      },
     });
 
     const presentation = buildSidebarPresentation({
@@ -172,15 +171,18 @@ describe("sidebar presentation", () => {
     });
   });
 
-  it("uses the canonical Token2 model and separate firmware", () => {
+  it("uses another HID product without a vendor identity layer", () => {
     const token2 = new DeviceReport({
       ...token,
-      identity: new DeviceIdentity({
-        vendor: Vendor.VendorToken2,
-        model: "Token2 Bio3 Dual A+C PIN+",
-        serial: "72103654095303",
-        firmware: "R3.2",
-      }),
+      attachment: {
+        ...token.attachment,
+        usb: {
+          product: "Token2 Bio3 Dual A+C PIN+",
+          reportedSerial: "72103654095303",
+          vendorId: 0x349e,
+          productId: 1,
+        },
+      },
     });
 
     const presentation = buildSidebarPresentation({
@@ -228,7 +230,7 @@ describe("sidebar presentation", () => {
     });
   });
 
-  it("shows an enriched contactless smart-card model above its reader", () => {
+  it("shows a generic contactless smart-card name above its reader", () => {
     const smartCard = new DeviceReport({
       ...token,
       attachment: {
@@ -239,10 +241,6 @@ describe("sidebar presentation", () => {
           interface: SmartCardInterface.SmartCardInterfaceContactless,
         },
       },
-      identity: new DeviceIdentity({
-        vendor: Vendor.VendorToken2,
-        model: "Token2 FIDO2 Card",
-      }),
     });
 
     const presentation = buildSidebarPresentation({
@@ -254,8 +252,8 @@ describe("sidebar presentation", () => {
 
     expect(presentation.tokens[0]).toEqual({
       value: "smart-card-1",
-      label: "Token2 FIDO2 Card",
-      name: "Token2 FIDO2 Card",
+      label: "FIDO smart card",
+      name: "FIDO smart card",
       detail: "Token2 Smart Reader · PC/SC",
       icon: Nfc,
     });

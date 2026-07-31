@@ -2,12 +2,19 @@ package service
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 func NewWailsService() *Service {
-	return New(WithEventEmitter(wailsEmitter{}))
+	service := New(WithEventEmitter(wailsEmitter{}))
+	if cacheDir, err := os.UserCacheDir(); err == nil {
+		service.metadataCachePath = filepath.Join(cacheDir, "Telesma", "device-metadata.json")
+	}
+
+	return service
 }
 
 func (s *Service) ServiceName() string {

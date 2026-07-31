@@ -12,7 +12,6 @@ import type {
 import type { AttestationTrustAssessment } from "../../bindings/github.com/go-ctap/mds/model";
 import {
   type AlwaysUVRequest,
-  type AuthenticatorSessionSnapshot,
   type AuthenticatorConfigEnvelope,
   type BioEnrollEnvelope,
   type BioEnrollRequest,
@@ -59,7 +58,6 @@ import {
   type ResetFactoryRequest,
   type ReadLogsRequest,
   type SelectionRequest,
-  type SelectionSnapshot,
   type GetAssertionVerificationRequest,
 } from "../../bindings/telesma/service";
 
@@ -103,12 +101,16 @@ export const api = {
     return runtimeCall("ctapkit.logs.clear", () => service.ClearLogs());
   },
 
-  discover(): Promise<AuthenticatorSessionSnapshot> {
+  discover(): Promise<void> {
     return runtimeCall("ctapkit.discover", () => service.Discover());
   },
 
-  setSelection(request: SelectionRequest): Promise<SelectionSnapshot> {
+  setSelection(request: SelectionRequest): Promise<void> {
     return runtimeCall("ctapkit.selection.set", () => service.SetSelection(request));
+  },
+
+  reconnectSelection(): Promise<void> {
+    return runtimeCall("ctapkit.selection.reconnect", () => service.ReconnectSelection());
   },
 
   cancelOperation(request: CancelOperationRequest): Promise<boolean> {

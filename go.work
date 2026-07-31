@@ -6,6 +6,7 @@ use (
 	../hid
 	../kit
 	../mds
+	../pcsc
 	../token2
 	../yubico
 	../wails/v3

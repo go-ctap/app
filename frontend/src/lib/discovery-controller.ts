@@ -1,15 +1,18 @@
 import { get } from "svelte/store";
 
 import type { DiscoveryChangedEnvelope } from "../../bindings/telesma/service";
-import { InventoryTrigger } from "../../bindings/github.com/go-ctap/kit";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { m } from "../paraglide/messages.js";
-import { selectAuthenticatorSession } from "$lib/authenticator-controller.js";
+import {
+  selectAuthenticatorSession,
+  sessionUpdateApplied,
+} from "$lib/authenticator-controller.js";
 import { authenticatorSession } from "$lib/features/authenticator/state.js";
 import { failureMessage } from "$lib/failure.js";
 import { operationRecovery } from "$lib/operation-recovery.js";
-import { applyDiscovery, setStatusOutcome } from "$lib/workbench-state.js";
+import { applySessionSnapshot, setStatusOutcome } from "$lib/workbench-state.js";
+import { loadActiveScreen } from "$lib/workbench-controller.js";
 
 type DiscoveryTone = "error" | "info" | "warning";
 
@@ -46,7 +49,8 @@ export async function handleDiscoveryChanged(envelope: DiscoveryChangedEnvelope)
     Boolean(previousSelector) &&
     !envelope.snapshot.devices.some((device) => device.attachment.id === previousSelector);
 
-  applyDiscovery(envelope.snapshot);
+  const change = applySessionSnapshot(envelope.snapshot);
+  sessionUpdateApplied();
 
   if (get(operationRecovery)) {
     const recoveryCard = envelope.snapshot.devices.find(
@@ -60,12 +64,6 @@ export async function handleDiscoveryChanged(envelope: DiscoveryChangedEnvelope)
     }
   }
 
-  if (
-    envelope.trigger === InventoryTrigger.InventoryTriggerIdentity &&
-    !envelope.snapshot.error &&
-    !selectedDisconnected
-  )
-    return;
-
   setStatusOutcome(discoveryPresentation(envelope, selectedDisconnected));
+  if (change.becameReady) await loadActiveScreen();
 }

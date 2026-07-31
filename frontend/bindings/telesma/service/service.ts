@@ -95,21 +95,23 @@ export function DeleteLargeBlob(req: $models.LargeBlobDeleteRequest): $Cancellab
     });
 }
 
-export function Discover(): $CancellablePromise<$models.AuthenticatorSessionSnapshot> {
-    return $Call.ByID(4183717870).then(($result: any) => {
-        return $$createType11($result);
-    });
+/**
+ * Discover starts device monitoring or republishes its current state. The
+ * initial state and every later change are published through EventDiscoveryChanged.
+ */
+export function Discover(): $CancellablePromise<void> {
+    return $Call.ByID(4183717870);
 }
 
 export function EnableEnterpriseAttestation(req: $models.EnableEnterpriseAttestationRequest): $CancellablePromise<$models.AuthenticatorConfigEnvelope> {
     return $Call.ByID(136034409, req).then(($result: any) => {
-        return $$createType12($result);
+        return $$createType11($result);
     });
 }
 
 export function EnableLongTouchForReset(req: $models.EnableLongTouchForResetRequest): $CancellablePromise<$models.AuthenticatorConfigEnvelope> {
     return $Call.ByID(2583563405, req).then(($result: any) => {
-        return $$createType12($result);
+        return $$createType11($result);
     });
 }
 
@@ -121,55 +123,59 @@ export function GarbageCollectLargeBlobs(req: $models.LargeBlobGarbageCollectReq
 
 export function GetAssertion(req: $models.GetAssertionRequest): $CancellablePromise<$models.GetAssertionEnvelope> {
     return $Call.ByID(1932383177, req).then(($result: any) => {
-        return $$createType13($result);
+        return $$createType12($result);
     });
 }
 
 export function Inspect(req: $models.OperationRequest): $CancellablePromise<$models.InspectEnvelope> {
     return $Call.ByID(3574876855, req).then(($result: any) => {
-        return $$createType14($result);
+        return $$createType13($result);
     });
 }
 
 export function ListCredentials(req: $models.OperationRequest): $CancellablePromise<$models.CredentialsEnvelope> {
     return $Call.ByID(18371077, req).then(($result: any) => {
-        return $$createType15($result);
+        return $$createType14($result);
     });
 }
 
 export function ListLargeBlobs(req: $models.OperationRequest): $CancellablePromise<$models.LargeBlobListEnvelope> {
     return $Call.ByID(2541655760, req).then(($result: any) => {
-        return $$createType16($result);
+        return $$createType15($result);
     });
 }
 
 export function LookupMDS(req: $models.MDSLookupRequest): $CancellablePromise<$models.MDSLookupEnvelope> {
     return $Call.ByID(922358051, req).then(($result: any) => {
-        return $$createType17($result);
+        return $$createType16($result);
     });
 }
 
 export function MakeCredential(req: $models.MakeCredentialRequest): $CancellablePromise<$models.MakeCredentialEnvelope> {
     return $Call.ByID(3527636358, req).then(($result: any) => {
-        return $$createType18($result);
+        return $$createType17($result);
     });
 }
 
 export function ReadLargeBlob(req: $models.LargeBlobReadRequest): $CancellablePromise<$models.LargeBlobReadEnvelope> {
     return $Call.ByID(804278151, req).then(($result: any) => {
-        return $$createType19($result);
+        return $$createType18($result);
     });
 }
 
 export function ReadLogs(req: $models.ReadLogsRequest): $CancellablePromise<model$1.LogJournalBatch> {
     return $Call.ByID(2019221894, req).then(($result: any) => {
-        return $$createType20($result);
+        return $$createType19($result);
     });
+}
+
+export function ReconnectSelection(): $CancellablePromise<void> {
+    return $Call.ByID(2068708288);
 }
 
 export function ResetFactory(req: $models.ResetFactoryRequest): $CancellablePromise<$models.ResetFactoryEnvelope> {
     return $Call.ByID(3099128462, req).then(($result: any) => {
-        return $$createType21($result);
+        return $$createType20($result);
     });
 }
 
@@ -179,13 +185,13 @@ export function ResolveInteraction(answer: $models.InteractionAnswer): $Cancella
 
 export function SetAlwaysUV(req: $models.AlwaysUVRequest): $CancellablePromise<$models.AuthenticatorConfigEnvelope> {
     return $Call.ByID(864302713, req).then(($result: any) => {
-        return $$createType12($result);
+        return $$createType11($result);
     });
 }
 
 export function SetMinPINLength(req: $models.MinPINLengthRequest): $CancellablePromise<$models.AuthenticatorConfigEnvelope> {
     return $Call.ByID(664355016, req).then(($result: any) => {
-        return $$createType12($result);
+        return $$createType11($result);
     });
 }
 
@@ -195,27 +201,25 @@ export function SetPIN(req: $models.PINSetRequest): $CancellablePromise<$models.
     });
 }
 
-export function SetSelection(req: $models.SelectionRequest): $CancellablePromise<$models.SelectionSnapshot> {
-    return $Call.ByID(3136587015, req).then(($result: any) => {
-        return $$createType22($result);
-    });
+export function SetSelection(req: $models.SelectionRequest): $CancellablePromise<void> {
+    return $Call.ByID(3136587015, req);
 }
 
 export function UpdateCredentialUser(req: $models.CredentialUpdateRequest): $CancellablePromise<$models.CredentialUpdateEnvelope> {
     return $Call.ByID(1873826706, req).then(($result: any) => {
-        return $$createType23($result);
+        return $$createType21($result);
     });
 }
 
 export function VerifyGetAssertion(req: $models.GetAssertionVerificationRequest): $CancellablePromise<webauthn$0.GetAssertionVerification> {
     return $Call.ByID(2758956860, req).then(($result: any) => {
-        return $$createType24($result);
+        return $$createType22($result);
     });
 }
 
 export function VerifyMakeCredential(req: $models.MakeCredentialVerificationRequest): $CancellablePromise<webauthn$0.MakeCredentialVerification> {
     return $Call.ByID(448257851, req).then(($result: any) => {
-        return $$createType25($result);
+        return $$createType23($result);
     });
 }
 
@@ -237,18 +241,16 @@ const $$createType7 = $models.ConfigStatusEnvelope.createFrom;
 const $$createType8 = $models.LargeBlobDecodeEnvelope.createFrom;
 const $$createType9 = $models.CredentialDeleteEnvelope.createFrom;
 const $$createType10 = $models.LargeBlobMutationEnvelope.createFrom;
-const $$createType11 = $models.AuthenticatorSessionSnapshot.createFrom;
-const $$createType12 = $models.AuthenticatorConfigEnvelope.createFrom;
-const $$createType13 = $models.GetAssertionEnvelope.createFrom;
-const $$createType14 = $models.InspectEnvelope.createFrom;
-const $$createType15 = $models.CredentialsEnvelope.createFrom;
-const $$createType16 = $models.LargeBlobListEnvelope.createFrom;
-const $$createType17 = $models.MDSLookupEnvelope.createFrom;
-const $$createType18 = $models.MakeCredentialEnvelope.createFrom;
-const $$createType19 = $models.LargeBlobReadEnvelope.createFrom;
-const $$createType20 = model$1.LogJournalBatch.createFrom;
-const $$createType21 = $models.ResetFactoryEnvelope.createFrom;
-const $$createType22 = $models.SelectionSnapshot.createFrom;
-const $$createType23 = $models.CredentialUpdateEnvelope.createFrom;
-const $$createType24 = webauthn$0.GetAssertionVerification.createFrom;
-const $$createType25 = webauthn$0.MakeCredentialVerification.createFrom;
+const $$createType11 = $models.AuthenticatorConfigEnvelope.createFrom;
+const $$createType12 = $models.GetAssertionEnvelope.createFrom;
+const $$createType13 = $models.InspectEnvelope.createFrom;
+const $$createType14 = $models.CredentialsEnvelope.createFrom;
+const $$createType15 = $models.LargeBlobListEnvelope.createFrom;
+const $$createType16 = $models.MDSLookupEnvelope.createFrom;
+const $$createType17 = $models.MakeCredentialEnvelope.createFrom;
+const $$createType18 = $models.LargeBlobReadEnvelope.createFrom;
+const $$createType19 = model$1.LogJournalBatch.createFrom;
+const $$createType20 = $models.ResetFactoryEnvelope.createFrom;
+const $$createType21 = $models.CredentialUpdateEnvelope.createFrom;
+const $$createType22 = webauthn$0.GetAssertionVerification.createFrom;
+const $$createType23 = webauthn$0.MakeCredentialVerification.createFrom;

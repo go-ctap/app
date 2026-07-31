@@ -7,7 +7,7 @@ export function labelDevice(device: DeviceReport | null | undefined) {
   if (!device) return m.no_token_selected();
 
   const name = deviceName(device);
-  const serialValue = device.identity?.serial;
+  const serialValue = device.attachment.usb?.reportedSerial;
   const serial = serialValue ? ` · ${serialValue}` : "";
 
   return `${name || device.attachment.id || m.authenticator()}${serial}`;
@@ -17,10 +17,9 @@ export function deviceName(device: DeviceReport | null | undefined) {
   if (!device) return m.no_token_selected();
 
   return (
-    device.identity?.model?.trim() ||
-    (device.attachment.transport === Mode.ModeSmartCard ? m.fido_smart_card() : "") ||
     device.attachment.usb?.product?.trim() ||
     device.attachment.usb?.manufacturer?.trim() ||
+    (device.attachment.transport === Mode.ModeSmartCard ? m.fido_smart_card() : "") ||
     device.attachment.id ||
     m.authenticator()
   );
@@ -29,7 +28,7 @@ export function deviceName(device: DeviceReport | null | undefined) {
 export function deviceDetail(device: DeviceReport | null | undefined) {
   if (!device) return "";
 
-  return device.identity?.serial ?? "";
+  return device.attachment.usb?.reportedSerial ?? "";
 }
 
 export function authenticatorStateLabel(value: unknown) {

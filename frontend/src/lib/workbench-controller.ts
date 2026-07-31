@@ -10,7 +10,7 @@ import { maybeLoadOverview } from "$lib/overview-controller.js";
 import { maybeLoadPasskeys } from "$lib/passkeys-controller.js";
 import { maybeLoadSecurity } from "$lib/security-controller.js";
 
-async function loadActiveScreen(screen = get(activeScreen)) {
+export async function loadActiveScreen(screen = get(activeScreen)) {
   switch (screen) {
     case "overview":
     case "lab": {
@@ -36,12 +36,10 @@ async function loadActiveScreen(screen = get(activeScreen)) {
 
 export async function bootstrap() {
   await bootstrapAuthenticatorSession();
-  await loadActiveScreen();
 }
 
 export async function selectToken(selector: string) {
   await selectAuthenticatorSession(selector);
-  await loadActiveScreen();
 }
 
 export async function navigateToScreen(screen: ActiveScreen) {

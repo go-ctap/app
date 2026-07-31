@@ -18,11 +18,7 @@ import {
   Target,
 } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import {
-  DeviceIdentity,
-  DeviceReport,
-  Vendor,
-} from "../../bindings/github.com/go-ctap/kit/model/report";
+import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { InspectEnvelope } from "../../bindings/telesma/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
@@ -199,40 +195,7 @@ describe("Overview", () => {
     });
   });
 
-  it("updates the capability matrix when discovery enrichment arrives after inspection", async () => {
-    seedSelectionForTest("token-1", device, {
-      state: "ready",
-      selectionId: "authenticator-1",
-    });
-    seedOverviewEnvelopeForTest(
-      inspectEnvelope("inspect-1", "00000000-0000-0000-0000-000000000001"),
-    );
-    render(Overview);
-
-    expect(screen.queryByText("72103654095303")).not.toBeInTheDocument();
-
-    await act(() => {
-      const enriched = new DeviceReport({
-        ...device,
-        identity: new DeviceIdentity({
-          vendor: Vendor.VendorToken2,
-          model: "Token2 Bio3 Dual A+C PIN+",
-          serial: "72103654095303",
-          firmware: "R3.2",
-        }),
-      });
-
-      seedSelectionForTest("token-1", enriched, {
-        state: "ready",
-        selectionId: "authenticator-1",
-      });
-    });
-
-    expect(screen.getByText("72103654095303")).toBeInTheDocument();
-    expect(screen.getByText("R3.2")).toBeInTheDocument();
-  });
-
-  it("keeps degraded Overview errors out of the page", () => {
+  it("keeps degraded Overview errors out of the automatic loading state", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -241,9 +204,8 @@ describe("Overview", () => {
 
     render(Overview);
 
-    expect(
-      screen.getByText("Inspect the authenticator to populate its capability matrix."),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Inspection in progress")).toBeInTheDocument();
+    expect(screen.queryByText("Reload overview")).not.toBeInTheDocument();
     expect(
       screen.queryByText("Authenticator metadata could not be downloaded."),
     ).not.toBeInTheDocument();

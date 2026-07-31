@@ -6,7 +6,7 @@
 import { Create as $Create } from "@wailsio/runtime";
 
 /**
- * Mode selects the transport policy for an Inventory.
+ * Mode selects the transport policy for a DeviceManager.
  */
 export enum Mode {
     /**

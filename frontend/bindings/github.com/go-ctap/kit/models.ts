@@ -5,17 +5,6 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
-export enum InventoryTrigger {
-    /**
-     * The Go zero value for the underlying type of the enum.
-     */
-    $zero = "",
-
-    InventoryTriggerTopology = "topology",
-    InventoryTriggerIdentity = "identity",
-    InventoryTriggerManual = "manual",
-};
-
 /**
  * VerificationFlow selects the preferred PIN or user-verification flow.
  */

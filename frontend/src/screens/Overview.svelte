@@ -42,7 +42,7 @@
   }
 </script>
 
-{#if overview.selector && !overview.hasReport && !overview.loading}
+{#if overview.selector && overview.failed}
   <EmptyState title={m.overview_not_loaded()} message={m.overview_not_loaded_message()}>
     {#snippet actions()}
       <Button type="button" onclick={reloadOverview}>

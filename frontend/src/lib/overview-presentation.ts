@@ -29,7 +29,9 @@ export type OverviewPresentation = ReturnType<typeof buildOverviewPresentation>;
 export function buildOverviewPresentation(input: OverviewPresentationInput) {
   const selector = input.selectedSelector;
   const envelope = input.overviewState.data;
-  const loading = input.overviewState.state === "loading";
+  const loading =
+    input.overviewState.state === "loading" ||
+    (input.overviewState.state === "idle" && Boolean(selector));
   const mdsLoading = input.overviewMDSState.state === "loading";
   const mdsFailureMessage =
     input.overviewMDSState.state === "error" ? m.mds_unavailable_description() : null;
@@ -51,6 +53,7 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
   return {
     selector,
     loading,
+    failed: input.overviewState.state === "error",
     mdsLoading,
     hasReport: Boolean(report),
     report,

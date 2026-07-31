@@ -4,6 +4,7 @@
 
   import InteractionModal from "$lib/components/interaction/InteractionModal.svelte";
   import OperationRecoveryDialog from "$lib/components/operation/OperationRecoveryDialog.svelte";
+  import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
   import NoAuthenticatorState from "$lib/components/shell/NoAuthenticatorState.svelte";
   import ShellStatusBar from "$lib/components/shell/ShellStatusBar.svelte";
@@ -34,6 +35,8 @@
   import { syncLogJournal } from "$lib/logs-controller.js";
   import { cancelActiveOperation } from "$lib/operation-controller.js";
   import { currentLocale } from "$lib/i18n";
+  import { failureMessage } from "$lib/failure.js";
+  import { deviceName } from "$lib/format.js";
   import {
     cancelOperationRecovery,
     operationRecovery,
@@ -46,6 +49,7 @@
   } from "$lib/shell-presentation";
   import { toggleMaximizeWindow } from "$lib/window-controller.js";
   import { detectWindowPlatform, resolveWindowPlatform } from "$lib/window-platform";
+  import { m } from "./paraglide/messages.js";
   import Lab from "./screens/Lab.svelte";
   import LargeBlobs from "./screens/LargeBlobs.svelte";
   import Logs from "./screens/Logs.svelte";
@@ -65,6 +69,19 @@
   let isMacOS = $derived(windowPlatform === "macos");
 
   let noDevices = $derived(initialized && !refreshing && $devices.length === 0);
+
+  let opening = $derived($authenticatorStatus.state === "opening");
+
+  let sessionUnavailable = $derived(
+    initialized &&
+      $devices.length > 0 &&
+      !$selectedSelector &&
+      $authenticatorStatus.state === "error",
+  );
+
+  let sessionErrorMessage = $derived(
+    $authenticatorStatus.error ? failureMessage($authenticatorStatus.error) : "",
+  );
 
   let sidebarPresentation = $derived(
     buildSidebarPresentation({
@@ -224,6 +241,18 @@
                   <Settings />
                 {:else if noDevices}
                   <NoAuthenticatorState screenLabel={sidebarPresentation.activeScreenLabel} />
+                {:else if opening}
+                  <EmptyState
+                    title={m.authenticator_opening()}
+                    message={$selectedDevice ? deviceName($selectedDevice) : ""}
+                    variant="workspace"
+                  />
+                {:else if sessionUnavailable}
+                  <EmptyState
+                    title={m.token_selection_issue()}
+                    message={sessionErrorMessage}
+                    variant="workspace"
+                  />
                 {:else if $activeScreen === "large-blobs"}
                   <LargeBlobs />
                 {:else if $activeScreen === "passkeys"}

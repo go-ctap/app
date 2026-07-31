@@ -2,181 +2,145 @@ package service
 
 import (
 	"context"
+	"os"
 
 	ctapkit "github.com/go-ctap/kit"
 	"github.com/go-ctap/kit/model/failure"
 	"github.com/go-ctap/kit/model/report"
 	"github.com/go-ctap/kit/transport"
+
+	"telesma/internal/atomicfile"
 )
 
-func (s *Service) Discover(ctx context.Context) (AuthenticatorSessionSnapshot, error) {
-	if err := s.ensureInventory(ctx); err != nil {
-		return AuthenticatorSessionSnapshot{}, err
-	}
-
-	unlock, err := s.lockSelection(ctx)
-
-	if err != nil {
-		return AuthenticatorSessionSnapshot{}, err
-	}
-
-	defer unlock()
-
-	s.mu.Lock()
-	inventory := s.inventory
-	s.mu.Unlock()
-
-	inventorySnapshot := inventory.Snapshot()
-	var selectionErr error
-
-	if s.currentSelection() == nil && len(inventorySnapshot.Devices) > 0 {
-		_, selectionErr = s.setSelection(ctx, SelectionRequest{
-			AttachmentID: inventorySnapshot.Devices[0].Attachment.ID,
-		})
-	}
-
-	return s.sessionSnapshot(inventorySnapshot.Devices, selectionErr), nil
+// Discover starts device monitoring or republishes its current state. The
+// initial state and every later change are published through EventDiscoveryChanged.
+func (s *Service) Discover(ctx context.Context) error {
+	return s.ensureDeviceManager(ctx)
 }
 
-func (s *Service) ensureInventory(ctx context.Context) error {
+func (s *Service) ensureDeviceManager(ctx context.Context) error {
 	unlock, err := s.lockSelection(ctx)
-
 	if err != nil {
 		return err
 	}
-
 	defer unlock()
 
 	s.mu.Lock()
-	if s.closed {
+	if s.devices != nil {
+		snapshot := s.sessionSnapshotLocked()
 		s.mu.Unlock()
-
-		return closedServiceError(failure.PhaseDiscovery)
-	}
-
-	if s.inventory != nil {
-		s.mu.Unlock()
+		s.emit(EventDiscoveryChanged, DiscoveryChangedEnvelope{Snapshot: snapshot})
 
 		return nil
 	}
-
-	open := s.openInventory
-
+	open := s.openDeviceManager
+	deviceContext := s.deviceContext
 	s.mu.Unlock()
 
-	inventory, err := open(ctx, transport.ModeAuto)
-
+	options := []ctapkit.AuthenticatorOption{ctapkit.WithLogJournal(s.logs)}
+	if s.metadataCachePath != "" {
+		cache, cacheErr := os.ReadFile(s.metadataCachePath)
+		if cacheErr == nil && len(cache) != 0 {
+			options = append(options, ctapkit.WithDeviceMetadataCache(cache))
+		}
+	}
+	manager, err := open(deviceContext, transport.ModeAuto, options...)
 	if err != nil {
 		return ctapkit.NormalizeError(err, failure.PhaseDiscovery)
 	}
+	initial, ok := manager.Next()
+	if !ok {
+		_ = manager.Close()
 
+		return closedServiceError(failure.PhaseDiscovery)
+	}
 	done := make(chan struct{})
 
 	s.mu.Lock()
 	if s.closed {
 		s.mu.Unlock()
-		_ = inventory.Close()
+		_ = manager.Close()
 
 		return closedServiceError(failure.PhaseDiscovery)
 	}
-
-	s.inventory = inventory
-	s.inventoryDone = done
+	s.devices = manager
+	s.devicesDone = done
 	s.mu.Unlock()
 
-	go s.forwardInventoryEvents(inventory, done)
+	snapshot := s.applyDeviceUpdate(initial)
+	s.emit(EventDiscoveryChanged, DiscoveryChangedEnvelope{Snapshot: snapshot})
+	go s.forwardDeviceUpdates(manager, done)
 
 	return nil
 }
 
-func (s *Service) forwardInventoryEvents(inventory inventoryRuntime, done chan struct{}) {
+func (s *Service) forwardDeviceUpdates(
+	manager deviceManagerRuntime,
+	done chan struct{},
+) {
 	defer close(done)
 
-	for event := range inventory.Events() {
-		s.applyInventoryEvent(event)
-	}
-}
+	for {
+		update, ok := manager.Next()
+		if !ok {
+			return
+		}
 
-func (s *Service) applyInventoryEvent(event ctapkit.InventoryEvent) {
-	s.selectionGate <- struct{}{}
-	defer func() { <-s.selectionGate }()
+		unlock, err := s.lockSelection(context.Background())
+		if err != nil {
+			return
+		}
 
-	s.mu.Lock()
-	if s.closed || s.inventory == nil {
+		s.mu.Lock()
+		current := s.devices
 		s.mu.Unlock()
-
-		return
+		if current == manager {
+			snapshot := s.applyDeviceUpdate(update)
+			s.emit(EventDiscoveryChanged, DiscoveryChangedEnvelope{Snapshot: snapshot})
+		}
+		unlock()
 	}
-
-	selected := s.selected
-	missing := selected != nil &&
-		!attachmentPresent(event.Snapshot.Devices, selected.device.Attachment.ID)
-
-	s.mu.Unlock()
-
-	if missing {
-		_ = s.closeSelection(selected)
-		s.retireSelection(selected)
-	}
-
-	var selectionErr error
-
-	if s.currentSelection() == nil && len(event.Snapshot.Devices) > 0 {
-		_, selectionErr = s.setSelection(context.Background(), SelectionRequest{
-			AttachmentID: event.Snapshot.Devices[0].Attachment.ID,
-		})
-	}
-
-	snapshot := s.sessionSnapshot(event.Snapshot.Devices, selectionErr)
-	if snapshot.Error == nil && event.Trigger != ctapkit.InventoryTriggerIdentity {
-		snapshot.Error = event.Error
-	}
-
-	s.emit(EventDiscoveryChanged, DiscoveryChangedEnvelope{
-		Trigger:  event.Trigger,
-		Snapshot: snapshot,
-	})
 }
 
-func (s *Service) sessionSnapshot(
-	devices []report.DeviceReport,
-	sessionErr error,
+func (s *Service) applyDeviceUpdate(
+	state deviceManagerState,
 ) AuthenticatorSessionSnapshot {
+	if s.metadataCachePath != "" && len(state.update.DeviceMetadataCache) != 0 {
+		_ = atomicfile.WriteFile(
+			s.metadataCachePath,
+			state.update.DeviceMetadataCache,
+			0o600,
+			0o700,
+		)
+	}
+	s.reconcileSelection(state.runtime)
+
 	s.mu.Lock()
-	selected := s.selected
+	s.deviceSnapshot = state.update.Snapshot
+	s.deviceError = state.update.Error
+	snapshot := s.sessionSnapshotLocked()
 	s.mu.Unlock()
-
-	snapshot := AuthenticatorSessionSnapshot{
-		Devices: devices,
-		Error:   failure.Snapshot(sessionErr),
-	}
-
-	if selected != nil {
-		active := activeSelection(selected)
-		snapshot.Selection = &active
-	}
 
 	return snapshot
 }
 
-func attachmentPresent(devices []report.DeviceReport, id report.AttachmentID) bool {
-	for _, device := range devices {
-		if device.Attachment.ID == id {
-			return true
+func (s *Service) sessionSnapshotLocked() AuthenticatorSessionSnapshot {
+	devices := s.deviceSnapshot.Devices
+	if devices == nil {
+		devices = []report.DeviceReport{}
+	}
+	snapshot := AuthenticatorSessionSnapshot{
+		Devices: devices,
+		Error:   s.deviceError,
+	}
+	if s.selected != nil {
+		snapshot.Selection = &ActiveSelection{
+			ID:           s.selected.id,
+			AttachmentID: s.selected.device.Attachment.ID,
 		}
 	}
 
-	return false
-}
-
-func (s *Service) isClosed() bool {
-	s.mu.Lock()
-
-	closed := s.closed
-
-	s.mu.Unlock()
-
-	return closed
+	return snapshot
 }
 
 func closedServiceError(phase failure.Phase) error {

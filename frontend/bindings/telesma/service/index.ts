@@ -59,8 +59,7 @@ export {
     ReadLogsRequest,
     ResetFactoryEnvelope,
     ResetFactoryRequest,
-    SelectionRequest,
-    SelectionSnapshot
+    SelectionRequest
 } from "./models.js";
 
 export type {

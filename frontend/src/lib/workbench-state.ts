@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 
 import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import type { ActiveSelection, AuthenticatorSessionSnapshot } from "../../bindings/telesma/service";
+import type { AuthenticatorSessionSnapshot } from "../../bindings/telesma/service";
 import { m } from "../paraglide/messages.js";
 import type { OperationEnvelope } from "$lib/api.js";
 import { resetDeviceState } from "$lib/device-state.js";
@@ -15,53 +15,39 @@ import {
 import { activeSelectionID } from "$lib/authenticator-boundary.js";
 import { failureMessage, isCanceledFailure } from "$lib/failure.js";
 
-export function applyDiscovery(snapshot: AuthenticatorSessionSnapshot): boolean {
+export type SessionChange = {
+  boundaryChanged: boolean;
+  becameReady: boolean;
+};
+
+export function applySessionSnapshot(snapshot: AuthenticatorSessionSnapshot): SessionChange {
   const nextSelector = snapshot.selection?.attachmentId ?? "";
   const current = get(authenticatorSession);
-  const previousSelectionID = current.authenticator.selectionId ?? "";
+  const nextReady = Boolean(snapshot.selection);
   const nextSelectionID = snapshot.selection?.id ?? "";
-  const changed =
-    nextSelector !== current.selectedAttachmentId || nextSelectionID !== previousSelectionID;
+  const currentReady = current.authenticator.state === "ready";
+  const currentSelectionID = currentReady ? current.authenticator.selectionId! : "";
+  const boundaryChanged =
+    nextSelector !== current.selectedAttachmentId ||
+    (nextReady && currentReady && nextSelectionID !== currentSelectionID);
+  const becameReady = nextReady && (!currentReady || nextSelectionID !== currentSelectionID);
 
   authenticatorSession.set({
     devices: snapshot.devices,
     selectedAttachmentId: nextSelector,
-    authenticator: snapshot.selection
-      ? { selectionId: snapshot.selection.id, state: "ready" }
+    authenticator: nextReady
+      ? { selectionId: nextSelectionID, state: "ready" }
       : snapshot.error
         ? { state: "error", error: snapshot.error }
         : { state: "idle" },
   });
 
-  if (changed) {
+  if (boundaryChanged) {
+    pendingInteraction.set(null);
     clearWorkbenchScreenCaches();
   }
 
-  return changed;
-}
-
-export function applySelection(selection: ActiveSelection | null) {
-  const current = get(authenticatorSession);
-  const nextSelector = selection?.attachmentId ?? "";
-  const changed = nextSelector !== current.selectedAttachmentId;
-
-  authenticatorSession.set({
-    ...current,
-    selectedAttachmentId: nextSelector,
-    authenticator: selection ? { selectionId: selection.id, state: "ready" } : { state: "idle" },
-  });
-
-  if (changed) clearWorkbenchScreenCaches();
-
-  return changed;
-}
-
-export function setAuthenticatorOpening(selectedAttachmentId: string) {
-  authenticatorSession.update((session) => ({
-    ...session,
-    selectedAttachmentId,
-    authenticator: { state: "opening" },
-  }));
+  return { boundaryChanged, becameReady };
 }
 
 export function setAuthenticatorError(error: Failure) {

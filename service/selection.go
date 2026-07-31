@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	ctapkit "github.com/go-ctap/kit"
 	"github.com/go-ctap/kit/model/failure"
@@ -43,6 +44,44 @@ func (a openedAuthenticator) Closed() bool {
 	return a.lifecycle.Closed()
 }
 
+func (a openedAuthenticator) same(other openedAuthenticator) bool {
+	if a.client != nil || other.client != nil {
+		return a.client == other.client
+	}
+
+	return a.lifecycle == other.lifecycle
+}
+
+type managedDevices struct {
+	manager *ctapkit.DeviceManager
+}
+
+func managedDeviceState(update ctapkit.DeviceUpdate) deviceManagerState {
+	state := deviceManagerState{update: update}
+	if update.Selected != nil {
+		state.runtime = newOpenedAuthenticator(update.Selected)
+	}
+
+	return state
+}
+
+func (m managedDevices) Next() (deviceManagerState, bool) {
+	update, ok := <-m.manager.Updates()
+	if !ok {
+		return deviceManagerState{}, false
+	}
+
+	return managedDeviceState(update), true
+}
+
+func (m managedDevices) Select(ctx context.Context, id report.AttachmentID) error {
+	return m.manager.Select(ctx, id)
+}
+
+func (m managedDevices) Close() error {
+	return m.manager.Close()
+}
+
 func newSelection(id SelectionID, runtime openedAuthenticator) *selection {
 	return &selection{
 		id:         id,
@@ -52,134 +91,152 @@ func newSelection(id SelectionID, runtime openedAuthenticator) *selection {
 	}
 }
 
-func (s *Service) SetSelection(ctx context.Context, req SelectionRequest) (SelectionSnapshot, error) {
+func (s *Service) SetSelection(
+	ctx context.Context,
+	req SelectionRequest,
+) error {
 	unlock, err := s.lockSelection(ctx)
-
 	if err != nil {
-		return SelectionSnapshot{}, err
+		return err
 	}
-
 	defer unlock()
 
-	return s.setSelection(ctx, req)
-}
-
-func (s *Service) setSelection(ctx context.Context, req SelectionRequest) (SelectionSnapshot, error) {
-	if s.isClosed() {
-		return SelectionSnapshot{}, closedServiceError(failure.PhaseAuthenticator)
-	}
-
-	if req.AttachmentID == "" {
-		if selected := s.currentSelection(); selected != nil {
-			closeErr := s.closeSelection(selected)
-
-			s.retireSelection(selected)
-
-			return SelectionSnapshot{}, closeErr
-		}
-
-		return SelectionSnapshot{}, nil
-	}
-
 	s.mu.Lock()
-
-	inventory := s.inventory
-	current := s.selected
-
+	manager := s.devices
 	s.mu.Unlock()
-	if inventory == nil {
-		return SelectionSnapshot{}, failure.New(
+	if manager == nil {
+		return failure.New(
 			failure.CodeDeviceNotFound,
 			failure.WithPhase(failure.PhaseDiscovery),
 		)
 	}
-
-	if current != nil && current.device.Attachment.ID == req.AttachmentID {
-		active := activeSelection(current)
-
-		return SelectionSnapshot{Selection: &active}, nil
+	if req.AttachmentID == "" {
+		return failure.New(
+			failure.CodeDeviceNotFound,
+			failure.WithPhase(failure.PhaseAuthenticator),
+		)
 	}
 
-	if current != nil {
-		_ = s.closeSelection(current)
-		s.retireSelection(current)
-	}
+	return manager.Select(ctx, req.AttachmentID)
+}
 
-	runtime, err := s.openAuthenticator(
-		ctx,
-		inventory,
-		req.AttachmentID,
-		ctapkit.WithLogJournal(s.logs),
-	)
-
-	if err != nil {
-		return SelectionSnapshot{}, err
-	}
-
-	selected := newSelection(
-		SelectionID(uuid.NewString()),
-		runtime,
-	)
-
+func (s *Service) ReconnectSelection(
+	ctx context.Context,
+) error {
 	s.mu.Lock()
-	if s.closed {
-		s.mu.Unlock()
-		_ = selected.runtime.Close()
-
-		return SelectionSnapshot{}, closedServiceError(failure.PhaseAuthenticator)
-	}
-
-	s.selected = selected
+	selected := s.selected
 	s.mu.Unlock()
-
-	active := activeSelection(selected)
-
-	return SelectionSnapshot{Selection: &active}, nil
-}
-
-func activeSelection(selected *selection) ActiveSelection {
-	return ActiveSelection{
-		ID:           selected.id,
-		AttachmentID: selected.device.Attachment.ID,
-	}
-}
-
-func (s *Service) close() error {
-	s.selectionGate <- struct{}{}
-
-	s.mu.Lock()
-	if s.closed {
-		s.mu.Unlock()
-		<-s.selectionGate
-
+	if selected == nil {
 		return nil
 	}
 
-	s.closed = true
+	return s.restartDeviceManager(ctx, selected.device.Attachment.ID)
+}
 
+func (s *Service) reconcileSelection(runtime openedAuthenticator) {
+	current := s.currentSelection()
+	if current != nil && runtime.lifecycle != nil && current.runtime.same(runtime) {
+		s.mu.Lock()
+		current.device = runtime.device
+		s.mu.Unlock()
+
+		return
+	}
+
+	if current != nil {
+		s.retireSelection(current)
+		s.cancelAndWait(current)
+	}
+	if runtime.lifecycle == nil {
+		return
+	}
+
+	selected := newSelection(SelectionID(uuid.NewString()), runtime)
+	s.mu.Lock()
+	if !s.closed {
+		s.selected = selected
+	}
+	s.mu.Unlock()
+}
+
+func (s *Service) restartDeviceManager(
+	ctx context.Context,
+	preferred report.AttachmentID,
+) error {
+	unlock, err := s.lockSelection(ctx)
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	manager := s.devices
+	done := s.devicesDone
 	selected := s.selected
-	inventory := s.inventory
-	inventoryDone := s.inventoryDone
-
+	s.devices = nil
+	s.devicesDone = nil
+	s.deviceSnapshot = ctapkit.DeviceSnapshot{}
+	s.deviceError = nil
+	s.selected = nil
 	s.mu.Unlock()
 
 	var closeErr error
-
+	if manager != nil {
+		closeErr = manager.Close()
+	}
 	if selected != nil {
-		closeErr = s.closeSelection(selected)
-		s.retireSelection(selected)
+		s.cancelAndWait(selected)
+	}
+	unlock()
+	if done != nil {
+		<-done
+	}
+
+	if err := s.ensureDeviceManager(ctx); err != nil {
+		return errors.Join(closeErr, err)
+	}
+
+	if preferred != "" {
+		selectErr := s.SetSelection(
+			ctx,
+			SelectionRequest{AttachmentID: preferred},
+		)
+		closeErr = errors.Join(closeErr, selectErr)
+	}
+
+	return closeErr
+}
+
+func (s *Service) close() error {
+	s.mu.Lock()
+	if s.closed {
+		s.mu.Unlock()
+
+		return nil
+	}
+	s.closed = true
+	s.cancelDevices()
+	s.mu.Unlock()
+
+	s.selectionGate <- struct{}{}
+
+	s.mu.Lock()
+	selected := s.selected
+	s.selected = nil
+	manager := s.devices
+	done := s.devicesDone
+	s.mu.Unlock()
+
+	var closeErr error
+	if manager != nil {
+		closeErr = manager.Close()
+	}
+	if selected != nil {
+		s.cancelAndWait(selected)
 	}
 
 	<-s.selectionGate
-
-	if inventory != nil {
-		if err := inventory.Close(); closeErr == nil {
-			closeErr = err
-		}
-	}
-
-	if inventoryDone != nil {
-		<-inventoryDone
+	if done != nil {
+		<-done
 	}
 
 	return closeErr
@@ -195,35 +252,32 @@ func (s *Service) currentSelection() *selection {
 func (s *Service) lockSelection(ctx context.Context) (func(), error) {
 	select {
 	case s.selectionGate <- struct{}{}:
+		s.mu.Lock()
+		closed := s.closed
+		s.mu.Unlock()
+		if closed {
+			<-s.selectionGate
+
+			return nil, closedServiceError(failure.PhaseAuthenticator)
+		}
+
 		return func() { <-s.selectionGate }, nil
 	case <-ctx.Done():
 		return nil, ctapkit.NormalizeError(ctx.Err(), failure.PhaseAuthenticator)
 	}
 }
 
-func (s *Service) closeSelection(selected *selection) error {
-	closeErr := selected.runtime.Close()
-
-	s.cancelAndWait(selected)
-
-	return closeErr
-}
-
 func (s *Service) cancelAndWait(selected *selection) {
 	s.mu.Lock()
-
 	operations := make([]*operationState, 0, len(selected.operations))
-
 	for _, operation := range selected.operations {
 		operations = append(operations, operation)
 	}
-
 	s.mu.Unlock()
 
 	for _, operation := range operations {
 		operation.cancel()
 	}
-
 	for _, operation := range operations {
 		<-operation.done
 	}

@@ -4,7 +4,6 @@ import type {
   PayloadEntry,
   StatusReport,
 } from "../../bindings/github.com/go-ctap/mds/model";
-import { Vendor } from "../../bindings/github.com/go-ctap/kit/model/report";
 
 import { deviceName as formattedDeviceName } from "$lib/format.js";
 import { m, mdsDescriptionText, mdsStateText } from "$lib/overview-i18n.js";
@@ -55,7 +54,7 @@ export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHe
   return {
     title: deviceName || mdsName || m.selected_authenticator(),
     subtitle: textValue(statement?.description, "") || m.current_authenticator_overview(),
-    versionBadge: vendorVersionBadge(device?.identity?.vendor, device?.identity?.firmware),
+    versionBadge: "",
     aaguid,
     aaguidAvailable: hasAaguid(rawAaguid, aaguid),
     iconSrc: safeMDSImage(statement?.icon) || safeMDSImage(statement?.iconDark) || "",
@@ -65,18 +64,6 @@ export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHe
     mdsStatusFacts: statusReportFacts(latestStatus, statement, entry, status, found, mdsState),
     mdsBlobFacts: metadataBlobFacts(mdsResult, hasLookup),
   };
-}
-
-function vendorVersionBadge(vendor: Vendor | undefined, firmware: string | undefined) {
-  const version = textValue(firmware, "");
-
-  if (!version) return "";
-
-  if (vendor === Vendor.VendorToken2 || vendor === Vendor.VendorYubico) {
-    return m.token_firmware_badge({ version });
-  }
-
-  return "";
 }
 
 export function buildOverviewMDSObservations(

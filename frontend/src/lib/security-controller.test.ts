@@ -9,28 +9,26 @@ import {
   StateValue,
 } from "../../bindings/github.com/go-ctap/kit/model/config";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import {
-  IdentityResolutionState,
-  type DeviceReport,
-} from "../../bindings/github.com/go-ctap/kit/model/report";
+import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { PreviewMode } from "../../bindings/github.com/go-ctap/kit/model/safety";
-import type {
-  AuthenticatorConfigEnvelope,
-  BioEnrollEnvelope,
-  BioListEnvelope,
-  BioMutationEnvelope,
-  BioSensorEnvelope,
-  ConfigStatusEnvelope,
-  PINChangeRequest,
-  PINEnvelope,
-  PINSetRequest,
-  ResetFactoryEnvelope,
-  ActiveSelection,
+import {
+  type ActiveSelection,
+  type AuthenticatorConfigEnvelope,
+  type BioEnrollEnvelope,
+  type BioListEnvelope,
+  type BioMutationEnvelope,
+  type BioSensorEnvelope,
+  type ConfigStatusEnvelope,
+  type PINChangeRequest,
+  type PINEnvelope,
+  type PINSetRequest,
+  type ResetFactoryEnvelope,
 } from "../../bindings/telesma/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 import { testSmartCardDevice } from "../test/device.js";
 
 import { api } from "$lib/api";
+import { handleDiscoveryChanged } from "$lib/discovery-controller.js";
 import { errorLoadState, overviewBioSensor, overviewMDS } from "$lib/features/overview/state";
 import { failureForCode } from "$lib/test-support/failure";
 import {
@@ -85,7 +83,6 @@ function device(id: string): DeviceReport {
       transport: Mode.ModeHID,
       usb: { product: id, vendorId: 1, productId: 2 },
     },
-    identityResolution: { state: IdentityResolutionState.IdentityUnavailable },
   };
 }
 
@@ -96,7 +93,7 @@ function snapshot(
   return {
     id: selectionId,
     attachmentId: item.attachment.id,
-  } as ActiveSelection;
+  };
 }
 
 function statusEnvelope(
@@ -876,11 +873,13 @@ describe("factory reset lifecycle", () => {
       .mockResolvedValueOnce(resetEnvelope("preview"))
       .mockResolvedValueOnce(resetEnvelope("result"));
 
-    const setSelection = vi.spyOn(api, "setSelection").mockResolvedValueOnce({});
-
-    vi.spyOn(api, "discover").mockResolvedValue({
-      devices: replacements,
-      selection: snapshot(replacements[0]),
+    const reconnectSelection = vi.spyOn(api, "reconnectSelection").mockImplementation(async () => {
+      await handleDiscoveryChanged({
+        snapshot: {
+          devices: replacements,
+          selection: snapshot(replacements[0]),
+        },
+      });
     });
 
     vi.spyOn(api, "configStatus").mockResolvedValue(
@@ -893,8 +892,7 @@ describe("factory reset lifecycle", () => {
     expect(await beginFactoryReset()).toBe(true);
     expect(await confirmSecurityMutation()).toBe(true);
 
-    expect(setSelection).toHaveBeenCalledOnce();
-    expect(setSelection).toHaveBeenCalledWith({ attachmentId: "" });
+    expect(reconnectSelection).toHaveBeenCalledOnce();
     expect(get(devices)).toEqual(replacements);
     expect(get(selectedSelector)).toBe(replacements[0].attachment.id);
     expect(get(authenticatorStatus)).toMatchObject({
@@ -903,7 +901,7 @@ describe("factory reset lifecycle", () => {
     });
   });
 
-  it("does not reuse a pre-reset authenticator when clearing selection reports an error", async () => {
+  it("applies a fresh authenticator when reconnect reports a cleanup warning", async () => {
     const replacement = device("token-after-close-warning");
 
     seedActiveScreenForTest("security");
@@ -911,13 +909,15 @@ describe("factory reset lifecycle", () => {
       .mockResolvedValueOnce(resetEnvelope("preview"))
       .mockResolvedValueOnce(resetEnvelope("result"));
 
-    const setSelection = vi
-      .spyOn(api, "setSelection")
-      .mockRejectedValueOnce(new Error("old handle close failed"));
+    const reconnectSelection = vi.spyOn(api, "reconnectSelection").mockImplementation(async () => {
+      await handleDiscoveryChanged({
+        snapshot: {
+          devices: [replacement],
+          selection: snapshot(replacement, "fresh-authenticator"),
+        },
+      });
 
-    vi.spyOn(api, "discover").mockResolvedValue({
-      devices: [replacement],
-      selection: snapshot(replacement, "fresh-authenticator"),
+      throw failureForCode(Code.CodeInternalError);
     });
     vi.spyOn(api, "configStatus").mockResolvedValue(
       statusEnvelope({
@@ -929,7 +929,7 @@ describe("factory reset lifecycle", () => {
     expect(await beginFactoryReset()).toBe(true);
     expect(await confirmSecurityMutation()).toBe(true);
 
-    expect(setSelection).toHaveBeenCalledOnce();
+    expect(reconnectSelection).toHaveBeenCalledOnce();
     expect(get(authenticatorStatus)).toMatchObject({
       state: "ready",
       selectionId: "fresh-authenticator",

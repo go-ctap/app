@@ -3,21 +3,9 @@
 
 export {
     AttachmentReport,
-    Capability,
-    DeviceIdentity,
     DeviceReport,
-    IdentityResolution,
-    IdentityResolutionState,
-    Interface,
-    InterfaceReport,
     SmartCardReport,
-    USBReport,
-    Vendor,
-    VendorDetails,
-    YubicoDetails,
-    YubicoFormFactor,
-    YubicoReleaseType,
-    YubicoVersionQualifier
+    USBReport
 } from "./models.js";
 
 export type {
