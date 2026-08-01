@@ -2,14 +2,11 @@ package service
 
 import (
 	"context"
-	"os"
 
 	ctapkit "github.com/go-ctap/kit"
 	"github.com/go-ctap/kit/model/failure"
 	"github.com/go-ctap/kit/model/report"
 	"github.com/go-ctap/kit/transport"
-
-	"telesma/internal/atomicfile"
 )
 
 // Discover starts device monitoring or republishes its current state. The
@@ -37,14 +34,7 @@ func (s *Service) ensureDeviceManager(ctx context.Context) error {
 	deviceContext := s.deviceContext
 	s.mu.Unlock()
 
-	options := []ctapkit.AuthenticatorOption{ctapkit.WithLogJournal(s.logs)}
-	if s.metadataCachePath != "" {
-		cache, cacheErr := os.ReadFile(s.metadataCachePath)
-		if cacheErr == nil && len(cache) != 0 {
-			options = append(options, ctapkit.WithDeviceMetadataCache(cache))
-		}
-	}
-	manager, err := open(deviceContext, transport.ModeAuto, options...)
+	manager, err := open(deviceContext, transport.ModeAuto, ctapkit.WithLogJournal(s.logs))
 	if err != nil {
 		return ctapkit.NormalizeError(err, failure.PhaseDiscovery)
 	}
@@ -105,14 +95,6 @@ func (s *Service) forwardDeviceUpdates(
 func (s *Service) applyDeviceUpdate(
 	state deviceManagerState,
 ) AuthenticatorSessionSnapshot {
-	if s.metadataCachePath != "" && len(state.update.DeviceMetadataCache) != 0 {
-		_ = atomicfile.WriteFile(
-			s.metadataCachePath,
-			state.update.DeviceMetadataCache,
-			0o600,
-			0o700,
-		)
-	}
 	s.reconcileSelection(state.runtime)
 
 	s.mu.Lock()

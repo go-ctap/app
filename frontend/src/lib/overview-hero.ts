@@ -54,6 +54,7 @@ export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHe
   return {
     title: deviceName || mdsName || m.selected_authenticator(),
     subtitle: textValue(statement?.description, "") || m.current_authenticator_overview(),
+    serialNumber: textValue(device?.identity?.serialNumber, ""),
     versionBadge: "",
     aaguid,
     aaguidAvailable: hasAaguid(rawAaguid, aaguid),

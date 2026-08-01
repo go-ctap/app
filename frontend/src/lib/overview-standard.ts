@@ -283,7 +283,9 @@ function metadataSummary(mdsState: OverviewMDSState, mds: LookupResult | null) {
   const fips = fipsCertification(mds, statusReports);
 
   if (status === "FIDO_CERTIFIED" || status.startsWith("FIDO_CERTIFIED_L")) {
-    const fido = m.overview_standard_summary_mds_certified();
+    const fido = m.overview_standard_summary_mds_certified({
+      certification: fidoCertification(status),
+    });
 
     if (!fips) return fido;
 
@@ -341,6 +343,12 @@ function fipsCertification(mds: LookupResult, statusReports: StatusReport[]) {
 
 function certificationLevel(value: number | null | undefined) {
   return Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 4 ? Number(value) : null;
+}
+
+function fidoCertification(status: string) {
+  const level = status.match(/^FIDO_CERTIFIED_L([1-3])(PLUS)?$/);
+
+  return level ? `FIDO L${level[1]}${level[2] ? "+" : ""}` : "FIDO";
 }
 
 function isDangerousMDSStatus(status: string) {
@@ -425,9 +433,8 @@ function certificationSummary(
   }
 
   const fidoStatus = statuses.find((status) => /^FIDO_CERTIFIED_L[1-3](PLUS)?$/.test(status));
-  const fidoLevel = fidoStatus?.match(/^FIDO_CERTIFIED_L([1-3])(PLUS)?$/);
-  const fido = fidoLevel
-    ? `FIDO L${fidoLevel[1]}${fidoLevel[2] ? "+" : ""}`
+  const fido = fidoStatus
+    ? fidoCertification(fidoStatus)
     : statuses.includes("FIDO_CERTIFIED")
       ? m.overview_standard_certification_verified()
       : "";

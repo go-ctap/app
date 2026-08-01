@@ -8,6 +8,12 @@ import { Create as $Create } from "@wailsio/runtime";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as transport$0 from "../../transport/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as token2$0 from "../../../token2/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as yubico$0 from "../../../yubico/models.js";
 
 /**
  * AttachmentID identifies one currently reachable transport endpoint. It is
@@ -55,10 +61,40 @@ export class AttachmentReport {
 }
 
 /**
- * DeviceReport describes one selectable transport attachment.
+ * DeviceIdentityReport is the stable identity summary derived from vendor
+ * metadata.
+ */
+export class DeviceIdentityReport {
+    "vendor": DeviceVendor;
+    "name"?: string;
+    "serialNumber"?: string;
+
+    /** Creates a new DeviceIdentityReport instance. */
+    constructor($$source: Partial<DeviceIdentityReport> = {}) {
+        if (!("vendor" in $$source)) {
+            this["vendor"] = DeviceVendor.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new DeviceIdentityReport instance from a string or object.
+     */
+    static createFrom($$source: any = {}): DeviceIdentityReport {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new DeviceIdentityReport($$parsedSource as Partial<DeviceIdentityReport>);
+    }
+}
+
+/**
+ * DeviceReport describes one selectable transport attachment and its resolved
+ * physical-device identity and vendor metadata.
  */
 export class DeviceReport {
     "attachment": AttachmentReport;
+    "identity"?: DeviceIdentityReport | null;
+    "vendorMetadata"?: DeviceVendorMetadata | null;
 
     /** Creates a new DeviceReport instance. */
     constructor($$source: Partial<DeviceReport> = {}) {
@@ -74,11 +110,60 @@ export class DeviceReport {
      */
     static createFrom($$source: any = {}): DeviceReport {
         const $$createField0_0 = $$createType4;
+        const $$createField1_0 = $$createType6;
+        const $$createField2_0 = $$createType8;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("attachment" in $$parsedSource) {
             $$parsedSource["attachment"] = $$createField0_0($$parsedSource["attachment"]);
         }
+        if ("identity" in $$parsedSource) {
+            $$parsedSource["identity"] = $$createField1_0($$parsedSource["identity"]);
+        }
+        if ("vendorMetadata" in $$parsedSource) {
+            $$parsedSource["vendorMetadata"] = $$createField2_0($$parsedSource["vendorMetadata"]);
+        }
         return new DeviceReport($$parsedSource as Partial<DeviceReport>);
+    }
+}
+
+export enum DeviceVendor {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    DeviceVendorYubico = "yubico",
+    DeviceVendorToken2 = "token2",
+};
+
+/**
+ * DeviceVendorMetadata is an extensible tagged union of metadata returned by
+ * vendor-owned packages. A provider sets only its own field.
+ */
+export class DeviceVendorMetadata {
+    "yubico"?: yubico$0.DeviceInfo | null;
+    "token2"?: token2$0.DeviceInfo | null;
+
+    /** Creates a new DeviceVendorMetadata instance. */
+    constructor($$source: Partial<DeviceVendorMetadata> = {}) {
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new DeviceVendorMetadata instance from a string or object.
+     */
+    static createFrom($$source: any = {}): DeviceVendorMetadata {
+        const $$createField0_0 = $$createType10;
+        const $$createField1_0 = $$createType12;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("yubico" in $$parsedSource) {
+            $$parsedSource["yubico"] = $$createField0_0($$parsedSource["yubico"]);
+        }
+        if ("token2" in $$parsedSource) {
+            $$parsedSource["token2"] = $$createField1_0($$parsedSource["token2"]);
+        }
+        return new DeviceVendorMetadata($$parsedSource as Partial<DeviceVendorMetadata>);
     }
 }
 
@@ -149,3 +234,11 @@ const $$createType1 = $Create.Nullable($$createType0);
 const $$createType2 = SmartCardReport.createFrom;
 const $$createType3 = $Create.Nullable($$createType2);
 const $$createType4 = AttachmentReport.createFrom;
+const $$createType5 = DeviceIdentityReport.createFrom;
+const $$createType6 = $Create.Nullable($$createType5);
+const $$createType7 = DeviceVendorMetadata.createFrom;
+const $$createType8 = $Create.Nullable($$createType7);
+const $$createType9 = yubico$0.DeviceInfo.createFrom;
+const $$createType10 = $Create.Nullable($$createType9);
+const $$createType11 = token2$0.DeviceInfo.createFrom;
+const $$createType12 = $Create.Nullable($$createType11);

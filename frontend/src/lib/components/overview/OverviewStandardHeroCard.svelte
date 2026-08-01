@@ -58,6 +58,9 @@
       <div class="standard-device-copy">
         <Card.Title class="standard-device-title"><h2>{hero.title}</h2></Card.Title>
         <div class="standard-device-meta cluster">
+          {#if hero.serialNumber}
+            <Badge variant="secondary">S/N {hero.serialNumber}</Badge>
+          {/if}
           {#if hero.versionBadge}
             <Badge variant="secondary">{hero.versionBadge}</Badge>
           {/if}

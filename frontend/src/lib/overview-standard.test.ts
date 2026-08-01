@@ -106,7 +106,7 @@ describe("buildOverviewStandardPresentation", () => {
     expect(presentation.description).toContain("Actions are confirmed by touching the device.");
     expect(presentation.description).toContain("The device PIN is set.");
     expect(presentation.description).toContain("managed in the app");
-    expect(presentation.description).toContain("this model has passed FIDO certification");
+    expect(presentation.description).toContain("this model has passed FIDO L2 certification");
     expect(presentation.description).toContain("FIPS 140-3 Level 2 certification");
     expect(presentation.transports).toBe("USB · NFC");
     expect(presentation.facts.find((fact) => fact.id === "owner-verification")?.value).toBe(

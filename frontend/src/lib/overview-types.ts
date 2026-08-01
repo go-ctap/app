@@ -114,6 +114,7 @@ export type OverviewHeroFact = {
 export type OverviewHeroPresentation = {
   title: string;
   subtitle: string;
+  serialNumber: string;
   versionBadge: string;
   aaguid: string;
   aaguidAvailable: boolean;

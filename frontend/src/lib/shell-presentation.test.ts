@@ -3,7 +3,11 @@ import { CreditCard, Nfc, Usb } from "@lucide/svelte";
 
 import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
 import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import {
+  DeviceIdentityReport,
+  DeviceReport,
+  DeviceVendor,
+} from "../../bindings/github.com/go-ctap/kit/model/report";
 import { Mode, SmartCardInterface } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n.js";
@@ -141,18 +145,22 @@ describe("sidebar presentation", () => {
     ]);
   });
 
-  it("uses the HID product and reported serial in token rows", () => {
+  it("prefers the Yubico identity resolved after opening", () => {
     const enriched = new DeviceReport({
       ...token,
       attachment: {
         ...token.attachment,
         usb: {
-          product: "YubiKey 5C NFC",
-          reportedSerial: "12345678",
+          product: "Yubico Security Key",
           vendorId: 0x1050,
           productId: 0x0407,
         },
       },
+      identity: new DeviceIdentityReport({
+        vendor: DeviceVendor.DeviceVendorYubico,
+        name: "YubiKey 5C NFC",
+        serialNumber: "12345678",
+      }),
     });
 
     const presentation = buildSidebarPresentation({
@@ -171,18 +179,22 @@ describe("sidebar presentation", () => {
     });
   });
 
-  it("uses another HID product without a vendor identity layer", () => {
+  it("prefers the canonical Token2 identity over attachment labels", () => {
     const token2 = new DeviceReport({
       ...token,
       attachment: {
         ...token.attachment,
         usb: {
-          product: "Token2 Bio3 Dual A+C PIN+",
-          reportedSerial: "72103654095303",
+          product: "TOKEN2 FIDO2 Security Key",
           vendorId: 0x349e,
           productId: 1,
         },
       },
+      identity: new DeviceIdentityReport({
+        vendor: DeviceVendor.DeviceVendorToken2,
+        name: "Token2 Bio3 Dual A+C PIN+",
+        serialNumber: "72103654095303",
+      }),
     });
 
     const presentation = buildSidebarPresentation({
@@ -230,7 +242,7 @@ describe("sidebar presentation", () => {
     });
   });
 
-  it("shows a generic contactless smart-card name above its reader", () => {
+  it("shows a resolved contactless smart-card identity above its reader", () => {
     const smartCard = new DeviceReport({
       ...token,
       attachment: {
@@ -241,6 +253,11 @@ describe("sidebar presentation", () => {
           interface: SmartCardInterface.SmartCardInterfaceContactless,
         },
       },
+      identity: new DeviceIdentityReport({
+        vendor: DeviceVendor.DeviceVendorToken2,
+        name: "Token2 FIDO Card",
+        serialNumber: "86202012345678",
+      }),
     });
 
     const presentation = buildSidebarPresentation({
@@ -252,9 +269,9 @@ describe("sidebar presentation", () => {
 
     expect(presentation.tokens[0]).toEqual({
       value: "smart-card-1",
-      label: "FIDO smart card",
-      name: "FIDO smart card",
-      detail: "Token2 Smart Reader · PC/SC",
+      label: "Token2 FIDO Card · 86202012345678",
+      name: "Token2 FIDO Card",
+      detail: "S/N 86202012345678",
       icon: Nfc,
     });
   });

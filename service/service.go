@@ -47,7 +47,6 @@ type Service struct {
 	deviceSnapshot    ctapkit.DeviceSnapshot
 	deviceError       *failure.Failure
 	selectionGate     chan struct{}
-	metadataCachePath string
 
 	selected     *selection
 	interactions map[InteractionID]*pendingInteraction

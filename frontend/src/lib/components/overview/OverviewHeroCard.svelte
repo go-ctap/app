@@ -52,6 +52,9 @@
             <Card.Title class="hero-title"><h2>{hero.title}</h2></Card.Title>
             <div class="hero-meta">
               <div class="badges cluster">
+                {#if hero.serialNumber}
+                  <StatusBadge label={`S/N ${hero.serialNumber}`} tone="neutral" />
+                {/if}
                 {#if hero.versionBadge}
                   <StatusBadge label={hero.versionBadge} tone="neutral" />
                 {/if}

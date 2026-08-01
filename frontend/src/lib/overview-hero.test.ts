@@ -8,7 +8,11 @@ import {
   PayloadEntry,
   StatusReport,
 } from "../../bindings/github.com/go-ctap/mds/model";
-import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import {
+  DeviceIdentityReport,
+  DeviceReport,
+  DeviceVendor,
+} from "../../bindings/github.com/go-ctap/kit/model/report";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
@@ -58,16 +62,30 @@ describe("buildOverviewHero", () => {
     );
   });
 
-  it("uses the attachment product as the device title", () => {
+  it("uses vendor identity for the title and serial while retaining the MDS name", () => {
     const device = new DeviceReport({
       attachment: {
         id: "token-1",
         transport: Mode.ModeHID,
         usb: { product: "Yubico Security Key", vendorId: 0x1050, productId: 0x0407 },
       },
+      identity: new DeviceIdentityReport({
+        vendor: DeviceVendor.DeviceVendorYubico,
+        name: "YubiKey 5C Nano",
+        serialNumber: "12345678",
+      }),
     });
+    const mds = new LookupResult({
+      found: true,
+      entry: new PayloadEntry({
+        metadataStatement: new MetadataStatement({ description: "YubiKey 5 Series" }),
+      }),
+    });
+    const hero = buildOverviewHero({ device, mds });
 
-    expect(buildOverviewHero({ device }).title).toBe("Yubico Security Key");
+    expect(hero.title).toBe("YubiKey 5C Nano");
+    expect(hero.serialNumber).toBe("12345678");
+    expect(hero.subtitle).toBe("YubiKey 5 Series");
   });
 
   it("leaves the removed vendor firmware badge empty", () => {
