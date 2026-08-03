@@ -12,11 +12,14 @@ import {
 } from "../../bindings/github.com/go-ctap/kit/model/inspect";
 import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
 import {
+  AttachmentReport,
   DeviceIdentityReport,
   DeviceReport,
   DeviceVendor,
   DeviceVendorMetadata,
+  SmartCardReport,
 } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Mode, SmartCardInterface } from "../../bindings/github.com/go-ctap/kit/transport";
 import {
   DeviceInfo as Token2DeviceInfo,
   FIDOVersion as Token2FIDOVersion,
@@ -29,8 +32,7 @@ import {
 } from "../../bindings/github.com/go-ctap/yubico";
 
 import { setAppLocale } from "$lib/i18n";
-import { buildOverviewRows } from "$lib/overview-rows";
-import { groupOverviewRows } from "$lib/overview-shared";
+import { buildOverviewRows, buildOverviewVendorPassport } from "$lib/overview-rows";
 import { testOverviewAssessment, testOverviewFact } from "$lib/test-support/overview-facts";
 import type { OverviewRow } from "$lib/overview-types";
 
@@ -265,7 +267,7 @@ describe("buildOverviewRows", () => {
     expect(rowBySource(rows, "certifications").value).toContain("FIDO L1+");
   });
 
-  it("renders every available Yubico provider field from the direct DeviceInfo type", () => {
+  it("moves every available Yubico provider field into the vendor passport", () => {
     setAppLocale("en");
     const device = new DeviceReport({
       identity: new DeviceIdentityReport({
@@ -292,24 +294,42 @@ describe("buildOverviewRows", () => {
       }),
     });
 
+    const passport = buildOverviewVendorPassport(device)!;
     const rows = buildOverviewRows({ info: info(), device });
 
-    expect(rowBySource(rows, "device.identity.name").value).toBe("YubiKey 5C Nano");
-    expect(rowBySource(rows, "device.vendorMetadata.yubico.supportedUSBCapabilities").value).toBe(
-      "U2F, CTAP2 (0x0202)",
+    expect(passport.vendor).toBe("Yubico");
+    expect(passport).not.toHaveProperty("model");
+    expect(passport).not.toHaveProperty("modelHint");
+    expect(passport.coreFacts.map((fact) => [fact.source, fact.value])).toEqual([
+      ["device.identity.serialNumber", "12345678"],
+      ["device.vendorMetadata.yubico.formFactor", "USB-C Nano (0x04)"],
+    ]);
+    expect(passport.summaryFacts.map((fact) => [fact.source, fact.value])).toEqual([
+      ["device.vendorMetadata.yubico.supportedUSBCapabilities", "U2F, CTAP2 (0x0202)"],
+      ["device.vendorMetadata.yubico.enabledUSBCapabilities", "CTAP2 (0x0200)"],
+    ]);
+    expect(passport.detailFacts).toContainEqual(
+      expect.objectContaining({
+        source: "device.vendorMetadata.yubico.deviceFlags",
+        value: "0x80",
+      }),
     );
-    expect(rowBySource(rows, "device.vendorMetadata.yubico.formFactor").value).toBe(
-      "USB-C Nano (0x04)",
+    expect(passport.detailFacts).toContainEqual(
+      expect.objectContaining({
+        source: "device.vendorMetadata.yubico.unknownFields.0x99",
+        value: "0x010203",
+      }),
     );
-    expect(rowBySource(rows, "device.vendorMetadata.yubico.firmwareVersion").value).toBe("5.7.1");
-    expect(rowBySource(rows, "device.vendorMetadata.yubico.deviceFlags").value).toBe("0x80");
-    expect(rowBySource(rows, "device.vendorMetadata.yubico.unknownFields.0x99").value).toBe(
-      "0x010203",
-    );
-    expect(groupOverviewRows(rows).some((group) => group.name === "Vendor details")).toBe(true);
+    expect(
+      rows.some(
+        (row) =>
+          row.source?.startsWith("device.identity.") ||
+          row.source?.startsWith("device.vendorMetadata."),
+      ),
+    ).toBe(false);
   });
 
-  it("renders every available field from the direct Token2 DeviceInfo type", () => {
+  it("summarizes full Token2 metadata in the vendor passport", () => {
     setAppLocale("en");
     const device = new DeviceReport({
       identity: new DeviceIdentityReport({
@@ -351,86 +371,107 @@ describe("buildOverviewRows", () => {
       }),
     });
 
-    const rows = buildOverviewRows({ info: info(), device });
-    const metadataSources = rows
-      .map((row) => row.source)
-      .filter((source) => source?.startsWith("device.vendorMetadata.token2."));
+    const passport = buildOverviewVendorPassport(device)!;
 
-    expect(metadataSources).toEqual([
-      "device.vendorMetadata.token2.serialNumber",
-      "device.vendorMetadata.token2.release",
-      "device.vendorMetadata.token2.formFactor",
-      "device.vendorMetadata.token2.branding",
-      "device.vendorMetadata.token2.productId",
-      "device.vendorMetadata.token2.appearance",
-      "device.vendorMetadata.token2.fidoVersion",
-      "device.vendorMetadata.token2.interfaceStateKnown",
-      "device.vendorMetadata.token2.fidoEnabled",
-      "device.vendorMetadata.token2.hotpKeystrokeEnabled",
-      "device.vendorMetadata.token2.ccidEnabled",
-      "device.vendorMetadata.token2.capabilitiesKnown",
-      "device.vendorMetadata.token2.fidoPINSet",
-      "device.vendorMetadata.token2.fidoPINLocked",
-      "device.vendorMetadata.token2.supportsHOTP",
-      "device.vendorMetadata.token2.supportsTOTP",
-      "device.vendorMetadata.token2.supportsNFC",
-      "device.vendorMetadata.token2.supportsCCID",
-      "device.vendorMetadata.token2.supportsFIDO21",
-      "device.vendorMetadata.token2.hasFingerprintSensor",
-      "device.vendorMetadata.token2.supportsFingerprintRegistration",
-      "device.vendorMetadata.token2.supportsMandatoryFingerprint",
-      "device.vendorMetadata.token2.otpRequiresFingerprint",
-      "device.vendorMetadata.token2.supportsButtonHOTP",
-      "device.vendorMetadata.token2.buttonHOTPConfigured",
-      "device.vendorMetadata.token2.buttonHOTPSendsEnter",
-      "device.vendorMetadata.token2.buttonHOTPRequiresLongPress",
-      "device.vendorMetadata.token2.buttonHOTPUsesNumericKeypad",
+    expect(passport.limited).toBe(false);
+    expect(passport.coreFacts.map((fact) => [fact.source, fact.value])).toEqual([
+      ["device.identity.serialNumber", "72103654095303"],
+      ["device.vendorMetadata.token2.formFactor", "Bio3 Dual A+C PIN+"],
+      ["device.vendorMetadata.token2.productId", "0x0102"],
     ]);
-
-    expect(rowBySource(rows, "device.vendorMetadata.token2.release").value).toBe("R3.2");
-    expect(rowBySource(rows, "device.vendorMetadata.token2.productId").value).toBe("0x0102");
-    expect(rowBySource(rows, "device.vendorMetadata.token2.appearance").value).toBe("0x01020304");
-    expect(rowBySource(rows, "device.vendorMetadata.token2.fidoVersion").value).toBe("2.1.0");
-    expect(rowBySource(rows, "device.vendorMetadata.token2.fidoEnabled").value).toBe("Enabled");
-    expect(rowBySource(rows, "device.vendorMetadata.token2.hotpKeystrokeEnabled").value).toBe(
-      "Disabled",
+    expect(passport.summaryFacts.map((fact) => fact.value)).toEqual([
+      "FIDO, CCID",
+      "HOTP, TOTP, NFC, CCID, FIDO 2.1, Fingerprint sensor, Fingerprint registration support, Mandatory fingerprint support, Button HOTP support",
+    ]);
+    expect(passport.detailFacts).toContainEqual(
+      expect.objectContaining({
+        source: "device.vendorMetadata.token2.appearance",
+        value: "0x01020304",
+      }),
     );
-    expect(rowBySource(rows, "device.vendorMetadata.token2.fidoPINSet").value).toBe("PIN set");
-    expect(rowBySource(rows, "device.vendorMetadata.token2.supportsHOTP").value).toBe("Supported");
-    expect(rowBySource(rows, "device.vendorMetadata.token2.hasFingerprintSensor").value).toBe(
-      "Supported",
+    expect(passport.detailFacts).toContainEqual(
+      expect.objectContaining({
+        source: "device.vendorMetadata.token2.hotpKeystrokeEnabled",
+        value: "Disabled",
+      }),
     );
-    expect(rowBySource(rows, "device.vendorMetadata.token2.buttonHOTPConfigured").value).toBe(
-      "Configured",
+    expect(passport.detailFacts).toContainEqual(
+      expect.objectContaining({
+        source: "device.vendorMetadata.token2.buttonHOTPConfigured",
+        value: "Configured",
+      }),
     );
   });
 
-  it("does not interpret unknown Token2 state flags as disabled capabilities", () => {
+  it("omits unavailable Token2 metadata groups instead of listing unknown values", () => {
     setAppLocale("en");
     const device = new DeviceReport({
+      attachment: new AttachmentReport({
+        id: "hid:token2",
+        transport: Mode.ModeHID,
+      }),
+      identity: new DeviceIdentityReport({
+        vendor: DeviceVendor.DeviceVendorToken2,
+        name: "Token2 Mini USB-C PIN+",
+        serialNumber: "72102935780528",
+      }),
+      vendorMetadata: new DeviceVendorMetadata({
+        token2: new Token2DeviceInfo({
+          serialNumber: "72102935780528",
+          release: "R3.1",
+          formFactor: "Mini USB-C PIN+",
+          branding: "Token2",
+          productId: 0x0016,
+        }),
+      }),
+    });
+
+    const passport = buildOverviewVendorPassport(device)!;
+
+    expect(passport.summaryFacts).toEqual([]);
+    expect(passport.detailFacts).toEqual([]);
+  });
+
+  it("limits Token2 NFC and ISO 7816 passports to the serial number", () => {
+    setAppLocale("en");
+    const device = new DeviceReport({
+      attachment: new AttachmentReport({
+        id: "smart-card:token2",
+        transport: Mode.ModeSmartCard,
+        smartCard: new SmartCardReport({
+          reader: "Token2 NFC reader",
+          interface: SmartCardInterface.SmartCardInterfaceContactless,
+        }),
+      }),
+      identity: new DeviceIdentityReport({
+        vendor: DeviceVendor.DeviceVendorToken2,
+        name: "Token2 FIDO Card NFC with ISO 7816 PIN+ PIV+",
+        serialNumber: "66202208969539",
+      }),
       vendorMetadata: new DeviceVendorMetadata({
         token2: new Token2DeviceInfo({
           serialNumber: "66202208969539",
           release: "R3.3",
           formFactor: "FIDO Card NFC with ISO 7816 PIN+ PIV+",
           branding: "Token2",
+          fidoVersion: new Token2FIDOVersion({ major: 2, minor: 1, patch: 2 }),
+          interfaceStateKnown: true,
+          fidoEnabled: true,
+          capabilitiesKnown: true,
+          supportsNFC: true,
+          supportsFIDO21: true,
         }),
       }),
     });
 
-    const rows = buildOverviewRows({ info: info(), device });
+    const passport = buildOverviewVendorPassport(device)!;
 
-    expect(rowBySource(rows, "device.vendorMetadata.token2.interfaceStateKnown").value).toBe(
-      "Not reported",
-    );
-    expect(rowBySource(rows, "device.vendorMetadata.token2.fidoEnabled").value).toBe(
-      "Not reported",
-    );
-    expect(rowBySource(rows, "device.vendorMetadata.token2.capabilitiesKnown").value).toBe(
-      "Not reported",
-    );
-    expect(rowBySource(rows, "device.vendorMetadata.token2.supportsHOTP").value).toBe(
-      "Not reported",
-    );
+    expect(passport.limited).toBe(true);
+    expect(passport.transport).toBe("NFC · ISO 7816");
+    expect(passport.coreFacts.map((fact) => [fact.source, fact.value])).toEqual([
+      ["device.identity.serialNumber", "66202208969539"],
+    ]);
+    expect(passport.summaryFacts).toEqual([]);
+    expect(passport.detailFacts).toEqual([]);
   });
 });

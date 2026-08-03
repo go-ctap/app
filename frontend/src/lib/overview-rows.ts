@@ -5,7 +5,11 @@ import {
   FactValueKind,
   type Fact,
 } from "../../bindings/github.com/go-ctap/kit/model/inspect";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import {
+  DeviceVendor,
+  type DeviceReport,
+} from "../../bindings/github.com/go-ctap/kit/model/report";
+import { Mode, SmartCardInterface } from "../../bindings/github.com/go-ctap/kit/transport";
 import type { DeviceInfo as Token2DeviceInfo } from "../../bindings/github.com/go-ctap/token2";
 import {
   Capability,
@@ -36,6 +40,8 @@ import type {
   OverviewContext,
   OverviewRow,
   OverviewRowStatus,
+  OverviewVendorFact,
+  OverviewVendorPassportPresentation,
 } from "$lib/overview-types.js";
 import { algorithmLabel, formatNumberWithUnit, textValue } from "$lib/overview-utils.js";
 
@@ -87,7 +93,6 @@ export function buildOverviewRows(
       textValue(device?.attachment.id, value.notReported()),
       "device.attachment.id",
     ),
-    ...vendorIdentityRows(device),
     transportRow(facts, device),
     ...connectionRows(device),
     localizedFactRow(
@@ -104,9 +109,6 @@ export function buildOverviewRows(
       m.matrix_name_encrypted_device_identifier,
       m.matrix_desc_encrypted_device_identifier,
     ),
-
-    ...vendorMetadataRows(device),
-
     localizedFactRow(
       facts,
       FactID.FactIDVersions,
@@ -833,37 +835,225 @@ function formatCertification(input: string) {
   return `${id}: ${formatCertificationValue(id, Number.isSafeInteger(level) ? level : undefined)}`;
 }
 
-function vendorIdentityRows(device: DeviceReport | null) {
-  const identity = device?.identity;
+export function buildOverviewVendorPassport(
+  device: DeviceReport | null,
+): OverviewVendorPassportPresentation | null {
+  if (!device?.identity && !device?.vendorMetadata) return null;
 
-  if (!identity) return [];
-
-  return [
-    row(
-      "Identity",
-      m.matrix_name_device_vendor,
-      m.matrix_desc_device_vendor,
-      "informational",
-      identity.vendor,
-      "device.identity.vendor",
-    ),
-    row(
-      "Identity",
-      m.matrix_name_device_model,
-      m.matrix_desc_device_model,
-      valueStatus(identity.name),
-      textValue(identity.name, value.notReported()),
-      "device.identity.name",
-    ),
-    row(
-      "Identity",
-      m.matrix_name_device_serial,
-      m.matrix_desc_device_serial,
-      valueStatus(identity.serialNumber),
-      textValue(identity.serialNumber, value.notReported()),
-      "device.identity.serialNumber",
-    ),
+  const token2 = device.vendorMetadata?.token2;
+  const yubico = device.vendorMetadata?.yubico;
+  const limited = Boolean(token2 && device.attachment.transport === Mode.ModeSmartCard);
+  const serialNumber =
+    device.identity?.serialNumber?.trim() ||
+    token2?.serialNumber.trim() ||
+    (yubico?.serial ? String(yubico.serial) : "") ||
+    value.notReported();
+  const coreFacts: OverviewVendorFact[] = [
+    passportFact(m.matrix_name_device_serial(), serialNumber, "device.identity.serialNumber"),
   ];
+  const excludedSources = new Set(["device.identity.serialNumber"]);
+  const summaryFacts: OverviewVendorFact[] = [];
+
+  if (token2) {
+    excludedSources.add("device.vendorMetadata.token2.serialNumber");
+    excludedSources.add("device.vendorMetadata.token2.fidoVersion");
+
+    if (!limited) {
+      coreFacts.push(
+        passportFact(
+          m.matrix_name_token2_form_factor(),
+          textValue(token2.formFactor, value.notReported()),
+          "device.vendorMetadata.token2.formFactor",
+        ),
+      );
+      excludedSources.add("device.vendorMetadata.token2.release");
+      excludedSources.add("device.vendorMetadata.token2.formFactor");
+      excludedSources.add("device.vendorMetadata.token2.branding");
+
+      if (token2.productId !== undefined) {
+        coreFacts.push(
+          passportFact(
+            m.matrix_name_token2_product_id(),
+            formatHex(token2.productId, 4),
+            "device.vendorMetadata.token2.productId",
+          ),
+        );
+        excludedSources.add("device.vendorMetadata.token2.productId");
+      }
+
+      if (token2.interfaceStateKnown) {
+        summaryFacts.push(
+          passportFact(
+            m.overview_vendor_enabled_interfaces(),
+            inlineList(
+              [
+                token2.fidoEnabled && "FIDO",
+                token2.hotpKeystrokeEnabled && "HOTP keystroke",
+                token2.ccidEnabled && "CCID",
+              ].filter((item): item is string => Boolean(item)),
+              value.emptyList(),
+            ),
+            "device.vendorMetadata.token2.interfaceState",
+          ),
+        );
+      }
+
+      if (token2.capabilitiesKnown) {
+        summaryFacts.push(
+          passportFact(
+            m.overview_vendor_supported_capabilities(),
+            inlineList(
+              [
+                token2.supportsHOTP && "HOTP",
+                token2.supportsTOTP && "TOTP",
+                token2.supportsNFC && "NFC",
+                token2.supportsCCID && "CCID",
+                token2.supportsFIDO21 && "FIDO 2.1",
+                token2.hasFingerprintSensor && m.matrix_name_token2_fingerprint_sensor(),
+                token2.supportsFingerprintRegistration &&
+                  m.matrix_name_token2_fingerprint_registration(),
+                token2.supportsMandatoryFingerprint && m.matrix_name_token2_mandatory_fingerprint(),
+                token2.supportsButtonHOTP && m.matrix_name_token2_button_hotp(),
+              ].filter((item): item is string => Boolean(item)),
+              value.emptyList(),
+            ),
+            "device.vendorMetadata.token2.capabilities",
+          ),
+        );
+      }
+    }
+  } else if (yubico) {
+    coreFacts.push(
+      passportFact(
+        m.matrix_name_yubico_form_factor(),
+        `${yubicoFormFactorLabel(yubico.formFactor)} (${formatHex(yubico.formFactor, 2)})`,
+        "device.vendorMetadata.yubico.formFactor",
+      ),
+    );
+    excludedSources.add("device.vendorMetadata.yubico.firmwareVersion");
+    excludedSources.add("device.vendorMetadata.yubico.formFactor");
+
+    if (yubico.partNumber) {
+      coreFacts.push(
+        passportFact(
+          m.matrix_name_yubico_part_number(),
+          yubico.partNumber,
+          "device.vendorMetadata.yubico.partNumber",
+        ),
+      );
+      excludedSources.add("device.vendorMetadata.yubico.partNumber");
+    }
+
+    const applicationSources = new Set([
+      "device.vendorMetadata.yubico.supportedUSBCapabilities",
+      "device.vendorMetadata.yubico.enabledUSBCapabilities",
+      "device.vendorMetadata.yubico.supportedNFCCapabilities",
+      "device.vendorMetadata.yubico.enabledNFCCapabilities",
+    ]);
+
+    for (const metadataRow of vendorMetadataRows(device)) {
+      if (!metadataRow.source || !applicationSources.has(metadataRow.source)) continue;
+
+      summaryFacts.push(
+        passportFact(
+          metadataRow.name,
+          metadataRow.value || value.notReported(),
+          metadataRow.source,
+        ),
+      );
+      excludedSources.add(metadataRow.source);
+    }
+  }
+
+  const detailFacts = limited
+    ? []
+    : vendorMetadataRows(device)
+        .filter((metadataRow) => metadataRow.source && !excludedSources.has(metadataRow.source))
+        .filter((metadataRow) => token2MetadataReported(token2, metadataRow.source!))
+        .map((metadataRow) =>
+          passportFact(
+            metadataRow.name,
+            metadataRow.value || value.notReported(),
+            metadataRow.source!,
+          ),
+        );
+
+  return {
+    vendor: vendorName(device),
+    transport: vendorTransportLabel(device),
+    limited,
+    scopeNote: limited ? m.overview_vendor_token2_iso7816_scope() : "",
+    coreFacts,
+    summaryFacts,
+    detailFacts,
+  };
+}
+
+function token2MetadataReported(metadata: Token2DeviceInfo | null | undefined, source: string) {
+  if (!metadata) return true;
+
+  if (
+    source === "device.vendorMetadata.token2.interfaceStateKnown" ||
+    source === "device.vendorMetadata.token2.fidoEnabled" ||
+    source === "device.vendorMetadata.token2.hotpKeystrokeEnabled" ||
+    source === "device.vendorMetadata.token2.ccidEnabled"
+  ) {
+    return metadata.interfaceStateKnown;
+  }
+
+  if (
+    source === "device.vendorMetadata.token2.capabilitiesKnown" ||
+    source.startsWith("device.vendorMetadata.token2.fidoPIN") ||
+    source.startsWith("device.vendorMetadata.token2.supports") ||
+    source === "device.vendorMetadata.token2.hasFingerprintSensor" ||
+    source === "device.vendorMetadata.token2.otpRequiresFingerprint" ||
+    source.startsWith("device.vendorMetadata.token2.buttonHOTP")
+  ) {
+    return metadata.capabilitiesKnown;
+  }
+
+  return true;
+}
+
+function passportFact(label: string, factValue: string, source: string): OverviewVendorFact {
+  return { label, value: factValue, source };
+}
+
+function vendorName(device: DeviceReport) {
+  if (
+    device.vendorMetadata?.token2 ||
+    device.identity?.vendor === DeviceVendor.DeviceVendorToken2
+  ) {
+    return "Token2";
+  }
+  if (
+    device.vendorMetadata?.yubico ||
+    device.identity?.vendor === DeviceVendor.DeviceVendorYubico
+  ) {
+    return "Yubico";
+  }
+
+  return device.identity?.vendor || m.not_reported();
+}
+
+function vendorTransportLabel(device: DeviceReport) {
+  switch (device.attachment.transport) {
+    case Mode.ModeHID:
+      return "USB · HID";
+    case Mode.ModeWindowsProxy:
+      return "Windows proxy";
+    case Mode.ModeSmartCard:
+      switch (device.attachment.smartCard?.interface) {
+        case SmartCardInterface.SmartCardInterfaceContactless:
+          return "NFC · ISO 7816";
+        case SmartCardInterface.SmartCardInterfaceContact:
+          return "Contact · ISO 7816";
+        default:
+          return "ISO 7816";
+      }
+    default:
+      return textValue(device.attachment.transport, value.notReported());
+  }
 }
 
 function vendorMetadataRows(device: DeviceReport | null) {

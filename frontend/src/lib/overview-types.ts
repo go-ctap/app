@@ -34,6 +34,22 @@ export type OverviewGroup = {
   rows: OverviewRow[];
 };
 
+export type OverviewVendorFact = {
+  label: string;
+  value: string;
+  source: string;
+};
+
+export type OverviewVendorPassportPresentation = {
+  vendor: string;
+  transport: string;
+  limited: boolean;
+  scopeNote: string;
+  coreFacts: OverviewVendorFact[];
+  summaryFacts: OverviewVendorFact[];
+  detailFacts: OverviewVendorFact[];
+};
+
 export type OverviewConformanceStatus = "passed" | "findings" | "inconclusive" | "unresolved";
 
 export type OverviewConformanceAssessment = {

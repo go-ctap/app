@@ -14,6 +14,11 @@ import {
   DeviceVendor,
 } from "../../bindings/github.com/go-ctap/kit/model/report";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import { DeviceInfo as Token2DeviceInfo } from "../../bindings/github.com/go-ctap/token2";
+import {
+  DeviceInfo as YubicoDeviceInfo,
+  FirmwareVersion as YubicoFirmwareVersion,
+} from "../../bindings/github.com/go-ctap/yubico";
 
 import { setAppLocale } from "$lib/i18n";
 import { buildOverviewHero } from "$lib/overview-hero";
@@ -88,7 +93,35 @@ describe("buildOverviewHero", () => {
     expect(hero.subtitle).toBe("YubiKey 5 Series");
   });
 
-  it("leaves the removed vendor firmware badge empty", () => {
-    expect(buildOverviewHero({ device: new DeviceReport() }).versionBadge).toBe("");
+  it("shows the Token2 release and Yubico firmware in a separate badge", () => {
+    const token2 = new DeviceReport({
+      vendorMetadata: {
+        token2: new Token2DeviceInfo({
+          release: "R3.3",
+        }),
+      },
+    });
+    const yubico = new DeviceReport({
+      vendorMetadata: {
+        yubico: new YubicoDeviceInfo({
+          firmwareVersion: new YubicoFirmwareVersion({ major: 5, minor: 7, build: 1 }),
+        }),
+      },
+    });
+
+    expect(buildOverviewHero({ device: token2 }).versionBadge).toBe("Release 3.3");
+    expect(buildOverviewHero({ device: yubico }).versionBadge).toBe("Firmware 5.7.1");
+  });
+
+  it("omits the version badge when no vendor version was reported", () => {
+    const token2 = new DeviceReport({
+      vendorMetadata: { token2: new Token2DeviceInfo() },
+    });
+    const yubico = new DeviceReport({
+      vendorMetadata: { yubico: new YubicoDeviceInfo() },
+    });
+
+    expect(buildOverviewHero({ device: token2 }).versionBadge).toBe("");
+    expect(buildOverviewHero({ device: yubico }).versionBadge).toBe("");
   });
 });

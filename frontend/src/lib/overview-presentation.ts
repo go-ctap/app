@@ -13,6 +13,7 @@ import {
   buildOverviewMDSObservations,
   buildOverviewRows,
   buildOverviewStandardPresentation,
+  buildOverviewVendorPassport,
   groupOverviewRows,
 } from "$lib/overview-rules.js";
 
@@ -59,6 +60,7 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
     report,
     info,
     hero,
+    vendorPassport: buildOverviewVendorPassport(device ?? null),
     standard: facts
       ? buildOverviewStandardPresentation({
           facts,

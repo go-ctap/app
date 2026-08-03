@@ -55,7 +55,7 @@ export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHe
     title: deviceName || mdsName || m.selected_authenticator(),
     subtitle: textValue(statement?.description, "") || m.current_authenticator_overview(),
     serialNumber: textValue(device?.identity?.serialNumber, ""),
-    versionBadge: "",
+    versionBadge: vendorVersionBadge(device),
     aaguid,
     aaguidAvailable: hasAaguid(rawAaguid, aaguid),
     iconSrc: safeMDSImage(statement?.icon) || safeMDSImage(statement?.iconDark) || "",
@@ -65,6 +65,24 @@ export function buildOverviewHero(context: OverviewHeroContext = {}): OverviewHe
     mdsStatusFacts: statusReportFacts(latestStatus, statement, entry, status, found, mdsState),
     mdsBlobFacts: metadataBlobFacts(mdsResult, hasLookup),
   };
+}
+
+function vendorVersionBadge(device: OverviewHeroContext["device"]) {
+  const token2Release = device?.vendorMetadata?.token2?.release;
+
+  if (token2Release) {
+    return m.token_release_badge({ version: token2Release.slice(1) });
+  }
+
+  const yubicoVersion = device?.vendorMetadata?.yubico?.firmwareVersion;
+
+  if (yubicoVersion && (yubicoVersion.major || yubicoVersion.minor || yubicoVersion.build)) {
+    return m.token_firmware_badge({
+      version: `${yubicoVersion.major}.${yubicoVersion.minor}.${yubicoVersion.build}`,
+    });
+  }
+
+  return "";
 }
 
 export function buildOverviewMDSObservations(

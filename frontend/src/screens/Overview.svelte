@@ -6,6 +6,7 @@
   import OverviewMDSObservations from "$lib/components/overview/OverviewMDSObservations.svelte";
   import OverviewStandardCapabilities from "$lib/components/overview/OverviewStandardCapabilities.svelte";
   import OverviewStandardHeroCard from "$lib/components/overview/OverviewStandardHeroCard.svelte";
+  import OverviewVendorPassport from "$lib/components/overview/OverviewVendorPassport.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import { Button } from "$lib/components/ui/button";
@@ -60,6 +61,10 @@
           mdsLoading={overview.mdsLoading}
           onRefreshMDS={refreshMDS}
         />
+
+        {#if overview.vendorPassport}
+          <OverviewVendorPassport presentation={overview.vendorPassport} />
+        {/if}
 
         {#if overview.conformance}
           {#key overview.info}
