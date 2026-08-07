@@ -39,16 +39,15 @@
       <Alert.Title>{m.security_warning_reset_destructive()}</Alert.Title>
       <Alert.Description>{m.security_warning_reset_credentials()}</Alert.Description>
     </Alert.Root>
+  </Card.Content>
 
+  <Card.Footer>
     <dl class="reset-hints">
       <div>
         <dt>{m.security_transports_for_reset()}</dt>
         <dd>{resetHints.transportsForReset?.join(", ") || m.not_reported()}</dd>
       </div>
     </dl>
-  </Card.Content>
-
-  <Card.Footer>
     <Button variant="destructive" type="button" {disabled} onclick={() => void onReset()}>
       <RotateCcw data-icon="inline-start" aria-hidden="true" />
       {m.preview_change()}
@@ -76,6 +75,10 @@
       min-width: 0;
     }
 
+    .reset-hints {
+      flex: 1 1 auto;
+    }
+
     .reset-hints > div {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, auto);
@@ -92,7 +95,8 @@
     }
 
     :global(#security-factory-reset [data-slot="card-footer"]) {
-      justify-content: flex-end;
+      gap: var(--space-4);
+      justify-content: space-between;
       border-top: 0;
     }
   }
