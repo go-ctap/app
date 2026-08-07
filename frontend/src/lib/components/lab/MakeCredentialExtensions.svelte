@@ -6,7 +6,6 @@
   } from "../../../../bindings/github.com/go-ctap/ctap/extension";
   import type { InspectEnvelope } from "../../../../bindings/telesma/service";
 
-  import * as Accordion from "$lib/components/ui/accordion";
   import * as Alert from "$lib/components/ui/alert";
   import { Button } from "$lib/components/ui/button";
   import * as Field from "$lib/components/ui/field";
@@ -47,8 +46,6 @@
     onRetryInspection,
   }: Props = $props();
 
-  let openExtension = $state("");
-
   function status(identifier: ExtensionIdentifier): ExtensionStatus {
     if (inspection.state !== "ready") return "unknown";
 
@@ -76,7 +73,6 @@
     next: MakeCredentialExtensionsDraft[K],
   ) {
     update(key, { ...next, included });
-    if (included) openExtension = key;
   }
 
   function policyLabel(policy: CredentialProtectionPolicy) {
@@ -126,13 +122,7 @@
   </Alert.Root>
 {/if}
 
-<Accordion.Root
-  type="single"
-  value={openExtension}
-  onValueChange={(next) => {
-    openExtension = next ?? "";
-  }}
->
+<div class="lab-extension-grid">
   <section class="lab-extension-group" aria-labelledby="lab-make-webauthn-extensions-title">
     <header class="lab-extension-group-header">
       <h3 id="lab-make-webauthn-extensions-title">{m.lab_webauthn_client_extensions()}</h3>
@@ -425,23 +415,14 @@
       </Field.Field>
     </LabExtensionItem>
   </section>
-</Accordion.Root>
+</div>
 
 <style>
   @layer blocks {
-    .lab-extension-group {
-      display: grid;
-    }
-
-    .lab-extension-group + .lab-extension-group {
-      margin-top: var(--space-5);
-    }
-
     .lab-extension-group-header {
       display: grid;
       gap: var(--space-1);
-      padding-block: var(--space-2);
-      border-bottom: 1px solid var(--border);
+      padding: var(--space-3);
     }
 
     .lab-extension-group-header h3,
@@ -450,12 +431,37 @@
     }
 
     .lab-extension-group-header h3 {
-      font-size: 0.8rem;
+      color: var(--muted-foreground);
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
 
     .lab-extension-group-header p {
       color: var(--muted-foreground);
       font-size: 0.7rem;
+    }
+
+    :global(.lab-extension-grid) {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-3);
+    }
+
+    .lab-extension-group {
+      display: contents;
+    }
+
+    .lab-extension-group-header {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @container workspace (max-width: 44rem) {
+    @layer blocks {
+      :global(.lab-extension-grid) {
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
   }
 </style>

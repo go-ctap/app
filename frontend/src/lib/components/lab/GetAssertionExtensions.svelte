@@ -3,7 +3,6 @@
   import type { InspectEnvelope } from "../../../../bindings/telesma/service";
   import { Plus, Trash2 } from "@lucide/svelte";
 
-  import * as Accordion from "$lib/components/ui/accordion";
   import * as Alert from "$lib/components/ui/alert";
   import { Button } from "$lib/components/ui/button";
   import * as Field from "$lib/components/ui/field";
@@ -49,8 +48,6 @@
     onRetryInspection,
   }: Props = $props();
 
-  let openExtension = $state("");
-
   let nextOverrideDescriptor = $derived.by(() => {
     const overridden = new Set(
       value.prf.evalByCredential.map((entry) => entry.credentialIDHex.toLowerCase()),
@@ -88,7 +85,6 @@
     next: GetAssertionExtensionsDraft[K],
   ) {
     update(key, { ...next, included });
-    if (included) openExtension = key;
   }
 
   function emptyPRFValues(): LabPRFValuesDraft {
@@ -148,13 +144,7 @@
   </Alert.Root>
 {/if}
 
-<Accordion.Root
-  type="single"
-  value={openExtension}
-  onValueChange={(next) => {
-    openExtension = next ?? "";
-  }}
->
+<div class="lab-extension-grid">
   <section class="lab-extension-group" aria-labelledby="lab-get-webauthn-extensions-title">
     <header class="lab-extension-group-header">
       <h3 id="lab-get-webauthn-extensions-title">{m.lab_webauthn_client_extensions()}</h3>
@@ -347,23 +337,14 @@
       />
     </LabExtensionItem>
   </section>
-</Accordion.Root>
+</div>
 
 <style>
   @layer blocks {
-    .lab-extension-group {
-      display: grid;
-    }
-
-    .lab-extension-group + .lab-extension-group {
-      margin-top: var(--space-5);
-    }
-
     .lab-extension-group-header {
       display: grid;
       gap: var(--space-1);
-      padding-block: var(--space-2);
-      border-bottom: 1px solid var(--border);
+      padding: var(--space-3);
     }
 
     .lab-extension-group-header h3,
@@ -372,7 +353,10 @@
     }
 
     .lab-extension-group-header h3 {
-      font-size: 0.8rem;
+      color: var(--muted-foreground);
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
 
     .lab-extension-group-header p {
@@ -397,6 +381,28 @@
 
     .lab-prf-override + .lab-prf-override {
       margin-top: var(--space-2);
+    }
+
+    :global(.lab-extension-grid) {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-3);
+    }
+
+    .lab-extension-group {
+      display: contents;
+    }
+
+    .lab-extension-group-header {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @container workspace (max-width: 44rem) {
+    @layer blocks {
+      :global(.lab-extension-grid) {
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
   }
 </style>

@@ -72,6 +72,12 @@
 
   let executionFailed = $derived(step.phase === "error" && step.failedPhase === "executing");
 
+  let configurationVisible = $derived(
+    phase === "editing" ||
+      phase === "previewing" ||
+      (step.phase === "error" && step.failedPhase === "previewing"),
+  );
+
   function phaseLabel() {
     if (phase === "previewing") return m.lab_phase_previewing();
 
@@ -140,13 +146,13 @@
 {/snippet}
 
 <div class="lab-step-layout">
-  <Card.Root class="lab-step-card" data-phase={phase}>
-    <Card.Header>
-      <Card.Title><h2 id={headingId}>{title}</h2></Card.Title>
-      <Card.Description>{description}</Card.Description>
-    </Card.Header>
+  {#if configurationVisible}
+    <section class="lab-step-main" data-phase={phase} aria-labelledby={headingId}>
+      <header class="lab-step-heading">
+        <h2 id={headingId}>{title}</h2>
+        <p>{description}</p>
+      </header>
 
-    <Card.Content class="lab-step-content">
       {#if failureMessage}
         <Alert.Root variant="destructive" role="alert">
           <Alert.Title>{m.lab_request_failed()}</Alert.Title>
@@ -154,8 +160,25 @@
         </Alert.Root>
       {/if}
       {@render content()}
-    </Card.Content>
-  </Card.Root>
+    </section>
+  {:else}
+    <Card.Root class="lab-step-card" data-phase={phase}>
+      <Card.Header>
+        <Card.Title><h2 id={headingId}>{title}</h2></Card.Title>
+        <Card.Description>{description}</Card.Description>
+      </Card.Header>
+
+      <Card.Content class="lab-step-content">
+        {#if failureMessage}
+          <Alert.Root variant="destructive" role="alert">
+            <Alert.Title>{m.lab_request_failed()}</Alert.Title>
+            <Alert.Description>{failureMessage}</Alert.Description>
+          </Alert.Root>
+        {/if}
+        {@render content()}
+      </Card.Content>
+    </Card.Root>
+  {/if}
 
   <aside class="lab-command-rail" aria-labelledby={`${id}-title`}>
     <Card.Root class="lab-command-center" data-phase={phase}>
@@ -228,8 +251,34 @@
     }
 
     .lab-step-layout,
+    .lab-step-main,
     :global(.lab-step-card) {
       min-width: 0;
+    }
+
+    .lab-step-main,
+    .lab-step-heading {
+      display: grid;
+      align-content: start;
+      gap: var(--space-4);
+    }
+
+    .lab-step-heading {
+      gap: var(--space-1);
+    }
+
+    .lab-step-heading h2,
+    .lab-step-heading p {
+      margin: 0;
+    }
+
+    .lab-step-heading h2 {
+      font-size: 1rem;
+    }
+
+    .lab-step-heading p {
+      color: var(--muted-foreground);
+      font-size: 0.76rem;
     }
 
     :global(.lab-step-card [data-slot="card-title"] h2) {
@@ -238,7 +287,8 @@
     }
 
     :global(.lab-step-content),
-    :global(.lab-step-content .lab-configure-stage) {
+    :global(.lab-step-content .lab-configure-stage),
+    :global(.lab-step-main .lab-configure-stage) {
       display: grid;
       gap: var(--space-4);
       min-width: 0;

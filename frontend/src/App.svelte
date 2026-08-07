@@ -381,8 +381,11 @@
       min-height: 0;
     }
     .main-view-content {
+      width: 100%;
+      max-width: 96rem;
       min-width: 0;
       min-height: 100%;
+      margin-inline: auto;
       padding: var(--space-4);
     }
     @container workspace-shell (max-width: 48rem) {
@@ -424,7 +427,9 @@
     }
 
     .main-view-content[data-fill="true"] {
+      max-width: none;
       height: 100%;
+      margin-inline: 0;
       overflow: hidden;
     }
 

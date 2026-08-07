@@ -61,7 +61,7 @@
 <style>
   @layer blocks {
     .settings-screen {
-      max-width: 48rem;
+      width: 100%;
       min-width: 0;
       --flow-space: var(--space-4);
     }

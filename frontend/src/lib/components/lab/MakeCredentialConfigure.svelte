@@ -5,6 +5,7 @@
   import type { InspectEnvelope } from "../../../../bindings/telesma/service";
 
   import * as Field from "$lib/components/ui/field";
+  import * as Card from "$lib/components/ui/card";
   import { Input } from "$lib/components/ui/input";
   import * as InputGroup from "$lib/components/ui/input-group";
   import { Separator } from "$lib/components/ui/separator";
@@ -85,245 +86,244 @@
 </script>
 
 <div class="lab-configure-sections">
-  <section class="lab-configure-section" aria-labelledby="lab-make-basics-title">
-    <header class="lab-configure-section-header">
-      <h3 id="lab-make-basics-title">{m.lab_basics()}</h3>
-      <p>{m.lab_basic_fields()}</p>
-    </header>
-
-    <Field.Set {disabled} data-disabled={disabled}>
-      <Field.Legend class="sr-only">{m.lab_basic_fields()}</Field.Legend>
-      <Field.Group class="lab-basic-grid">
-        <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("make.rpID")}>
-          <Field.Label for="lab-make-rp-id">{m.lab_rp_id()}</Field.Label>
-          <Input
-            id="lab-make-rp-id"
-            value={draft.rpID}
-            {disabled}
-            aria-invalid={fieldInvalid("make.rpID")}
-            oninput={(event) => onDraftChange({ rpID: event.currentTarget.value })}
-            onkeydown={handleSingleLineKeydown}
-          />
-        </Field.Field>
-
-        <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("make.rpName")}>
-          <Field.Label for="lab-make-rp-name">{m.lab_rp_name()}</Field.Label>
-          <Input
-            id="lab-make-rp-name"
-            value={draft.rpName}
-            {disabled}
-            aria-invalid={fieldInvalid("make.rpName")}
-            oninput={(event) => onDraftChange({ rpName: event.currentTarget.value })}
-            onkeydown={handleSingleLineKeydown}
-          />
-        </Field.Field>
-
-        <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("make.userIDHex")}>
-          <Field.Label for="lab-make-user-id">{m.lab_user_id_hex()}</Field.Label>
-          <InputGroup.Root>
-            <InputGroup.Input
-              id="lab-make-user-id"
-              value={draft.userIDHex}
-              spellcheck="false"
+  <Card.Root class="lab-configure-section" aria-labelledby="lab-make-basics-title">
+    <Card.Header>
+      <Card.Title id="lab-make-basics-title">{m.lab_basics()}</Card.Title>
+      <Card.Description>{m.lab_basic_fields()}</Card.Description>
+    </Card.Header>
+    <Card.Content>
+      <Field.Set {disabled} data-disabled={disabled}>
+        <Field.Legend class="sr-only">{m.lab_basic_fields()}</Field.Legend>
+        <Field.Group class="lab-basic-grid">
+          <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("make.rpID")}>
+            <Field.Label for="lab-make-rp-id">{m.lab_rp_id()}</Field.Label>
+            <Input
+              id="lab-make-rp-id"
+              value={draft.rpID}
               {disabled}
-              aria-invalid={fieldInvalid("make.userIDHex")}
-              oninput={(event) => onDraftChange({ userIDHex: event.currentTarget.value })}
+              aria-invalid={fieldInvalid("make.rpID")}
+              oninput={(event) => onDraftChange({ rpID: event.currentTarget.value })}
               onkeydown={handleSingleLineKeydown}
             />
-            <InputGroup.Addon align="inline-end">
-              <InputGroup.Button size="sm" {disabled} onclick={onRegenerateUserID}>
-                <RefreshCw aria-hidden="true" />
-                {m.lab_regenerate()}
-              </InputGroup.Button>
-            </InputGroup.Addon>
-          </InputGroup.Root>
-        </Field.Field>
+          </Field.Field>
 
-        <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("make.userName")}>
-          <Field.Label for="lab-make-user-name">{m.lab_user_name()}</Field.Label>
-          <Input
-            id="lab-make-user-name"
-            value={draft.userName}
-            {disabled}
-            aria-invalid={fieldInvalid("make.userName")}
-            oninput={(event) => onDraftChange({ userName: event.currentTarget.value })}
-            onkeydown={handleSingleLineKeydown}
-          />
-        </Field.Field>
+          <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("make.rpName")}>
+            <Field.Label for="lab-make-rp-name">{m.lab_rp_name()}</Field.Label>
+            <Input
+              id="lab-make-rp-name"
+              value={draft.rpName}
+              {disabled}
+              aria-invalid={fieldInvalid("make.rpName")}
+              oninput={(event) => onDraftChange({ rpName: event.currentTarget.value })}
+              onkeydown={handleSingleLineKeydown}
+            />
+          </Field.Field>
 
-        <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("make.userDisplayName")}>
-          <Field.Label for="lab-make-display-name">{m.lab_display_name()}</Field.Label>
-          <Input
-            id="lab-make-display-name"
-            value={draft.userDisplayName}
-            {disabled}
-            aria-invalid={fieldInvalid("make.userDisplayName")}
-            oninput={(event) => onDraftChange({ userDisplayName: event.currentTarget.value })}
-            onkeydown={handleSingleLineKeydown}
-          />
-        </Field.Field>
-      </Field.Group>
-    </Field.Set>
-  </section>
+          <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("make.userIDHex")}>
+            <Field.Label for="lab-make-user-id">{m.lab_user_id_hex()}</Field.Label>
+            <InputGroup.Root>
+              <InputGroup.Input
+                id="lab-make-user-id"
+                value={draft.userIDHex}
+                spellcheck="false"
+                {disabled}
+                aria-invalid={fieldInvalid("make.userIDHex")}
+                oninput={(event) => onDraftChange({ userIDHex: event.currentTarget.value })}
+                onkeydown={handleSingleLineKeydown}
+              />
+              <InputGroup.Addon align="inline-end">
+                <InputGroup.Button size="sm" {disabled} onclick={onRegenerateUserID}>
+                  <RefreshCw aria-hidden="true" />
+                  {m.lab_regenerate()}
+                </InputGroup.Button>
+              </InputGroup.Addon>
+            </InputGroup.Root>
+          </Field.Field>
 
-  <Separator />
+          <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("make.userName")}>
+            <Field.Label for="lab-make-user-name">{m.lab_user_name()}</Field.Label>
+            <Input
+              id="lab-make-user-name"
+              value={draft.userName}
+              {disabled}
+              aria-invalid={fieldInvalid("make.userName")}
+              oninput={(event) => onDraftChange({ userName: event.currentTarget.value })}
+              onkeydown={handleSingleLineKeydown}
+            />
+          </Field.Field>
 
-  <section class="lab-configure-section" aria-labelledby="lab-make-client-data-title">
-    <header class="lab-configure-section-header">
-      <h3 id="lab-make-client-data-title">{m.lab_client_data()}</h3>
-      <p>{m.lab_client_data_section_description()}</p>
-    </header>
-
-    <LabClientDataEditor
-      id="lab-make-client-data"
-      operation="create"
-      mode={draft.clientData.mode}
-      origin={draft.clientData.origin}
-      challenge={draft.clientData.challenge}
-      crossOrigin={draft.clientData.crossOrigin}
-      topOrigin={draft.clientData.topOrigin}
-      rawValue={draft.clientData.rawJSON}
-      {disabled}
-      originInvalid={fieldInvalid("make.clientData.origin")}
-      challengeInvalid={fieldInvalid("make.clientData.challenge")}
-      topOriginInvalid={fieldInvalid("make.clientData.topOrigin")}
-      warning={draft.clientData.mode === "raw" &&
-      warnings.some((issue) => issue.field === "make.clientData.rawJSON")
-        ? m.lab_raw_json_warning()
-        : null}
-      onModeChange={(mode, rawJSON) =>
-        updateClientData(rawJSON === undefined ? { mode } : { mode, rawJSON })}
-      onOriginChange={(origin) => updateClientData({ origin })}
-      onChallengeChange={(challenge) => updateClientData({ challenge })}
-      onCrossOriginChange={(crossOrigin) => updateClientData({ crossOrigin })}
-      onTopOriginChange={(topOrigin) => updateClientData({ topOrigin })}
-      {onRegenerateChallenge}
-      onRawChange={(rawJSON) => updateClientData({ rawJSON })}
-      {onPrimary}
-    />
-  </section>
-
-  <Separator />
-
-  <section class="lab-configure-section" aria-labelledby="lab-make-extensions-title">
-    <header class="lab-configure-section-header">
-      <h3 id="lab-make-extensions-title">{m.lab_extensions_count({ count: extensionCount })}</h3>
-    </header>
-
-    <MakeCredentialExtensions
-      value={draft.extensions}
-      {disabled}
-      {inspection}
-      {errors}
-      onChange={(extensions) => onDraftChange({ extensions })}
-      {onRetryInspection}
-    />
-  </section>
-
-  <Separator />
-
-  <section class="lab-configure-section" aria-labelledby="lab-make-advanced-title">
-    <header class="lab-configure-section-header">
-      <h3 id="lab-make-advanced-title">{m.lab_advanced()}</h3>
-      <p>{m.lab_advanced_fields()}</p>
-    </header>
-
-    <Field.Group>
-      <LabAlgorithmEditor
-        id="lab-make-algorithms"
-        values={draft.algorithms}
-        {disabled}
-        invalid={errors.some((issue) => issue.field.startsWith("make.algorithms"))}
-        onChange={(algorithms) => onDraftChange({ algorithms })}
-      />
-
-      <LabAttestationEditor
-        id="lab-make-attestation"
-        formats={draft.attestationFormatsPreference}
-        enterpriseAttestation={draft.enterpriseAttestation}
-        {disabled}
-        invalid={errors.some((issue) =>
-          issue.field.startsWith("make.attestationFormatsPreference"),
-        )}
-        onFormatsChange={(attestationFormatsPreference) =>
-          onDraftChange({ attestationFormatsPreference })}
-        onEnterpriseAttestationChange={(enterpriseAttestation) =>
-          onDraftChange({ enterpriseAttestation })}
-      />
-
-      <LabDescriptorEditor
-        id="lab-make-exclude"
-        label={m.lab_exclude_list()}
-        description={m.lab_exclude_list_description()}
-        descriptors={draft.excludeList}
-        {disabled}
-        invalidIndices={descriptorInvalidIndices("make.excludeList")}
-        onChange={(excludeList) => onDraftChange({ excludeList })}
-        {onPrimary}
-      />
-
-      <Field.Set {disabled} data-disabled={disabled}>
-        <Field.Legend>{m.lab_options()}</Field.Legend>
-        <Field.Group class="lab-option-grid">
-          <LabTriStateSelect
-            id="lab-make-resident-key"
-            label={m.lab_resident_key()}
-            value={draft.residentKey}
-            {disabled}
-            helpText={m.lab_make_rk_tooltip()}
-            helpLabel={m.lab_option_help({ label: m.lab_resident_key() })}
-            onChange={(residentKey) => onDraftChange({ residentKey })}
-          />
-
-          <LabTriStateSelect
-            id="lab-make-user-presence"
-            label={m.lab_user_presence()}
-            value={draft.userPresence}
-            {disabled}
-            allowFalse={false}
-            helpText={m.lab_make_up_tooltip()}
-            helpLabel={m.lab_option_help({ label: m.lab_user_presence() })}
-            autoLabel={m.lab_make_up_omit()}
-            trueLabel={m.lab_make_up_explicit()}
-            onChange={(userPresence) => onDraftChange({ userPresence })}
-          />
-
-          <LabTriStateSelect
-            id="lab-make-user-verification"
-            label={m.lab_user_verification()}
-            value={draft.userVerification}
-            {disabled}
-            helpText={m.lab_uv_tooltip()}
-            helpLabel={m.lab_option_help({ label: m.lab_user_verification() })}
-            onChange={(userVerification) => onDraftChange({ userVerification })}
-          />
+          <Field.Field data-disabled={disabled} data-invalid={fieldInvalid("make.userDisplayName")}>
+            <Field.Label for="lab-make-display-name">{m.lab_display_name()}</Field.Label>
+            <Input
+              id="lab-make-display-name"
+              value={draft.userDisplayName}
+              {disabled}
+              aria-invalid={fieldInvalid("make.userDisplayName")}
+              oninput={(event) => onDraftChange({ userDisplayName: event.currentTarget.value })}
+              onkeydown={handleSingleLineKeydown}
+            />
+          </Field.Field>
         </Field.Group>
       </Field.Set>
-    </Field.Group>
-  </section>
+      <Separator />
 
-  <Separator />
+      <section class="lab-configure-subsection" aria-labelledby="lab-make-client-data-title">
+        <header class="lab-configure-section-header">
+          <h3 id="lab-make-client-data-title">{m.lab_client_data()}</h3>
+          <p>{m.lab_client_data_section_description()}</p>
+        </header>
 
-  <section class="lab-configure-section" aria-labelledby="lab-make-execution-title">
-    <header class="lab-configure-section-header">
-      <h3 id="lab-make-execution-title">{m.lab_execution()}</h3>
-      <p>{m.lab_execution_description()}</p>
-    </header>
+        <LabClientDataEditor
+          id="lab-make-client-data"
+          operation="create"
+          mode={draft.clientData.mode}
+          origin={draft.clientData.origin}
+          challenge={draft.clientData.challenge}
+          crossOrigin={draft.clientData.crossOrigin}
+          topOrigin={draft.clientData.topOrigin}
+          rawValue={draft.clientData.rawJSON}
+          {disabled}
+          originInvalid={fieldInvalid("make.clientData.origin")}
+          challengeInvalid={fieldInvalid("make.clientData.challenge")}
+          topOriginInvalid={fieldInvalid("make.clientData.topOrigin")}
+          warning={draft.clientData.mode === "raw" &&
+          warnings.some((issue) => issue.field === "make.clientData.rawJSON")
+            ? m.lab_raw_json_warning()
+            : null}
+          onModeChange={(mode, rawJSON) =>
+            updateClientData(rawJSON === undefined ? { mode } : { mode, rawJSON })}
+          onOriginChange={(origin) => updateClientData({ origin })}
+          onChallengeChange={(challenge) => updateClientData({ challenge })}
+          onCrossOriginChange={(crossOrigin) => updateClientData({ crossOrigin })}
+          onTopOriginChange={(topOrigin) => updateClientData({ topOrigin })}
+          {onRegenerateChallenge}
+          onRawChange={(rawJSON) => updateClientData({ rawJSON })}
+          {onPrimary}
+        />
+      </section>
+    </Card.Content>
+  </Card.Root>
 
-    <LabVerificationFlow
-      id="lab-make-verification"
-      value={draft.verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto"}
-      {disabled}
-      description={m.lab_verification_flow_description()}
-      onChange={handleVerificationChange}
-    />
-  </section>
+  <Card.Root class="lab-configure-section" aria-labelledby="lab-make-extensions-title">
+    <Card.Header>
+      <Card.Title id="lab-make-extensions-title"
+        >{m.lab_extensions_count({ count: extensionCount })}</Card.Title
+      >
+    </Card.Header>
+    <Card.Content>
+      <MakeCredentialExtensions
+        value={draft.extensions}
+        {disabled}
+        {inspection}
+        {errors}
+        onChange={(extensions) => onDraftChange({ extensions })}
+        {onRetryInspection}
+      />
+    </Card.Content>
+  </Card.Root>
+
+  <Card.Root class="lab-configure-section" aria-labelledby="lab-make-advanced-title">
+    <Card.Header>
+      <Card.Title id="lab-make-advanced-title">{m.lab_advanced()}</Card.Title>
+      <Card.Description>{m.lab_advanced_fields()}</Card.Description>
+    </Card.Header>
+    <Card.Content>
+      <Field.Group>
+        <LabAlgorithmEditor
+          id="lab-make-algorithms"
+          values={draft.algorithms}
+          {disabled}
+          invalid={errors.some((issue) => issue.field.startsWith("make.algorithms"))}
+          onChange={(algorithms) => onDraftChange({ algorithms })}
+        />
+
+        <LabAttestationEditor
+          id="lab-make-attestation"
+          formats={draft.attestationFormatsPreference}
+          enterpriseAttestation={draft.enterpriseAttestation}
+          {disabled}
+          invalid={errors.some((issue) =>
+            issue.field.startsWith("make.attestationFormatsPreference"),
+          )}
+          onFormatsChange={(attestationFormatsPreference) =>
+            onDraftChange({ attestationFormatsPreference })}
+          onEnterpriseAttestationChange={(enterpriseAttestation) =>
+            onDraftChange({ enterpriseAttestation })}
+        />
+
+        <LabDescriptorEditor
+          id="lab-make-exclude"
+          label={m.lab_exclude_list()}
+          description={m.lab_exclude_list_description()}
+          descriptors={draft.excludeList}
+          {disabled}
+          invalidIndices={descriptorInvalidIndices("make.excludeList")}
+          onChange={(excludeList) => onDraftChange({ excludeList })}
+          {onPrimary}
+        />
+
+        <Field.Set {disabled} data-disabled={disabled}>
+          <Field.Legend>{m.lab_options()}</Field.Legend>
+          <Field.Group class="lab-option-grid">
+            <LabTriStateSelect
+              id="lab-make-resident-key"
+              label={m.lab_resident_key()}
+              value={draft.residentKey}
+              {disabled}
+              helpText={m.lab_make_rk_tooltip()}
+              helpLabel={m.lab_option_help({ label: m.lab_resident_key() })}
+              onChange={(residentKey) => onDraftChange({ residentKey })}
+            />
+
+            <LabTriStateSelect
+              id="lab-make-user-presence"
+              label={m.lab_user_presence()}
+              value={draft.userPresence}
+              {disabled}
+              allowFalse={false}
+              helpText={m.lab_make_up_tooltip()}
+              helpLabel={m.lab_option_help({ label: m.lab_user_presence() })}
+              autoLabel={m.lab_make_up_omit()}
+              trueLabel={m.lab_make_up_explicit()}
+              onChange={(userPresence) => onDraftChange({ userPresence })}
+            />
+
+            <LabTriStateSelect
+              id="lab-make-user-verification"
+              label={m.lab_user_verification()}
+              value={draft.userVerification}
+              {disabled}
+              helpText={m.lab_uv_tooltip()}
+              helpLabel={m.lab_option_help({ label: m.lab_user_verification() })}
+              onChange={(userVerification) => onDraftChange({ userVerification })}
+            />
+          </Field.Group>
+        </Field.Set>
+      </Field.Group>
+      <Separator />
+
+      <section class="lab-configure-subsection" aria-labelledby="lab-make-execution-title">
+        <header class="lab-configure-section-header">
+          <h3 id="lab-make-execution-title">{m.lab_execution()}</h3>
+          <p>{m.lab_execution_description()}</p>
+        </header>
+
+        <LabVerificationFlow
+          id="lab-make-verification"
+          value={draft.verificationFlow === VerificationFlow.VerificationFlowPIN ? "pin" : "auto"}
+          {disabled}
+          description={m.lab_verification_flow_description()}
+          onChange={handleVerificationChange}
+        />
+      </section>
+    </Card.Content>
+  </Card.Root>
 </div>
 
 <style>
   @layer blocks {
     .lab-configure-sections,
-    .lab-configure-section {
+    .lab-configure-subsection {
       display: grid;
       gap: var(--space-4);
       min-width: 0;
