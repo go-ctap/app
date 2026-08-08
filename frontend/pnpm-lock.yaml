@@ -12,8 +12,8 @@ importers:
         specifier: ^3.13.32
         version: 3.13.32(svelte@5.56.3)
       '@wailsio/runtime':
-        specifier: file:../../wails/v3/internal/runtime/desktop/@wailsio/runtime
-        version: file:../../wails/v3/internal/runtime/desktop/@wailsio/runtime
+        specifier: 3.0.0-beta.5
+        version: 3.0.0-beta.5
       tldts:
         specifier: ^7.4.3
         version: 7.4.3
@@ -619,8 +619,8 @@ packages:
   '@vitest/utils@4.1.9':
     resolution: {integrity: sha512-A51o8ymO5PpqlWNnBP9ZHPXDIpuMtTLlGSjN7la4US+LJzoUMyhwjA5QXlm39JexgwHKW4Xjs8Z2d3dLCXOeuA==}
 
-  '@wailsio/runtime@file:../../wails/v3/internal/runtime/desktop/@wailsio/runtime':
-    resolution: {directory: ../../wails/v3/internal/runtime/desktop/@wailsio/runtime, type: directory}
+  '@wailsio/runtime@3.0.0-beta.5':
+    resolution: {integrity: sha512-WPJcKfD/iN5EbzLAE0B2AjwRVVSSnhpGQSjgFORtIA3h1bkiw/k7rTd06emNsI1ZFGFgMiUEEmXgEcVfeWoRVQ==}
 
   acorn@8.17.0:
     resolution: {integrity: sha512-xRQbDb9BnwDafYNn6Vwl839DYVjqXYb1XVGtWAZ1kcDc6iwAL4hg3B1dZlRiuENFeO2H53gFG3in621AdERVAg==}
@@ -1899,7 +1899,7 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.0
 
-  '@wailsio/runtime@file:../../wails/v3/internal/runtime/desktop/@wailsio/runtime': {}
+  '@wailsio/runtime@3.0.0-beta.5': {}
 
   acorn@8.17.0: {}
 
