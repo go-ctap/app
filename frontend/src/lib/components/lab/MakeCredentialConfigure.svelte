@@ -91,7 +91,7 @@
       <Card.Title id="lab-make-basics-title">{m.lab_basics()}</Card.Title>
       <Card.Description>{m.lab_basic_fields()}</Card.Description>
     </Card.Header>
-    <Card.Content>
+    <Card.Content class="lab-configure-card-content">
       <Field.Set {disabled} data-disabled={disabled}>
         <Field.Legend class="sr-only">{m.lab_basic_fields()}</Field.Legend>
         <Field.Group class="lab-basic-grid">
@@ -210,7 +210,7 @@
         >{m.lab_extensions_count({ count: extensionCount })}</Card.Title
       >
     </Card.Header>
-    <Card.Content>
+    <Card.Content class="lab-configure-card-content">
       <MakeCredentialExtensions
         value={draft.extensions}
         {disabled}
@@ -227,7 +227,7 @@
       <Card.Title id="lab-make-advanced-title">{m.lab_advanced()}</Card.Title>
       <Card.Description>{m.lab_advanced_fields()}</Card.Description>
     </Card.Header>
-    <Card.Content>
+    <Card.Content class="lab-configure-card-content">
       <Field.Group>
         <LabAlgorithmEditor
           id="lab-make-algorithms"
@@ -324,6 +324,12 @@
   @layer blocks {
     .lab-configure-sections,
     .lab-configure-subsection {
+      display: grid;
+      gap: var(--space-4);
+      min-width: 0;
+    }
+
+    :global(.lab-configure-card-content) {
       display: grid;
       gap: var(--space-4);
       min-width: 0;

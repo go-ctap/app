@@ -148,10 +148,7 @@
 <div class="lab-step-layout">
   {#if configurationVisible}
     <section class="lab-step-main" data-phase={phase} aria-labelledby={headingId}>
-      <header class="lab-step-heading">
-        <h2 id={headingId}>{title}</h2>
-        <p>{description}</p>
-      </header>
+      <h2 id={headingId} class="sr-only">{title}</h2>
 
       {#if failureMessage}
         <Alert.Root variant="destructive" role="alert">
@@ -256,29 +253,10 @@
       min-width: 0;
     }
 
-    .lab-step-main,
-    .lab-step-heading {
+    .lab-step-main {
       display: grid;
       align-content: start;
       gap: var(--space-4);
-    }
-
-    .lab-step-heading {
-      gap: var(--space-1);
-    }
-
-    .lab-step-heading h2,
-    .lab-step-heading p {
-      margin: 0;
-    }
-
-    .lab-step-heading h2 {
-      font-size: 1rem;
-    }
-
-    .lab-step-heading p {
-      color: var(--muted-foreground);
-      font-size: 0.76rem;
     }
 
     :global(.lab-step-card [data-slot="card-title"] h2) {

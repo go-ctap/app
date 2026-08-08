@@ -91,14 +91,14 @@
       }}
       class="lab-operation-tabs"
     >
-      <div class="lab-operation-toolbar">
-        <LabHeader />
-
-        <Tabs.List aria-label={m.lab_title()}>
-          <Tabs.Trigger value="make">{m.lab_make_credential()}</Tabs.Trigger>
-          <Tabs.Trigger value="get">{m.lab_get_assertion()}</Tabs.Trigger>
-        </Tabs.List>
-      </div>
+      <LabHeader>
+        {#snippet actions()}
+          <Tabs.List aria-label={m.lab_title()}>
+            <Tabs.Trigger value="make">{m.lab_make_credential()}</Tabs.Trigger>
+            <Tabs.Trigger value="get">{m.lab_get_assertion()}</Tabs.Trigger>
+          </Tabs.List>
+        {/snippet}
+      </LabHeader>
 
       <Tabs.Content value="make" class="lab-operation-panel">
         <MakeCredentialStep
@@ -194,19 +194,10 @@
 
     :global(.lab-operation-tabs) {
       display: grid;
-      gap: var(--space-3);
+      gap: var(--space-4);
     }
 
-    .lab-operation-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: end;
-      justify-content: space-between;
-      gap: var(--space-3);
-      min-width: 0;
-    }
-
-    .lab-operation-toolbar :global([data-slot="tabs-list"]) {
+    :global(.lab-header-card [data-slot="tabs-list"]) {
       width: min(30rem, 100%);
     }
 
@@ -230,12 +221,7 @@
     }
 
     @container workspace (max-width: 42rem) {
-      .lab-operation-toolbar {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .lab-operation-toolbar :global([data-slot="tabs-list"]) {
+      :global(.lab-header-card [data-slot="tabs-list"]) {
         width: 100%;
       }
     }
