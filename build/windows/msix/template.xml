@@ -25,7 +25,7 @@
         </Capabilities>
         <Applications>
             <Application
-                Id="app.telesma.telesma"
+                Id="app.telesma.Telesma"
                 Description="Desktop workbench for local FIDO2/CTAP authenticators"
                 DisplayName="Telesma"
                 ExecutableName="telesma.exe"

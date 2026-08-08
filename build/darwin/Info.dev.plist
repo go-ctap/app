@@ -11,7 +11,7 @@
 		<key>CFBundleIconName</key>
 		<string>appicon</string>
 		<key>CFBundleIdentifier</key>
-		<string>app.telesma.telesma</string>
+		<string>app.telesma.Telesma</string>
 		<key>CFBundleName</key>
 		<string>Telesma</string>
 		<key>CFBundlePackageType</key>

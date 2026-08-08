@@ -8,7 +8,7 @@
   IgnorableNamespaces="uap3">
   
   <Identity 
-    Name="app.telesma.telesma"
+    Name="app.telesma.Telesma"
     Publisher="CN=Savely Krasovsky"
     Version="0.1.0.0" 
     ProcessorArchitecture="x64" />
@@ -29,7 +29,7 @@
   </Resources>
   
   <Applications>
-    <Application Id="app.telesma.telesma" Executable="telesma.exe" EntryPoint="Windows.FullTrustApplication">
+    <Application Id="app.telesma.Telesma" Executable="telesma.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="Telesma"
         Description="Desktop workbench for local FIDO2/CTAP authenticators"
