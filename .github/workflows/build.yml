@@ -71,15 +71,31 @@ jobs:
           corepack enable
           corepack prepare "pnpm@${PNPM_VERSION}" --activate
 
+      - name: Resolve pnpm store
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Install frontend dependencies
         working-directory: frontend
         run: pnpm install --frozen-lockfile
 
+      - name: Resolve Wails version
+        id: wails-version
+        shell: bash
+        run: echo "version=$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)" >> "$GITHUB_OUTPUT"
+
       - name: Install Wails CLI
         shell: bash
-        run: |
-          wails_version="$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)"
-          go install "github.com/wailsapp/wails/v3/cmd/wails3@${wails_version}"
+        run: go install "github.com/wailsapp/wails/v3/cmd/wails3@${{ steps.wails-version.outputs.version }}"
 
       - name: Build application
         run: wails3 build

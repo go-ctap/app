@@ -51,30 +51,22 @@ jobs:
           corepack enable
           corepack prepare "pnpm@${PNPM_VERSION}" --activate
 
+      - name: Resolve pnpm store
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Install frontend dependencies
         working-directory: frontend
         run: pnpm install --frozen-lockfile
-
-      - name: Install Go analysis tools
-        shell: bash
-        run: |
-          go install "honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}"
-          go install "github.com/rhysd/actionlint/cmd/actionlint@${ACTIONLINT_VERSION}"
-
-      - name: Run Go tests
-        run: go test ./... -count=1
-
-      - name: Run Go race tests
-        run: go test -race ./... -count=1
-
-      - name: Run go vet
-        run: go vet ./...
-
-      - name: Run Staticcheck
-        run: staticcheck ./...
-
-      - name: Lint GitHub Actions workflows
-        run: actionlint
 
       - name: Check frontend formatting
         working-directory: frontend
@@ -87,3 +79,39 @@ jobs:
       - name: Run frontend tests
         working-directory: frontend
         run: pnpm run test
+
+      - name: Build embedded frontend assets
+        working-directory: frontend
+        run: pnpm run build
+
+      - name: Cache Go analysis tools
+        id: analysis-tools-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/go/bin/actionlint
+            ~/go/bin/staticcheck
+          key: analysis-tools-${{ runner.os }}-${{ runner.arch }}-${{ env.STATICCHECK_VERSION }}-${{ env.ACTIONLINT_VERSION }}
+
+      - name: Install Go analysis tools
+        if: steps.analysis-tools-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          go install "honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}"
+          go install "github.com/rhysd/actionlint/cmd/actionlint@${ACTIONLINT_VERSION}"
+
+      - name: Run Go tests
+        run: go test ./... -count=1
+
+      - name: Run Go race tests
+        if: github.event_name == 'push'
+        run: go test -race ./... -count=1
+
+      - name: Run go vet
+        run: go vet ./...
+
+      - name: Run Staticcheck
+        run: staticcheck ./...
+
+      - name: Lint GitHub Actions workflows
+        run: actionlint
