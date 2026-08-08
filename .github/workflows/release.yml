@@ -31,6 +31,29 @@ jobs:
             exit 1
           fi
 
+      - name: Verify release tag signature
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag_type="$(gh api "repos/${GH_REPO}/git/ref/tags/${GITHUB_REF_NAME}" --jq '.object.type')"
+          if [[ "$tag_type" != "tag" ]]; then
+            echo "Release tag must be an annotated, signed tag" >&2
+            exit 1
+          fi
+
+          tag_sha="$(gh api "repos/${GH_REPO}/git/ref/tags/${GITHUB_REF_NAME}" --jq '.object.sha')"
+          verified="$(gh api "repos/${GH_REPO}/git/tags/${tag_sha}" --jq '.verification.verified')"
+          reason="$(gh api "repos/${GH_REPO}/git/tags/${tag_sha}" --jq '.verification.reason')"
+
+          if [[ "$verified" != "true" ]]; then
+            echo "GitHub did not verify the release tag signature: ${reason}" >&2
+            exit 1
+          fi
+
+          echo "GitHub verified the release tag signature"
+
   build:
     name: Build ${{ matrix.name }}
     needs: validate
@@ -149,4 +172,5 @@ jobs:
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: gh release create "$GITHUB_REF_NAME" dist/* --verify-tag --generate-notes --title "$GITHUB_REF_NAME"
