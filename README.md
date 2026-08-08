@@ -1,6 +1,6 @@
 # Telesma
 
-Telesma is a desktop workbench for inspecting, testing, and managing local FIDO2/CTAP authenticators. It is built with Wails 3, Go, Svelte 5, and [`github.com/go-ctap/kit`](https://github.com/go-ctap/kit).
+Telesma is a desktop workbench for inspecting, testing, and managing local FIDO2/CTAP authenticators. It is built with Wails 3, Go, Svelte 5, and [`github.com/telesma-app/kit`](https://github.com/telesma-app/kit).
 
 The application discovers connected authenticators, opens the selected device automatically, and keeps authenticator lifecycle and user-interaction prompts inside the desktop workflow.
 
