@@ -64,10 +64,14 @@ function stepLayout(name: string) {
   return screen.getByRole("heading", { level: 2, name }).closest(".lab-step-layout") as HTMLElement;
 }
 
-function extensionTrigger(scope: HTMLElement, title: string) {
+function cardTitle(scope: HTMLElement, name: string) {
+  return within(scope).getByText(name, { selector: '[data-slot="card-title"]' });
+}
+
+function extensionCard(scope: HTMLElement, title: string) {
   return within(scope)
     .getByText(title, { selector: "code" })
-    .closest("button") as HTMLButtonElement;
+    .closest('[data-slot="card"]') as HTMLElement;
 }
 
 describe("WebAuthn Lab screen", () => {
@@ -98,7 +102,7 @@ describe("WebAuthn Lab screen", () => {
     render(Lab);
 
     expect(screen.queryByRole("heading", { name: "WebAuthn Lab" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "Scenario" })).toBeInTheDocument();
+    expect(cardTitle(document.body, "Scenario")).toBeInTheDocument();
     expect(
       screen.getByText(
         "Create a passkey, review the exact request, then exercise it with an assertion.",
@@ -169,10 +173,10 @@ describe("WebAuthn Lab screen", () => {
     const make = stepLayout("MakeCredential");
 
     expect(within(make).queryByRole("tab")).not.toBeInTheDocument();
-    expect(within(make).getByRole("heading", { name: "Basics" })).toBeInTheDocument();
+    expect(cardTitle(make, "Basics")).toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "clientDataJSON" })).toBeInTheDocument();
-    expect(within(make).getByRole("heading", { name: "Extensions · 0" })).toBeInTheDocument();
-    expect(within(make).getByRole("heading", { name: "Advanced" })).toBeInTheDocument();
+    expect(cardTitle(make, "Extensions · 0")).toBeInTheDocument();
+    expect(cardTitle(make, "Advanced")).toBeInTheDocument();
     expect(within(make).getByRole("heading", { name: "Execution" })).toBeInTheDocument();
     expect(
       within(make).getByRole("heading", { name: "WebAuthn client extensions" }),
@@ -180,17 +184,14 @@ describe("WebAuthn Lab screen", () => {
     expect(
       within(make).getByRole("heading", { name: "CTAP authenticator extensions" }),
     ).toBeInTheDocument();
-    expect(within(make).getByRole("button", { name: /prf.*supported/i })).toBeInTheDocument();
+    expect(within(extensionCard(make, "prf")).getByText("Supported")).toBeInTheDocument();
 
     const includeCredProps = within(make).getByRole("switch", { name: "Include credProps" });
-    const expandCredProps = within(make).getByRole("button", { name: /credProps/i });
 
-    expect(includeCredProps).not.toBe(expandCredProps);
-    expect(expandCredProps).toHaveAttribute("aria-expanded", "false");
+    expect(within(extensionCard(make, "credProps")).getByText("Client-side")).toBeInTheDocument();
 
     await user.click(includeCredProps);
-    expect(within(make).getByRole("heading", { name: "Extensions · 1" })).toBeInTheDocument();
-    expect(expandCredProps).toHaveAttribute("aria-expanded", "true");
+    expect(cardTitle(make, "Extensions · 1")).toBeInTheDocument();
     expect(within(make).queryByRole("switch", { name: "Enabled" })).not.toBeInTheDocument();
     expect(within(make).getByRole("switch", { name: "Include credProtect" })).toBeEnabled();
     expect(within(make).getByRole("switch", { name: "Include credBlob" })).toBeEnabled();
@@ -206,7 +207,7 @@ describe("WebAuthn Lab screen", () => {
 
     expect(within(assertion).queryByRole("tab")).not.toBeInTheDocument();
     expect(within(assertion).getByRole("heading", { name: "clientDataJSON" })).toBeInTheDocument();
-    expect(within(assertion).getByRole("heading", { name: "Extensions · 0" })).toBeInTheDocument();
+    expect(cardTitle(assertion, "Extensions · 0")).toBeInTheDocument();
     expect(
       within(assertion).getByRole("heading", { name: "WebAuthn client extensions" }),
     ).toBeInTheDocument();
@@ -217,7 +218,7 @@ describe("WebAuthn Lab screen", () => {
     const includePRF = within(assertion).getByRole("switch", { name: "Include prf" });
 
     expect(includePRF).toBeEnabled();
-    expect(within(assertion).getByRole("button", { name: /prf.*supported/i })).toBeInTheDocument();
+    expect(within(extensionCard(assertion, "prf")).getByText("Supported")).toBeInTheDocument();
     expect(within(assertion).getByRole("switch", { name: "Include credBlob" })).toBeEnabled();
     expect(within(assertion).getByRole("switch", { name: "Include hmac-secret" })).toBeEnabled();
     expect(within(assertion).getByRole("switch", { name: "Include largeBlob" })).toBeEnabled();
@@ -302,17 +303,13 @@ describe("WebAuthn Lab screen", () => {
 
       const make = stepLayout("MakeCredential");
 
-      expect(
-        within(make).getByRole("button", { name: new RegExp(`largeBlob.*${status}`, "i") }),
-      ).toBeInTheDocument();
+      expect(within(extensionCard(make, "largeBlob")).getByText(status)).toBeInTheDocument();
 
       await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
 
       const assertion = stepLayout("GetAssertion");
 
-      expect(
-        within(assertion).getByRole("button", { name: new RegExp(`largeBlob.*${status}`, "i") }),
-      ).toBeInTheDocument();
+      expect(within(extensionCard(assertion, "largeBlob")).getByText(status)).toBeInTheDocument();
     },
   );
 
@@ -340,17 +337,13 @@ describe("WebAuthn Lab screen", () => {
 
     const make = stepLayout("MakeCredential");
 
-    expect(
-      within(make).getByRole("button", { name: new RegExp(`prf.*${status}`, "i") }),
-    ).toBeInTheDocument();
+    expect(within(extensionCard(make, "prf")).getByText(status)).toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
 
     const assertion = stepLayout("GetAssertion");
 
-    expect(
-      within(assertion).getByRole("button", { name: new RegExp(`prf.*${status}`, "i") }),
-    ).toBeInTheDocument();
+    expect(within(extensionCard(assertion, "prf")).getByText(status)).toBeInTheDocument();
   });
 
   it("describes every extension and explains its configurable options", async () => {
@@ -379,12 +372,12 @@ describe("WebAuthn Lab screen", () => {
       within(make).queryByText("Authenticator extension input sent through CTAP."),
     ).not.toBeInTheDocument();
 
-    await user.click(extensionTrigger(make, "prf"));
+    await user.click(within(make).getByRole("switch", { name: "Include prf" }));
     expect(
       within(make).getByRole("button", { name: "About prf: Evaluate during registration" }),
     ).toBeInTheDocument();
 
-    await user.click(extensionTrigger(make, "credProtect"));
+    await user.click(within(make).getByRole("switch", { name: "Include credProtect" }));
     expect(
       within(make).getByRole("button", { name: "About credProtect: Policy" }),
     ).toBeInTheDocument();
@@ -397,7 +390,7 @@ describe("WebAuthn Lab screen", () => {
       ["minPinLength", "About minPinLength: Enabled"],
       ["pinComplexityPolicy", "About pinComplexityPolicy: Enabled"],
     ] as const) {
-      await user.click(extensionTrigger(make, extension));
+      await user.click(within(make).getByRole("switch", { name: `Include ${extension}` }));
       expect(within(make).getByRole("button", { name: helpName })).toBeInTheDocument();
     }
 
@@ -417,11 +410,11 @@ describe("WebAuthn Lab screen", () => {
       within(assertion).getByText(/Evaluates the selected passkey's HMAC secret/),
     ).toBeInTheDocument();
 
-    await user.click(extensionTrigger(assertion, "prf"));
+    await user.click(within(assertion).getByRole("switch", { name: "Include prf" }));
     expect(
       within(assertion).getByRole("button", { name: "About prf: Global evaluation" }),
     ).toBeInTheDocument();
-    await user.click(extensionTrigger(assertion, "credBlob"));
+    await user.click(within(assertion).getByRole("switch", { name: "Include credBlob" }));
     expect(
       within(assertion).getByRole("button", { name: "About credBlob: Enabled" }),
     ).toBeInTheDocument();
@@ -474,9 +467,7 @@ describe("WebAuthn Lab screen", () => {
     render(Lab);
 
     const make = stepLayout("MakeCredential");
-    const basics = within(make)
-      .getByRole("heading", { name: "Basics" })
-      .closest("section") as HTMLElement;
+    const basics = within(make).getByRole("group", { name: "Basic request" });
     const clientData = within(make)
       .getByRole("heading", { name: "clientDataJSON" })
       .closest("section") as HTMLElement;

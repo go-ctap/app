@@ -9,7 +9,7 @@ describe("ctapkit display labels", () => {
   it("localizes symbolic and canonical permission names", () => {
     setAppLocale("ru");
 
-    expect(permissionLabel("PermissionMakeCredential")).toBe("MakeCredential");
+    expect(permissionLabel("PermissionMakeCredential")).toBe("Создание ключа доступа");
     expect(permissionLabel("PermissionCredentialManagement")).toBe("Управление ключами доступа");
     expect(permissionLabel("credentialManagement")).toBe("Управление ключами доступа");
     expect(permissionLabel("credentialManagement,largeBlobWrite")).toBe(
@@ -17,8 +17,8 @@ describe("ctapkit display labels", () => {
     );
   });
 
-  it("does not describe MakeCredential permission as passkey creation", () => {
-    expect(permissionLabel("makeCredential")).toBe("MakeCredential");
+  it("localizes the MakeCredential permission", () => {
+    expect(permissionLabel("makeCredential")).toBe("Create passkey");
   });
 
   it("localizes biometric sample statuses", () => {
