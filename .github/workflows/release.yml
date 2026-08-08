@@ -138,7 +138,8 @@ jobs:
         run: go install "github.com/wailsapp/wails/v3/cmd/wails3@${{ steps.wails-version.outputs.version }}"
 
       - name: Build application
-        run: wails3 build
+        shell: bash
+        run: wails3 build VERSION="${GITHUB_REF_NAME#v}"
 
       - name: Package Unix binary
         if: runner.os != 'Windows'

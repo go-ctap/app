@@ -10,7 +10,7 @@ includes:
 
 vars:
   APP_NAME: "telesma"
-  APP_VERSION: '{{.VERSION | default "0.1.0"}}'
+  APP_VERSION: '{{.VERSION | default "dev"}}'
   BIN_DIR: "bin"
   VITE_PORT: '{{.WAILS_VITE_PORT | default 9245}}'
 
