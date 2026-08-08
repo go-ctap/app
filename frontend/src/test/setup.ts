@@ -1,4 +1,11 @@
 import "@testing-library/jest-dom/vitest";
+import { cleanup, waitFor } from "@testing-library/svelte";
+import { afterEach, expect } from "vitest";
+
+afterEach(async () => {
+  cleanup();
+  await waitFor(() => expect(document.body.style.overflow).not.toBe("hidden"));
+});
 
 if (!("window" in globalThis)) {
   Object.defineProperty(globalThis, "window", {

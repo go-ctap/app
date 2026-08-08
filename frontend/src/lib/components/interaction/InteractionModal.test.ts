@@ -1,6 +1,6 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/svelte";
+import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   InteractionKind,
@@ -53,11 +53,6 @@ describe("InteractionModal", () => {
     onAnswer = vi.fn(async () => {});
     setAdvancedMode(true);
     resetAppStateForTest();
-  });
-
-  afterEach(async () => {
-    cleanup();
-    await waitFor(() => expect(document.body.style.overflow).not.toBe("hidden"));
   });
 
   it("focuses the PIN input when a PIN prompt opens", async () => {
