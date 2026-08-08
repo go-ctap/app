@@ -3,7 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AttestationStatementFormatIdentifier } from "../../../../bindings/github.com/telesma-app/ctap/attestation";
-import { Category, Code, Failure } from "../../../../bindings/github.com/telesma-app/kit/model/failure";
+import {
+  Category,
+  Code,
+  Failure,
+} from "../../../../bindings/github.com/telesma-app/kit/model/failure";
 import {
   AssertionVerification,
   AttestationType,
