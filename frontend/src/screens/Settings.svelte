@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
+  import type { ApplicationInfo } from "../../bindings/telesma/appconfig";
+  import { api } from "$lib/api.js";
   import * as Field from "$lib/components/ui/field";
   import * as Select from "$lib/components/ui/select";
   import { Switch } from "$lib/components/ui/switch";
@@ -6,6 +10,12 @@
   import { advancedMode, setAdvancedMode } from "$lib/preferences";
 
   import { m } from "../paraglide/messages.js";
+
+  let applicationInfo = $state<ApplicationInfo | null>(null);
+
+  onMount(() => {
+    void api.getApplicationInfo().then((info) => (applicationInfo = info));
+  });
 </script>
 
 <section class="settings-screen flow" aria-label={m.settings()}>
@@ -56,6 +66,22 @@
       />
     </Field.Field>
   </section>
+
+  {#if applicationInfo}
+    <section class="settings-section" aria-labelledby="settings-about-title">
+      <div class="settings-copy">
+        <h2 id="settings-about-title">{m.about()}</h2>
+        <p>{m.app_title()}</p>
+      </div>
+
+      <dl class="settings-metadata">
+        <div>
+          <dt>{m.version()}</dt>
+          <dd>{applicationInfo.version}</dd>
+        </div>
+      </dl>
+    </section>
+  {/if}
 </section>
 
 <style>
@@ -96,6 +122,29 @@
       display: grid;
       gap: var(--space-2);
       min-width: 0;
+    }
+
+    .settings-metadata,
+    .settings-metadata div {
+      margin: 0;
+    }
+
+    .settings-metadata div {
+      display: grid;
+      grid-template-columns: auto auto;
+      gap: var(--space-3);
+      align-items: baseline;
+    }
+
+    .settings-metadata dt {
+      color: var(--muted-foreground);
+      font-size: 0.82rem;
+    }
+
+    .settings-metadata dd {
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
     }
 
     .settings-section h2 {

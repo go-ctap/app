@@ -8,6 +8,14 @@ import (
 	"testing"
 )
 
+func TestApplicationInfoIncludesVersion(t *testing.T) {
+	info := newService(filepath.Join(t.TempDir(), configFile)).GetApplicationInfo(context.Background())
+
+	if info.Version == "" {
+		t.Fatal("application version is empty")
+	}
+}
+
 func TestMissingConfigUsesDefaults(t *testing.T) {
 	service := newService(filepath.Join(t.TempDir(), configFile))
 

@@ -8,5 +8,6 @@ export {
 
 export {
     ApplicationConfig,
-    ApplicationConfigSnapshot
+    ApplicationConfigSnapshot,
+    ApplicationInfo
 } from "./models.js";

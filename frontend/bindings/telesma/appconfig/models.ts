@@ -59,5 +59,26 @@ export class ApplicationConfigSnapshot {
     }
 }
 
+export class ApplicationInfo {
+    "version": string;
+
+    /** Creates a new ApplicationInfo instance. */
+    constructor($$source: Partial<ApplicationInfo> = {}) {
+        if (!("version" in $$source)) {
+            this["version"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ApplicationInfo instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ApplicationInfo {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ApplicationInfo($$parsedSource as Partial<ApplicationInfo>);
+    }
+}
+
 // Private type creation functions
 const $$createType0 = ApplicationConfig.createFrom;

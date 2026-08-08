@@ -2,10 +2,15 @@ import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ApplicationConfig, ApplicationConfigSnapshot } from "../../bindings/telesma/appconfig";
+import {
+  ApplicationConfig,
+  ApplicationConfigSnapshot,
+  ApplicationInfo,
+} from "../../bindings/telesma/appconfig";
 import { initializeApplicationConfig } from "$lib/i18n";
 
 const applicationServiceMocks = vi.hoisted(() => ({
+  GetApplicationInfo: vi.fn(),
   LoadApplicationConfig: vi.fn(),
   SaveApplicationConfig: vi.fn(),
 }));
@@ -16,6 +21,9 @@ import Settings from "./Settings.svelte";
 
 describe("Settings", () => {
   beforeEach(async () => {
+    applicationServiceMocks.GetApplicationInfo.mockResolvedValue(
+      new ApplicationInfo({ version: "1.2.3" }),
+    );
     applicationServiceMocks.LoadApplicationConfig.mockResolvedValue(
       new ApplicationConfigSnapshot({
         config: new ApplicationConfig({ locale: "en", advancedMode: false }),
@@ -65,5 +73,11 @@ describe("Settings", () => {
         expect.objectContaining({ locale: "en", advancedMode: true }),
       ),
     );
+  });
+
+  it("shows the embedded application version", async () => {
+    render(Settings);
+
+    expect(await screen.findByText("1.2.3")).toBeInTheDocument();
   });
 });

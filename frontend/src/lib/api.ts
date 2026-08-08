@@ -2,6 +2,7 @@ import * as applicationService from "../../bindings/telesma/appconfig/service";
 import type {
   ApplicationConfig,
   ApplicationConfigSnapshot,
+  ApplicationInfo,
 } from "../../bindings/telesma/appconfig";
 import * as service from "../../bindings/telesma/service/service";
 import type { LogJournalBatch } from "../../bindings/github.com/go-ctap/kit/model";
@@ -83,6 +84,10 @@ export type OperationEnvelope =
   | GetAssertionEnvelope;
 
 export const api = {
+  getApplicationInfo(): Promise<ApplicationInfo> {
+    return runtimeCall("application.info.get", () => applicationService.GetApplicationInfo());
+  },
+
   loadApplicationConfig(): Promise<ApplicationConfigSnapshot> {
     return runtimeCall("application.config.load", () => applicationService.LoadApplicationConfig());
   },

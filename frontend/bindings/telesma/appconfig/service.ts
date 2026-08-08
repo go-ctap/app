@@ -9,9 +9,15 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 // @ts-ignore: Unused imports
 import * as $models from "./models.js";
 
+export function GetApplicationInfo(): $CancellablePromise<$models.ApplicationInfo> {
+    return $Call.ByID(741992745).then(($result: any) => {
+        return $$createType0($result);
+    });
+}
+
 export function LoadApplicationConfig(): $CancellablePromise<$models.ApplicationConfigSnapshot> {
     return $Call.ByID(2064344301).then(($result: any) => {
-        return $$createType0($result);
+        return $$createType1($result);
     });
 }
 
@@ -20,4 +26,5 @@ export function SaveApplicationConfig(config: $models.ApplicationConfig): $Cance
 }
 
 // Private type creation functions
-const $$createType0 = $models.ApplicationConfigSnapshot.createFrom;
+const $$createType0 = $models.ApplicationInfo.createFrom;
+const $$createType1 = $models.ApplicationConfigSnapshot.createFrom;

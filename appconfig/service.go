@@ -12,6 +12,7 @@ import (
 	"github.com/pelletier/go-toml/v2"
 
 	"telesma/internal/atomicfile"
+	"telesma/internal/buildinfo"
 )
 
 const configFile = "config.toml"
@@ -24,6 +25,10 @@ type ApplicationConfig struct {
 type ApplicationConfigSnapshot struct {
 	Config ApplicationConfig `json:"config"`
 	Exists bool              `json:"exists"`
+}
+
+type ApplicationInfo struct {
+	Version string `json:"version"`
 }
 
 type Service struct {
@@ -48,6 +53,10 @@ func (s *Service) ServiceName() string {
 
 func (s *Service) LoadApplicationConfig(_ context.Context) (ApplicationConfigSnapshot, error) {
 	return s.load()
+}
+
+func (s *Service) GetApplicationInfo(_ context.Context) ApplicationInfo {
+	return ApplicationInfo{Version: buildinfo.Version}
 }
 
 func (s *Service) SaveApplicationConfig(_ context.Context, config ApplicationConfig) error {
