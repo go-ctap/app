@@ -4,10 +4,7 @@ import type { DiscoveryChangedEnvelope } from "../../bindings/telesma/service";
 import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
 
 import { m } from "../paraglide/messages.js";
-import {
-  selectAuthenticatorSession,
-  sessionUpdateApplied,
-} from "$lib/authenticator-controller.js";
+import { selectAuthenticatorSession, sessionUpdateApplied } from "$lib/authenticator-controller.js";
 import { authenticatorSession } from "$lib/features/authenticator/state.js";
 import { failureMessage } from "$lib/failure.js";
 import { operationRecovery } from "$lib/operation-recovery.js";

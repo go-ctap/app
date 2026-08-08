@@ -54,9 +54,15 @@ jobs:
 
           echo "GitHub verified the release tag signature"
 
+  quality:
+    needs: validate
+    uses: ./.github/workflows/quality.yml
+
   build:
     name: Build ${{ matrix.name }}
-    needs: validate
+    needs:
+      - validate
+      - quality
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
     permissions:
@@ -138,9 +144,29 @@ jobs:
           Copy-Item bin/telesma.exe "dist/telesma-windows-$arch.exe"
 
       - name: Attest build provenance
+        id: attest
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
           subject-path: dist/telesma-*
+
+      - name: Stage Unix provenance bundle
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          BUNDLE_PATH: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          os="$(go env GOOS)"
+          arch="$(go env GOARCH)"
+          cp "$BUNDLE_PATH" "dist/telesma-${os}-${arch}.intoto.jsonl"
+
+      - name: Stage Windows provenance bundle
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          BUNDLE_PATH: ${{ steps.attest.outputs.bundle-path }}
+        run: |
+          $arch = go env GOARCH
+          Copy-Item $env:BUNDLE_PATH "dist/telesma-windows-$arch.intoto.jsonl"
 
       - name: Upload binary
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
