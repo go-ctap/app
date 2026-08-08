@@ -55,8 +55,9 @@ describe("InteractionModal", () => {
     resetAppStateForTest();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     cleanup();
+    await waitFor(() => expect(document.body.style.overflow).not.toBe("hidden"));
   });
 
   it("focuses the PIN input when a PIN prompt opens", async () => {
@@ -196,7 +197,9 @@ describe("InteractionModal", () => {
 
     await user.type(await screen.findByLabelText("PIN"), "1111{Enter}");
 
-    expect(submitted).toEqual([{ interactionId: "interaction-1", pin: "1111" }]);
+    await waitFor(() =>
+      expect(submitted).toEqual([{ interactionId: "interaction-1", pin: "1111" }]),
+    );
     await view.rerender({
       presentation: buildInteractionModalPresentation(pinPrompt("interaction-2")),
       onAnswer: answer,
@@ -211,10 +214,12 @@ describe("InteractionModal", () => {
     await waitFor(() => expect(retryInput).toHaveFocus());
 
     await user.type(retryInput, "2222{Enter}");
-    expect(submitted).toEqual([
-      { interactionId: "interaction-1", pin: "1111" },
-      { interactionId: "interaction-2", pin: "2222" },
-    ]);
+    await waitFor(() =>
+      expect(submitted).toEqual([
+        { interactionId: "interaction-1", pin: "1111" },
+        { interactionId: "interaction-2", pin: "2222" },
+      ]),
+    );
   });
 
   it("cancels the prompt from Escape", async () => {
