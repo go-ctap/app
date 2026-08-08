@@ -1,17 +1,17 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { InteractionKind } from "../../bindings/github.com/go-ctap/kit/model";
-import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import { InteractionKind } from "../../bindings/github.com/telesma-app/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
+import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
+import { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
 import type {
   CredentialsEnvelope,
   InteractionPrompt,
   OperationEventEnvelope,
 } from "../../bindings/telesma/service";
 import { InteractionAnswer } from "../../bindings/telesma/service";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import { Mode } from "../../bindings/github.com/telesma-app/kit/transport";
 
 import { pendingInteraction } from "$lib/features/interaction/state.js";
 import { failureForCode } from "$lib/test-support/failure.js";

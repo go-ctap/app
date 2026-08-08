@@ -1,6 +1,6 @@
-import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import type { Failure } from "../../bindings/github.com/telesma-app/kit/model/failure";
 import type { SelectionID } from "../../bindings/telesma/service";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import type { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
 
 export type AuthenticatorState = "idle" | "opening" | "ready" | "error";
 

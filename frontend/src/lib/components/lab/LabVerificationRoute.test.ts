@@ -2,8 +2,8 @@ import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AttestationStatementFormatIdentifier } from "../../../../bindings/github.com/go-ctap/ctap/attestation";
-import { Category, Code, Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+import { AttestationStatementFormatIdentifier } from "../../../../bindings/github.com/telesma-app/ctap/attestation";
+import { Category, Code, Failure } from "../../../../bindings/github.com/telesma-app/kit/model/failure";
 import {
   AssertionVerification,
   AttestationType,
@@ -12,12 +12,12 @@ import {
   SignCountStatus,
   VerificationIssueCode,
   VerificationStatus,
-} from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
+} from "../../../../bindings/github.com/telesma-app/kit/model/webauthn";
 import {
   AttestationTrustAssessment,
   AttestationTrustStatus,
   AuthenticatorStatus,
-} from "../../../../bindings/github.com/go-ctap/mds/model";
+} from "../../../../bindings/github.com/telesma-app/mds/model";
 
 import { setAppLocale } from "$lib/i18n";
 

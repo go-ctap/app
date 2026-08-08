@@ -3,9 +3,9 @@ import { writable } from "svelte/store";
 import {
   CredentialProtectionPolicy,
   LargeBlobSupport,
-} from "../../../../bindings/github.com/go-ctap/ctap/extension";
-import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit";
-import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+} from "../../../../bindings/github.com/telesma-app/ctap/extension";
+import { VerificationFlow } from "../../../../bindings/github.com/telesma-app/kit";
+import type { Failure } from "../../../../bindings/github.com/telesma-app/kit/model/failure";
 import type {
   CredentialVerificationMaterial,
   GetAssertionPreview,
@@ -14,8 +14,8 @@ import type {
   MakeCredentialPreview,
   MakeCredentialResult,
   MakeCredentialVerification,
-} from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
-import type { AttestationTrustAssessment } from "../../../../bindings/github.com/go-ctap/mds/model";
+} from "../../../../bindings/github.com/telesma-app/kit/model/webauthn";
+import type { AttestationTrustAssessment } from "../../../../bindings/github.com/telesma-app/mds/model";
 import type {
   GetAssertionEnvelope,
   GetAssertionRequest,

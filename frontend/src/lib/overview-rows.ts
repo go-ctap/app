@@ -4,20 +4,20 @@ import {
   FactState,
   FactValueKind,
   type Fact,
-} from "../../bindings/github.com/go-ctap/kit/model/inspect";
+} from "../../bindings/github.com/telesma-app/kit/model/inspect";
 import {
   DeviceVendor,
   type DeviceReport,
-} from "../../bindings/github.com/go-ctap/kit/model/report";
-import { Mode, SmartCardInterface } from "../../bindings/github.com/go-ctap/kit/transport";
-import type { DeviceInfo as Token2DeviceInfo } from "../../bindings/github.com/go-ctap/token2";
+} from "../../bindings/github.com/telesma-app/kit/model/report";
+import { Mode, SmartCardInterface } from "../../bindings/github.com/telesma-app/kit/transport";
+import type { DeviceInfo as Token2DeviceInfo } from "../../bindings/github.com/telesma-app/token2";
 import {
   Capability,
   FormFactor,
   ReleaseType,
   type DeviceInfo as YubicoDeviceInfo,
   type FirmwareVersion as YubicoFirmwareVersion,
-} from "../../bindings/github.com/go-ctap/yubico";
+} from "../../bindings/github.com/telesma-app/yubico";
 
 import {
   buildOverviewFactLookup,

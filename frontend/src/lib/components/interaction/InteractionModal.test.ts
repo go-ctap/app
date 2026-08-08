@@ -6,8 +6,8 @@ import {
   InteractionKind,
   InteractionRequest,
   PINInteractionState,
-} from "../../../../bindings/github.com/go-ctap/kit/model";
-import { UserVerify } from "../../../../bindings/github.com/go-ctap/ctap/protocol";
+} from "../../../../bindings/github.com/telesma-app/kit/model";
+import { UserVerify } from "../../../../bindings/github.com/telesma-app/ctap/protocol";
 import { InteractionAnswer, InteractionPrompt } from "../../../../bindings/telesma/service";
 
 import { buildInteractionModalPresentation } from "$lib/shell-presentation";

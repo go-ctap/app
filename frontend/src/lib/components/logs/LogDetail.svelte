@@ -4,8 +4,8 @@
   import {
     LogOutcome,
     type LogPayload,
-  } from "../../../../bindings/github.com/go-ctap/kit/model/index.js";
-  import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure/index.js";
+  } from "../../../../bindings/github.com/telesma-app/kit/model/index.js";
+  import type { Failure } from "../../../../bindings/github.com/telesma-app/kit/model/failure/index.js";
   import * as Alert from "$lib/components/ui/alert";
   import { Badge } from "$lib/components/ui/badge";
   import { ScrollArea } from "$lib/components/ui/scroll-area";
@@ -94,7 +94,7 @@
       return [
         { label: m.logs_source(), value: m.logs_source_runtime() },
         { label: m.logs_entry_id(), value: value.id },
-        { label: m.logs_failure(), value: failureMessage(value.error) },
+        { label: m.logs_failure(), value: failureMessage(value.error) ?? "" },
       ];
     }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { InventoryReport } from "../../bindings/github.com/go-ctap/kit/model/credentials";
+import type { InventoryReport } from "../../bindings/github.com/telesma-app/kit/model/credentials";
 import type {
   CredentialDeleteEnvelope,
   GetAssertionEnvelope,

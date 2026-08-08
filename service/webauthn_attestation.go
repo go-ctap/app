@@ -6,11 +6,11 @@ import (
 	"errors"
 	"time"
 
-	ctapattestation "github.com/go-ctap/ctap/attestation"
-	ctapkit "github.com/go-ctap/kit"
-	appwebauthn "github.com/go-ctap/kit/model/webauthn"
-	"github.com/go-ctap/mds"
-	mdsmodel "github.com/go-ctap/mds/model"
+	ctapattestation "github.com/telesma-app/ctap/attestation"
+	ctapkit "github.com/telesma-app/kit"
+	appwebauthn "github.com/telesma-app/kit/model/webauthn"
+	"github.com/telesma-app/mds"
+	mdsmodel "github.com/telesma-app/mds/model"
 	"github.com/google/uuid"
 )
 

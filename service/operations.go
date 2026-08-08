@@ -3,12 +3,13 @@ package service
 import (
 	"context"
 
-	ctapkit "github.com/go-ctap/kit"
-	"github.com/go-ctap/kit/model/config"
-	"github.com/go-ctap/kit/model/credentials"
-	"github.com/go-ctap/kit/model/largeblobs"
-	appoperation "github.com/go-ctap/kit/model/operation"
-	"github.com/go-ctap/kit/model/webauthn"
+	ctapkit "github.com/telesma-app/kit"
+	"github.com/telesma-app/kit/conformance/ctap23"
+	"github.com/telesma-app/kit/model/config"
+	"github.com/telesma-app/kit/model/credentials"
+	"github.com/telesma-app/kit/model/largeblobs"
+	appoperation "github.com/telesma-app/kit/model/operation"
+	"github.com/telesma-app/kit/model/webauthn"
 )
 
 type OperationRequest struct {
@@ -110,6 +111,11 @@ type MakeCredentialRequest struct {
 type GetAssertionRequest struct {
 	OperationRequest
 	webauthn.GetAssertionOperation
+}
+
+type CTAP23ConformanceRequest struct {
+	OperationRequest
+	ctap23.RunRequest
 }
 
 func (s *Service) Inspect(ctx context.Context, req OperationRequest) InspectEnvelope {
@@ -335,4 +341,13 @@ func (s *Service) GetAssertion(ctx context.Context, req GetAssertionRequest) Get
 	)
 
 	return GetAssertionEnvelope{OperationEnvelopeMeta: meta, Result: result}
+}
+
+func (s *Service) RunCTAP23Conformance(ctx context.Context, req CTAP23ConformanceRequest) CTAP23ConformanceEnvelope {
+	meta, result := runAuthenticatorOperation(
+		s, ctx, req.OperationRequest, appoperation.ConformanceCTAP23,
+		req.RunRequest, (*ctapkit.Authenticator).RunCTAP23Conformance,
+	)
+
+	return CTAP23ConformanceEnvelope{OperationEnvelopeMeta: meta, Result: result}
 }

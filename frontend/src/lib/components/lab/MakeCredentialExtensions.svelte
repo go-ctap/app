@@ -3,7 +3,7 @@
     CredentialProtectionPolicy,
     ExtensionIdentifier,
     LargeBlobSupport,
-  } from "../../../../bindings/github.com/go-ctap/ctap/extension";
+  } from "../../../../bindings/github.com/telesma-app/ctap/extension";
   import type { InspectEnvelope } from "../../../../bindings/telesma/service";
 
   import * as Alert from "$lib/components/ui/alert";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
+import { Version } from "../../bindings/github.com/telesma-app/ctap/protocol";
 import {
   Evidence,
   EvidenceGapID,
@@ -11,14 +11,14 @@ import {
   Finding,
   Inconclusive,
   Profile,
-  Report,
+  Assessment as ConformanceAssessment,
   RequirementLevel,
   RequirementRef,
   RuleID,
   SpecificationID,
   Target,
-} from "../../bindings/github.com/go-ctap/kit/model/conformance";
-import { Assessment } from "../../bindings/github.com/go-ctap/kit/model/inspect";
+} from "../../bindings/github.com/telesma-app/kit/conformance";
+import { Assessment as InspectAssessment } from "../../bindings/github.com/telesma-app/kit/model/inspect";
 
 import { buildOverviewConformancePresentation } from "$lib/overview-conformance";
 import { localizeCtapAssessment } from "$lib/overview-i18n";
@@ -28,11 +28,11 @@ const fido21Target = new Target({
   profile: Profile.ProfileFIDO21,
 });
 
-function infoWith(report: Report, versions: Version[] = [Version.FIDO_2_1]) {
+function infoWith(report: ConformanceAssessment, versions: Version[] = [Version.FIDO_2_1]) {
   return {
     versions,
     aaguid: "00000000-0000-0000-0000-000000000000",
-    assessment: new Assessment(),
+    assessment: new InspectAssessment(),
     conformance: report,
   };
 }
@@ -102,7 +102,7 @@ describe("buildOverviewConformancePresentation", () => {
 
   it("presents a clean targeted report as passed", () => {
     const presentation = buildOverviewConformancePresentation({
-      info: infoWith(new Report({ target: fido21Target })),
+      info: infoWith(new ConformanceAssessment({ target: fido21Target })),
     });
 
     expect(presentation).toEqual({
@@ -117,7 +117,7 @@ describe("buildOverviewConformancePresentation", () => {
   it("presents and localizes findings", () => {
     const presentation = buildOverviewConformancePresentation({
       info: infoWith(
-        new Report({
+        new ConformanceAssessment({
           target: fido21Target,
           findings: [localizedFinding()],
         }),
@@ -143,7 +143,7 @@ describe("buildOverviewConformancePresentation", () => {
   it("gives findings precedence in a mixed report", () => {
     const presentation = buildOverviewConformancePresentation({
       info: infoWith(
-        new Report({
+        new ConformanceAssessment({
           target: fido21Target,
           findings: [localizedFinding()],
           inconclusive: [localizedInconclusive()],
@@ -171,7 +171,7 @@ describe("buildOverviewConformancePresentation", () => {
   it("presents an inconclusive-only report", () => {
     const presentation = buildOverviewConformancePresentation({
       info: infoWith(
-        new Report({
+        new ConformanceAssessment({
           target: fido21Target,
           inconclusive: [localizedInconclusive()],
         }),
@@ -191,7 +191,7 @@ describe("buildOverviewConformancePresentation", () => {
   it("makes an unresolved target explicit instead of presenting a clean report", () => {
     const presentation = buildOverviewConformancePresentation({
       info: infoWith(
-        new Report({
+        new ConformanceAssessment({
           advertisedProfiles: [Profile.ProfileU2FV2],
         }),
         [Version.U2F_V2],

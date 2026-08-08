@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { GetAssertionPreview } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
+  import type { GetAssertionPreview } from "../../../../bindings/github.com/telesma-app/kit/model/webauthn";
 
   import LabReviewShell from "$lib/components/lab/LabReviewShell.svelte";
 

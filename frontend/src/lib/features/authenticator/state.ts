@@ -1,6 +1,6 @@
 import { derived, writable } from "svelte/store";
 
-import type { DeviceReport } from "../../../../bindings/github.com/go-ctap/kit/model/report";
+import type { DeviceReport } from "../../../../bindings/github.com/telesma-app/kit/model/report";
 import type { InspectEnvelope } from "../../../../bindings/telesma/service";
 
 import { idleLoadState, type LoadState } from "$lib/load-state";

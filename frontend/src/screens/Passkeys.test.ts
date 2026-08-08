@@ -5,10 +5,10 @@ import { get } from "svelte/store";
 import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
-import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
-import type { CredentialTarget } from "../../bindings/github.com/go-ctap/kit/model/credentials";
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { VerificationFlow } from "../../bindings/github.com/telesma-app/kit";
+import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
+import type { CredentialTarget } from "../../bindings/github.com/telesma-app/kit/model/credentials";
+import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
 import type {
   CredentialDeleteEnvelope,
   CredentialUpdateEnvelope,

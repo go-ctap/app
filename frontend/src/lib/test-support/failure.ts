@@ -1,4 +1,4 @@
-import { Category, Code, Failure } from "../../../bindings/github.com/go-ctap/kit/model/failure";
+import { Category, Code, Failure } from "../../../bindings/github.com/telesma-app/kit/model/failure";
 
 const TEST_CATEGORY_BY_CODE: Partial<Record<Code, Category>> = {
   [Code.CodeAssertionDenied]: Category.CategoryInvalidState,

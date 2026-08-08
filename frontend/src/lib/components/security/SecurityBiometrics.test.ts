@@ -5,7 +5,7 @@ import {
   BioStatus,
   CapabilityState,
   StateValue,
-} from "../../../../bindings/github.com/go-ctap/kit/model/config";
+} from "../../../../bindings/github.com/telesma-app/kit/model/config";
 import type { BioListEnvelope, BioSensorEnvelope } from "../../../../bindings/telesma/service";
 
 import { emptySecurityResourceState } from "$lib/features/security/state";

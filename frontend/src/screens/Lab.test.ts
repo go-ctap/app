@@ -4,18 +4,18 @@ import { get } from "svelte/store";
 import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { Severity, Warning } from "../../bindings/github.com/go-ctap/kit/model/safety";
-import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/credential";
-import { ExtensionIdentifier } from "../../bindings/github.com/go-ctap/ctap/extension";
-import { Option } from "../../bindings/github.com/go-ctap/ctap/protocol";
-import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
+import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
+import { Severity, Warning } from "../../bindings/github.com/telesma-app/kit/model/safety";
+import { PublicKeyCredentialType } from "../../bindings/github.com/telesma-app/ctap/credential";
+import { ExtensionIdentifier } from "../../bindings/github.com/telesma-app/ctap/extension";
+import { Option } from "../../bindings/github.com/telesma-app/ctap/protocol";
+import { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
+import { Mode } from "../../bindings/github.com/telesma-app/kit/transport";
 import {
   MakeCredentialInput,
   MakeCredentialPreview,
-} from "../../bindings/github.com/go-ctap/kit/model/webauthn";
+} from "../../bindings/github.com/telesma-app/kit/model/webauthn";
 import {
   MakeCredentialEnvelope,
   MakeCredentialRequest,

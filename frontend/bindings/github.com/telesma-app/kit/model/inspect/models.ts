@@ -7,6 +7,9 @@ import { Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as uuid$0 from "../../../../google/uuid/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as attestation$0 from "../../../ctap/attestation/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -19,13 +22,10 @@ import * as extension$0 from "../../../ctap/extension/models.js";
 import * as protocol$0 from "../../../ctap/protocol/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as conformance$0 from "../conformance/models.js";
+import * as conformance$0 from "../../conformance/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
 import * as report$0 from "../report/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as uuid$0 from "../../../../google/uuid/models.js";
 
 /**
  * Assessment is the deterministic, presentation-neutral interpretation of an
@@ -293,7 +293,7 @@ export class Info {
     "authenticatorConfigCommands"?: protocol$0.ConfigSubCommand[];
     "uvModalityLabel"?: string;
     "assessment": Assessment;
-    "conformance": conformance$0.Report;
+    "conformance": conformance$0.Assessment;
 
     /** Creates a new Info instance. */
     constructor($$source: Partial<Info> = {}) {
@@ -307,7 +307,7 @@ export class Info {
             this["assessment"] = (new Assessment());
         }
         if (!("conformance" in $$source)) {
-            this["conformance"] = (new conformance$0.Report());
+            this["conformance"] = (new conformance$0.Assessment());
         }
 
         Object.assign(this, $$source);
@@ -443,6 +443,6 @@ const $$createType14 = $Create.Array($Create.Any);
 const $$createType15 = $Create.Array($Create.Any);
 const $$createType16 = $Create.Array($Create.Any);
 const $$createType17 = Assessment.createFrom;
-const $$createType18 = conformance$0.Report.createFrom;
+const $$createType18 = conformance$0.Assessment.createFrom;
 const $$createType19 = report$0.DeviceReport.createFrom;
 const $$createType20 = Info.createFrom;

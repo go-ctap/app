@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	ctapkit "github.com/go-ctap/kit"
-	appwebauthn "github.com/go-ctap/kit/model/webauthn"
+	ctapkit "github.com/telesma-app/kit"
+	appwebauthn "github.com/telesma-app/kit/model/webauthn"
 )
 
 type MakeCredentialVerificationRequest struct {

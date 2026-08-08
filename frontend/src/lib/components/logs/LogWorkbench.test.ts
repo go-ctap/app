@@ -8,13 +8,13 @@ import {
   LogJournalRecord,
   LogOutcome,
   LogPayload,
-} from "../../../../bindings/github.com/go-ctap/kit/model";
+} from "../../../../bindings/github.com/telesma-app/kit/model";
 import {
   Category,
   Code,
   CTAPDetail,
   Failure,
-} from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+} from "../../../../bindings/github.com/telesma-app/kit/model/failure";
 import { LogCursor } from "../../../../bindings/telesma/service";
 import { api } from "$lib/api";
 import { logController } from "$lib/features/logs/state.svelte.js";

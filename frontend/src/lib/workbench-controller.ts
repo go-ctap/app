@@ -4,6 +4,8 @@ import {
   bootstrapAuthenticatorSession,
   selectAuthenticatorSession,
 } from "$lib/authenticator-controller.js";
+import { advancedMode } from "$lib/application-config.js";
+import { maybeLoadConformance } from "$lib/conformance-controller.js";
 import { activeScreen, type ActiveScreen } from "$lib/features/workbench/state.js";
 import { maybeLoadLargeBlobs } from "$lib/largeblobs-controller.js";
 import { maybeLoadOverview } from "$lib/overview-controller.js";
@@ -30,6 +32,11 @@ export async function loadActiveScreen(screen = get(activeScreen)) {
     }
     case "security": {
       await maybeLoadSecurity();
+
+      return;
+    }
+    case "conformance": {
+      await maybeLoadConformance();
     }
   }
 }
@@ -43,6 +50,8 @@ export async function selectToken(selector: string) {
 }
 
 export async function navigateToScreen(screen: ActiveScreen) {
+  if (screen === "conformance" && !get(advancedMode)) return;
+
   if (get(activeScreen) === screen) return;
 
   activeScreen.set(screen);

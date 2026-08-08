@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"testing"
 
-	ctapkit "github.com/go-ctap/kit"
-	"github.com/go-ctap/kit/model/credentials"
-	"github.com/go-ctap/kit/model/failure"
-	"github.com/go-ctap/kit/model/operation"
+	ctapkit "github.com/telesma-app/kit"
+	"github.com/telesma-app/kit/model/credentials"
+	"github.com/telesma-app/kit/model/failure"
+	"github.com/telesma-app/kit/model/operation"
 )
 
 func TestListCredentialsWithoutSelectionReturnsTypedErrorEnvelope(t *testing.T) {
@@ -30,6 +30,22 @@ func TestListCredentialsWithoutSelectionReturnsTypedErrorEnvelope(t *testing.T) 
 
 	if envelope.Error.Category != failure.CategoryInvalidState || envelope.Error.Phase != failure.PhaseAuthenticator {
 		t.Fatalf("envelope error = %#v, want invalid-state/authenticator", envelope.Error)
+	}
+}
+
+func TestRunCTAP23ConformanceWithoutSelectionReturnsTypedErrorEnvelope(t *testing.T) {
+	service := New()
+
+	envelope := service.RunCTAP23Conformance(t.Context(), CTAP23ConformanceRequest{})
+
+	if envelope.Kind != operation.ConformanceCTAP23 {
+		t.Fatalf("envelope kind = %q, want %q", envelope.Kind, operation.ConformanceCTAP23)
+	}
+	if envelope.Error == nil || envelope.Error.Code != failure.CodeAuthenticatorClosed {
+		t.Fatalf("envelope error = %#v, want %s", envelope.Error, failure.CodeAuthenticatorClosed)
+	}
+	if envelope.Result != nil {
+		t.Fatalf("envelope result = %#v, want nil", envelope.Result)
 	}
 }
 

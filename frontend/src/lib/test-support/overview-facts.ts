@@ -6,7 +6,7 @@ import {
   FactState,
   FactValue,
   FactValueKind,
-} from "../../../bindings/github.com/go-ctap/kit/model/inspect";
+} from "../../../bindings/github.com/telesma-app/kit/model/inspect";
 
 const factKinds = new Map<FactID, FactValueKind>([
   ...withKind(FactValueKind.FactValueText, [

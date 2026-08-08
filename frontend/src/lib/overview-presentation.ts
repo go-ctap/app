@@ -1,5 +1,5 @@
-import type { LookupResult } from "../../bindings/github.com/go-ctap/mds/model";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+import type { LookupResult } from "../../bindings/github.com/telesma-app/mds/model";
+import type { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
 import type { BioSensorEnvelope, InspectEnvelope } from "../../bindings/telesma/service";
 
 import { m } from "../paraglide/messages.js";

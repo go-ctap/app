@@ -1,12 +1,12 @@
-import { AttestationStatementFormatIdentifier } from "../../bindings/github.com/go-ctap/ctap/attestation";
+import { AttestationStatementFormatIdentifier } from "../../bindings/github.com/telesma-app/ctap/attestation";
 import {
   PublicKeyCredentialDescriptor,
   PublicKeyCredentialParameters,
   PublicKeyCredentialRpEntity,
   PublicKeyCredentialType,
   PublicKeyCredentialUserEntity,
-} from "../../bindings/github.com/go-ctap/ctap/credential";
-import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
+} from "../../bindings/github.com/telesma-app/ctap/credential";
+import { VerificationFlow } from "../../bindings/github.com/telesma-app/kit";
 import {
   AuthenticationExtensionsLargeBlobInputs,
   AuthenticationExtensionsPaymentInputs,
@@ -15,8 +15,8 @@ import {
   CreateAuthenticationExtensionsClientInputs,
   GetAuthenticationExtensionsClientInputs,
   HMACGetSecretInput,
-} from "../../bindings/github.com/go-ctap/ctap/webauthn";
-import { AuthenticatorOptions } from "../../bindings/github.com/go-ctap/kit/model/webauthn";
+} from "../../bindings/github.com/telesma-app/ctap/webauthn";
+import { AuthenticatorOptions } from "../../bindings/github.com/telesma-app/kit/model/webauthn";
 import { GetAssertionRequest, MakeCredentialRequest } from "../../bindings/telesma/service";
 import { getDomain } from "tldts";
 

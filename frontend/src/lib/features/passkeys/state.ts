@@ -1,10 +1,10 @@
 import { writable } from "svelte/store";
 
-import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit";
+import { VerificationFlow } from "../../../../bindings/github.com/telesma-app/kit";
 import type {
   CredentialTarget,
   InventoryReport,
-} from "../../../../bindings/github.com/go-ctap/kit/model/credentials";
+} from "../../../../bindings/github.com/telesma-app/kit/model/credentials";
 import type {
   CredentialDeleteEnvelope,
   CredentialDeleteRequest,

@@ -7,13 +7,13 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as model$1 from "../../github.com/go-ctap/kit/model/models.js";
+import * as model$1 from "../../github.com/telesma-app/kit/model/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as webauthn$0 from "../../github.com/go-ctap/kit/model/webauthn/models.js";
+import * as webauthn$0 from "../../github.com/telesma-app/kit/model/webauthn/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as model$0 from "../../github.com/go-ctap/mds/model/models.js";
+import * as model$0 from "../../github.com/telesma-app/mds/model/models.js";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -183,6 +183,12 @@ export function ResolveInteraction(answer: $models.InteractionAnswer): $Cancella
     return $Call.ByID(2161635929, answer);
 }
 
+export function RunCTAP23Conformance(req: $models.CTAP23ConformanceRequest): $CancellablePromise<$models.CTAP23ConformanceEnvelope> {
+    return $Call.ByID(1818165716, req).then(($result: any) => {
+        return $$createType21($result);
+    });
+}
+
 export function SetAlwaysUV(req: $models.AlwaysUVRequest): $CancellablePromise<$models.AuthenticatorConfigEnvelope> {
     return $Call.ByID(864302713, req).then(($result: any) => {
         return $$createType11($result);
@@ -207,19 +213,19 @@ export function SetSelection(req: $models.SelectionRequest): $CancellablePromise
 
 export function UpdateCredentialUser(req: $models.CredentialUpdateRequest): $CancellablePromise<$models.CredentialUpdateEnvelope> {
     return $Call.ByID(1873826706, req).then(($result: any) => {
-        return $$createType21($result);
+        return $$createType22($result);
     });
 }
 
 export function VerifyGetAssertion(req: $models.GetAssertionVerificationRequest): $CancellablePromise<webauthn$0.GetAssertionVerification> {
     return $Call.ByID(2758956860, req).then(($result: any) => {
-        return $$createType22($result);
+        return $$createType23($result);
     });
 }
 
 export function VerifyMakeCredential(req: $models.MakeCredentialVerificationRequest): $CancellablePromise<webauthn$0.MakeCredentialVerification> {
     return $Call.ByID(448257851, req).then(($result: any) => {
-        return $$createType23($result);
+        return $$createType24($result);
     });
 }
 
@@ -251,6 +257,7 @@ const $$createType17 = $models.MakeCredentialEnvelope.createFrom;
 const $$createType18 = $models.LargeBlobReadEnvelope.createFrom;
 const $$createType19 = model$1.LogJournalBatch.createFrom;
 const $$createType20 = $models.ResetFactoryEnvelope.createFrom;
-const $$createType21 = $models.CredentialUpdateEnvelope.createFrom;
-const $$createType22 = webauthn$0.GetAssertionVerification.createFrom;
-const $$createType23 = webauthn$0.MakeCredentialVerification.createFrom;
+const $$createType21 = $models.CTAP23ConformanceEnvelope.createFrom;
+const $$createType22 = $models.CredentialUpdateEnvelope.createFrom;
+const $$createType23 = webauthn$0.GetAssertionVerification.createFrom;
+const $$createType24 = webauthn$0.MakeCredentialVerification.createFrom;

@@ -1,7 +1,7 @@
 import { writable } from "svelte/store";
 
-import type { OperationStage } from "../../../../bindings/github.com/go-ctap/kit/model";
-import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+import type { OperationStage } from "../../../../bindings/github.com/telesma-app/kit/model";
+import type { Failure } from "../../../../bindings/github.com/telesma-app/kit/model/failure";
 
 export type ActiveOperation = {
   operationId?: string;
@@ -28,7 +28,14 @@ export type StatusBarState = {
 };
 
 export type ActiveScreen =
-  "overview" | "passkeys" | "lab" | "large-blobs" | "security" | "logs" | "settings";
+  | "overview"
+  | "passkeys"
+  | "lab"
+  | "large-blobs"
+  | "security"
+  | "conformance"
+  | "logs"
+  | "settings";
 
 export const activeScreen = writable<ActiveScreen>("overview");
 

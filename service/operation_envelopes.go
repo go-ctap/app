@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 
-	ctapkit "github.com/go-ctap/kit"
-	"github.com/go-ctap/kit/model/failure"
-	"github.com/go-ctap/kit/model/operation"
+	ctapkit "github.com/telesma-app/kit"
+	"github.com/telesma-app/kit/model/failure"
+	"github.com/telesma-app/kit/model/operation"
 	"github.com/google/uuid"
 )
 

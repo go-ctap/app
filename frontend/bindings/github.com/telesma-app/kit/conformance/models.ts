@@ -5,6 +5,61 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+/**
+ * Assessment is a static assessment of the information observable in one
+ * authenticatorGetInfo response. Target is nil and no normative rules are run
+ * when the response does not advertise a stable supported FIDO2 profile. It is
+ * not a replacement for protocol-level certification testing.
+ */
+export class Assessment {
+    "target": Target | null;
+    "advertisedProfiles": Profile[];
+    "findings": Finding[];
+    "inconclusive": Inconclusive[];
+
+    /** Creates a new Assessment instance. */
+    constructor($$source: Partial<Assessment> = {}) {
+        if (!("target" in $$source)) {
+            this["target"] = null;
+        }
+        if (!("advertisedProfiles" in $$source)) {
+            this["advertisedProfiles"] = [];
+        }
+        if (!("findings" in $$source)) {
+            this["findings"] = [];
+        }
+        if (!("inconclusive" in $$source)) {
+            this["inconclusive"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Assessment instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Assessment {
+        const $$createField0_0 = $$createType1;
+        const $$createField1_0 = $$createType2;
+        const $$createField2_0 = $$createType4;
+        const $$createField3_0 = $$createType6;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("target" in $$parsedSource) {
+            $$parsedSource["target"] = $$createField0_0($$parsedSource["target"]);
+        }
+        if ("advertisedProfiles" in $$parsedSource) {
+            $$parsedSource["advertisedProfiles"] = $$createField1_0($$parsedSource["advertisedProfiles"]);
+        }
+        if ("findings" in $$parsedSource) {
+            $$parsedSource["findings"] = $$createField2_0($$parsedSource["findings"]);
+        }
+        if ("inconclusive" in $$parsedSource) {
+            $$parsedSource["inconclusive"] = $$createField3_0($$parsedSource["inconclusive"]);
+        }
+        return new Assessment($$parsedSource as Partial<Assessment>);
+    }
+}
+
 export class Evidence {
     "path": FieldPath;
     "state": EvidenceState;
@@ -29,7 +84,7 @@ export class Evidence {
      * Creates a new Evidence instance from a string or object.
      */
     static createFrom($$source: any = {}): Evidence {
-        const $$createField2_0 = $$createType0;
+        const $$createField2_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("values" in $$parsedSource) {
             $$parsedSource["values"] = $$createField2_0($$parsedSource["values"]);
@@ -91,8 +146,8 @@ export class Expectation {
      * Creates a new Expectation instance from a string or object.
      */
     static createFrom($$source: any = {}): Expectation {
-        const $$createField0_0 = $$createType1;
-        const $$createField3_0 = $$createType0;
+        const $$createField0_0 = $$createType8;
+        const $$createField3_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("subjects" in $$parsedSource) {
             $$parsedSource["subjects"] = $$createField0_0($$parsedSource["subjects"]);
@@ -166,9 +221,9 @@ export class Finding {
      * Creates a new Finding instance from a string or object.
      */
     static createFrom($$source: any = {}): Finding {
-        const $$createField2_0 = $$createType3;
-        const $$createField3_0 = $$createType5;
-        const $$createField4_0 = $$createType7;
+        const $$createField2_0 = $$createType10;
+        const $$createField3_0 = $$createType12;
+        const $$createField4_0 = $$createType14;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("expectations" in $$parsedSource) {
             $$parsedSource["expectations"] = $$createField2_0($$parsedSource["expectations"]);
@@ -219,9 +274,9 @@ export class Inconclusive {
      * Creates a new Inconclusive instance from a string or object.
      */
     static createFrom($$source: any = {}): Inconclusive {
-        const $$createField3_0 = $$createType3;
-        const $$createField4_0 = $$createType5;
-        const $$createField5_0 = $$createType7;
+        const $$createField3_0 = $$createType10;
+        const $$createField4_0 = $$createType12;
+        const $$createField5_0 = $$createType14;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("expectations" in $$parsedSource) {
             $$parsedSource["expectations"] = $$createField3_0($$parsedSource["expectations"]);
@@ -253,61 +308,6 @@ export enum Profile {
     ProfileFIDO23 = "FIDO_2_3",
     ProfileU2FV2 = "U2F_V2",
 };
-
-/**
- * Report is a static assessment of the information observable in one
- * authenticatorGetInfo response. Target is nil and no normative rules are run
- * when the response does not advertise a stable supported FIDO2 profile. A
- * report is not a replacement for protocol-level certification testing.
- */
-export class Report {
-    "target": Target | null;
-    "advertisedProfiles": Profile[];
-    "findings": Finding[];
-    "inconclusive": Inconclusive[];
-
-    /** Creates a new Report instance. */
-    constructor($$source: Partial<Report> = {}) {
-        if (!("target" in $$source)) {
-            this["target"] = null;
-        }
-        if (!("advertisedProfiles" in $$source)) {
-            this["advertisedProfiles"] = [];
-        }
-        if (!("findings" in $$source)) {
-            this["findings"] = [];
-        }
-        if (!("inconclusive" in $$source)) {
-            this["inconclusive"] = [];
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new Report instance from a string or object.
-     */
-    static createFrom($$source: any = {}): Report {
-        const $$createField0_0 = $$createType9;
-        const $$createField1_0 = $$createType10;
-        const $$createField2_0 = $$createType12;
-        const $$createField3_0 = $$createType14;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("target" in $$parsedSource) {
-            $$parsedSource["target"] = $$createField0_0($$parsedSource["target"]);
-        }
-        if ("advertisedProfiles" in $$parsedSource) {
-            $$parsedSource["advertisedProfiles"] = $$createField1_0($$parsedSource["advertisedProfiles"]);
-        }
-        if ("findings" in $$parsedSource) {
-            $$parsedSource["findings"] = $$createField2_0($$parsedSource["findings"]);
-        }
-        if ("inconclusive" in $$parsedSource) {
-            $$parsedSource["inconclusive"] = $$createField3_0($$parsedSource["inconclusive"]);
-        }
-        return new Report($$parsedSource as Partial<Report>);
-    }
-}
 
 export type RequirementID = string;
 
@@ -416,6 +416,65 @@ export enum RuleID {
     RuleAlwaysUVU2FRequiresBuiltInUV = "ctap.get_info.always_uv.u2f_requires_built_in_uv",
 };
 
+/**
+ * Source identifies the upstream artifact from which a suite was adapted.
+ * Digest is the digest of the complete artifact, including the algorithm
+ * prefix, for example "sha256:...".
+ */
+export class Source {
+    "artifact": string;
+    "version": string;
+    "digest"?: string;
+
+    /** Creates a new Source instance. */
+    constructor($$source: Partial<Source> = {}) {
+        if (!("artifact" in $$source)) {
+            this["artifact"] = "";
+        }
+        if (!("version" in $$source)) {
+            this["version"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Source instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Source {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Source($$parsedSource as Partial<Source>);
+    }
+}
+
+/**
+ * SourceLocation maps a test back to its exact upstream case.
+ */
+export class SourceLocation {
+    "path": string;
+    "case": string;
+
+    /** Creates a new SourceLocation instance. */
+    constructor($$source: Partial<SourceLocation> = {}) {
+        if (!("path" in $$source)) {
+            this["path"] = "";
+        }
+        if (!("case" in $$source)) {
+            this["case"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SourceLocation instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SourceLocation {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new SourceLocation($$parsedSource as Partial<SourceLocation>);
+    }
+}
+
 export enum SpecificationID {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -426,6 +485,122 @@ export enum SpecificationID {
     SpecificationCTAP21 = "ctap-2.1-ps-20210615",
     SpecificationCTAP23 = "ctap-2.3-ps-20260226",
 };
+
+/**
+ * Status is the aggregate outcome of a suite, test, or step.
+ */
+export enum Status {
+    /**
+     * The Go zero value for the underlying type of the enum.
+     */
+    $zero = "",
+
+    StatusPassed = "passed",
+    StatusFailed = "failed",
+    StatusSkipped = "skipped",
+    StatusError = "error",
+};
+
+/**
+ * StepID is the stable identifier of one phase within a test.
+ */
+export type StepID = string;
+
+/**
+ * StepResult is the structured result of one executed step.
+ */
+export class StepResult {
+    "id": StepID;
+    "name": string;
+    "references": RequirementRef[];
+    "status": Status;
+    "message"?: string;
+
+    /** Creates a new StepResult instance. */
+    constructor($$source: Partial<StepResult> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("references" in $$source)) {
+            this["references"] = [];
+        }
+        if (!("status" in $$source)) {
+            this["status"] = Status.$zero;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new StepResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): StepResult {
+        const $$createField2_0 = $$createType14;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("references" in $$parsedSource) {
+            $$parsedSource["references"] = $$createField2_0($$parsedSource["references"]);
+        }
+        return new StepResult($$parsedSource as Partial<StepResult>);
+    }
+}
+
+/**
+ * SuiteID is the stable identifier of an executable conformance suite.
+ */
+export type SuiteID = string;
+
+/**
+ * SuiteResult is the complete structured result of one suite run.
+ */
+export class SuiteResult {
+    "id": SuiteID;
+    "name": string;
+    "description"?: string;
+    "source": Source;
+    "status": Status;
+    "error"?: string;
+    "tests": TestResult[];
+
+    /** Creates a new SuiteResult instance. */
+    constructor($$source: Partial<SuiteResult> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("source" in $$source)) {
+            this["source"] = (new Source());
+        }
+        if (!("status" in $$source)) {
+            this["status"] = Status.$zero;
+        }
+        if (!("tests" in $$source)) {
+            this["tests"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SuiteResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SuiteResult {
+        const $$createField3_0 = $$createType15;
+        const $$createField6_0 = $$createType17;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("source" in $$parsedSource) {
+            $$parsedSource["source"] = $$createField3_0($$parsedSource["source"]);
+        }
+        if ("tests" in $$parsedSource) {
+            $$parsedSource["tests"] = $$createField6_0($$parsedSource["tests"]);
+        }
+        return new SuiteResult($$parsedSource as Partial<SuiteResult>);
+    }
+}
 
 export class Target {
     "specification": SpecificationID;
@@ -452,19 +627,87 @@ export class Target {
     }
 }
 
+/**
+ * TestID is the stable identifier of one independently reported test.
+ */
+export type TestID = string;
+
+/**
+ * TestResult is the structured result of one test.
+ */
+export class TestResult {
+    "id": TestID;
+    "name": string;
+    "description"?: string;
+    "source": SourceLocation;
+    "references": RequirementRef[];
+    "status": Status;
+    "steps": StepResult[];
+
+    /** Creates a new TestResult instance. */
+    constructor($$source: Partial<TestResult> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("source" in $$source)) {
+            this["source"] = (new SourceLocation());
+        }
+        if (!("references" in $$source)) {
+            this["references"] = [];
+        }
+        if (!("status" in $$source)) {
+            this["status"] = Status.$zero;
+        }
+        if (!("steps" in $$source)) {
+            this["steps"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new TestResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): TestResult {
+        const $$createField3_0 = $$createType18;
+        const $$createField4_0 = $$createType14;
+        const $$createField6_0 = $$createType20;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("source" in $$parsedSource) {
+            $$parsedSource["source"] = $$createField3_0($$parsedSource["source"]);
+        }
+        if ("references" in $$parsedSource) {
+            $$parsedSource["references"] = $$createField4_0($$parsedSource["references"]);
+        }
+        if ("steps" in $$parsedSource) {
+            $$parsedSource["steps"] = $$createField6_0($$parsedSource["steps"]);
+        }
+        return new TestResult($$parsedSource as Partial<TestResult>);
+    }
+}
+
 // Private type creation functions
-const $$createType0 = $Create.Array($Create.Any);
-const $$createType1 = $Create.Array($Create.Any);
-const $$createType2 = Expectation.createFrom;
-const $$createType3 = $Create.Array($$createType2);
-const $$createType4 = Evidence.createFrom;
-const $$createType5 = $Create.Array($$createType4);
-const $$createType6 = RequirementRef.createFrom;
-const $$createType7 = $Create.Array($$createType6);
-const $$createType8 = Target.createFrom;
-const $$createType9 = $Create.Nullable($$createType8);
-const $$createType10 = $Create.Array($Create.Any);
-const $$createType11 = Finding.createFrom;
+const $$createType0 = Target.createFrom;
+const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = $Create.Array($Create.Any);
+const $$createType3 = Finding.createFrom;
+const $$createType4 = $Create.Array($$createType3);
+const $$createType5 = Inconclusive.createFrom;
+const $$createType6 = $Create.Array($$createType5);
+const $$createType7 = $Create.Array($Create.Any);
+const $$createType8 = $Create.Array($Create.Any);
+const $$createType9 = Expectation.createFrom;
+const $$createType10 = $Create.Array($$createType9);
+const $$createType11 = Evidence.createFrom;
 const $$createType12 = $Create.Array($$createType11);
-const $$createType13 = Inconclusive.createFrom;
+const $$createType13 = RequirementRef.createFrom;
 const $$createType14 = $Create.Array($$createType13);
+const $$createType15 = Source.createFrom;
+const $$createType16 = TestResult.createFrom;
+const $$createType17 = $Create.Array($$createType16);
+const $$createType18 = SourceLocation.createFrom;
+const $$createType19 = StepResult.createFrom;
+const $$createType20 = $Create.Array($$createType19);

@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import { RefreshCw } from "@lucide/svelte";
 
-  import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit";
+  import { VerificationFlow } from "../../../../bindings/github.com/telesma-app/kit";
 
   import { Button } from "$lib/components/ui/button";
   import * as Card from "$lib/components/ui/card";

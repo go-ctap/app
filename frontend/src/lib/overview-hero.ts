@@ -3,7 +3,7 @@ import type {
   MetadataStatement,
   PayloadEntry,
   StatusReport,
-} from "../../bindings/github.com/go-ctap/mds/model";
+} from "../../bindings/github.com/telesma-app/mds/model";
 
 import { deviceName as formattedDeviceName } from "$lib/format.js";
 import { m, mdsDescriptionText, mdsStateText } from "$lib/overview-i18n.js";

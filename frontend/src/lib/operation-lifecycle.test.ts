@@ -1,8 +1,8 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
+import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
 import type { CredentialsEnvelope } from "../../bindings/telesma/service";
 
 import { runConfirmedPreview } from "$lib/confirmed-operation.js";

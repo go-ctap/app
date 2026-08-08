@@ -1,9 +1,9 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
+import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
+import { Mode } from "../../bindings/github.com/telesma-app/kit/transport";
 import type {
   AuthenticatorSessionSnapshot,
   DiscoveryChangedEnvelope,

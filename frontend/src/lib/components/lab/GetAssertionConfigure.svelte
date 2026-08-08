@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit";
+  import { VerificationFlow } from "../../../../bindings/github.com/telesma-app/kit";
   import type { InspectEnvelope } from "../../../../bindings/telesma/service";
 
   import * as Field from "$lib/components/ui/field";

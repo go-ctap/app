@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/go-ctap/kit/model/failure"
+	"github.com/telesma-app/kit/model/failure"
 )
 
 func authenticatorClosedError() error {

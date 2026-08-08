@@ -35,6 +35,7 @@
   import { syncLogJournal } from "$lib/logs-controller.js";
   import { cancelActiveOperation } from "$lib/operation-controller.js";
   import { currentLocale } from "$lib/i18n";
+  import { advancedMode } from "$lib/preferences";
   import { failureMessage } from "$lib/failure.js";
   import { deviceName } from "$lib/format.js";
   import {
@@ -51,6 +52,7 @@
   import { detectWindowPlatform, resolveWindowPlatform } from "$lib/window-platform";
   import { m } from "./paraglide/messages.js";
   import Lab from "./screens/Lab.svelte";
+  import Conformance from "./screens/Conformance.svelte";
   import LargeBlobs from "./screens/LargeBlobs.svelte";
   import Logs from "./screens/Logs.svelte";
   import Overview from "./screens/Overview.svelte";
@@ -103,6 +105,12 @@
   let interactionModalPresentation = $derived(
     $pendingInteraction ? buildInteractionModalPresentation($pendingInteraction) : null,
   );
+
+  $effect(() => {
+    if (!$advancedMode && $activeScreen === "conformance") {
+      void navigateToScreen("overview");
+    }
+  });
 
   async function syncWindowPlatform() {
     const detected = detectWindowPlatform();
@@ -207,6 +215,7 @@
       <AppSidebar
         presentation={sidebarPresentation}
         nativeWindowTitlebar={isMacOS}
+        advancedMode={$advancedMode}
         onNavigate={(screen) => void navigateToScreen(screen)}
         onSelectToken={(selector) => void selectToken(selector)}
       />
@@ -261,6 +270,8 @@
                   <Lab />
                 {:else if $activeScreen === "security"}
                   <Security />
+                {:else if $activeScreen === "conformance" && $advancedMode}
+                  <Conformance />
                 {:else}
                   <Overview />
                 {/if}

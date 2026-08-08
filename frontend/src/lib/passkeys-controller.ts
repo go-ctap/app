@@ -1,8 +1,8 @@
 import { get } from "svelte/store";
 
-import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
-import type { CredentialTarget } from "../../bindings/github.com/go-ctap/kit/model/credentials";
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { VerificationFlow } from "../../bindings/github.com/telesma-app/kit";
+import type { CredentialTarget } from "../../bindings/github.com/telesma-app/kit/model/credentials";
+import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
 import type {
   CredentialDeleteRequest,
   CredentialUpdateRequest,

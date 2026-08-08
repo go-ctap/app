@@ -1,7 +1,7 @@
 import { writable, type Writable } from "svelte/store";
 
-import type { AlwaysUVTarget } from "../../../../bindings/github.com/go-ctap/kit/model/config";
-import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+import type { AlwaysUVTarget } from "../../../../bindings/github.com/telesma-app/kit/model/config";
+import type { Failure } from "../../../../bindings/github.com/telesma-app/kit/model/failure";
 import type {
   AlwaysUVRequest,
   AuthenticatorConfigEnvelope,

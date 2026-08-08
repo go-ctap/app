@@ -6,7 +6,7 @@ import {
   FactValueKind,
   type Assessment,
   type Fact,
-} from "../../bindings/github.com/go-ctap/kit/model/inspect";
+} from "../../bindings/github.com/telesma-app/kit/model/inspect";
 
 import type { OverviewRowStatus } from "$lib/overview-types.js";
 

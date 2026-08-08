@@ -1,8 +1,8 @@
 import { cleanup, render, screen, within } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
+import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
 import {
   AuthenticatorConfigStatus,
   BioStatus,
@@ -14,10 +14,10 @@ import {
   StateValue,
   StatusReport,
   UVStatus,
-} from "../../bindings/github.com/go-ctap/kit/model/config";
-import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+} from "../../bindings/github.com/telesma-app/kit/model/config";
+import { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
 import type { ConfigStatusEnvelope } from "../../bindings/telesma/service";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import { Mode } from "../../bindings/github.com/telesma-app/kit/transport";
 
 import {
   completeSecurityResourceLoad,

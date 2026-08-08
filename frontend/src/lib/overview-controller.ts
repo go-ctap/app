@@ -1,6 +1,6 @@
 import { get } from "svelte/store";
 
-import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import type { Failure } from "../../bindings/github.com/telesma-app/kit/model/failure";
 import type { InspectEnvelope } from "../../bindings/telesma/service";
 
 import { m } from "../paraglide/messages.js";

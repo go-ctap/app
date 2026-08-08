@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ChevronsUpDown, KeyRound, Plus, Trash2 } from "@lucide/svelte";
 
-  import { CredentialVerificationMaterial } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
+  import { CredentialVerificationMaterial } from "../../../../bindings/github.com/telesma-app/kit/model/webauthn";
 
   import { Badge } from "$lib/components/ui/badge";
   import { Button, buttonVariants } from "$lib/components/ui/button";

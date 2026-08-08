@@ -2,7 +2,7 @@
   import { KeyRound } from "@lucide/svelte";
   import { onDestroy, tick } from "svelte";
 
-  import type { PINStatus } from "../../../../bindings/github.com/go-ctap/kit/model/config";
+  import type { PINStatus } from "../../../../bindings/github.com/telesma-app/kit/model/config";
 
   import * as Alert from "$lib/components/ui/alert";
   import { Badge } from "$lib/components/ui/badge";

@@ -1,5 +1,5 @@
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import type { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
+import { Mode } from "../../bindings/github.com/telesma-app/kit/transport";
 
 import { m } from "../paraglide/messages.js";
 

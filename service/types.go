@@ -3,16 +3,17 @@
 package service
 
 import (
-	"github.com/go-ctap/kit/model"
-	"github.com/go-ctap/kit/model/config"
-	"github.com/go-ctap/kit/model/credentials"
-	"github.com/go-ctap/kit/model/failure"
-	"github.com/go-ctap/kit/model/inspect"
-	"github.com/go-ctap/kit/model/largeblobs"
-	"github.com/go-ctap/kit/model/operation"
-	"github.com/go-ctap/kit/model/report"
-	"github.com/go-ctap/kit/model/webauthn"
-	mdsmodel "github.com/go-ctap/mds/model"
+	"github.com/telesma-app/kit/conformance"
+	"github.com/telesma-app/kit/model"
+	"github.com/telesma-app/kit/model/config"
+	"github.com/telesma-app/kit/model/credentials"
+	"github.com/telesma-app/kit/model/failure"
+	"github.com/telesma-app/kit/model/inspect"
+	"github.com/telesma-app/kit/model/largeblobs"
+	"github.com/telesma-app/kit/model/operation"
+	"github.com/telesma-app/kit/model/report"
+	"github.com/telesma-app/kit/model/webauthn"
+	mdsmodel "github.com/telesma-app/mds/model"
 )
 
 type SelectionID string
@@ -146,6 +147,11 @@ type MakeCredentialEnvelope struct {
 type GetAssertionEnvelope struct {
 	OperationEnvelopeMeta
 	Result *webauthn.GetAssertionOutput `json:"result,omitempty"`
+}
+
+type CTAP23ConformanceEnvelope struct {
+	OperationEnvelopeMeta
+	Result *conformance.SuiteResult `json:"result,omitempty"`
 }
 
 type CancelOperationRequest struct {

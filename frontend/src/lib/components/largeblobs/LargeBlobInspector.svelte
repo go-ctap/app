@@ -4,7 +4,7 @@
   import {
     DecodeMode,
     ReadState,
-  } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
+  } from "../../../../bindings/github.com/telesma-app/kit/model/largeblobs";
 
   import { copyToClipboard } from "$lib/clipboard";
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";

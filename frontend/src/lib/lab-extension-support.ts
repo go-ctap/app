@@ -1,6 +1,6 @@
-import { ExtensionIdentifier } from "../../bindings/github.com/go-ctap/ctap/extension";
-import { Option } from "../../bindings/github.com/go-ctap/ctap/protocol";
-import type { Info } from "../../bindings/github.com/go-ctap/kit/model/inspect";
+import { ExtensionIdentifier } from "../../bindings/github.com/telesma-app/ctap/extension";
+import { Option } from "../../bindings/github.com/telesma-app/ctap/protocol";
+import type { Info } from "../../bindings/github.com/telesma-app/kit/model/inspect";
 
 export function authenticatorSupportsLabExtension(
   info: Info,

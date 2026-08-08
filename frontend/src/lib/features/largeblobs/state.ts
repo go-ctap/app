@@ -1,12 +1,12 @@
 import { writable } from "svelte/store";
 
-import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit";
-import { Code, type Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+import { VerificationFlow } from "../../../../bindings/github.com/telesma-app/kit";
+import { Code, type Failure } from "../../../../bindings/github.com/telesma-app/kit/model/failure";
 import {
   DecodeMode,
   type DecodeResult,
   type ListReport,
-} from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
+} from "../../../../bindings/github.com/telesma-app/kit/model/largeblobs";
 import type {
   LargeBlobDecodeEnvelope,
   LargeBlobGarbageCollectRequest,

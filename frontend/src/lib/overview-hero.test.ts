@@ -1,24 +1,24 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { AuthenticatorGetInfoResponse } from "../../bindings/github.com/go-ctap/ctap/protocol";
+import { AuthenticatorGetInfoResponse } from "../../bindings/github.com/telesma-app/ctap/protocol";
 import {
   AuthenticatorStatus,
   LookupResult,
   MetadataStatement,
   PayloadEntry,
   StatusReport,
-} from "../../bindings/github.com/go-ctap/mds/model";
+} from "../../bindings/github.com/telesma-app/mds/model";
 import {
   DeviceIdentityReport,
   DeviceReport,
   DeviceVendor,
-} from "../../bindings/github.com/go-ctap/kit/model/report";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
-import { DeviceInfo as Token2DeviceInfo } from "../../bindings/github.com/go-ctap/token2";
+} from "../../bindings/github.com/telesma-app/kit/model/report";
+import { Mode } from "../../bindings/github.com/telesma-app/kit/transport";
+import { DeviceInfo as Token2DeviceInfo } from "../../bindings/github.com/telesma-app/token2";
 import {
   DeviceInfo as YubicoDeviceInfo,
   FirmwareVersion as YubicoFirmwareVersion,
-} from "../../bindings/github.com/go-ctap/yubico";
+} from "../../bindings/github.com/telesma-app/yubico";
 
 import { setAppLocale } from "$lib/i18n";
 import { buildOverviewHero } from "$lib/overview-hero";

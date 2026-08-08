@@ -5,8 +5,8 @@ import {
   LogJournalRecord,
   LogOutcome,
   LogPayload,
-} from "../../bindings/github.com/go-ctap/kit/model";
-import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
+} from "../../bindings/github.com/telesma-app/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
 
 import { LogController } from "$lib/features/logs/state.svelte.js";
 import { setAppLocale } from "$lib/i18n.js";

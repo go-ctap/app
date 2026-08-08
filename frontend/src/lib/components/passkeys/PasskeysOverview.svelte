@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { VerificationFlow } from "../../../../bindings/github.com/go-ctap/kit";
+  import { VerificationFlow } from "../../../../bindings/github.com/telesma-app/kit";
 
   import InventoryOverviewCard from "$lib/components/shared/InventoryOverviewCard.svelte";
   import StatusBadge from "$lib/components/shared/StatusBadge.svelte";

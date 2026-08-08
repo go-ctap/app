@@ -1,11 +1,11 @@
 import { get } from "svelte/store";
 
-import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
+import { VerificationFlow } from "../../bindings/github.com/telesma-app/kit";
 import {
   DecodeMode,
   MutationOperation,
   ReadState,
-} from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
+} from "../../bindings/github.com/telesma-app/kit/model/largeblobs";
 import type {
   LargeBlobDecodeEnvelope,
   LargeBlobDecodeRequest,

@@ -6,7 +6,7 @@
     FingerprintKind,
     type BioEnrollmentRecord,
     type BioStatus,
-  } from "../../../../bindings/github.com/go-ctap/kit/model/config";
+  } from "../../../../bindings/github.com/telesma-app/kit/model/config";
 
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import * as Alert from "$lib/components/ui/alert";

@@ -1,4 +1,4 @@
-import { Category, Code, Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { Category, Code, Failure } from "../../bindings/github.com/telesma-app/kit/model/failure";
 
 import { m } from "../paraglide/messages.js";
 
@@ -23,6 +23,7 @@ const CODE_MESSAGES: Record<Exclude<Code, Code.$zero>, Message> = {
   [Code.CodeMDSFetchFailed]: m.failure_mds_fetch_failed,
   [Code.CodeMDSVerificationFailed]: m.failure_mds_verification_failed,
   [Code.CodeConformanceTargetInvalid]: m.failure_conformance_target_invalid,
+  [Code.CodeConformanceModeInvalid]: m.failure_conformance_mode_invalid,
   [Code.CodeRelyingPartyIDRequired]: m.failure_relying_party_id_required,
   [Code.CodeUserIDRequired]: m.failure_user_id_required,
   [Code.CodeClientDataJSONRequired]: m.failure_client_data_json_required,

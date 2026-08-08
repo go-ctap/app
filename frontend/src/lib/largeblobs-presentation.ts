@@ -2,8 +2,8 @@ import {
   EntryState,
   type ArrayEntry,
   type ListReport,
-} from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+} from "../../bindings/github.com/telesma-app/kit/model/largeblobs";
+import type { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
 
 import { m } from "../paraglide/messages.js";
 import type {

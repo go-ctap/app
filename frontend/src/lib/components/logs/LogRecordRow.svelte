@@ -3,7 +3,7 @@
   import type { LogRecord } from "$lib/features/logs/state.svelte.js";
   import { recordID } from "$lib/features/logs/state.svelte.js";
   import { logOutcome, logOutcomeLabel, logSummary, logTime } from "$lib/log-presentation.js";
-  import { LogOutcome } from "../../../../bindings/github.com/go-ctap/kit/model/index.js";
+  import { LogOutcome } from "../../../../bindings/github.com/telesma-app/kit/model/index.js";
 
   import { m } from "../../../paraglide/messages.js";
 

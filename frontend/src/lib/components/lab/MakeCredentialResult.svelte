@@ -3,8 +3,8 @@
     MakeCredentialPreview,
     MakeCredentialResult as MakeCredentialResultDTO,
     MakeCredentialVerification,
-  } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
-  import type { AttestationTrustAssessment } from "../../../../bindings/github.com/go-ctap/mds/model";
+  } from "../../../../bindings/github.com/telesma-app/kit/model/webauthn";
+  import type { AttestationTrustAssessment } from "../../../../bindings/github.com/telesma-app/mds/model";
 
   import { Badge } from "$lib/components/ui/badge";
   import type { LabVerificationState } from "$lib/features/lab/state";

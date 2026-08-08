@@ -9,7 +9,7 @@ import {
   type Finding,
   type Inconclusive,
   type Profile,
-} from "../../bindings/github.com/go-ctap/kit/model/conformance";
+} from "../../bindings/github.com/telesma-app/kit/conformance";
 
 import { m } from "../paraglide/messages.js";
 import type {

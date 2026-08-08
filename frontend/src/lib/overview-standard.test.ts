@@ -6,17 +6,17 @@ import {
   FactState,
   FactValue,
   FactValueKind,
-} from "../../bindings/github.com/go-ctap/kit/model/inspect";
-import { AuthenticatorGetInfoResponse } from "../../bindings/github.com/go-ctap/ctap/protocol";
+} from "../../bindings/github.com/telesma-app/kit/model/inspect";
+import { AuthenticatorGetInfoResponse } from "../../bindings/github.com/telesma-app/ctap/protocol";
 import {
   AuthenticatorStatus,
   LookupResult,
   MetadataStatement,
   PayloadEntry,
   StatusReport,
-} from "../../bindings/github.com/go-ctap/mds/model";
-import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+} from "../../bindings/github.com/telesma-app/mds/model";
+import { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
+import { Mode } from "../../bindings/github.com/telesma-app/kit/transport";
 import { setAppLocale } from "$lib/i18n";
 import { testOverviewAssessment, testOverviewFact } from "$lib/test-support/overview-facts";
 

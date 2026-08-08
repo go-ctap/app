@@ -1,5 +1,5 @@
-import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import { Mode, SmartCardInterface } from "../../bindings/github.com/go-ctap/kit/transport";
+import { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
+import { Mode, SmartCardInterface } from "../../bindings/github.com/telesma-app/kit/transport";
 
 export function testHIDDevice(id = "token-1", product = "Test key") {
   return new DeviceReport({

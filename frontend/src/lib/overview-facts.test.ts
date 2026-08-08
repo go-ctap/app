@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  Assessment,
+  Assessment as InspectAssessment,
   FactID,
   FactOrigin,
   FactState,
   FactValue,
   FactValueKind,
   Info,
-} from "../../bindings/github.com/go-ctap/kit/model/inspect";
-import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
+} from "../../bindings/github.com/telesma-app/kit/model/inspect";
+import { Assessment as ConformanceAssessment } from "../../bindings/github.com/telesma-app/kit/conformance";
 
 import { setAppLocale } from "$lib/i18n";
 import { buildOverviewFactLookup } from "$lib/overview-facts";
@@ -29,11 +29,11 @@ describe("Overview fact projection", () => {
       new FactValue({ kind: FactValueKind.FactValueBoolean, boolean: false }),
     );
     const ordered = testOverviewAssessment([clientPIN]);
-    const reversed = new Assessment({ facts: [...ordered.facts].reverse() });
+    const reversed = new InspectAssessment({ facts: [...ordered.facts].reverse() });
     const info = new Info({
       options: { clientPin: true },
       assessment: reversed,
-      conformance: new Report(),
+      conformance: new ConformanceAssessment(),
     });
     const facts = buildOverviewFactLookup(info.assessment);
 
@@ -52,7 +52,7 @@ describe("Overview fact projection", () => {
     });
 
     const orderedSources = buildOverviewRows({
-      info: new Info({ assessment: ordered, conformance: new Report() }),
+      info: new Info({ assessment: ordered, conformance: new ConformanceAssessment() }),
     }).map((row) => row.source);
     const reversedSources = buildOverviewRows({ info }, facts).map((row) => row.source);
 

@@ -4,7 +4,7 @@
     GetAssertionPreview,
     GetAssertionResult as GetAssertionResultDTO,
     GetAssertionVerification,
-  } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
+  } from "../../../../bindings/github.com/telesma-app/kit/model/webauthn";
 
   import { Badge } from "$lib/components/ui/badge";
   import * as Tabs from "$lib/components/ui/tabs";

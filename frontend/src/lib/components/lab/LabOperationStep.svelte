@@ -2,7 +2,7 @@
   import type { Snippet } from "svelte";
   import { Pencil, RotateCcw, Send, Sparkles, WandSparkles } from "@lucide/svelte";
 
-  import type { DeviceReport } from "../../../../bindings/github.com/go-ctap/kit/model/report";
+  import type { DeviceReport } from "../../../../bindings/github.com/telesma-app/kit/model/report";
 
   import { confirmedFailureMessage } from "$lib/confirmed-operation-presentation";
   import * as Alert from "$lib/components/ui/alert";

@@ -1,13 +1,13 @@
-import type { Info as InspectInfo } from "../../bindings/github.com/go-ctap/kit/model/inspect";
-import type { BioSensorReport } from "../../bindings/github.com/go-ctap/kit/model/config";
+import type { Info as InspectInfo } from "../../bindings/github.com/telesma-app/kit/model/inspect";
+import type { BioSensorReport } from "../../bindings/github.com/telesma-app/kit/model/config";
 import type {
   Profile,
   RequirementRef,
   RuleID,
   Target,
-} from "../../bindings/github.com/go-ctap/kit/model/conformance";
-import type { LookupResult } from "../../bindings/github.com/go-ctap/mds/model";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+} from "../../bindings/github.com/telesma-app/kit/conformance";
+import type { LookupResult } from "../../bindings/github.com/telesma-app/mds/model";
+import type { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
 
 export type OverviewRowStatus =
   | "supported"

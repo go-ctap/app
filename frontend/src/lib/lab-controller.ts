@@ -15,7 +15,7 @@ import {
   MakeCredentialInput,
   type GetAssertionResult,
   type MakeCredentialResult,
-} from "../../bindings/github.com/go-ctap/kit/model/webauthn";
+} from "../../bindings/github.com/telesma-app/kit/model/webauthn";
 import { m } from "../paraglide/messages.js";
 import { api } from "$lib/api.js";
 import {

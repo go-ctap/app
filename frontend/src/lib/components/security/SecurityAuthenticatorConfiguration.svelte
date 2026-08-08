@@ -5,7 +5,7 @@
     AlwaysUVTarget,
     type CapabilityState,
     type StatusReport,
-  } from "../../../../bindings/github.com/go-ctap/kit/model/config";
+  } from "../../../../bindings/github.com/telesma-app/kit/model/config";
 
   import SecurityPINPolicyForm from "$lib/components/security/SecurityPINPolicyForm.svelte";
   import StatusBadge from "$lib/components/shared/StatusBadge.svelte";

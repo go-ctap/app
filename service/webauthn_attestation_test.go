@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/fxamacker/cbor/v2"
-	ctapattestation "github.com/go-ctap/ctap/attestation"
-	appwebauthn "github.com/go-ctap/kit/model/webauthn"
-	mdsmodel "github.com/go-ctap/mds/model"
+	ctapattestation "github.com/telesma-app/ctap/attestation"
+	appwebauthn "github.com/telesma-app/kit/model/webauthn"
+	mdsmodel "github.com/telesma-app/mds/model"
 	"github.com/google/uuid"
 )
 

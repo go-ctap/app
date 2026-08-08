@@ -1,10 +1,10 @@
 import { cleanup, render, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { Kind as OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model/operation";
-import { StateValue } from "../../../../bindings/github.com/go-ctap/kit/model/config";
-import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
-import { PreviewMode, Severity } from "../../../../bindings/github.com/go-ctap/kit/model/safety";
+import { Kind as OperationKind } from "../../../../bindings/github.com/telesma-app/kit/model/operation";
+import { StateValue } from "../../../../bindings/github.com/telesma-app/kit/model/config";
+import { Code } from "../../../../bindings/github.com/telesma-app/kit/model/failure";
+import { PreviewMode, Severity } from "../../../../bindings/github.com/telesma-app/kit/model/safety";
 import type { ResetFactoryEnvelope } from "../../../../bindings/telesma/service";
 
 import type { SecurityMutationState } from "$lib/features/security/state";

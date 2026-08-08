@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
+import type { Version } from "../../bindings/github.com/telesma-app/ctap/protocol";
 import {
   FactID,
   FactOrigin,
@@ -9,8 +9,8 @@ import {
   FactValue,
   FactValueKind,
   Info as InspectInfo,
-} from "../../bindings/github.com/go-ctap/kit/model/inspect";
-import { Report } from "../../bindings/github.com/go-ctap/kit/model/conformance";
+} from "../../bindings/github.com/telesma-app/kit/model/inspect";
+import { Assessment } from "../../bindings/github.com/telesma-app/kit/conformance";
 import {
   AttachmentReport,
   DeviceIdentityReport,
@@ -18,18 +18,18 @@ import {
   DeviceVendor,
   DeviceVendorMetadata,
   SmartCardReport,
-} from "../../bindings/github.com/go-ctap/kit/model/report";
-import { Mode, SmartCardInterface } from "../../bindings/github.com/go-ctap/kit/transport";
+} from "../../bindings/github.com/telesma-app/kit/model/report";
+import { Mode, SmartCardInterface } from "../../bindings/github.com/telesma-app/kit/transport";
 import {
   DeviceInfo as Token2DeviceInfo,
   FIDOVersion as Token2FIDOVersion,
-} from "../../bindings/github.com/go-ctap/token2";
+} from "../../bindings/github.com/telesma-app/token2";
 import {
   Capability as YubicoCapability,
   DeviceInfo as YubicoDeviceInfo,
   FirmwareVersion as YubicoFirmwareVersion,
   FormFactor as YubicoFormFactor,
-} from "../../bindings/github.com/go-ctap/yubico";
+} from "../../bindings/github.com/telesma-app/yubico";
 
 import { setAppLocale } from "$lib/i18n";
 import { buildOverviewRows, buildOverviewVendorPassport } from "$lib/overview-rows";
@@ -41,7 +41,7 @@ function info(input: Partial<InspectInfo> = {}): InspectInfo {
     versions: ["FIDO_2_1" as Version],
     aaguid: "00000000-0000-0000-0000-000000000000",
     assessment: testOverviewAssessment(),
-    conformance: new Report(),
+    conformance: new Assessment(),
     ...input,
   });
 }

@@ -4,7 +4,7 @@ import { toast } from "svelte-sonner";
 import {
   AlwaysUVTarget,
   type StatusReport,
-} from "../../bindings/github.com/go-ctap/kit/model/config";
+} from "../../bindings/github.com/telesma-app/kit/model/config";
 import {
   type AlwaysUVRequest,
   type BioEnrollRequest,

@@ -2,9 +2,9 @@ import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Kind as OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model/operation";
-import { AlwaysUVTarget } from "../../../../bindings/github.com/go-ctap/kit/model/config";
-import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+import { Kind as OperationKind } from "../../../../bindings/github.com/telesma-app/kit/model/operation";
+import { AlwaysUVTarget } from "../../../../bindings/github.com/telesma-app/kit/model/config";
+import { Code } from "../../../../bindings/github.com/telesma-app/kit/model/failure";
 import {
   AlwaysUVRequest,
   AuthenticatorConfigEnvelope,

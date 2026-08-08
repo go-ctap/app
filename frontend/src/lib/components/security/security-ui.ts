@@ -1,7 +1,7 @@
 import {
   StateValue,
   type RetryState,
-} from "../../../../bindings/github.com/go-ctap/kit/model/config";
+} from "../../../../bindings/github.com/telesma-app/kit/model/config";
 
 import { m } from "../../../paraglide/messages.js";
 

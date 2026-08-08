@@ -2,25 +2,25 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Version } from "../../bindings/github.com/go-ctap/ctap/protocol";
-import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
+import { Version } from "../../bindings/github.com/telesma-app/ctap/protocol";
+import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
 import {
   Info as InspectInfo,
   Result as InspectResult,
   type Assessment,
-} from "../../bindings/github.com/go-ctap/kit/model/inspect";
+} from "../../bindings/github.com/telesma-app/kit/model/inspect";
 import {
   Finding,
   Profile,
-  Report,
+  Assessment as ConformanceAssessment,
   RuleID,
   SpecificationID,
   Target,
-} from "../../bindings/github.com/go-ctap/kit/model/conformance";
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+} from "../../bindings/github.com/telesma-app/kit/conformance";
+import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
+import { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
 import { InspectEnvelope } from "../../bindings/telesma/service";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import { Mode } from "../../bindings/github.com/telesma-app/kit/transport";
 
 import { setAppLocale } from "$lib/i18n";
 import { setAdvancedMode } from "$lib/preferences";
@@ -76,7 +76,7 @@ function inspectEnvelope(
         aaguid,
         options: {},
         assessment,
-        conformance: new Report({
+        conformance: new ConformanceAssessment({
           target: new Target({
             profile: Profile.ProfileFIDO23,
             specification: SpecificationID.SpecificationCTAP23,

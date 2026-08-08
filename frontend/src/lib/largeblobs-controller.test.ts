@@ -1,14 +1,14 @@
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { VerificationFlow } from "../../bindings/github.com/telesma-app/kit";
+import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
 import {
   DecodeMode,
   EntryState,
   ReadState,
-} from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
-import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
+} from "../../bindings/github.com/telesma-app/kit/model/largeblobs";
+import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
 import type {
   LargeBlobDecodeEnvelope,
   LargeBlobListEnvelope,

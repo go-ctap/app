@@ -5,12 +5,12 @@ import type {
   ApplicationInfo,
 } from "../../bindings/telesma/appconfig";
 import * as service from "../../bindings/telesma/service/service";
-import type { LogJournalBatch } from "../../bindings/github.com/go-ctap/kit/model";
+import type { LogJournalBatch } from "../../bindings/github.com/telesma-app/kit/model";
 import type {
   GetAssertionVerification,
   MakeCredentialVerification,
-} from "../../bindings/github.com/go-ctap/kit/model/webauthn";
-import type { AttestationTrustAssessment } from "../../bindings/github.com/go-ctap/mds/model";
+} from "../../bindings/github.com/telesma-app/kit/model/webauthn";
+import type { AttestationTrustAssessment } from "../../bindings/github.com/telesma-app/mds/model";
 import {
   type AlwaysUVRequest,
   type AuthenticatorConfigEnvelope,
@@ -21,6 +21,8 @@ import {
   type BioRemoveRequest,
   type BioRenameRequest,
   type BioSensorEnvelope,
+  type CTAP23ConformanceEnvelope,
+  type CTAP23ConformanceRequest,
   type CancelOperationRequest,
   type ConfigStatusEnvelope,
   type CredentialDeleteEnvelope,
@@ -81,7 +83,8 @@ export type OperationEnvelope =
   | BioMutationEnvelope
   | ResetFactoryEnvelope
   | MakeCredentialEnvelope
-  | GetAssertionEnvelope;
+  | GetAssertionEnvelope
+  | CTAP23ConformanceEnvelope;
 
 export const api = {
   getApplicationInfo(): Promise<ApplicationInfo> {
@@ -240,6 +243,12 @@ export const api = {
 
   getAssertion(request: GetAssertionRequest): Promise<GetAssertionEnvelope> {
     return runtimeCall("ctapkit.operation.getAssertion", () => service.GetAssertion(request));
+  },
+
+  runCTAP23Conformance(request: CTAP23ConformanceRequest): Promise<CTAP23ConformanceEnvelope> {
+    return runtimeCall("ctapkit.operation.conformance.ctap23", () =>
+      service.RunCTAP23Conformance(request),
+    );
   },
 
   verifyMakeCredential(

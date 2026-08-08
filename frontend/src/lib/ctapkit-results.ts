@@ -10,7 +10,7 @@ import type {
   ResetPreview,
   ResetResult,
   StatusReport,
-} from "../../bindings/github.com/go-ctap/kit/model/config";
+} from "../../bindings/github.com/telesma-app/kit/model/config";
 import type {
   CredentialTarget,
   DeleteOutput as CredentialDeleteOutput,
@@ -19,13 +19,14 @@ import type {
   InventoryReport,
   UpdateUserPreview,
   UpdateUserResult,
-} from "../../bindings/github.com/go-ctap/kit/model/credentials";
+} from "../../bindings/github.com/telesma-app/kit/model/credentials";
 import type {
   ListReport as LargeBlobListReport,
   MutationPreview as LargeBlobMutationPreview,
   MutationResult as LargeBlobMutationResult,
   ReadReport as LargeBlobReadReport,
-} from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
+} from "../../bindings/github.com/telesma-app/kit/model/largeblobs";
+import type { SuiteResult } from "../../bindings/github.com/telesma-app/kit/conformance";
 import type {
   AuthenticatorConfigEnvelope,
   BioEnrollEnvelope,
@@ -33,6 +34,7 @@ import type {
   BioMutationEnvelope,
   BioSensorEnvelope,
   ConfigStatusEnvelope,
+  CTAP23ConformanceEnvelope,
   CredentialDeleteEnvelope,
   CredentialUpdateEnvelope,
   CredentialsEnvelope,
@@ -50,9 +52,15 @@ import type {
   GetAssertionResult,
   MakeCredentialPreview,
   MakeCredentialResult,
-} from "../../bindings/github.com/go-ctap/kit/model/webauthn";
+} from "../../bindings/github.com/telesma-app/kit/model/webauthn";
 
 export function inspectResult(envelope: InspectEnvelope | null | undefined) {
+  return envelope?.result ?? null;
+}
+
+export function conformanceSuiteResult(
+  envelope: CTAP23ConformanceEnvelope | null | undefined,
+): SuiteResult | null {
   return envelope?.result ?? null;
 }
 

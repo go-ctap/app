@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { Category, Code, Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { Category, Code, Failure } from "../../bindings/github.com/telesma-app/kit/model/failure";
 
 import {
   resetAppStateForTest,

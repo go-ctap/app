@@ -1,22 +1,22 @@
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { AttestationStatementFormatIdentifier } from "../../bindings/github.com/go-ctap/ctap/attestation";
-import { PublicKeyCredentialType } from "../../bindings/github.com/go-ctap/ctap/credential";
-import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
-import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { DecodeMode } from "../../bindings/github.com/go-ctap/kit/model/largeblobs";
+import { AttestationStatementFormatIdentifier } from "../../bindings/github.com/telesma-app/ctap/attestation";
+import { PublicKeyCredentialType } from "../../bindings/github.com/telesma-app/ctap/credential";
+import { VerificationFlow } from "../../bindings/github.com/telesma-app/kit";
+import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
+import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
+import { DecodeMode } from "../../bindings/github.com/telesma-app/kit/model/largeblobs";
 import {
   CredentialVerificationMaterial,
   GetAssertionVerification,
   MakeCredentialVerification,
   VerificationStatus,
-} from "../../bindings/github.com/go-ctap/kit/model/webauthn";
+} from "../../bindings/github.com/telesma-app/kit/model/webauthn";
 import {
   AttestationTrustAssessment,
   LookupResult,
-} from "../../bindings/github.com/go-ctap/mds/model";
+} from "../../bindings/github.com/telesma-app/mds/model";
 import type {
   CredentialsEnvelope,
   GetAssertionEnvelope,

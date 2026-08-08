@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ArrowRight, Pencil } from "@lucide/svelte";
 
-  import type { Warning } from "../../../../bindings/github.com/go-ctap/kit/model/safety";
+  import type { Warning } from "../../../../bindings/github.com/telesma-app/kit/model/safety";
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";
   import * as Alert from "$lib/components/ui/alert";

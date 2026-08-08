@@ -1,4 +1,4 @@
-import type { Warning } from "../../bindings/github.com/go-ctap/kit/model/safety";
+import type { Warning } from "../../bindings/github.com/telesma-app/kit/model/safety";
 
 import { m } from "../paraglide/messages.js";
 

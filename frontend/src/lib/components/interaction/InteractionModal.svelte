@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { InteractionKind } from "../../../../bindings/github.com/go-ctap/kit/model";
+  import { InteractionKind } from "../../../../bindings/github.com/telesma-app/kit/model";
   import { InteractionAnswer } from "../../../../bindings/telesma/service";
 
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";

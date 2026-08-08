@@ -8,12 +8,12 @@ import {
   PublicKeyCredentialDescriptor,
   PublicKeyCredentialType,
   PublicKeyCredentialUserEntity,
-} from "../../../../bindings/github.com/go-ctap/ctap/credential";
-import { AttestationStatementFormatIdentifier } from "../../../../bindings/github.com/go-ctap/ctap/attestation";
+} from "../../../../bindings/github.com/telesma-app/ctap/credential";
+import { AttestationStatementFormatIdentifier } from "../../../../bindings/github.com/telesma-app/ctap/attestation";
 import {
   AuthenticationExtensionsPRFValues,
   CredentialPropertiesOutput,
-} from "../../../../bindings/github.com/go-ctap/ctap/webauthn";
+} from "../../../../bindings/github.com/telesma-app/ctap/webauthn";
 import {
   Assertion,
   CredentialBlobCreateOutput,
@@ -30,7 +30,7 @@ import {
   MakeCredentialPRFOutput,
   MakeCredentialPreview,
   MakeCredentialResult as MakeCredentialResultDTO,
-} from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
+} from "../../../../bindings/github.com/telesma-app/kit/model/webauthn";
 
 import GetAssertionResult from "$lib/components/lab/GetAssertionResult.svelte";
 import MakeCredentialResult from "$lib/components/lab/MakeCredentialResult.svelte";

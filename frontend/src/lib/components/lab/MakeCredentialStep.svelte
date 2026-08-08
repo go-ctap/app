@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from "svelte";
 
-  import type { DeviceReport } from "../../../../bindings/github.com/go-ctap/kit/model/report";
+  import type { DeviceReport } from "../../../../bindings/github.com/telesma-app/kit/model/report";
   import type { InspectEnvelope } from "../../../../bindings/telesma/service";
 
   import { inspectResult } from "$lib/ctapkit-results";

@@ -1,6 +1,6 @@
 import { writable } from "svelte/store";
 
-import type { LookupResult } from "../../../../bindings/github.com/go-ctap/mds/model";
+import type { LookupResult } from "../../../../bindings/github.com/telesma-app/mds/model";
 import type { BioSensorEnvelope } from "../../../../bindings/telesma/service";
 
 import { idleLoadState, type LoadState } from "$lib/load-state";

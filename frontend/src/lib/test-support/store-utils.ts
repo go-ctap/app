@@ -1,6 +1,6 @@
-import type { LookupResult } from "../../../bindings/github.com/go-ctap/mds/model";
-import { Code, type Failure } from "../../../bindings/github.com/go-ctap/kit/model/failure";
-import type { DeviceReport } from "../../../bindings/github.com/go-ctap/kit/model/report";
+import type { LookupResult } from "../../../bindings/github.com/telesma-app/mds/model";
+import { Code, type Failure } from "../../../bindings/github.com/telesma-app/kit/model/failure";
+import type { DeviceReport } from "../../../bindings/github.com/telesma-app/kit/model/report";
 import type {
   BioSensorEnvelope,
   CredentialsEnvelope,
@@ -41,6 +41,7 @@ import {
   resetAuthenticatorStateForTest,
 } from "$lib/features/authenticator/state.js";
 import { resetSecurityDeviceState } from "$lib/features/security/state.js";
+import { resetConformanceDeviceState } from "$lib/features/conformance/state.js";
 import { cancelOperationRecovery } from "$lib/operation-recovery.js";
 import { activeScreen, resetWorkbenchStateForTest } from "$lib/features/workbench/state.js";
 import type { AuthenticatorStatus } from "$lib/authenticator-model.js";
@@ -56,6 +57,7 @@ export function resetAppStateForTest() {
   resetLargeBlobsStateForTest();
   resetLabStateForTest();
   resetSecurityDeviceState();
+  resetConformanceDeviceState();
 }
 
 export function seedActiveScreenForTest(screen: ActiveScreen) {

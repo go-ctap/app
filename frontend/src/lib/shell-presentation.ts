@@ -18,10 +18,10 @@ import type { Component } from "svelte";
 import {
   InteractionKind,
   type PINInteractionState,
-} from "../../bindings/github.com/go-ctap/kit/model";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import { Mode, SmartCardInterface } from "../../bindings/github.com/go-ctap/kit/transport";
-import { UserVerify } from "../../bindings/github.com/go-ctap/ctap/protocol";
+} from "../../bindings/github.com/telesma-app/kit/model";
+import type { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
+import { Mode, SmartCardInterface } from "../../bindings/github.com/telesma-app/kit/transport";
+import { UserVerify } from "../../bindings/github.com/telesma-app/ctap/protocol";
 import type { InteractionPrompt } from "../../bindings/telesma/service";
 
 import { m } from "../paraglide/messages.js";
@@ -138,6 +138,7 @@ function screenLabel(screen: ActiveScreen) {
     lab: m.webauthn_lab(),
     "large-blobs": m.nav_large_blobs(),
     security: m.security(),
+    conformance: m.nav_conformance(),
     logs: m.logs(),
     settings: m.settings(),
   };

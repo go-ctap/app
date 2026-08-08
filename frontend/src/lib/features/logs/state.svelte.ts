@@ -3,8 +3,8 @@ import type {
   LogJournalBatch,
   LogJournalRecord,
   LogOutcome,
-} from "../../../../bindings/github.com/go-ctap/kit/model";
-import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+} from "../../../../bindings/github.com/telesma-app/kit/model";
+import type { Failure } from "../../../../bindings/github.com/telesma-app/kit/model/failure";
 import { SvelteDate } from "svelte/reactivity";
 
 import { runtimeFailureFrom } from "$lib/failure.js";

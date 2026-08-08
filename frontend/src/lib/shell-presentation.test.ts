@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { CreditCard, Nfc, Usb } from "@lucide/svelte";
 
-import { OperationStage } from "../../bindings/github.com/go-ctap/kit/model";
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import { OperationStage } from "../../bindings/github.com/telesma-app/kit/model";
+import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
 import {
   DeviceIdentityReport,
   DeviceReport,
   DeviceVendor,
-} from "../../bindings/github.com/go-ctap/kit/model/report";
-import { Mode, SmartCardInterface } from "../../bindings/github.com/go-ctap/kit/transport";
+} from "../../bindings/github.com/telesma-app/kit/model/report";
+import { Mode, SmartCardInterface } from "../../bindings/github.com/telesma-app/kit/transport";
 
 import { setAppLocale } from "$lib/i18n.js";
 import { failureForCode } from "$lib/test-support/failure.js";

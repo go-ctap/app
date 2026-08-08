@@ -1,7 +1,7 @@
 <script lang="ts">
   import { RotateCcw, TriangleAlert } from "@lucide/svelte";
 
-  import type { ResetHints } from "../../../../bindings/github.com/go-ctap/kit/model/config";
+  import type { ResetHints } from "../../../../bindings/github.com/telesma-app/kit/model/config";
 
   import * as Alert from "$lib/components/ui/alert";
   import { Button } from "$lib/components/ui/button";

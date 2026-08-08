@@ -6,7 +6,7 @@ import {
   LogJournalRecord,
   LogOutcome,
   LogPayload,
-} from "../../../../bindings/github.com/go-ctap/kit/model";
+} from "../../../../bindings/github.com/telesma-app/kit/model";
 
 import {
   LogController,

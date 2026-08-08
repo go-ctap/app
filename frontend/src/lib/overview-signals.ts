@@ -1,4 +1,4 @@
-import { FactID, FactOrigin, FactState } from "../../bindings/github.com/go-ctap/kit/model/inspect";
+import { FactID, FactOrigin, FactState } from "../../bindings/github.com/telesma-app/kit/model/inspect";
 
 import {
   factBoolean,

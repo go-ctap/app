@@ -1,7 +1,7 @@
 <script lang="ts">
   import { LockKeyhole, ShieldCheck, TriangleAlert } from "@lucide/svelte";
 
-  import type { StatusReport } from "../../../../bindings/github.com/go-ctap/kit/model/config";
+  import type { StatusReport } from "../../../../bindings/github.com/telesma-app/kit/model/config";
 
   import * as Card from "$lib/components/ui/card";
 

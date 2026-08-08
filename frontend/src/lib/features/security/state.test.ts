@@ -1,8 +1,8 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { Kind as OperationKind } from "../../../../bindings/github.com/go-ctap/kit/model/operation";
-import { Code, type Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+import { Kind as OperationKind } from "../../../../bindings/github.com/telesma-app/kit/model/operation";
+import { Code, type Failure } from "../../../../bindings/github.com/telesma-app/kit/model/failure";
 import type { ConfigStatusEnvelope } from "../../../../bindings/telesma/service";
 
 import { failureForCode } from "$lib/test-support/failure";

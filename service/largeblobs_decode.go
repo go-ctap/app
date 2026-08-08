@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/hex"
 
-	ctapkit "github.com/go-ctap/kit"
-	"github.com/go-ctap/kit/model/failure"
-	"github.com/go-ctap/kit/model/largeblobs"
+	ctapkit "github.com/telesma-app/kit"
+	"github.com/telesma-app/kit/model/failure"
+	"github.com/telesma-app/kit/model/largeblobs"
 )
 
 type LargeBlobDecodeRequest struct {

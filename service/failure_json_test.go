@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/go-ctap/kit/model/failure"
-	"github.com/go-ctap/kit/model/operation"
+	"github.com/telesma-app/kit/model/failure"
+	"github.com/telesma-app/kit/model/operation"
 )
 
 func TestGetAssertionFailureEnvelopeExactJSON(t *testing.T) {

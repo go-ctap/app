@@ -15,7 +15,7 @@
   import { clearLogJournal } from "$lib/logs-controller.js";
   import { logController, recordID } from "$lib/features/logs/state.svelte.js";
   import { filterLogs } from "$lib/log-presentation.js";
-  import { LogOutcome } from "../../../../bindings/github.com/go-ctap/kit/model/index.js";
+  import { LogOutcome } from "../../../../bindings/github.com/telesma-app/kit/model/index.js";
 
   import { m } from "../../../paraglide/messages.js";
   import LogDetail from "$lib/components/logs/LogDetail.svelte";

@@ -87,6 +87,7 @@ export enum Code {
     CodeMDSFetchFailed = "MDS_FETCH_FAILED",
     CodeMDSVerificationFailed = "MDS_VERIFICATION_FAILED",
     CodeConformanceTargetInvalid = "CONFORMANCE_TARGET_INVALID",
+    CodeConformanceModeInvalid = "CONFORMANCE_MODE_INVALID",
     CodeRelyingPartyIDRequired = "RELYING_PARTY_ID_REQUIRED",
     CodeUserIDRequired = "USER_ID_REQUIRED",
     CodeClientDataJSONRequired = "CLIENT_DATA_JSON_REQUIRED",

@@ -6,7 +6,7 @@ import {
   CTAPDetail,
   Failure,
   Phase,
-} from "../../bindings/github.com/go-ctap/kit/model/failure";
+} from "../../bindings/github.com/telesma-app/kit/model/failure";
 
 import { failureMessage, internalFailure, runtimeFailureFrom } from "$lib/failure.js";
 

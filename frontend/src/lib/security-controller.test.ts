@@ -1,16 +1,16 @@
 import { get } from "svelte/store";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
+import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
 import {
   AlwaysUVTarget,
   AuthenticatorConfigOperation,
   BioMutationOperation,
   StateValue,
-} from "../../bindings/github.com/go-ctap/kit/model/config";
-import { Code } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
-import { PreviewMode } from "../../bindings/github.com/go-ctap/kit/model/safety";
+} from "../../bindings/github.com/telesma-app/kit/model/config";
+import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
+import type { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
+import { PreviewMode } from "../../bindings/github.com/telesma-app/kit/model/safety";
 import {
   type ActiveSelection,
   type AuthenticatorConfigEnvelope,
@@ -24,7 +24,7 @@ import {
   type PINSetRequest,
   type ResetFactoryEnvelope,
 } from "../../bindings/telesma/service";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import { Mode } from "../../bindings/github.com/telesma-app/kit/transport";
 import { testSmartCardDevice } from "../test/device.js";
 
 import { api } from "$lib/api";

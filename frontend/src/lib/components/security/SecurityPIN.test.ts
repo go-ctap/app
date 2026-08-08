@@ -6,7 +6,7 @@ import {
   PINStatus,
   RetryState,
   StateValue,
-} from "../../../../bindings/github.com/go-ctap/kit/model/config";
+} from "../../../../bindings/github.com/telesma-app/kit/model/config";
 
 import { setAppLocale } from "$lib/i18n";
 

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { tick } from "svelte";
 
-  import type { DeviceReport } from "../../../../bindings/github.com/go-ctap/kit/model/report";
-  import type { CredentialVerificationMaterial } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
+  import type { DeviceReport } from "../../../../bindings/github.com/telesma-app/kit/model/report";
+  import type { CredentialVerificationMaterial } from "../../../../bindings/github.com/telesma-app/kit/model/webauthn";
   import type { InspectEnvelope } from "../../../../bindings/telesma/service";
 
   import type { GetAssertionDraft, LabState } from "$lib/features/lab/state";

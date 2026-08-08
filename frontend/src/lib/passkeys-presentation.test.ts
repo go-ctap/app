@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from "vitest";
 
-import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
+import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
 import type { CredentialsEnvelope } from "../../bindings/telesma/service";
 import { testHIDDevice } from "../test/device.js";
 

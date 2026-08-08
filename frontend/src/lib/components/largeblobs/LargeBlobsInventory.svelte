@@ -4,7 +4,7 @@
   import {
     EntryState,
     type DecodeMode,
-  } from "../../../../bindings/github.com/go-ctap/kit/model/largeblobs";
+  } from "../../../../bindings/github.com/telesma-app/kit/model/largeblobs";
 
   import LargeBlobInspector from "$lib/components/largeblobs/LargeBlobInspector.svelte";
   import CredentialInventoryToolbar from "$lib/components/shared/CredentialInventoryToolbar.svelte";

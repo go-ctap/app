@@ -16,11 +16,11 @@
     type GetAssertionVerification,
     type MakeCredentialVerification,
     type VerificationStatus as VerificationStatusValue,
-  } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
+  } from "../../../../bindings/github.com/telesma-app/kit/model/webauthn";
   import {
     AttestationTrustStatus,
     type AttestationTrustAssessment,
-  } from "../../../../bindings/github.com/go-ctap/mds/model";
+  } from "../../../../bindings/github.com/telesma-app/mds/model";
 
   import * as Alert from "$lib/components/ui/alert";
   import { Badge, type BadgeVariant } from "$lib/components/ui/badge";

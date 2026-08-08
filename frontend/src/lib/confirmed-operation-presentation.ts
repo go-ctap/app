@@ -1,4 +1,4 @@
-import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import type { Failure } from "../../bindings/github.com/telesma-app/kit/model/failure";
 import { m } from "../paraglide/messages.js";
 import { failureMessage, isCanceledFailure } from "$lib/failure.js";
 

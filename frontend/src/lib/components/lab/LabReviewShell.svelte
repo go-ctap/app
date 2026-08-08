@@ -2,11 +2,11 @@
   import { Eye, TriangleAlert } from "@lucide/svelte";
   import type { Snippet } from "svelte";
 
-  import type { Warning } from "../../../../bindings/github.com/go-ctap/kit/model/safety";
+  import type { Warning } from "../../../../bindings/github.com/telesma-app/kit/model/safety";
   import type {
     GetAssertionInput,
     MakeCredentialInput,
-  } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
+  } from "../../../../bindings/github.com/telesma-app/kit/model/webauthn";
 
   import * as Alert from "$lib/components/ui/alert";
   import { Badge } from "$lib/components/ui/badge";

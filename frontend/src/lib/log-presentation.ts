@@ -1,5 +1,5 @@
-import { LogOutcome } from "../../bindings/github.com/go-ctap/kit/model";
-import { Kind as OperationKind } from "../../bindings/github.com/go-ctap/kit/model/operation";
+import { LogOutcome } from "../../bindings/github.com/telesma-app/kit/model";
+import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
 
 import { m } from "../paraglide/messages.js";
 import { failureMessage } from "$lib/failure.js";
@@ -63,6 +63,8 @@ export function operationKindLabel(kind: OperationKind | undefined) {
       return m.lab_make_credential();
     case OperationKind.GetAssertion:
       return m.lab_get_assertion();
+    case OperationKind.ConformanceCTAP23:
+      return m.conformance_run_operation();
     case OperationKind.$zero:
     case undefined:
       return "—";

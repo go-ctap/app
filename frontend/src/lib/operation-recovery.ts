@@ -1,7 +1,7 @@
 import { derived, get, writable } from "svelte/store";
 
-import { Code, type Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import { Code, type Failure } from "../../bindings/github.com/telesma-app/kit/model/failure";
+import { Mode } from "../../bindings/github.com/telesma-app/kit/transport";
 
 import { authenticatorStatus, devices, selectedDevice } from "$lib/features/authenticator/state.js";
 

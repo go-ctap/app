@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	ctapkit "github.com/go-ctap/kit"
-	"github.com/go-ctap/kit/model/failure"
-	"github.com/go-ctap/kit/model/report"
+	ctapkit "github.com/telesma-app/kit"
+	"github.com/telesma-app/kit/model/failure"
+	"github.com/telesma-app/kit/model/report"
 	"github.com/google/uuid"
 )
 

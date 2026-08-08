@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 
 import type { DiscoveryChangedEnvelope } from "../../bindings/telesma/service";
-import { Mode } from "../../bindings/github.com/go-ctap/kit/transport";
+import { Mode } from "../../bindings/github.com/telesma-app/kit/transport";
 
 import { m } from "../paraglide/messages.js";
 import { selectAuthenticatorSession, sessionUpdateApplied } from "$lib/authenticator-controller.js";

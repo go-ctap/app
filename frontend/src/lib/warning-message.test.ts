@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { Severity, Warning } from "../../bindings/github.com/go-ctap/kit/model/safety";
+import { Severity, Warning } from "../../bindings/github.com/telesma-app/kit/model/safety";
 
 import { setAppLocale } from "$lib/i18n";
 

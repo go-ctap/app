@@ -1,6 +1,6 @@
 import { get } from "svelte/store";
 
-import type { Failure } from "../../bindings/github.com/go-ctap/kit/model/failure";
+import type { Failure } from "../../bindings/github.com/telesma-app/kit/model/failure";
 import type { AuthenticatorSessionSnapshot } from "../../bindings/telesma/service";
 import { m } from "../paraglide/messages.js";
 import type { OperationEnvelope } from "$lib/api.js";

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/go-ctap/kit/model/failure"
-	"github.com/go-ctap/kit/model/largeblobs"
+	"github.com/telesma-app/kit/model/failure"
+	"github.com/telesma-app/kit/model/largeblobs"
 )
 
 func TestDecodeLargeBlobSuccess(t *testing.T) {

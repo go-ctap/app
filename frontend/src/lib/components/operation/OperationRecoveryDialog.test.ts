@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Code } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+import { Code } from "../../../../bindings/github.com/telesma-app/kit/model/failure";
 
 import { setAppLocale } from "$lib/i18n.js";
 import { failureForCode } from "$lib/test-support/failure.js";

@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 
-	ctapkit "github.com/go-ctap/kit"
-	"github.com/go-ctap/kit/model/failure"
-	"github.com/go-ctap/kit/model/report"
-	"github.com/go-ctap/kit/transport"
+	ctapkit "github.com/telesma-app/kit"
+	"github.com/telesma-app/kit/model/failure"
+	"github.com/telesma-app/kit/model/report"
+	"github.com/telesma-app/kit/transport"
 )
 
 // Discover starts device monitoring or republishes its current state. The

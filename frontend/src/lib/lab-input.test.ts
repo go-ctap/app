@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { VerificationFlow } from "../../bindings/github.com/go-ctap/kit";
-import { LargeBlobSupport } from "../../bindings/github.com/go-ctap/ctap/extension";
+import { VerificationFlow } from "../../bindings/github.com/telesma-app/kit";
+import { LargeBlobSupport } from "../../bindings/github.com/telesma-app/ctap/extension";
 import {
   AuthenticationExtensionsLargeBlobInputs,
   AuthenticationExtensionsPaymentInputs,
@@ -10,7 +10,7 @@ import {
   CreateAuthenticationExtensionsClientInputs,
   GetAuthenticationExtensionsClientInputs,
   HMACGetSecretInput,
-} from "../../bindings/github.com/go-ctap/ctap/webauthn";
+} from "../../bindings/github.com/telesma-app/ctap/webauthn";
 
 import { createLabState } from "$lib/features/lab/state";
 import {

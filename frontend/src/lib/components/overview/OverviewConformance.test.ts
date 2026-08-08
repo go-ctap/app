@@ -7,7 +7,7 @@ import {
   RuleID,
   SpecificationID,
   Target,
-} from "../../../../bindings/github.com/go-ctap/kit/model/conformance";
+} from "../../../../bindings/github.com/telesma-app/kit/conformance";
 
 import { setAppLocale } from "$lib/i18n";
 import type {

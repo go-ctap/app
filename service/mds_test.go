@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/go-ctap/kit/model/failure"
-	"github.com/go-ctap/mds"
+	"github.com/telesma-app/kit/model/failure"
+	"github.com/telesma-app/mds"
 )
 
 func TestNormalizeMDSErrorPreservesHTTPStatus(t *testing.T) {

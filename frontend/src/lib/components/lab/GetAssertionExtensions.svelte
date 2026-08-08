@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ExtensionIdentifier } from "../../../../bindings/github.com/go-ctap/ctap/extension";
+  import { ExtensionIdentifier } from "../../../../bindings/github.com/telesma-app/ctap/extension";
   import type { InspectEnvelope } from "../../../../bindings/telesma/service";
   import { Plus, Trash2 } from "@lucide/svelte";
 

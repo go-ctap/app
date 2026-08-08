@@ -2,8 +2,8 @@ import type {
   CredentialGroup,
   CredentialRecord,
   InventoryReport,
-} from "../../bindings/github.com/go-ctap/kit/model/credentials";
-import type { DeviceReport } from "../../bindings/github.com/go-ctap/kit/model/report";
+} from "../../bindings/github.com/telesma-app/kit/model/credentials";
+import type { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
 
 import { m } from "../paraglide/messages.js";
 import type { PasskeysInventoryState, PasskeysStatusFilter } from "$lib/features/passkeys/state.js";

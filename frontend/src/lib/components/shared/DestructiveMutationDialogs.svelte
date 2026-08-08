@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import { TriangleAlert } from "@lucide/svelte";
-  import type { Failure } from "../../../../bindings/github.com/go-ctap/kit/model/failure";
+  import type { Failure } from "../../../../bindings/github.com/telesma-app/kit/model/failure";
 
   import ModalScrollArea from "$lib/components/shared/ModalScrollArea.svelte";
   import * as Alert from "$lib/components/ui/alert";

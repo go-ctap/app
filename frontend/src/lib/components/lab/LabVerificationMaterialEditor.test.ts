@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { CredentialVerificationMaterial } from "../../../../bindings/github.com/go-ctap/kit/model/webauthn";
+import { CredentialVerificationMaterial } from "../../../../bindings/github.com/telesma-app/kit/model/webauthn";
 
 import { setAppLocale } from "$lib/i18n";
 
