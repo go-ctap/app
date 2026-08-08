@@ -29,100 +29,79 @@ export enum Capability {
  * UnknownFields preserves tags introduced by newer firmware.
  */
 export class DeviceInfo {
-    "SupportedUSBCapabilities": Capability;
-    "Serial": number | null;
-    "EnabledUSBCapabilities": Capability;
-    "FormFactor": FormFactor;
-    "IsFIPS": boolean;
-    "IsSecurityKey": boolean;
-    "FirmwareVersion": FirmwareVersion;
-    "VersionQualifier": VersionQualifier | null;
-    "AutoEjectTimeout": number;
-    "ChallengeResponseTimeout": number;
-    "DeviceFlags": number;
-    "Locked": boolean;
-    "PartNumber": string | null;
-    "FIPSCapable": Capability;
-    "FIPSApproved": Capability;
-    "PinComplexity": boolean;
-    "NFCRestricted": boolean;
-    "ResetBlocked": Capability;
-    "FPSVersion": FirmwareVersion | null;
-    "STMVersion": FirmwareVersion | null;
-    "SupportedNFCCapabilities": Capability | null;
-    "EnabledNFCCapabilities": Capability | null;
-    "UnknownFields": { [_ in `${number}`]?: string };
+    "supportedUSBCapabilities": Capability;
+    "serial"?: number | null;
+    "enabledUSBCapabilities": Capability;
+    "formFactor": FormFactor;
+    "isFIPS": boolean;
+    "isSecurityKey": boolean;
+    "firmwareVersion": FirmwareVersion;
+    "versionQualifier"?: VersionQualifier | null;
+    "autoEjectTimeout": number;
+    "challengeResponseTimeout": number;
+    "deviceFlags": number;
+    "locked": boolean;
+    "partNumber"?: string | null;
+    "fipsCapable": Capability;
+    "fipsApproved": Capability;
+    "pinComplexity": boolean;
+    "nfcRestricted": boolean;
+    "resetBlocked": Capability;
+    "fpsVersion"?: FirmwareVersion | null;
+    "stmVersion"?: FirmwareVersion | null;
+    "supportedNFCCapabilities"?: Capability | null;
+    "enabledNFCCapabilities"?: Capability | null;
+    "unknownFields": { [_ in `${number}`]?: string };
 
     /** Creates a new DeviceInfo instance. */
     constructor($$source: Partial<DeviceInfo> = {}) {
-        if (!("SupportedUSBCapabilities" in $$source)) {
-            this["SupportedUSBCapabilities"] = Capability.$zero;
+        if (!("supportedUSBCapabilities" in $$source)) {
+            this["supportedUSBCapabilities"] = Capability.$zero;
         }
-        if (!("Serial" in $$source)) {
-            this["Serial"] = null;
+        if (!("enabledUSBCapabilities" in $$source)) {
+            this["enabledUSBCapabilities"] = Capability.$zero;
         }
-        if (!("EnabledUSBCapabilities" in $$source)) {
-            this["EnabledUSBCapabilities"] = Capability.$zero;
+        if (!("formFactor" in $$source)) {
+            this["formFactor"] = FormFactor.$zero;
         }
-        if (!("FormFactor" in $$source)) {
-            this["FormFactor"] = FormFactor.$zero;
+        if (!("isFIPS" in $$source)) {
+            this["isFIPS"] = false;
         }
-        if (!("IsFIPS" in $$source)) {
-            this["IsFIPS"] = false;
+        if (!("isSecurityKey" in $$source)) {
+            this["isSecurityKey"] = false;
         }
-        if (!("IsSecurityKey" in $$source)) {
-            this["IsSecurityKey"] = false;
+        if (!("firmwareVersion" in $$source)) {
+            this["firmwareVersion"] = (new FirmwareVersion());
         }
-        if (!("FirmwareVersion" in $$source)) {
-            this["FirmwareVersion"] = (new FirmwareVersion());
+        if (!("autoEjectTimeout" in $$source)) {
+            this["autoEjectTimeout"] = 0;
         }
-        if (!("VersionQualifier" in $$source)) {
-            this["VersionQualifier"] = null;
+        if (!("challengeResponseTimeout" in $$source)) {
+            this["challengeResponseTimeout"] = 0;
         }
-        if (!("AutoEjectTimeout" in $$source)) {
-            this["AutoEjectTimeout"] = 0;
+        if (!("deviceFlags" in $$source)) {
+            this["deviceFlags"] = 0;
         }
-        if (!("ChallengeResponseTimeout" in $$source)) {
-            this["ChallengeResponseTimeout"] = 0;
+        if (!("locked" in $$source)) {
+            this["locked"] = false;
         }
-        if (!("DeviceFlags" in $$source)) {
-            this["DeviceFlags"] = 0;
+        if (!("fipsCapable" in $$source)) {
+            this["fipsCapable"] = Capability.$zero;
         }
-        if (!("Locked" in $$source)) {
-            this["Locked"] = false;
+        if (!("fipsApproved" in $$source)) {
+            this["fipsApproved"] = Capability.$zero;
         }
-        if (!("PartNumber" in $$source)) {
-            this["PartNumber"] = null;
+        if (!("pinComplexity" in $$source)) {
+            this["pinComplexity"] = false;
         }
-        if (!("FIPSCapable" in $$source)) {
-            this["FIPSCapable"] = Capability.$zero;
+        if (!("nfcRestricted" in $$source)) {
+            this["nfcRestricted"] = false;
         }
-        if (!("FIPSApproved" in $$source)) {
-            this["FIPSApproved"] = Capability.$zero;
+        if (!("resetBlocked" in $$source)) {
+            this["resetBlocked"] = Capability.$zero;
         }
-        if (!("PinComplexity" in $$source)) {
-            this["PinComplexity"] = false;
-        }
-        if (!("NFCRestricted" in $$source)) {
-            this["NFCRestricted"] = false;
-        }
-        if (!("ResetBlocked" in $$source)) {
-            this["ResetBlocked"] = Capability.$zero;
-        }
-        if (!("FPSVersion" in $$source)) {
-            this["FPSVersion"] = null;
-        }
-        if (!("STMVersion" in $$source)) {
-            this["STMVersion"] = null;
-        }
-        if (!("SupportedNFCCapabilities" in $$source)) {
-            this["SupportedNFCCapabilities"] = null;
-        }
-        if (!("EnabledNFCCapabilities" in $$source)) {
-            this["EnabledNFCCapabilities"] = null;
-        }
-        if (!("UnknownFields" in $$source)) {
-            this["UnknownFields"] = {};
+        if (!("unknownFields" in $$source)) {
+            this["unknownFields"] = {};
         }
 
         Object.assign(this, $$source);
@@ -138,20 +117,20 @@ export class DeviceInfo {
         const $$createField19_0 = $$createType3;
         const $$createField22_0 = $$createType4;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("FirmwareVersion" in $$parsedSource) {
-            $$parsedSource["FirmwareVersion"] = $$createField6_0($$parsedSource["FirmwareVersion"]);
+        if ("firmwareVersion" in $$parsedSource) {
+            $$parsedSource["firmwareVersion"] = $$createField6_0($$parsedSource["firmwareVersion"]);
         }
-        if ("VersionQualifier" in $$parsedSource) {
-            $$parsedSource["VersionQualifier"] = $$createField7_0($$parsedSource["VersionQualifier"]);
+        if ("versionQualifier" in $$parsedSource) {
+            $$parsedSource["versionQualifier"] = $$createField7_0($$parsedSource["versionQualifier"]);
         }
-        if ("FPSVersion" in $$parsedSource) {
-            $$parsedSource["FPSVersion"] = $$createField18_0($$parsedSource["FPSVersion"]);
+        if ("fpsVersion" in $$parsedSource) {
+            $$parsedSource["fpsVersion"] = $$createField18_0($$parsedSource["fpsVersion"]);
         }
-        if ("STMVersion" in $$parsedSource) {
-            $$parsedSource["STMVersion"] = $$createField19_0($$parsedSource["STMVersion"]);
+        if ("stmVersion" in $$parsedSource) {
+            $$parsedSource["stmVersion"] = $$createField19_0($$parsedSource["stmVersion"]);
         }
-        if ("UnknownFields" in $$parsedSource) {
-            $$parsedSource["UnknownFields"] = $$createField22_0($$parsedSource["UnknownFields"]);
+        if ("unknownFields" in $$parsedSource) {
+            $$parsedSource["unknownFields"] = $$createField22_0($$parsedSource["unknownFields"]);
         }
         return new DeviceInfo($$parsedSource as Partial<DeviceInfo>);
     }
@@ -161,20 +140,20 @@ export class DeviceInfo {
  * FirmwareVersion is the major.minor.build version reported by the device.
  */
 export class FirmwareVersion {
-    "Major": number;
-    "Minor": number;
-    "Build": number;
+    "major": number;
+    "minor": number;
+    "build": number;
 
     /** Creates a new FirmwareVersion instance. */
     constructor($$source: Partial<FirmwareVersion> = {}) {
-        if (!("Major" in $$source)) {
-            this["Major"] = 0;
+        if (!("major" in $$source)) {
+            this["major"] = 0;
         }
-        if (!("Minor" in $$source)) {
-            this["Minor"] = 0;
+        if (!("minor" in $$source)) {
+            this["minor"] = 0;
         }
-        if (!("Build" in $$source)) {
-            this["Build"] = 0;
+        if (!("build" in $$source)) {
+            this["build"] = 0;
         }
 
         Object.assign(this, $$source);
@@ -227,20 +206,20 @@ export enum ReleaseType {
  * development firmware.
  */
 export class VersionQualifier {
-    "Version": FirmwareVersion;
-    "ReleaseType": ReleaseType;
-    "Iteration": number;
+    "version": FirmwareVersion;
+    "releaseType": ReleaseType;
+    "iteration": number;
 
     /** Creates a new VersionQualifier instance. */
     constructor($$source: Partial<VersionQualifier> = {}) {
-        if (!("Version" in $$source)) {
-            this["Version"] = (new FirmwareVersion());
+        if (!("version" in $$source)) {
+            this["version"] = (new FirmwareVersion());
         }
-        if (!("ReleaseType" in $$source)) {
-            this["ReleaseType"] = ReleaseType.$zero;
+        if (!("releaseType" in $$source)) {
+            this["releaseType"] = ReleaseType.$zero;
         }
-        if (!("Iteration" in $$source)) {
-            this["Iteration"] = 0;
+        if (!("iteration" in $$source)) {
+            this["iteration"] = 0;
         }
 
         Object.assign(this, $$source);
@@ -252,8 +231,8 @@ export class VersionQualifier {
     static createFrom($$source: any = {}): VersionQualifier {
         const $$createField0_0 = $$createType0;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("Version" in $$parsedSource) {
-            $$parsedSource["Version"] = $$createField0_0($$parsedSource["Version"]);
+        if ("version" in $$parsedSource) {
+            $$parsedSource["version"] = $$createField0_0($$parsedSource["version"]);
         }
         return new VersionQualifier($$parsedSource as Partial<VersionQualifier>);
     }

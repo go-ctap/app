@@ -4,7 +4,6 @@
     "target": "ESNext",
     "module": "ESNext",
     "paths": {
-      "@wailsio/runtime": ["../../wails/v3/internal/runtime/desktop/@wailsio/runtime/src/index.ts"],
       "$lib": ["./src/lib"],
       "$lib/*": ["./src/lib/*"]
     },
@@ -15,10 +14,5 @@
     "skipLibCheck": true,
     "types": ["vite/client"]
   },
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.svelte",
-    "bindings/**/*.ts",
-    "../../wails/v3/internal/runtime/desktop/@wailsio/runtime/src/global.d.ts"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.svelte", "bindings/**/*.ts"]
 }
