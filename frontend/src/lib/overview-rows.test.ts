@@ -10,7 +10,6 @@ import {
   FactValueKind,
   Info as InspectInfo,
 } from "../../bindings/github.com/telesma-app/kit/model/inspect";
-import { Assessment } from "../../bindings/github.com/telesma-app/kit/conformance";
 import {
   AttachmentReport,
   DeviceIdentityReport,
@@ -41,7 +40,6 @@ function info(input: Partial<InspectInfo> = {}): InspectInfo {
     versions: ["FIDO_2_1" as Version],
     aaguid: "00000000-0000-0000-0000-000000000000",
     assessment: testOverviewAssessment(),
-    conformance: new Assessment(),
     ...input,
   });
 }

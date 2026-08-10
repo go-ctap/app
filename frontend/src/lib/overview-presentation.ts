@@ -7,7 +7,6 @@ import { bioSensorReport, inspectResult } from "$lib/ctapkit-results.js";
 import type { LoadState } from "$lib/features/overview/state.js";
 import { buildOverviewFactLookup } from "$lib/overview-facts.js";
 import {
-  buildOverviewConformancePresentation,
   buildOverviewHero,
   buildOverviewHeroSignalGroups,
   buildOverviewMDSObservations,
@@ -71,7 +70,6 @@ export function buildOverviewPresentation(input: OverviewPresentationInput) {
       : null,
     signalGroups: facts ? buildOverviewHeroSignalGroups(facts) : [],
     overviewGroups: groupOverviewRows(overviewRows),
-    conformance: buildOverviewConformancePresentation({ info }),
     mdsObservations: buildOverviewMDSObservations({ info, mds: mdsResult }),
     warningCount: overviewRows.filter((row) => row.status === "warning").length,
   };

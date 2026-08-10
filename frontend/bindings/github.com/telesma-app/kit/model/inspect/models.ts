@@ -22,9 +22,6 @@ import * as extension$0 from "../../../ctap/extension/models.js";
 import * as protocol$0 from "../../../ctap/protocol/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as conformance$0 from "../../conformance/models.js";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
 import * as report$0 from "../report/models.js";
 
 /**
@@ -61,7 +58,7 @@ export class Assessment {
  */
 export class Fact {
     "id": FactID;
-    "source": conformance$0.FieldPath;
+    "source": FactSource;
     "state": FactState;
     "origin": FactOrigin;
     "value": FactValue;
@@ -184,6 +181,8 @@ export enum FactOrigin {
     FactOriginAbsent = "absent",
 };
 
+export type FactSource = string;
+
 export enum FactState {
     /**
      * The Go zero value for the underlying type of the enum.
@@ -293,7 +292,6 @@ export class Info {
     "authenticatorConfigCommands"?: protocol$0.ConfigSubCommand[];
     "uvModalityLabel"?: string;
     "assessment": Assessment;
-    "conformance": conformance$0.Assessment;
 
     /** Creates a new Info instance. */
     constructor($$source: Partial<Info> = {}) {
@@ -305,9 +303,6 @@ export class Info {
         }
         if (!("assessment" in $$source)) {
             this["assessment"] = (new Assessment());
-        }
-        if (!("conformance" in $$source)) {
-            this["conformance"] = (new conformance$0.Assessment());
         }
 
         Object.assign(this, $$source);
@@ -332,7 +327,6 @@ export class Info {
         const $$createField29_0 = $Create.ByteSlice;
         const $$createField30_0 = $$createType16;
         const $$createField32_0 = $$createType17;
-        const $$createField33_0 = $$createType18;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("versions" in $$parsedSource) {
             $$parsedSource["versions"] = $$createField0_0($$parsedSource["versions"]);
@@ -379,9 +373,6 @@ export class Info {
         if ("assessment" in $$parsedSource) {
             $$parsedSource["assessment"] = $$createField32_0($$parsedSource["assessment"]);
         }
-        if ("conformance" in $$parsedSource) {
-            $$parsedSource["conformance"] = $$createField33_0($$parsedSource["conformance"]);
-        }
         return new Info($$parsedSource as Partial<Info>);
     }
 }
@@ -406,8 +397,8 @@ export class Result {
      * Creates a new Result instance from a string or object.
      */
     static createFrom($$source: any = {}): Result {
-        const $$createField0_0 = $$createType19;
-        const $$createField1_0 = $$createType20;
+        const $$createField0_0 = $$createType18;
+        const $$createField1_0 = $$createType19;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("device" in $$parsedSource) {
             $$parsedSource["device"] = $$createField0_0($$parsedSource["device"]);
@@ -443,6 +434,5 @@ const $$createType14 = $Create.Array($Create.Any);
 const $$createType15 = $Create.Array($Create.Any);
 const $$createType16 = $Create.Array($Create.Any);
 const $$createType17 = Assessment.createFrom;
-const $$createType18 = conformance$0.Assessment.createFrom;
-const $$createType19 = report$0.DeviceReport.createFrom;
-const $$createType20 = Info.createFrom;
+const $$createType18 = report$0.DeviceReport.createFrom;
+const $$createType19 = Info.createFrom;

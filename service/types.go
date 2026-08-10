@@ -3,7 +3,6 @@
 package service
 
 import (
-	"github.com/telesma-app/kit/conformance"
 	"github.com/telesma-app/kit/model"
 	"github.com/telesma-app/kit/model/config"
 	"github.com/telesma-app/kit/model/credentials"
@@ -147,11 +146,6 @@ type MakeCredentialEnvelope struct {
 type GetAssertionEnvelope struct {
 	OperationEnvelopeMeta
 	Result *webauthn.GetAssertionOutput `json:"result,omitempty"`
-}
-
-type CTAP23ConformanceEnvelope struct {
-	OperationEnvelopeMeta
-	Result *conformance.SuiteResult `json:"result,omitempty"`
 }
 
 type CancelOperationRequest struct {

@@ -9,7 +9,6 @@ import {
   FactValueKind,
   Info,
 } from "../../bindings/github.com/telesma-app/kit/model/inspect";
-import { Assessment as ConformanceAssessment } from "../../bindings/github.com/telesma-app/kit/conformance";
 
 import { setAppLocale } from "$lib/i18n";
 import { buildOverviewFactLookup } from "$lib/overview-facts";
@@ -33,7 +32,6 @@ describe("Overview fact projection", () => {
     const info = new Info({
       options: { clientPin: true },
       assessment: reversed,
-      conformance: new ConformanceAssessment(),
     });
     const facts = buildOverviewFactLookup(info.assessment);
 
@@ -52,7 +50,7 @@ describe("Overview fact projection", () => {
     });
 
     const orderedSources = buildOverviewRows({
-      info: new Info({ assessment: ordered, conformance: new ConformanceAssessment() }),
+      info: new Info({ assessment: ordered }),
     }).map((row) => row.source);
     const reversedSources = buildOverviewRows({ info }, facts).map((row) => row.source);
 

@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor } from "@testing-library/svelte";
+import { cleanup, render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -9,14 +9,6 @@ import {
   Result as InspectResult,
   type Assessment,
 } from "../../bindings/github.com/telesma-app/kit/model/inspect";
-import {
-  Finding,
-  Profile,
-  Assessment as ConformanceAssessment,
-  RuleID,
-  SpecificationID,
-  Target,
-} from "../../bindings/github.com/telesma-app/kit/conformance";
 import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
 import { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
 import { InspectEnvelope } from "../../bindings/telesma/service";
@@ -62,7 +54,6 @@ const device = new DeviceReport({
 function inspectEnvelope(
   operationId: string,
   aaguid: string,
-  withFinding = false,
   assessment: Assessment = testOverviewAssessment(),
 ) {
   return new InspectEnvelope({
@@ -76,21 +67,6 @@ function inspectEnvelope(
         aaguid,
         options: {},
         assessment,
-        conformance: new ConformanceAssessment({
-          target: new Target({
-            profile: Profile.ProfileFIDO23,
-            specification: SpecificationID.SpecificationCTAP23,
-          }),
-          advertisedProfiles: [Profile.ProfileFIDO23],
-          findings: withFinding
-            ? [
-                new Finding({
-                  ruleId: RuleID.RuleVersionsRequired,
-                  profile: Profile.ProfileFIDO23,
-                }),
-              ]
-            : [],
-        }),
       }),
     }),
   });
@@ -209,83 +185,5 @@ describe("Overview", () => {
     expect(
       screen.queryByText("Authenticator metadata could not be downloaded."),
     ).not.toBeInTheDocument();
-  });
-
-  it("preserves a manual conformance toggle across MDS updates and resets it for a new inspection", async () => {
-    const user = userEvent.setup();
-
-    seedSelectionForTest("token-1", device, {
-      state: "ready",
-      selectionId: "authenticator-1",
-    });
-    seedOverviewEnvelopeForTest(
-      inspectEnvelope("inspect-1", "00000000-0000-0000-0000-000000000001"),
-    );
-
-    render(Overview);
-
-    const expand = screen.getByRole("button", { name: "Expand conformance details" });
-
-    expect(expand).toHaveAttribute("aria-expanded", "false");
-    await user.click(expand);
-    expect(screen.getByRole("button", { name: "Collapse conformance details" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-
-    await act(() => {
-      seedOverviewMDSForTest(null, failureForCode(Code.CodeMDSFetchFailed));
-    });
-    expect(screen.getByRole("button", { name: "Collapse conformance details" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
-
-    await act(() => {
-      seedOverviewEnvelopeForTest(
-        inspectEnvelope("inspect-2", "00000000-0000-0000-0000-000000000002"),
-      );
-    });
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Expand conformance details" })).toHaveAttribute(
-        "aria-expanded",
-        "false",
-      );
-    });
-  });
-
-  it("restores the expanded default for findings in a new inspection", async () => {
-    const user = userEvent.setup();
-
-    seedSelectionForTest("token-1", device, {
-      state: "ready",
-      selectionId: "authenticator-1",
-    });
-    seedOverviewEnvelopeForTest(
-      inspectEnvelope("inspect-1", "00000000-0000-0000-0000-000000000001", true),
-    );
-
-    render(Overview);
-
-    const collapse = screen.getByRole("button", { name: "Collapse conformance details" });
-
-    expect(collapse).toHaveAttribute("aria-expanded", "true");
-    await user.click(collapse);
-    expect(screen.getByRole("button", { name: "Expand conformance details" })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
-
-    await act(() => {
-      seedOverviewEnvelopeForTest(
-        inspectEnvelope("inspect-2", "00000000-0000-0000-0000-000000000002", true),
-      );
-    });
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Collapse conformance details" })).toHaveAttribute(
-        "aria-expanded",
-        "true",
-      );
-    });
   });
 });

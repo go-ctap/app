@@ -4,7 +4,6 @@ import { resetLabDeviceState } from "$lib/features/lab/state.js";
 import { resetOverviewDeviceState } from "$lib/features/overview/state.js";
 import { resetPasskeysDeviceState } from "$lib/features/passkeys/state.js";
 import { resetSecurityDeviceState } from "$lib/features/security/state.js";
-import { resetConformanceDeviceState } from "$lib/features/conformance/state.js";
 
 export function resetDeviceState() {
   resetAuthenticatorDeviceState();
@@ -13,5 +12,4 @@ export function resetDeviceState() {
   resetLargeBlobsDeviceState();
   resetLabDeviceState();
   resetSecurityDeviceState();
-  resetConformanceDeviceState();
 }

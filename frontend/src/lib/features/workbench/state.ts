@@ -28,14 +28,7 @@ export type StatusBarState = {
 };
 
 export type ActiveScreen =
-  | "overview"
-  | "passkeys"
-  | "lab"
-  | "large-blobs"
-  | "security"
-  | "conformance"
-  | "logs"
-  | "settings";
+  "overview" | "passkeys" | "lab" | "large-blobs" | "security" | "logs" | "settings";
 
 export const activeScreen = writable<ActiveScreen>("overview");
 

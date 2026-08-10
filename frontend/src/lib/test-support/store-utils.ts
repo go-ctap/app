@@ -41,7 +41,6 @@ import {
   resetAuthenticatorStateForTest,
 } from "$lib/features/authenticator/state.js";
 import { resetSecurityDeviceState } from "$lib/features/security/state.js";
-import { resetConformanceDeviceState } from "$lib/features/conformance/state.js";
 import { cancelOperationRecovery } from "$lib/operation-recovery.js";
 import { activeScreen, resetWorkbenchStateForTest } from "$lib/features/workbench/state.js";
 import type { AuthenticatorStatus } from "$lib/authenticator-model.js";
@@ -57,7 +56,6 @@ export function resetAppStateForTest() {
   resetLargeBlobsStateForTest();
   resetLabStateForTest();
   resetSecurityDeviceState();
-  resetConformanceDeviceState();
 }
 
 export function seedActiveScreenForTest(screen: ActiveScreen) {

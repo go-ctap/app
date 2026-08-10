@@ -1,6 +1,5 @@
 <script lang="ts">
   import OverviewCapabilityMatrix from "$lib/components/overview/OverviewCapabilityMatrix.svelte";
-  import OverviewConformance from "$lib/components/overview/OverviewConformance.svelte";
   import OverviewHeroCard from "$lib/components/overview/OverviewHeroCard.svelte";
   import OverviewLoadingCard from "$lib/components/overview/OverviewLoadingCard.svelte";
   import OverviewMDSObservations from "$lib/components/overview/OverviewMDSObservations.svelte";
@@ -66,12 +65,6 @@
           <OverviewVendorPassport presentation={overview.vendorPassport} />
         {/if}
 
-        {#if overview.conformance}
-          {#key overview.info}
-            <OverviewConformance presentation={overview.conformance} />
-          {/key}
-        {/if}
-
         <OverviewCapabilityMatrix
           groups={overview.overviewGroups}
           warningCount={overview.warningCount}
@@ -82,12 +75,6 @@
         <JsonDisclosure value={overview.report} />
       {:else if overview.standard}
         <OverviewStandardHeroCard hero={overview.hero} presentation={overview.standard} />
-
-        {#if overview.conformance && overview.conformance.status !== "passed"}
-          {#key overview.info}
-            <OverviewConformance presentation={overview.conformance} />
-          {/key}
-        {/if}
 
         <OverviewStandardCapabilities presentation={overview.standard} />
 

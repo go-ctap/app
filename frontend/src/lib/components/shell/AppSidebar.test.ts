@@ -55,43 +55,6 @@ describe("AppSidebar", () => {
     expect(onNavigate).toHaveBeenCalledWith("settings");
   });
 
-  it("shows Conformance navigation only in Advanced Mode", async () => {
-    const user = userEvent.setup();
-    const onNavigate = vi.fn();
-
-    const { rerender } = render(AppSidebar, {
-      props: {
-        presentation: {
-          activeScreen: "overview",
-          activeScreenLabel: "Overview",
-          tokens: [],
-          selectedValue: "",
-          busy: false,
-        },
-        onNavigate,
-        onSelectToken: vi.fn(),
-      },
-    });
-
-    expect(screen.queryByRole("button", { name: "Conformance" })).not.toBeInTheDocument();
-
-    await rerender({
-      presentation: {
-        activeScreen: "overview",
-        activeScreenLabel: "Overview",
-        tokens: [],
-        selectedValue: "",
-        busy: false,
-      },
-      advancedMode: true,
-      onNavigate,
-      onSelectToken: vi.fn(),
-    });
-
-    await user.click(screen.getByRole("button", { name: "Conformance" }));
-    expect(onNavigate).toHaveBeenCalledWith("conformance");
-  });
-
   it("selects a discovered token from the persistent token section", async () => {
     const user = userEvent.setup();
     const onSelectToken = vi.fn();

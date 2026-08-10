@@ -13,3 +13,7 @@ export {
     Info,
     Result
 } from "./models.js";
+
+export type {
+    FactSource
+} from "./models.js";

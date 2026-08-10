@@ -63,8 +63,6 @@ export function operationKindLabel(kind: OperationKind | undefined) {
       return m.lab_make_credential();
     case OperationKind.GetAssertion:
       return m.lab_get_assertion();
-    case OperationKind.ConformanceCTAP23:
-      return m.conformance_run_operation();
     case OperationKind.$zero:
     case undefined:
       return "—";

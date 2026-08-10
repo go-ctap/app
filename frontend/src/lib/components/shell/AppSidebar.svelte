@@ -1,7 +1,6 @@
 <script lang="ts">
   import {
     Database,
-    ClipboardCheck,
     FlaskConical,
     Gauge,
     KeyRound,
@@ -23,26 +22,18 @@
   type Props = {
     presentation: SidebarPresentation;
     nativeWindowTitlebar?: boolean;
-    advancedMode?: boolean;
     onNavigate: (screen: ActiveScreen) => void;
     onSelectToken: (selector: string) => void;
   };
 
-  let {
-    presentation,
-    nativeWindowTitlebar = false,
-    advancedMode = false,
-    onNavigate,
-    onSelectToken,
-  }: Props = $props();
+  let { presentation, nativeWindowTitlebar = false, onNavigate, onSelectToken }: Props = $props();
 
-  const navItems: { id: ActiveScreen; label: string; icon: Component; advanced?: boolean }[] = [
+  const navItems: { id: ActiveScreen; label: string; icon: Component }[] = [
     { id: "overview", label: m.overview(), icon: Gauge },
     { id: "passkeys", label: m.passkeys(), icon: KeyRound },
     { id: "large-blobs", label: m.nav_large_blobs(), icon: Database },
     { id: "security", label: m.security(), icon: Shield },
     { id: "lab", label: m.webauthn_lab(), icon: FlaskConical },
-    { id: "conformance", label: m.nav_conformance(), icon: ClipboardCheck, advanced: true },
     { id: "logs", label: m.logs(), icon: ScrollText },
     { id: "settings", label: m.settings(), icon: Settings },
   ];
@@ -70,20 +61,18 @@
     <ScrollArea class="sidebar-nav-scroll">
       <div class="sidebar-nav-list">
         {#each navItems as item (item.id)}
-          {#if !item.advanced || advancedMode}
-            <Button
-              type="button"
-              variant={presentation.activeScreen === item.id ? "secondary" : "ghost"}
-              class="sidebar-nav-button"
-              data-active={presentation.activeScreen === item.id ? "true" : undefined}
-              aria-current={presentation.activeScreen === item.id ? "page" : undefined}
-              aria-label={item.label}
-              onclick={() => onNavigate(item.id)}
-            >
-              <item.icon data-icon="inline-start" />
-              <span class="sidebar-nav-label">{item.label}</span>
-            </Button>
-          {/if}
+          <Button
+            type="button"
+            variant={presentation.activeScreen === item.id ? "secondary" : "ghost"}
+            class="sidebar-nav-button"
+            data-active={presentation.activeScreen === item.id ? "true" : undefined}
+            aria-current={presentation.activeScreen === item.id ? "page" : undefined}
+            aria-label={item.label}
+            onclick={() => onNavigate(item.id)}
+          >
+            <item.icon data-icon="inline-start" />
+            <span class="sidebar-nav-label">{item.label}</span>
+          </Button>
         {/each}
       </div>
     </ScrollArea>

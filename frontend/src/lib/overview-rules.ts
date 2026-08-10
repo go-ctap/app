@@ -1,7 +1,4 @@
 export type {
-  OverviewConformanceAssessment,
-  OverviewConformancePresentation,
-  OverviewConformanceStatus,
   OverviewContext,
   OverviewGroup,
   OverviewHeroContext,
@@ -33,6 +30,5 @@ export type { OverviewFactLookup } from "$lib/overview-facts.js";
 export { buildOverviewHeroSignalGroups } from "$lib/overview-signals.js";
 export { buildOverviewStandardPresentation } from "$lib/overview-standard.js";
 export { buildOverviewRows, buildOverviewVendorPassport } from "$lib/overview-rows.js";
-export { buildOverviewConformancePresentation } from "$lib/overview-conformance.js";
 export { groupOverviewRows, overviewStatusLabel } from "$lib/overview-shared.js";
 export { inlineList } from "$lib/overview-raw-format.js";

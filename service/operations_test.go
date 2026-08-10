@@ -33,22 +33,6 @@ func TestListCredentialsWithoutSelectionReturnsTypedErrorEnvelope(t *testing.T) 
 	}
 }
 
-func TestRunCTAP23ConformanceWithoutSelectionReturnsTypedErrorEnvelope(t *testing.T) {
-	service := New()
-
-	envelope := service.RunCTAP23Conformance(t.Context(), CTAP23ConformanceRequest{})
-
-	if envelope.Kind != operation.ConformanceCTAP23 {
-		t.Fatalf("envelope kind = %q, want %q", envelope.Kind, operation.ConformanceCTAP23)
-	}
-	if envelope.Error == nil || envelope.Error.Code != failure.CodeAuthenticatorClosed {
-		t.Fatalf("envelope error = %#v, want %s", envelope.Error, failure.CodeAuthenticatorClosed)
-	}
-	if envelope.Result != nil {
-		t.Fatalf("envelope result = %#v, want nil", envelope.Result)
-	}
-}
-
 func TestListCredentialsFailureUsesOnlyTheTypedEnvelopeError(t *testing.T) {
 	runtime := &recordingAuthenticator{}
 	runErr := failure.Wrap(

@@ -6,7 +6,7 @@ The application discovers connected authenticators, opens the selected device au
 
 ## Features
 
-- Inspect authenticator identity, CTAP versions, options, algorithms, transports, extensions, limits, vendor metadata, and conformance observations.
+- Inspect authenticator identity, CTAP versions, options, algorithms, transports, extensions, limits, and vendor metadata.
 - Look up authenticator metadata and status reports through the FIDO Metadata Service (MDS).
 - List, inspect, rename, and delete discoverable passkeys with operation previews and confirmations.
 - Inspect and manage the authenticator large-blob array, including entry writes, deletes, and cleanup previews.

@@ -18,8 +18,6 @@ export {
     BioRemoveRequest,
     BioRenameRequest,
     BioSensorEnvelope,
-    CTAP23ConformanceEnvelope,
-    CTAP23ConformanceRequest,
     CancelOperationRequest,
     ConfigStatusEnvelope,
     CredentialDeleteEnvelope,

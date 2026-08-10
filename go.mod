@@ -6,16 +6,18 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.2
 	github.com/google/uuid v1.6.0
 	github.com/pelletier/go-toml/v2 v2.4.3
-	github.com/telesma-app/ctap v0.44.0
-	github.com/telesma-app/kit v0.17.0
-	github.com/telesma-app/mds v0.3.0
+	github.com/telesma-app/ctap v0.46.0
+	github.com/telesma-app/kit v0.17.1-0.20260809115425-004451c97774
+	github.com/telesma-app/mds v0.4.0
 	github.com/wailsapp/wails/v3 v3.0.0-beta.5
 )
 
 require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
+	github.com/cloudflare/circl v1.6.5 // indirect
 	github.com/coder/websocket v1.8.15 // indirect
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1 // indirect
 	github.com/ebitengine/purego v0.10.2 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.2.2 // indirect
@@ -24,6 +26,7 @@ require (
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/samber/lo v1.53.0 // indirect
+	github.com/telesma-app/fido-registry v0.2.0 // indirect
 	github.com/telesma-app/hid v0.12.0 // indirect
 	github.com/telesma-app/iso7816 v0.2.0 // indirect
 	github.com/telesma-app/pcsc v0.9.0 // indirect

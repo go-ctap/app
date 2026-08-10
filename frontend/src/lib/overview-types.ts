@@ -1,11 +1,5 @@
 import type { Info as InspectInfo } from "../../bindings/github.com/telesma-app/kit/model/inspect";
 import type { BioSensorReport } from "../../bindings/github.com/telesma-app/kit/model/config";
-import type {
-  Profile,
-  RequirementRef,
-  RuleID,
-  Target,
-} from "../../bindings/github.com/telesma-app/kit/conformance";
 import type { LookupResult } from "../../bindings/github.com/telesma-app/mds/model";
 import type { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
 
@@ -48,29 +42,6 @@ export type OverviewVendorPassportPresentation = {
   coreFacts: OverviewVendorFact[];
   summaryFacts: OverviewVendorFact[];
   detailFacts: OverviewVendorFact[];
-};
-
-export type OverviewConformanceStatus = "passed" | "findings" | "inconclusive" | "unresolved";
-
-export type OverviewConformanceAssessment = {
-  id: RuleID | "target_unresolved";
-  kind: "finding" | "inconclusive" | "unresolved";
-  profile: Profile | null;
-  name: string;
-  description: string;
-  expectations: string[];
-  evidence: string[];
-  reason?: string;
-  source: string;
-  references: RequirementRef[];
-};
-
-export type OverviewConformancePresentation = {
-  status: OverviewConformanceStatus;
-  target: Target | null;
-  assessments: OverviewConformanceAssessment[];
-  findingCount: number;
-  inconclusiveCount: number;
 };
 
 export type OverviewMDSObservationSeverity = "critical" | "warning" | "info";

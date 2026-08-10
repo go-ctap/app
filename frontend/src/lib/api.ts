@@ -21,8 +21,6 @@ import {
   type BioRemoveRequest,
   type BioRenameRequest,
   type BioSensorEnvelope,
-  type CTAP23ConformanceEnvelope,
-  type CTAP23ConformanceRequest,
   type CancelOperationRequest,
   type ConfigStatusEnvelope,
   type CredentialDeleteEnvelope,
@@ -83,8 +81,7 @@ export type OperationEnvelope =
   | BioMutationEnvelope
   | ResetFactoryEnvelope
   | MakeCredentialEnvelope
-  | GetAssertionEnvelope
-  | CTAP23ConformanceEnvelope;
+  | GetAssertionEnvelope;
 
 export const api = {
   getApplicationInfo(): Promise<ApplicationInfo> {
@@ -243,12 +240,6 @@ export const api = {
 
   getAssertion(request: GetAssertionRequest): Promise<GetAssertionEnvelope> {
     return runtimeCall("ctapkit.operation.getAssertion", () => service.GetAssertion(request));
-  },
-
-  runCTAP23Conformance(request: CTAP23ConformanceRequest): Promise<CTAP23ConformanceEnvelope> {
-    return runtimeCall("ctapkit.operation.conformance.ctap23", () =>
-      service.RunCTAP23Conformance(request),
-    );
   },
 
   verifyMakeCredential(

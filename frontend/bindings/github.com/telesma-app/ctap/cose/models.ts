@@ -45,6 +45,11 @@ export enum Algorithm {
     AlgorithmESP512 = -52,
 
     /**
+     * AlgorithmES256K is ECDSA with SHA-256 on the secp256k1 curve.
+     */
+    AlgorithmES256K = -47,
+
+    /**
      * AlgorithmEdDSA is EdDSA using a key-selected Edwards curve.
      */
     AlgorithmEdDSA = -8,
@@ -68,6 +73,11 @@ export enum Algorithm {
      * AlgorithmRS512 is RSASSA-PKCS1-v1_5 with SHA-512.
      */
     AlgorithmRS512 = -259,
+
+    /**
+     * AlgorithmRS1 is RSASSA-PKCS1-v1_5 with SHA-1.
+     */
+    AlgorithmRS1 = -65535,
 
     /**
      * AlgorithmPS256 is RSASSA-PSS with SHA-256.

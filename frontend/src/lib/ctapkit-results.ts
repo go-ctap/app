@@ -26,7 +26,6 @@ import type {
   MutationResult as LargeBlobMutationResult,
   ReadReport as LargeBlobReadReport,
 } from "../../bindings/github.com/telesma-app/kit/model/largeblobs";
-import type { SuiteResult } from "../../bindings/github.com/telesma-app/kit/conformance";
 import type {
   AuthenticatorConfigEnvelope,
   BioEnrollEnvelope,
@@ -34,7 +33,6 @@ import type {
   BioMutationEnvelope,
   BioSensorEnvelope,
   ConfigStatusEnvelope,
-  CTAP23ConformanceEnvelope,
   CredentialDeleteEnvelope,
   CredentialUpdateEnvelope,
   CredentialsEnvelope,
@@ -55,12 +53,6 @@ import type {
 } from "../../bindings/github.com/telesma-app/kit/model/webauthn";
 
 export function inspectResult(envelope: InspectEnvelope | null | undefined) {
-  return envelope?.result ?? null;
-}
-
-export function conformanceSuiteResult(
-  envelope: CTAP23ConformanceEnvelope | null | undefined,
-): SuiteResult | null {
   return envelope?.result ?? null;
 }
 
