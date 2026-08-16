@@ -6,12 +6,14 @@ import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
 import {
   DecodeMode,
   EntryState,
+  MutationOperation,
   ReadState,
 } from "../../bindings/github.com/telesma-app/kit/model/largeblobs";
 import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
 import type {
   LargeBlobDecodeEnvelope,
   LargeBlobListEnvelope,
+  LargeBlobMutationEnvelope,
   LargeBlobReadEnvelope,
 } from "../../bindings/telesma/service";
 
@@ -19,12 +21,23 @@ import { api } from "$lib/api";
 import {
   completeLargeBlobsInventoryLoad,
   largeBlobsDecodeState,
+  largeBlobsMutation,
   largeBlobsReadState,
   largeBlobsSelectedEntryIndex,
+  passkeyLargeBlobState,
   resetLargeBlobsStateForTest,
 } from "$lib/features/largeblobs/state";
 import { resetAuthenticatorStateForTest } from "$lib/features/authenticator/state";
-import { selectLargeBlobEntry, setLargeBlobsDecodeMode } from "$lib/largeblobs-controller";
+import {
+  beginPasskeyLargeBlobWrite,
+  checkPasskeyLargeBlob,
+  confirmLargeBlobWrite,
+  previewLargeBlobWrite,
+  selectLargeBlobEntry,
+  setLargeBlobsDecodeMode,
+  setLargeBlobsPayloadEncoding,
+  updateLargeBlobWriteDraft,
+} from "$lib/largeblobs-controller";
 import { resetWorkbenchStateForTest } from "$lib/features/workbench/state";
 import { setAppLocale } from "$lib/i18n";
 import { failureForCode } from "$lib/test-support/failure";
@@ -197,5 +210,138 @@ describe("large blob entry controller", () => {
 
     expect(await selectLargeBlobEntry(2)).toBe(true);
     expect(get(largeBlobsReadState)).toMatchObject({ phase: "ready", entryIndex: 2 });
+  });
+});
+
+describe("passkey-associated data controller", () => {
+  it("opens decodable data as UTF-8 and switches representations losslessly", async () => {
+    vi.spyOn(api, "readLargeBlob").mockResolvedValue(readEnvelope());
+
+    expect(await checkPasskeyLargeBlob("cafe", VerificationFlow.VerificationFlowPIN)).toBe(true);
+    expect(get(passkeyLargeBlobState)).toMatchObject({
+      phase: "ready",
+      credentialIDHex: "cafe",
+      state: ReadState.ReadStatePresent,
+      draft: { payload: "hello", encoding: "utf8" },
+    });
+    expect(beginPasskeyLargeBlobWrite("cafe", VerificationFlow.VerificationFlowPIN)).toBe(true);
+
+    expect(setLargeBlobsPayloadEncoding("hex")).toBe(true);
+    expect(get(largeBlobsMutation)).toMatchObject({
+      kind: "write",
+      draft: { payload: "68656c6c6f", encoding: "hex" },
+    });
+
+    expect(setLargeBlobsPayloadEncoding("utf8")).toBe(true);
+    expect(get(largeBlobsMutation)).toMatchObject({
+      kind: "write",
+      draft: { payload: "hello", encoding: "utf8" },
+    });
+  });
+
+  it("creates a write preview for a credential without an existing array entry", async () => {
+    vi.spyOn(api, "readLargeBlob").mockResolvedValue({
+      ...readEnvelope(),
+      result: {
+        ...readEnvelope().result!,
+        state: ReadState.ReadStateMissing,
+        rawHex: undefined,
+        rawByteCount: 0,
+      },
+    });
+    const write = vi.spyOn(api, "writeLargeBlob").mockResolvedValue({
+      operationId: "write-preview-1",
+      selectionId: "authenticator-1",
+      kind: OperationKind.WriteLargeBlob,
+      authenticatorClosed: false,
+      result: {
+        preview: {
+          operation: MutationOperation.MutationCreate,
+          device: testHIDDevice(),
+          support: { largeBlobs: true, largeBlobKeyExtension: true },
+          target: {
+            credentialIDHex: "cafe",
+            rp: { id: "example.test" },
+            user: {},
+          },
+          largeBlobKeyState: "available",
+          currentByteCount: 0,
+          proposedByteCount: 5,
+          serializedLargeBlobArraySizeBefore: 0,
+          serializedLargeBlobArraySizeAfter: 64,
+          blobCountBefore: 0,
+          blobCountAfter: 1,
+          noBlob: true,
+        },
+        result: null,
+      },
+    } as LargeBlobMutationEnvelope);
+
+    expect(await checkPasskeyLargeBlob("cafe", VerificationFlow.VerificationFlowPIN)).toBe(true);
+    expect(get(passkeyLargeBlobState)).toMatchObject({
+      phase: "ready",
+      credentialIDHex: "cafe",
+      state: ReadState.ReadStateMissing,
+    });
+    expect(beginPasskeyLargeBlobWrite("cafe", VerificationFlow.VerificationFlowPIN)).toBe(true);
+
+    const mutation = get(largeBlobsMutation);
+
+    expect(mutation).toMatchObject({
+      kind: "write",
+      entryIndex: null,
+      credentialIDHex: "cafe",
+      verificationFlow: VerificationFlow.VerificationFlowPIN,
+      existing: false,
+      operation: { phase: "editing" },
+    });
+    updateLargeBlobWriteDraft({ payload: "hello" });
+    expect(await previewLargeBlobWrite()).toBe(true);
+    expect(write).toHaveBeenCalledWith({
+      verificationFlow: VerificationFlow.VerificationFlowPIN,
+      credentialIDHex: "cafe",
+      payload: "aGVsbG8=",
+      dryRun: true,
+    });
+    expect(get(largeBlobsMutation)).toMatchObject({ operation: { phase: "review" } });
+
+    const reviewed = get(largeBlobsMutation);
+
+    if (reviewed.kind !== "write" || reviewed.operation.phase !== "review") {
+      throw new Error("write preview not ready");
+    }
+
+    write.mockResolvedValueOnce({
+      operationId: "write-execution-1",
+      selectionId: "authenticator-1",
+      kind: OperationKind.WriteLargeBlob,
+      authenticatorClosed: false,
+      result: {
+        preview: reviewed.operation.previewValue,
+        result: {
+          operation: MutationOperation.MutationCreate,
+          attachmentId: testHIDDevice().attachment.id,
+          credentialIDHex: "cafe",
+          rpID: "example.test",
+          currentByteCount: 0,
+          proposedByteCount: 5,
+          serializedLargeBlobArraySizeBefore: 0,
+          serializedLargeBlobArraySizeAfter: 64,
+          blobCountBefore: 0,
+          blobCountAfter: 1,
+          noBlob: false,
+        },
+      },
+    } as LargeBlobMutationEnvelope);
+
+    expect(await confirmLargeBlobWrite()).toBe(true);
+    expect(get(passkeyLargeBlobState)).toMatchObject({
+      phase: "ready",
+      credentialIDHex: "cafe",
+      state: ReadState.ReadStatePresent,
+      rawByteCount: 5,
+      draft: { payload: "hello", encoding: "utf8" },
+    });
+    expect(get(largeBlobsMutation)).toMatchObject({ kind: "idle" });
   });
 });

@@ -137,10 +137,8 @@
           originInvalid={fieldInvalid("get.clientData.origin")}
           challengeInvalid={fieldInvalid("get.clientData.challenge")}
           topOriginInvalid={fieldInvalid("get.clientData.topOrigin")}
-          warning={draft.clientData.mode === "raw" &&
-          warnings.some((issue) => issue.field === "get.clientData.rawJSON")
-            ? m.lab_raw_json_warning()
-            : null}
+          rawInvalid={draft.clientData.mode === "raw" &&
+            warnings.some((issue) => issue.field === "get.clientData.rawJSON")}
           onModeChange={(mode, rawJSON) =>
             updateClientData(rawJSON === undefined ? { mode } : { mode, rawJSON })}
           onOriginChange={(origin) => updateClientData({ origin })}

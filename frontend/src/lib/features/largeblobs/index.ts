@@ -16,6 +16,8 @@ export const largeBlobsDecodeState = readonly(state.largeBlobsDecodeState);
 
 export const largeBlobsReadState = readonly(state.largeBlobsReadState);
 
+export const passkeyLargeBlobState = readonly(state.passkeyLargeBlobState);
+
 export const largeBlobsMutation = readonly(state.largeBlobsMutation);
 
 export const largeBlobsQuery = readonly(state.largeBlobsQuery);
@@ -33,6 +35,7 @@ export type {
   LargeBlobsInventoryPhase,
   LargeBlobsInventoryState,
   LargeBlobsStatusFilter,
+  PasskeyLargeBlobState,
 } from "$lib/features/largeblobs/state.js";
 export type { LargeBlobPayloadEncoding } from "$lib/largeblobs-payload.js";
 
@@ -46,6 +49,9 @@ export {
 
 export {
   beginLargeBlobWrite,
+  beginPasskeyLargeBlobDelete,
+  beginPasskeyLargeBlobWrite,
+  checkPasskeyLargeBlob,
   closeLargeBlobMutation,
   confirmLargeBlobCleanup,
   confirmLargeBlobDelete,

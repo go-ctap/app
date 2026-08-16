@@ -5,6 +5,7 @@ import {
   DecodeMode,
   MutationOperation,
   ReadState,
+  type MutationResult,
 } from "../../bindings/github.com/telesma-app/kit/model/largeblobs";
 import type {
   LargeBlobDecodeEnvelope,
@@ -31,6 +32,7 @@ import {
   completeLargeBlobsInventoryLoad,
   failLargeBlobsInventoryLoadAtRuntime,
   failLargeBlobsInventoryLoadWithResponse,
+  invalidateLargeBlobArrayInventory,
   largeBlobsDecodeState,
   largeBlobsDecodeMode,
   largeBlobsInventoryState,
@@ -41,6 +43,7 @@ import {
   largeBlobsSelectedEntryIndex,
   largeBlobsStatusFilter,
   largeBlobsVerificationFlow,
+  passkeyLargeBlobState,
   resetLargeBlobReadState,
   resetLargeBlobsDeviceState,
   type LargeBlobMutationState,
@@ -50,6 +53,7 @@ import {
 import { selectedSelector, authenticatorStatus } from "$lib/features/authenticator/state.js";
 import { activeScreen } from "$lib/features/workbench/state.js";
 import {
+  convertLargeBlobPayload,
   parseLargeBlobPayload,
   type LargeBlobPayloadEncoding,
   type LargeBlobPayloadValidationError,
@@ -199,21 +203,31 @@ export async function setLargeBlobsDecodeMode(value: DecodeMode): Promise<boolea
 }
 
 export function setLargeBlobsPayloadEncoding(value: LargeBlobPayloadEncoding) {
-  largeBlobsPayloadEncoding.set(value);
-
   const current = get(largeBlobsMutation);
 
-  if (current.kind !== "write") return;
+  if (current.kind !== "write") {
+    largeBlobsPayloadEncoding.set(value);
+
+    return true;
+  }
+
+  const payload = convertLargeBlobPayload(current.draft.payload, current.draft.encoding, value);
+
+  if (payload === null) return false;
+
+  largeBlobsPayloadEncoding.set(value);
 
   largeBlobsMutation.set(
     editingLargeBlobWrite(
       {
         ...writeMutationBase(current),
-        draft: { ...current.draft, encoding: value },
+        draft: { payload, encoding: value },
       },
       null,
     ),
   );
+
+  return true;
 }
 
 function reportForActions() {
@@ -249,12 +263,18 @@ function writeMutationBase(current: Extract<LargeBlobMutationState, { kind: "wri
     kind: "write" as const,
     entryIndex: current.entryIndex,
     credentialIDHex: current.credentialIDHex,
+    verificationFlow: current.verificationFlow,
+    existing: current.existing,
     draft: current.draft,
   };
 }
 
-function deleteMutationBase(entryIndex: number, credentialIDHex: string) {
-  return { kind: "delete" as const, entryIndex, credentialIDHex };
+function deleteMutationBase(
+  entryIndex: number | null,
+  credentialIDHex: string,
+  verificationFlow: VerificationFlow,
+) {
+  return { kind: "delete" as const, entryIndex, credentialIDHex, verificationFlow };
 }
 
 function cleanupMutationBase() {
@@ -269,6 +289,12 @@ function editingLargeBlobWrite(
     ...base,
     operation: editingConfirmedOperation(validationError),
   };
+}
+
+function writeDraftFromRawHex(rawHex: string): LargeBlobWriteDraft {
+  const payload = convertLargeBlobPayload(rawHex, "hex", "utf8");
+
+  return payload === null ? { payload: rawHex, encoding: "hex" } : { payload, encoding: "utf8" };
 }
 
 function readError(
@@ -380,6 +406,67 @@ export async function readLargeBlob(
   return true;
 }
 
+function passkeyLargeBlobError(
+  credentialIDHex: string,
+  responseEnvelope: LargeBlobReadEnvelope | null,
+  runtimeError: ReturnType<typeof runtimeFailureFrom> | null,
+) {
+  passkeyLargeBlobState.set({
+    phase: "error",
+    credentialIDHex,
+    responseEnvelope,
+    runtimeError,
+  });
+}
+
+export async function checkPasskeyLargeBlob(
+  credentialIDHex: string,
+  verificationFlow: VerificationFlow,
+): Promise<boolean> {
+  const request: LargeBlobReadRequest = { verificationFlow, credentialIDHex };
+
+  passkeyLargeBlobState.set({ phase: "loading", credentialIDHex });
+
+  const label = m.large_blob_read();
+  const attempt = await runOperation({
+    label,
+    call: () => api.readLargeBlob(request),
+    onRuntimeFailure: (error) => passkeyLargeBlobError(credentialIDHex, null, error),
+  });
+
+  if (!attempt.ok) return false;
+
+  const envelope = attempt.envelope;
+
+  if (envelope.error) {
+    passkeyLargeBlobError(credentialIDHex, envelope, null);
+  } else {
+    const report = largeBlobReadReport(envelope)!;
+
+    passkeyLargeBlobState.set(
+      report.state === ReadState.ReadStatePresent
+        ? {
+            phase: "ready",
+            credentialIDHex,
+            state: ReadState.ReadStatePresent,
+            rawByteCount: report.rawByteCount,
+            draft: writeDraftFromRawHex(report.rawHex ?? ""),
+          }
+        : {
+            phase: "ready",
+            credentialIDHex,
+            state: ReadState.ReadStateMissing,
+            rawByteCount: 0,
+            draft: null,
+          },
+    );
+  }
+
+  completeOperation(label, envelope);
+
+  return !envelope.error;
+}
+
 export function buildLargeBlobDeletePreviewRequest(
   verificationFlow: VerificationFlow,
   credentialIDHex: string,
@@ -414,16 +501,7 @@ export function beginLargeBlobWrite(entryIndex = get(largeBlobsSelectedEntryInde
 
   if (!report || report.state !== ReadState.ReadStatePresent) return false;
 
-  let draft: LargeBlobWriteDraft = { payload: report.rawHex ?? "", encoding: "hex" };
-  const decodeState = get(largeBlobsDecodeState);
-
-  if (
-    decodeState.phase === "ready" &&
-    decodeState.entryIndex === entryIndex &&
-    decodeState.mode === DecodeMode.DecodeModeUTF8
-  ) {
-    draft = { payload: decodeState.value.text ?? "", encoding: "utf8" };
-  }
+  const draft = writeDraftFromRawHex(report.rawHex ?? "");
 
   largeBlobsSelectedEntryIndex.set(entryIndex);
   largeBlobsMutation.set(
@@ -432,6 +510,38 @@ export function beginLargeBlobWrite(entryIndex = get(largeBlobsSelectedEntryInde
         kind: "write" as const,
         entryIndex,
         credentialIDHex: entry.target.credentialIDHex,
+        verificationFlow: get(largeBlobsVerificationFlow),
+        existing: true,
+        draft,
+      },
+      null,
+    ),
+  );
+
+  return true;
+}
+
+export function beginPasskeyLargeBlobWrite(
+  credentialIDHex: string,
+  verificationFlow: VerificationFlow,
+) {
+  const state = get(passkeyLargeBlobState);
+
+  if (state.phase !== "ready" || state.credentialIDHex !== credentialIDHex) return false;
+
+  const existing = state.state === ReadState.ReadStatePresent;
+  const draft = existing
+    ? state.draft
+    : ({ payload: "", encoding: get(largeBlobsPayloadEncoding) } satisfies LargeBlobWriteDraft);
+
+  largeBlobsMutation.set(
+    editingLargeBlobWrite(
+      {
+        kind: "write" as const,
+        entryIndex: null,
+        credentialIDHex,
+        verificationFlow,
+        existing,
         draft,
       },
       null,
@@ -485,8 +595,6 @@ export async function previewLargeBlobWrite(): Promise<boolean> {
   )
     return false;
 
-  if (!entryForMutation(current.entryIndex)) return false;
-
   const payload = parseLargeBlobPayload(current.draft.payload, current.draft.encoding);
 
   if (!payload.ok) {
@@ -496,7 +604,7 @@ export async function previewLargeBlobWrite(): Promise<boolean> {
   }
 
   const request: LargeBlobWriteRequest = {
-    verificationFlow: get(largeBlobsVerificationFlow),
+    verificationFlow: current.verificationFlow,
     credentialIDHex: current.credentialIDHex,
     payload: payload.base64,
     dryRun: true,
@@ -523,14 +631,35 @@ export async function beginLargeBlobDelete(
 
   const credentialIDHex = entry.target.credentialIDHex;
 
-  const request = buildLargeBlobDeletePreviewRequest(
-    get(largeBlobsVerificationFlow),
-    credentialIDHex,
-  );
+  return previewLargeBlobDelete(entryIndex, credentialIDHex, get(largeBlobsVerificationFlow));
+}
 
-  largeBlobsSelectedEntryIndex.set(entryIndex);
+export async function beginPasskeyLargeBlobDelete(
+  credentialIDHex: string,
+  verificationFlow: VerificationFlow,
+): Promise<boolean> {
+  const state = get(passkeyLargeBlobState);
 
-  const base = deleteMutationBase(entryIndex, credentialIDHex);
+  if (
+    state.phase !== "ready" ||
+    state.credentialIDHex !== credentialIDHex ||
+    state.state !== ReadState.ReadStatePresent
+  )
+    return false;
+
+  return previewLargeBlobDelete(null, credentialIDHex, verificationFlow);
+}
+
+async function previewLargeBlobDelete(
+  entryIndex: number | null,
+  credentialIDHex: string,
+  verificationFlow: VerificationFlow,
+) {
+  const request = buildLargeBlobDeletePreviewRequest(verificationFlow, credentialIDHex);
+
+  if (entryIndex !== null) largeBlobsSelectedEntryIndex.set(entryIndex);
+
+  const base = deleteMutationBase(entryIndex, credentialIDHex, verificationFlow);
 
   return runConfirmedPreview({
     label: m.large_blob_delete(),
@@ -546,6 +675,13 @@ export async function beginLargeBlobDelete(
       ),
     onSkipped: () => {
       largeBlobsMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
+      passkeyLargeBlobState.set({
+        phase: "ready",
+        credentialIDHex,
+        state: ReadState.ReadStateMissing,
+        rawByteCount: 0,
+        draft: null,
+      });
       setStatusOutcome({
         tone: "info",
         title: m.large_blob_delete(),
@@ -581,6 +717,12 @@ export async function beginLargeBlobCleanup(): Promise<boolean> {
 }
 
 async function refreshAfterMutation() {
+  if (get(activeScreen) !== "large-blobs") {
+    invalidateLargeBlobArrayInventory();
+
+    return;
+  }
+
   largeBlobsMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
   largeBlobsSelectedEntryIndex.set(null);
   resetLargeBlobReadState();
@@ -596,6 +738,7 @@ type LargeBlobExecutionOptions<TRequest extends LargeBlobExecutionRequest> = {
     | ConfirmedOperationReview<TRequest, LargeBlobMutationEnvelope>
     | ConfirmedOperationError<TRequest, LargeBlobMutationEnvelope>;
   call: (request: TRequest) => Promise<LargeBlobMutationEnvelope>;
+  onSuccess?: (result: MutationResult) => void;
   publish: (
     operation:
       | ConfirmedOperationExecuting<TRequest, LargeBlobMutationEnvelope>
@@ -607,6 +750,7 @@ async function executeReviewedLargeBlobMutation<TRequest extends LargeBlobExecut
   label,
   operation,
   call,
+  onSuccess,
   publish,
 }: LargeBlobExecutionOptions<TRequest>): Promise<boolean> {
   const succeeded = await runConfirmedExecution({
@@ -614,6 +758,7 @@ async function executeReviewedLargeBlobMutation<TRequest extends LargeBlobExecut
     operation,
     call,
     extract: largeBlobMutationResult,
+    onSuccess,
     publish,
   });
 
@@ -639,6 +784,14 @@ export async function confirmLargeBlobWrite(): Promise<boolean> {
     label: m.large_blob_write(),
     operation: current.operation,
     call: api.writeLargeBlob,
+    onSuccess: (result) =>
+      passkeyLargeBlobState.set({
+        phase: "ready",
+        credentialIDHex: current.credentialIDHex,
+        state: ReadState.ReadStatePresent,
+        rawByteCount: result.proposedByteCount,
+        draft: current.draft,
+      }),
     publish: (operation) => largeBlobsMutation.set({ ...base, operation }),
   });
 }
@@ -652,12 +805,24 @@ export async function confirmLargeBlobDelete(): Promise<boolean> {
   )
     return false;
 
-  const base = deleteMutationBase(current.entryIndex, current.credentialIDHex);
+  const base = deleteMutationBase(
+    current.entryIndex,
+    current.credentialIDHex,
+    current.verificationFlow,
+  );
 
   return executeReviewedLargeBlobMutation({
     label: m.large_blob_delete(),
     operation: current.operation,
     call: api.deleteLargeBlob,
+    onSuccess: () =>
+      passkeyLargeBlobState.set({
+        phase: "ready",
+        credentialIDHex: current.credentialIDHex,
+        state: ReadState.ReadStateMissing,
+        rawByteCount: 0,
+        draft: null,
+      }),
     publish: (operation) => largeBlobsMutation.set({ ...base, operation }),
   });
 }

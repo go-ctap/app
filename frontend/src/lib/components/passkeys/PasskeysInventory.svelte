@@ -8,6 +8,7 @@
   import { Badge } from "$lib/components/ui/badge";
   import { Button } from "$lib/components/ui/button";
   import { Skeleton } from "$lib/components/ui/skeleton";
+  import type { PasskeyLargeBlobState } from "$lib/features/largeblobs/state";
   import type { PasskeysStatusFilter } from "$lib/features/passkeys/state";
   import type { PasskeyCredentialRow, PasskeysPresentation } from "$lib/passkeys-presentation";
 
@@ -22,6 +23,11 @@
     onSelect: (credentialID: string) => void;
     onEdit: (credentialID: string) => void;
     onDelete: (credentialID: string) => void | Promise<boolean>;
+    largeBlobState: PasskeyLargeBlobState;
+    largeBlobDisabled: boolean;
+    onLargeBlobCheck: (credentialID: string) => void | Promise<boolean>;
+    onLargeBlobWrite: (credentialID: string) => void;
+    onLargeBlobDelete: (credentialID: string) => void | Promise<boolean>;
     onOpenLab: () => void;
     onReload: () => void | Promise<boolean>;
   };
@@ -33,6 +39,11 @@
     onSelect,
     onEdit,
     onDelete,
+    largeBlobState,
+    largeBlobDisabled,
+    onLargeBlobCheck,
+    onLargeBlobWrite,
+    onLargeBlobDelete,
     onOpenLab,
     onReload,
   }: Props = $props();
@@ -225,9 +236,14 @@
               {row}
               updateDisabled={presentation.updateDisabled}
               deleteDisabled={presentation.deleteDisabled}
+              {largeBlobState}
+              {largeBlobDisabled}
               previewOnly={Boolean(presentation.report?.support.previewOnly)}
               {onEdit}
               {onDelete}
+              {onLargeBlobCheck}
+              {onLargeBlobWrite}
+              {onLargeBlobDelete}
             />
           {/snippet}
         </ExpandableDataTable.Row>

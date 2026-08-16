@@ -1,11 +1,16 @@
 import { cleanup, render, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { Nfc, Usb } from "@lucide/svelte";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import AppSidebar from "$lib/components/shell/AppSidebar.svelte";
+import { setAdvancedMode } from "$lib/preferences";
 
 describe("AppSidebar", () => {
+  beforeEach(() => {
+    setAdvancedMode(false);
+  });
+
   afterEach(() => {
     cleanup();
   });
@@ -30,29 +35,43 @@ describe("AppSidebar", () => {
 
     expect(
       screen.getAllByRole("button").map((button) => button.getAttribute("aria-label")),
-    ).toEqual([
-      "Overview",
-      "Passkeys",
-      "Large blobs",
-      "Security",
-      "WebAuthn Lab",
-      "Logs",
-      "Settings",
-    ]);
+    ).toEqual(["Overview", "Passkeys", "Security", "WebAuthn Lab", "Logs", "Settings"]);
 
     await user.click(screen.getByRole("button", { name: "Passkeys" }));
     await user.click(screen.getByRole("button", { name: "WebAuthn Lab" }));
-    await user.click(screen.getByRole("button", { name: "Large blobs" }));
     await user.click(screen.getByRole("button", { name: "Security" }));
     await user.click(screen.getByRole("button", { name: "Logs" }));
     await user.click(screen.getByRole("button", { name: "Settings" }));
 
     expect(onNavigate).toHaveBeenCalledWith("passkeys");
     expect(onNavigate).toHaveBeenCalledWith("lab");
-    expect(onNavigate).toHaveBeenCalledWith("large-blobs");
     expect(onNavigate).toHaveBeenCalledWith("security");
     expect(onNavigate).toHaveBeenCalledWith("logs");
     expect(onNavigate).toHaveBeenCalledWith("settings");
+  });
+
+  it("reveals physical large-blob diagnostics only in Advanced Mode", async () => {
+    const user = userEvent.setup();
+    const onNavigate = vi.fn();
+
+    setAdvancedMode(true);
+    render(AppSidebar, {
+      props: {
+        presentation: {
+          activeScreen: "overview",
+          activeScreenLabel: "Overview",
+          tokens: [],
+          selectedValue: "",
+          busy: false,
+        },
+        onNavigate,
+        onSelectToken: vi.fn(),
+      },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Large blobs" }));
+
+    expect(onNavigate).toHaveBeenCalledWith("large-blobs");
   });
 
   it("selects a discovered token from the persistent token section", async () => {

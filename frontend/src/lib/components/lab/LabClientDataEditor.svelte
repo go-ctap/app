@@ -1,13 +1,14 @@
 <script lang="ts">
   import { RefreshCw } from "@lucide/svelte";
 
-  import * as Alert from "$lib/components/ui/alert";
+  import JsonEditor from "$lib/components/shared/JsonEditor.svelte";
   import * as Field from "$lib/components/ui/field";
   import { Input } from "$lib/components/ui/input";
   import * as InputGroup from "$lib/components/ui/input-group";
   import { Switch } from "$lib/components/ui/switch";
   import * as ToggleGroup from "$lib/components/ui/toggle-group";
   import type { LabClientDataMode } from "$lib/features/lab/state";
+  import { formatJSON } from "$lib/json-source";
   import { buildClientDataJSON, type LabClientDataOperation } from "$lib/lab-input";
 
   import { m } from "../../../paraglide/messages.js";
@@ -25,7 +26,7 @@
     originInvalid?: boolean;
     challengeInvalid?: boolean;
     topOriginInvalid?: boolean;
-    warning?: string | null;
+    rawInvalid?: boolean;
     onModeChange: (value: LabClientDataMode, generatedRawValue?: string) => void;
     onOriginChange: (value: string) => void;
     onChallengeChange: (value: string) => void;
@@ -49,7 +50,7 @@
     originInvalid = false,
     challengeInvalid = false,
     topOriginInvalid = false,
-    warning = null,
+    rawInvalid = false,
     onModeChange,
     onOriginChange,
     onChallengeChange,
@@ -70,16 +71,13 @@
       topOrigin,
     }),
   );
+  let generatedEditorValue = $derived(formatJSON(generatedValue)!);
 
   function handleModeChange(next: string | string[]) {
     if (Array.isArray(next) || !next) return;
 
-    if (next === "raw") onModeChange(next, generatedValue);
+    if (next === "raw") onModeChange(next, generatedEditorValue);
     else if (next === "builder") onModeChange(next);
-  }
-
-  function handleRawInput(event: Event) {
-    onRawChange((event.currentTarget as HTMLTextAreaElement).value);
   }
 
   function handleSingleLineKeydown(event: KeyboardEvent) {
@@ -186,30 +184,26 @@
       </Field.Group>
     {/if}
 
-    <Field.Field data-disabled={disabled || mode === "builder"}>
-      <Field.Label for={`${id}-json`}>
+    <Field.Field
+      data-disabled={disabled || mode === "builder"}
+      data-invalid={mode === "raw" && rawInvalid}
+    >
+      <Field.Label id={`${id}-json-label`}>
         {mode === "builder" ? m.lab_generated_client_data() : m.lab_raw_client_data()}
       </Field.Label>
-      <InputGroup.Root>
-        <InputGroup.Textarea
-          id={`${id}-json`}
-          value={mode === "builder" ? generatedValue : rawValue}
-          rows={8}
-          spellcheck="false"
-          disabled={disabled || mode === "builder"}
-          oninput={handleRawInput}
-        />
-      </InputGroup.Root>
+      <JsonEditor
+        id={`${id}-json`}
+        labelledBy={`${id}-json-label`}
+        value={mode === "builder" ? generatedEditorValue : rawValue}
+        minLines={8}
+        disabled={disabled || mode === "builder"}
+        invalid={mode === "raw" && rawInvalid}
+        onChange={onRawChange}
+      />
       {#if mode === "builder"}
         <Field.Description>{m.lab_generated_client_data_description()}</Field.Description>
       {/if}
     </Field.Field>
-
-    {#if mode === "raw" && warning}
-      <Alert.Root variant="warning" role="status">
-        <Alert.Description>{warning}</Alert.Description>
-      </Alert.Root>
-    {/if}
   </Field.Group>
 </Field.Set>
 

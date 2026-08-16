@@ -382,7 +382,7 @@
     }
     .main-view-content {
       width: 100%;
-      max-width: 96rem;
+      max-width: 72rem;
       min-width: 0;
       min-height: 100%;
       margin-inline: auto;

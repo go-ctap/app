@@ -10,6 +10,7 @@
   };
 
   let { issues, severity }: Props = $props();
+  let visibleIssues = $derived(issues.filter((issue) => issue.code !== "invalid-json"));
 
   function fieldLabel(field: string) {
     if (field.endsWith("rpID")) return m.lab_rp_id();
@@ -69,8 +70,6 @@
 
     if (issue.code === "user-id-too-long") return m.lab_user_id_too_long();
 
-    if (issue.code === "invalid-json") return m.lab_raw_json_warning();
-
     if (issue.code === "invalid-length") return m.lab_invalid_length();
 
     if (issue.code === "too-long") return m.lab_value_too_long();
@@ -87,7 +86,7 @@
   }
 </script>
 
-{#if issues.length}
+{#if visibleIssues.length}
   <Alert.Root
     variant={severity === "error" ? "destructive" : "warning"}
     role={severity === "error" ? "alert" : "status"}
@@ -97,7 +96,7 @@
     >
     <Alert.Description>
       <ul class="lab-validation-list">
-        {#each issues as issue, index (`${issue.field}-${issue.code}-${index}`)}
+        {#each visibleIssues as issue, index (`${issue.field}-${issue.code}-${index}`)}
           <li><strong>{fieldLabel(issue.field)}:</strong> {issueMessage(issue)}</li>
         {/each}
       </ul>

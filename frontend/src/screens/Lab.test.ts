@@ -74,6 +74,10 @@ function extensionCard(scope: HTMLElement, title: string) {
     .closest('[data-slot="card"]') as HTMLElement;
 }
 
+function codeMirrorValue(editor: HTMLElement) {
+  return Array.from(editor.querySelectorAll(".cm-line"), (line) => line.textContent).join("\n");
+}
+
 describe("WebAuthn Lab screen", () => {
   beforeEach(() => {
     setAppLocale("en");
@@ -478,10 +482,12 @@ describe("WebAuthn Lab screen", () => {
     expect(within(clientData).getByLabelText("Challenge")).toBeInTheDocument();
     expect(within(clientData).getByText("webauthn.create")).toBeInTheDocument();
 
-    const generated = within(clientData).getByLabelText("Generated clientDataJSON");
+    const generated = await within(clientData).findByRole("textbox", {
+      name: "Generated clientDataJSON",
+    });
 
-    expect(generated).toBeDisabled();
-    expect((generated as HTMLTextAreaElement).value).toContain('"type":"webauthn.create"');
+    expect(generated).toHaveAttribute("aria-disabled", "true");
+    expect(generated).toHaveTextContent('"type": "webauthn.create"');
 
     const crossOrigin = within(clientData).getByRole("switch", { name: "crossOrigin" });
 
@@ -491,16 +497,18 @@ describe("WebAuthn Lab screen", () => {
     await user.click(crossOrigin);
     expect(crossOrigin).toBeChecked();
     expect(within(clientData).getByLabelText("topOrigin")).toHaveValue("https://example.com");
-    expect((generated as HTMLTextAreaElement).value).toContain('"topOrigin":"https://example.com"');
+    expect(generated).toHaveTextContent('"topOrigin": "https://example.com"');
 
-    const generatedValue = (generated as HTMLTextAreaElement).value;
+    const generatedValue = JSON.parse(codeMirrorValue(generated));
 
     await user.click(within(clientData).getByRole("radio", { name: "Exact UTF-8 bytes" }));
     expect(within(clientData).queryByLabelText("Origin")).not.toBeInTheDocument();
     expect(within(clientData).queryByLabelText("Challenge")).not.toBeInTheDocument();
-    expect(within(clientData).getByLabelText("Exact clientDataJSON bytes (UTF-8)")).toHaveValue(
-      generatedValue,
-    );
+    const raw = await within(clientData).findByRole("textbox", {
+      name: "Exact clientDataJSON bytes (UTF-8)",
+    });
+
+    expect(JSON.parse(codeMirrorValue(raw))).toEqual(generatedValue);
     expect(within(clientData).getByText(/without normalization/)).toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "GetAssertion" }));
@@ -513,7 +521,7 @@ describe("WebAuthn Lab screen", () => {
     expect(within(assertionClientData).getByText("webauthn.get")).toBeInTheDocument();
   });
 
-  it("runs the primary action on single-line Enter but preserves textarea Enter", async () => {
+  it("runs the primary action on single-line Enter but preserves editor Enter", async () => {
     const user = userEvent.setup();
 
     selectToken();
@@ -538,12 +546,14 @@ describe("WebAuthn Lab screen", () => {
     await tick();
     expect(within(make).getByRole("heading", { name: "clientDataJSON" })).toBeInTheDocument();
 
-    const raw = within(make).getByLabelText("Exact clientDataJSON bytes (UTF-8)");
+    const raw = await within(make).findByRole("textbox", {
+      name: "Exact clientDataJSON bytes (UTF-8)",
+    });
 
-    expect(await fireEvent.keyDown(raw, { key: "Enter" })).toBe(true);
+    expect(await fireEvent.keyDown(raw, { key: "Enter" })).toBe(false);
     expect(controllerMocks.previewMakeCredential).not.toHaveBeenCalled();
 
-    expect(await fireEvent.keyDown(raw, { key: "Enter", ctrlKey: true })).toBe(true);
+    expect(await fireEvent.keyDown(raw, { key: "Enter", ctrlKey: true })).toBe(false);
     expect(controllerMocks.previewMakeCredential).not.toHaveBeenCalled();
   });
 

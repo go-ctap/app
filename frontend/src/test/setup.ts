@@ -67,3 +67,17 @@ if (!("ResizeObserver" in globalThis)) {
     configurable: true,
   });
 }
+
+if (!Range.prototype.getClientRects) {
+  Object.defineProperty(Range.prototype, "getClientRects", {
+    value: () => [],
+    configurable: true,
+  });
+}
+
+if (!Range.prototype.getBoundingClientRect) {
+  Object.defineProperty(Range.prototype, "getBoundingClientRect", {
+    value: () => new DOMRect(),
+    configurable: true,
+  });
+}

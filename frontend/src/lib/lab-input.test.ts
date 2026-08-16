@@ -197,6 +197,18 @@ describe("WebAuthn Lab client data and validation", () => {
 
     expect(base64ToUTF8(request.clientDataJSON)).toBe("{not JSON}\nПривет");
   });
+
+  it("preserves valid raw client data JSON byte-for-byte", () => {
+    const state = createLabState(sequentialRandom());
+    const rawJSON = '{\n  "type": "webauthn.get",\n  "crossOrigin": false\n}';
+
+    state.getDraft.clientData.mode = "raw";
+    state.getDraft.clientData.rawJSON = rawJSON;
+
+    const request = buildGetAssertionRequest(state.getDraft);
+
+    expect(base64ToUTF8(request.clientDataJSON)).toBe(rawJSON);
+  });
 });
 
 describe("WebAuthn Lab request builders", () => {

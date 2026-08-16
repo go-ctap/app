@@ -38,6 +38,12 @@
 
   let operation = $derived(mutation.operation);
 
+  let writeLabel = $derived(
+    mutation.kind === "write" && !mutation.existing
+      ? m.large_blob_attach_data()
+      : m.large_blob_replace_data(),
+  );
+
   let open = $derived(
     mutation.kind === "write" &&
       (operation.phase === "editing" ||
@@ -138,7 +144,7 @@
     <Dialog.Content class="large-blob-write-dialog">
       <ModalScrollArea>
         <Dialog.Header>
-          <Dialog.Title>{m.large_blob_edit()}</Dialog.Title>
+          <Dialog.Title>{writeLabel}</Dialog.Title>
         </Dialog.Header>
 
         <form class="large-blob-write-form" onsubmit={handleSubmit}>
@@ -198,8 +204,7 @@
               <Alert.Title>
                 {failureCanceled
                   ? m.operation_canceled_with_label({
-                      label:
-                        failedPhase === "previewing" ? m.preview_changes() : m.large_blob_edit(),
+                      label: failedPhase === "previewing" ? m.preview_changes() : writeLabel,
                     })
                   : m.operation_failed()}
               </Alert.Title>
@@ -224,7 +229,7 @@
             <Button type="submit">
               {operation.phase === "review" ||
               (operation.phase === "error" && operation.failedPhase === "executing")
-                ? m.save_changes()
+                ? writeLabel
                 : m.preview_changes()}
             </Button>
             <Button variant="outline" type="button" onclick={onClose}>{m.cancel()}</Button>

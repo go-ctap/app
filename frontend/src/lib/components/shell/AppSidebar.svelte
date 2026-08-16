@@ -14,6 +14,7 @@
   import { Button } from "$lib/components/ui/button";
   import { ScrollArea } from "$lib/components/ui/scroll-area";
   import { Spinner } from "$lib/components/ui/spinner";
+  import { advancedMode } from "$lib/preferences";
   import type { SidebarPresentation } from "$lib/shell-presentation";
   import type { ActiveScreen } from "$lib/features/workbench";
 
@@ -61,18 +62,20 @@
     <ScrollArea class="sidebar-nav-scroll">
       <div class="sidebar-nav-list">
         {#each navItems as item (item.id)}
-          <Button
-            type="button"
-            variant={presentation.activeScreen === item.id ? "secondary" : "ghost"}
-            class="sidebar-nav-button"
-            data-active={presentation.activeScreen === item.id ? "true" : undefined}
-            aria-current={presentation.activeScreen === item.id ? "page" : undefined}
-            aria-label={item.label}
-            onclick={() => onNavigate(item.id)}
-          >
-            <item.icon data-icon="inline-start" />
-            <span class="sidebar-nav-label">{item.label}</span>
-          </Button>
+          {#if item.id !== "large-blobs" || $advancedMode}
+            <Button
+              type="button"
+              variant={presentation.activeScreen === item.id ? "secondary" : "ghost"}
+              class="sidebar-nav-button"
+              data-active={presentation.activeScreen === item.id ? "true" : undefined}
+              aria-current={presentation.activeScreen === item.id ? "page" : undefined}
+              aria-label={item.label}
+              onclick={() => onNavigate(item.id)}
+            >
+              <item.icon data-icon="inline-start" />
+              <span class="sidebar-nav-label">{item.label}</span>
+            </Button>
+          {/if}
         {/each}
       </div>
     </ScrollArea>

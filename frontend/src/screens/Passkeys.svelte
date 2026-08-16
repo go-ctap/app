@@ -2,6 +2,8 @@
   import { KeyRound, TriangleAlert } from "@lucide/svelte";
   import { toast } from "svelte-sonner";
 
+  import LargeBlobDestructiveDialog from "$lib/components/largeblobs/LargeBlobDestructiveDialog.svelte";
+  import LargeBlobWriteDialog from "$lib/components/largeblobs/LargeBlobWriteDialog.svelte";
   import PasskeyDeleteDialog from "$lib/components/passkeys/PasskeyDeleteDialog.svelte";
   import PasskeysInventory from "$lib/components/passkeys/PasskeysInventory.svelte";
   import PasskeysOverview from "$lib/components/passkeys/PasskeysOverview.svelte";
@@ -9,6 +11,23 @@
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import * as Alert from "$lib/components/ui/alert";
   import { Button } from "$lib/components/ui/button";
+  import {
+    beginLargeBlobCleanup,
+    beginLargeBlobDelete,
+    beginPasskeyLargeBlobDelete,
+    beginPasskeyLargeBlobWrite,
+    checkPasskeyLargeBlob,
+    closeLargeBlobMutation,
+    confirmLargeBlobCleanup,
+    confirmLargeBlobDelete,
+    confirmLargeBlobWrite,
+    editLargeBlobWrite,
+    largeBlobsMutation,
+    passkeyLargeBlobState,
+    previewLargeBlobWrite,
+    setLargeBlobsPayloadEncoding,
+    updateLargeBlobWriteDraft,
+  } from "$lib/features/largeblobs";
   import {
     beginCredentialDelete,
     beginCredentialUpdate,
@@ -57,6 +76,14 @@
     }),
   );
 
+  let largeBlobDisabled = $derived(
+    passkeys.loading ||
+      $authenticatorBusy ||
+      $authenticatorStatus.state !== "ready" ||
+      !$authenticatorStatus.selectionId ||
+      $largeBlobsMutation.kind !== "idle",
+  );
+
   async function handleReload() {
     const refreshed = await reloadPasskeys();
 
@@ -77,6 +104,44 @@
     const succeeded = await confirmCredentialDelete();
 
     if (succeeded) toast.success(m.credential_deleted());
+
+    return succeeded;
+  }
+
+  function handleLargeBlobCheck(credentialIDHex: string) {
+    return checkPasskeyLargeBlob(credentialIDHex, $passkeysVerificationFlow);
+  }
+
+  function handleLargeBlobWrite(credentialIDHex: string) {
+    return beginPasskeyLargeBlobWrite(credentialIDHex, $passkeysVerificationFlow);
+  }
+
+  function handleLargeBlobDelete(credentialIDHex: string) {
+    return beginPasskeyLargeBlobDelete(credentialIDHex, $passkeysVerificationFlow);
+  }
+
+  async function handlePreviewLargeBlobDelete(entryIndex: number | null) {
+    if (entryIndex !== null) return beginLargeBlobDelete(entryIndex);
+
+    const mutation = $largeBlobsMutation;
+
+    return mutation.kind === "delete"
+      ? beginPasskeyLargeBlobDelete(mutation.credentialIDHex, mutation.verificationFlow)
+      : false;
+  }
+
+  async function handleConfirmLargeBlobWrite() {
+    const succeeded = await confirmLargeBlobWrite();
+
+    if (succeeded) toast.success(m.large_blob_written());
+
+    return succeeded;
+  }
+
+  async function handleConfirmLargeBlobDelete() {
+    const succeeded = await confirmLargeBlobDelete();
+
+    if (succeeded) toast.success(m.large_blob_deleted());
 
     return succeeded;
   }
@@ -129,6 +194,11 @@
         onSelect={selectPasskeyCredential}
         onEdit={beginCredentialUpdate}
         onDelete={beginCredentialDelete}
+        largeBlobState={$passkeyLargeBlobState}
+        {largeBlobDisabled}
+        onLargeBlobCheck={handleLargeBlobCheck}
+        onLargeBlobWrite={handleLargeBlobWrite}
+        onLargeBlobDelete={handleLargeBlobDelete}
         onOpenLab={() => void navigateToScreen("lab")}
         onReload={handleReload}
       />
@@ -149,6 +219,25 @@
     onPreview={beginCredentialDelete}
     onConfirm={handleConfirmDelete}
     onClose={closePasskeysMutation}
+  />
+
+  <LargeBlobWriteDialog
+    mutation={$largeBlobsMutation}
+    onDraftChange={updateLargeBlobWriteDraft}
+    onEncodingChange={setLargeBlobsPayloadEncoding}
+    onEdit={editLargeBlobWrite}
+    onPreview={previewLargeBlobWrite}
+    onConfirm={handleConfirmLargeBlobWrite}
+    onClose={closeLargeBlobMutation}
+  />
+
+  <LargeBlobDestructiveDialog
+    mutation={$largeBlobsMutation}
+    onDeletePreview={handlePreviewLargeBlobDelete}
+    onDeleteConfirm={handleConfirmLargeBlobDelete}
+    onCleanupPreview={beginLargeBlobCleanup}
+    onCleanupConfirm={confirmLargeBlobCleanup}
+    onClose={closeLargeBlobMutation}
   />
 {/if}
 

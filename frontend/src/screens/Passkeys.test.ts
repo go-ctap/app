@@ -6,6 +6,7 @@ import { tick } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { VerificationFlow } from "../../bindings/github.com/telesma-app/kit";
+import { ReadState } from "../../bindings/github.com/telesma-app/kit/model/largeblobs";
 import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
 import type { CredentialTarget } from "../../bindings/github.com/telesma-app/kit/model/credentials";
 import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
@@ -13,8 +14,10 @@ import type {
   CredentialDeleteEnvelope,
   CredentialUpdateEnvelope,
   CredentialsEnvelope,
+  LargeBlobReadEnvelope,
 } from "../../bindings/telesma/service";
 
+import { api } from "$lib/api";
 import {
   failPasskeysInventoryLoadAtRuntime,
   failPasskeysInventoryLoadWithResponse,
@@ -323,6 +326,73 @@ describe("Passkeys", () => {
     await waitFor(() => expect(toastMocks.success).toHaveBeenCalledWith("JSON copied"));
     expect(credential).toHaveAttribute("aria-expanded", "true");
     expect(record).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("reads and attaches data from the selected passkey inspector", async () => {
+    const user = userEvent.setup();
+    const envelope = credentialsEnvelope();
+
+    envelope.result!.groups![0].credentials![0].largeBlobKeyState = "available";
+    vi.spyOn(api, "readLargeBlob").mockResolvedValue({
+      operationId: "large-blob-read-1",
+      selectionId: "authenticator-1",
+      kind: OperationKind.ReadLargeBlob,
+      authenticatorClosed: false,
+      result: {
+        device: testHIDDevice(),
+        target: {
+          credentialIDHex: "cafe",
+          rp: { id: "example.com", name: "Example", idHashHex: "abcd" },
+          user: {
+            userIDHex: "01",
+            name: "user@example.com",
+            displayName: "Example User",
+          },
+        },
+        state: ReadState.ReadStateMissing,
+        rawByteCount: 0,
+      },
+    } as LargeBlobReadEnvelope);
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      selectionId: "authenticator-1",
+    });
+    seedPasskeysEnvelopeForTest(envelope);
+
+    render(Passkeys);
+    await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
+
+    expect(screen.getByRole("heading", { name: "Associated data" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("No data attached")).toBeInTheDocument());
+    expect(api.readLargeBlob).toHaveBeenCalledWith({
+      verificationFlow: VerificationFlow.VerificationFlowDefault,
+      credentialIDHex: "cafe",
+    });
+    expect(screen.queryByRole("button", { name: "Check data" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Attach data" }));
+
+    expect(screen.getByRole("dialog", { name: "Attach data" })).toBeInTheDocument();
+  });
+
+  it("explains why data cannot be attached when largeBlobKey is missing", async () => {
+    const user = userEvent.setup();
+    const envelope = credentialsEnvelope();
+
+    envelope.result!.groups![0].credentials![0].largeBlobKeyState = "missing";
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      selectionId: "authenticator-1",
+    });
+    seedPasskeysEnvelopeForTest(envelope);
+
+    render(Passkeys);
+    await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
+
+    expect(screen.getByText("Unavailable")).toBeInTheDocument();
+    expect(
+      screen.getByText("This passkey has no large-blob key, so data cannot be attached later."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Check data" })).not.toBeInTheDocument();
   });
 
   it("removes the raw JSON region and its divider when Advanced Mode is disabled", async () => {

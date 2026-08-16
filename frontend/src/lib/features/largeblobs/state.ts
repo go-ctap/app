@@ -4,6 +4,7 @@ import { VerificationFlow } from "../../../../bindings/github.com/telesma-app/ki
 import { Code, type Failure } from "../../../../bindings/github.com/telesma-app/kit/model/failure";
 import {
   DecodeMode,
+  ReadState,
   type DecodeResult,
   type ListReport,
 } from "../../../../bindings/github.com/telesma-app/kit/model/largeblobs";
@@ -94,17 +95,44 @@ export type LargeBlobWriteDraft = {
   encoding: LargeBlobPayloadEncoding;
 };
 
+type PasskeyLargeBlobReadyBase = {
+  phase: "ready";
+  credentialIDHex: string;
+  rawByteCount: number;
+};
+
+export type PasskeyLargeBlobState =
+  | { phase: "idle" }
+  | { phase: "loading"; credentialIDHex: string }
+  | (PasskeyLargeBlobReadyBase & {
+      state: ReadState.ReadStateMissing;
+      draft: null;
+    })
+  | (PasskeyLargeBlobReadyBase & {
+      state: ReadState.ReadStatePresent;
+      draft: LargeBlobWriteDraft;
+    })
+  | {
+      phase: "error";
+      credentialIDHex: string;
+      responseEnvelope: LargeBlobReadEnvelope | null;
+      runtimeError: Failure | null;
+    };
+
 type WriteMutationBase = {
   kind: "write";
-  entryIndex: number;
+  entryIndex: number | null;
   credentialIDHex: string;
+  verificationFlow: VerificationFlow;
+  existing: boolean;
   draft: LargeBlobWriteDraft;
 };
 
 type DeleteMutationBase = {
   kind: "delete";
-  entryIndex: number;
+  entryIndex: number | null;
   credentialIDHex: string;
+  verificationFlow: VerificationFlow;
 };
 
 type CleanupMutationBase = {
@@ -139,6 +167,8 @@ export const largeBlobsInventoryState = writable<LargeBlobsInventoryState>(
 );
 
 export const largeBlobsReadState = writable<LargeBlobReadState>({ phase: "idle" });
+
+export const passkeyLargeBlobState = writable<PasskeyLargeBlobState>({ phase: "idle" });
 
 export const largeBlobsDecodeState = writable<LargeBlobDecodeState>({ phase: "idle" });
 
@@ -184,22 +214,29 @@ export function resetLargeBlobReadState() {
   largeBlobsDecodeState.set({ phase: "idle" });
 }
 
-/** Clears state owned by one authenticator while preserving UI preferences. */
-export function resetLargeBlobsDeviceState() {
+export function resetPasskeyLargeBlobState() {
+  passkeyLargeBlobState.set({ phase: "idle" });
+}
+
+export function invalidateLargeBlobArrayInventory() {
   largeBlobsInventoryState.set(emptyLargeBlobsInventoryState());
   resetLargeBlobReadState();
   largeBlobsMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
+  largeBlobsSelectedEntryIndex.set(null);
+}
+
+/** Clears state owned by one authenticator while preserving UI preferences. */
+export function resetLargeBlobsDeviceState() {
+  invalidateLargeBlobArrayInventory();
+  resetPasskeyLargeBlobState();
   largeBlobsQuery.set("");
   largeBlobsStatusFilter.set("all");
-  largeBlobsSelectedEntryIndex.set(null);
 }
 
 /** Invalidates authenticator-backed inventory while retaining every UI preference. */
 export function invalidateLargeBlobsInventory() {
-  largeBlobsInventoryState.set(emptyLargeBlobsInventoryState());
-  resetLargeBlobReadState();
-  largeBlobsMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
-  largeBlobsSelectedEntryIndex.set(null);
+  invalidateLargeBlobArrayInventory();
+  resetPasskeyLargeBlobState();
 }
 
 export function resetLargeBlobsStateForTest() {

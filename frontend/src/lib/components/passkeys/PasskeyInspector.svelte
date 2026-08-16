@@ -2,11 +2,13 @@
   import { Copy, Pencil, Trash2 } from "@lucide/svelte";
 
   import { copyToClipboard } from "$lib/clipboard";
+  import PasskeyLargeBlobSection from "$lib/components/passkeys/PasskeyLargeBlobSection.svelte";
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import { Badge } from "$lib/components/ui/badge";
   import { Button } from "$lib/components/ui/button";
   import { Separator } from "$lib/components/ui/separator";
   import * as Tooltip from "$lib/components/ui/tooltip";
+  import type { PasskeyLargeBlobState } from "$lib/features/largeblobs/state";
   import type { PasskeyCredentialRow } from "$lib/passkeys-presentation";
   import { advancedMode } from "$lib/preferences";
 
@@ -16,12 +18,29 @@
     row: PasskeyCredentialRow;
     updateDisabled: boolean;
     deleteDisabled: boolean;
+    largeBlobState: PasskeyLargeBlobState;
+    largeBlobDisabled: boolean;
     previewOnly: boolean;
     onEdit: (credentialID: string) => void;
     onDelete: (credentialID: string) => void | Promise<boolean>;
+    onLargeBlobCheck: (credentialID: string) => void | Promise<boolean>;
+    onLargeBlobWrite: (credentialID: string) => void;
+    onLargeBlobDelete: (credentialID: string) => void | Promise<boolean>;
   };
 
-  let { row, updateDisabled, deleteDisabled, previewOnly, onEdit, onDelete }: Props = $props();
+  let {
+    row,
+    updateDisabled,
+    deleteDisabled,
+    largeBlobState,
+    largeBlobDisabled,
+    previewOnly,
+    onEdit,
+    onDelete,
+    onLargeBlobCheck,
+    onLargeBlobWrite,
+    onLargeBlobDelete,
+  }: Props = $props();
 </script>
 
 <Tooltip.Provider delayDuration={350}>
@@ -195,6 +214,15 @@
           {/if}
         </div>
       </section>
+
+      <PasskeyLargeBlobSection
+        {row}
+        state={largeBlobState}
+        disabled={largeBlobDisabled}
+        onCheck={onLargeBlobCheck}
+        onWrite={onLargeBlobWrite}
+        onDelete={onLargeBlobDelete}
+      />
     </div>
 
     {#if $advancedMode}

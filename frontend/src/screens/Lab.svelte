@@ -177,7 +177,7 @@
       align-content: start;
       gap: var(--space-4);
       width: 100%;
-      max-width: 96rem;
+      max-width: 72rem;
       min-width: 0;
       margin-inline: auto;
     }

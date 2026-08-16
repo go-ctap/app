@@ -8,7 +8,7 @@
 
   type Props = {
     mutation: LargeBlobMutationState;
-    onDeletePreview: (entryIndex: number) => void | Promise<boolean>;
+    onDeletePreview: (entryIndex: number | null) => void | Promise<boolean>;
     onDeleteConfirm: () => void | Promise<boolean>;
     onCleanupPreview: () => void | Promise<boolean>;
     onCleanupConfirm: () => void | Promise<boolean>;

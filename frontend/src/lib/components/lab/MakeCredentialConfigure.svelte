@@ -186,10 +186,8 @@
           originInvalid={fieldInvalid("make.clientData.origin")}
           challengeInvalid={fieldInvalid("make.clientData.challenge")}
           topOriginInvalid={fieldInvalid("make.clientData.topOrigin")}
-          warning={draft.clientData.mode === "raw" &&
-          warnings.some((issue) => issue.field === "make.clientData.rawJSON")
-            ? m.lab_raw_json_warning()
-            : null}
+          rawInvalid={draft.clientData.mode === "raw" &&
+            warnings.some((issue) => issue.field === "make.clientData.rawJSON")}
           onModeChange={(mode, rawJSON) =>
             updateClientData(rawJSON === undefined ? { mode } : { mode, rawJSON })}
           onOriginChange={(origin) => updateClientData({ origin })}

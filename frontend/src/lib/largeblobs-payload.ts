@@ -22,6 +22,14 @@ export function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+export function bytesToHex(bytes: Uint8Array): string {
+  let hex = "";
+
+  for (const byte of bytes) hex += byte.toString(16).padStart(2, "0");
+
+  return hex;
+}
+
 export function parseLargeBlobPayload(
   value: string,
   encoding: LargeBlobPayloadEncoding,
@@ -59,4 +67,24 @@ export function parseLargeBlobPayload(
     base64: bytesToBase64(bytes),
     byteCount: bytes.byteLength,
   };
+}
+
+export function convertLargeBlobPayload(
+  value: string,
+  sourceEncoding: LargeBlobPayloadEncoding,
+  targetEncoding: LargeBlobPayloadEncoding,
+): string | null {
+  if (sourceEncoding === targetEncoding) return value;
+
+  const parsed = parseLargeBlobPayload(value, sourceEncoding);
+
+  if (!parsed.ok) return null;
+
+  if (targetEncoding === "hex") return bytesToHex(parsed.bytes);
+
+  try {
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(parsed.bytes);
+  } catch {
+    return null;
+  }
 }

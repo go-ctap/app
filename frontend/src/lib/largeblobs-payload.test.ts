@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseLargeBlobPayload } from "$lib/largeblobs-payload";
+import { convertLargeBlobPayload, parseLargeBlobPayload } from "$lib/largeblobs-payload";
 
 describe("large blob payload encoding", () => {
   it("encodes UTF-8 text, including non-ASCII code points, as base64", () => {
@@ -12,6 +12,17 @@ describe("large blob payload encoding", () => {
     expect(result.base64).toBe("0J/RgNC40LLQtdGCIPCfkYs=");
     expect(result.byteCount).toBe(17);
     expect(Array.from(result.bytes)).toEqual(Array.from(new TextEncoder().encode("Привет 👋")));
+  });
+
+  it("preserves valid UTF-8 JSON byte-for-byte", () => {
+    const source = '{\n  "enabled": true,\n  "count": 2\n}';
+    const result = parseLargeBlobPayload(source, "utf8");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(new TextDecoder().decode(result.bytes)).toBe(source);
+    expect(result.byteCount).toBe(new TextEncoder().encode(source).byteLength);
   });
 
   it("accepts arbitrary whitespace between hex bytes", () => {
@@ -48,5 +59,17 @@ describe("large blob payload encoding", () => {
       base64: "",
       byteCount: 0,
     });
+  });
+
+  it("switches between UTF-8 and hex without changing the bytes", () => {
+    const source = '{"kind":"passkey"}';
+    const hex = "7b226b696e64223a22706173736b6579227d";
+
+    expect(convertLargeBlobPayload(source, "utf8", "hex")).toBe(hex);
+    expect(convertLargeBlobPayload(hex, "hex", "utf8")).toBe(source);
+  });
+
+  it("keeps non-UTF-8 bytes in hex representation", () => {
+    expect(convertLargeBlobPayload("ff", "hex", "utf8")).toBeNull();
   });
 });
