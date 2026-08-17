@@ -48,7 +48,11 @@
     buildSidebarPresentation,
   } from "$lib/shell-presentation";
   import { toggleMaximizeWindow } from "$lib/window-controller.js";
-  import { detectWindowPlatform, resolveWindowPlatform } from "$lib/window-platform";
+  import {
+    detectWindowPlatform,
+    resolveWindowPlatform,
+    windowPlatform,
+  } from "$lib/window-platform";
   import { m } from "./paraglide/messages.js";
   import Lab from "./screens/Lab.svelte";
   import LargeBlobs from "./screens/LargeBlobs.svelte";
@@ -62,11 +66,9 @@
 
   let initialized = $state(false);
 
-  let windowPlatform = $state(detectWindowPlatform());
-
   let windowActive = $state(true);
 
-  let isMacOS = $derived(windowPlatform === "macos");
+  let isMacOS = $derived($windowPlatform === "macos");
 
   let noDevices = $derived(initialized && !refreshing && $devices.length === 0);
 
@@ -108,17 +110,17 @@
     const detected = detectWindowPlatform();
 
     if (detected !== null) {
-      windowPlatform = detected;
+      $windowPlatform = detected;
 
       return;
     }
 
-    windowPlatform = null;
+    $windowPlatform = null;
     try {
       const resolved = await resolveWindowPlatform();
 
       if (resolved !== null) {
-        windowPlatform = resolved;
+        $windowPlatform = resolved;
       }
     } catch {
       // WindowRuntimeReady retries detection without rendering the wrong platform chrome.
@@ -197,11 +199,11 @@
   });
 </script>
 
-{#if windowPlatform}
+{#if $windowPlatform}
   {#key $currentLocale}
     <div
       class="app-shell"
-      data-platform={windowPlatform}
+      data-platform={$windowPlatform}
       data-window-active={windowActive ? "true" : "false"}
     >
       <AppSidebar

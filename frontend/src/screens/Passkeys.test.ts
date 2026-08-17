@@ -16,16 +16,19 @@ import type {
   CredentialsEnvelope,
   LargeBlobReadEnvelope,
 } from "../../bindings/telesma/service";
+import { PasskeySupportMode } from "../../bindings/telesma/passkeydirectory";
 
 import { api } from "$lib/api";
 import {
+  beginPasskeyDirectoryLookup,
+  completePasskeyDirectoryLookup,
   failPasskeysInventoryLoadAtRuntime,
   failPasskeysInventoryLoadWithResponse,
   passkeysMutation as mutablePasskeysMutation,
   passkeysVerificationFlow as mutablePasskeysVerificationFlow,
 } from "$lib/features/passkeys/state";
 import { setAppLocale } from "$lib/i18n";
-import { setAdvancedMode } from "$lib/preferences";
+import { setAdvancedMode, setPasskeyDirectoryEnabled } from "$lib/preferences";
 import { failureForCode } from "$lib/test-support/failure";
 import {
   resetAppStateForTest,
@@ -174,6 +177,7 @@ describe("Passkeys", () => {
   beforeEach(() => {
     setAppLocale("en");
     setAdvancedMode(true);
+    setPasskeyDirectoryEnabled(false);
     controllerMocks.reloadPasskeys.mockClear();
     workbenchMocks.navigateToScreen.mockClear();
     clipboardSetText.mockReset();
@@ -211,18 +215,14 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    const table = screen.getByRole("table", { name: "Discoverable passkeys" });
+    expect(screen.getByText("This authenticator has no discoverable passkeys")).toBeInTheDocument();
+    expect(screen.getByText(/The inventory loaded successfully\./)).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
 
-    expect(within(table).getByRole("columnheader", { name: "RP name" })).toBeInTheDocument();
-    expect(
-      within(table).getByText("This authenticator has no discoverable passkeys"),
-    ).toBeInTheDocument();
-    expect(within(table).getByText(/The inventory loaded successfully\./)).toBeInTheDocument();
-
-    await user.click(within(table).getByRole("button", { name: "Open WebAuthn Lab" }));
+    await user.click(screen.getByRole("button", { name: "Open WebAuthn Lab" }));
     expect(workbenchMocks.navigateToScreen).toHaveBeenCalledWith("lab");
 
-    await user.click(within(table).getByRole("button", { name: "Reload inventory" }));
+    await user.click(screen.getByRole("button", { name: "Reload inventory" }));
     await waitFor(() => expect(controllerMocks.reloadPasskeys).toHaveBeenCalledOnce());
   });
 
@@ -285,7 +285,7 @@ describe("Passkeys", () => {
     expect(screen.queryByText("Passkey management unavailable")).not.toBeInTheDocument();
   });
 
-  it("opens credential details immediately after the selected table row", async () => {
+  it("shows the single credential directly inside the selected RP workspace", async () => {
     const user = userEvent.setup();
 
     seedSelectionForTest("token-1", null, {
@@ -296,27 +296,33 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    const credential = screen.getByRole("button", { name: /Example User, user@example.com/ });
-    const record = credential.closest("tr");
+    const navigation = screen.getByRole("complementary", { name: "Relying parties" });
+    const relyingParty = within(navigation).getByRole("button", {
+      name: /example\.com Example 1 passkey/,
+    });
+    const domainHeader = screen.getByRole("heading", { name: "Example" }).closest("header");
+    const details = screen.getByRole("article", { name: "Passkey details" });
 
-    expect(record).not.toBeNull();
-    expect(credential.closest("td")).toBe(record?.cells[0]);
-    expect(within(record!.cells[1]).queryByRole("button")).not.toBeInTheDocument();
-    expect(credential).toHaveAttribute("aria-expanded", "false");
-    expect(credential).toHaveAttribute("aria-controls", "passkey-row-details-cafe");
-    await user.click(credential);
-
-    const details = record?.nextElementSibling as HTMLElement;
-
-    expect(details).toHaveAttribute("id", "passkey-row-details-cafe");
-    expect(details.closest("table")).toBe(
-      screen.getByRole("table", { name: "Discoverable passkeys" }),
-    );
-    expect(
-      within(screen.getByRole("table", { name: "Discoverable passkeys" })).getAllByRole("row"),
-    ).toHaveLength(3);
+    expect(domainHeader).not.toBeNull();
+    expect(within(domainHeader!).getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(within(domainHeader!).getByRole("button", { name: "Delete" })).toBeInTheDocument();
+    expect(within(details).queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    expect(within(details).queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
+    expect(relyingParty).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Selected passkey" })).not.toBeInTheDocument();
+    expect(within(details).getByRole("heading", { name: "Example User" })).toBeInTheDocument();
     expect(within(details).getByText("public-key")).toBeInTheDocument();
     expect(within(details).getAllByText("01").length).toBeGreaterThan(0);
+    expect(within(details).getByText("User ID")).toBeInTheDocument();
+    expect(within(details).getByTitle("cafe").closest("header")).toBe(
+      details.querySelector("header"),
+    );
+
+    const associatedData = within(details).getByRole("region", { name: "Associated data" });
+
+    expect(associatedData.parentElement).toBe(details);
+    expect(associatedData.firstElementChild).toHaveAttribute("data-slot", "separator");
 
     const copyJson = within(details).getByRole("button", { name: "Copy JSON" });
 
@@ -324,8 +330,179 @@ describe("Passkeys", () => {
     await user.click(copyJson);
     await waitFor(() => expect(clipboardSetText).toHaveBeenCalledOnce());
     await waitFor(() => expect(toastMocks.success).toHaveBeenCalledWith("JSON copied"));
-    expect(credential).toHaveAttribute("aria-expanded", "true");
-    expect(record).toHaveAttribute("aria-selected", "true");
+    expect(within(details).queryByText("Passkey Directory")).not.toBeInTheDocument();
+  });
+
+  it("keeps a vertical RP list on narrow layouts and opens details in a sheet", async () => {
+    const user = userEvent.setup();
+    const clientWidth = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(600);
+
+    try {
+      seedSelectionForTest("token-1", null, {
+        state: "ready",
+        selectionId: "authenticator-1",
+      });
+      seedPasskeysEnvelopeForTest(mixedRelyingPartyEnvelope());
+
+      render(Passkeys);
+
+      const navigation = screen.getByRole("complementary", { name: "Relying parties" });
+      const workspace = navigation.parentElement;
+      const team = within(navigation).getByRole("button", {
+        name: /team\.example Team 2 passkeys/,
+      });
+
+      expect(workspace).toHaveAttribute("data-layout", "list");
+      expect(within(navigation).getAllByRole("button")).toHaveLength(2);
+      expect(screen.queryByRole("article", { name: "Passkey details" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+      await user.click(team);
+
+      const sheet = screen.getByRole("dialog", { name: "Team" });
+      const previous = within(sheet).getByRole("button", { name: "Previous relying party" });
+      const next = within(sheet).getByRole("button", { name: "Next relying party" });
+
+      expect(within(sheet).getByRole("article", { name: "Passkey details" })).toBeInTheDocument();
+      expect(within(sheet).getByText("Passkey 1 of 2")).toBeInTheDocument();
+      expect(within(sheet).getByText("Relying party 2 of 2")).toBeInTheDocument();
+      expect(previous).toHaveAttribute("aria-keyshortcuts", "Alt+ArrowUp");
+      expect(previous).toBeEnabled();
+      expect(next).toBeDisabled();
+      expect(team).toHaveAttribute("aria-current", "page");
+
+      await user.click(previous);
+
+      expect(sheet).toHaveAccessibleName("Solo");
+      expect(within(sheet).getByTitle("a1")).toBeInTheDocument();
+      expect(within(sheet).getByText("Relying party 1 of 2")).toBeInTheDocument();
+      expect(previous).toBeDisabled();
+      expect(next).toBeEnabled();
+
+      await user.keyboard("{Alt>}{ArrowDown}{/Alt}");
+
+      expect(sheet).toHaveAccessibleName("Team");
+      expect(within(sheet).getByText("Relying party 2 of 2")).toBeInTheDocument();
+      expect(team).toHaveAttribute("aria-current", "page");
+
+      await user.click(within(sheet).getByRole("button", { name: "Close" }));
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog", { name: "Team" })).not.toBeInTheDocument(),
+      );
+      expect(screen.queryByRole("article", { name: "Passkey details" })).not.toBeInTheDocument();
+    } finally {
+      clientWidth.mockRestore();
+    }
+  });
+
+  it("decodes readable user IDs and integrates the passkey ID into the credential header", async () => {
+    const user = userEvent.setup();
+    const envelope = credentialsEnvelope();
+    const credentialID = "00112233445566778899aabbccddeeff0011223344556677";
+    const userIDHex = "616c6963652d696e7465726e616c";
+
+    envelope.result!.groups![0].credentials![0].credentialIDHex = credentialID;
+    envelope.result!.groups![0].credentials![0].userIDHex = userIDHex;
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      selectionId: "authenticator-1",
+    });
+    seedPasskeysEnvelopeForTest(envelope);
+
+    render(Passkeys);
+
+    const details = screen.getByRole("article", { name: "Passkey details" });
+    const header = details.querySelector("header")!;
+    const passkeyID = within(header).getByTitle(credentialID);
+
+    expect(passkeyID).toHaveTextContent("00112233445566778899…44556677");
+    expect(within(details).getByText("alice-internal")).toBeInTheDocument();
+    expect(within(details).queryByText(userIDHex)).not.toBeInTheDocument();
+
+    await user.click(within(details).getByRole("button", { name: "Copy User ID" }));
+    await waitFor(() => expect(clipboardSetText).toHaveBeenCalledWith("alice-internal"));
+
+    await user.click(within(header).getByRole("button", { name: "Copy Passkey ID" }));
+    await waitFor(() => expect(clipboardSetText).toHaveBeenCalledWith(credentialID));
+  });
+
+  it("does not repeat an RP name that is equivalent to its RP ID", () => {
+    const envelope = credentialsEnvelope();
+
+    envelope.result!.groups![0].rpName = "EXAMPLE.COM.";
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      selectionId: "authenticator-1",
+    });
+    seedPasskeysEnvelopeForTest(envelope);
+
+    render(Passkeys);
+
+    const navigation = screen.getByRole("complementary", { name: "Relying parties" });
+    const relyingParty = within(navigation).getByRole("button", {
+      name: "example.com 1 passkey",
+    });
+
+    expect(within(relyingParty).getAllByText("example.com")).toHaveLength(1);
+    expect(within(relyingParty).queryByText("EXAMPLE.COM.")).not.toBeInTheDocument();
+  });
+
+  it("shows exact Passkey Directory enrichment once at RP level", () => {
+    vi.spyOn(api, "saveApplicationConfig").mockResolvedValue();
+    setPasskeyDirectoryEnabled(true);
+    seedSelectionForTest("token-1", null, {
+      state: "ready",
+      selectionId: "authenticator-1",
+    });
+    seedPasskeysEnvelopeForTest(credentialsEnvelope());
+    completePasskeyDirectoryLookup(beginPasskeyDirectoryLookup(), {
+      matches: [
+        {
+          rpID: "example.com",
+          canonicalDomain: "accounts.example.com",
+          passwordless: PasskeySupportMode.PasskeySupportModeAllowed,
+          mfa: PasskeySupportMode.PasskeySupportModeRequired,
+          documentation: "https://example.com/passkeys",
+          recovery: "https://example.com/recovery",
+          notes: "Community note: <strong>plain text</strong>",
+        },
+      ],
+    });
+
+    render(Passkeys);
+
+    const directory = screen.getByRole("heading", { name: "Passkey Directory" }).closest("section");
+    const details = screen.getByRole("article", { name: "Passkey details" });
+
+    expect(directory).not.toBeNull();
+    expect(screen.getAllByRole("heading", { name: "Passkey Directory" })).toHaveLength(1);
+    expect(within(directory!).getByText("Community reference")).toBeInTheDocument();
+    expect(
+      within(directory!).getByText("Informational only · not a security indicator"),
+    ).toBeInTheDocument();
+    expect(within(directory!).getByText("accounts.example.com")).toBeInTheDocument();
+    expect(within(directory!).getByText("Passwordless")).toBeInTheDocument();
+    expect(within(directory!).getByText("Optional")).toBeInTheDocument();
+    expect(within(directory!).getByText("Passkey as MFA/2FA")).toBeInTheDocument();
+    expect(within(directory!).getByText("Required")).toBeInTheDocument();
+    expect(
+      within(directory!).getByText("Community note: <strong>plain text</strong>"),
+    ).toBeInTheDocument();
+    expect(within(directory!).getByRole("link", { name: "Setup guide" })).toHaveAttribute(
+      "href",
+      "https://example.com/passkeys",
+    );
+    expect(within(directory!).getByRole("link", { name: "Account recovery" })).toHaveAttribute(
+      "href",
+      "https://example.com/recovery",
+    );
+    expect(within(directory!).queryByText("https://example.com/passkeys")).not.toBeInTheDocument();
+    expect(within(directory!).getByRole("link", { name: /2factorauth/ })).toBeInTheDocument();
+    expect(directory).toHaveTextContent("Community note: <strong>plain text</strong>");
+    expect(within(details).queryByText("Passkey Directory")).not.toBeInTheDocument();
+    expect(
+      directory!.compareDocumentPosition(details) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("reads and attaches data from the selected passkey inspector", async () => {
@@ -360,7 +537,6 @@ describe("Passkeys", () => {
     seedPasskeysEnvelopeForTest(envelope);
 
     render(Passkeys);
-    await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
 
     expect(screen.getByRole("heading", { name: "Associated data" })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("No data attached")).toBeInTheDocument());
@@ -374,8 +550,7 @@ describe("Passkeys", () => {
     expect(screen.getByRole("dialog", { name: "Attach data" })).toBeInTheDocument();
   });
 
-  it("explains why data cannot be attached when largeBlobKey is missing", async () => {
-    const user = userEvent.setup();
+  it("explains why data cannot be attached when largeBlobKey is missing", () => {
     const envelope = credentialsEnvelope();
 
     envelope.result!.groups![0].credentials![0].largeBlobKeyState = "missing";
@@ -386,7 +561,6 @@ describe("Passkeys", () => {
     seedPasskeysEnvelopeForTest(envelope);
 
     render(Passkeys);
-    await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
 
     expect(screen.getByText("Unavailable")).toBeInTheDocument();
     expect(
@@ -395,9 +569,7 @@ describe("Passkeys", () => {
     expect(screen.queryByRole("button", { name: "Check data" })).not.toBeInTheDocument();
   });
 
-  it("removes the raw JSON region and its divider when Advanced Mode is disabled", async () => {
-    const user = userEvent.setup();
-
+  it("removes the raw JSON region and its divider when Advanced Mode is disabled", () => {
     setAdvancedMode(false);
     seedSelectionForTest("token-1", null, {
       state: "ready",
@@ -407,19 +579,14 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    const credential = screen.getByRole("button", { name: /Example User, user@example.com/ });
-    const record = credential.closest("tr") as HTMLElement;
-
-    await user.click(credential);
-
-    const details = record.nextElementSibling as HTMLElement;
+    const details = screen.getByRole("article", { name: "Passkey details" });
 
     expect(details.querySelector(".passkey-raw-separator")).not.toBeInTheDocument();
     expect(details.querySelector(".passkey-raw")).not.toBeInTheDocument();
     expect(within(details).queryByRole("button", { name: "Copy JSON" })).not.toBeInTheDocument();
   });
 
-  it("collapses inline credential details when the selected row is clicked again", async () => {
+  it("keeps a single credential direct when its RP is selected again", async () => {
     const user = userEvent.setup();
 
     seedSelectionForTest("token-1", null, {
@@ -430,42 +597,40 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    const credential = screen.getByRole("button", { name: /Example User, user@example.com/ });
-    const record = credential.closest("tr") as HTMLElement;
+    const relyingParty = screen.getByRole("button", { name: /example\.com Example 1 passkey/ });
 
-    await user.click(credential);
-
-    const details = record.nextElementSibling as HTMLElement;
-
-    expect(within(details).getByText("public-key")).toBeInTheDocument();
-    await user.click(credential);
+    expect(screen.getByRole("article", { name: "Passkey details" })).toBeInTheDocument();
+    await user.click(relyingParty);
     await tick();
 
-    expect(screen.queryByText("public-key")).not.toBeInTheDocument();
-    expect(credential).toHaveAttribute("aria-expanded", "false");
-    expect(record).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByText("public-key")).toBeInTheDocument();
+    expect(relyingParty).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByRole("button", { name: "Selected passkey" })).not.toBeInTheDocument();
   });
 
-  it("supports keyboard selection through semantic credential buttons", async () => {
+  it("supports keyboard selection through semantic RP buttons", async () => {
     const user = userEvent.setup();
 
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
     });
-    seedPasskeysEnvelopeForTest(credentialsEnvelope());
+    seedPasskeysEnvelopeForTest(mixedRelyingPartyEnvelope());
 
     render(Passkeys);
 
-    const credential = screen.getByRole("button", { name: /Example User, user@example.com/ });
+    const relyingParty = screen.getByRole("button", { name: /team\.example Team 2 passkeys/ });
 
-    credential.focus();
+    relyingParty.focus();
     await user.keyboard("{Enter}");
 
-    expect(screen.getByText("public-key")).toBeInTheDocument();
+    expect(relyingParty).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "Selected passkey" })).toHaveTextContent(
+      "Alice · alice@team.example",
+    );
   });
 
-  it("hides inline details with a filtered row and restores them when filters are cleared", async () => {
+  it("hides the RP workspace with a filtered credential and restores it when filters are cleared", async () => {
     const user = userEvent.setup();
 
     seedSelectionForTest("token-1", null, {
@@ -475,7 +640,6 @@ describe("Passkeys", () => {
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
     render(Passkeys);
-    await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
     expect(screen.getByText("public-key")).toBeInTheDocument();
 
     await user.type(
@@ -491,9 +655,7 @@ describe("Passkeys", () => {
     expect(screen.getByText("public-key")).toBeInTheDocument();
   });
 
-  it("uses a compact UV badge without dropping the full credProtect explanation", async () => {
-    const user = userEvent.setup();
-
+  it("keeps the compact UV badge together with its full explanation", () => {
     seedSelectionForTest("token-1", null, {
       state: "ready",
       selectionId: "authenticator-1",
@@ -505,13 +667,10 @@ describe("Passkeys", () => {
     const compact = screen.getByText("UV 2");
 
     expect(compact).toHaveAttribute("title", "Level 2 · UV optional with passkey list");
-    expect(screen.queryByText("Level 2 · UV optional with passkey list")).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
     expect(screen.getByText("Level 2 · UV optional with passkey list")).toBeInTheDocument();
   });
 
-  it("renders every passkey as a flat table row without RP collapsibles", async () => {
+  it("groups by RP and adds a credential selector only for multi-credential RPs", async () => {
     const user = userEvent.setup();
 
     seedSelectionForTest("token-1", null, {
@@ -522,46 +681,45 @@ describe("Passkeys", () => {
 
     render(Passkeys);
 
-    const table = screen.getByRole("table", { name: "Discoverable passkeys" });
+    const navigation = screen.getByRole("complementary", { name: "Relying parties" });
+    const solo = within(navigation).getByRole("button", {
+      name: /solo\.example Solo 1 passkey/,
+    });
+    const team = within(navigation).getByRole("button", {
+      name: /team\.example Team 2 passkeys/,
+    });
 
-    expect(within(table).getByRole("columnheader", { name: "RP name" })).toHaveAttribute(
-      "data-slot",
-      "expandable-data-table-disclosure-header",
+    expect(within(navigation).getAllByRole("button")).toHaveLength(2);
+    expect(solo).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByRole("button", { name: "Selected passkey" })).not.toBeInTheDocument();
+
+    await user.click(team);
+
+    const credential = screen.getByRole("button", { name: "Selected passkey" });
+
+    expect(team).toHaveAttribute("aria-current", "page");
+    expect(screen.getByText("Passkey 1 of 2")).toBeInTheDocument();
+    expect(credential).toHaveTextContent("Alice · alice@team.example");
+
+    await user.click(credential);
+    await user.keyboard("{ArrowDown}{Enter}");
+
+    expect(screen.getByText("Passkey 2 of 2")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Selected passkey" })).toHaveTextContent(
+      "Bob · bob@team.example",
     );
-    expect(within(table).getByRole("columnheader", { name: "User name" })).toBeInTheDocument();
-    expect(within(table).getByRole("columnheader", { name: "Passkey ID" })).toBeInTheDocument();
-    expect(within(table).getByRole("columnheader", { name: "UV" })).toHaveAttribute(
-      "data-align",
-      "end",
-    );
-    expect(within(table).getAllByRole("row")).toHaveLength(4);
+    expect(screen.getByTitle("b2")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
 
-    expect(
-      screen.getByRole("button", { name: /Solo User, solo@example\.com, Solo/ }),
-    ).toBeInTheDocument();
+    const edit = screen.getByRole("button", { name: "Edit" });
 
-    const alice = screen.getByRole("button", { name: /Alice, alice@team\.example/ });
-    const bob = screen.getByRole("button", { name: /Bob, bob@team\.example/ });
+    edit.focus();
+    await user.keyboard("{Enter}");
 
-    expect(alice).toHaveAttribute("aria-expanded", "false");
-    expect(bob).toBeInTheDocument();
-    expect(screen.queryByText("2 passkeys")).not.toBeInTheDocument();
+    const dialog = screen.getByRole("dialog", { name: "Edit passkey user" });
 
-    const aliceRow = alice.closest("tr") as HTMLElement;
-
-    await user.click(alice);
-    expect(alice).toHaveAttribute("aria-expanded", "true");
-    expect(aliceRow).toHaveAttribute("aria-selected", "true");
-    expect(aliceRow.nextElementSibling).toHaveAttribute("id", "passkey-row-details-b1");
-    expect(within(table).getAllByRole("row")).toHaveLength(5);
-    expect(bob).toBeInTheDocument();
-
-    await user.click(alice);
-
-    expect(alice).toHaveAttribute("aria-expanded", "false");
-    expect(aliceRow).toHaveAttribute("aria-selected", "false");
-    expect(within(table).getAllByRole("row")).toHaveLength(4);
-    expect(bob).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("User name")).toHaveValue("bob@team.example");
+    expect(within(dialog).getByLabelText("Display name")).toHaveValue("Bob");
   });
 
   it("opens the typed update dialog from the inspector", async () => {
@@ -574,7 +732,6 @@ describe("Passkeys", () => {
     seedPasskeysEnvelopeForTest(credentialsEnvelope());
 
     render(Passkeys);
-    await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
     await user.click(screen.getByRole("button", { name: "Edit" }));
 
     const dialog = screen.getByRole("dialog", { name: "Edit passkey user" });
@@ -636,7 +793,6 @@ describe("Passkeys", () => {
       screen.queryByText(/Communication with the authenticator failed\./),
     ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reload passkeys" })).toBeEnabled();
-    await user.click(screen.getByRole("button", { name: /Example User, user@example.com/ }));
     expect(screen.getByRole("button", { name: "Edit" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Delete" })).toBeEnabled();
 

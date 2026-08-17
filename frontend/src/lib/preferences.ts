@@ -1,1 +1,6 @@
-export { advancedMode, setAdvancedMode } from "$lib/application-config.js";
+export {
+  advancedMode,
+  passkeyDirectoryEnabled,
+  setAdvancedMode,
+  setPasskeyDirectoryEnabled,
+} from "$lib/application-config.js";

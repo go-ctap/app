@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 
+	"github.com/google/uuid"
 	ctapkit "github.com/telesma-app/kit"
 	"github.com/telesma-app/kit/model/failure"
 	"github.com/telesma-app/kit/model/operation"
-	"github.com/google/uuid"
 )
 
 type operationExecutor[T any] func(
@@ -77,9 +77,7 @@ func runOperation[T any](
 	selected := service.currentSelection()
 
 	if selected == nil {
-		operationErr := authenticatorClosedError()
-
-		meta.Error = failure.Snapshot(operationErr)
+		meta.Error = failure.Snapshot(authenticatorClosedError())
 
 		return meta, nil
 	}
@@ -95,10 +93,7 @@ func runOperation[T any](
 
 	if !service.registerOperation(selected, state) {
 		cancel()
-
-		operationErr := authenticatorClosedError()
-
-		meta.Error = failure.Snapshot(operationErr)
+		meta.Error = failure.Snapshot(authenticatorClosedError())
 
 		return meta, nil
 	}

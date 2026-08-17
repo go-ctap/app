@@ -7,6 +7,7 @@ import (
 
 	"telesma/appconfig"
 	"telesma/internal/windowstate"
+	"telesma/passkeydirectory"
 	appservice "telesma/service"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -28,10 +29,6 @@ func init() {
 }
 
 func mainWindowOptions(goos string, state windowstate.State) application.WebviewWindowOptions {
-	if !windowstate.Valid(state, mainWindowMinWidth, mainWindowMinHeight) {
-		state = windowstate.Default(mainWindowMinWidth, mainWindowMinHeight)
-	}
-
 	options := application.WebviewWindowOptions{
 		Title:      "Telesma",
 		Width:      state.Width,
@@ -78,6 +75,7 @@ func main() {
 		Description: "Desktop workbench for local FIDO2/CTAP authenticators",
 		Services: []application.Service{
 			application.NewService(appconfig.NewService()),
+			application.NewService(passkeydirectory.NewService()),
 			application.NewService(ctapkitService),
 		},
 		Assets: application.AssetOptions{

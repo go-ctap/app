@@ -11,6 +11,10 @@ import type {
   CredentialUpdateEnvelope,
   CredentialUpdateRequest,
 } from "../../../../bindings/telesma/service";
+import type {
+  PasskeyDirectoryLookupResult,
+  PasskeyDirectoryMatch,
+} from "../../../../bindings/telesma/passkeydirectory";
 
 import {
   idleConfirmedOperation,
@@ -32,6 +36,13 @@ export type PasskeysInventoryPhase = RetainedInventoryPhase;
 
 /** Retains the last-known-good generated report while a forced refresh fails. */
 export type PasskeysInventoryState = RetainedInventoryState<InventoryReport>;
+
+type PasskeyDirectoryLookupPhase = "idle" | "loading" | "ready" | "unavailable";
+
+type PasskeyDirectoryState = {
+  phase: PasskeyDirectoryLookupPhase;
+  matches: ReadonlyMap<string, PasskeyDirectoryMatch>;
+};
 
 export function passkeysInventoryIsStale(state: PasskeysInventoryState) {
   return retainedInventoryIsStale(state);
@@ -83,9 +94,18 @@ export function emptyPasskeysInventoryState(): PasskeysInventoryState {
   return emptyRetainedInventoryState();
 }
 
+function emptyPasskeyDirectoryState(): PasskeyDirectoryState {
+  return {
+    phase: "idle",
+    matches: new Map(),
+  };
+}
+
 export const passkeysInventoryState = writable<PasskeysInventoryState>(
   emptyPasskeysInventoryState(),
 );
+
+export const passkeyDirectoryState = writable<PasskeyDirectoryState>(emptyPasskeyDirectoryState());
 
 export const passkeysQuery = writable("");
 
@@ -101,6 +121,8 @@ export const passkeysMutation = writable<PasskeysMutationState>({
   kind: "idle",
   operation: idleConfirmedOperation(),
 });
+
+let passkeyDirectoryLookupID = 0;
 
 export function beginPasskeysInventoryLoad() {
   passkeysInventoryState.update(beginRetainedInventoryLoad);
@@ -118,9 +140,45 @@ export function failPasskeysInventoryLoadAtRuntime() {
   passkeysInventoryState.update((current) => failRetainedInventoryLoad(current));
 }
 
+export function beginPasskeyDirectoryLookup() {
+  const lookupID = ++passkeyDirectoryLookupID;
+
+  passkeyDirectoryState.set({ phase: "loading", matches: new Map() });
+
+  return lookupID;
+}
+
+export function completePasskeyDirectoryLookup(
+  lookupID: number,
+  result: PasskeyDirectoryLookupResult,
+) {
+  if (lookupID !== passkeyDirectoryLookupID) return;
+
+  passkeyDirectoryState.set({
+    phase: "ready",
+    matches: new Map(result.matches.map((match) => [normalizedRPID(match.rpID), match])),
+  });
+}
+
+export function failPasskeyDirectoryLookup(lookupID: number) {
+  if (lookupID !== passkeyDirectoryLookupID) return;
+
+  passkeyDirectoryState.set({ phase: "unavailable", matches: new Map() });
+}
+
+export function resetPasskeyDirectoryLookup() {
+  passkeyDirectoryLookupID++;
+  passkeyDirectoryState.set(emptyPasskeyDirectoryState());
+}
+
+export function normalizedRPID(rpID: string) {
+  return rpID.trim().toLowerCase().replace(/\.$/u, "");
+}
+
 /** Clears state owned by one selected authenticator but keeps the in-memory UV preference. */
 export function resetPasskeysDeviceState() {
   passkeysInventoryState.set(emptyPasskeysInventoryState());
+  resetPasskeyDirectoryLookup();
   passkeysQuery.set("");
   passkeysStatusFilter.set("all");
   passkeysSelectedCredentialID.set("");
@@ -130,6 +188,7 @@ export function resetPasskeysDeviceState() {
 /** Invalidates authenticator-backed inventory while retaining every UI preference. */
 export function invalidatePasskeysInventory() {
   passkeysInventoryState.set(emptyPasskeysInventoryState());
+  resetPasskeyDirectoryLookup();
   passkeysSelectedCredentialID.set("");
   passkeysMutation.set({ kind: "idle", operation: idleConfirmedOperation() });
 }

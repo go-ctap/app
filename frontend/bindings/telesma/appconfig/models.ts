@@ -8,6 +8,7 @@ import { Create as $Create } from "@wailsio/runtime";
 export class ApplicationConfig {
     "locale": string;
     "advancedMode": boolean;
+    "passkeyDirectoryEnabled": boolean;
 
     /** Creates a new ApplicationConfig instance. */
     constructor($$source: Partial<ApplicationConfig> = {}) {
@@ -16,6 +17,9 @@ export class ApplicationConfig {
         }
         if (!("advancedMode" in $$source)) {
             this["advancedMode"] = false;
+        }
+        if (!("passkeyDirectoryEnabled" in $$source)) {
+            this["passkeyDirectoryEnabled"] = false;
         }
 
         Object.assign(this, $$source);

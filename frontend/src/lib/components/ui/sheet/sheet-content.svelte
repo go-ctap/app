@@ -53,3 +53,23 @@
     {/if}
   </SheetPrimitive.Content>
 </SheetPortal>
+
+<style>
+  @layer exceptions {
+    :global(
+      body:has(.app-shell[data-platform="macos"]) [data-slot="sheet-content"][data-side="right"]
+    ) {
+      max-width: calc(100vw - 8rem);
+    }
+
+    /*
+     * Wails sends non-client rectangles to Windows independently of DOM stacking.
+     * Disable every native hit-test region while a modal sheet covers the window.
+     */
+    :global(body:has([data-slot="sheet-content"][data-state="open"])),
+    :global(body:has([data-slot="sheet-content"][data-state="open"]) *) {
+      --wails-non-client-region: initial !important;
+      --wails-draggable: no-drag !important;
+    }
+  }
+</style>

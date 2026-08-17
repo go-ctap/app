@@ -12,6 +12,19 @@ import (
 	"github.com/telesma-app/kit/transport"
 )
 
+func TestSetSelectionValidatesRequestBeforeManagerState(t *testing.T) {
+	service := New()
+	defer func() { _ = service.close() }()
+
+	err := service.SetSelection(t.Context(), SelectionRequest{})
+	if !failure.IsCode(err, failure.CodeDeviceNotFound) {
+		t.Fatalf("SetSelection error = %v", err)
+	}
+	if got := failure.Snapshot(err).Phase; got != failure.PhaseAuthenticator {
+		t.Fatalf("phase = %q, want %q", got, failure.PhaseAuthenticator)
+	}
+}
+
 func TestSetSelectionUsesManagerAndAppliesReplacementBoundary(t *testing.T) {
 	firstRuntime := &fakeAuthenticatorRuntime{}
 	secondRuntime := &fakeAuthenticatorRuntime{}

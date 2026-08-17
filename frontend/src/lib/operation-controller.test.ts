@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { InteractionKind } from "../../bindings/github.com/telesma-app/kit/model";
+import { InteractionKind, OperationStage } from "../../bindings/github.com/telesma-app/kit/model";
 import { Kind as OperationKind } from "../../bindings/github.com/telesma-app/kit/model/operation";
 import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
 import { DeviceReport } from "../../bindings/github.com/telesma-app/kit/model/report";
@@ -93,6 +93,37 @@ describe("operation controller", () => {
     });
     expect(get(authenticatorStatus).state).toBe("ready");
     expect(get(readonlyPendingInteraction)).toBeNull();
+  });
+
+  it("retains progress received while cancellation is pending", async () => {
+    let accept!: () => void;
+
+    seedAuthenticator();
+    seedOperation();
+    serviceMocks.CancelOperation.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          accept = () => resolve(true);
+        }),
+    );
+
+    const { cancelActiveOperation } = await import("$lib/operation-controller.js");
+    const cancellation = cancelActiveOperation();
+
+    setStatusOperation({
+      operationId: "operation-1",
+      selectionId: "authenticator-1",
+      label: "Inventory",
+      stage: OperationStage.OperationStageEnumeratingCredentials,
+    });
+    accept();
+
+    await expect(cancellation).resolves.toBe("accepted");
+    expect(get(statusBar).activeOperation).toMatchObject({
+      stage: "enumerating-credentials",
+      cancelPending: false,
+      cancelRequested: true,
+    });
   });
 
   it("finishes stale UI activity and reports when the operation already ended", async () => {

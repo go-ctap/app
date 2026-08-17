@@ -9,6 +9,8 @@ import * as state from "$lib/features/passkeys/state.js";
 
 export const passkeysInventoryState = readonly(state.passkeysInventoryState);
 
+export const passkeyDirectoryState = readonly(state.passkeyDirectoryState);
+
 export const passkeysQuery = readonly(state.passkeysQuery);
 
 export const passkeysStatusFilter = readonly(state.passkeysStatusFilter);

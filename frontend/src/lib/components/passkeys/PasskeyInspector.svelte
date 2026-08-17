@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { Copy, Pencil, Trash2 } from "@lucide/svelte";
+  import { Copy } from "@lucide/svelte";
 
   import { copyToClipboard } from "$lib/clipboard";
   import PasskeyLargeBlobSection from "$lib/components/passkeys/PasskeyLargeBlobSection.svelte";
   import JsonDisclosure from "$lib/components/shared/JsonDisclosure.svelte";
   import { Badge } from "$lib/components/ui/badge";
   import { Button } from "$lib/components/ui/button";
+  import * as Select from "$lib/components/ui/select";
   import { Separator } from "$lib/components/ui/separator";
   import * as Tooltip from "$lib/components/ui/tooltip";
   import type { PasskeyLargeBlobState } from "$lib/features/largeblobs/state";
@@ -16,13 +17,10 @@
 
   type Props = {
     row: PasskeyCredentialRow;
-    updateDisabled: boolean;
-    deleteDisabled: boolean;
+    credentials: PasskeyCredentialRow[];
     largeBlobState: PasskeyLargeBlobState;
     largeBlobDisabled: boolean;
-    previewOnly: boolean;
-    onEdit: (credentialID: string) => void;
-    onDelete: (credentialID: string) => void | Promise<boolean>;
+    onSelect: (credentialID: string) => void;
     onLargeBlobCheck: (credentialID: string) => void | Promise<boolean>;
     onLargeBlobWrite: (credentialID: string) => void;
     onLargeBlobDelete: (credentialID: string) => void | Promise<boolean>;
@@ -30,71 +28,106 @@
 
   let {
     row,
-    updateDisabled,
-    deleteDisabled,
+    credentials,
     largeBlobState,
     largeBlobDisabled,
-    previewOnly,
-    onEdit,
-    onDelete,
+    onSelect,
     onLargeBlobCheck,
     onLargeBlobWrite,
     onLargeBlobDelete,
   }: Props = $props();
+
+  let credentialOptions = $derived(
+    credentials.map((credential) => ({
+      value: credential.id,
+      label: `${credential.displayName} · ${credential.userName}`,
+    })),
+  );
+  let credentialPosition = $derived(
+    Math.max(1, credentials.findIndex((credential) => credential.id === row.id) + 1),
+  );
+
+  function handleCredentialChange(value: string | string[]) {
+    if (!Array.isArray(value)) onSelect(value);
+  }
+
+  function compactCredentialID(value: string) {
+    if (value.length <= 32) return value;
+
+    return `${value.slice(0, 20)}…${value.slice(-8)}`;
+  }
 </script>
 
 <Tooltip.Provider delayDuration={350}>
-  <section class="passkey-inspector" aria-labelledby={`passkey-details-${row.id}`}>
+  <article class="passkey-inspector" aria-label={m.passkey_details()}>
     <header class="passkey-inspector-header">
-      <div class="passkey-inspector-heading">
-        <h3 id={`passkey-details-${row.id}`}>{m.passkey_details()}</h3>
-        <span>{row.rpName}</span>
-      </div>
+      {#if credentials.length === 1}
+        <div class="passkey-inspector-identity">
+          <span>{m.passkey_credential()}</span>
+          <h3>{row.displayName}</h3>
+          <small>{row.userName}</small>
+        </div>
+      {:else}
+        <div class="passkey-inspector-identity" data-multiple>
+          <span>
+            {m.passkeys_credential_position({
+              current: credentialPosition,
+              total: credentials.length,
+            })}
+          </span>
+          <Select.Root
+            type="single"
+            value={row.id}
+            onValueChange={handleCredentialChange}
+            items={credentialOptions}
+          >
+            <Select.Trigger aria-label={m.passkeys_select_credential()}>
+              {row.displayName} · {row.userName}
+            </Select.Trigger>
+            <Select.Content side="bottom" align="start" sideOffset={6}>
+              <Select.Group>
+                {#each credentialOptions as credential (credential.value)}
+                  <Select.Item value={credential.value} label={credential.label}>
+                    {credential.label}
+                  </Select.Item>
+                {/each}
+              </Select.Group>
+            </Select.Content>
+          </Select.Root>
+          <small>{m.passkeys_select_credential_hint()}</small>
+        </div>
+      {/if}
 
-      <div class="passkey-inspector-actions">
-        {#if previewOnly}
+      <div class="passkey-inspector-credential-id">
+        <span>{m.credential_id()}</span>
+        <div class="passkey-copy-value">
+          <code title={row.credentialIDHex}>{compactCredentialID(row.credentialIDHex)}</code>
           <Tooltip.Root>
             <Tooltip.Trigger>
               {#snippet child({ props })}
-                <span {...props} class="passkey-disabled-action">
-                  <Button variant="outline" size="sm" type="button" disabled>
-                    <Pencil data-icon="inline-start" aria-hidden="true" />
-                    {m.edit()}
-                  </Button>
-                </span>
+                <Button
+                  {...props}
+                  variant="ghost"
+                  size="icon-xs"
+                  type="button"
+                  aria-label={m.copy_label({ label: m.credential_id() })}
+                  onclick={() => copyToClipboard(row.credentialIDHex, m.credential_id_copied())}
+                >
+                  <Copy data-icon="inline-start" aria-hidden="true" />
+                </Button>
               {/snippet}
             </Tooltip.Trigger>
-            <Tooltip.Content side="top">{m.preview_only()}</Tooltip.Content>
+            <Tooltip.Content side="top">
+              {m.copy_label({ label: m.credential_id() })}
+            </Tooltip.Content>
           </Tooltip.Root>
-        {:else}
-          <Button
-            variant="outline"
-            size="sm"
-            type="button"
-            disabled={updateDisabled}
-            onclick={() => onEdit(row.id)}
-          >
-            <Pencil data-icon="inline-start" aria-hidden="true" />
-            {m.edit()}
-          </Button>
-        {/if}
-
-        <Button
-          variant="destructive"
-          size="sm"
-          type="button"
-          disabled={deleteDisabled}
-          onclick={() => onDelete(row.id)}
-        >
-          <Trash2 data-icon="inline-start" aria-hidden="true" />
-          {m.delete()}
-        </Button>
+        </div>
       </div>
     </header>
 
     <div class="passkey-inspector-content">
       <section class="passkey-detail-section" aria-labelledby={`passkey-user-title-${row.id}`}>
-        <h4 id={`passkey-user-title-${row.id}`}>{m.user_name()}</h4>
+        <h4 id={`passkey-user-title-${row.id}`}>{m.passkey_user()}</h4>
 
         <dl class="passkey-detail-list">
           <div>
@@ -108,9 +141,13 @@
           </div>
 
           <div>
-            <dt>{m.user_id_hex()}</dt>
+            <dt>{m.user_id()}</dt>
             <dd class="passkey-copy-value">
-              <code title={row.userIDHex}>{row.userIDHex}</code>
+              {#if row.userIDEncoding === "hex"}
+                <code title={row.userIDHex}>{row.userID}</code>
+              {:else}
+                <span title={row.userID}>{row.userID}</span>
+              {/if}
               <Tooltip.Root>
                 <Tooltip.Trigger>
                   {#snippet child({ props })}
@@ -119,73 +156,61 @@
                       variant="ghost"
                       size="icon-xs"
                       type="button"
-                      aria-label={m.copy_label({ label: m.user_id_hex() })}
-                      disabled={!row.raw.credential.userIDHex}
-                      onclick={() => copyToClipboard(row.userIDHex, m.user_id_copied())}
+                      aria-label={m.copy_label({ label: m.user_id() })}
+                      disabled={row.userIDEncoding === "unavailable"}
+                      onclick={() => copyToClipboard(row.userID, m.user_id_copied())}
                     >
                       <Copy data-icon="inline-start" aria-hidden="true" />
                     </Button>
                   {/snippet}
                 </Tooltip.Trigger>
-                <Tooltip.Content side="top"
-                  >{m.copy_label({ label: m.user_id_hex() })}</Tooltip.Content
-                >
+                <Tooltip.Content side="top">
+                  {m.copy_label({ label: m.user_id() })}
+                </Tooltip.Content>
               </Tooltip.Root>
             </dd>
           </div>
         </dl>
       </section>
 
-      <section class="passkey-detail-section" aria-labelledby={`passkey-rp-title-${row.id}`}>
-        <h4 id={`passkey-rp-title-${row.id}`}>{m.relying_parties()}</h4>
+      <section
+        class="passkey-detail-section"
+        aria-labelledby={`passkey-credential-title-${row.id}`}
+      >
+        <h4 id={`passkey-credential-title-${row.id}`}>{m.passkey_credential()}</h4>
 
         <dl class="passkey-detail-list">
-          <div>
-            <dt>{m.rp_name()}</dt>
-            <dd>{row.rpName}</dd>
-          </div>
-
-          <div>
-            <dt>{m.credential_id()}</dt>
-            <dd class="passkey-copy-value">
-              <code title={row.credentialIDHex}>{row.credentialIDHex}</code>
-              <Tooltip.Root>
-                <Tooltip.Trigger>
-                  {#snippet child({ props })}
-                    <Button
-                      {...props}
-                      variant="ghost"
-                      size="icon-xs"
-                      type="button"
-                      aria-label={m.copy_label({ label: m.credential_id() })}
-                      onclick={() => copyToClipboard(row.credentialIDHex, m.credential_id_copied())}
-                    >
-                      <Copy data-icon="inline-start" aria-hidden="true" />
-                    </Button>
-                  {/snippet}
-                </Tooltip.Trigger>
-                <Tooltip.Content side="top"
-                  >{m.copy_label({ label: m.credential_id() })}</Tooltip.Content
-                >
-              </Tooltip.Root>
-            </dd>
-          </div>
-
           <div>
             <dt>{m.credential_type()}</dt>
             <dd>{row.credentialType}</dd>
           </div>
+
+          <div>
+            <dt>{m.transport()}</dt>
+            <dd class="passkey-transports">
+              {#if row.raw.credential.credentialTransports?.length}
+                {#each row.raw.credential.credentialTransports as transport (transport)}
+                  <Badge variant="outline">{transport}</Badge>
+                {/each}
+              {:else}
+                {m.not_reported()}
+              {/if}
+            </dd>
+          </div>
         </dl>
       </section>
 
-      <section class="passkey-detail-section" aria-labelledby={`passkey-status-title-${row.id}`}>
-        <h4 id={`passkey-status-title-${row.id}`}>{m.status()}</h4>
+      <section
+        class="passkey-detail-section passkey-protection"
+        aria-labelledby={`passkey-protection-title-${row.id}`}
+      >
+        <h4 id={`passkey-protection-title-${row.id}`}>{m.passkey_protection()}</h4>
 
         <div class="passkey-cred-protect">
           <Badge variant="outline" aria-label={row.credProtect} title={row.credProtect}>
             {row.credProtectLevel ? `UV ${row.credProtectLevel}` : "UV —"}
           </Badge>
-          <span>{row.credProtect}</span>
+          <small>{row.credProtect}</small>
         </div>
 
         <div class="passkey-status-badges">
@@ -200,30 +225,17 @@
             <Badge variant="outline">{m.third_party_payment()}</Badge>
           {/if}
         </div>
-
-        <div class="passkey-transports">
-          <span>{m.transport()}</span>
-          {#if row.raw.credential.credentialTransports?.length}
-            <div>
-              {#each row.raw.credential.credentialTransports as transport (transport)}
-                <Badge variant="outline">{transport}</Badge>
-              {/each}
-            </div>
-          {:else}
-            <strong>{m.not_reported()}</strong>
-          {/if}
-        </div>
       </section>
-
-      <PasskeyLargeBlobSection
-        {row}
-        state={largeBlobState}
-        disabled={largeBlobDisabled}
-        onCheck={onLargeBlobCheck}
-        onWrite={onLargeBlobWrite}
-        onDelete={onLargeBlobDelete}
-      />
     </div>
+
+    <PasskeyLargeBlobSection
+      {row}
+      state={largeBlobState}
+      disabled={largeBlobDisabled}
+      onCheck={onLargeBlobCheck}
+      onWrite={onLargeBlobWrite}
+      onDelete={onLargeBlobDelete}
+    />
 
     {#if $advancedMode}
       <Separator class="passkey-raw-separator" />
@@ -232,100 +244,136 @@
         <JsonDisclosure value={row.raw} title={m.raw_credential_details()} />
       </div>
     {/if}
-  </section>
+  </article>
 </Tooltip.Provider>
 
 <style>
   @layer blocks {
+    .passkey-inspector,
+    .passkey-inspector-header,
+    .passkey-inspector-identity,
+    .passkey-inspector-credential-id,
+    .passkey-inspector-content,
+    .passkey-detail-section,
+    .passkey-detail-list,
+    .passkey-copy-value,
+    .passkey-transports,
+    .passkey-cred-protect,
+    .passkey-status-badges,
+    .passkey-raw {
+      min-width: 0;
+    }
     .passkey-inspector {
       contain: inline-size;
       display: grid;
       width: 100%;
       max-width: 100%;
-      min-width: 0;
     }
 
     .passkey-inspector-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-2);
-      min-width: 0;
-      padding: var(--space-3);
-    }
-
-    .passkey-inspector-heading {
       display: grid;
-      min-width: 0;
-      gap: var(--space-1);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: start;
+      gap: var(--space-5) var(--space-6);
+      padding: var(--space-5);
     }
 
-    .passkey-inspector-heading h3 {
-      margin: 0;
-      font-size: 0.86rem;
+    .passkey-inspector-identity {
+      grid-column: span 2;
+      display: grid;
+      gap: 3px;
     }
 
-    .passkey-inspector-heading span {
-      overflow: hidden;
+    .passkey-inspector-identity > span,
+    .passkey-inspector-credential-id > span,
+    .passkey-detail-section h4 {
       color: var(--muted-foreground);
-      font-size: 0.72rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .passkey-inspector-identity h3 {
+      margin: 0;
+      overflow: hidden;
+      font-size: 1rem;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .passkey-inspector-actions {
+    .passkey-inspector-identity small,
+    .passkey-cred-protect small {
+      color: var(--muted-foreground);
+      font-size: 0.72rem;
+    }
+
+    .passkey-inspector-identity[data-multiple] :global([data-slot="select-trigger"]) {
+      width: min(100%, 28rem);
+      background: var(--muted);
+    }
+
+    .passkey-inspector-credential-id {
+      grid-column: 3;
+      display: grid;
+      gap: 3px;
+    }
+
+    .passkey-inspector-credential-id .passkey-copy-value {
+      max-width: 100%;
+    }
+
+    .passkey-transports,
+    .passkey-cred-protect,
+    .passkey-status-badges {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: var(--space-2);
     }
 
-    .passkey-disabled-action {
-      display: inline-flex;
-    }
-
-    .passkey-inspector-content,
-    .passkey-detail-section,
-    .passkey-detail-list,
-    .passkey-status-badges,
-    .passkey-cred-protect,
-    .passkey-transports {
-      min-width: 0;
+    .passkey-copy-value {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: var(--space-2);
     }
 
     .passkey-inspector-content {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: var(--space-4);
-      padding: 0 var(--space-3) var(--space-3);
+      gap: var(--space-5) var(--space-6);
+      border-top: 1px solid var(--data-table-border);
+      padding: var(--space-4) var(--space-5) var(--space-5);
+    }
+
+    .passkey-detail-section,
+    .passkey-detail-list {
+      display: grid;
+      align-content: start;
     }
 
     .passkey-detail-section {
-      display: grid;
-      align-content: start;
-      gap: var(--space-2);
+      gap: var(--space-3);
     }
 
     .passkey-detail-section h4 {
       margin: 0;
-      font-size: 0.78rem;
-      text-transform: uppercase;
+      color: var(--foreground);
     }
 
     .passkey-detail-list {
-      display: grid;
-      gap: var(--space-2);
+      gap: var(--space-3);
       margin: 0;
     }
 
     .passkey-detail-list > div {
       display: grid;
-      grid-template-columns: minmax(0, 1fr);
       gap: 2px;
+      min-width: 0;
     }
 
-    .passkey-detail-list dt,
-    .passkey-transports > span {
+    .passkey-detail-list dt {
       color: var(--muted-foreground);
       font-size: 0.72rem;
     }
@@ -338,43 +386,57 @@
       white-space: nowrap;
     }
 
-    .passkey-copy-value {
-      display: flex;
-      align-items: center;
-      gap: var(--space-1);
-    }
-
-    .passkey-copy-value code {
+    .passkey-copy-value code,
+    .passkey-copy-value > span {
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .passkey-status-badges,
-    .passkey-cred-protect,
-    .passkey-transports,
-    .passkey-transports > div {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--space-2);
+    .passkey-cred-protect {
+      align-items: flex-start;
     }
 
-    .passkey-cred-protect > span {
-      min-width: 0;
-      color: var(--muted-foreground);
-      font-size: 0.72rem;
+    .passkey-cred-protect small {
+      flex: 1 1 10rem;
       overflow-wrap: anywhere;
     }
 
     .passkey-raw {
-      min-width: 0;
-      padding: var(--space-3);
+      padding: var(--space-4) var(--space-5) var(--space-5);
     }
 
-    @container workspace (max-width: 56.25rem) {
+    @container workspace (max-width: 56rem) {
+      .passkey-inspector-header {
+        grid-template-columns: minmax(0, 1.35fr) minmax(15rem, 1fr);
+      }
+
+      .passkey-inspector-identity {
+        grid-column: 1;
+      }
+
+      .passkey-inspector-credential-id {
+        grid-column: 2;
+      }
+
       .passkey-inspector-content {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    @container workspace (max-width: 38rem) {
+      .passkey-inspector-header,
+      .passkey-inspector-content,
+      .passkey-raw {
+        padding-inline: var(--space-4);
+      }
+
+      .passkey-inspector-credential-id {
+        grid-column: 1;
+      }
+
+      .passkey-inspector-header {
         grid-template-columns: minmax(0, 1fr);
       }
     }

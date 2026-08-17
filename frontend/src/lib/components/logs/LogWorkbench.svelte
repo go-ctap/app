@@ -11,6 +11,7 @@
   import * as Resizable from "$lib/components/ui/resizable";
   import { ScrollArea } from "$lib/components/ui/scroll-area";
   import * as Select from "$lib/components/ui/select";
+  import DetailNavigation from "$lib/components/shared/DetailNavigation.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import { clearLogJournal } from "$lib/logs-controller.js";
   import { logController, recordID } from "$lib/features/logs/state.svelte.js";
@@ -19,7 +20,6 @@
 
   import { m } from "../../../paraglide/messages.js";
   import LogDetail from "$lib/components/logs/LogDetail.svelte";
-  import LogDetailNavigation from "$lib/components/logs/LogDetailNavigation.svelte";
   import LogDetailSheet from "$lib/components/logs/LogDetailSheet.svelte";
   import LogRecordRow from "$lib/components/logs/LogRecordRow.svelte";
 
@@ -130,32 +130,6 @@
     return true;
   }
 
-  function isEditableTarget(target: EventTarget | null) {
-    return (
-      target instanceof Element &&
-      Boolean(target.closest('input, textarea, select, [contenteditable="true"]'))
-    );
-  }
-
-  function handleWindowKeydown(event: KeyboardEvent) {
-    if (
-      useDetailSheet ||
-      !selectedRecord ||
-      !event.altKey ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.shiftKey ||
-      isEditableTarget(event.target) ||
-      !["ArrowUp", "ArrowDown"].includes(event.key)
-    ) {
-      return;
-    }
-
-    const offset = event.key === "ArrowUp" ? -1 : 1;
-
-    if (selectRecordAt(selectedRecordIndex + offset)) event.preventDefault();
-  }
-
   async function clearLogs() {
     if (await clearLogJournal()) {
       clearOpen = false;
@@ -163,8 +137,6 @@
     }
   }
 </script>
-
-<svelte:window onkeydown={handleWindowKeydown} />
 
 {#snippet logMaster()}
   <section class="log-master" aria-label={m.logs()}>
@@ -207,11 +179,17 @@
 {#snippet logDetail()}
   <section class="log-detail-frame" aria-live="polite">
     {#if selectedRecord}
-      <LogDetailNavigation
-        position={selectedRecordIndex + 1}
-        total={filteredRecords.length}
+      <DetailNavigation
+        navigationLabel={m.logs_navigation()}
+        positionLabel={m.logs_entry_position({
+          current: selectedRecordIndex + 1,
+          total: filteredRecords.length,
+        })}
+        previousLabel={m.logs_previous_entry()}
+        nextLabel={m.logs_next_entry()}
         canPrevious={selectedRecordIndex > 0}
         canNext={selectedRecordIndex >= 0 && selectedRecordIndex < filteredRecords.length - 1}
+        shortcutsEnabled
         onPrevious={() => selectRecordAt(selectedRecordIndex - 1)}
         onNext={() => selectRecordAt(selectedRecordIndex + 1)}
       />

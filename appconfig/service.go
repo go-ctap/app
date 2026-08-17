@@ -18,8 +18,9 @@ import (
 const configFile = "config.toml"
 
 type ApplicationConfig struct {
-	Locale       string `json:"locale" toml:"locale"`
-	AdvancedMode bool   `json:"advancedMode" toml:"advanced_mode"`
+	Locale                  string `json:"locale" toml:"locale"`
+	AdvancedMode            bool   `json:"advancedMode" toml:"advanced_mode"`
+	PasskeyDirectoryEnabled bool   `json:"passkeyDirectoryEnabled" toml:"passkey_directory_enabled"`
 }
 
 type ApplicationConfigSnapshot struct {

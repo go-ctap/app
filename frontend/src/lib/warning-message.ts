@@ -2,7 +2,7 @@ import type { Warning } from "../../bindings/github.com/telesma-app/kit/model/sa
 
 import { m } from "../paraglide/messages.js";
 
-const warningMessages: Readonly<Record<string, () => string>> = {
+const warningMessages: Readonly<Partial<Record<string, () => string>>> = {
   "bio.enroll.mutation": m.security_warning_bio_enroll,
   "bio.remove.destructive": m.security_warning_bio_remove,
   "bio.rename.mutation": m.security_warning_bio_rename,

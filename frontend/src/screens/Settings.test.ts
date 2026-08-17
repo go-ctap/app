@@ -26,7 +26,11 @@ describe("Settings", () => {
     );
     applicationServiceMocks.LoadApplicationConfig.mockResolvedValue(
       new ApplicationConfigSnapshot({
-        config: new ApplicationConfig({ locale: "en", advancedMode: false }),
+        config: new ApplicationConfig({
+          locale: "en",
+          advancedMode: false,
+          passkeyDirectoryEnabled: false,
+        }),
         exists: true,
       }),
     );
@@ -50,7 +54,11 @@ describe("Settings", () => {
 
     await waitFor(() =>
       expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledWith(
-        expect.objectContaining({ locale: "ru", advancedMode: false }),
+        expect.objectContaining({
+          locale: "ru",
+          advancedMode: false,
+          passkeyDirectoryEnabled: false,
+        }),
       ),
     );
     expect(document.documentElement.lang).toBe("ru");
@@ -71,6 +79,27 @@ describe("Settings", () => {
     await waitFor(() =>
       expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledWith(
         expect.objectContaining({ locale: "en", advancedMode: true }),
+      ),
+    );
+  });
+
+  it("explains and persists the opt-in Passkey Directory setting", async () => {
+    const user = userEvent.setup();
+
+    render(Settings);
+
+    const directory = screen.getByRole("switch", { name: "Passkey Directory" });
+
+    expect(directory).not.toBeChecked();
+    expect(screen.getByText(/RP IDs, usernames, credential IDs/)).toBeInTheDocument();
+    expect(screen.getByText(/IP address and standard HTTP request metadata/)).toBeInTheDocument();
+
+    await user.click(directory);
+
+    expect(directory).toBeChecked();
+    await waitFor(() =>
+      expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledWith(
+        expect.objectContaining({ passkeyDirectoryEnabled: true }),
       ),
     );
   });

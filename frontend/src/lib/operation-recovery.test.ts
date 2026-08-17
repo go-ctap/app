@@ -117,21 +117,4 @@ describe("operation recovery", () => {
     cancelOperationRecovery();
     await expect(decision).resolves.toBe("cancel");
   });
-
-  it("does not replace an active recovery intent", async () => {
-    seedReadyCard();
-
-    const decision = offerOperationRecovery(
-      "Create credential",
-      failure(Code.CodeUserPresenceRequired),
-    );
-
-    expect(
-      offerOperationRecovery("Background inspection", failure(Code.CodeUserPresenceRequired)),
-    ).toBeNull();
-    expect(get(operationRecovery)).toMatchObject({ label: "Create credential" });
-
-    cancelOperationRecovery();
-    await expect(decision).resolves.toBe("cancel");
-  });
 });

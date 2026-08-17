@@ -94,81 +94,84 @@
 >
   <Separator />
 
-  <header class="passkey-large-blob-heading">
-    <div>
-      <h4 id={`passkey-associated-data-${row.id}`}>{m.passkey_associated_data()}</h4>
-      <p>{m.passkey_associated_data_description()}</p>
-    </div>
-    <Badge variant={ready?.state === ReadState.ReadStatePresent ? "secondary" : "outline"}>
-      {badgeLabel}
-    </Badge>
-  </header>
-
-  {#if selectedState?.phase === "error"}
-    <div class="passkey-large-blob-error">
-      <Alert.Root variant="destructive" role="alert">
-        <TriangleAlert aria-hidden="true" />
-        <Alert.Title>{m.passkey_data_check_failed()}</Alert.Title>
-        <Alert.Description>{readFailure}</Alert.Description>
-      </Alert.Root>
-
-      <Button
-        variant="outline"
-        size="sm"
-        type="button"
-        {disabled}
-        onclick={() => onCheck(row.credentialIDHex)}
-      >
-        <RefreshCw data-icon="inline-start" aria-hidden="true" />
-        {m.retry()}
-      </Button>
-    </div>
-  {:else}
-    <div class="passkey-large-blob-state">
-      <div class="passkey-large-blob-copy">
-        <Database aria-hidden="true" />
-        <span>
-          <strong>{statusTitle}</strong>
-          {#if statusMessage}<small>{statusMessage}</small>{/if}
-        </span>
+  <div class="passkey-large-blob-content">
+    <header class="passkey-large-blob-heading">
+      <div>
+        <h4 id={`passkey-associated-data-${row.id}`}>{m.passkey_associated_data()}</h4>
+        <p>{m.passkey_associated_data_description()}</p>
       </div>
+      <Badge variant={ready?.state === ReadState.ReadStatePresent ? "secondary" : "outline"}>
+        {badgeLabel}
+      </Badge>
+    </header>
 
-      <div class="passkey-large-blob-actions">
-        {#if row.largeBlobKeyAvailable && ready?.state === ReadState.ReadStatePresent}
-          <Button
-            variant="outline"
-            size="sm"
-            type="button"
-            {disabled}
-            onclick={() => onWrite(row.credentialIDHex)}
-          >
-            <FilePenLine data-icon="inline-start" aria-hidden="true" />
-            {m.large_blob_replace_data()}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            type="button"
-            {disabled}
-            onclick={() => onDelete(row.credentialIDHex)}
-          >
-            <Trash2 data-icon="inline-start" aria-hidden="true" />
-            {m.delete()}
-          </Button>
-        {:else if row.largeBlobKeyAvailable && ready?.state === ReadState.ReadStateMissing}
-          <Button size="sm" type="button" {disabled} onclick={() => onWrite(row.credentialIDHex)}>
-            <FilePlus2 data-icon="inline-start" aria-hidden="true" />
-            {m.large_blob_attach_data()}
-          </Button>
-        {/if}
+    {#if selectedState?.phase === "error"}
+      <div class="passkey-large-blob-error">
+        <Alert.Root variant="destructive" role="alert">
+          <TriangleAlert aria-hidden="true" />
+          <Alert.Title>{m.passkey_data_check_failed()}</Alert.Title>
+          <Alert.Description>{readFailure}</Alert.Description>
+        </Alert.Root>
+
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          {disabled}
+          onclick={() => onCheck(row.credentialIDHex)}
+        >
+          <RefreshCw data-icon="inline-start" aria-hidden="true" />
+          {m.retry()}
+        </Button>
       </div>
-    </div>
-  {/if}
+    {:else}
+      <div class="passkey-large-blob-state">
+        <div class="passkey-large-blob-copy">
+          <Database aria-hidden="true" />
+          <span>
+            <strong>{statusTitle}</strong>
+            {#if statusMessage}<small>{statusMessage}</small>{/if}
+          </span>
+        </div>
+
+        <div class="passkey-large-blob-actions">
+          {#if row.largeBlobKeyAvailable && ready?.state === ReadState.ReadStatePresent}
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
+              {disabled}
+              onclick={() => onWrite(row.credentialIDHex)}
+            >
+              <FilePenLine data-icon="inline-start" aria-hidden="true" />
+              {m.large_blob_replace_data()}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              type="button"
+              {disabled}
+              onclick={() => onDelete(row.credentialIDHex)}
+            >
+              <Trash2 data-icon="inline-start" aria-hidden="true" />
+              {m.delete()}
+            </Button>
+          {:else if row.largeBlobKeyAvailable && ready?.state === ReadState.ReadStateMissing}
+            <Button size="sm" type="button" {disabled} onclick={() => onWrite(row.credentialIDHex)}>
+              <FilePlus2 data-icon="inline-start" aria-hidden="true" />
+              {m.large_blob_attach_data()}
+            </Button>
+          {/if}
+        </div>
+      </div>
+    {/if}
+  </div>
 </section>
 
 <style>
   @layer blocks {
     .passkey-large-blob-section,
+    .passkey-large-blob-content,
     .passkey-large-blob-heading,
     .passkey-large-blob-state,
     .passkey-large-blob-error,
@@ -179,8 +182,12 @@
 
     .passkey-large-blob-section {
       display: grid;
-      grid-column: 1 / -1;
+    }
+
+    .passkey-large-blob-content {
+      display: grid;
       gap: var(--space-3);
+      padding: var(--space-4) var(--space-5);
     }
 
     .passkey-large-blob-heading,
@@ -237,6 +244,12 @@
 
     .passkey-large-blob-error :global([data-slot="alert"]) {
       flex: 1 1 20rem;
+    }
+
+    @container workspace (max-width: 38rem) {
+      .passkey-large-blob-content {
+        padding-inline: var(--space-4);
+      }
     }
   }
 </style>

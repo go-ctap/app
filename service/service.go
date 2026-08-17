@@ -4,12 +4,12 @@ import (
 	"context"
 	"sync"
 
+	"github.com/google/uuid"
 	ctapkit "github.com/telesma-app/kit"
 	"github.com/telesma-app/kit/model"
 	"github.com/telesma-app/kit/model/failure"
 	"github.com/telesma-app/kit/model/report"
 	"github.com/telesma-app/kit/transport"
-	"github.com/google/uuid"
 )
 
 type EventEmitter interface {
@@ -88,9 +88,7 @@ func New(opts ...Option) *Service {
 	}
 
 	for _, opt := range opts {
-		if opt != nil {
-			opt(service)
-		}
+		opt(service)
 	}
 
 	return service
@@ -243,7 +241,7 @@ func (s *Service) emitOperationEvent(operation *operationState, event model.Oper
 	s.mu.Lock()
 
 	selected := s.selected
-	ok := operation != nil && selected != nil && selected.id == operation.selectionID &&
+	ok := selected != nil && selected.id == operation.selectionID &&
 		selected.operations[operation.id] == operation
 
 	s.mu.Unlock()

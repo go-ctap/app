@@ -13,7 +13,6 @@ import { setStatusOperation, summarizeOperationFailure } from "$lib/workbench-st
 
 export async function answerPendingInteraction(answer: InteractionAnswer) {
   const label = get(statusBar).activeOperation?.label ?? m.operation_running();
-  const interactionId = answer.interactionId;
 
   try {
     const resolution = api.resolveInteraction(answer);
@@ -22,9 +21,7 @@ export async function answerPendingInteraction(answer: InteractionAnswer) {
 
     const accepted = await resolution;
 
-    pendingInteraction.update((prompt) =>
-      prompt?.interactionId === interactionId ? null : prompt,
-    );
+    pendingInteraction.set(null);
 
     return accepted;
   } catch (error) {
@@ -43,14 +40,9 @@ export function handleInteractionRequested(data: InteractionPrompt) {
   pendingInteraction.set(data);
 
   const currentOperation = get(statusBar).activeOperation;
-  const operation =
-    currentOperation &&
-    (!currentOperation.operationId || currentOperation.operationId === data.operationId)
-      ? currentOperation
-      : null;
 
   setStatusOperation({
-    ...operation,
+    ...currentOperation,
     operationId: data.operationId,
     selectionId: data.selectionId,
     stage: OperationStage.OperationStageInteractionRequired,

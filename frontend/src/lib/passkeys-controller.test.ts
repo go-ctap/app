@@ -15,10 +15,14 @@ import { testHIDDevice, testSmartCardDevice } from "../test/device.js";
 import { api } from "$lib/api";
 import { failureForCode } from "$lib/test-support/failure";
 import {
+  beginPasskeyDirectoryLookup,
+  completePasskeyDirectoryLookup,
   completePasskeysInventoryLoad,
   failPasskeysInventoryLoadAtRuntime,
+  passkeyDirectoryState,
   passkeysInventoryState,
   passkeysMutation,
+  resetPasskeysDeviceState,
   resetPasskeysStateForTest,
 } from "$lib/features/passkeys/state";
 import { resetAuthenticatorStateForTest } from "$lib/features/authenticator/state";
@@ -28,7 +32,12 @@ import {
   operationRecovery,
   retryOperationRecovery,
 } from "$lib/operation-recovery.js";
-import { seedDevicesForTest, seedSelectionForTest } from "$lib/test-support/store-utils.js";
+import { setPasskeyDirectoryEnabled } from "$lib/preferences";
+import {
+  seedActiveScreenForTest,
+  seedDevicesForTest,
+  seedSelectionForTest,
+} from "$lib/test-support/store-utils.js";
 import {
   beginCredentialDelete,
   beginCredentialUpdate,
@@ -38,6 +47,7 @@ import {
   confirmCredentialUpdate,
   normalizeCredentialUpdateForm,
   loadPasskeys,
+  maybeLoadPasskeys,
   previewCredentialUpdate,
   updateCredentialDraft,
   validateCredentialUpdate,
@@ -152,6 +162,7 @@ function deleteResultEnvelope(): CredentialDeleteEnvelope {
 }
 
 beforeEach(() => {
+  setPasskeyDirectoryEnabled(false);
   resetAuthenticatorStateForTest();
   resetWorkbenchStateForTest();
   resetPasskeysStateForTest();
@@ -168,6 +179,77 @@ afterEach(() => {
 });
 
 describe("passkeys mutation requests", () => {
+  it("does not call Passkey Directory while the opt-in is disabled", async () => {
+    const list = vi.spyOn(api, "listCredentials").mockResolvedValue(inventoryEnvelope());
+    const lookup = vi.spyOn(api, "lookupPasskeyDirectory").mockResolvedValue({
+      matches: [],
+    });
+
+    expect(await loadPasskeys()).toBe(true);
+    expect(list).toHaveBeenCalledOnce();
+    expect(lookup).not.toHaveBeenCalled();
+    expect(get(passkeyDirectoryState).phase).toBe("idle");
+  });
+
+  it("passes inventory RP IDs to one directory lookup", async () => {
+    vi.spyOn(api, "saveApplicationConfig").mockResolvedValue();
+    setPasskeyDirectoryEnabled(true);
+
+    const envelope = inventoryEnvelope();
+
+    envelope.result!.groups!.push({
+      rpID: "EXAMPLE.TEST.",
+      credentials: [],
+    });
+
+    vi.spyOn(api, "listCredentials").mockResolvedValue(envelope);
+    const lookup = vi.spyOn(api, "lookupPasskeyDirectory").mockResolvedValue({
+      matches: [],
+    });
+
+    expect(await loadPasskeys()).toBe(true);
+    await vi.waitFor(() => expect(lookup).toHaveBeenCalledOnce());
+    expect(lookup).toHaveBeenCalledWith({ rpIDs: ["example.test", "EXAMPLE.TEST."] });
+  });
+
+  it("looks up a retained in-memory inventory when entering Passkeys", async () => {
+    vi.spyOn(api, "saveApplicationConfig").mockResolvedValue();
+    setPasskeyDirectoryEnabled(true);
+    seedActiveScreenForTest("passkeys");
+
+    const lookup = vi.spyOn(api, "lookupPasskeyDirectory").mockResolvedValue({
+      matches: [],
+    });
+
+    await maybeLoadPasskeys();
+    await vi.waitFor(() => expect(lookup).toHaveBeenCalledWith({ rpIDs: ["example.test"] }));
+    await vi.waitFor(() => expect(get(passkeyDirectoryState).phase).toBe("ready"));
+    await maybeLoadPasskeys();
+    expect(lookup).toHaveBeenCalledOnce();
+  });
+
+  it("keeps directory failures separate and clears lookup state at the device boundary", async () => {
+    vi.spyOn(api, "saveApplicationConfig").mockResolvedValue();
+    setPasskeyDirectoryEnabled(true);
+    vi.spyOn(api, "listCredentials").mockResolvedValue(inventoryEnvelope());
+    vi.spyOn(api, "lookupPasskeyDirectory").mockRejectedValue(new Error("offline"));
+
+    expect(await loadPasskeys()).toBe(true);
+    await vi.waitFor(() => expect(get(passkeyDirectoryState).phase).toBe("unavailable"));
+    expect(get(passkeysInventoryState).report).not.toBeNull();
+
+    const lookupID = beginPasskeyDirectoryLookup();
+    const result = {
+      matches: [],
+    };
+
+    completePasskeyDirectoryLookup(lookupID, result);
+    resetPasskeysDeviceState();
+    completePasskeyDirectoryLookup(lookupID, result);
+
+    expect(get(passkeyDirectoryState).phase).toBe("idle");
+  });
+
   it("recovers inventory loading through the shared operation lifecycle", async () => {
     const firstCard = testSmartCardDevice("card-1");
     const secondCard = testSmartCardDevice("card-2");

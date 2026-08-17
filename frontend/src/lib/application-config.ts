@@ -17,6 +17,8 @@ const currentLocaleState = writable<Locale>(initialLocale());
 
 const advancedModeState = writable(false);
 
+const passkeyDirectoryEnabledState = writable(false);
+
 let saveTail: Promise<void> = Promise.resolve();
 
 export const availableLocales = locales;
@@ -24,6 +26,8 @@ export const availableLocales = locales;
 export const currentLocale = readonly(currentLocaleState);
 
 export const advancedMode = readonly(advancedModeState);
+
+export const passkeyDirectoryEnabled = readonly(passkeyDirectoryEnabledState);
 
 export function localeLabel(locale: Locale) {
   return locale === "ru" ? m.locale_ru() : m.locale_en();
@@ -38,16 +42,19 @@ export async function initializeApplicationConfig() {
     if (snapshot.exists) {
       applyLocale(snapshot.config.locale as Locale);
       advancedModeState.set(snapshot.config.advancedMode);
+      passkeyDirectoryEnabledState.set(snapshot.config.passkeyDirectoryEnabled);
 
       return;
     }
 
     applyLocale(fallbackLocale);
     advancedModeState.set(false);
+    passkeyDirectoryEnabledState.set(false);
     await queueConfigSave();
   } catch {
     applyLocale(fallbackLocale);
     advancedModeState.set(false);
+    passkeyDirectoryEnabledState.set(false);
   }
 }
 
@@ -67,12 +74,19 @@ export function setAdvancedMode(enabled: boolean) {
   void queueConfigSave().catch(() => {});
 }
 
+export function setPasskeyDirectoryEnabled(enabled: boolean) {
+  if (get(passkeyDirectoryEnabledState) === enabled) return;
+
+  passkeyDirectoryEnabledState.set(enabled);
+  void queueConfigSave().catch(() => {});
+}
+
 function initialLocale(): Locale {
   const runtimeLocale = getLocale();
 
   if (isLocale(runtimeLocale)) return runtimeLocale;
 
-  const language = navigator.languages?.find(isLocale) || navigator.language;
+  const language = navigator.languages.find(isLocale) || navigator.language;
 
   return isLocale(language) ? language : baseLocale;
 }
@@ -88,6 +102,7 @@ function queueConfigSave() {
   const config = new ApplicationConfig({
     locale: get(currentLocaleState),
     advancedMode: get(advancedModeState),
+    passkeyDirectoryEnabled: get(passkeyDirectoryEnabledState),
   });
   const save = saveTail.then(() => api.saveApplicationConfig(config));
 

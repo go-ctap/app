@@ -1,8 +1,11 @@
 import { System } from "@wailsio/runtime";
+import { writable } from "svelte/store";
 
 import { runtimeCall } from "$lib/features/logs/state.svelte.js";
 
 export type WindowPlatform = "linux" | "macos" | "windows";
+
+export const windowPlatform = writable<WindowPlatform | null>(detectWindowPlatform());
 
 export function windowPlatformFromOS(os: string): WindowPlatform | null {
   switch (os) {

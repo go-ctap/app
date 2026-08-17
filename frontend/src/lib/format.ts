@@ -56,7 +56,7 @@ export function operationStageLabel(value: unknown) {
   return labels[raw] || raw.replaceAll("-", " ") || m.operation_running();
 }
 
-const permissionMessages: Readonly<Record<string, () => string>> = {
+const permissionMessages: Readonly<Partial<Record<string, () => string>>> = {
   authenticatorconfiguration: m.permission_authenticator_configuration,
   bioenrollment: m.permission_bio_enrollment,
   credentialmanagement: m.permission_credential_management,
@@ -87,7 +87,7 @@ export function permissionLabel(value: unknown) {
     .join(" + ");
 }
 
-const sampleStatusMessages: Readonly<Record<string, () => string>> = {
+const sampleStatusMessages: Readonly<Partial<Record<string, () => string>>> = {
   exists: m.sample_status_fingerprint_exists,
   good: m.sample_status_fingerprint_good,
   mergefailure: m.sample_status_fingerprint_merge_failure,

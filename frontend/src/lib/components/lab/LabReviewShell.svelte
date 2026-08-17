@@ -80,6 +80,7 @@
 <LabDataViewerSheet
   open={requestOpen}
   title={m.lab_request_json()}
+  description={m.lab_normalized_request()}
   kind="json"
   value={input}
   onOpenChange={(open) => (requestOpen = open)}

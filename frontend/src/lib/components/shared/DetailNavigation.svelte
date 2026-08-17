@@ -4,34 +4,73 @@
   import { Button } from "$lib/components/ui/button";
   import * as Kbd from "$lib/components/ui/kbd";
   import * as Tooltip from "$lib/components/ui/tooltip";
-
-  import { m } from "../../../paraglide/messages.js";
+  import { windowPlatform } from "$lib/window-platform";
 
   type Props = {
-    position: number;
-    total: number;
+    navigationLabel: string;
+    positionLabel: string;
+    previousLabel: string;
+    nextLabel: string;
     canPrevious: boolean;
     canNext: boolean;
-    onPrevious?: () => void;
-    onNext?: () => void;
+    shortcutsEnabled: boolean;
+    onPrevious: () => void;
+    onNext: () => void;
   };
 
   let {
-    position,
-    total,
+    navigationLabel,
+    positionLabel,
+    previousLabel,
+    nextLabel,
     canPrevious,
     canNext,
-    onPrevious = () => undefined,
-    onNext = () => undefined,
+    shortcutsEnabled,
+    onPrevious,
+    onNext,
   }: Props = $props();
+
+  let isMacOS = $derived($windowPlatform === "macos");
+
+  function isEditableTarget(target: EventTarget | null) {
+    return (
+      target instanceof Element &&
+      Boolean(target.closest('input, textarea, select, [contenteditable="true"]'))
+    );
+  }
+
+  function handleWindowKeydown(event: KeyboardEvent) {
+    if (
+      !shortcutsEnabled ||
+      !event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      isEditableTarget(event.target)
+    ) {
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (canPrevious) onPrevious();
+
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (canNext) onNext();
+    }
+  }
 </script>
 
-<nav class="log-detail-navigation" aria-label={m.logs_navigation()}>
-  <span class="log-detail-position" aria-live="polite">
-    {m.logs_entry_position({ current: position, total })}
-  </span>
+<svelte:window onkeydown={handleWindowKeydown} />
+
+<nav class="detail-navigation" aria-label={navigationLabel}>
+  <span class="detail-navigation-position" aria-live="polite">{positionLabel}</span>
   <Tooltip.Provider delayDuration={350} skipDelayDuration={80}>
-    <div class="log-detail-actions">
+    <div class="detail-navigation-actions">
       <Tooltip.Root>
         <Tooltip.Trigger>
           {#snippet child({ props })}
@@ -41,7 +80,7 @@
               variant="ghost"
               size="icon-sm"
               disabled={!canPrevious}
-              aria-label={m.logs_previous_entry()}
+              aria-label={previousLabel}
               aria-keyshortcuts="Alt+ArrowUp"
               onclick={onPrevious}
             >
@@ -50,11 +89,11 @@
           {/snippet}
         </Tooltip.Trigger>
         <Tooltip.Content side="bottom" sideOffset={6}>
-          <span class="log-detail-shortcut">
-            {m.logs_previous_entry()}
+          <span class="detail-navigation-shortcut">
+            {previousLabel}
             <Kbd.Group aria-hidden="true">
-              <Kbd.Root>Alt</Kbd.Root>
-              <span>+</span>
+              <Kbd.Root>{isMacOS ? "⌥" : "Alt"}</Kbd.Root>
+              {#if !isMacOS}<span>+</span>{/if}
               <Kbd.Root>↑</Kbd.Root>
             </Kbd.Group>
           </span>
@@ -70,7 +109,7 @@
               variant="ghost"
               size="icon-sm"
               disabled={!canNext}
-              aria-label={m.logs_next_entry()}
+              aria-label={nextLabel}
               aria-keyshortcuts="Alt+ArrowDown"
               onclick={onNext}
             >
@@ -79,11 +118,11 @@
           {/snippet}
         </Tooltip.Trigger>
         <Tooltip.Content side="bottom" sideOffset={6}>
-          <span class="log-detail-shortcut">
-            {m.logs_next_entry()}
+          <span class="detail-navigation-shortcut">
+            {nextLabel}
             <Kbd.Group aria-hidden="true">
-              <Kbd.Root>Alt</Kbd.Root>
-              <span>+</span>
+              <Kbd.Root>{isMacOS ? "⌥" : "Alt"}</Kbd.Root>
+              {#if !isMacOS}<span>+</span>{/if}
               <Kbd.Root>↓</Kbd.Root>
             </Kbd.Group>
           </span>
@@ -95,35 +134,35 @@
 
 <style>
   @layer blocks {
-    .log-detail-navigation,
-    .log-detail-actions,
-    .log-detail-shortcut {
+    .detail-navigation,
+    .detail-navigation-actions,
+    .detail-navigation-shortcut {
       display: flex;
       align-items: center;
     }
 
-    .log-detail-navigation {
+    .detail-navigation {
       flex: 0 0 auto;
       justify-content: flex-end;
       gap: var(--space-2);
       min-height: 2.5rem;
-      padding: 0 var(--space-3) 0 var(--space-4);
       border-bottom: 1px solid var(--border);
+      padding: 0 var(--space-3) 0 var(--space-4);
     }
 
-    .log-detail-actions {
+    .detail-navigation-actions {
       gap: var(--space-1);
       --wails-non-client-region: initial;
       --wails-draggable: no-drag;
     }
 
-    .log-detail-position {
+    .detail-navigation-position {
       color: var(--muted-foreground);
       font-family: var(--font-mono);
       font-size: 0.7rem;
     }
 
-    .log-detail-shortcut {
+    .detail-navigation-shortcut {
       gap: var(--space-2);
     }
   }

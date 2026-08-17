@@ -41,13 +41,6 @@ function storedSize(value: object) {
   return encoder.encode(JSON.stringify(value)).byteLength;
 }
 
-function runtimeID() {
-  return (
-    globalThis.crypto?.randomUUID?.() ??
-    `runtime-${Date.now()}-${Math.random().toString(16).slice(2)}`
-  );
-}
-
 function kitRecord(item: LogJournalRecord): KitLogRecord {
   const base = { source: "kit" as const, sequence: item.sequence, entry: item.entry };
 
@@ -93,7 +86,7 @@ export class LogController {
   recordRuntimeFailure(context: string, cause: unknown) {
     const base = {
       source: "app/runtime" as const,
-      id: runtimeID(),
+      id: globalThis.crypto.randomUUID(),
       timestamp: new SvelteDate().toISOString(),
       context,
       error: runtimeFailureFrom(cause),

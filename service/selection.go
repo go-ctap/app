@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	ctapkit "github.com/telesma-app/kit"
 	"github.com/telesma-app/kit/model/failure"
 	"github.com/telesma-app/kit/model/report"
-	"github.com/google/uuid"
 )
 
 type selection struct {
@@ -95,6 +95,13 @@ func (s *Service) SetSelection(
 	ctx context.Context,
 	req SelectionRequest,
 ) error {
+	if req.AttachmentID == "" {
+		return failure.New(
+			failure.CodeDeviceNotFound,
+			failure.WithPhase(failure.PhaseAuthenticator),
+		)
+	}
+
 	unlock, err := s.lockSelection(ctx)
 	if err != nil {
 		return err
@@ -108,12 +115,6 @@ func (s *Service) SetSelection(
 		return failure.New(
 			failure.CodeDeviceNotFound,
 			failure.WithPhase(failure.PhaseDiscovery),
-		)
-	}
-	if req.AttachmentID == "" {
-		return failure.New(
-			failure.CodeDeviceNotFound,
-			failure.WithPhase(failure.PhaseAuthenticator),
 		)
 	}
 

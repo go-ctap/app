@@ -10,7 +10,6 @@ const CODE_MESSAGES: Record<Exclude<Code, Code.$zero>, Message> = {
   [Code.CodeOperationCanceled]: m.failure_operation_canceled,
   [Code.CodeOperationTimeout]: m.failure_operation_timeout,
   [Code.CodeVerificationFlowUnsupported]: m.failure_verification_flow_unsupported,
-  [Code.CodeInteractionKindRequired]: m.failure_interaction_kind_required,
   [Code.CodeInteractionHandlerRequired]: m.failure_interaction_handler_required,
   [Code.CodeInteractionCanceled]: m.failure_interaction_canceled,
   [Code.CodeAuthenticatorClosed]: m.failure_authenticator_closed,
@@ -143,10 +142,7 @@ export function failureMessage(failure: Failure | null | undefined): string | nu
 export function failureMessage(failure: Failure | null | undefined): string | null {
   if (!failure) return null;
 
-  const message =
-    CODE_MESSAGES[failure.code as Exclude<Code, Code.$zero>] ?? m.failure_internal_error;
-
-  return message();
+  return CODE_MESSAGES[failure.code as Exclude<Code, Code.$zero>]();
 }
 
 export function isCanceledFailure(failure: Failure | null | undefined): boolean {

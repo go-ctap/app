@@ -32,12 +32,20 @@ func TestMissingConfigUsesDefaults(t *testing.T) {
 	if snapshot.Config != defaultConfig() {
 		t.Fatalf("missing config = %#v, want %#v", snapshot.Config, defaultConfig())
 	}
+
+	if snapshot.Config.PasskeyDirectoryEnabled {
+		t.Fatal("Passkey Directory is enabled by default")
+	}
 }
 
 func TestConfigRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), configFile)
 	service := newService(path)
-	want := ApplicationConfig{Locale: "ru", AdvancedMode: true}
+	want := ApplicationConfig{
+		Locale:                  "ru",
+		AdvancedMode:            true,
+		PasskeyDirectoryEnabled: true,
+	}
 
 	if err := service.SaveApplicationConfig(context.Background(), want); err != nil {
 		t.Fatalf("save config: %v", err)
@@ -65,7 +73,9 @@ func TestConfigRoundTrip(t *testing.T) {
 
 	contents := string(data)
 
-	if !strings.Contains(contents, "locale") || !strings.Contains(contents, "advanced_mode") {
+	if !strings.Contains(contents, "locale") ||
+		!strings.Contains(contents, "advanced_mode") ||
+		!strings.Contains(contents, "passkey_directory_enabled") {
 		t.Fatalf("saved TOML does not contain application config keys: %q", contents)
 	}
 }

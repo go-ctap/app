@@ -74,7 +74,6 @@ export enum Code {
     CodeOperationCanceled = "OPERATION_CANCELED",
     CodeOperationTimeout = "OPERATION_TIMEOUT",
     CodeVerificationFlowUnsupported = "VERIFICATION_FLOW_UNSUPPORTED",
-    CodeInteractionKindRequired = "INTERACTION_KIND_REQUIRED",
     CodeInteractionHandlerRequired = "INTERACTION_HANDLER_REQUIRED",
     CodeInteractionCanceled = "INTERACTION_CANCELED",
     CodeAuthenticatorClosed = "AUTHENTICATOR_CLOSED",

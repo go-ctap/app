@@ -215,6 +215,9 @@ describe("LogWorkbench", () => {
 
     await user.click(within(dialog).getByRole("button", { name: "Previous log entry" }));
     expect(within(dialog).getByText("Log entry 1 of 2")).toBeInTheDocument();
+
+    await user.keyboard("{Alt>}{ArrowDown}{/Alt}");
+    expect(within(dialog).getByText("Log entry 2 of 2")).toBeInTheDocument();
   });
 
   it("navigates the desktop detail panel with Alt+ArrowUp and Alt+ArrowDown", async () => {

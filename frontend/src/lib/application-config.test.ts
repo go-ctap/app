@@ -14,13 +14,19 @@ import {
   advancedMode,
   currentLocale,
   initializeApplicationConfig,
+  passkeyDirectoryEnabled,
   setAdvancedMode,
   setAppLocale,
+  setPasskeyDirectoryEnabled,
 } from "$lib/application-config.js";
 
-function snapshot(locale: string, advanced: boolean, exists = true) {
+function snapshot(locale: string, advanced: boolean, directoryEnabled = false, exists = true) {
   return new ApplicationConfigSnapshot({
-    config: new ApplicationConfig({ locale, advancedMode: advanced }),
+    config: new ApplicationConfig({
+      locale,
+      advancedMode: advanced,
+      passkeyDirectoryEnabled: directoryEnabled,
+    }),
     exists,
   });
 }
@@ -34,22 +40,29 @@ describe("application config", () => {
   });
 
   it("applies a persisted config", async () => {
-    applicationServiceMocks.LoadApplicationConfig.mockResolvedValue(snapshot("ru", true));
+    applicationServiceMocks.LoadApplicationConfig.mockResolvedValue(snapshot("ru", true, true));
 
     await initializeApplicationConfig();
 
     expect(get(currentLocale)).toBe("ru");
     expect(get(advancedMode)).toBe(true);
+    expect(get(passkeyDirectoryEnabled)).toBe(true);
     expect(applicationServiceMocks.SaveApplicationConfig).not.toHaveBeenCalled();
   });
 
   it("creates a config on first launch", async () => {
-    applicationServiceMocks.LoadApplicationConfig.mockResolvedValue(snapshot("en", false, false));
+    applicationServiceMocks.LoadApplicationConfig.mockResolvedValue(
+      snapshot("en", false, false, false),
+    );
 
     await initializeApplicationConfig();
 
     expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledWith(
-      expect.objectContaining({ locale: "en", advancedMode: false }),
+      expect.objectContaining({
+        locale: "en",
+        advancedMode: false,
+        passkeyDirectoryEnabled: false,
+      }),
     );
   });
 
@@ -76,7 +89,22 @@ describe("application config", () => {
       expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledTimes(2),
     );
     expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenLastCalledWith(
-      expect.objectContaining({ locale: "ru", advancedMode: true }),
+      expect.objectContaining({
+        locale: "ru",
+        advancedMode: true,
+        passkeyDirectoryEnabled: false,
+      }),
     );
+  });
+
+  it("persists the Passkey Directory preference", async () => {
+    setPasskeyDirectoryEnabled(true);
+
+    await vi.waitFor(() =>
+      expect(applicationServiceMocks.SaveApplicationConfig).toHaveBeenCalledWith(
+        expect.objectContaining({ passkeyDirectoryEnabled: true }),
+      ),
+    );
+    expect(get(passkeyDirectoryEnabled)).toBe(true);
   });
 });

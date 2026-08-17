@@ -3,12 +3,12 @@
 
   import { Button } from "$lib/components/ui/button";
   import * as Sheet from "$lib/components/ui/sheet";
+  import DetailNavigation from "$lib/components/shared/DetailNavigation.svelte";
   import type { LogRecord } from "$lib/features/logs/state.svelte.js";
   import { logSummary, logTime } from "$lib/log-presentation.js";
 
   import { m } from "../../../paraglide/messages.js";
   import LogDetail from "$lib/components/logs/LogDetail.svelte";
-  import LogDetailNavigation from "$lib/components/logs/LogDetailNavigation.svelte";
 
   type Props = {
     open: boolean;
@@ -17,9 +17,9 @@
     total: number;
     canPrevious: boolean;
     canNext: boolean;
-    onPrevious?: () => void;
-    onNext?: () => void;
-    onOpenChange?: (open: boolean) => void;
+    onPrevious: () => void;
+    onNext: () => void;
+    onOpenChange: (open: boolean) => void;
   };
 
   let {
@@ -29,9 +29,9 @@
     total,
     canPrevious,
     canNext,
-    onPrevious = () => undefined,
-    onNext = () => undefined,
-    onOpenChange = () => undefined,
+    onPrevious,
+    onNext,
+    onOpenChange,
   }: Props = $props();
 
   let sheetContent: HTMLElement | null = $state(null);
@@ -40,41 +40,7 @@
     event.preventDefault();
     requestAnimationFrame(() => sheetContent?.focus({ preventScroll: true }));
   }
-
-  function isEditableTarget(target: EventTarget | null) {
-    return (
-      target instanceof Element &&
-      Boolean(target.closest('input, textarea, select, [contenteditable="true"]'))
-    );
-  }
-
-  function handleWindowKeydown(event: KeyboardEvent) {
-    if (
-      !open ||
-      !event.altKey ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.shiftKey ||
-      isEditableTarget(event.target)
-    ) {
-      return;
-    }
-
-    if (event.key === "ArrowUp") {
-      event.preventDefault();
-      if (canPrevious) onPrevious();
-
-      return;
-    }
-
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      if (canNext) onNext();
-    }
-  }
 </script>
-
-<svelte:window onkeydown={handleWindowKeydown} />
 
 <Sheet.Root {open} {onOpenChange}>
   <Sheet.Content
@@ -103,7 +69,17 @@
       </Sheet.Close>
     </div>
 
-    <LogDetailNavigation {position} {total} {canPrevious} {canNext} {onPrevious} {onNext} />
+    <DetailNavigation
+      navigationLabel={m.logs_navigation()}
+      positionLabel={m.logs_entry_position({ current: position, total })}
+      previousLabel={m.logs_previous_entry()}
+      nextLabel={m.logs_next_entry()}
+      {canPrevious}
+      {canNext}
+      shortcutsEnabled={open}
+      {onPrevious}
+      {onNext}
+    />
 
     <LogDetail {record} />
   </Sheet.Content>

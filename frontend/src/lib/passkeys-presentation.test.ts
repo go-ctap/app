@@ -112,6 +112,8 @@ describe("buildPasskeysPresentation", () => {
     expect(presentation.rows).toHaveLength(1);
     expect(presentation.rows[0].rpName).toBe("Example");
     expect(presentation.rows[0].rpID).toBe("example.com");
+    expect(presentation.rows[0].userID).toBe("01");
+    expect(presentation.rows[0].userIDEncoding).toBe("hex");
     expect(presentation.rows[0].credProtect).toBe("Level 2 · UV optional with passkey list");
     expect(presentation.rows[0].raw.credential.credentialTransports).toEqual(["usb", "nfc"]);
     expect(presentation.rows[0].raw.relyingParty).toEqual({
@@ -120,7 +122,76 @@ describe("buildPasskeysPresentation", () => {
       rpIDHashHex: "abcd",
     });
     expect(presentation.rows[0].raw.relyingParty).not.toHaveProperty("credentials");
+    expect(presentation.relyingParties).toHaveLength(1);
+    expect(presentation.relyingParties[0].credentials).toEqual(presentation.rows);
+    expect(presentation.selectedRelyingParty).toBe(presentation.relyingParties[0]);
+    expect(presentation.selectedCredential).toBe(presentation.rows[0]);
     expect(presentation.selectedCredentialID).toBe("cafe");
+  });
+
+  it("shows printable user IDs as UTF-8 and keeps opaque bytes in hex", () => {
+    const rows = buildPasskeyRows(
+      envelope([
+        {
+          rpID: "example.com",
+          credentials: [
+            { credentialIDHex: "text", userIDHex: "616c6963652d696e7465726e616c" },
+            { credentialIDHex: "bytes", userIDHex: "00ff" },
+            { credentialIDHex: "replacement", userIDHex: "efbfbd" },
+            { credentialIDHex: "missing" },
+          ],
+        },
+      ]).result!,
+    );
+
+    expect(rows.map(({ userID, userIDEncoding }) => ({ userID, userIDEncoding }))).toEqual([
+      { userID: "alice-internal", userIDEncoding: "utf8" },
+      { userID: "00ff", userIDEncoding: "hex" },
+      { userID: "efbfbd", userIDEncoding: "hex" },
+      { userID: "Not reported", userIDEncoding: "unavailable" },
+    ]);
+  });
+
+  it("groups credentials by RP and keeps directory enrichment at RP level", () => {
+    const credentials = envelope([
+      {
+        rpID: "solo.example",
+        rpName: "Solo",
+        credentials: [{ credentialIDHex: "one" }],
+      },
+      {
+        rpID: "team.example",
+        rpName: "Team",
+        credentials: [{ credentialIDHex: "two" }, { credentialIDHex: "three" }],
+      },
+    ]);
+    const directory = {
+      rpID: "team.example",
+      canonicalDomain: "accounts.team.example",
+    };
+    const presentation = buildPasskeysPresentation({
+      ...defaultView,
+      selectedSelector: "token-1",
+      selectedDevice: null,
+      authenticatorBusy: false,
+      authenticatorReady: true,
+      inventoryState: inventoryState(credentials),
+      selectedCredentialID: "three",
+      directoryMatches: new Map([["team.example", directory]]),
+    });
+
+    expect(presentation.relyingParties.map((relyingParty) => relyingParty.rpID)).toEqual([
+      "solo.example",
+      "team.example",
+    ]);
+    expect(presentation.relyingParties[1].credentials.map((credential) => credential.id)).toEqual([
+      "two",
+      "three",
+    ]);
+    expect(presentation.relyingParties[1].directory).toBe(directory);
+    expect(presentation.selectedRelyingParty).toBe(presentation.relyingParties[1]);
+    expect(presentation.selectedCredential?.id).toBe("three");
+    expect(presentation.rows.every((row) => !("directory" in row))).toBe(true);
   });
 
   it("searches every RP and credential identity field and applies status filters", () => {
@@ -249,6 +320,8 @@ describe("buildPasskeysPresentation", () => {
     });
 
     expect(filtered.rows).toHaveLength(0);
+    expect(filtered.selectedRelyingParty).toBeNull();
+    expect(filtered.selectedCredential).toBeNull();
     expect(filtered.selectedCredentialID).toBe("one");
 
     const restored = buildPasskeysPresentation({

@@ -1,7 +1,10 @@
 import { get } from "svelte/store";
 
 import { VerificationFlow } from "../../bindings/github.com/telesma-app/kit";
-import type { CredentialTarget } from "../../bindings/github.com/telesma-app/kit/model/credentials";
+import type {
+  CredentialTarget,
+  InventoryReport,
+} from "../../bindings/github.com/telesma-app/kit/model/credentials";
 import { Code } from "../../bindings/github.com/telesma-app/kit/model/failure";
 import type {
   CredentialDeleteRequest,
@@ -20,15 +23,20 @@ import {
 } from "$lib/ctapkit-results.js";
 import {
   beginPasskeysInventoryLoad,
+  beginPasskeyDirectoryLookup,
+  completePasskeyDirectoryLookup,
   completePasskeysInventoryLoad,
+  failPasskeyDirectoryLookup,
   failPasskeysInventoryLoadAtRuntime,
   failPasskeysInventoryLoadWithResponse,
+  passkeyDirectoryState,
   passkeysInventoryState,
   passkeysMutation,
   passkeysQuery,
   passkeysSelectedCredentialID,
   passkeysStatusFilter,
   passkeysVerificationFlow,
+  resetPasskeyDirectoryLookup,
   resetPasskeysDeviceState,
   type CredentialUpdateForm,
   type CredentialUpdateValidationError,
@@ -37,6 +45,7 @@ import {
 } from "$lib/features/passkeys/state.js";
 import { selectedSelector, authenticatorStatus } from "$lib/features/authenticator/state.js";
 import { activeScreen } from "$lib/features/workbench/state.js";
+import { passkeyDirectoryEnabled } from "$lib/preferences.js";
 import {
   editingConfirmedOperation,
   idleConfirmedOperation,
@@ -77,9 +86,41 @@ function reconcileSelectedCredential() {
 }
 
 export async function maybeLoadPasskeys() {
-  if (!shouldAutoLoadPasskeys()) return;
+  if (shouldAutoLoadPasskeys()) {
+    await loadPasskeys();
 
-  await loadPasskeys();
+    return;
+  }
+
+  const report = get(passkeysInventoryState).report;
+
+  if (get(activeScreen) === "passkeys" && report && get(passkeyDirectoryState).phase === "idle") {
+    void loadPasskeyDirectory(report);
+  }
+}
+
+async function loadPasskeyDirectory(report: InventoryReport) {
+  if (!get(passkeyDirectoryEnabled)) {
+    resetPasskeyDirectoryLookup();
+
+    return;
+  }
+
+  const rpIDs = (report.groups ?? []).map((group) => group.rpID);
+
+  if (rpIDs.length === 0) {
+    resetPasskeyDirectoryLookup();
+
+    return;
+  }
+
+  const lookupID = beginPasskeyDirectoryLookup();
+
+  try {
+    completePasskeyDirectoryLookup(lookupID, await api.lookupPasskeyDirectory({ rpIDs }));
+  } catch {
+    failPasskeyDirectoryLookup(lookupID);
+  }
 }
 
 export async function loadPasskeys() {
@@ -112,8 +153,11 @@ export async function loadPasskeys() {
       envelope.error.code === Code.CodeCredentialManagementUnsupported,
     );
   } else {
-    completePasskeysInventoryLoad(credentialsReport(envelope)!, new Date().toISOString());
+    const report = credentialsReport(envelope)!;
+
+    completePasskeysInventoryLoad(report, new Date().toISOString());
     reconcileSelectedCredential();
+    void loadPasskeyDirectory(report);
   }
 
   completeOperation(label, envelope);

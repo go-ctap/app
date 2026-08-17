@@ -5,7 +5,7 @@
   import LargeBlobDestructiveDialog from "$lib/components/largeblobs/LargeBlobDestructiveDialog.svelte";
   import LargeBlobWriteDialog from "$lib/components/largeblobs/LargeBlobWriteDialog.svelte";
   import PasskeyDeleteDialog from "$lib/components/passkeys/PasskeyDeleteDialog.svelte";
-  import PasskeysInventory from "$lib/components/passkeys/PasskeysInventory.svelte";
+  import PasskeysDomainWorkspace from "$lib/components/passkeys/PasskeysDomainWorkspace.svelte";
   import PasskeysOverview from "$lib/components/passkeys/PasskeysOverview.svelte";
   import PasskeyUpdateDialog from "$lib/components/passkeys/PasskeyUpdateDialog.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
@@ -53,12 +53,14 @@
   import { buildPasskeysPresentation } from "$lib/passkeys-presentation";
   import {
     passkeysInventoryState,
+    passkeyDirectoryState,
     passkeysMutation,
     passkeysQuery,
     passkeysSelectedCredentialID,
     passkeysStatusFilter,
     passkeysVerificationFlow,
   } from "$lib/features/passkeys";
+  import { passkeyDirectoryEnabled } from "$lib/preferences";
 
   import { m } from "../paraglide/messages.js";
 
@@ -73,6 +75,7 @@
       query: $passkeysQuery,
       statusFilter: $passkeysStatusFilter,
       selectedCredentialID: $passkeysSelectedCredentialID,
+      directoryMatches: $passkeyDirectoryEnabled ? $passkeyDirectoryState.matches : undefined,
     }),
   );
 
@@ -187,7 +190,7 @@
         {/snippet}
       </EmptyState>
     {:else}
-      <PasskeysInventory
+      <PasskeysDomainWorkspace
         presentation={passkeys}
         onQueryChange={setPasskeysQuery}
         onFilterChange={setPasskeysStatusFilter}

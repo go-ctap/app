@@ -9,45 +9,34 @@ import { finishOperation, setStatusOperation, setStatusOutcome } from "$lib/work
 
 export type CancelOperationResult = "accepted" | "already-finished" | "failed" | "unavailable";
 
-function currentOperation(operationId: string) {
-  const operation = get(statusBar).activeOperation;
-
-  return operation?.operationId === operationId ? operation : null;
-}
-
-function patchCurrentOperation(operationId: string, patch: Partial<ActiveOperation>) {
-  const operation = currentOperation(operationId);
-
-  if (!operation) return false;
-
-  setStatusOperation({ ...operation, ...patch });
-
-  return true;
+function patchActiveOperation(patch: Partial<ActiveOperation>) {
+  setStatusOperation({ ...get(statusBar).activeOperation!, ...patch });
 }
 
 export async function cancelActiveOperation(): Promise<CancelOperationResult> {
   const operation = get(statusBar).activeOperation;
   const operationId = operation?.operationId?.trim() || "";
 
-  if (!operationId || operation?.cancelPending || operation?.cancelRequested) return "unavailable";
+  if (!operation || !operationId || operation.cancelPending || operation.cancelRequested)
+    return "unavailable";
 
-  patchCurrentOperation(operationId, { cancelPending: true, cancelError: null });
+  patchActiveOperation({ cancelPending: true, cancelError: null });
 
   try {
     const accepted = await api.cancelOperation({ operationId });
 
     if (accepted) {
-      patchCurrentOperation(operationId, {
+      patchActiveOperation({
         cancelPending: false,
         cancelRequested: true,
         cancelError: null,
       });
-      pendingInteraction.update((prompt) => (prompt?.operationId === operationId ? null : prompt));
+      pendingInteraction.set(null);
 
       return "accepted";
     }
 
-    if (currentOperation(operationId)) finishOperation();
+    finishOperation();
 
     setStatusOutcome({
       tone: "info",
@@ -58,18 +47,16 @@ export async function cancelActiveOperation(): Promise<CancelOperationResult> {
     return "already-finished";
   } catch (error) {
     const runtimeError = runtimeFailureFrom(error);
-    const stillActive = patchCurrentOperation(operationId, {
+    patchActiveOperation({
       cancelPending: false,
       cancelError: runtimeError,
     });
 
-    if (stillActive) {
-      setStatusOutcome({
-        tone: "error",
-        title: m.operation_cancel_failed(),
-        message: failureMessage(runtimeError),
-      });
-    }
+    setStatusOutcome({
+      tone: "error",
+      title: m.operation_cancel_failed(),
+      message: failureMessage(runtimeError),
+    });
 
     return "failed";
   }

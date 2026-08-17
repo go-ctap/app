@@ -7,7 +7,12 @@
   import * as Select from "$lib/components/ui/select";
   import { Switch } from "$lib/components/ui/switch";
   import { availableLocales, currentLocale, localeLabel, setAppLocale } from "$lib/i18n";
-  import { advancedMode, setAdvancedMode } from "$lib/preferences";
+  import {
+    advancedMode,
+    passkeyDirectoryEnabled,
+    setAdvancedMode,
+    setPasskeyDirectoryEnabled,
+  } from "$lib/preferences";
 
   import { m } from "../paraglide/messages.js";
 
@@ -63,6 +68,25 @@
         aria-labelledby="settings-advanced-mode-title"
         aria-describedby="settings-advanced-mode-description"
         onCheckedChange={setAdvancedMode}
+      />
+    </Field.Field>
+  </section>
+
+  <section class="settings-section" aria-labelledby="settings-passkey-directory-title">
+    <div class="settings-copy">
+      <h2 id="settings-passkey-directory-title">{m.passkey_directory()}</h2>
+      <p id="settings-passkey-directory-description">
+        {m.passkey_directory_description()}
+      </p>
+    </div>
+
+    <Field.Field orientation="horizontal" class="settings-switch-control">
+      <Switch
+        id="settings-passkey-directory"
+        checked={$passkeyDirectoryEnabled}
+        aria-labelledby="settings-passkey-directory-title"
+        aria-describedby="settings-passkey-directory-description"
+        onCheckedChange={setPasskeyDirectoryEnabled}
       />
     </Field.Field>
   </section>

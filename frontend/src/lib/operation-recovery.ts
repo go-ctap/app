@@ -92,8 +92,6 @@ export const operationRecovery = derived(
 );
 
 export function offerOperationRecovery(label: string, failure: Failure) {
-  if (get(intent)) return null;
-
   const device = get(selectedDevice);
 
   if (

@@ -4,6 +4,11 @@ import type {
   ApplicationConfigSnapshot,
   ApplicationInfo,
 } from "../../bindings/telesma/appconfig";
+import * as passkeyDirectoryService from "../../bindings/telesma/passkeydirectory/service";
+import type {
+  PasskeyDirectoryLookupRequest,
+  PasskeyDirectoryLookupResult,
+} from "../../bindings/telesma/passkeydirectory";
 import * as service from "../../bindings/telesma/service/service";
 import type { LogJournalBatch } from "../../bindings/github.com/telesma-app/kit/model";
 import type {
@@ -95,6 +100,14 @@ export const api = {
   saveApplicationConfig(config: ApplicationConfig): Promise<void> {
     return runtimeCall("application.config.save", () =>
       applicationService.SaveApplicationConfig(config),
+    );
+  },
+
+  lookupPasskeyDirectory(
+    request: PasskeyDirectoryLookupRequest,
+  ): Promise<PasskeyDirectoryLookupResult> {
+    return runtimeCall("passkeyDirectory.lookup", () =>
+      passkeyDirectoryService.LookupPasskeyDirectory(request),
     );
   },
 

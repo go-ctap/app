@@ -23,7 +23,7 @@ func WriteFile(path string, data []byte, filePerm, dirPerm fs.FileMode) error {
 
 	tempPath := tempFile.Name()
 
-	defer os.Remove(tempPath)
+	defer func() { _ = os.Remove(tempPath) }()
 
 	if err := tempFile.Chmod(filePerm); err != nil {
 		_ = tempFile.Close()

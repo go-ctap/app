@@ -76,7 +76,7 @@ func (s *Service) forwardDeviceUpdates(
 			return
 		}
 
-		unlock, err := s.lockSelection(context.Background())
+		unlock, err := s.lockSelection(s.deviceContext)
 		if err != nil {
 			return
 		}
